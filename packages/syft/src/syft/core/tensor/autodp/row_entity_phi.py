@@ -603,8 +603,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def __mod__(
-            self,
-            other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
     ) -> RowEntityPhiTensor:
 
         # We will let the underlying SingleEntityPhiTensor logic handle most of the errors/exceptions
@@ -632,7 +632,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def __divmod__(
-            self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor]
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
     ) -> Tuple:
         # Let logic written out in mod, floordiv and SEPT handle all exceptions
         return self // other, self % other

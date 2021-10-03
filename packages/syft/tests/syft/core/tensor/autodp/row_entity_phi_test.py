@@ -745,9 +745,6 @@ def test_divmod_rept(row_data_ishan: list) -> None:
         assert tensors[1] == row_data_ishan[index] % other_data[index]
 
 
-
-
-
 @pytest.mark.skip(
     reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
 )
