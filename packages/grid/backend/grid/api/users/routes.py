@@ -2,6 +2,7 @@
 import json
 from typing import List
 from typing import NoReturn
+from typing import Optional
 
 # third party
 from fastapi import APIRouter
@@ -45,11 +46,11 @@ def get_self(current_user: UserPrivate = Depends(get_current_user)) -> User:
 @router.post("", name="users:create", status_code=status.HTTP_201_CREATED)
 async def create_user_grid(
     current_user: UserPrivate = Depends(get_current_user),
-    file: UploadFile = File(...),
-    metadata: str = Form(...),
+    file: Optional[UploadFile] = File(...),
+    new_user: str = Form(...),
 ) -> str:
     pdf_file = file.file.read()
-    dict_user = json.loads(metadata)
+    dict_user = json.loads(new_user)
     dict_user["daa_pdf"] = pdf_file
     new_user = UserCreate(**dict_user)
     try:
