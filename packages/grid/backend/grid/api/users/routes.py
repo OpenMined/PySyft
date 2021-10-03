@@ -49,7 +49,11 @@ async def create_user_grid(
     file: Optional[UploadFile] = File(...),
     new_user: str = Form(...),
 ) -> str:
-    pdf_file = file.file.read()
+    if file:
+        pdf_file = file.file.read() # type: ignore
+    else:
+        pdf_file = b''
+
     dict_user = json.loads(new_user)
     dict_user["daa_pdf"] = pdf_file
     new_user = UserCreate(**dict_user)
