@@ -1,6 +1,5 @@
 # stdlib
 from datetime import datetime
-import json
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -130,7 +129,6 @@ def update_settings(
             daa=msg.daa,
             contact=msg.contact,
             daa_document=msg.daa_document,
-            tags=json.dumps(msg.tags),
         )
     else:
         raise AuthorizationError("You're not allowed to get setup configs!")
