@@ -1210,12 +1210,14 @@ def test_or(reference_binary_data: np.ndarray, ishan: Entity) -> None:
     assert (output.child == target).all()
 
 
-def test_round(reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray, ishan: Entity) -> None:
+def test_round(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
     reference_tensor = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=ishan
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
     output = reference_tensor.round(decimals=0)
     target = reference_data.astype(dtype=np.int32)
