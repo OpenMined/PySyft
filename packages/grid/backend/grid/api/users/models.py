@@ -50,7 +50,7 @@ class User(BaseUser):
     institution: Optional[str]
     website: Optional[str]
     added_by: Optional[str]
-
+    created_at: Optional[str]
 
 class UserPrivate(User):
     private_key: str
