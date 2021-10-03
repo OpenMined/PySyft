@@ -1,4 +1,4 @@
 """Beaver Generators Mechanism."""
 
 # relative
-from .beaver import *  # noqa F403
+from . import beaver  # noqa F403
