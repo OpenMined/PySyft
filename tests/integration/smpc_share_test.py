@@ -1,6 +1,5 @@
 # stdlib
 import operator
-import time
 
 # third party
 import numpy as np
@@ -70,7 +69,7 @@ def test_mpc_public_private_op(op_str: str) -> None:
     op = getattr(operator, op_str)
 
     res = op(mpc_tensor_1, public_value)
-    time.sleep(2)
+
     res = res.reconstruct()
     expected = op(value_1, public_value)
 
