@@ -61,10 +61,9 @@ def test_mpc_public_private_op(op_str: str) -> None:
     value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
 
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+    public_value = 27
 
     mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(1, 5))
-
-    public_value = 42
 
     op = getattr(operator, op_str)
 
