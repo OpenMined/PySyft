@@ -560,6 +560,18 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 f"Tensor dims do not match for __ge__: {len(self.child)} != {len(other.child)}"
             )
 
+    def cumprod(self, axis: Optional[int] = None) -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.cumprod(axis))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def cumsum(self, axis: Optional[int] = None) -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.cumsum(axis))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
     def clip(
         self, a_min: npt.ArrayLike, a_max: npt.ArrayLike, *args: Any
     ) -> RowEntityPhiTensor:

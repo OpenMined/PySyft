@@ -1386,6 +1386,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         dtype: Optional[Any] = None,
         out: np.ndarray = None,
     ) -> SingleEntityPhiTensor:
+        if dtype and dtype != np.int32:
+            raise Exception(
+                "We currently only support np.int32 dtypes. "
+                "We have plans to support more in the future though!"
+            )
         if isinstance(self.child, np.ndarray):
             data = self.child.cumsum(axis, dtype, out)
         elif isinstance(self.child, torch.Tensor):
@@ -1413,6 +1418,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         dtype: Optional[Any] = None,
         out: np.ndarray = None,
     ) -> SingleEntityPhiTensor:
+        if dtype and dtype != np.int32:
+            raise Exception(
+                "We currently only support np.int32 dtypes. "
+                "We have plans to support more in the future though!"
+            )
         if isinstance(self.child, np.ndarray):
             data = self.child.cumprod(axis, dtype, out)
         elif isinstance(self.child, torch.Tensor):
