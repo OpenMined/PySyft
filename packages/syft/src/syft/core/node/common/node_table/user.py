@@ -4,7 +4,7 @@ from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
-
+from sqlalchemy import DateTime
 # relative
 from . import Base
 
@@ -46,6 +46,7 @@ class SyftUser(Base):
     website = Column(String(2048))
     institution = Column(String(2048))
     daa_pdf = Column(Integer, ForeignKey("daa_pdf.id"))
+    created_at = Column(DateTime())
 
     def __str__(self) -> str:
         return (
