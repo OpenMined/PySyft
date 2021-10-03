@@ -778,7 +778,11 @@ def test_matmul_array(row_data_ishan: list) -> None:
 
 
 def test_matmul_sept(
-        row_data_ishan: list, reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray, ishan: Entity
+    row_data_ishan: list,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     reference_tensor = REPT(rows=row_data_ishan)
     other = row_data_ishan[0].transpose() * 2
@@ -796,7 +800,9 @@ def test_matmul_rept(row_data_ishan: list) -> None:
     other = REPT(rows=data)
     output = reference_tensor.__matmul__(other)
 
-    for input_tensor, other_tensor, output_tensor in zip(reference_tensor.child, other.child, output.child):
+    for input_tensor, other_tensor, output_tensor in zip(
+        reference_tensor.child, other.child, output.child
+    ):
         assert output_tensor.shape[1] == reference_tensor.shape[1]
         assert output_tensor.shape[-1] == other.shape[-1]
         assert output_tensor == input_tensor.child.__matmul__(other_tensor.child)

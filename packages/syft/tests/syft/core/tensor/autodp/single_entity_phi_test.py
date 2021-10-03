@@ -1443,19 +1443,19 @@ def test_divmod_sept(
 
 
 def test_matmul_array(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: Entity,
-        traskmaster: Entity,
-        reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
 ) -> None:
     reference_tensor = SEPT(
         child=reference_data,
         max_vals=upper_bound,
         min_vals=lower_bound,
         entity=ishan,
-        scalar_manager=reference_scalar_manager
+        scalar_manager=reference_scalar_manager,
     )
     other = np.ones_like(reference_data.T) * 5
     output = reference_tensor.__matmul__(other)
@@ -1465,19 +1465,19 @@ def test_matmul_array(
 
 
 def test_matmul_sept(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: Entity,
-        traskmaster: Entity,
-        reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
 ) -> None:
     reference_tensor = SEPT(
         child=reference_data,
         max_vals=upper_bound,
         min_vals=lower_bound,
         entity=ishan,
-        scalar_manager=reference_scalar_manager
+        scalar_manager=reference_scalar_manager,
     )
     data = np.ones_like(reference_data.T) * 5
     other = SEPT(
@@ -1485,7 +1485,7 @@ def test_matmul_sept(
         max_vals=np.ones_like(data) * 10,
         min_vals=np.ones_like(data),
         entity=ishan,
-        scalar_manager=reference_scalar_manager
+        scalar_manager=reference_scalar_manager,
     )
     output = reference_tensor.__matmul__(other)
     assert output.shape[0] == reference_data.shape[0]
