@@ -258,7 +258,7 @@ class ProcessUserCandidateMessage(ImmediateSyftMessageWithReply):
     @staticmethod
     def _proto2object(
         proto: ProcessUserCandidateMessage_PB,
-    ) -> "GetUserMessage":
+    ) -> "ProcessUserCandidateMessage":
         """Creates a GetUserMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -462,7 +462,7 @@ class GetCandidatesMessage(ImmediateSyftMessageWithReply):
     @staticmethod
     def _proto2object(
         proto: GetCandidatesMessage_PB,
-    ) -> "GetUsersMessage":
+    ) -> "GetCandidatesMessage":
         """Creates a GetUsersMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

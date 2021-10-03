@@ -23,6 +23,7 @@ from ..success_resp_message import SuccessResponseMessage
 from .user_messages import CreateUserMessage
 from .user_messages import DeleteUserMessage
 from .user_messages import GetCandidatesMessage
+from .user_messages import GetCandidatesResponse
 from .user_messages import GetUserMessage
 from .user_messages import GetUserResponse
 from .user_messages import GetUsersMessage
@@ -249,7 +250,7 @@ def get_applicant_users(
     msg: GetCandidatesMessage,
     node: DomainInterface,
     verify_key: VerifyKey,
-) -> GetUsersResponse:
+) -> GetCandidatesResponse:
     # Check key permissions
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
     if not _allowed:
@@ -265,7 +266,7 @@ def get_applicant_users(
                 _user_json["daa_pdf"] = user.daa_pdf
             _msg.append(_user_json)
 
-    return GetUsersResponse(
+    return GetCandidatesResponse(
         address=msg.reply_to,
         content=_msg,
     )
@@ -337,6 +338,8 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         Type[GetUsersMessage],
         Type[DeleteUserMessage],
         Type[SearchUsersMessage],
+        Type[GetCandidatesMessage],
+        Type[ProcessUserCandidateMessage],
     ]
 
     INPUT_MESSAGES = Union[
@@ -352,6 +355,7 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         SuccessResponseMessage,
         GetUserResponse,
         GetUsersResponse,
+        GetCandidatesResponse,
         SearchUsersResponse,
     ]
 

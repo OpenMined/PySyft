@@ -1,10 +1,10 @@
 # stdlib
+from datetime import datetime
 from typing import Any
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from datetime import datetime
 
 # third party
 from bcrypt import checkpw
@@ -142,7 +142,7 @@ class UserManager(DatabaseManager):
             encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode(
                 "utf-8"
             )
-            added_by = self.get_user(verify_key).name
+            added_by = self.get_user(verify_key).name  # type: ignore
             self.register(
                 name=candidate.name,
                 email=candidate.email,

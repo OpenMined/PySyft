@@ -16,8 +16,8 @@ from .roles import Role
 from .user import SyftUser
 from .usergroup import UserGroup
 
-
 datetime_cols = ["date", "created_at", "destroyed_at", "deployed_on"]
+
 
 def model_to_json(model: Base) -> Dict[str, Any]:
     """Returns a JSON representation of an SQLAlchemy-backed object."""
