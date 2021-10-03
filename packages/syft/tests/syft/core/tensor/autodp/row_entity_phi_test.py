@@ -646,6 +646,38 @@ def test_and(row_count: int, ishan: Entity) -> None:
         assert (tensor & False) == output[index]
 
 
+def test_floordiv_array(row_data_ishan: list) -> None:
+    """ Test floordiv with np.ndarrays"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = np.ones_like(row_data_ishan[0].child)
+    output = reference_tensor // other
+    for index, tensor in enumerate(output.child):
+        assert tensor == row_data_ishan[index] // other
+
+
+@pytest.mark.skip(reason="Test works but occasionally gives a division by zero error")
+def test_floordiv_sept(row_data_ishan: list) -> None:
+    """ Test floordiv with SEPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = row_data_ishan[0]
+    output = reference_tensor // other
+
+    for index, tensor in enumerate(output.child):
+        assert tensor == row_data_ishan[index] // other.child
+
+
+@pytest.mark.skip(reason="Test works but occasionally gives a division by zero error")
+def test_floordiv_rept(row_data_ishan: list) -> None:
+    """ Test floordiv with REPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other_data = [i // 2 + 1 for i in row_data_ishan]
+    other = REPT(rows=other_data)
+    output = reference_tensor // other
+
+    for index, tensor in enumerate(output.child):
+        assert tensor == row_data_ishan[index] // other_data[index]
+
+
 @pytest.mark.skip(
     reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
 )

@@ -573,6 +573,30 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
+    def __floordiv__(self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor]) -> RowEntityPhiTensor:
+
+        # We will let the underlying SingleEntityPhiTensor logic handle most of the errors/exceptions
+        new_list = list()
+        if is_acceptable_simple_type(other):
+            for tensor in self.child:
+                new_list.append(tensor // other)
+        elif isinstance(other, SingleEntityPhiTensor):
+            for tensor in self.child:
+                new_list.append(tensor // other)
+        elif isinstance(other, RowEntityPhiTensor):
+            if not is_broadcastable(self.shape, other.shape):
+                raise Exception(f'Shapes not broadcastable: {self.shape}, {other.shape}')
+            else:
+                if other.shape[0] == 1:
+                    for tensor in self.child:
+                        new_list.append(tensor // other.child[0])
+                else:
+                    for self_tensors, other_tensors in zip(self.child, other.child):
+                        new_list.append(self_tensors // other_tensors)
+        else:
+            raise NotImplementedError
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
 
 @implements(RowEntityPhiTensor, np.expand_dims)
 def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
