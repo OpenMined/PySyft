@@ -237,7 +237,7 @@ def get_all_users_msg(
                 user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
                 returned_epsilon_is_private=True,
             )
-            
+
             _msg.append(_user_json)
 
     return GetUsersResponse(

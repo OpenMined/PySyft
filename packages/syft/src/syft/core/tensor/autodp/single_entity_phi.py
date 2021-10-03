@@ -1380,12 +1380,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         )
 
     def __floordiv__(
-            self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         if is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
                 if not is_broadcastable(self.shape, other.shape):
-                    raise Exception(f'Shapes not broadcastable: {self.shape} and {other.shape}')
+                    raise Exception(
+                        f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                    )
                 else:
                     data = self.child // other
                     mins = self.min_vals // other
@@ -1404,7 +1406,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                     # return convert_to_gamma_tensor(self) // convert_to_gamma_tensor(other)
                     raise NotImplementedError
             else:
-                raise Exception(f'Shapes not broadcastable: {self.shape} and {other.shape}')
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
         else:
             raise NotImplementedError
         return SingleEntityPhiTensor(
@@ -1412,7 +1416,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             max_vals=maxes,
             min_vals=mins,
             entity=self.entity,
-            scalar_manager=self.scalar_manager
+            scalar_manager=self.scalar_manager,
         )
 
 

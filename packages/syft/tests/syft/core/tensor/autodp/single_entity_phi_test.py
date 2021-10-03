@@ -1211,16 +1211,20 @@ def test_or(reference_binary_data: np.ndarray, ishan: Entity) -> None:
 
 
 def test_floordiv_array(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray, ishan: Entity,
-        traskmaster: Entity, reference_scalar_manager: VirtualMachinePrivateScalarManager
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
 ) -> None:
-    """ Test floordiv"""
+    """Test floordiv"""
     reference_tensor = SEPT(
         child=reference_data,
         max_vals=upper_bound,
         min_vals=lower_bound,
         entity=ishan,
-        scalar_manager=reference_scalar_manager
+        scalar_manager=reference_scalar_manager,
     )
 
     other = np.ones_like(reference_data)
@@ -1233,16 +1237,20 @@ def test_floordiv_array(
 
 
 def test_floordiv_sept(
-        reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray, ishan: Entity,
-        traskmaster: Entity, reference_scalar_manager: VirtualMachinePrivateScalarManager
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
 ) -> None:
-    """ Test floordiv with public SEPT"""
+    """Test floordiv with public SEPT"""
     reference_tensor = SEPT(
         child=reference_data,
         max_vals=upper_bound,
         min_vals=lower_bound,
         entity=ishan,
-        scalar_manager=reference_scalar_manager
+        scalar_manager=reference_scalar_manager,
     )
 
     other = SEPT(
@@ -1250,7 +1258,7 @@ def test_floordiv_sept(
         max_vals=np.ones_like(reference_data) * 5,
         min_vals=np.ones_like(reference_data),
         entity=ishan,
-        scalar_manager=reference_scalar_manager
+        scalar_manager=reference_scalar_manager,
     )
     output = reference_tensor // other
     assert isinstance(output, SEPT)
