@@ -1419,10 +1419,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-
     # TODO: Check to see if non-integers are ever introduced
     def __mod__(
-            self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         if is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
@@ -1462,7 +1461,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         )
 
     def __divmod__(
-            self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
     ) -> TypeTuple:
         return self // other, self % other
 

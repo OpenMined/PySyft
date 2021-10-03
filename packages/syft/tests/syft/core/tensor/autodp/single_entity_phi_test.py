@@ -1297,7 +1297,7 @@ def test_mod_array(
     output = reference_tensor % other
     assert isinstance(output, SEPT)
     assert output.shape == reference_tensor.shape
-    assert (output.child == reference_data % 4 ).all()
+    assert (output.child == reference_data % 4).all()
     assert (output.max_vals == upper_bound % 4).all()
     assert (output.min_vals == lower_bound % 4).all()
 
@@ -1331,8 +1331,9 @@ def test_mod_sept(
     assert output.shape == reference_tensor.shape
     assert (output.child == np.zeros_like(reference_data)).all()
     assert (output.max_vals == np.zeros_like(upper_bound) % 5).all()
-    assert (output.min_vals == np.zeros_like(lower_bound)).all()  # Beware of division by 0 error
-
+    assert (
+        output.min_vals == np.zeros_like(lower_bound)
+    ).all()  # Beware of division by 0 error
 
     other = SEPT(
         child=np.ones_like(reference_data) * 6,
@@ -1346,16 +1347,18 @@ def test_mod_sept(
     assert output.shape == reference_tensor.shape
     assert (output.child == reference_data % 6).all()
     assert (output.max_vals == upper_bound % 6).all()
-    assert (output.min_vals == np.zeros_like(lower_bound)).all()  # Beware of division by 0 error
+    assert (
+        output.min_vals == np.zeros_like(lower_bound)
+    ).all()  # Beware of division by 0 error
 
 
 def test_divmod_array(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: Entity,
-        traskmaster: Entity,
-        reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
 ) -> None:
     reference_tensor = SEPT(
         child=reference_data,
@@ -1380,12 +1383,12 @@ def test_divmod_array(
 
 
 def test_divmod_sept(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        ishan: Entity,
-        traskmaster: Entity,
-        reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
 ) -> None:
     reference_tensor = SEPT(
         child=reference_data,
@@ -1412,7 +1415,9 @@ def test_divmod_sept(
     assert (quotient.max_vals == upper_bound // 5).all()
     assert (remainder.max_vals == np.zeros_like(upper_bound)).all()
     assert (quotient.min_vals == lower_bound).all()  # Beware of division by 0 error
-    assert (remainder.min_vals == np.zeros_like(lower_bound)).all()  # Beware of division by 0 error
+    assert (
+        remainder.min_vals == np.zeros_like(lower_bound)
+    ).all()  # Beware of division by 0 error
 
     other = SEPT(
         child=np.ones_like(reference_data) * 6,
@@ -1432,7 +1437,10 @@ def test_divmod_sept(
     assert (quotient.max_vals == upper_bound // 6).all()
     assert (remainder.max_vals == upper_bound % 6).all()
     assert (quotient.min_vals == lower_bound).all()  # Beware of division by 0 error
-    assert (remainder.min_vals == np.zeros_like(lower_bound)).all()  # Beware of division by 0 error
+    assert (
+        remainder.min_vals == np.zeros_like(lower_bound)
+    ).all()  # Beware of division by 0 error
+
 
 # End of Ishan's tests
 
