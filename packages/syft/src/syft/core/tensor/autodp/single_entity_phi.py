@@ -1466,10 +1466,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         return self // other, self % other
 
     def __matmul__(
-            self, other: Union[np.ndarray, SingleEntityPhiTensor]
+        self, other: Union[np.ndarray, SingleEntityPhiTensor]
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         if not isinstance(np.ndarray, SingleEntityPhiTensor):
-            raise Exception(f"Matrix multiplication not yet implemented for type {type(other)}")
+            raise Exception(
+                f"Matrix multiplication not yet implemented for type {type(other)}"
+            )
         else:
             if not is_broadcastable(self.shape, other.shape):
                 raise Exception(
@@ -1495,7 +1497,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                     max_vals=maxes,
                     min_vals=mins,
                     entity=self.entity,
-                    scalar_manager=self.scalar_manager
+                    scalar_manager=self.scalar_manager,
                 )
 
 

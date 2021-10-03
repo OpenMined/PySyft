@@ -639,7 +639,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return self // other, self % other
 
     def __matmul__(
-            self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor]
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
     ) -> RowEntityPhiTensor:
         new_list = list()
         if is_acceptable_simple_type(other):
