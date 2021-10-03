@@ -638,6 +638,24 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # Let logic written out in mod, floordiv and SEPT handle all exceptions
         return self // other, self % other
 
+    def __matmul__(
+            self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor]
+    ) -> RowEntityPhiTensor:
+        new_list = list()
+        if is_acceptable_simple_type(other):
+            for tensor in self.child:
+                new_list.append(tensor.__matmul__(other))
+        elif isinstance(other, SingleEntityPhiTensor):
+            # Whether the output of the matmul is SEPT or IGT, we let SEPT code determine that
+            for tensor in self.child:
+                new_list.append(tensor.__matmul__(other))
+        elif isinstance(other, RowEntityPhiTensor):
+            for self_tensor, other_tensor in zip(self.child, other.child):
+                new_list.append(self_tensor.__matmul__(other_tensor))
+        else:
+            raise NotImplementedError
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
 
 @implements(RowEntityPhiTensor, np.expand_dims)
 def expand_dims(a: np.typing.ArrayLike, axis: int) -> RowEntityPhiTensor:
