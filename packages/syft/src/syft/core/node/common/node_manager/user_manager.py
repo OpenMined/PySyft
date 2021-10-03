@@ -4,6 +4,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from datetime import datetime
 
 # third party
 from bcrypt import checkpw
@@ -155,6 +156,7 @@ class UserManager(DatabaseManager):
                 added_by=added_by,
                 institution=candidate.institution,
                 website=candidate.website,
+                created_at=datetime.now(),
             )
         else:
             status = "rejected"
