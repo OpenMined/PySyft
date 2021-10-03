@@ -48,6 +48,7 @@ def upgrade() -> None:
     op.add_column("syft_user", sa.Column("added_by", sa.String(2048), default=""))
     op.add_column("syft_user", sa.Column("daa_pdf", sa.Integer(), nullable=True))
     op.add_column("syft_user", sa.Column("created_at", sa.DateTime(), nullable=True))
+    op.add_column("syft_user", sa.Column("allocated_budget", sa.Float(), default=0.0))
 
     op.add_column("setup", sa.Column("tags", sa.String(2048), default="[]"))
     op.add_column("setup", sa.Column("deployed_on", sa.DateTime(), nullable=True))

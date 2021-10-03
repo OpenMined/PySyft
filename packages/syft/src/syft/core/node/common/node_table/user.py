@@ -1,10 +1,11 @@
 # third party
 from sqlalchemy import Column
+from sqlalchemy import DateTime
 from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import String
-from sqlalchemy import DateTime
+
 # relative
 from . import Base
 
@@ -37,6 +38,7 @@ class SyftUser(Base):
     email = Column(String(255))
     name = Column(String(255), default="")
     budget = Column(Float(), default=0.0)
+    allocated_budget = Column(Float(), default=0.0)
     hashed_password = Column(String(512))
     salt = Column(String(255))
     private_key = Column(String(2048))
