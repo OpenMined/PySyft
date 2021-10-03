@@ -32,3 +32,10 @@ packages/hagrid/grid
 
 # vagrant
 .vagrant
+
+# venv
+venv
+
+# docs
+doc/build
+doc/source/_build
