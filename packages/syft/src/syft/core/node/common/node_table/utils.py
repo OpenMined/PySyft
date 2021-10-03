@@ -17,17 +17,14 @@ from .user import SyftUser
 from .usergroup import UserGroup
 
 
+datetime_cols = ["date", "created_at", "destroyed_at", "deployed_on"]
+
 def model_to_json(model: Base) -> Dict[str, Any]:
     """Returns a JSON representation of an SQLAlchemy-backed object."""
     json = {}
     for col in model.__mapper__.attrs.keys():  # type: ignore
         if col != "hashed_password" and col != "salt":
-            if (
-                col == "date"
-                or col == "created_at"
-                or col == "destroyed_at"
-                or col == "deployed_on"
-            ):
+            if col in datetime_cols:
                 # Cast datetime object to string
                 json[col] = str(getattr(model, col))
             else:
