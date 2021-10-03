@@ -678,6 +678,76 @@ def test_floordiv_rept(row_data_ishan: list) -> None:
         assert tensor == row_data_ishan[index] // other_data[index]
 
 
+def test_mod_array(row_data_ishan: list) -> None:
+    """Test mod with np.ndarrays"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = np.ones_like(row_data_ishan[0].child)
+    output = reference_tensor % other
+    for index, tensor in enumerate(output.child):
+        assert tensor == row_data_ishan[index] % other
+
+
+@pytest.mark.skip(reason="Test works but occasionally gives a division by zero error")
+def test_mod_sept(row_data_ishan: list) -> None:
+    """Test mod with SEPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = row_data_ishan[0]
+    output = reference_tensor % other
+
+    for index, tensor in enumerate(output.child):
+        assert tensor == row_data_ishan[index] % other.child
+
+
+@pytest.mark.skip(reason="Test works but occasionally gives a division by zero error")
+def test_mod_rept(row_data_ishan: list) -> None:
+    """Test mod with REPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other_data = [i // 2 + 1 for i in row_data_ishan]
+    other = REPT(rows=other_data)
+    output = reference_tensor % other
+
+    for index, tensor in enumerate(output.child):
+        assert tensor == row_data_ishan[index] // other_data[index]
+
+
+def test_divmod_array(row_data_ishan: list) -> None:
+    """Test divmod with np.ndarrays"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = np.ones_like(row_data_ishan[0].child)
+    quotient, remainder = reference_tensor.__divmod__(other)
+    for index, tensors in enumerate(zip(quotient.child, remainder.child)):
+        assert tensors[0] == row_data_ishan[index] % other
+        assert tensors[1] == row_data_ishan[index] % other
+
+
+@pytest.mark.skip(reason="Test works but occasionally gives a division by zero error")
+def test_divmod_sept(row_data_ishan: list) -> None:
+    """Test divmod with SEPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = row_data_ishan[0]
+    quotient, remainder = reference_tensor.__divmod__(other)
+
+    for index, tensors in enumerate(zip(quotient.child, remainder.child)):
+        assert tensors[0] == row_data_ishan[index] // other.child
+        assert tensors[1] == row_data_ishan[index] % other.child
+
+
+@pytest.mark.skip(reason="Test works but occasionally gives a division by zero error")
+def test_divmod_rept(row_data_ishan: list) -> None:
+    """Test divmod with REPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other_data = [i // 2 + 1 for i in row_data_ishan]
+    other = REPT(rows=other_data)
+    quotient, remainder = reference_tensor.__divmod__(other)
+
+    for index, tensors in enumerate(zip(quotient.child, remainder.child)):
+        assert tensors[0] == row_data_ishan[index] // other_data[index]
+        assert tensors[1] == row_data_ishan[index] % other_data[index]
+
+
+
+
+
 @pytest.mark.skip(
     reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
 )
