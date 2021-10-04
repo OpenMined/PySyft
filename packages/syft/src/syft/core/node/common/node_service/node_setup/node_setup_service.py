@@ -1,5 +1,7 @@
 # stdlib
 from datetime import datetime
+from json import dumps
+from json import loads
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -110,6 +112,7 @@ def get_setup(
 ) -> GetSetUpResponse:
 
     _setup = model_to_json(node.setup.first(domain_name=node.name))
+    _setup["tags"] = loads(_setup["tags"])
     return GetSetUpResponse(
         address=msg.reply_to,
         content=_setup,
@@ -129,6 +132,7 @@ def update_settings(
             daa=msg.daa,
             contact=msg.contact,
             daa_document=msg.daa_document,
+            tags=dumps(msg.tags),
         )
     else:
         raise AuthorizationError("You're not allowed to get setup configs!")
