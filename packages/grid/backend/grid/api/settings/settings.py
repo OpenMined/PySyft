@@ -34,7 +34,8 @@ def update_settings(
     contact: str = Body(..., example="contact@openmined.org"),
     domain_name: str = Body(..., example="OpenGrid"),
     description: str = Body(..., example="A Domain Node Description ..."),
-    daa_document: Optional[bool] = False,
+    daa: Optional[bool] = False,
+    daa_document: Optional[str] = Body("", example="http://<daa_template>.com"),
     current_user: UserPrivate = Depends(get_current_user),
 ) -> Any:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
@@ -45,7 +46,8 @@ def update_settings(
         contact=contact,
         domain_name=domain_name,
         description=description,
-        daa=daa_document,
+        daa=daa,
+        daa_document=daa_document,
         reply_to=node.address,
     ).sign(signing_key=user_key)
 
