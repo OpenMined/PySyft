@@ -1,6 +1,7 @@
 # stdlib
 from typing import Optional
 from typing import Union
+from datetime import datetime
 
 # third party
 from nacl.encoding import HexEncoder
@@ -56,6 +57,8 @@ class User(BaseUser):
 
 class UserPrivate(User):
     private_key: str
+    created_at: Optional[datetime]
+
 
     def get_signing_key(self) -> SigningKey:
         return SigningKey(self.private_key.encode(), encoder=HexEncoder)

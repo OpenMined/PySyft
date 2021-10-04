@@ -190,6 +190,7 @@ class UserManager(DatabaseManager):
             verify_key=verify_key,
             hashed_password=hashed,
             salt=salt,
+            created_at=datetime.now(),
         )
 
     def query(self, **kwargs: Any) -> Query:
