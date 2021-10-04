@@ -35,15 +35,12 @@ def validate_permission_error(data_ptr: Pointer) -> None:
     assert newstdout.getvalue().startswith("No permission to print")
 
 
-# MADHAVA: this needs fixing
-@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
 def test_make_pointable(
-    with_verify_key: bool,
-    node: sy.VirtualMachine,
     client: sy.VirtualMachineClient,
     root_client: sy.VirtualMachineClient,
+    with_verify_key: bool,
 ) -> None:
     ten = th.tensor([1, 2])
     ptr = ten.send(root_client, pointable=False)
@@ -58,13 +55,10 @@ def test_make_pointable(
     assert len(client.store) == 1
 
 
-# MADHAVA: this needs fixing
-@pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize("with_verify_key", [True, False])
 def test_make_unpointable(
     with_verify_key: bool,
-    node: sy.VirtualMachine,
     client: sy.VirtualMachineClient,
     root_client: sy.VirtualMachineClient,
 ) -> None:
@@ -86,12 +80,12 @@ def test_make_unpointable(
     assert len(client.store) == 0
 
 
-# MADHAVA: this needs fixing
-@pytest.mark.xfail
 @pytest.mark.slow
 def test_pointable_property(
-    client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
+    client: sy.VirtualMachineClient,
+    root_client: sy.VirtualMachineClient,
 ) -> None:
+
     ten = th.tensor([1, 2])
     ptr = ten.send(root_client, pointable=False)
     assert len(client.store) == 0
