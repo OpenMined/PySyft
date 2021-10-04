@@ -1,6 +1,7 @@
 # stdlib
 import json
 from typing import Dict
+from typing import List as TypeList
 from typing import Optional
 
 # third party
@@ -266,6 +267,7 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         contact: str,
         reply_to: Address,
         daa_document: Optional[str] = "",
+        tags: Optional[TypeList] = [],
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -274,6 +276,7 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         self.description = description
         self.domain_name = domain_name
         self.daa_document = daa_document
+        self.tags = tags
 
     def _object2proto(self) -> UpdateSetupMessage_PB:
         """Returns a protobuf serialization of self.
@@ -295,6 +298,7 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
             daa=self.daa,
             description=self.description,
             daa_document=self.daa_document,
+            tags=self.tags,
             reply_to=serialize(self.reply_to),
         )
 
@@ -320,6 +324,7 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
             domain_name=proto.domain_name,
             description=proto.description,
             daa_document=proto.daa_document,
+            tags=[tag for tag in proto.tags],
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
