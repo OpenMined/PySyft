@@ -574,7 +574,12 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def trace(
-            self, offset: int = 0, axis1: int = 1, axis2: int = 2, dtype=np.int32, out: Optional[np.ndarray] = None
+        self,
+        offset: int = 0,
+        axis1: int = 1,
+        axis2: int = 2,
+        dtype: Optional[Any] = np.int32,
+        out: Optional[np.ndarray] = None,
     ) -> RowEntityPhiTensor:
         if axis1 == 0 or axis2 == 0:
             raise NotImplementedError  # This would create a GammaTensor
@@ -594,7 +599,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     def prod(
         self,
-        axis: Optional[Union[int, TypeTuple[int, ...]]] = None,
+        axis: int = 1,  # might be bad that the default behaviour currently is not implemented...
         dtype: Optional[Any] = None,
         out: Optional[np.ndarray] = None,
         keepdims: Optional[bool] = False,
