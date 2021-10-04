@@ -5,10 +5,6 @@ Revises: 239c5dd652ba, 886589613d4d
 Create Date: 2021-10-02 00:13:27.177662
 
 """
-# third party
-from alembic import op # type: ignore
-import sqlalchemy as sa
-
 # revision identifiers, used by Alembic.
 revision = "1bdbdf7f26ce"
 down_revision = ("239c5dd652ba", "886589613d4d")
