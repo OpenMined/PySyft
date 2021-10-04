@@ -50,15 +50,15 @@ async def create_user_grid(
     new_user: str = Form(...),
 ) -> str:
     if file:
-        pdf_file = file.file.read() # type: ignore
+        pdf_file = file.file.read()  # type: ignore
     else:
-        pdf_file = b''
+        pdf_file = b""
 
     dict_user = json.loads(new_user)
     dict_user["daa_pdf"] = pdf_file
-    new_user = UserCreate(**dict_user)
+    user_schema = UserCreate(**dict_user)
     try:
-        return syft_user_messages.create_user(new_user, current_user)
+        return syft_user_messages.create_user(user_schema, current_user)
     except Exception as err:
         logger.error(err)
         raise_generic_private_error()
