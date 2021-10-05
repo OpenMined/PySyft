@@ -2,11 +2,9 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any
 from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType

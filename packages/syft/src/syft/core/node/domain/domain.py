@@ -44,9 +44,6 @@ from ..common.node_service.dataset_manager.dataset_manager_service import (
 from ..common.node_service.get_remaining_budget.get_remaining_budget_service import (
     GetRemainingBudgetService,
 )
-from ..common.node_service.group_manager.group_manager_service import (
-    GroupManagerService,
-)
 from ..common.node_service.node_setup.node_setup_messages import (
     CreateInitialSetUpMessage,
 )

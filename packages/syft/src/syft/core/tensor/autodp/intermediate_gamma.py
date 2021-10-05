@@ -15,6 +15,8 @@ import numpy as np
 from sympy.ntheory.factor_ import factorint
 
 # relative
+from ....core.adp.entity import DataSubjectGroup
+from ....core.adp.entity import Entity
 from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import serializable
@@ -22,8 +24,6 @@ from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from ..broadcastable import is_broadcastable
 from .adp_tensor import ADPTensor
-from ....core.adp.entity import Entity
-from ....core.adp.entity import DataSubjectGroup
 
 SupportedChainType = Union[int, bool, float, np.ndarray, PassthroughTensor]
 
@@ -87,25 +87,36 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
     def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 vals = self._values()
-                tensor = InitialGammaTensor(values=vals > other, min_vals=np.zeros_like(vals), max_vals=np.ones_like(vals),
-                                            entities=self._entities())
+                tensor = InitialGammaTensor(
+                    values=vals > other,
+                    min_vals=np.zeros_like(vals),
+                    max_vals=np.ones_like(vals),
+                    entities=self._entities(),
+                )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         elif isinstance(other, IntermediateGammaTensor):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 self_vals = self._values()
                 other_vals = other._values()
-                tensor = InitialGammaTensor(values=self_vals > other_vals, min_vals=np.zeros_like(self_vals), max_vals=np.ones_like(self_vals),
-                                            entities=self._entities() + other._entities()
+                tensor = InitialGammaTensor(
+                    values=self_vals > other_vals,
+                    min_vals=np.zeros_like(self_vals),
+                    max_vals=np.ones_like(self_vals),
+                    entities=self._entities() + other._entities(),
                 )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         else:
             raise NotImplementedError
@@ -114,25 +125,36 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
     def __lt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 vals = self._values()
-                tensor = InitialGammaTensor(values=vals < other, min_vals=np.zeros_like(vals), max_vals=np.ones_like(vals),
-                                            entities=self._entities())
+                tensor = InitialGammaTensor(
+                    values=vals < other,
+                    min_vals=np.zeros_like(vals),
+                    max_vals=np.ones_like(vals),
+                    entities=self._entities(),
+                )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         elif isinstance(other, IntermediateGammaTensor):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 self_vals = self._values()
                 other_vals = other._values()
-                tensor = InitialGammaTensor(values=self_vals < other_vals, min_vals=np.zeros_like(self_vals), max_vals=np.ones_like(self_vals),
-                                            entities=self._entities() + other._entities()
+                tensor = InitialGammaTensor(
+                    values=self_vals < other_vals,
+                    min_vals=np.zeros_like(self_vals),
+                    max_vals=np.ones_like(self_vals),
+                    entities=self._entities() + other._entities(),
                 )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         else:
             raise NotImplementedError
@@ -141,28 +163,37 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
     def __eq__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 vals = self._values()
-                tensor = InitialGammaTensor(values= not (vals < other) and not (vals > other), max_vals=np.ones_like(vals),
-                                            min_vals=np.zeros_like(vals), entities=self._entities())
+                tensor = InitialGammaTensor(
+                    values=not (vals < other) and not (vals > other),
+                    max_vals=np.ones_like(vals),
+                    min_vals=np.zeros_like(vals),
+                    entities=self._entities(),
+                )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         elif isinstance(other, IntermediateGammaTensor):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 self_vals = self._values()
                 other_vals = other._values()
-                tensor = InitialGammaTensor(values= self_vals == other_vals,
-                    #values= not (self_vals < other_vals) and not (self_vals > other_vals),
-                                            min_vals=np.zeros_like(self_vals),
-                                            max_vals=np.ones_like(self_vals),
-                                            entities=self._entities() + other._entities()
-                                            )
+                tensor = InitialGammaTensor(
+                    values=self_vals == other_vals,
+                    # values= not (self_vals < other_vals) and not (self_vals > other_vals),
+                    min_vals=np.zeros_like(self_vals),
+                    max_vals=np.ones_like(self_vals),
+                    entities=self._entities() + other._entities(),
+                )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         else:
             raise NotImplementedError
@@ -171,28 +202,37 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
     def __ge__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 vals = self._values()
-                tensor = InitialGammaTensor(values=vals >= other, max_vals=np.ones_like(vals),
-                                            min_vals=np.zeros_like(vals), entities=self._entities())
+                tensor = InitialGammaTensor(
+                    values=vals >= other,
+                    max_vals=np.ones_like(vals),
+                    min_vals=np.zeros_like(vals),
+                    entities=self._entities(),
+                )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         elif isinstance(other, IntermediateGammaTensor):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 self_vals = self._values()
                 other_vals = other._values()
-                tensor = InitialGammaTensor(values= self_vals >= other_vals,
-                    #values= not (self_vals < other_vals) and not (self_vals > other_vals),
-                                            min_vals=np.zeros_like(self_vals),
-                                            max_vals=np.ones_like(self_vals),
-                                            entities=self._entities() + other._entities()
-                                            )
+                tensor = InitialGammaTensor(
+                    values=self_vals >= other_vals,
+                    # values= not (self_vals < other_vals) and not (self_vals > other_vals),
+                    min_vals=np.zeros_like(self_vals),
+                    max_vals=np.ones_like(self_vals),
+                    entities=self._entities() + other._entities(),
+                )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         else:
             raise NotImplementedError
@@ -201,33 +241,41 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
     def __le__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 vals = self._values()
-                tensor = InitialGammaTensor(values=vals <= other, max_vals=np.ones_like(vals),
-                                            min_vals=np.zeros_like(vals), entities=self._entities())
+                tensor = InitialGammaTensor(
+                    values=vals <= other,
+                    max_vals=np.ones_like(vals),
+                    min_vals=np.zeros_like(vals),
+                    entities=self._entities(),
+                )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         elif isinstance(other, IntermediateGammaTensor):
             if is_broadcastable(self.shape, other.shape):
+                # relative
                 from .initial_gamma import InitialGammaTensor
+
                 self_vals = self._values()
                 other_vals = other._values()
-                tensor = InitialGammaTensor(values= self_vals <= other_vals,
-                    #values= not (self_vals < other_vals) and not (self_vals > other_vals),
-                                            min_vals=np.zeros_like(self_vals),
-                                            max_vals=np.ones_like(self_vals),
-                                            entities=self._entities() + other._entities()
-                                            )
+                tensor = InitialGammaTensor(
+                    values=self_vals <= other_vals,
+                    # values= not (self_vals < other_vals) and not (self_vals > other_vals),
+                    min_vals=np.zeros_like(self_vals),
+                    max_vals=np.ones_like(self_vals),
+                    entities=self._entities() + other._entities(),
+                )
             else:
                 raise Exception(
-                    f'Tensor shapes not compatible: {self.shape} and {other.shape}'
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
                 )
         else:
             raise NotImplementedError
         return tensor
-
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -265,7 +313,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
-        return np.array(list(map(lambda x:x.value, self.flat_scalars))).reshape(self.shape)
+        return np.array(list(map(lambda x: x.value, self.flat_scalars))).reshape(
+            self.shape
+        )
 
     def _entities(self):
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
@@ -287,9 +337,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                         if isinstance(i, Entity) or isinstance(i, DataSubjectGroup):
                             combined_entities += i
                         else:
-                            raise Exception(
-                                f"Not implemented for i of type:{type(i)}"
-                            )
+                            raise Exception(f"Not implemented for i of type:{type(i)}")
                 else:
                     raise Exception(f"No plans for row type:{type(row)}")
                 # combined_entities += row
@@ -563,4 +611,3 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
         )
-

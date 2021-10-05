@@ -73,7 +73,7 @@ class Entity:
             return DataSubjectGroup([self])
         else:
             raise Exception(
-                f'Addition not implemented between {type(self)} and {type(other)}'
+                f"Addition not implemented between {type(self)} and {type(other)}"
             )
 
     def to_string(self) -> str:
@@ -116,7 +116,7 @@ class DataSubjectGroup:
             self.entity_set: set = set()
         else:
             raise Exception(
-                f'Cannot initialize DSG with {type(list_of_entities)} - please try list or set instead.'
+                f"Cannot initialize DSG with {type(list_of_entities)} - please try list or set instead."
             )
         self.id = UID()
 
@@ -157,7 +157,7 @@ class DataSubjectGroup:
             return self
         else:
             raise Exception(
-                f'Addition not implemented between {type(self)} and {type(other)}'
+                f"Addition not implemented between {type(self)} and {type(other)}"
             )
 
     def __repr__(self) -> str:
