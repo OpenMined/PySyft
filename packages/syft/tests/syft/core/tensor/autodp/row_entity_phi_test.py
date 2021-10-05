@@ -577,6 +577,7 @@ def test_mul_simple(row_data_ishan: List) -> None:
     assert output.child == [i * 5 for i in reference_tensor.child]
 
 
+@pytest.mark.skip(reason="IGT Equality not implemented yet")
 def test_mul_rept(row_data_ishan: List, row_data_trask: List) -> None:
     """Test multiplication of two REPTs"""
 
