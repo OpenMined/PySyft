@@ -579,15 +579,33 @@ def test_mul_simple(row_data_ishan: List) -> None:
 
 def test_mul_rept(row_data_ishan: List, row_data_trask: List) -> None:
     """Test multiplication of two REPTs"""
+
+    # Common data
     reference_tensor1 = REPT(rows=row_data_ishan)
     reference_tensor2 = REPT(rows=row_data_trask)
-    output = reference_tensor1 * reference_tensor2
-    # assert output.max_vals == reference_tensor1.max_vals * reference_tensor2.max_vals
-    # assert output.min_vals == reference_tensor1.min_vals * reference_tensor2.min_vals
-    assert output == reference_tensor1 * reference_tensor2
+
+    # Private-Public
+    output = reference_tensor1 * reference_tensor1
+    assert (output.max_vals == reference_tensor1.max_vals * reference_tensor1.max_vals).all()
+    # assert (output.min_vals == reference_tensor1.min_vals * reference_tensor1.min_vals).all()
     assert isinstance(output, REPT)
-    for tensor in output.child:
-        assert isinstance(tensor, IGT)
+    for output_tensor, input_tensor in zip(output.child, row_data_ishan):
+        assert isinstance(output_tensor, SEPT)
+        assert output_tensor == input_tensor * input_tensor
+
+    # Private-Private
+    assert len(row_data_ishan) == len(row_data_trask)
+    assert reference_tensor1.shape == reference_tensor2.shape
+    output = reference_tensor1 * reference_tensor2
+    assert isinstance(output, REPT)
+    for output_tensor, ishan_tensor, trask_tensor in zip(output.child, row_data_ishan, row_data_trask):
+        assert isinstance(output_tensor, IGT)
+        result = ishan_tensor * trask_tensor
+        assert isinstance(result, IGT)
+        print(output_tensor._values())
+        print(result._values())
+        assert output_tensor == result
+        # assert output_tensor == ishan_tensor * trask_tensor
 
 
 def test_mul_sept(

@@ -1,5 +1,8 @@
-import pytest
+# third party
 import numpy as np
+import pytest
+
+# syft absolute
 from syft.core.adp.entity import Entity
 from syft.core.adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as ScalarManager,
@@ -45,26 +48,36 @@ def lower_bound(ref_data: np.ndarray) -> np.ndarray:
 
 
 @pytest.fixture
-def sept_ishan(ref_data: np.ndarray,
-               upper_bound: np.ndarray, lower_bound: np.ndarray, vsm: ScalarManager, ishan: Entity) -> SEPT:
+def sept_ishan(
+    ref_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    vsm: ScalarManager,
+    ishan: Entity,
+) -> SEPT:
     return SEPT(
         child=ref_data,
         min_vals=lower_bound,
         max_vals=upper_bound,
         entity=ishan,
-        scalar_manager=vsm
+        scalar_manager=vsm,
     )
 
 
 @pytest.fixture
-def sept_traskmaster(ref_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray,
-                     vsm: ScalarManager, traskmaster: Entity) -> SEPT:
+def sept_traskmaster(
+    ref_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    vsm: ScalarManager,
+    traskmaster: Entity,
+) -> SEPT:
     return SEPT(
         child=ref_data,
         min_vals=lower_bound,
         max_vals=upper_bound,
         entity=traskmaster,
-        scalar_manager=vsm
+        scalar_manager=vsm,
     )
 
 
@@ -83,27 +96,39 @@ def gamma_tensor_max(sept_ishan, sept_traskmaster) -> IGT:
     return sept_ishan + sept_traskmaster * 4
 
 
-def test_gt(gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT) -> None:
+def test_gt(
+    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT
+) -> None:
     assert isinstance(gamma_tensor_min, IGT)
     assert isinstance(gamma_tensor_ref, IGT)
     assert isinstance(gamma_tensor_max, IGT)
 
 
-def test_lt(gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT) -> None:
+def test_lt(
+    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT
+) -> None:
     pass
 
 
-def test_eq(gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT) -> None:
+def test_eq(
+    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT
+) -> None:
     pass
 
 
-def test_ge(gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT) -> None:
+def test_ge(
+    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT
+) -> None:
     pass
 
 
-def test_le(gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT) -> None:
+def test_le(
+    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT
+) -> None:
     pass
 
 
-def test_ne(gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT) -> None:
+def test_ne(
+    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT
+) -> None:
     pass

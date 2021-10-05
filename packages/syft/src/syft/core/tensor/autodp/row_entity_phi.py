@@ -195,9 +195,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 new_list = [child * other for child in self.child]
         elif isinstance(other, RowEntityPhiTensor):
             if is_broadcastable(self.shape, other.shape):
-                new_list = [
-                    self.child[i] * other.child[i] for i in range(len(self.child))
-                ]
+                for self_child, other_child in zip(self.child, other.child):
+                    new_tensor = self_child * other_child
+                    new_list.append(self_child * other_child)
             else:
                 raise Exception(
                     f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"
