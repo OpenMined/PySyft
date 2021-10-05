@@ -3,15 +3,14 @@ import numpy as np
 import pytest
 
 # syft absolute
-from syft.core.adp.entity import Entity
 from syft.core.adp.entity import DataSubjectGroup as DSG
+from syft.core.adp.entity import Entity
 from syft.core.adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as ScalarManager,
 )
-from syft.core.tensor.autodp.intermediate_gamma import IntermediateGammaTensor as IGT
-from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
-from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.autodp.dp_tensor_converter import convert_to_gamma_tensor
+from syft.core.tensor.autodp.intermediate_gamma import IntermediateGammaTensor as IGT
+from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 
 
 @pytest.fixture
@@ -104,7 +103,7 @@ def gamma_tensor_max(sept_ishan, sept_traskmaster) -> IGT:
 
 
 def test_values(sept_ishan, sept_traskmaster, gamma_tensor_min) -> None:
-    """ Test that the _values() method correctly returns the np array"""
+    """Test that the _values() method correctly returns the np array"""
     gamma_tensor = sept_ishan + sept_traskmaster
     assert isinstance(gamma_tensor, IGT)
     target = sept_ishan.child + sept_traskmaster.child
@@ -130,7 +129,12 @@ def test_entities(sept_ishan, sept_traskmaster) -> None:
 
 
 def test_gt(
-    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT, sept_ishan: SEPT, sept_traskmaster: SEPT, dsg: DSG
+    gamma_tensor_min: IGT,
+    gamma_tensor_ref: IGT,
+    gamma_tensor_max: IGT,
+    sept_ishan: SEPT,
+    sept_traskmaster: SEPT,
+    dsg: DSG,
 ) -> None:
 
     # Private - Public
@@ -161,7 +165,12 @@ def test_gt(
 
 
 def test_lt(
-    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT, sept_ishan: SEPT, sept_traskmaster: SEPT, dsg: DSG
+    gamma_tensor_min: IGT,
+    gamma_tensor_ref: IGT,
+    gamma_tensor_max: IGT,
+    sept_ishan: SEPT,
+    sept_traskmaster: SEPT,
+    dsg: DSG,
 ) -> None:
 
     # Private - Public
@@ -192,7 +201,12 @@ def test_lt(
 
 
 def test_eq(
-    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT, sept_ishan: SEPT, sept_traskmaster: SEPT, dsg: DSG
+    gamma_tensor_min: IGT,
+    gamma_tensor_ref: IGT,
+    gamma_tensor_max: IGT,
+    sept_ishan: SEPT,
+    sept_traskmaster: SEPT,
+    dsg: DSG,
 ) -> None:
 
     # Private - Public
@@ -224,7 +238,12 @@ def test_eq(
 
 
 def test_ge(
-    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT, sept_ishan: SEPT, sept_traskmaster: SEPT, dsg: DSG
+    gamma_tensor_min: IGT,
+    gamma_tensor_ref: IGT,
+    gamma_tensor_max: IGT,
+    sept_ishan: SEPT,
+    sept_traskmaster: SEPT,
+    dsg: DSG,
 ) -> None:
 
     # Private - Public
@@ -248,7 +267,7 @@ def test_ge(
     for entity in output.entities.flatten():
         assert isinstance(entity, DSG)
         assert entity == dsg
-    output = gamma_ishan  >= gamma_trask + 1
+    output = gamma_ishan >= gamma_trask + 1
     assert not output.values.any()
     for entity in output.entities.flatten():
         assert isinstance(entity, DSG)
@@ -256,7 +275,12 @@ def test_ge(
 
 
 def test_le(
-    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT, sept_ishan: SEPT, sept_traskmaster: SEPT, dsg: DSG
+    gamma_tensor_min: IGT,
+    gamma_tensor_ref: IGT,
+    gamma_tensor_max: IGT,
+    sept_ishan: SEPT,
+    sept_traskmaster: SEPT,
+    dsg: DSG,
 ) -> None:
 
     # Private - Public
@@ -288,7 +312,12 @@ def test_le(
 
 
 def test_ne(
-    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT, sept_ishan: SEPT, sept_traskmaster: SEPT, dsg: DSG
+    gamma_tensor_min: IGT,
+    gamma_tensor_ref: IGT,
+    gamma_tensor_max: IGT,
+    sept_ishan: SEPT,
+    sept_traskmaster: SEPT,
+    dsg: DSG,
 ) -> None:
 
     # Private - Public
@@ -317,4 +346,3 @@ def test_ne(
     for entity in output.entities.flatten():
         assert isinstance(entity, DSG)
         assert entity == dsg
-

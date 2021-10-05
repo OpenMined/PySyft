@@ -84,6 +84,70 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
         self.scalar_manager = scalar_manager
 
+    @property
+    def flat_scalars(self) -> List[Any]:
+        flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
+        flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
+        flattened_bias = self.bias_tensor.reshape(-1)
+        # flattened_min_vals = self.min_vals.reshape(-1)
+        # flattened_max_vals = self.max_vals.reshape(-1)
+
+        scalars = list()
+
+        for i in range(len(flattened_terms)):
+            single_poly_terms = flattened_terms[i]
+            single_poly_coeffs = flattened_coeffs[i]
+            single_poly_bias = flattened_bias[i]
+            # single_poly_min_val = flattened_min_vals[i]
+            # single_poly_max_val = flattened_max_vals[i]
+
+            scalar = single_poly_bias
+
+            for j in range(len(single_poly_terms)):
+                term = single_poly_terms[j]
+                coeff = single_poly_coeffs[j]
+
+                for prime, n_times in factorint(term).items():
+                    input_scalar = self.scalar_manager.prime2symbol[prime]
+                    right = input_scalar * n_times * coeff
+                    scalar = scalar + right
+
+            scalars.append(scalar)
+
+        return scalars
+
+    def _values(self) -> np.array:
+        """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
+        DO NOT ADD THIS METHOD TO THE AST!!!
+        """
+        return np.array(list(map(lambda x: x.value, self.flat_scalars))).reshape(
+            self.shape
+        )
+
+    def _entities(self) -> np.array:
+        """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
+        DO NOT ADD THIS METHOD TO THE AST!!!
+        """
+
+        """WARNING/PLEA: DO NOT DELETE ANY OF THE COMMENTED PARTS- WE MIGHT REVERT BACK TO THEM LATER"""
+        output_entities = []
+        for flat_scalar in self.flat_scalars:
+            # TODO: This will fail if the nested entity is any deeper than 2 levels- i.e. [A, [A, [A, B]]]. Recursive?
+            combined_entities = DataSubjectGroup()
+            for row in flat_scalar.input_entities:
+                if isinstance(row, Entity) or isinstance(row, DataSubjectGroup):
+                    combined_entities += row
+                elif isinstance(row, list):
+                    for i in row:
+                        if isinstance(i, Entity) or isinstance(i, DataSubjectGroup):
+                            combined_entities += i
+                        else:
+                            raise Exception(f"Not implemented for i of type:{type(i)}")
+                else:
+                    raise Exception(f"No plans for row type:{type(row)}")
+            output_entities.append(combined_entities)
+        return np.array(output_entities).reshape(self.shape)
+
     def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
             if is_broadcastable(self.shape, other.shape):
@@ -347,97 +411,6 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 value=result,
             )
         return result
-
-    def _values(self):
-        """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
-        DO NOT ADD THIS METHOD TO THE AST!!!
-        """
-        return np.array(list(map(lambda x: x.value, self.flat_scalars))).reshape(
-            self.shape
-        )
-
-    def _entities(self):
-        """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
-        DO NOT ADD THIS METHOD TO THE AST!!!
-        """
-
-        """WARNING/PLEA: DO NOT DELETE ANY OF THE COMMENTED PARTS- WE MIGHT REVERT BACK TO THEM LATER"""
-        output_entities = []
-        for flat_scalar in self.flat_scalars:
-            # TODO: Flatten this using a for loop!
-            # TODO: This will fail if the nested entity is any deeper than 2 levels- i.e. [A, [A, [A, B]]]. Recursive?
-            # flattened_list = []
-            combined_entities = DataSubjectGroup()
-            for row in flat_scalar.input_entities:
-                if isinstance(row, Entity) or isinstance(row, DataSubjectGroup):
-                    combined_entities += row
-                elif isinstance(row, list):
-                    for i in row:
-                        if isinstance(i, Entity) or isinstance(i, DataSubjectGroup):
-                            combined_entities += i
-                        else:
-                            raise Exception(f"Not implemented for i of type:{type(i)}")
-                else:
-                    raise Exception(f"No plans for row type:{type(row)}")
-                # combined_entities += row
-                # if isinstance(row, DataSubjectGroup):
-                #     flattened_list.append(row)
-                #     assert isinstance(flattened_list[-1], DataSubjectGroup)
-                # elif isinstance(row, Entity):
-                #     flattened_list.append(row)
-                #     assert isinstance(flattened_list[-1], Entity)
-                # elif isinstance(row, list):
-                #     for input_entity in row:
-                #         if isinstance(input_entity, Entity):
-                #             output_group += input_entity
-                #             flattened_list.append(input_entity)
-                #             assert isinstance(flattened_list[-1], Entity)
-                #         elif isinstance(input_entity, DataSubjectGroup):
-                #             flattened_list.append(input_entity)
-                #             assert isinstance(flattened_list[-1], DataSubjectGroup)
-                #         else:
-                #             raise Exception(
-                #                 f"We didn't account for input_entity type: {type(input_entity)} "
-                #                 f"with value: {input_entity}"
-                #             )
-
-            # output_entities.append(flattened_list)
-            # output_entities += [flattened_list]
-            output_entities.append(combined_entities)
-        # return output_entities
-        return np.array(output_entities).reshape(self.shape)
-
-    @property
-    def flat_scalars(self) -> List[Any]:
-        flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
-        flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
-        flattened_bias = self.bias_tensor.reshape(-1)
-        # flattened_min_vals = self.min_vals.reshape(-1)
-        # flattened_max_vals = self.max_vals.reshape(-1)
-
-        scalars = list()
-
-        for i in range(len(flattened_terms)):
-            single_poly_terms = flattened_terms[i]
-            single_poly_coeffs = flattened_coeffs[i]
-            single_poly_bias = flattened_bias[i]
-            # single_poly_min_val = flattened_min_vals[i]
-            # single_poly_max_val = flattened_max_vals[i]
-
-            scalar = single_poly_bias
-
-            for j in range(len(single_poly_terms)):
-                term = single_poly_terms[j]
-                coeff = single_poly_coeffs[j]
-
-                for prime, n_times in factorint(term).items():
-                    input_scalar = self.scalar_manager.prime2symbol[prime]
-                    right = input_scalar * n_times * coeff
-                    scalar = scalar + right
-
-            scalars.append(scalar)
-
-        return scalars
 
     def sum(self, axis: Optional[int] = None) -> IntermediateGammaTensor:
 

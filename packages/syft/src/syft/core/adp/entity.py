@@ -68,7 +68,8 @@ class Entity:
         if isinstance(other, Entity):
             return DataSubjectGroup([self, other])
         elif isinstance(other, DataSubjectGroup):
-            return DataSubjectGroup(other.entity_set.add(self))
+            other.entity_set.add(self)
+            return other
         elif not other:  # Check for NoneType
             return DataSubjectGroup([self])
         else:
@@ -107,13 +108,16 @@ class DataSubjectGroup:
     """Data Subject is what we have been calling an 'ENTITY' all along ..."""
 
     def __init__(self, list_of_entities: Optional[Union[list, set]] = None):
+        self.entity_set: set = set()
         # Ensure each entity being tracked is unique
         if isinstance(list_of_entities, list):
-            self.entity_set: set = set(list_of_entities)
+            self.entity_set.union(set(list_of_entities))
         elif isinstance(list_of_entities, set):
-            self.entity_set: set = list_of_entities
-        elif not list_of_entities:
-            self.entity_set: set = set()
+            self.entity_set.union(list_of_entities)
+        # elif not list_of_entities:  # Don't need to do anything if is NoneType
+        #     pass
+        elif isinstance(list_of_entities, Entity):
+            self.entity_set.add(list_of_entities)
         else:
             raise Exception(
                 f"Cannot initialize DSG with {type(list_of_entities)} - please try list or set instead."
@@ -144,16 +148,12 @@ class DataSubjectGroup:
             entity_set.add(Entity.from_string(entity_blob))
         return DataSubjectGroup(list[entity_set])  # type: ignore
 
-    @staticmethod
-    def merge(set1: DataSubjectGroup, set2: DataSubjectGroup):
-        pass
-
     def __add__(self, other: Union[DataSubjectGroup, Entity]) -> DataSubjectGroup:
         if isinstance(other, Entity):
             return DataSubjectGroup(self.entity_set.union({other}))
         elif isinstance(other, DataSubjectGroup):
             return DataSubjectGroup(self.entity_set.union(other.entity_set))
-        elif not other:  # NoneType should return Identity
+        elif not other:
             return self
         else:
             raise Exception(

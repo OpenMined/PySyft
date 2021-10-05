@@ -196,7 +196,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(other, RowEntityPhiTensor):
             if is_broadcastable(self.shape, other.shape):
                 for self_child, other_child in zip(self.child, other.child):
-                    new_tensor = self_child * other_child
                     new_list.append(self_child * other_child)
             else:
                 raise Exception(
