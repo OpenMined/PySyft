@@ -23,6 +23,7 @@ import wrapt
 from ..ast.globals import Globals
 from ..core.adp import create_adp_ast
 from ..core.node.abstract.node import AbstractNodeClient
+from ..core.node.common import create_client_ast
 from ..core.tensor import create_tensor_ast
 from ..logger import critical
 from ..logger import traceback_and_raise
@@ -235,6 +236,7 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     # numpy_ast = create_numpy_ast()
     plan_ast = create_plan_ast(client=client)
     adp_ast = create_adp_ast(client=client)
+    client_ast = create_client_ast(client=client)
     remote_dataloader_ast = create_remote_dataloader_ast(client=client)
     tensor_ast = create_tensor_ast(client=client)
 
@@ -244,6 +246,7 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
     lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
     lib_ast.syft.core.add_attr("adp", attr=adp_ast.syft.core.adp)
+    lib_ast.syft.core.add_attr("node", attr=client_ast.syft.core.node)
     lib_ast.syft.core.add_attr("tensor", attr=tensor_ast.syft.core.tensor)
     lib_ast.syft.core.add_attr(
         "remote_dataloader", remote_dataloader_ast.syft.core.remote_dataloader

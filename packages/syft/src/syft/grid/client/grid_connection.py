@@ -3,7 +3,6 @@ import io
 import json
 from typing import Any
 from typing import Dict
-from typing import Optional
 from typing import Tuple
 
 # third party
@@ -39,7 +38,8 @@ class GridHTTPConnection(HTTPConnection):
 
     def __init__(self, url: str) -> None:
         self.base_url = url
-        self.session_token: Optional[Dict[str, str]] = None
+        self.session_token: str = ""
+        self.token_type: str = "'"
 
     def _send_msg(self, msg: SyftMessage) -> requests.Response:
         """
@@ -196,10 +196,17 @@ class GridHTTPConnection(HTTPConnection):
 
     @staticmethod
     def _proto2object(proto: GridHTTPConnection_PB) -> "GridHTTPConnection":
-        return GridHTTPConnection(url=proto.base_url)
+        obj = GridHTTPConnection(url=proto.base_url)
+        obj.session_token = proto.session_token
+        obj.token_type = proto.token_type
+        return obj
 
     def _object2proto(self) -> GridHTTPConnection_PB:
-        return GridHTTPConnection_PB(base_url=self.base_url)
+        return GridHTTPConnection_PB(
+            base_url=self.base_url,
+            session_token=self.session_token,
+            token_type=self.token_type,
+        )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
