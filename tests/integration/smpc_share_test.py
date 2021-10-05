@@ -24,7 +24,7 @@ for i in range(PARTIES):
 
 @pytest.mark.integration
 def test_secret_sharing() -> None:
-    data = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]], dtype=np.int32)
+    data = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]], dtype=np.int64)
     value_secret = clients[0].syft.core.tensor.tensor.Tensor(data)
     mpc_tensor = MPCTensor(secret=value_secret, shape=(2, 5), parties=clients)
 
@@ -35,8 +35,8 @@ def test_secret_sharing() -> None:
 @pytest.mark.integration
 @pytest.mark.parametrize("op_str", ["add", "sub"])
 def test_mpc_private_private_op(op_str: str) -> None:
-    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
-    value_2 = np.array([42], dtype=np.int32)
+    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
+    value_2 = np.array([42], dtype=np.int64)
 
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
     remote_value_2 = clients[1].syft.core.tensor.tensor.Tensor(value_2)
@@ -58,7 +58,7 @@ def test_mpc_private_private_op(op_str: str) -> None:
 @pytest.mark.integration
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_public_private_op(op_str: str) -> None:
-    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int32)
+    value_1 = np.array([[1, 2, 3, 4, -5]], dtype=np.int64)
 
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
     public_value = 27
