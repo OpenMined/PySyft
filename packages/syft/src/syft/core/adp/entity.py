@@ -70,7 +70,7 @@ class Entity:
         elif isinstance(other, DataSubjectGroup):
             other.entity_set.add(self)
             return other
-        elif not other:  # Check for NoneType
+        elif not other:  # type: ignore
             return DataSubjectGroup([self])
         else:
             raise Exception(
@@ -117,7 +117,7 @@ class DataSubjectGroup:
         # elif not list_of_entities:  # Don't need to do anything if is NoneType
         #     pass
         elif isinstance(list_of_entities, Entity):
-            self.entity_set.add(list_of_entities)
+            self.entity_set.add(list_of_entities)  # type: ignore
         else:
             raise Exception(
                 f"Cannot initialize DSG with {type(list_of_entities)} - please try list or set instead."
@@ -153,7 +153,7 @@ class DataSubjectGroup:
             return DataSubjectGroup(self.entity_set.union({other}))
         elif isinstance(other, DataSubjectGroup):
             return DataSubjectGroup(self.entity_set.union(other.entity_set))
-        elif not other:
+        elif not other:  # type: ignore
             return self
         else:
             raise Exception(

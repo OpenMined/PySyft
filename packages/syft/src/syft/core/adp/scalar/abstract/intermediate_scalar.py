@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -64,9 +65,9 @@ class IntermediateScalar(Scalar):
         return phi_gamma_scalars
 
     @property
-    def input_entities(self) -> TypeList[Entity]:
+    def input_entities(self) -> Union[TypeList[Entity], TypeList[None]]:
         """Return a list of the entities involved in the creation of this scalar object."""
-        return list(set([x.entity for x in self.input_scalars]))
+        return list(set([x.entity for x in self.input_scalars]))  # type: ignore
 
     @property
     def input_polys(self) -> TypeSet[BasicSymbol]:
@@ -95,7 +96,7 @@ class IntermediateScalar(Scalar):
     def value(self) -> Optional[float]:
         if self.poly is not None:
             result = EM(
-                context={obj.poly.name: obj.value for obj in self.input_scalars}
+                context={obj.poly.name: obj.value for obj in self.input_scalars}  # type: ignore
             )(self.poly)
             return float(result)
         return None

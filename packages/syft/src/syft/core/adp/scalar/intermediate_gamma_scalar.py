@@ -120,7 +120,7 @@ class IntermediateGammaScalar(IntermediateScalar):
         self, force_all_searches: bool = False
     ) -> TypeTuple[TypeList[optimize.OptimizeResult], np.float64]:
 
-        r1 = np.array([x.poly for x in self.input_scalars])
+        r1 = np.array([x.poly for x in self.input_scalars])  # type: ignore
 
         # relative
         from .gamma_scalar import GammaScalar

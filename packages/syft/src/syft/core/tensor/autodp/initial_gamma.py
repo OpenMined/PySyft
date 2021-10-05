@@ -102,7 +102,3 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
         )
-
-    @staticmethod
-    def convert_to_intermediate():
-        pass

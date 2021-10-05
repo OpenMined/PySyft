@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import asyncio
 import os
@@ -28,6 +31,7 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.action.get_object_action import GetObjectAction
 from ..common.client import Client
+from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
 from ..common.node_manager.dataset_manager import DatasetManager
@@ -176,10 +180,10 @@ class Domain(Node):
         first_superuser_password: str = "changethis",
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
-    ):
+    ) -> Domain:
 
         # Build Syft Message
-        msg = CreateInitialSetUpMessage(
+        msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
             address=self.address,
             name=first_superuser_name,
             email=first_superuser_email,

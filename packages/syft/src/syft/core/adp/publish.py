@@ -9,8 +9,10 @@ from copy import deepcopy
 import random
 from typing import Any
 from typing import Dict as TypeDict
+from typing import List
 from typing import List as TypeList
-from typing import Type
+from typing import Tuple
+from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
@@ -127,10 +129,13 @@ def publish(
 
 def get_mechanism_for_entity(
     scalars: TypeList[Any],
-    entity: Entity,
+    entity: Union[Entity, DataSubjectGroup],
     sigma: float = 1.5,
     public_only: bool = False,
-) -> Type[iDPGaussianMechanism]:
+) -> Union[
+    List[Tuple[Entity, iDPGaussianMechanism]],
+    List[Tuple[DataSubjectGroup, iDPGaussianMechanism]],
+]:
     """
     Iterates over scalars computing its value and L attribute and builds its mechanism.
     """
@@ -151,8 +156,6 @@ def get_mechanism_for_entity(
     else:
         value = np.sqrt(np.sum(np.square(np.array([float(s.value) for s in scalars]))))
 
-    L = float(max_lipschitz_wrt_entity(scalars, entity=entity))
-
     if isinstance(entity, DataSubjectGroup):
         mechanisms = []
         for e in entity.entity_set:
@@ -163,7 +166,7 @@ def get_mechanism_for_entity(
                         sigma=sigma,
                         squared_l2_norm=value,
                         squared_l2_norm_upper_bound=value_upper_bound,
-                        L=L,
+                        L=float(max_lipschitz_wrt_entity(scalars, entity=e)),
                         entity_name=e.name,
                         name=m_id,
                     ),
@@ -178,7 +181,7 @@ def get_mechanism_for_entity(
                     sigma=sigma,
                     squared_l2_norm=value,
                     squared_l2_norm_upper_bound=value_upper_bound,
-                    L=L,
+                    L=float(max_lipschitz_wrt_entity(scalars, entity=entity)),
                     entity_name=entity.name,
                     name=m_id,
                 ),
@@ -196,7 +199,7 @@ def get_all_entity_mechanisms(
     for s in scalars:
         for i_s in s.input_scalars:
             entities.add(i_s.entity)
-    entity_to_mechanisms = {}
+    entity_to_mechanisms: dict = {}
     for entity in entities:
         for flat_entity, mechanism in get_mechanism_for_entity(
             scalars=scalars, entity=entity, sigma=sigma, public_only=public_only

@@ -11,6 +11,7 @@ from typing import KeysView as TypeKeysView
 from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
+from typing import Union
 
 # third party
 from autodp.autodp_core import Mechanism
@@ -37,7 +38,7 @@ class AdversarialAccountant:
             # maps an entity to an actual budget
             self.entity2ledger = LedgerManager(db_engine)
         else:
-            self.entity2ledger = {}
+            self.entity2ledger = {}  # type: ignore
 
         # this is a temporary lookup table for mechanisms we're not sure
         # we're going to keep (See publish.py for how this is used)
@@ -219,10 +220,13 @@ class AdversarialAccountant:
     # returns a collection of entities having no budget
     def overbudgeted_entities(
         self,
-        temp_entities: TypeDict[Entity, TypeList[iDPGaussianMechanism]],
+        temp_entities: Union[
+            TypeDict[Entity, TypeList[iDPGaussianMechanism]],
+            TypeDict[DataSubjectGroup, TypeList[iDPGaussianMechanism]],
+        ],
         user_key: VerifyKey,
         returned_epsilon_is_private: bool = False,
-    ) -> TypeSet[Entity]:
+    ) -> Union[TypeSet[Entity], TypeSet[DataSubjectGroup]]:
         entities = set()
 
         for entity, _ in temp_entities.items():
@@ -242,7 +246,7 @@ class AdversarialAccountant:
                     user_key=user_key,
                     returned_epsilon_is_private=returned_epsilon_is_private,
                 ):
-                    entities.add(entity)
+                    entities.add(entity)  # type: ignore
             else:
                 raise Exception
         return entities
