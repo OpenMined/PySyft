@@ -1571,6 +1571,131 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             return NotImplemented
 
+    def copy(
+        self, order: Optional[str] = "K", subok: Optional[bool] = True
+    ) -> SingleEntityPhiTensor:
+        """Return copy of the given object"""
+        if isinstance(self.child, torch.Tensor):
+            self.child = self.child.numpy()
+
+        if isinstance(self.child, np.ndarray):
+            data = np.array(self.child, order=order, subok=subok, copy=True)
+        else:
+            # self.child is singleton
+            data = self.child
+
+        if isinstance(self.min_vals, np.ndarray):
+            min_vals = np.array(self.min_vals, order=order, subok=subok, copy=True)
+        else:
+            min_vals = self.min_vals
+
+        if isinstance(self.max_vals, np.ndarray):
+            max_vals = np.array(self.max_vals, order=order, subok=subok, copy=True)
+        else:
+            max_vals = self.max_vals
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def take(
+        self,
+        indices: np.ArrayLike,
+        axis: Optional[int] = None,
+        mode: Optional[str] = "raise",
+    ) -> SingleEntityPhiTensor:
+        """Take elements from an array along an axis"""
+        data = self.child.take(indices=indices, axis=axis, mode=mode)
+        min_vals = self.min_vals.take(indices=indices, axis=axis, mode=mode)
+        max_vals = self.max_vals.take(indices=indices, axis=axis, mode=mode)
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def diagonal(
+        self,
+        offset: Optional[int] = 0,
+        axis1: Optional[int] = 0,
+        axis2: Optional[int] = 1,
+    ) -> SingleEntityPhiTensor:
+        """Return specified diagonals"""
+        if isinstance(self.child, torch.Tensor):
+            self.child = self.child.numpy()
+
+        if (
+            isinstance(self.child, int)
+            or isinstance(self.child, float)
+            or isinstance(self.child, bool)
+        ):
+            raise Exception(
+                "ValueError: diag requires an array of at least two dimensions"
+            )
+
+        elif isinstance(self.child, np.matrix):
+            # Make diagonal of matrix 1-D to preserve backward compatibility.
+            data = np.asarray(self.child).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+        else:
+            data = np.asanyarray(self.child).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+
+        if (
+            isinstance(self.min_vals, int)
+            or isinstance(self.min_vals, float)
+            or isinstance(self.min_vals, bool)
+        ):
+            raise Exception(
+                "ValueError: diag requires an array of at least two dimensions"
+            )
+
+        elif isinstance(self.min_vals, np.matrix):
+            # Make diagonal of matrix 1-D to preserve backward compatibility.
+            min_vals = np.asarray(self.min_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+        else:
+            min_vals = np.asanyarray(self.min_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+
+        if (
+            isinstance(self.max_vals, int)
+            or isinstance(self.max_vals, float)
+            or isinstance(self.max_vals, bool)
+        ):
+            raise Exception(
+                "ValueError: diag requires an array of at least two dimensions"
+            )
+
+        elif isinstance(self.max_vals, np.matrix):
+            # Make diagonal of matrix 1-D to preserve backward compatibility.
+            max_vals = np.asarray(self.max_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+        else:
+            max_vals = np.asanyarray(self.max_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:

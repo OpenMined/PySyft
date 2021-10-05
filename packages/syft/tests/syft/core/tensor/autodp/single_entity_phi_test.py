@@ -1,3 +1,6 @@
+# stdlib
+from random import sample
+
 # third party
 import numpy as np
 import pytest
@@ -1545,6 +1548,53 @@ def test_sum(
 
     assert tensor.sum().child == tensor_sum
     assert zeros_tensor.sum().child == 0
+
+
+def test_copy(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
+) -> None:
+    tensor = SEPT(
+        child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+    )
+    tensor_copy = tensor.copy()
+    assert (
+        (tensor_copy.child == tensor.child).all()
+        & (tensor_copy.min_vals == tensor.min_vals).all()
+        & (tensor_copy.max_vals == tensor.max_vals).all()
+    )
+
+
+def test_take(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
+    dims: int,
+) -> None:
+    tensor = SEPT(
+        child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+    )
+    indices = sample(range(dims), dims)
+    tensor_take = tensor.take(indices)
+    assert (tensor_take.child == tensor.child[0][indices]).all()
+
+
+def test_diagonal(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ent: Entity,
+    dims: int,
+) -> None:
+    tensor = SEPT(
+        child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+    )
+    tensor_diagonal = tensor.diagonal()
+    for i in range(dims):
+        assert (tensor_diagonal.child[i] == tensor.child[i][i]).all()
 
 
 #

@@ -1,5 +1,6 @@
 # stdlib
 from random import randint
+from random import sample
 from typing import List
 
 # third party
@@ -874,3 +875,28 @@ def test_sum(
             for j in range(dims):
                 tensor_sum += tensor.child[k].child[i, j]
         assert sum_tensor.child[k].child == tensor_sum
+
+
+def test_copy(row_data_trask: List) -> None:
+    tensor = REPT(rows=row_data_trask)
+    tensor_copy = tensor.copy()
+    for i in range(len(tensor.child)):
+        assert (tensor_copy.child[i].child == tensor.child[i].child).all()
+
+
+def test_take(row_data_trask: List, dims: int) -> None:
+    tensor = REPT(rows=row_data_trask)
+    indices = sample(range(dims), dims)
+    tensor_take = tensor.take(indices)
+    for i in range(len(tensor)):
+        assert (tensor_take.child[i].child == tensor.child[i].child[0][indices]).all()
+
+
+def test_diagonal(row_data_trask: List, dims: int) -> None:
+    tensor = REPT(rows=row_data_trask)
+    tensor_diagonal = tensor.diagonal()
+    for i in range(len(tensor)):
+        for j in range(dims):
+            assert (
+                tensor_diagonal.child[i].child[j] == tensor.child[i].child[j][j]
+            ).all()
