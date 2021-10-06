@@ -49,7 +49,7 @@ class ShareTensor(PassthroughTensor):
         self,
         rank: int,
         nr_parties: int,
-        ring_size: int = 2 ** 64,
+        ring_size: int = 2 ** 32,
         value: Optional[Any] = None,
     ) -> None:
         self.rank = rank
@@ -77,7 +77,7 @@ class ShareTensor(PassthroughTensor):
     @lru_cache(32)
     def compute_min_max_from_ring(ring_size: int = 2 ** 64) -> Tuple[int, int]:
         min_value = (-ring_size) // 2
-        max_value = (ring_size - 1) // 2
+        max_value = ring_size // 2 - 1
         return min_value, max_value
 
     """ TODO: Remove this -- we would use generate_przs since the scenario we are testing is that
@@ -337,6 +337,47 @@ class ShareTensor(PassthroughTensor):
         ShareTensor.sanity_check(y)
         new_share = y.apply_function(self, "matmul")
         return new_share
+
+    def __eq__(self, other: Any) -> bool:
+        """Equal operator.
+
+        Check if "self" is equal with another object given a set of
+            attributes to compare.
+
+        Args:
+            other (Any): Value to compare.
+
+        Returns:
+            bool: True if equal False if not.
+
+        """
+        # relative
+        from .... import Tensor
+
+        if (
+            isinstance(self.child, Tensor)
+            and isinstance(other.child, Tensor)
+            and (self.child != other.child).child.any()  # type: ignore
+        ):
+            return False
+
+        if (
+            isinstance(self.child, np.ndarray)
+            and isinstance(other.child, np.ndarray)
+            and (self.child != other.child).any()
+        ):
+            return False
+
+        if self.rank != other.rank:
+            return False
+
+        if self.ring_size != other.ring_size:
+            return False
+
+        if self.nr_parties != other.nr_parties:
+            return False
+
+        return True
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
     # def div(
