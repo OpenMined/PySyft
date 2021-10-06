@@ -374,6 +374,70 @@ $ ./build_azure.sh ${SUBSCRIPTION_ID}
 
 Create a Shared image gallery within Azure.
 
+## Publish
+
+### HAGrid
+
+#### PyPI
+
+To publish hagrid to pypi create a virtualenv in the `/packages/hagrid` directory.
+
+```
+$ cd packages/hagrid
+```
+
+Use a tool like `pipenv` or manually create and source like so:
+
+```
+$ python3 -m venv ./venv
+$ source .venv/bin/activate
+```
+
+Install some tools:
+
+```
+$ pip install --upgrade bandit safety setuptools wheel twine tox
+```
+
+Bump the version inside `/packages/hagrid/hagrid/__init__.py`
+
+Build a wheel:
+
+```
+$ ./build_wheel.sh
+```
+
+Check with twine:
+
+```
+$ twine check `find -L ./ -name "*.whl"`
+```
+
+Upload with twine:
+
+```
+$ twine upload dist/hagrid-x.x.x-py3-none-any.whl
+```
+
+#### Docker
+
+```
+$ cd packages/hagrid
+```
+
+Build and tag the images:
+
+```
+$ ./build_docker.sh
+```
+
+Publish to docker hub:
+
+```
+$ docker push openmined/hagrid:latest
+$ docker push openmined/hagrid:x.x.x
+```
+
 ## Join Slack
 
 Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).
