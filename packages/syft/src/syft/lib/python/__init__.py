@@ -44,6 +44,14 @@ for syft_type in [
     syft_type.__module__ = __name__
 
 
+def client_send(client) -> None:  # type: ignore
+    i = Int(1)
+    p = i.send(client)  # type: ignore
+    print(client)
+    print(p)
+    print(i)
+
+
 def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ast = Globals(client)
 
@@ -562,6 +570,10 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.lib.python.collections.OrderedDict.dict_get",
             "syft.lib.python.Any",
+        ),
+        (
+            "syft.lib.python.client_send",
+            "syft.lib.python._SyNone",
         ),
     ]
 
