@@ -24,6 +24,7 @@ from ....logger import debug
 from ....logger import info
 from ....logger import traceback
 from ...adp.adversarial_accountant import AdversarialAccountant
+from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -31,7 +32,6 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.action.get_object_action import GetObjectAction
 from ..common.client import Client
-from ..common.message import SignedImmediateSyftMessageWithReply
 from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
 from ..common.node_manager.dataset_manager import DatasetManager
