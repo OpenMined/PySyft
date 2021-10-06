@@ -165,10 +165,9 @@ def node() -> sy.VirtualMachine:
     return sy.VirtualMachine(name="Bob")
 
 
-# this is not working anymore
-# @pytest.fixture(autouse=True)
-# def node_store(node: sy.VirtualMachine) -> None:
-#     node.store.clear()
+@pytest.fixture(autouse=True)
+def node_store(node: sy.VirtualMachine) -> None:
+    node.store.clear()
 
 
 @pytest.fixture(scope="session")

@@ -42,10 +42,19 @@ def rs_proto2object(proto: RecursiveSerde_PB) -> Any:
     for attr_name, attr_bytes in zip(proto.fields_name, proto.fields_data):
         attr_value = sy.deserialize(attr_bytes, from_bytes=True)
         transforms = obj.__serde_overrides__.get(attr_name, None)
-        if transforms is None:
-            setattr(obj, attr_name, attr_value)
-        else:
-            setattr(obj, attr_name, transforms[1](attr_value))
+        try:
+            if transforms is None:
+                setattr(obj, attr_name, attr_value)
+            else:
+                setattr(obj, attr_name, transforms[1](attr_value))
+        except AttributeError:
+            # if its an ID we need to set the _id instead
+            if attr_name == "id":
+                attr_name = "_id"
+                if transforms is None:
+                    setattr(obj, attr_name, attr_value)
+                else:
+                    setattr(obj, attr_name, transforms[1](attr_value))
 
     return obj
 
