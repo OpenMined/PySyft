@@ -1,11 +1,9 @@
 # stdlib
 from datetime import datetime
 from typing import Any
-from typing import List
-from typing import Optional
+from typing import Dict
 
 # third party
-from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
@@ -31,31 +29,9 @@ class RequestManager(DatabaseManager):
 
         return result
 
-    def create_request(
-        self,
-        user_id: int,
-        user_name: str,
-        object_id: str,
-        reason: str,
-        request_type: str,
-        verify_key: Optional[VerifyKey] = None,
-        tags: Optional[List[str]] = None,
-        object_type: str = "",
-    ) -> Request:
+    def create_request(self, **kwargs) -> Request:
         date = datetime.now()
-
-        return self.register(
-            id=str(UID().value),
-            user_id=user_id,
-            user_name=user_name,
-            object_id=object_id,
-            date=date,
-            reason=reason,
-            request_type=request_type,
-            verify_key=verify_key,
-            tags=tags,
-            object_type=object_type,
-        )
+        return self.register(id=str(UID().value), date=date, **kwargs)
 
     def status(self, request_id: str) -> RequestStatus:
         _req = self.first(id=request_id)
@@ -68,6 +44,17 @@ class RequestManager(DatabaseManager):
 
     def set(self, request_id: int, status: RequestStatus) -> None:
         self.modify({"id": request_id}, {"status": status})
+
+    def get_user_info(request_id: int) -> Dict:
+        request = super().first(id=request_id)
+        return {
+            "name": request.user_name,
+            "email": request.user_email,
+            "role": request.user_role,
+            "budget": request.user_budget,
+            "institution": request.institution,
+            "website": request.website,
+        }
 
     def clear(self) -> None:
         local_session = sessionmaker(bind=self.db)()
