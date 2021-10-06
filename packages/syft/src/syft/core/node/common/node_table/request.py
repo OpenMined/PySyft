@@ -1,6 +1,7 @@
 # third party
 from sqlalchemy import Column
 from sqlalchemy import DateTime
+from sqlalchemy import Float
 from sqlalchemy import ForeignKey
 from sqlalchemy import Integer
 from sqlalchemy import JSON
@@ -31,6 +32,11 @@ class Request(Base):
     date = Column(DateTime())
     user_id = Column(Integer, ForeignKey("syft_user.id"))
     user_name = Column(String(255))
+    user_email = Column(String(255))
+    user_role = Column(String(255))
+    user_budget = Column(Float())
+    institution = Column(String(255))
+    website = Column(String(255))
     object_id = Column(String(255))
     reason = Column(String(255))
     status = Column(String(255), default="pending")
