@@ -42,6 +42,7 @@ from ..request_handler.request_handler_messages import (
 from ..request_handler.request_handler_messages import GetAllRequestHandlersMessage
 from ..request_handler.request_handler_messages import UpdateRequestHandlerMessage
 from ..request_receiver.request_receiver_messages import RequestMessage
+from ..request_receiver.request_receiver_messages import RequestStatus
 from .object_request_messages import CreateRequestMessage
 from .object_request_messages import CreateRequestResponse
 from .object_request_messages import DeleteRequestMessage
@@ -162,7 +163,6 @@ def get_request_msg(
     return GetRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        # request_id=request_id
         request_id=request_json,
     )
 
@@ -178,13 +178,25 @@ def get_all_request_msg(
 
     if allowed:
         requests = node.data_requests.all()
-        requests_json = [model_to_json(request) for request in requests]
+        response = list()
+        for request in requests:
+            # Get current state user
+            if node.data_requests.status(request.id) == RequestStatus.Pending:
+                _user = node.users.first(id=request.user_id)
+                user = model_to_json(_user)
+                user["role"] = node.roles.first(id=_user.role).name
+            # Get History state user
+            else:
+                user = user.data_requests.get_user_info(request_id=request.id)
+            request = model_to_json(request)
+            response.append({"user": user, "req": request})
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
+
     return GetRequestsResponse(
         status_code=200,
         address=msg.reply_to,
-        content=requests_json,
+        content=response,
     )
 
 
@@ -432,7 +444,6 @@ def build_request_message(
         raise ValueError(
             "Can't process Request service without a given " "verification key"
         )
-
     if msg.requester_verify_key != verify_key:
         raise Exception(
             "You tried to request access for a key that is not yours!"
@@ -461,7 +472,12 @@ def build_request_message(
 
     node.data_requests.create_request(
         user_id=current_user.id,
-        user_name=current_user.email,
+        user_name=current_user.name,
+        user_email=current_user.email,
+        user_role=node.roles.first(id=current_user.role).name,
+        user_budget=current_user.budget,
+        institution=current_user.institution,
+        website=current_user.website,
         object_id=str(msg.object_id.value),
         reason=msg.request_description,
         request_type="permissions",
