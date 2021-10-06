@@ -46,6 +46,10 @@ for syft_type in [
 
 def client_send(client) -> None:  # type: ignore
     i = Int(1)
+    base_url = client.routes[0].connection.base_url
+    if base_url.find("localhost") != -1:
+        base_url = base_url.replace("localhost", "docker-host")
+    client.routes[0].connection.base_url = base_url
     p = i.send(client)  # type: ignore
     print(client)
     print(p)
