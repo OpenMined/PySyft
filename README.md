@@ -538,6 +538,44 @@ $ devspace dev -b
 $ devspace purge
 ```
 
+### Deploy to Google Kubernetes Engine (GKE)
+
+Configure kubectl context with GKE:
+
+```
+$ gcloud container clusters get-credentials --region us-central1-c staging-cluster-1
+```
+
+Configure your Google Container Registry (GCR):
+
+```
+$ gcloud auth configure-docker
+```
+
+Deploy to GKE:
+
+```
+$ devspace deploy
+```
+
+Access a container directly:
+
+```
+$ devspace enter
+```
+
+Attach to container stdout:
+
+```
+$ devspace attach
+```
+
+Use port forwarding to access an internal service:
+
+```
+$ kubectl port-forward deployment/tailscale :4000
+```
+
 ## Join Slack
 
 Also, join the rapidly growing community of 12,000+ on [Slack](http://slack.openmined.org).

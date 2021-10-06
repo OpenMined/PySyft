@@ -1,6 +1,8 @@
 version: v1beta11
 
 vars:
+  - name: CONTAINER_REGISTRY
+    value: "gcr.io/reflected-space-315806/"
   - name: DOCKER_IMAGE_DB
     value: postgres:12
   - name: DOCKER_IMAGE_QUEUE
@@ -24,28 +26,37 @@ vars:
 
 images:
   backend:
-    image: ${DOCKER_IMAGE_BACKEND}
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+    tags:
+      - latest
+      - "0.6.0-alpha.0"
+      - "######"
+    createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
-    context: ./backend
-    build:
-      buildKit: {}
-  backend-stream:
-    image: openmined/grid-backend-stream
-    dockerfile: ./backend/backend.dockerfile
-    context: ./backend
+    context: ../
     build:
       buildKit: {}
   worker:
-    image: ${DOCKER_IMAGE_CELERYWORKER}
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_CELERYWORKER}
+    tags:
+      - latest
+      - "0.6.0-alpha.0"
+      - "######"
+    createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
-    context: ./backend
+    context: ../
     build:
       docker:
         options:
           target: "celery-worker"
       buildKit: {}
   frontend:
-    image: ${DOCKER_IMAGE_FRONTEND}
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
+    tags:
+      - latest
+      - "0.6.0-alpha.0"
+      - "######"
+    createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
     build:
@@ -58,13 +69,23 @@ images:
       buildKit:
         args: ["--target", "grid-ui-development"]
   headscale:
-    image: ${DOCKER_IMAGE_HEADSCALE}
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
+    tags:
+      - latest
+      - "0.6.0-alpha.0"
+      - "######"
+    createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
     build:
       buildKit: {}
   tailscale:
-    image: ${DOCKER_IMAGE_TAILSCALE}
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
+    tags:
+      - latest
+      - "0.6.0-alpha.0"
+      - "######"
+    createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
     build:
@@ -106,7 +127,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${DOCKER_IMAGE_BACKEND}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
               - /start-reload.sh
             env:
@@ -146,7 +167,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: openmined/grid-backend-stream
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
               - waitforit
             args:
@@ -196,7 +217,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${DOCKER_IMAGE_CELERYWORKER}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_CELERYWORKER}
             command:
               - waitforit
             args:
@@ -237,7 +258,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${DOCKER_IMAGE_FRONTEND}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
             env:
               - name: VERSION
                 value: ${VERSION}
@@ -257,7 +278,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${DOCKER_IMAGE_HEADSCALE}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
             env:
               - name: NETWORK_NAME
                 value: ${NETWORK_NAME}
@@ -278,7 +299,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${DOCKER_IMAGE_TAILSCALE}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
             securityContext:
               capabilities:
                 add: ["NET_ADMIN", "SYS_MODULE"]
