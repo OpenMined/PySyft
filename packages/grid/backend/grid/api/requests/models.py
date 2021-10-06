@@ -10,9 +10,9 @@ from pydantic import BaseModel
 class BaseRequest(BaseModel):
     id: Optional[str]
     date: Optional[datetime]
-    user_id: Optional[int]
-    user_name: Optional[str]
     object_id: Optional[str]
+    size: Optional[float] = 0.0
+    subjects: Optional[int] = 0
     reason: Optional[str]
     status: Optional[str]  # Literal['pending', 'accepted', 'denied']
     request_type: Optional[str]
@@ -23,11 +23,29 @@ class BaseRequest(BaseModel):
         orm_mode = True
 
 
+class UserRequest(BaseModel):
+    name: str
+    email: str
+    role: str
+    budget_spent: Optional[float] = 0.0
+    allocated_budget: Optional[float] = 0.0
+    company: Optional[str] = ""
+    website: Optional[str] = ""
+
+
+class AccessRequest(BaseModel):
+    user: UserRequest
+    req: BaseRequest
+
+    class Config:
+        orm_mode = True
+
+
 class RequestUpdate(BaseRequest):
     status: str  # Literal['pending', 'accepted', 'denied']
 
 
-class Request(BaseRequest):
+class Request(AccessRequest):
     pass
 
 
