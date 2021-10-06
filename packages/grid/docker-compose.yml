@@ -182,8 +182,7 @@ services:
       - SERVER_HOST=https://${DOMAIN?Variable not set}
       # Allow explicit env var override for tests
       - SMTP_HOST=${SMTP_HOST}
-    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -debug -- /start.sh"
-
+    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
     build:
       context: ./backend
       dockerfile: backend.dockerfile

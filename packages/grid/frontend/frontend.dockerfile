@@ -1,28 +1,31 @@
-ARG TYPE
+ARG TYPE=domain
 ARG FRONTEND_DEV
 ARG DISABLE_TELEMETRY=1
 ARG PRODUCTION_DIR=/prod_app
 
 FROM node:16-alpine as init-stage
-ARG TYPE
+ARG TYPE=domain
 ARG PRODUCTION_DIR
 ARG DISABLE_TELEMETRY
 
 ENV NODE_TYPE $TYPE
 ENV PROD_ROOT $PRODUCTION_DIR
 ENV NEXT_TELEMETRY_DISABLED $DISABLE_TELEMETRY
+ENV NEXT_PUBLIC_API_URL=/api/v1
 
 WORKDIR /app
-COPY package.json yarn.lock .
+COPY package.json yarn.lock /app/
 RUN yarn --frozen-lockfile
 COPY . .
 
 FROM node:16-alpine as grid-ui-development
-ARG TYPE
+ARG TYPE=domain
 ARG DISABLE_TELEMETRY
 
 ENV NODE_TYPE $TYPE
 ENV NEXT_TELEMETRY_DISABLED $DISABLE_TELEMETRY
+ENV NEXT_PUBLIC_ENVIRONMENT=development
+ENV NEXT_PUBLIC_API_URL=/api/v1
 
 WORKDIR /app
 COPY --from=init-stage /app .
@@ -41,6 +44,8 @@ ARG PRODUCTION_DIR
 
 ENV NEXT_TELEMETRY_DISABLED $DISABLE_TELEMETRY
 ENV PROD_ROOT $PRODUCTION_DIR
+ENV NEXT_PUBLIC_ENVIRONMENT=production
+ENV NEXT_PUBLIC_API_URL=/api/v1
 
 COPY --from=build-stage $PROD_ROOT/out /usr/share/nginx/html
 COPY --from=build-stage $PROD_ROOT/docker/nginx.conf /etc/nginx/conf.d/default.conf
