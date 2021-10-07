@@ -667,6 +667,54 @@ def test_or(row_count: int, ishan: Entity) -> None:
         assert (tensor | False) == output[index]
 
 
+def test_entities(row_data_ishan: list, ishan: Entity, traskmaster: Entity) -> None:
+    """Test that n_entities works as intended"""
+    rept_tensor1 = REPT(rows=row_data_ishan)
+    assert rept_tensor1.n_entities() == 1
+
+    rept_tensor2 = REPT(
+        rows=[
+            SEPT(
+                child=np.random.randint(low=0, high=20, size=(10, 10)),
+                min_vals=np.zeros((10, 10), dtype=np.int32) * 20,
+                max_vals=np.ones((10, 10), dtype=np.int32),
+                entity=ishan,
+            ),
+            SEPT(
+                child=np.random.randint(low=0, high=60, size=(10, 10)),
+                min_vals=np.zeros((10, 10), dtype=np.int32) * 60,
+                max_vals=np.ones((10, 10), dtype=np.int32),
+                entity=traskmaster,
+            ),
+        ]
+    )
+    assert rept_tensor2.n_entities() == 2
+
+    rept_tensor3 = REPT(
+        rows=[
+            SEPT(
+                child=np.random.randint(low=0, high=20, size=(10, 10)),
+                min_vals=np.zeros((10, 10), dtype=np.int32) * 20,
+                max_vals=np.ones((10, 10), dtype=np.int32),
+                entity=ishan,
+            ),
+            SEPT(
+                child=np.random.randint(low=0, high=60, size=(10, 10)),
+                min_vals=np.zeros((10, 10), dtype=np.int32) * 60,
+                max_vals=np.ones((10, 10), dtype=np.int32),
+                entity=traskmaster,
+            ),
+            SEPT(
+                child=np.random.randint(low=0, high=40, size=(10, 10)),
+                min_vals=np.zeros((10, 10), dtype=np.int32) * 40,
+                max_vals=np.ones((10, 10), dtype=np.int32),
+                entity=ishan,
+            ),
+        ]
+    )
+    assert rept_tensor3.n_entities() == 2
+
+
 @pytest.fixture
 def tensor1(traskmaster: Entity, row_count: int, dims: int) -> REPT:
     """Reference tensor"""

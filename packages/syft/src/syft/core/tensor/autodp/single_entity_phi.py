@@ -353,6 +353,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=scalar_manager,
         )
 
+    def n_entities(self) -> int:
+        """Returns the number of entities for this tensor. SEPTs by definition only have 1."""
+        return 1
+
     def publish(
         self, acc: Any, sigma: float, user_key: VerifyKey
     ) -> AcceptableSimpleType:

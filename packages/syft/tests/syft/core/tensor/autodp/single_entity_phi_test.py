@@ -1210,6 +1210,20 @@ def test_or(reference_binary_data: np.ndarray, ishan: Entity) -> None:
     assert (output.child == target).all()
 
 
+def test_entities(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test that the n_entities works for SEPTs"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+    assert isinstance(tensor, SEPT)
+    assert tensor.n_entities() == 1
+
+
 # End of Ishan's tests
 
 

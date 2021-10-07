@@ -93,6 +93,19 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             [[x.entity] * np.array(x.shape).prod() for x in self.child]
         ).reshape(self.shape)
 
+    def n_entities(self) -> int:
+        """Return the number of unique entities behind the REPT"""
+        uniques = set()
+        count = 0
+        for entity in self.entities.flatten():
+            if entity in uniques:
+                continue
+            else:
+                # if isinstance(entity, DSG):
+                uniques.add(entity)
+                count += 1  # if DSG needs to be decomposed, change this.
+        return count
+
     @property
     def gamma(self) -> InitialGammaTensor:
         return self.create_gamma()
