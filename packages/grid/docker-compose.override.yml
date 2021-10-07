@@ -179,7 +179,7 @@ services:
       context: ./vpn
       dockerfile: headscale.dockerfile
     volumes:
-      - headscale-data:/headscale
+      - headscale-data:/headscale/data
     environment:
       - NETWORK_NAME=omnet
     ports:
