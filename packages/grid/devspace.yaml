@@ -2,7 +2,8 @@ version: v1beta11
 
 vars:
   - name: CONTAINER_REGISTRY
-    value: "gcr.io/reflected-space-315806/"
+    # value: "gcr.io/reflected-space-315806/"
+    value: ""
   - name: DOCKER_IMAGE_DB
     value: postgres:12
   - name: DOCKER_IMAGE_QUEUE
@@ -28,9 +29,9 @@ images:
   backend:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
     tags:
+      - "######"
       - latest
       - "0.6.0-alpha.0"
-      - "######"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -39,9 +40,9 @@ images:
   worker:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_CELERYWORKER}
     tags:
+      - "######"
       - latest
       - "0.6.0-alpha.0"
-      - "######"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -53,9 +54,9 @@ images:
   frontend:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
     tags:
+      - "######"
       - latest
       - "0.6.0-alpha.0"
-      - "######"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -71,9 +72,9 @@ images:
   headscale:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
     tags:
+      - "######"
       - latest
       - "0.6.0-alpha.0"
-      - "######"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -82,9 +83,9 @@ images:
   tailscale:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
     tags:
+      - "######"
       - latest
       - "0.6.0-alpha.0"
-      - "######"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -118,6 +119,17 @@ deployments:
                 value: ${POSTGRES_USER}
               - name: POSTGRES_PASSWORD
                 value: ${POSTGRES_PASSWORD}
+              - name: PGDATA
+                value: /var/lib/postgresql/data/pgdata
+            volumeMounts:
+              - containerPath: /var/lib/postgresql/data/pgdata
+                volume:
+                  name: app-db-data
+                  subPath: /
+                  readOnly: false
+        volumes:
+          - name: app-db-data
+            size: "5Gi"
         service:
           name: ${SERVICE_NAME_DB}
           ports:
@@ -282,6 +294,15 @@ deployments:
             env:
               - name: NETWORK_NAME
                 value: ${NETWORK_NAME}
+            volumeMounts:
+              - containerPath: /headscale/data
+                volume:
+                  name: headscale-data
+                  subPath: /
+                  readOnly: false
+        volumes:
+          - name: headscale-data
+            size: "100Mi"
         service:
           name: ${SERVICE_NAME_HEADSCALE}
           ports:
@@ -293,7 +314,6 @@ deployments:
           rules:
             - host: vpn.grid.test
               servicePort: 8080
-
   - name: tailscale
     helm:
       componentChart: true
@@ -307,6 +327,15 @@ deployments:
             env:
               - name: HOSTNAME
                 value: ${DOMAIN_NAME}
+            volumeMounts:
+              - containerPath: /var/lib/tailscale
+                volume:
+                  name: tailscale-data
+                  subPath: /
+                  readOnly: false
+        volumes:
+          - name: tailscale-data
+            size: "100Mi"
         service:
           name: ${SERVICE_NAME_TAILSCALE}
           ports:

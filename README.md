@@ -422,8 +422,14 @@ To use minikube you need it to be running:
 
 ```
 $ minikube config set driver hyperkit
-$ minikube start
+$ minikube start --disk-size=40g
 $ minikube addons enable ingress
+```
+
+If you ever need to reset minikube you can do:
+
+```
+$ minikube delete --all --purge
 ```
 
 Once minikube is running you should see the container in docker.
@@ -532,10 +538,63 @@ $ cd packages/grid
 $ devspace dev -b
 ```
 
-## Destroy the local deployment
+### Connect VPN in dev
+
+You can run the connect VPN settings using all the opened ports with:
+
+```
+$ cd packages/grid
+$ python3 vpn/connect_vpn.py http://localhost:8088 http://localhost:8087 http://headscale:8080
+```
+
+### Destroy the local deployment
 
 ```
 $ devspace purge
+```
+
+### Delete persistent volumes
+
+The database and the VPN containers have persistent volumes.
+You can check them with:
+
+```
+$ kubectl get persistentvolumeclaim
+```
+
+And then delete PostgreSQL with something like:
+
+```
+$ kubectl delete persistentvolumeclaim app-db-data-db-0
+```
+
+### Check which images / tags are being used
+
+This will show all the unique images and their tags currently deployed which is useful
+when debugging which version is actually running in the cluster.
+
+```
+$ kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' | sort | uniq -c
+```
+
+### Restart a container / pod / deployment
+
+Get all the deployments
+
+```
+$ ubectl get deployments
+NAME             READY   UP-TO-DATE   AVAILABLE   AGE
+backend          1/1     1            1           18m
+backend-stream   1/1     1            1           18m
+backend-worker   1/1     1            1           18m
+frontend         1/1     1            1           18m
+queue            1/1     1            1           19m
+```
+
+Restart the backend-worker
+
+```
+$ kubectl rollout restart deployment backend-worker
 ```
 
 ### Deploy to Google Kubernetes Engine (GKE)
