@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import asyncio
 import os
@@ -21,6 +24,7 @@ from ....logger import debug
 from ....logger import info
 from ....logger import traceback
 from ...adp.adversarial_accountant import AdversarialAccountant
+from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -43,6 +47,9 @@ from ..common.node_service.dataset_manager.dataset_manager_service import (
 )
 from ..common.node_service.get_remaining_budget.get_remaining_budget_service import (
     GetRemainingBudgetService,
+)
+from ..common.node_service.node_setup.node_setup_messages import (
+    CreateInitialSetUpMessage,
 )
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
 from ..common.node_service.object_request.object_request_service import (
@@ -165,6 +172,31 @@ class Domain(Node):
     def post_init(self) -> None:
         super().post_init()
         self.set_node_uid()
+
+    def initial_setup(
+        self,
+        first_superuser_name: str = "Jane Doe",
+        first_superuser_email: str = "info@openmined.org",
+        first_superuser_password: str = "changethis",
+        first_superuser_budget: float = 5.55,
+        domain_name: str = "BigHospital",
+    ) -> Domain:
+
+        # Build Syft Message
+        msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
+            address=self.address,
+            name=first_superuser_name,
+            email=first_superuser_email,
+            password=first_superuser_password,
+            domain_name=domain_name,
+            budget=first_superuser_budget,
+            reply_to=self.address,
+        ).sign(signing_key=self.signing_key)
+
+        # Process syft message
+        _ = self.recv_immediate_msg_with_reply(msg=msg).message
+
+        return self
 
     def loud_print(self) -> None:
         install_path = os.path.abspath(

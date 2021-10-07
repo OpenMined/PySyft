@@ -11,6 +11,7 @@ from typing import KeysView as TypeKeysView
 from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
+from typing import Union
 
 # third party
 from autodp.autodp_core import Mechanism
@@ -20,6 +21,7 @@ from sqlalchemy.engine import Engine
 
 # relative
 from ..node.common.node_manager.ledger_manager import LedgerManager
+from .entity import DataSubjectGroup
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 
@@ -28,12 +30,15 @@ class AdversarialAccountant:
     """Adversarial Accountant class that keeps track of budget and maintains a privacy ledger."""
 
     def __init__(
-        self, db_engine: Engine, max_budget: float = 10, delta: float = 1e-6
+        self, db_engine: Engine = None, max_budget: float = 10, delta: float = 1e-6
     ) -> None:
 
-        # this is a database-backed lookup table
-        # maps an entity to an actual budget
-        self.entity2ledger = LedgerManager(db_engine)
+        if db_engine is not None:
+            # this is a database-backed lookup table
+            # maps an entity to an actual budget
+            self.entity2ledger = LedgerManager(db_engine)
+        else:
+            self.entity2ledger = {}  # type: ignore
 
         # this is a temporary lookup table for mechanisms we're not sure
         # we're going to keep (See publish.py for how this is used)
@@ -156,7 +161,8 @@ class AdversarialAccountant:
         user_key: VerifyKey,
         returned_epsilon_is_private: bool = False,
     ) -> bool:
-        spend = self.get_eps_for_entity(
+
+        spent = self.get_eps_for_entity(
             entity=entity,
             user_key=user_key,
             returned_epsilon_is_private=returned_epsilon_is_private,
@@ -166,10 +172,10 @@ class AdversarialAccountant:
 
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
         # @Andrew can we use <= or does it have to be <
-        has_budget = spend <= user_budget
+        has_budget = spent <= user_budget
         # print(f"has_budget = {spend} < {user_budget}")
         print("\n\nHas Budget:" + str(has_budget))
-        print("SPEND:" + str(spend))
+        print("YOU'VE SPENT:" + str(spent))
         print("USER BUDGET:" + str(user_budget))
         return has_budget
 
@@ -214,29 +220,43 @@ class AdversarialAccountant:
     # returns a collection of entities having no budget
     def overbudgeted_entities(
         self,
-        temp_entities: TypeDict[Entity, TypeList[iDPGaussianMechanism]],
+        temp_entities: Union[
+            TypeDict[Entity, TypeList[iDPGaussianMechanism]],
+            TypeDict[DataSubjectGroup, TypeList[iDPGaussianMechanism]],
+        ],
         user_key: VerifyKey,
         returned_epsilon_is_private: bool = False,
-    ) -> TypeSet[Entity]:
+    ) -> Union[TypeSet[Entity], TypeSet[DataSubjectGroup]]:
         entities = set()
 
         for entity, _ in temp_entities.items():
-            if not self.has_budget(
-                entity,
-                user_key=user_key,
-                returned_epsilon_is_private=returned_epsilon_is_private,
-            ):
-                entities.add(entity)
-
+            if isinstance(entity, DataSubjectGroup):
+                for e in entity.entity_set:
+                    if not self.has_budget(
+                        e,
+                        user_key=user_key,
+                        returned_epsilon_is_private=returned_epsilon_is_private,
+                    ):
+                        entities.add(
+                            entity
+                        )  # Leave out the whole group if ANY of its entities are over budget
+            elif isinstance(entity, Entity):
+                if not self.has_budget(
+                    entity,
+                    user_key=user_key,
+                    returned_epsilon_is_private=returned_epsilon_is_private,
+                ):
+                    entities.add(entity)  # type: ignore
+            else:
+                raise Exception
         return entities
 
     # prints entity and its epsilon value
     def print_ledger(self, returned_epsilon_is_private: bool = False) -> None:
-        for mechanism in self.entity2ledger.mechanism_manager.all():
-            entity = self.entity2ledger.entity_manager.first(name=mechanism.entity_name)
+        for entity in self.entities:
             if entity is not None:
                 print(
-                    str(mechanism.entity_name)
+                    str(entity.name)
                     + "\t"
                     + str(
                         self.get_eps_for_entity(
