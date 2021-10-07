@@ -2,12 +2,12 @@ syntax = "proto3";
 
 package syft.core.tensor;
 
-import "proto/core/tensor/tensor.proto";
 import "proto/lib/numpy/array.proto";
+import "proto/core/common/recursive_serde.proto";
 
 message ShareTensor {
   oneof data {
-    Tensor tensor = 1;
+    syft.core.common.RecursiveSerde tensor = 1;
     syft.lib.numpy.NumpyProto array = 2;
   };
 

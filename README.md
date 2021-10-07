@@ -582,7 +582,7 @@ $ kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].i
 Get all the deployments
 
 ```
-$ ubectl get deployments
+$ kubectl get deployments
 NAME             READY   UP-TO-DATE   AVAILABLE   AGE
 backend          1/1     1            1           18m
 backend-stream   1/1     1            1           18m
@@ -633,6 +633,70 @@ Use port forwarding to access an internal service:
 
 ```
 $ kubectl port-forward deployment/tailscale :4000
+```
+
+## Publish
+
+### HAGrid
+
+#### PyPI
+
+To publish hagrid to pypi create a virtualenv in the `/packages/hagrid` directory.
+
+```
+$ cd packages/hagrid
+```
+
+Use a tool like `pipenv` or manually create and source like so:
+
+```
+$ python3 -m venv ./venv
+$ source .venv/bin/activate
+```
+
+Install some tools:
+
+```
+$ pip install --upgrade bandit safety setuptools wheel twine tox
+```
+
+Bump the version inside `/packages/hagrid/hagrid/__init__.py`
+
+Build a wheel:
+
+```
+$ ./build_wheel.sh
+```
+
+Check with twine:
+
+```
+$ twine check `find -L ./ -name "*.whl"`
+```
+
+Upload with twine:
+
+```
+$ twine upload dist/hagrid-x.x.x-py3-none-any.whl
+```
+
+#### Docker
+
+```
+$ cd packages/hagrid
+```
+
+Build and tag the images:
+
+```
+$ ./build_docker.sh
+```
+
+Publish to docker hub:
+
+```
+$ docker push openmined/hagrid:latest
+$ docker push openmined/hagrid:x.x.x
 ```
 
 ## Join Slack
