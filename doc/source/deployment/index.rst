@@ -176,9 +176,9 @@ Local deployment using Docker
 
       changethis
 
-   b. Explore the interface or you can even do requests via `Postman <https://www.postman.com/downloads/>`__. You can check all the available endpoints at
-         http://localhost:8081/api/v1/openapi.json/ and have all the following environment variables set (a more detailed explanationcan be found in `this video
-         section <https://youtu.be/GCw7cN7xXJU?t=442>`__):\ |image0|
+   b. Explore the interface or you can even do requests via `Postman <https://www.postman.com/downloads/>`__. You can check all the available endpoints at http://localhost:8081/api/v1/openapi.json/ and have all the following environment variables set (a more detailed explanationcan be found in `this video section <https://youtu.be/GCw7cN7xXJU?t=442>`__):
+   
+      |image0|
 
       The auth token can be obtained by doing a login request as follows:
 
@@ -204,150 +204,115 @@ Local deployment using Docker
 
       (using the TAG specified in your CLI) hagrid land --tag=035c3b6a378a50f78cd74fc641d863c7
 
-   
-
-..
-
-   hagrid land --tag=035c3b6a378a50f78cd74fc641d863c7
-
-   (using the TAG specified in your CLI)
 
 Local deployment using Vagrant and VirtualBox
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+---------------------------------------------
 
-This is particularly useful to experiment with the Ansible scripts to
-test new changes.
+This is particularly useful to experiment with the Ansible scripts to test new changes.
 
-1. Run hagrid status and ensure all dependencies are checked to make
-      sure you have Vagrant and VirtualBox installed.
-
-..
+1. Run hagrid status and ensure all dependencies are checked to make sure you have Vagrant and VirtualBox installed.
 
    |image2|
 
-2. For installing Vagrant, check the `instructions
-      here. <https://www.vagrantup.com/downloads>`__
+2. For installing Vagrant, check the `instructions here. <https://www.vagrantup.com/downloads>`__
 
-3. Additionally to Vagrant, we need to install a plugin called landrush
-      that allows using a custom DNS that points to the IP address used
-      in the VM:
+3. Additionally to Vagrant, we need to install a plugin called landrush that allows using a custom DNS that points to the IP address used in the VM:
 
-..
+   .. code-block:: bash
+   
+      vagrant plugin install landrush
 
-   vagrant plugin install landrush
+3. Move to the correct branch and directory in the PySyft repository:
 
-4. Move to the correct branch and directory in the PySyft repository:
+   .. code-block:: bash
 
-..
+      git checkout 0.6.0
+      cd packages/grid   
 
-   git checkout 0.6.0
+   
+4. Create the environment using vagrant for the first time:
 
-   cd packages/grid
+   .. code-block:: bash
 
-5. Create the environment using vagrant for the first time:
+      vagrant init
+      vagrant up
 
-..
 
-   vagrant init
+   When the VM is booted up, it starts the docker service and then the docker service starts all the containers as configured. As it is just created, provisioning is always **run** automatically\ **.**
 
-   vagrant up
+   When deploying locally, the tasks listed in ‘main.yml’ for the node are not being run. Therefore, it does not have to do the lengthy
+   setup every time (installing docker, cloning PySyft and launching the cronjob to reload PySyft).
 
-   When the VM is booted up, it starts the docker service and then the
-   docker service starts all the containers as configured. As it is just
-   created, provisioning is always **run** automatically\ **.**
+   .. note:: text
+   
+      The tasks for the containers and nodes respectively can be found in \*.yml files defined in ``packages/grid/ansible/roles/containers`` and ``packages/grid/ansible/roles/nodes``
 
-   When deploying locally, the tasks listed in ‘main.yml’ for the node
-   are not being run. Therefore, it does not have to do the lengthy
-   setup every time (installing docker, cloning PySyft and launching the
-   cronjob to reload PySyft).
+5. If you intend to run it frequently and not only once, either run ``vagrant status`` to see if the env has already been created and if
+      yes, to ``run vagrant up --provision`` every time to launch the provisioners, otherwise it is just resuming the existing machine.
 
-   Note: The tasks for the containers and nodes respectively can be
-   found in \*.yml files defined in
-   packages/grid/ansible/roles/containers and
-   packages/grid/ansible/roles/nodes
+6. To access the VM via SSh and jump to the user we are creating in vagrant:
 
-6. If you intend to run it frequently and not only once, either run
-      vagrant status to see if the env has already been created and if
-      yes, to run vagrant up --provision every time to launch the
-      provisioners, otherwise it is just resuming the existing machine.
+   .. code-block:: bash
 
-7. To access the VM via SSh and jump to the user we are creating in
-      vagrant:
+      vagrant ssh
+      sudo su -om
+      whoami # should return 'om'
+   
+8. You can go to ``http://10.0.1.2/login`` which is at port 80 to access the PyGrid Admin UI, which you can explore, query via Postman or in a
+      local Jupyter Notebook using a Python client as described in `steps 3 and 4 here <#local-deployment-using-docker>`__.
 
-..
+9. To shut down the machine currently managed by Vagrant, you can run the following after exiting this node shell:
 
-   vagrant ssh
+   .. code-block:: bash
 
-   sudo su - om
-
-   whoami # should return ‘om’
-
-8. You can go to http://10.0.1.2/login which is at port 80 to access the
-      PyGrid Admin UI, which you can explore, query via Postman or in a
-      local Jupyter Notebook using a Python client as described in
-      `steps 3 and 4 here <#local-deployment-using-docker>`__.
-
-9. To shut down the machine currently managed by Vagrant, you can run
-      the following after exiting this node shell:
-
-..
-
-   vagrant halt
-
+      vagrant halt
+   
 10. Or alternatively to destroy it using:
 
-..
+   .. code-block:: bash
 
-   vagrant destroy
+      vagrant destroy
 
 Deploying to Azure
-~~~~~~~~~~~~~~~~~~
+------------------
 
 1. Get your virtual machine on Azure ready
 
-   a. To create one, you can either go to
-         `portal.azure.com <http://portal.azure.com>`__ or use `this
-         1-click
-         template <https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2FPySyft%2Fdev%2Fpackages%2Fgrid%2Fquickstart%2Ftemplate.json>`__
-         available off-the-shelves.
+   a. To create one, you can either go to `portal.azure.com <http://portal.azure.com>`__ or use `this 1-click template <https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2FPySyft%2Fdev%2Fpackages%2Fgrid%2Fquickstart%2Ftemplate.json>`__ available off-the-shelves.
 
-   b. If you proceed to create it yourself, make sure you respect the
-         following:
+   b. If you proceed to create it yourself, make sure you respect the following:
 
-      i.   Use Ubuntu Server 20.04 or newer
+      i.   Use ``Ubuntu Server 20.04`` or newer
 
-      ii.  Select SSH, HTTP, HTTPS as inbound ports
+      ii.  Select ``SSH``, ``HTTP``, ``HTTPS`` as inbound ports
 
-      iii. Have at least 2x CPU, 4GB RAM, 40GB HDD
+      iii. Have at least ``2x CPU``, ``4GB RAM``, ``40GB HDD``.
 
-Note: during creation, write down the username used and save the key
-locally. In case warnings arise regarding having an unprotected key, you
-can run:
+      .. note::
+         During creation, write down the username used and save the key locally. In case warnings arise regarding having an unprotected key, you can run:
 
-sudo chmod 600 key.pem
+         .. code-block:: bash
+
+            sudo chmod 600 key.pem
 
 2. To deploy to Azure, the following can be run:
 
-..
+   .. code-block:: bash
 
-   hagrid launch node --username=azureuser
-   --key_path=~/hagriddeploy_key.pem domain to 51.124.153.133
+      hagrid launch node --username=azureuser --key_path=~/hagriddeploy_key.pem domain to 51.124.153.133
+   
 
-   Additionally, you are being asked if you want to provide another
-   repository and branch to fetch and update HAGrid, which you can skip
-   by pressing ‘Enter’.
+   Additionally, you are being asked if you want to provide another repository and branch to fetch and update HAGrid, which you can skip by pressing ``Enter``.
 
-3. If successful, you can now access the deployed node at the specified
-      IP address and interact with it via the PyGrid Admin UI at
-      http://51.124.153.133/login (change IP with yours) or use Postman
+3. If successful, you can now access the deployed node at the specified IP address and interact with it via the PyGrid Admin UI at http://51.124.153.133/login (change IP with yours) or use Postman
       to do API requests.
 
 .. |image0| image:: ../_static/deployment/image2.png
-   :width: 5.53646in
-   :height: 1.16609in
+   :width: 95%
+   
 .. |image1| image:: ../_static/deployment/image1.png
-   :width: 3.35938in
-   :height: 2.70833in
+   :width: 95%
+   
 .. |image2| image:: ../_static/deployment/image3.png
-   :width: 2.23438in
-   :height: 1.26691in
+   :width: 95%
+   
