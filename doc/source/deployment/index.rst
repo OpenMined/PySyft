@@ -1,5 +1,8 @@
-Introduction to HAGrid
-----------------------
+Deployment: Introduction to HaGrid
+**********************************
+
+.. toctree::
+   :maxdepth: 3
 
 Hagrid (HAppy GRID!) is a command-line tool that speeds up the
 deployment of PyGrid, the software providing a peer-to-peer network of
@@ -20,8 +23,7 @@ on Azure, AWS\* and GCP*.
 
 Working with Hagrid & Syft API versions:
 
--  `Development
-      mode <#explore-locally-with-the-pysyft-api-no-containers-involved>`__\ **:**
+-  **Development mode**
       You can experiment with your own local checked-out version of Syft
       and bootstrap a local Jupyter Notebook where you can use the Syft
       & Grid API to communicate with a prod/local dev system\ *.*
@@ -34,189 +36,175 @@ Working with Hagrid & Syft API versions:
 
 
 Installation
-------------
+============
 
 Prerequisites
-~~~~~~~~~~~~~
+-------------
 
-1. Ensure using **Python3.7+**; If you are having trouble navigating
-      python dependencies, use conda:
+1. Ensure using **Python3.7+**; If you are having trouble navigating python dependencies, use conda:
 
-   a. Install conda `following these
-         instructions <https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html>`__.
+   a. Install conda `following these instructions <https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html>`__.
 
-   b. Create a new env specifying the Python version (we recommend
-         Python 3.8/3.9):
-
--  conda create -n myenv python=3.8
-
--  conda activate myenv
-
--  (to exit): conda deactivate
+   b. Create a new env specifying the Python version (we recommend Python 3.8/3.9):
+   
+      .. code-block:: bash
+         
+         conda create -n myenv python=3.8
+         conda activate myenv
+         (to exit): conda deactivate
 
 2. Ensure having an up-to-date **docker** in your system by running:
 
-..
+   .. code-block:: bash
 
-   sudo apt-get upgrade docker & docker run hello-world
+      sudo apt-get upgrade docker & docker run hello-world
 
-3. Install **Docker Composite V2,** which is needed to orchestrate
-      docker, as explained below:
+3. Install **Docker Composite V2,** which is needed to orchestrate docker, as explained below:
 
-For **Linux**:
+   For **Linux**:
 
-c. Install as described
-      `here <https://docs.docker.com/compose/cli-command/#installing-compose-v2>`__.
+   a. Install as described `here <https://docs.docker.com/compose/cli-command/#installing-compose-v2>`__.
 
-d. You should see ‘Docker Compose version v2’ when running:
+   b. You should see ‘Docker Compose version v2’ when running: 
 
-..
+      .. code-block:: bash
+         
+         docker compose version
 
-   docker compose version
+   c. If not, go through the `instructions here <https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/>`__ or if you are using Linux, you can try to do:
 
-e. If not, go through the `instructions
-      here <https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/>`__
-      or if you are using Linux, you can try to do:
+      .. code-block:: bash
 
-..
+         mkdir -p ~/.docker/cli-plugins
+         curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
+         chmod +x ~/.docker/cli-plugins/docker-compose
 
-   mkdir -p ~/.docker/cli-plugins
+   d. Also, make sure you can run without sudo:
 
-   curl -sSL
-   https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64
-   -o ~/.docker/cli-plugins/docker-compose
+      .. code-block:: bash
 
-   chmod +x ~/.docker/cli-plugins/docker-compose
+         echo $USER //(should return your username)
+         sudo usermod -aG docker $USER
 
-f. Also, make sure you can run without sudo:
 
-..
+   For **Windows**, **MacOs**:
 
-   echo $USER //(should return your username)
+   a. You can install Desktop Docker as explained `here for Windows <https://docs.docker.com/docker-for-windows/install/>`__or `here for MacOS <https://docs.docker.com/docker-for-mac/install/>`__.
 
-   sudo usermod -aG docker $USER
+   b. The ``docker-compose`` should be enabled by default. If you encounter issues, you can check it by:
 
-For **Windows**, **MacOs**:
+      -  Go to the Docker menu, click ``Preferences (Settings on Windows)`` > ``Experimental features``.
 
-a. You can install Desktop Docker as explained `here for
-      Windows <https://docs.docker.com/docker-for-windows/install/>`__
-      or `here for
-      MacOS <https://docs.docker.com/docker-for-mac/install/>`__.
+      -  Make sure the Use ``Docker Compose V2`` box is checked.
 
-b. The docker-compose should be enabled by default. If you encounter
-      issues, you can check it by:
+4. Make sure you are using the **0.6.0** branch of the PySyft repository (branch can be found `here <https://github.com/OpenMined/PySyft/tree/0.6.0>`__)
 
-   -  Go to the Docker menu, click Preferences (Settings on Windows) >
-         Experimental features.
-
-   -  Make sure the Use Docker Compose V2 box is checked.
-
-4. Make sure you are using the **0.6.0** branch of the PySyft repository
-      (branch can be found
-      `here <https://github.com/OpenMined/PySyft/tree/0.6.0>`__)
 
 Explore locally with the PySyft API (no containers involved):
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-------------------------------------------------------------
 
 1. Make sure you use last version of **pip** (pip>=21.2.1) (pip -V)
 
 2. Install **tox**:
+   
+   .. code-block:: bash
 
-..
-
-   pip install tox
+      pip install tox
 
 3. Move to the correct branch in the PySyft repository:
 
-..
+   .. code-block:: bash
 
-   git checkout 0.6.0
-
+      git checkout 0.6.0
+   
 4. Check current tasks that can be run by tox:
 
-..
+   .. code-block:: bash
 
-   tox -l
+      tox -l
 
-5. Open an editable Jupyter Notebook which doesn't require to run in a
-      container: tox -e syft.jupyter
+5. Open an editable Jupyter Notebook which doesn't require to run in a container: 
+   
+   .. code-block:: bash
+
+      tox -e syft.jupyter
+   
 
 Local deployment using Docker
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+-----------------------------
 
-1. Install Hagrid: pip install hagrid
+1. Install Hagrid: 
+   
+   .. code-block:: bash
 
-2. Launch a Domain Node: hagrid launch domain
+      pip install hagrid
 
-..
+2. Launch a Domain Node: 
+   
+   .. code-block:: bash
 
-   Note that during the first run **it might take ~5-10 mins** to build
-   the PyGrid docker image. Afterwards, you should see something like:
+      hagrid launch domain
+   
+   
+   .. note::  
+      
+      First run **it might take ~5-10 mins** to build the PyGrid docker image. Afterwards, you should see something like:
 
-   Launching a domain PyGrid node on port 8081!
+      .. code-block:: bash
 
-   - TYPE: domain
+         Launching a domaing PyGrid node on port 8081 !
 
-   - NAME: mystifying_wolf
+         - TYPE: domain
+         - NAME: mystifying_wolf
+         - TAG: 035c3b6a378a50f78cd74fc641d863c7
+         - PORT: 8081
+         - DOCKER: v2.0.0-beta.5  
 
-   - TAG: 035c3b6a378a50f78cd74fc641d863c7
+   Optionally, you can provide here additional args to use a certain repository and branch, as: 
+   
+   .. code-block:: bash
+   
+      hagrid launch domain --repo $REPO --branch $BRANCH
 
-   - PORT: **8081**
-
-   - DOCKER: v2.0.0-beta.5
-
-   Optionally, you can provide here additional args to use a certain
-   repository and branch, as: hagrid launch domain --repo $REPO --branch
-   $BRANCH
-
-3. Go to localhost:port/login in browser (using the port specified in
-      your CLI\ *,* here *8081*) to see the PyGrid Admin UI where you,
-      as a data owner, can manage your PyGrid deployment.
+3. Go to ``localhost:port/login`` in your browser (using the port specified in your CLI, here *8081*) to see the PyGrid Admin UI where you, as a data owner, can manage your PyGrid deployment.
 
    a. Log in using the following credentials:
 
-..
+   ..
 
-   info@openmined.org
+      info@openmined.org
 
-   changethis
+      changethis
 
-b. Explore the interface or you can even do requests via
-      `Postman <https://www.postman.com/downloads/>`__. You can check
-      all the available endpoints at
-      http://localhost:8081/api/v1/openapi.json/ and have all the
-      following environment variables set (a more detailed explanation
-      can be found in `this video
-      section <https://youtu.be/GCw7cN7xXJU?t=442>`__):\ |image0|
+   b. Explore the interface or you can even do requests via `Postman <https://www.postman.com/downloads/>`__. You can check all the available endpoints at
+         http://localhost:8081/api/v1/openapi.json/ and have all the following environment variables set (a more detailed explanationcan be found in `this video
+         section <https://youtu.be/GCw7cN7xXJU?t=442>`__):\ |image0|
 
-..
+      The auth token can be obtained by doing a login request as follows:
 
-   The auth token can be obtained by doing a login request as follows:
+      |image1|
 
-   |image1|
+4. While the Domain Node is online, you can start a Jupyter Notebook as described `above <#explore-locally-with-the-pysyft-api-no-containers-involved>`__ to use PySyft to communicate to it in a Python client rather than a REST API. Connecting to it can be done as following:
 
-4. While the Domain Node is online, you can start a Jupyter Notebook as
-      described
-      `above <#explore-locally-with-the-pysyft-api-no-containers-involved>`__
-      to use PySyft to communicate to it in a Python client rather than
-      a REST API. Connecting to it can be done as following:
+   .. code-block:: python
 
-..
+      import syft as sy
 
-   import syft as sy
+      domain = sy.login(email='info@openmined.org', password='changethis', port=8081)
 
-   domain = sy.login(email=’\ info@openmined.org\ ’,
-   password=”changethis”, port=8081)
+      domain.store
 
-   and queried easily by checking:
+      domain.requests
 
-   domain.store
-
-   domain.requests
-
-   Domain.users
+      Domain.users  
 
 5. To stop the node, run:
+
+   .. code-block:: bash
+
+      (using the TAG specified in your CLI) hagrid land --tag=035c3b6a378a50f78cd74fc641d863c7
+
+   
 
 ..
 
@@ -354,12 +342,12 @@ sudo chmod 600 key.pem
       http://51.124.153.133/login (change IP with yours) or use Postman
       to do API requests.
 
-.. |image0| image:: media/media/image2.png
+.. |image0| image:: ../_static/deployment/image2.png
    :width: 5.53646in
    :height: 1.16609in
-.. |image1| image:: media/media/image1.png
+.. |image1| image:: ../_static/deployment/image1.png
    :width: 3.35938in
    :height: 2.70833in
-.. |image2| image:: media/media/image3.png
+.. |image2| image:: ../_static/deployment/image3.png
    :width: 2.23438in
    :height: 1.26691in
