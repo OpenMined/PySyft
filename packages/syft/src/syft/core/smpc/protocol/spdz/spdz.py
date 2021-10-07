@@ -19,10 +19,9 @@ from typing import Optional
 import syft as sy
 
 # relative
-from ..... import Tensor
 from ....common.uid import UID
+from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
-from ....node.common.node import Node
 from ....store.storeable_object import StorableObject
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
@@ -97,7 +96,7 @@ def mul_parties(
     eps_id: UID,
     delta_id: UID,
     parties: List[Client],
-    node: Optional[Node] = None,
+    node: Optional[AbstractNode] = None,
     **kwargs: Dict[Any, Any],
 ) -> ShareTensor:
     """SPDZ Multiplication.
@@ -110,7 +109,7 @@ def mul_parties(
         eps_id (UID): UID to store public epsilon value.
         delta_id (UID): UID to store public delta value.
         parties (Any): Clients of parties involved in the computation.
-        node (Any): The  node which the input ShareTensor belongs to.
+        node (Optional[AbstractNode]): The  node which the input ShareTensor belongs to.
         kwargs (Dict[Any,Any]): Keywords arguments for the operator.
 
     Returns:
@@ -184,14 +183,14 @@ def mul_parties(
 
 
 def beaver_populate(
-    data: Tensor, id_at_location: UID, node: Optional[Node] = None
+    data: Any, id_at_location: UID, node: Optional[AbstractNode] = None
 ) -> None:
     """Populate the given input Tensor in the location specified.
 
     Args:
         data (Tensor): input Tensor to store in the node.
         id_at_location (UID): the location to store the data in.
-        node : The node on which the data is stored.
+        node Optional[AbstractNode] : The node on which the data is stored.
     """
     obj = node.store.get_object(key=id_at_location)  # type: ignore
     if obj is None:
