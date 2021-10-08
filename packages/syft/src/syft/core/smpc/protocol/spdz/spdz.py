@@ -47,8 +47,8 @@ def _register_clients(parties: List[Client]) -> List[Client]:
     clients: List[Client] = []
     for party in parties:
         client = cache_clients.get(party, None)
-        id = client.id.value.hex  # type: ignore
-        if client is None:
+        if client is not None:
+            id = client.id.value.hex
             connection = party.routes[0].connection  # type: ignore
             if not isinstance(connection, GridHTTPConnection):
                 raise TypeError(
@@ -60,14 +60,14 @@ def _register_clients(parties: List[Client]) -> List[Client]:
             base_url = connection.base_url
             url = base_url.rsplit(":", 1)[0]
             port = base_url.rsplit(":", 1)[1].split("/")[0]
-            client = sy.register(
+            proxy_client: Client = sy.register(  # nosec
                 url=url,
                 name=f"{id}",
                 email=f"{id}@openmined.org",
                 password="changethis",
                 port=port,
             )
-            cache_clients[party] = client
+            cache_clients[party] = proxy_client
         clients.append(cache_clients[party])
     return clients
 
