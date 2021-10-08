@@ -45,15 +45,33 @@ class RequestManager(DatabaseManager):
     def set(self, request_id: int, status: RequestStatus) -> None:
         self.modify({"id": request_id}, {"status": status})
 
-    def get_user_info(request_id: int) -> Dict:
+    def get_user_info(self, request_id: int) -> Dict:
         request = super().first(id=request_id)
         return {
             "name": request.user_name,
             "email": request.user_email,
             "role": request.user_role,
-            "budget": request.user_budget,
+            "current_budget": request.user_budget,
             "institution": request.institution,
             "website": request.website,
+        }
+
+    def get_req_info(self, request_id: int) -> Dict:
+        request = super().first(id=request_id)
+        return {
+            "id": request.id,
+            "date": str(request.date),
+            "status": request.status,
+            "reason": request.reason,
+            "request_type": request.request_type,
+            "current_budget": request.current_budget,
+            "requested_budget": request.requested_budget,
+            "review": {
+                "name": request.reviewer_name,
+                "role": request.reviewer_role,
+                "updated_on": str(request.updated_on),
+                "comment": request.reviewer_comment,
+            },
         }
 
     def clear(self) -> None:
