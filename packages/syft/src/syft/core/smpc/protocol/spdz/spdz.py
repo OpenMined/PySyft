@@ -48,7 +48,7 @@ def register_clients(parties: List[Client]) -> List[Client]:
     for party in parties:
         client = cache_clients.get(party, None)
         if client is None:
-            id = party.id.value.hex
+            id = UID().value.hex
             connection = party.routes[0].connection  # type: ignore
             if not isinstance(connection, GridHTTPConnection):
                 raise TypeError(
