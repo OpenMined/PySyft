@@ -48,6 +48,8 @@ def register_clients(parties: List[Client]) -> List[Client]:
     for party in parties:
         client = cache_clients.get(party, None)
         if client is None:
+            # Discuss with Andrew on returning same registered user when doing
+            # sy.register multiple times with same credentials
             id = UID().value.hex
             connection = party.routes[0].connection  # type: ignore
             if not isinstance(connection, GridHTTPConnection):
@@ -124,7 +126,8 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         party.syft.core.smpc.protocol.spdz.spdz.mul_parties(*args)
         for arg, party in zip(args, parties)
     ]
-    result = MPCTensor(shares=shares, parties=parties)
+    shape = MPCTensor.__get_shape("mul", shape_x, shape_y)
+    result = MPCTensor(shares=shares, parties=parties, shape=shape)
 
     return result
 

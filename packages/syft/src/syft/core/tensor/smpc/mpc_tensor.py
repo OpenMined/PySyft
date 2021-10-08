@@ -518,7 +518,6 @@ class MPCTensor(PassthroughTensor):
         self, y = MPCTensor.sanity_checks(self, y)
         if isinstance(y, MPCTensor):
             res = spdz.mul_master(self, y, "mul")
-            res.mpc_shape = MPCTensor.__get_shape("mul", self.shape, y.mpc_shape)
         else:
             res_shares = [
                 operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(y))
