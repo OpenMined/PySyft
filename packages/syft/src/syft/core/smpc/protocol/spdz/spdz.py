@@ -123,7 +123,7 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
 
     # TODO: Should modify to parallel execution
     shares = [
-        party.syft.core.smpc.protocol.spdz.spdz.mul_parties(*args)
+        party.syft.core.smpc.protocol.spdz.spdz.mul_parties(*arg)
         for arg, party in zip(args, parties)
     ]
     shape = MPCTensor._get_shape("mul", shape_x, shape_y)
