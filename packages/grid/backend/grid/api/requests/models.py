@@ -7,15 +7,26 @@ from typing import Optional
 from pydantic import BaseModel
 
 
+class Review(BaseModel):
+    name: Optional[str] = ""
+    role: Optional[str] = ""
+    comment: Optional[str] = ""
+    updated_on: Optional[datetime]
+
+
 class BaseRequest(BaseModel):
     id: Optional[str]
     date: Optional[datetime]
+    status: Optional[str]  # Literal['pending', 'accepted', 'denied']
+    reason: Optional[str]
+    request_type: Optional[str]
+    review: Optional[Review]
+
+
+class DataAccessRequest(BaseRequest):
     object_id: Optional[str]
     size: Optional[float] = 0.0
     subjects: Optional[int] = 0
-    reason: Optional[str]
-    status: Optional[str]  # Literal['pending', 'accepted', 'denied']
-    request_type: Optional[str]
     object_type: Optional[str]
     tags: Optional[List[str]]
 
@@ -28,14 +39,27 @@ class UserRequest(BaseModel):
     email: str
     role: str
     budget_spent: Optional[float] = 0.0
-    allocated_budget: Optional[float] = 0.0
-    company: Optional[str] = ""
+    current_budget: Optional[float] = 0.0
+    institution: Optional[str] = ""
     website: Optional[str] = ""
 
 
-class AccessRequest(BaseModel):
+class AccessRequestResponse(BaseModel):
     user: UserRequest
-    req: BaseRequest
+    req: DataAccessRequest
+
+    class Config:
+        orm_mode = True
+
+
+class BudgetRequest(BaseRequest):
+    current_budget: Optional[float] = 0.0
+    requested_budget: Optional[float] = 0.0
+
+
+class BudgetRequestResponse(BaseModel):
+    user: UserRequest
+    req: BudgetRequest
 
     class Config:
         orm_mode = True
@@ -45,7 +69,7 @@ class RequestUpdate(BaseRequest):
     status: str  # Literal['pending', 'accepted', 'denied']
 
 
-class Request(AccessRequest):
+class Request(AccessRequestResponse):
     pass
 
 
