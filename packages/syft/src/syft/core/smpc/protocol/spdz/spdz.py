@@ -6,6 +6,9 @@ SPDZ mechanism used for multiplication Contains functions that are run at:
 * the parties that hold the shares
 """
 
+# future
+from __future__ import annotations
+
 # stdlib
 import operator
 import time
@@ -13,17 +16,16 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 
 # syft absolute
 import syft as sy
 
 # relative
-from .....grid.client import GridHTTPConnection
 from ....common.uid import UID
 from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
 from ....store.storeable_object import StorableObject
-from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
 from ...store import CryptoPrimitiveProvider
 from ...store import CryptoStore
@@ -33,8 +35,15 @@ from ...store import CryptoStore
 EXPECTED_OPS = {"mul", "matmul"}
 cache_clients: Dict[Client, Client] = {}
 
+if TYPE_CHECKING:
+    # relative
+    from ....tensor.smpc.mpc_tensor import MPCTensor
+
 
 def _register_clients(parties: List[Client]) -> List[Client]:
+    # relative
+    from .....grid.client import GridHTTPConnection
+
     clients: List[Client] = []
     for party in parties:
         client = cache_clients.get(party, None)
@@ -77,6 +86,9 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     Returns:
         MPCTensor: Result of the multiplication.
     """
+    # relative
+    from ....tensor.smpc.mpc_tensor import MPCTensor
+
     if op_str not in EXPECTED_OPS:
         raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
 
