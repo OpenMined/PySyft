@@ -121,6 +121,14 @@ def test_values(sept_ishan, sept_traskmaster, gamma_tensor_min) -> None:
 def test_entities(sept_ishan, sept_traskmaster) -> None:
     tensor = sept_ishan + sept_traskmaster
     output = tensor._entities()
+    assert isinstance(tensor, IGT)
+    assert isinstance(sept_ishan.entity, Entity)
+    assert isinstance(sept_traskmaster.entity, Entity)
+
+    assert tensor.n_entities == 2
+    for ent in tensor.unique_entities:
+        assert isinstance(ent, Entity)
+        assert ent == sept_ishan.entity or ent == sept_traskmaster.entity
 
     target = sept_ishan.entity + sept_traskmaster.entity
     for j in output.flatten():

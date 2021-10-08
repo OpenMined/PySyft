@@ -46,6 +46,8 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         "bias_tensor",
         "scalar_manager",
         "child",
+        "unique_entities",
+        "n_entities",
     ]
 
     def __init__(
@@ -83,6 +85,23 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # self.max_vals = max_vals
 
         self.scalar_manager = scalar_manager
+
+        # Unique entities
+        self.unique_entities: set[Entity] = set()
+        self.n_entities = 0
+
+        for entity in set(self._entities(to_array=False)):
+            if isinstance(entity, Entity):
+                if entity not in self.unique_entities:
+                    self.unique_entities.add(entity)
+                    self.n_entities += 1
+            elif isinstance(entity, DataSubjectGroup):
+                for e in entity.entity_set:
+                    if e not in self.unique_entities:
+                        self.unique_entities.add(e)
+                        self.n_entities += 1
+            else:
+                raise Exception(f"{type(entity)}")
 
     @property
     def flat_scalars(self) -> List[Any]:
@@ -124,7 +143,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             self.shape
         )
 
-    def _entities(self) -> np.array:
+    def _entities(self, to_array: bool = True) -> Union[np.array, list]:
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
@@ -146,7 +165,12 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 else:
                     raise Exception(f"No plans for row type:{type(row)}")
             output_entities.append(combined_entities)
-        return np.array(output_entities).reshape(self.shape)
+        if to_array:
+            return np.array(output_entities).reshape(self.shape)
+        elif not to_array:
+            return output_entities
+        else:
+            raise Exception(f"{to_array}")
 
     def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
