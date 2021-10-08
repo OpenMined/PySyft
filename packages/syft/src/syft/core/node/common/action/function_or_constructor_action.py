@@ -81,7 +81,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
         if "spdz" in self.path:
-            method = functools.partial(node=node)  # type: ignore
+            method = functools.partial(method, node=node)  # type: ignore
         result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
         resolved_args = list()
