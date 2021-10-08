@@ -58,7 +58,7 @@ def register_clients(parties: List[Client]) -> List[Client]:
                     + "We will add support for local python objects very soon."
                 )
             base_url = connection.base_url
-            url = base_url.rsplit(":", 1)[0]
+            url = base_url.rsplit(":", 1)[0].replace("localhost", "docker-host")
             port = base_url.rsplit(":", 1)[1].split("/")[0]
             proxy_client: Client = sy.register(  # nosec
                 url=url,
@@ -113,7 +113,7 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
 
     args = [
         [x, y, cache_store[party], op_str, eps_id, delta_id, clients]
-        for x, y, party in zip(x.share_ptrs, y.share_ptrs, parties)
+        for x, y, party in zip(x.child, y.child, parties)
     ]
 
     # TODO: Should modify to parallel execution
