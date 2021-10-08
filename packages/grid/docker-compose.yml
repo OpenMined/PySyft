@@ -72,11 +72,9 @@ services:
     restart: always
     image: postgres:12
     volumes:
-      - app-db-data:/var/lib/postgresql/data/pgdata
+      - app-db-data:/var/lib/postgresql/data
     env_file:
       - .env
-    environment:
-      - PGDATA=/var/lib/postgresql/data/pgdata
     deploy:
       placement:
         constraints:
@@ -155,8 +153,8 @@ services:
       # Allow explicit env var override for tests
       - SMTP_HOST=${SMTP_HOST}
     build:
-      context: ./backend
-      dockerfile: backend.dockerfile
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-false}
       target: "backend"
@@ -182,11 +180,10 @@ services:
       - SERVER_HOST=https://${DOMAIN?Variable not set}
       # Allow explicit env var override for tests
       - SMTP_HOST=${SMTP_HOST}
-    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -debug -- /start.sh"
-
+    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
     build:
-      context: ./backend
-      dockerfile: backend.dockerfile
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-false}
       target: "backend"
@@ -214,8 +211,8 @@ services:
       - SMTP_HOST=${SMTP_HOST?Variable not set}
       - CELERY_WORKER=true
     build:
-      context: ./backend
-      dockerfile: backend.dockerfile
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-false}
       target: "celery-worker"

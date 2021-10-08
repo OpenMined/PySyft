@@ -5,7 +5,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
   apt-get install -y --no-install-recommends curl wget
 
 WORKDIR /app
-COPY ./requirements.txt /app
+COPY grid/backend/requirements.txt /app
 
 # Allow installing dev dependencies to run tests
 ARG INSTALL_DEV=false
@@ -29,9 +29,9 @@ ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
 # copy start scripts and gunicorn conf
-COPY ./docker-scripts/start.sh /start.sh
-COPY ./docker-scripts/gunicorn_conf.py /gunicorn_conf.py
-COPY ./docker-scripts/start-reload.sh /start-reload.sh
+COPY grid/backend/docker-scripts/start.sh /start.sh
+COPY grid/backend/docker-scripts/gunicorn_conf.py /gunicorn_conf.py
+COPY grid/backend/docker-scripts/start-reload.sh /start-reload.sh
 
 RUN chmod +x /start.sh
 RUN chmod +x /start-reload.sh
@@ -39,8 +39,15 @@ RUN chmod +x /start-reload.sh
 COPY --from=build /root/.local /root/.local
 COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
 
-COPY ./ /app/
+COPY grid/backend /app/
 WORKDIR /app
+
+# until we have stable releases make sure to install syft
+COPY syft/setup.py /app/syft/setup.py
+COPY syft/setup.cfg /app/syft/setup.cfg
+COPY syft/src /app/syft/src
+RUN --mount=type=cache,target=/root/.cache \
+  pip install --user -e /app/syft
 
 # Celery worker
 FROM backend as celery-worker
@@ -48,6 +55,6 @@ ENV C_FORCE_ROOT=1
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user watchdog pyyaml argh
 
-COPY ./worker-start.sh /worker-start.sh
+COPY grid/backend/worker-start.sh /worker-start.sh
 RUN chmod +x /worker-start.sh
 CMD ["bash", "/worker-start.sh"]
