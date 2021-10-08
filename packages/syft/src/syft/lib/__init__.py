@@ -249,6 +249,7 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
     lib_ast.syft.core.add_attr("adp", attr=adp_ast.syft.core.adp)
     lib_ast.syft.core.add_attr("node", attr=client_ast.syft.core.node)
+    lib_ast.syft.core.add_attr("common", attr=client_ast.syft.core.common)
     lib_ast.syft.core.add_attr("smpc", attr=smpc_ast.syft.core.smpc)
     lib_ast.syft.core.add_attr("tensor", attr=tensor_ast.syft.core.tensor)
     lib_ast.syft.core.add_attr(
