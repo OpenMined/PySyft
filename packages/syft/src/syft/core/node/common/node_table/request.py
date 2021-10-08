@@ -44,6 +44,12 @@ class Request(Base):
     verify_key = Column(String(255))
     object_type = Column(String(255))
     tags = Column(JSON())
+    updated_on = Column(DateTime())
+    reviewer_name = Column(String(255))
+    reviewer_role = Column(String(255))
+    reviewer_comment = Column(String(255))
+    requested_budget = Column(Float())
+    current_budget = Column(Float())
 
     def __str__(self) -> str:
         return (
