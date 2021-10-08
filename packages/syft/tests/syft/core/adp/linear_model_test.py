@@ -8,7 +8,7 @@ import pytest
 from syft import Domain
 from syft.core.adp.adversarial_accountant import AdversarialAccountant
 from syft.core.adp.entity import Entity
-from syft.core.adp.scalar.abstract.scalar import PhiScalar
+from syft.core.adp.scalar.phi_scalar import PhiScalar
 from syft.core.node.common.node_table.utils import create_memory_db_engine
 from syft.core.tensor.tensor import Tensor
 
