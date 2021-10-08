@@ -161,7 +161,7 @@ def mul_parties(
     shape_y = tuple(y.child.shape)
 
     primitives = crypto_store.get_primitives_from_store(
-        f"beaver_{op_str}", a_shape=shape_x, b_shape=shape_y  # type: ignore
+        f"beaver_{op_str}", shape_x, shape_y  # type: ignore
     )
 
     a_share, b_share, c_share = primitives
