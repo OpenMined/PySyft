@@ -58,7 +58,7 @@ def register_clients(parties: List[Client]) -> List[Client]:
                     + "We will add support for local python objects very soon."
                 )
             base_url = connection.base_url
-            url = base_url.rsplit(":", 1)[0].replace("localhost", "docker-host")
+            url = base_url.rsplit(":", 1)[0]
             port = base_url.rsplit(":", 1)[1].split("/")[0]
             proxy_client: Client = sy.register(  # nosec
                 url=url,
@@ -66,6 +66,9 @@ def register_clients(parties: List[Client]) -> List[Client]:
                 email=f"{id}@openmined.org",
                 password="changethis",
                 port=port,
+            )
+            proxy_client.routes[0].connection.base_url.replace(  # type: ignore
+                "localhost", "docker-host"
             )
             cache_clients[party] = proxy_client
         clients.append(cache_clients[party])
