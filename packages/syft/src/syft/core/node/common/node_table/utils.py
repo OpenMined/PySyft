@@ -16,7 +16,7 @@ from .roles import Role
 from .user import SyftUser
 from .usergroup import UserGroup
 
-datetime_cols = ["date", "created_at", "destroyed_at", "deployed_on"]
+datetime_cols = ["date", "created_at", "destroyed_at", "deployed_on", "updated_on"]
 
 
 def model_to_json(model: Base) -> Dict[str, Any]:
