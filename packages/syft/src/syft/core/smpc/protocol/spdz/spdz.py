@@ -40,15 +40,15 @@ if TYPE_CHECKING:
     from ....tensor.smpc.mpc_tensor import MPCTensor
 
 
-def _register_clients(parties: List[Client]) -> List[Client]:
+def register_clients(parties: List[Client]) -> List[Client]:
     # relative
     from .....grid.client import GridHTTPConnection
 
     clients: List[Client] = []
     for party in parties:
         client = cache_clients.get(party, None)
-        if client is not None:
-            id = client.id.value.hex
+        if client is None:
+            id = party.id.value.hex
             connection = party.routes[0].connection  # type: ignore
             if not isinstance(connection, GridHTTPConnection):
                 raise TypeError(
@@ -93,18 +93,12 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
 
     parties = x.parties
-    clients = _register_clients(parties)
-
-    cache_store = CryptoPrimitiveProvider.cache_store
+    clients = register_clients(parties)
 
     shape_x = tuple(x.shape)
     shape_y = tuple(y.shape)
     eps_id = UID()
     delta_id = UID()
-    args = [
-        [x, y, cache_store[party], op_str, eps_id, delta_id, clients]
-        for x, y, party in zip(x.share_ptrs, y.share_ptrs, parties)
-    ]
 
     CryptoPrimitiveProvider.generate_primitives(
         f"beaver_{op_str}",
@@ -115,6 +109,12 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         },
         p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
     )
+    cache_store = CryptoPrimitiveProvider.cache_store
+
+    args = [
+        [x, y, cache_store[party], op_str, eps_id, delta_id, clients]
+        for x, y, party in zip(x.share_ptrs, y.share_ptrs, parties)
+    ]
 
     # TODO: Should modify to parallel execution
     shares = [
