@@ -605,16 +605,51 @@ Configure kubectl context with GKE:
 $ gcloud container clusters get-credentials --region us-central1-c staging-cluster-1
 ```
 
+Check that you have the correct context
+
+```
+$ kubectx
+```
+
 Configure your Google Container Registry (GCR):
 
 ```
 $ gcloud auth configure-docker
 ```
 
+Check your settings with print
+
+```
+$ devspace print -p domain --var=CONTAINER_REGISTRY=gcr.io/reflected-space-315806/
+```
+
+You should see that you are creating a domain and that the container registry variable
+changes the image name to:
+
+```
+images:
+  backend:
+    image: gcr.io/reflected-space-315806/openmined/grid-backend
+```
+
+This will tell `devspace` to publish to the GCR for your active GCP project.
+
+Create the openmined namespace
+
+```
+$ kubectl create namespace openmined
+```
+
+Tell devspace to use the openmined namespace
+
+```
+$ devspace use namespace openmined
+```
+
 Deploy to GKE:
 
 ```
-$ devspace deploy
+$ devspace deploy -p domain --var=CONTAINER_REGISTRY=gcr.io/reflected-space-315806/
 ```
 
 Access a container directly:

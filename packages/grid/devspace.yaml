@@ -2,7 +2,6 @@ version: v1beta11
 
 vars:
   - name: CONTAINER_REGISTRY
-    # value: "gcr.io/reflected-space-315806/"
     value: ""
   - name: DOCKER_IMAGE_DB
     value: postgres:12
@@ -24,6 +23,12 @@ vars:
     value: headscale
   - name: SERVICE_NAME_TAILSCALE
     value: tailscale
+  - name: VERSION
+    command: "python ../../VERSION"
+  - name: VERSION_HASH
+    command: "python ../../VERSION hash"
+  - name: NODE_TYPE
+    value: "domain"
 
 images:
   backend:
@@ -65,7 +70,7 @@ images:
         options:
           target: "grid-ui-development"
           buildArgs:
-            NODE_TYPE: domain
+            NODE_TYPE: ${NODE_TYPE}
             FRONTEND_ENV: development
       buildKit:
         args: ["--target", "grid-ui-development"]
@@ -79,6 +84,7 @@ images:
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
     build:
+      disabled: $( [ $NODE_TYPE == "domain" ] && echo "true" || echo "false" )
       buildKit: {}
   tailscale:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
@@ -119,13 +125,11 @@ deployments:
                 value: ${POSTGRES_USER}
               - name: POSTGRES_PASSWORD
                 value: ${POSTGRES_PASSWORD}
-              - name: PGDATA
-                value: /var/lib/postgresql/data/pgdata
             volumeMounts:
-              - containerPath: /var/lib/postgresql/data/pgdata
+              - containerPath: /var/lib/postgresql/data
                 volume:
                   name: app-db-data
-                  subPath: /
+                  subPath: /pgdata
                   readOnly: false
         volumes:
           - name: app-db-data
@@ -142,6 +146,22 @@ deployments:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
               - /start-reload.sh
+            livenessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            readinessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
             env:
               - name: SYFT_USE_UVLOOP
                 value: "0"
@@ -165,6 +185,8 @@ deployments:
                 value: ${SERVER_HOST}
               - name: LOG_LEVEL
                 value: debug
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -185,6 +207,22 @@ deployments:
                 "--",
                 "/start-reload.sh",
               ]
+            livenessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            readinessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
             env:
               - name: SYFT_USE_UVLOOP
                 value: "0"
@@ -210,6 +248,8 @@ deployments:
                 value: debug
               - name: STREAM_QUEUE
                 value: "1"
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -255,6 +295,8 @@ deployments:
                 value: "true"
               - name: RUN
                 value: "celery worker -A grid.worker -l info -Q main-queue -c 1"
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
   - name: frontend
     helm:
       componentChart: true
@@ -266,6 +308,8 @@ deployments:
                 value: ${VERSION}
               - name: VERSION_HASH
                 value: ${VERSION_HASH}
+              - name: TYPE
+                value: ${NODE_TYPE}
         service:
           name: ${SERVICE_NAME_FRONTEND}
           ports:
@@ -283,7 +327,7 @@ deployments:
               - containerPath: /headscale/data
                 volume:
                   name: headscale-data
-                  subPath: /
+                  subPath: /headscale-data
                   readOnly: false
         volumes:
           - name: headscale-data
@@ -312,7 +356,7 @@ deployments:
               - containerPath: /var/lib/tailscale
                 volume:
                   name: tailscale-data
-                  subPath: /
+                  subPath: /tailscale-data
                   readOnly: false
         volumes:
           - name: tailscale-data
@@ -322,10 +366,16 @@ deployments:
           ports:
             - name: api
               port: 4000
-  - name: stack-ingress
+
+  - name: grid-stack-ingress
     kubectl:
       manifests:
         - k8s/manifests/ingress.yaml
+
+  - name: grid-vpn-ingress
+    kubectl:
+      manifests:
+        - k8s/manifests/ingress-vpn.yaml
 
 dev:
   ports:
@@ -445,22 +495,23 @@ dev:
       localSubPath: ./frontend/src
       containerPath: /app/src
       excludePaths: []
-# `dev.terminal` tells DevSpace to open a terminal as a last step during `devspace dev`
-# terminal:
-#   imageSelector: ${DOCKER_IMAGE_BACKEND} # Select the Pod that runs our `${IMAGE}`
-#   # With this optional `command` we can tell DevSpace to run a script when opening the terminal
-#   # This is often useful to display help info for new users or perform initial tasks (e.g. installing dependencies)
-#   # DevSpace has generated an example ./devspace_start.sh file in your local project - Feel free to customize it!
-#   command: ["bash"]
-# `profiles` lets you modify the config above for different environments (e.g. dev vs production)
-# profiles:
-#   # This profile is called `production` and you can use it for example using: devspace deploy -p production
-#   # We generally recommend to use the base config without any profiles as optimized for development (e.g. image build+push is disabled)
-#   - name: production
-#     # This profile adds our image to the config so that DevSpace will build, tag and push our image before the deployment
-#     merge:
-#       images:
-#         app:
-#           image: ${IMAGE} # Use the value of our `${IMAGE}` variable here (see vars above)
-#           dockerfile: ./packages/grid/backend/backend.dockerfile
-#           context: packages/grid/backend/
+profiles:
+  - name: domain
+    patches:
+      - op: replace
+        path: vars.name=NODE_TYPE.value
+        value: domain
+      - op: remove
+        path: dev.ports.name=headscale-api
+      - op: remove
+        path: deployments.name=headscale
+      - op: remove
+        path: images.name=headscale
+      - op: remove
+        path: deployments.name=grid-vpn-ingress
+
+  - name: network
+    patches:
+      - op: replace
+        path: vars.name=NODE_TYPE.value
+        value: network

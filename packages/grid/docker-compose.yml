@@ -72,11 +72,9 @@ services:
     restart: always
     image: postgres:12
     volumes:
-      - app-db-data:/var/lib/postgresql/data/pgdata
+      - app-db-data:/var/lib/postgresql/data
     env_file:
       - .env
-    environment:
-      - PGDATA=/var/lib/postgresql/data/pgdata
     deploy:
       placement:
         constraints:
