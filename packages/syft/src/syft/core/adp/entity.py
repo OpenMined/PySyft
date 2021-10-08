@@ -111,9 +111,9 @@ class DataSubjectGroup:
         self.entity_set: set = set()
         # Ensure each entity being tracked is unique
         if isinstance(list_of_entities, list):
-            self.entity_set.union(set(list_of_entities))
+            self.entity_set = self.entity_set.union(set(list_of_entities))
         elif isinstance(list_of_entities, set):
-            self.entity_set.union(list_of_entities)
+            self.entity_set = self.entity_set.union(list_of_entities)
         elif isinstance(list_of_entities, Entity):
             self.entity_set.add(list_of_entities)  # type: ignore
         elif not list_of_entities:  # Don't need to do anything if is NoneType
