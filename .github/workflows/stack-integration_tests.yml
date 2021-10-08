@@ -44,16 +44,16 @@ jobs:
       # In this step, this action saves a list of existing images,
       # the cache is created without them in the post run.
       # It also restores the cache if it exists.
-      - name: Cache docker images
-        uses: satackey/action-docker-layer-caching@v0.0.11
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        with:
-          key: docker-layer-cache-{hash}
-          restore-keys: |
-            docker-layer-cache-
-          # TODO: investigate why taking out filter by reference allows the docker cache step to run
-          # filter: reference='openmined/*'
+      # - name: Cache docker images
+      #   uses: satackey/action-docker-layer-caching@v0.0.11
+      #   if: steps.changes.outputs.stack == 'true'
+      #   continue-on-error: true
+      #   with:
+      #     key: docker-layer-cache-{hash}
+      #     restore-keys: |
+      #       docker-layer-cache-
+      #     # TODO: investigate why taking out filter by reference allows the docker cache step to run
+      #     # filter: reference='openmined/*'
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
@@ -117,12 +117,12 @@ jobs:
       # In this step, this action saves a list of existing images,
       # the cache is created without them in the post run.
       # It also restores the cache if it exists.
-      - name: Cache docker images
-        uses: broadshield/action-docker-layer-caching@main
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        with:
-          filter: reference='openmined/*'
+      # - name: Cache docker images
+      #   uses: broadshield/action-docker-layer-caching@main
+      #   if: steps.changes.outputs.stack == 'true'
+      #   continue-on-error: true
+      #   with:
+      #     filter: reference='openmined/*'
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
