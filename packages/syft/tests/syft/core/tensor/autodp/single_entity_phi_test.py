@@ -1222,7 +1222,7 @@ def test_entities(
         child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
     assert isinstance(tensor, SEPT)
-    assert tensor.n_entities() == 1
+    assert tensor.n_entities == 1
 
 
 # End of Ishan's tests

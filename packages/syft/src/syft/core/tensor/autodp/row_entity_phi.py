@@ -14,6 +14,8 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
+from ....core.adp.entity import DataSubjectGroup as DSG
+from ....core.adp.entity import Entity
 from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
@@ -43,7 +45,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     tensor can have an arbitrary number of dimensions."""
 
     # a list of attributes needed for serialization using RecursiveSerde
-    __attr_allowlist__ = ["child"]
+    __attr_allowlist__ = ["child", "n_entities", "unique_entities"]
 
     def __init__(self, rows: Sequence, check_shape: bool = True):
         """Initialize a RowEntityPhiTensor
@@ -71,6 +73,26 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                         f"All rows in RowEntityPhiTensor must match: {shape} != {row.shape}"
                     )
 
+        """Calculate the number of unique entities behind the REPT"""
+        self.unique_entities: set[Entity] = set()
+        self.n_entities = 0
+        for entity in self.entities.flatten():
+            if isinstance(entity, Entity):
+                if entity not in self.unique_entities:
+                    self.unique_entities.add(entity)
+                    self.n_entities += 1
+                else:
+                    continue
+            elif isinstance(entity, DSG):
+                for e in entity.entity_set:
+                    if e not in self.unique_entities:
+                        self.unique_entities.add(e)
+                        self.n_entities += 1
+                    else:
+                        continue
+            else:
+                raise Exception(f"{type(entity)}")
+
     @property
     def scalar_manager(self) -> TypeScalarManager:
         return self.child[0].scalar_manager
@@ -92,19 +114,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return np.array(
             [[x.entity] * np.array(x.shape).prod() for x in self.child]
         ).reshape(self.shape)
-
-    def n_entities(self) -> int:
-        """Return the number of unique entities behind the REPT"""
-        uniques = set()
-        count = 0
-        for entity in self.entities.flatten():
-            if entity in uniques:
-                continue
-            else:
-                # if isinstance(entity, DSG):
-                uniques.add(entity)
-                count += 1  # if DSG needs to be decomposed, change this.
-        return count
 
     @property
     def gamma(self) -> InitialGammaTensor:
