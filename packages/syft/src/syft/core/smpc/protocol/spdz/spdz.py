@@ -170,7 +170,7 @@ def mul_parties(
     delta = y - b_share
 
     for client in clients:
-        if client.id != client.id:  # type: ignore
+        if client.id != node.id:  # type: ignore
             client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
             client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
 

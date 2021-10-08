@@ -1,5 +1,4 @@
 # stdlib
-import functools
 from typing import Any
 from typing import Dict
 from typing import List
@@ -80,8 +79,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
-        if "spdz" in self.path:
-            method = functools.partial(method, node=node)  # type: ignore
         result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
         resolved_args = list()
@@ -125,6 +122,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             upcasted_args,
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+
+        if "spdz" in self.path:
+            upcasted_kwargs["node"] = node
 
         # execute the method with the newly upcasted args and kwargs
         result = method(*upcasted_args, **upcasted_kwargs)
