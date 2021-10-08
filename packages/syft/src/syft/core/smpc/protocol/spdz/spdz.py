@@ -126,7 +126,7 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         party.syft.core.smpc.protocol.spdz.spdz.mul_parties(*args)
         for arg, party in zip(args, parties)
     ]
-    shape = MPCTensor.__get_shape("mul", shape_x, shape_y)
+    shape = MPCTensor._get_shape("mul", shape_x, shape_y)
     result = MPCTensor(shares=shares, parties=parties, shape=shape)
 
     return result

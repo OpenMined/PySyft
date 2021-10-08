@@ -295,7 +295,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     @lru_cache(maxsize=128)
-    def __get_shape(
+    def _get_shape(
         op_str: str,
         x_shape: Tuple[int],
         y_shape: Tuple[int],
@@ -483,7 +483,7 @@ class MPCTensor(PassthroughTensor):
         else:
             y_shape = y.shape
 
-        shape = MPCTensor.__get_shape(op_str, self.mpc_shape, y_shape)
+        shape = MPCTensor._get_shape(op_str, self.mpc_shape, y_shape)
 
         result = MPCTensor(shares=result, shape=shape, parties=x.parties)
 
@@ -523,7 +523,7 @@ class MPCTensor(PassthroughTensor):
                 operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(y))
             ]
             y_shape = getattr(y, "shape", (1,))
-            new_shape = MPCTensor.__get_shape("mul", self.mpc_shape, y_shape)
+            new_shape = MPCTensor._get_shape("mul", self.mpc_shape, y_shape)
             res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
 
         return res
