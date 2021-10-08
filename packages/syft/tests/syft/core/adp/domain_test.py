@@ -3,7 +3,7 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.scalar.abstract.scalar import PhiScalar
+from syft.core.adp.scalar.phi_scalar import PhiScalar
 
 
 # TODO @Tudor fix
