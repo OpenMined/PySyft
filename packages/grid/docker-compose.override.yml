@@ -68,8 +68,8 @@ services:
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - PORT=8001
     build:
-      context: ./backend
-      dockerfile: backend.dockerfile
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-true}
         INSTALL_JUPYTER: ${INSTALL_JUPYTER-false}
@@ -99,8 +99,8 @@ services:
       - STREAM_QUEUE=1
       - PORT=8011
     build:
-      context: ./backend
-      dockerfile: backend.dockerfile
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-true}
       target: "backend"
@@ -127,8 +127,8 @@ services:
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
     build:
-      context: ./backend
-      dockerfile: backend.dockerfile
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
       args:
         INSTALL_DEV: ${INSTALL_DEV-true}
         INSTALL_JUPYTER: ${INSTALL_JUPYTER-false}
@@ -179,7 +179,7 @@ services:
       context: ./vpn
       dockerfile: headscale.dockerfile
     volumes:
-      - headscale-data:/headscale
+      - headscale-data:/headscale/data
     environment:
       - NETWORK_NAME=omnet
     ports:

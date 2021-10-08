@@ -44,16 +44,16 @@ jobs:
       # In this step, this action saves a list of existing images,
       # the cache is created without them in the post run.
       # It also restores the cache if it exists.
-      - name: Cache docker images
-        uses: satackey/action-docker-layer-caching@v0.0.11
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        with:
-          key: docker-layer-cache-{hash}
-          restore-keys: |
-            docker-layer-cache-
-          # TODO: investigate why taking out filter by reference allows the docker cache step to run
-          # filter: reference='openmined/*'
+      # - name: Cache docker images
+      #   uses: satackey/action-docker-layer-caching@v0.0.11
+      #   if: steps.changes.outputs.stack == 'true'
+      #   continue-on-error: true
+      #   with:
+      #     key: docker-layer-cache-{hash}
+      #     restore-keys: |
+      #       docker-layer-cache-
+      #     # TODO: investigate why taking out filter by reference allows the docker cache step to run
+      #     # filter: reference='openmined/*'
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
@@ -89,3 +89,70 @@ jobs:
           curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           tox -e stack.test.integration
+  stack-integration-tests-k8s:
+    strategy:
+      max-parallel: 1
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.9]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      # In this step, this action saves a list of existing images,
+      # the cache is created without them in the post run.
+      # It also restores the cache if it exists.
+      # - name: Cache docker images
+      #   uses: broadshield/action-docker-layer-caching@main
+      #   if: steps.changes.outputs.stack == 'true'
+      #   continue-on-error: true
+      #   with:
+      #     filter: reference='openmined/*'
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        shell: bash
+        run: |
+          curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
+          sudo install devspace /usr/local/bin;
+          tox -e stack.test.integration.k8s
