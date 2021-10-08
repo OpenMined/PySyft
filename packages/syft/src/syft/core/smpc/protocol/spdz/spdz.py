@@ -15,10 +15,10 @@ from typing import List
 from typing import Optional
 
 # syft absolute
-# absolute
 import syft as sy
 
 # relative
+from .....grid.client import GridHTTPConnection
 from ....common.uid import UID
 from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
@@ -34,16 +34,42 @@ EXPECTED_OPS = {"mul", "matmul"}
 cache_clients: Dict[Client, Client] = {}
 
 
-def mul_master(
-    x: MPCTensor, y: MPCTensor, op_str: str, kwargs_: Dict[Any, Any]
-) -> MPCTensor:
+def _register_clients(parties: List[Client]) -> List[Client]:
+    clients: List[Client] = []
+    for party in parties:
+        client = cache_clients.get(party, None)
+        id = client.id.value.hex  # type: ignore
+        if client is None:
+            connection = party.routes[0].connection  # type: ignore
+            if not isinstance(connection, GridHTTPConnection):
+                raise TypeError(
+                    f"You tried to pass {type(connection)} for multiplication dependent operation."
+                    + "Currently Syft works only with hagrid"
+                    + "We apologize for the inconvenience"
+                    + "We will add support for local python objects very soon."
+                )
+            base_url = connection.base_url
+            url = base_url.rsplit(":", 1)[0]
+            port = base_url.rsplit(":", 1)[1].split("/")[0]
+            client = sy.register(
+                url=url,
+                name=f"{id}",
+                email=f"{id}@openmined.org",
+                password="changethis",
+                port=port,
+            )
+            cache_clients[party] = client
+        clients.append(cache_clients[party])
+    return clients
+
+
+def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     """Function that is executed by the orchestrator to multiply two secret values.
 
     Args:
         x (MPCTensor): First value to multiply with.
         y (MPCTensor): Second value to multiply with.
         op_str (str): Operation string.
-        kwargs_ (dict): TODO:Add docstring.
 
     Raises:
         ValueError: If op_str not in EXPECTED_OPS.
@@ -55,6 +81,8 @@ def mul_master(
         raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
 
     parties = x.parties
+    clients = _register_clients(parties)
+
     cache_store = CryptoPrimitiveProvider.cache_store
 
     shape_x = tuple(x.shape)
@@ -62,7 +90,7 @@ def mul_master(
     eps_id = UID()
     delta_id = UID()
     args = [
-        [x, y, cache_store[party], op_str, eps_id, delta_id, parties]
+        [x, y, cache_store[party], op_str, eps_id, delta_id, clients]
         for x, y, party in zip(x.share_ptrs, y.share_ptrs, parties)
     ]
 
@@ -72,7 +100,6 @@ def mul_master(
         g_kwargs={
             "a_shape": shape_x,
             "b_shape": shape_y,
-            **kwargs_,
         },
         p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
     )
@@ -82,8 +109,7 @@ def mul_master(
         party.syft.core.smpc.protocol.spdz.spdz.mul_parties(*args)
         for arg, party in zip(args, parties)
     ]
-    shape = MPCTensor.__get_shape(op_str, shape_x, shape_y)
-    result = MPCTensor(shares=shares, parties=parties, shape=shape)
+    result = MPCTensor(shares=shares, parties=parties)
 
     return result
 
@@ -95,9 +121,8 @@ def mul_parties(
     op_str: str,
     eps_id: UID,
     delta_id: UID,
-    parties: List[Client],
+    clients: List[Client],
     node: Optional[AbstractNode] = None,
-    **kwargs: Dict[Any, Any],
 ) -> ShareTensor:
     """SPDZ Multiplication.
 
@@ -108,9 +133,8 @@ def mul_parties(
         op_str (str): Operator string.
         eps_id (UID): UID to store public epsilon value.
         delta_id (UID): UID to store public delta value.
-        parties (Any): Clients of parties involved in the computation.
+        clients (List[Client]): Clients of parties involved in the computation.
         node (Optional[AbstractNode]): The  node which the input ShareTensor belongs to.
-        kwargs (Dict[Any,Any]): Keywords arguments for the operator.
 
     Returns:
         ShareTensor: Shared result of the division.
@@ -127,10 +151,10 @@ def mul_parties(
     eps = x - a_share
     delta = y - b_share
 
-    for party in parties:
-        if party.id != node.id:  # type: ignore
-            party.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
-            party.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
+    for client in clients:
+        if client.id != client.id:  # type: ignore
+            client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
+            client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
 
     ctr = 3000
     while True:
@@ -141,7 +165,7 @@ def mul_parties(
                 raise Exception(
                     f"Epsilon value at {eps_id},{type(obj)} should be a List"
                 )
-            if len(obj) == len(parties) - 1:
+            if len(obj) == len(clients) - 1:
                 eps = eps + sum(obj)
                 break
         time.sleep(0.1)
@@ -158,7 +182,7 @@ def mul_parties(
                 raise Exception(
                     f"Epsilon value at {delta_id},{type(obj)} should be a List"
                 )
-            if len(obj) == len(parties) - 1:
+            if len(obj) == len(clients) - 1:
                 delta = delta + sum(obj)
                 break
         time.sleep(0.1)
@@ -168,12 +192,12 @@ def mul_parties(
 
     op = getattr(operator, op_str)
 
-    eps_b = op(eps, b_share.child, **kwargs)
-    delta_a = op(a_share.child, delta, **kwargs)
+    eps_b = op(eps, b_share.child)
+    delta_a = op(a_share.child, delta)
 
     tensor = c_share.child + eps_b + delta_a
     if x.rank == 0:
-        eps_delta = op(eps, delta, **kwargs)
+        eps_delta = op(eps, delta)
         tensor += eps_delta
 
     share = x.copy_tensor()

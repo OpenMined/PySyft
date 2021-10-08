@@ -23,6 +23,7 @@ import numpy.typing as npt
 import torch
 
 # relative
+from ...smpc.protocol.spdz import spdz
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
@@ -514,16 +515,17 @@ class MPCTensor(PassthroughTensor):
     def mul(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
         if isinstance(y, MPCTensor):
-            raise ValueError("Private multiplication not yet implemented!")
+            res = spdz.mul_master(self, y, "mul")
+            res.mpc_shape = MPCTensor.__get_shape("mul", self.shape, y.mpc_shape)
         else:
             res_shares = [
                 operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(y))
             ]
-
-        y_shape = getattr(y, "shape", (1,))
-        new_shape = MPCTensor.__get_shape("mul", self.mpc_shape, y_shape)
-        res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
+            y_shape = getattr(y, "shape", (1,))
+            new_shape = MPCTensor.__get_shape("mul", self.mpc_shape, y_shape)
+            res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
 
         return res
 
