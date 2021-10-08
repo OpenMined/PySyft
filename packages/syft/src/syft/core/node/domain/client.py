@@ -46,6 +46,9 @@ from ..common.node_service.network_search.network_search_messages import (
 )
 from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
 from ..common.node_service.node_setup.node_setup_messages import UpdateSetupMessage
+from ..common.node_service.object_request.object_request_messages import (
+    CreateBudgetRequestMessage,
+)
 from ..common.node_service.object_transfer.object_transfer_messages import (
     LoadObjectMessage,
 )
@@ -333,19 +336,10 @@ class DomainClient(Client):
                     input("Why should the domain owner give you more epsilon:")
                 )
 
-        # relative
-        from ..common.node_service.request_receiver.request_receiver_messages import (
-            RequestMessage,
-        )
-
-        msg = RequestMessage(
-            request_description=reason,
+        msg = CreateBudgetRequestMessage(
+            reason=reason,
+            budget=eps,
             address=self.address,
-            owner_address=self.address,
-            object_id=UID(),  # TODO: this is a dummy ID just to appease things
-            object_type="budget:" + str(eps),  # TODO: remove this
-            requester_verify_key=self.verify_key,
-            timeout_secs=-1,
         )
 
         self.send_immediate_msg_without_reply(msg=msg)
