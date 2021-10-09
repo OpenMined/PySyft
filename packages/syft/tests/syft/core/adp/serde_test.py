@@ -18,7 +18,7 @@ scalar_object_tests = [
     # BaseScalar(min_val=None, value=None, max_val=None, entity=Entity(name="test")),
     BaseScalar(min_val=1, value=None, max_val=3, entity=Entity(name="test")),
     PhiScalar(min_val=0, value=1, max_val=2, entity=Entity(name="test")),
-    GammaScalar(min_val=0, value=1, max_val=2, entity=Entity(name="test"), prime=3),
+    # GammaScalar(min_val=0, value=1, max_val=2, entity=Entity(name="test"), prime=3),
 ]
 
 
