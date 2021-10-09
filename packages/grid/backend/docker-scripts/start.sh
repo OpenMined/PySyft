@@ -31,6 +31,8 @@ else
 fi
 
 # Start Gunicorn
+# TODO: gunicorn crashes when running in k8s with asyncio issues while uvicorn from
+# start-reload.sh seems okay
 exec gunicorn -k "$WORKER_CLASS" -c "$GUNICORN_CONF" "$APP_MODULE"
 
 ## fetched from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/start.sh
