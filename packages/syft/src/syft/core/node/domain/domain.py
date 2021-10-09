@@ -173,7 +173,7 @@ class Domain(Node):
         super().post_init()
         self.set_node_uid()
 
-    def initial_setup(
+    def initial_setup(  # nosec
         self,
         first_superuser_name: str = "Jane Doe",
         first_superuser_email: str = "info@openmined.org",
