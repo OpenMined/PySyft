@@ -7,7 +7,8 @@ from syft import serialize
 from syft.core.adp.entity import Entity
 from syft.core.adp.scalar.abstract.base_scalar import BaseScalar
 from syft.core.adp.scalar.abstract.intermediate_scalar import IntermediateScalar
-from syft.core.adp.scalar.gamma_scalar import GammaScalar
+
+# from syft.core.adp.scalar.gamma_scalar import GammaScalar
 from syft.core.adp.scalar.intermediate_phi_scalar import IntermediatePhiScalar
 from syft.core.adp.scalar.phi_scalar import PhiScalar
 
