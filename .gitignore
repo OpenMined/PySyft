@@ -32,3 +32,8 @@ packages/hagrid/grid
 
 # vagrant
 .vagrant
+
+# helmcharts
+helm-charts/**/*.tgz
+helm-charts/**/*.lock
+.helm/**
