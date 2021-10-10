@@ -8,6 +8,7 @@ from sqlalchemy import create_engine
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Session
 from sqlalchemy.orm import sessionmaker
+from sqlalchemy.pool import NullPool
 
 # relative
 from . import Base
@@ -114,7 +115,7 @@ def seed_db(db: Session) -> None:
 
 
 def create_memory_db_engine() -> TypeTuple[Engine, sessionmaker]:
-    db_engine = create_engine("sqlite://", echo=False)
+    db_engine = create_engine("sqlite://", echo=False, poolclass=NullPool)
     Base.metadata.create_all(db_engine)  # type: ignore
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
     seed_db(SessionLocal())
