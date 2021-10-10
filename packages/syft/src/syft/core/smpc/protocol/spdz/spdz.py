@@ -69,7 +69,7 @@ def register_clients(parties: List[Client]) -> List[Client]:
                 password="changethis",
                 port=port,
             )
-            proxy_client.routes[0].connection.base_url.replace(  # type: ignore
+            proxy_client.routes[0].connection.base_url = base_url.replace(  # type: ignore
                 "localhost", "docker-host"
             )
             cache_clients[party] = proxy_client
