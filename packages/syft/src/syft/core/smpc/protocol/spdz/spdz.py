@@ -99,6 +99,9 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
 
     parties = x.parties
     clients = register_clients(parties)
+    print("Registered Clients")
+    print(cache_clients)
+    print("\n\n")
 
     shape_x = tuple(x.shape)
     shape_y = tuple(y.shape)
@@ -115,7 +118,8 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
     )
     cache_store = CryptoPrimitiveProvider.cache_store
-
+    print("Generated Primitives")
+    print("\n\n")
     args = [
         [x, y, cache_store[party], op_str, eps_id, delta_id, clients]
         for x, y, party in zip(x.child, y.child, parties)
@@ -165,18 +169,23 @@ def mul_parties(
     )
 
     a_share, b_share, c_share = primitives
+    print("primitives", primitives)
 
     eps = x - a_share
     delta = y - b_share
-
+    print("Eps: ##################", eps)
+    print("Delta: ##################", delta)
     for client in clients:
         if client.id != node.id:  # type: ignore
+            print("///////////////////////Exec loop")
+            print(client)
             client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
             client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
 
     ctr = 3000
     while True:
         obj = node.store.get_object(key=eps_id)  # type: ignore
+        print("Obj^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^:", obj)
         if obj is not None:
             obj = obj.data
             if not isinstance(obj, sy.lib.python.List):
@@ -234,6 +243,7 @@ def beaver_populate(
         id_at_location (UID): the location to store the data in.
         node Optional[AbstractNode] : The node on which the data is stored.
     """
+    print("Beaver")
     obj = node.store.get_object(key=id_at_location)  # type: ignore
     if obj is None:
         list_data = sy.lib.python.List([data])
@@ -254,3 +264,5 @@ def beaver_populate(
         node.store[id_at_location] = result  # type: ignore
     else:
         raise Exception(f"Object at {id_at_location} should be a List or None")
+
+    print("Beaver Finish*************************************************")
