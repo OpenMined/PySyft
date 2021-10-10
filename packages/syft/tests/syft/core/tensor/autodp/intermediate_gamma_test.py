@@ -39,30 +39,53 @@ def vsm() -> ScalarManager:
 
 
 @pytest.fixture
-def ref_data(dims: int) -> np.ndarray:
+def ref_square_data(dims: int) -> np.ndarray:
     return np.random.randint(low=5, high=50, size=(dims, dims), dtype=np.int32)
 
 
 @pytest.fixture
-def upper_bound(ref_data: np.ndarray) -> np.ndarray:
-    return np.ones_like(ref_data, dtype=np.int32) * ref_data.max()
+def ref_data(dims: int) -> np.ndarray:
+    return np.random.randint(low=5, high=50, size=(dims, dims + 1), dtype=np.int32)
 
 
 @pytest.fixture
-def lower_bound(ref_data: np.ndarray) -> np.ndarray:
-    return np.ones_like(ref_data, dtype=np.int32)
+def non_square_gamma_tensor(ref_data: np.ndarray, ishan: Entity, traskmaster: Entity, vsm: ScalarManager) -> IGT:
+    assert ref_data.shape[0] != ref_data.shape[1]
+    return SEPT(
+        child=ref_data,
+        min_vals=np.ones_like(ref_data),
+        max_vals=np.ones_like(ref_data) * 50,
+        entity=ishan,
+        scalar_manager=vsm
+    ) + SEPT(
+        child=ref_data,
+        min_vals=np.ones_like(ref_data),
+        max_vals=np.ones_like(ref_data) * 50,
+        entity=traskmaster,
+        scalar_manager=vsm
+    )
+
+
+@pytest.fixture
+def upper_bound(ref_square_data) -> np.ndarray:
+    return np.ones_like(ref_square_data, dtype=np.int32) * ref_square_data.max()
+
+
+@pytest.fixture
+def lower_bound(ref_square_data) -> np.ndarray:
+    return np.ones_like(ref_square_data, dtype=np.int32)
 
 
 @pytest.fixture
 def sept_ishan(
-    ref_data: np.ndarray,
+        ref_square_data,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     vsm: ScalarManager,
     ishan: Entity,
 ) -> SEPT:
     return SEPT(
-        child=ref_data,
+        child=ref_square_data,
         min_vals=lower_bound,
         max_vals=upper_bound,
         entity=ishan,
@@ -72,14 +95,14 @@ def sept_ishan(
 
 @pytest.fixture
 def sept_traskmaster(
-    ref_data: np.ndarray,
+        ref_square_data,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     vsm: ScalarManager,
     traskmaster: Entity,
 ) -> SEPT:
     return SEPT(
-        child=ref_data,
+        child=ref_square_data,
         min_vals=lower_bound,
         max_vals=upper_bound,
         entity=traskmaster,
@@ -354,3 +377,53 @@ def test_ne(
     for entity in output.entities.flatten():
         assert isinstance(entity, DSG)
         assert entity == dsg
+
+
+@pytest.mark.skip(reason="This doesn't actually test anything")
+def test_tensor_creation(sept_ishan, sept_traskmaster) -> None:
+    igt = sept_ishan + sept_traskmaster
+    print(f"Term tensor {igt.term_tensor.shape}")
+    print(igt.term_tensor)
+    print(f"Coeff tensor {igt.coeff_tensor.shape}")
+    print(igt.coeff_tensor)
+    print(f"Bias tensor {igt.bias_tensor.shape}")
+    print(igt.bias_tensor)
+
+    print(igt.shape)
+    print(sept_ishan.shape)
+    assert False
+
+
+def test_transpose(non_square_gamma_tensor: IGT) -> None:
+    """ Test the transpose operator default behaviour (no args)"""
+    output = non_square_gamma_tensor.transpose()
+    original_values = non_square_gamma_tensor._values()
+
+    # Ensure both of these have the same shapes to begin with
+    assert non_square_gamma_tensor.shape == original_values.shape
+
+    # Ensure resultant shapes are correct
+    target_values = original_values.transpose()
+    assert output.shape == target_values.shape
+
+    # Test to see if _values() constructs a proper shape
+    output_values = output._values()
+    assert output_values.shape != original_values.shape
+    assert output_values.shape == target_values.shape
+
+    # Check that transposing twice undoes the operation
+    assert output.transpose() == non_square_gamma_tensor
+    # assert (output.transpose()._values() == original_values).all()
+
+    # Test to see if the values have been kept the same
+    print(f"Values, {type(original_values)}")
+    print(original_values)
+    print(f"New Values, {type(output_values)}")
+    print(output_values)
+    # assert (output_values == target_values).all()
+
+    old_entities = non_square_gamma_tensor._entities()
+    new_entities = output._entities()
+    assert old_entities.shape != new_entities.shape
+
+

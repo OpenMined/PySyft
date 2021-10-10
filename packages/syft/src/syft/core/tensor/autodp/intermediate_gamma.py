@@ -8,6 +8,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from typing import Sequence
 
 # third party
 from nacl.signing import VerifyKey
@@ -61,7 +62,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
     ) -> None:
         super().__init__(term_tensor)
 
-        # EXPLAIN A: if our clipped polynomiala is y = clip(mx + b, min=min_vals, max=max_vals)
+        # EXPLAIN A: if our clipped polynomial is y = clip(mx + b, min=min_vals, max=max_vals)
         # EXPLAIN B: if self.child = 5x10
 
         # EXPLAIN A: this is "x"
@@ -647,3 +648,96 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
         )
+
+    def __pos__(self) -> IntermediateGammaTensor:
+        return self
+
+    def __neg__(self) -> IntermediateGammaTensor:
+        return IntermediateGammaTensor(
+            term_tensor=self.term_tensor,
+            coeff_tensor=-self.coeff_tensor,
+            bias_tensor=-self.bias_tensor,
+            scalar_manager=self.scalar_manager
+        )
+
+    def copy(self) -> IntermediateGammaTensor:
+        return IntermediateGammaTensor(
+            term_tensor=self.term_tensor,
+            coeff_tensor=self.coeff_tensor,
+            bias_tensor=self.bias_tensor,
+            scalar_manager=self.scalar_manager
+        )
+
+    # TODO: Check if Sequence can be used as type hint instead
+    def transpose(self, axes: Optional[Union[int, Sequence[int], Tuple[int]]] = None) -> IntermediateGammaTensor:
+        # TODO: Need to check if new prime numbers are issued or if old ones are just moved around.
+
+        num = len(self.shape)
+        if not axes:
+            axes = [i for i in range(num)][::-1] + [num]  # Shape of last axis mustn't change
+        else:
+            if isinstance(axes, list):
+                axes += [num]
+            elif isinstance(axes, tuple):
+                axes = list(axes) + [num]
+            else:
+                raise Exception(
+                    f"Unknown type: {type(axes)}"
+                )
+        return IntermediateGammaTensor(
+            term_tensor=self.term_tensor.transpose(axes),
+            coeff_tensor=self.term_tensor.transpose(axes),
+            bias_tensor=self.bias_tensor.transpose(axes[:-1]),
+            scalar_manager=self.scalar_manager
+        )
+
+    def reshape(self, *dims) -> PassthroughTensor:
+        pass
+
+    def resize(
+        self,
+        new_shape: Union[int, Tuple[int, ...]],
+        refcheck: Optional[bool] = True,
+    ) -> PassthroughTensor:
+        pass
+
+    def ravel(self, order: Optional[str] = "C") -> PassthroughTensor:
+        pass
+
+    def squeeze(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> PassthroughTensor:
+        pass
+
+    def swapaxes(self, axis1: int, axis2: int) -> PassthroughTensor:
+        pass
+
+    def partition(
+        self,
+        kth: Union[int, Tuple[int, ...]],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[Union[int, Tuple[int, ...]]] = None,
+    ) -> PassthroughTensor:
+        pass
+
+    def compress(
+        self, condition: List[bool], axis: int = None, out: Optional[np.ndarray] = None
+    ) -> PassthroughTensor:
+        pass
+
+    def __and__(self, other):
+        pass
+
+    def __or__(self, other):
+        pass
+
+    def take(
+        self, indices: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> PassthroughTensor:
+        pass
+
+    def diagonal(
+        self, offset: int = 0, axis1: int = 0, axis2: int = 1
+    ) -> PassthroughTensor:
+        pass
