@@ -1,5 +1,4 @@
 # stdlib
-import time
 from typing import Any
 from typing import Dict
 from typing import List
@@ -78,32 +77,32 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         # left and right have the same keys
         return {k: left[k] for k in intersection}
 
-    @staticmethod
-    def retrieve_object(node: AbstractNode, id_at_location: UID) -> StorableObject:
-        try:
-            # keep five minutes seconds as max latency
-            ctr = 3000
-            while True:
-                storable_object = node.store.get_object(key=id_at_location)
-                if storable_object is None:
-                    ctr -= 1
-                    time.sleep(0.1)
-                    # We intimate user every ten seconds
-                    if ctr % 5 == 0:
-                        print("Waiting for Object to arrive...🚀")
-                else:
-                    return storable_object
-                if ctr <= 0:
-                    raise Exception(
-                        "Object not found or Object did not arrive at store"
-                    )
-        except Exception as e:
-            log = (
-                f"Unable to Get Object with ID {id_at_location} from store. "
-                + f"Possible dangling Pointer. {e}"
-            )
+    # @staticmethod
+    # def retrieve_object(node: AbstractNode, id_at_location: UID) -> StorableObject:
+    #     try:
+    #         # keep five minutes seconds as max latency
+    #         ctr = 3000
+    #         while True:
+    #             storable_object = node.store.get_object(key=id_at_location)
+    #             if storable_object is None:
+    #                 ctr -= 1
+    #                 time.sleep(0.1)
+    #                 # We intimate user every ten seconds
+    #                 if ctr % 5 == 0:
+    #                     print("Waiting for Object to arrive...🚀")
+    #             else:
+    #                 return storable_object
+    #             if ctr <= 0:
+    #                 raise Exception(
+    #                     "Object not found or Object did not arrive at store"
+    #                 )
+    #     except Exception as e:
+    #         log = (
+    #             f"Unable to Get Object with ID {id_at_location} from store. "
+    #             + f"Possible dangling Pointer. {e}"
+    #         )
 
-            traceback_and_raise(Exception(log))
+    #         traceback_and_raise(Exception(log))
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
@@ -120,7 +119,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                     )
                 )
 
-            r_arg = self.retrieve_object(node, arg.id_at_location)
+            r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -138,7 +137,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                     )
                 )
 
-            r_arg = self.retrieve_object(node, arg.id_at_location)
+            r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
