@@ -1,6 +1,8 @@
 version: "3.8"
 services:
   proxy:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     # ports:
     #   - "${DOMAIN_PORT?80}:80"
     #   - "8080"
@@ -37,6 +39,8 @@ services:
       - "5050"
 
   db:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     ports:
       - "5432"
   flower:
@@ -49,12 +53,16 @@ services:
       - "--broker_api=http://guest:guest@queue:15672/api//"
 
   queue:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     image: rabbitmq:3-management
     ports:
       - "5672"
       - "15672"
 
   backend:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     volumes:
       - ./backend/grid:/app/grid
       - ../syft:/app/syft
@@ -84,6 +92,8 @@ services:
     network_mode: service:proxy
 
   backend_stream:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - db
       - backend
@@ -114,6 +124,8 @@ services:
     network_mode: service:proxy
 
   celeryworker:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     depends_on:
       - backend
     volumes:
@@ -137,6 +149,8 @@ services:
     network_mode: service:proxy
 
   frontend:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     build:
       context: ./frontend
       dockerfile: frontend.dockerfile
@@ -152,6 +166,8 @@ services:
       - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
 
   tailscale:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     hostname: ${DOMAIN_NAME?Variable not set}
     image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
     build:
@@ -171,6 +187,8 @@ services:
       - "4000"
 
   headscale:
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
     profiles:
       - network
     hostname: headscale
