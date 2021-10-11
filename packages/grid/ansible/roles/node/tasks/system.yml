@@ -75,15 +75,6 @@
     name: pip
     extra_args: --upgrade
 
-- name: Install pipx
-  pip:
-    name: pipx
-    extra_args: --upgrade
-
-- name: Add .local/bin to PATH
-  shell: "runuser -l {{ om_user }} -c 'pipx ensurepath'"
-  become: yes
-
 - name: Check ctop exists
   stat:
     path: /usr/local/bin/ctop

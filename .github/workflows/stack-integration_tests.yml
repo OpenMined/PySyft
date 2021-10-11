@@ -55,6 +55,17 @@ jobs:
       #     # TODO: investigate why taking out filter by reference allows the docker cache step to run
       #     # filter: reference='openmined/*'
 
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v1
+
+      - name: Cache Docker layers
+        uses: actions/cache@v2
+        with:
+          path: /tmp/.buildx-cache
+          key: ${{ runner.os }}-buildx
+          restore-keys: |
+            ${{ runner.os }}-buildx
+
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
@@ -88,6 +99,7 @@ jobs:
           DOCKER_COMPOSE_VERSION=v2.0.0-rc.2
           curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
+          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T ANyr9pDBevjh7hLI94had0 FlG5iQ10jBOO4ZcesS9O1t au.relay.tunshell.com
           tox -e stack.test.integration
   stack-integration-tests-k8s:
     strategy:
@@ -153,7 +165,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         shell: bash
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T ANyr9pDBevjh7hLI94had0 FlG5iQ10jBOO4ZcesS9O1t au.relay.tunshell.com
           curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
           sudo install devspace /usr/local/bin;
           tox -e stack.test.integration.k8s
