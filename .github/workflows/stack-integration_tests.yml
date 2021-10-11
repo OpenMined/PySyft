@@ -41,30 +41,15 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      # In this step, this action saves a list of existing images,
-      # the cache is created without them in the post run.
-      # It also restores the cache if it exists.
-      # - name: Cache docker images
-      #   uses: satackey/action-docker-layer-caching@v0.0.11
-      #   if: steps.changes.outputs.stack == 'true'
-      #   continue-on-error: true
-      #   with:
-      #     key: docker-layer-cache-{hash}
-      #     restore-keys: |
-      #       docker-layer-cache-
-      #     # TODO: investigate why taking out filter by reference allows the docker cache step to run
-      #     # filter: reference='openmined/*'
-
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v1
 
-      - name: Cache Docker layers
-        uses: actions/cache@v2
+      - name: Cache docker images
+        uses: Broadshield/action-docker-layer-caching@main
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
         with:
-          path: /tmp/.buildx-cache
-          key: ${{ runner.os }}-buildx
-          restore-keys: |
-            ${{ runner.os }}-buildx
+          filter: reference='openmined/*'
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
@@ -99,7 +84,6 @@ jobs:
           DOCKER_COMPOSE_VERSION=v2.0.0-rc.2
           curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T ANyr9pDBevjh7hLI94had0 FlG5iQ10jBOO4ZcesS9O1t au.relay.tunshell.com
           tox -e stack.test.integration
   stack-integration-tests-k8s:
     strategy:
