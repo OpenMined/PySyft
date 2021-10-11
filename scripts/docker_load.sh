@@ -1,4 +1,6 @@
 #!/bin/bash
+mkdir .docker-cache || true
+mkdir .docker-cache/openmined || true
 
 cd .docker-cache/openmined
 ls | grep .tar.gz | xargs -L 1 -I {} tar -xf {}
