@@ -8,7 +8,7 @@ celery_app = Celery(
 )
 # celery_app.conf.result_backend = "db+sqlite:///results.db"
 # celery_app.conf.result_backend = "file:///tmp/results"
-# celery_app.conf.result_backend = "postgresql://postgres:changethis@host.docker.internal:5432"
+# celery_app.conf.result_backend = "postgresql://postgres:changethis@docker-host:5432"
 # celery_app.conf.result_backend = "amqp://guest@queue//"
 celery_app.conf.result_backend = "rpc://"
 celery_app.conf.result_persistent = True
