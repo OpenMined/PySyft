@@ -195,6 +195,7 @@ if __name__ == "__main__":
             network_name = stat_parts[4]
 
             assert network_name == "omnet"
+            break
 
     nodes = list_nodes(headscale_host=headscale_api)
     for node in nodes:
