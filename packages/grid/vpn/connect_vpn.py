@@ -132,7 +132,7 @@ def get_result(command_url: str, json: Dict) -> str:
 # then connect itself or another domain to the network
 # $ python vpn/connect_vpn.py test_network_1_tailscale_1 test_network_1_headscale_1
 # or if they are on different local docker networks
-# $ python vpn/connect_vpn.py test_domain_1_tailscale_1 test_network_1_headscale_1 http://docker-host:8080
+# $ python vpn/connect_vpn.py test_domain_1_tailscale_1 test_network_1_headscale_1 http://host.docker.internal:8080
 if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Try: python vpn/connect_vpn.py domain_tailscale_1 network_headscale_1")
@@ -186,11 +186,15 @@ if __name__ == "__main__":
     time.sleep(5)
 
     stat = status(tailscale_host=tailscale_api)
-    stat_parts = re.split(r"(\s+)", stat)
-    stat_ip = stat_parts[0]
-    network_name = stat_parts[4]
 
-    assert network_name == "omnet"
+    for line in str(stat).split("\n"):
+        matches = re.match(r"^\d.+", line)
+        if matches is not None:
+            stat_parts = re.split(r"(\s+)", matches.string)
+            stat_ip = stat_parts[0]
+            network_name = stat_parts[4]
+
+            assert network_name == "omnet"
 
     nodes = list_nodes(headscale_host=headscale_api)
     for node in nodes:

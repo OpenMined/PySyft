@@ -186,26 +186,6 @@ services:
       - "${HEADSCALE_PORT?8080}:8080"
       - "4000"
 
-  docker-host:
-    depends_on:
-      - proxy
-      - pgadmin
-      - db
-      - flower
-      - queue
-      - backend
-      - backend_stream
-      - celeryworker
-      - frontend
-      - tailscale
-      - headscale
-    image: qoomon/docker-host
-    cap_add:
-      - net_admin
-      - net_raw
-    mem_limit: 8M
-    restart: always
-
 networks:
   traefik-public:
     # For local dev, don't expect an external Traefik network
