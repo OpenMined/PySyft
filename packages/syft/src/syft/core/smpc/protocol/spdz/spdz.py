@@ -24,7 +24,6 @@ import syft as sy
 # relative
 from ....common.uid import UID
 from ....node.abstract.node import AbstractNode
-from ....node.common.client import Client
 from ....store.storeable_object import StorableObject
 from ....tensor.smpc.share_tensor import ShareTensor
 from ...store import CryptoPrimitiveProvider
@@ -38,43 +37,6 @@ cache_clients: Dict[Client, Client] = {}
 if TYPE_CHECKING:
     # relative
     from ....tensor.smpc.mpc_tensor import MPCTensor
-
-
-def register_clients(parties: List[Client]) -> List[Client]:
-    # relative
-    from .....grid.client import GridHTTPConnection
-
-    clients: List[Client] = []
-    for party in parties:
-        client = cache_clients.get(party, None)
-        if client is None:
-            # Discuss with Andrew on returning same registered user when doing
-            # sy.register multiple times with same credentials
-            id = UID().value.hex
-            connection = party.routes[0].connection  # type: ignore
-            if not isinstance(connection, GridHTTPConnection):
-                raise TypeError(
-                    f"You tried to pass {type(connection)} for multiplication dependent operation."
-                    + "Currently Syft works only with hagrid"
-                    + "We apologize for the inconvenience"
-                    + "We will add support for local python objects very soon."
-                )
-            base_url = connection.base_url
-            url = base_url.rsplit(":", 1)[0]
-            port = base_url.rsplit(":", 1)[1].split("/")[0]
-            proxy_client: Client = sy.register(  # nosec
-                url=url,
-                name=f"{id}",
-                email=f"{id}@openmined.org",
-                password="changethis",
-                port=port,
-            )
-            proxy_client.routes[0].connection.base_url = base_url.replace(  # type: ignore
-                "localhost", "docker-host"
-            )
-            cache_clients[party] = proxy_client
-        clients.append(cache_clients[party])
-    return clients
 
 
 def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
@@ -97,8 +59,8 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     if op_str not in EXPECTED_OPS:
         raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
 
-    parties = x.parties
-    clients = register_clients(parties)
+    parties = x.clients
+    # clients = register_clients(parties)
     print("Registered Clients")
     print(cache_clients)
     print("\n\n")
@@ -121,7 +83,7 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     print("Generated Primitives")
     print("\n\n")
     args = [
-        [x, y, cache_store[party], op_str, eps_id, delta_id, clients]
+        [x, y, cache_store[party], op_str, eps_id, delta_id]
         for x, y, party in zip(x.child, y.child, parties)
     ]
 
@@ -143,7 +105,6 @@ def mul_parties(
     op_str: str,
     eps_id: UID,
     delta_id: UID,
-    clients: List[Client],
     node: Optional[AbstractNode] = None,
 ) -> ShareTensor:
     """SPDZ Multiplication.
@@ -161,6 +122,7 @@ def mul_parties(
     Returns:
         ShareTensor: Shared result of the division.
     """
+    clients = x.clients
     shape_x = tuple(x.child.shape)
     shape_y = tuple(y.child.shape)
 
