@@ -28,7 +28,7 @@ vars:
   - name: VERSION_HASH
     command: "python ../../VERSION hash"
   - name: NODE_TYPE
-    value: "domain"
+    value: "network"
 
 images:
   backend:
@@ -84,7 +84,6 @@ images:
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
     build:
-      disabled: $( [ $NODE_TYPE == "domain" ] && echo "true" || echo "false" )
       buildKit: {}
   tailscale:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
