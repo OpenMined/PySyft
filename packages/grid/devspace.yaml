@@ -1,0 +1,504 @@
+version: v1beta11
+
+vars:
+  - name: CONTAINER_REGISTRY
+    value: ""
+  - name: DOCKER_IMAGE_DB
+    value: postgres:12
+  - name: DOCKER_IMAGE_QUEUE
+    value: rabbitmq:3-management
+  - name: SERVICE_NAME_DB
+    value: db
+  - name: SERVICE_NAME_QUEUE
+    value: queue
+  - name: SERVICE_NAME_BACKEND
+    value: backend
+  - name: SERVICE_NAME_BACKEND_STREAM
+    value: backend-stream
+  - name: SERVICE_NAME_BACKEND_WORKER
+    value: backend-worker
+  - name: SERVICE_NAME_FRONTEND
+    value: frontend
+  - name: SERVICE_NAME_HEADSCALE
+    value: headscale
+  - name: SERVICE_NAME_TAILSCALE
+    value: tailscale
+  - name: VERSION
+    command: "python ../../VERSION"
+  - name: VERSION_HASH
+    command: "python ../../VERSION hash"
+  - name: NODE_TYPE
+    value: "network"
+
+images:
+  backend:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+    tags:
+      - "######"
+      - latest
+      - "0.6.0-alpha.0"
+    createPullSecret: true
+    dockerfile: ./backend/backend.dockerfile
+    context: ../
+    build:
+      buildKit: {}
+  frontend:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
+    tags:
+      - "######"
+      - latest
+      - "0.6.0-alpha.0"
+    createPullSecret: true
+    dockerfile: ./frontend/frontend.dockerfile
+    context: ./frontend
+    build:
+      docker:
+        options:
+          target: "grid-ui-development"
+          buildArgs:
+            NODE_TYPE: ${NODE_TYPE}
+            FRONTEND_ENV: development
+      buildKit:
+        args: ["--target", "grid-ui-development"]
+  headscale:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
+    tags:
+      - "######"
+      - latest
+      - "0.6.0-alpha.0"
+    createPullSecret: true
+    dockerfile: ./vpn/headscale.dockerfile
+    context: ./vpn
+    build:
+      buildKit: {}
+  tailscale:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
+    tags:
+      - "######"
+      - latest
+      - "0.6.0-alpha.0"
+    createPullSecret: true
+    dockerfile: ./vpn/tailscale.dockerfile
+    context: ./vpn
+    build:
+      buildKit: {}
+
+deployments:
+  - name: queue
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${DOCKER_IMAGE_QUEUE}
+        service:
+          name: ${SERVICE_NAME_QUEUE}
+          ports:
+            - name: ampq
+              port: 5672
+            - name: management
+              port: 15672
+  - name: db
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${DOCKER_IMAGE_DB}
+            env:
+              - name: POSTGRES_DB
+                value: ${POSTGRES_DB}
+              - name: POSTGRES_USER
+                value: ${POSTGRES_USER}
+              - name: POSTGRES_PASSWORD
+                value: ${POSTGRES_PASSWORD}
+            volumeMounts:
+              - containerPath: /var/lib/postgresql/data
+                volume:
+                  name: app-db-data
+                  subPath: /pgdata
+                  readOnly: false
+        volumes:
+          - name: app-db-data
+            size: "5Gi"
+        service:
+          name: ${SERVICE_NAME_DB}
+          ports:
+            - port: 5432
+  - name: backend
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+            command:
+              - /start-reload.sh
+            livenessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            readinessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            env:
+              - name: SYFT_USE_UVLOOP
+                value: "0"
+              - name: DOMAIN_NAME
+                value: ${DOMAIN_NAME}
+              - name: POSTGRES_SERVER
+                value: ${SERVICE_NAME_DB}
+              - name: POSTGRES_DB
+                value: ${POSTGRES_DB}
+              - name: POSTGRES_USER
+                value: ${POSTGRES_USER}
+              - name: POSTGRES_PASSWORD
+                value: ${POSTGRES_PASSWORD}
+              - name: VERSION
+                value: ${VERSION}
+              - name: VERSION_HASH
+                value: ${VERSION_HASH}
+              - name: SERVER_NAME
+                value: ${DOMAIN}
+              - name: SERVER_HOST
+                value: ${SERVER_HOST}
+              - name: LOG_LEVEL
+                value: debug
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
+        service:
+          name: ${SERVICE_NAME_BACKEND}
+          ports:
+            - port: 80
+  - name: backend-stream
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+            command:
+              - waitforit
+            args:
+              [
+                "-address=http://backend:80/api/v1/syft/metadata",
+                "-status=200",
+                "-timeout=600",
+                "--",
+                "/start-reload.sh",
+              ]
+            livenessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            readinessProbe:
+              httpGet:
+                path: /api/v1/status
+                port: 80
+              initialDelaySeconds: 5
+              periodSeconds: 60
+              successThreshold: 1
+              failureThreshold: 3
+            env:
+              - name: SYFT_USE_UVLOOP
+                value: "0"
+              - name: DOMAIN_NAME
+                value: ${DOMAIN_NAME}
+              - name: POSTGRES_SERVER
+                value: ${SERVICE_NAME_DB}
+              - name: POSTGRES_DB
+                value: ${POSTGRES_DB}
+              - name: POSTGRES_USER
+                value: ${POSTGRES_USER}
+              - name: POSTGRES_PASSWORD
+                value: ${POSTGRES_PASSWORD}
+              - name: VERSION
+                value: ${VERSION}
+              - name: VERSION_HASH
+                value: ${VERSION_HASH}
+              - name: SERVER_NAME
+                value: ${DOMAIN}
+              - name: SERVER_HOST
+                value: ${SERVER_HOST}
+              - name: LOG_LEVEL
+                value: debug
+              - name: STREAM_QUEUE
+                value: "1"
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
+        service:
+          name: ${SERVICE_NAME_BACKEND_STREAM}
+          ports:
+            - port: 80
+  - name: backend-worker
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+            command:
+              - waitforit
+            args:
+              [
+                "-address=http://backend:80/api/v1/syft/metadata",
+                "-status=200",
+                "-timeout=600",
+                "--",
+                "/worker-start.sh",
+              ]
+            env:
+              - name: SYFT_USE_UVLOOP
+                value: "0"
+              - name: DOMAIN_NAME
+                value: ${DOMAIN_NAME}
+              - name: POSTGRES_SERVER
+                value: ${SERVICE_NAME_DB}
+              - name: POSTGRES_DB
+                value: ${POSTGRES_DB}
+              - name: POSTGRES_USER
+                value: ${POSTGRES_USER}
+              - name: POSTGRES_PASSWORD
+                value: ${POSTGRES_PASSWORD}
+              - name: VERSION
+                value: ${VERSION}
+              - name: VERSION_HASH
+                value: ${VERSION_HASH}
+              - name: SERVER_NAME
+                value: ${DOMAIN}
+              - name: SERVER_HOST
+                value: ${SERVER_HOST}
+              - name: CELERY_WORKER
+                value: "true"
+              - name: RUN
+                value: "celery worker -A grid.worker -l info -Q main-queue -c 1"
+              - name: NODE_TYPE
+                value: ${NODE_TYPE}
+              - name: C_FORCE_ROOT
+                value: "1"
+  - name: frontend
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
+            env:
+              - name: VERSION
+                value: ${VERSION}
+              - name: VERSION_HASH
+                value: ${VERSION_HASH}
+              - name: TYPE
+                value: ${NODE_TYPE}
+        service:
+          name: ${SERVICE_NAME_FRONTEND}
+          ports:
+            - port: 80
+  - name: headscale
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
+            env:
+              - name: NETWORK_NAME
+                value: ${NETWORK_NAME}
+            volumeMounts:
+              - containerPath: /headscale/data
+                volume:
+                  name: headscale-data
+                  subPath: /headscale-data
+                  readOnly: false
+        volumes:
+          - name: headscale-data
+            size: "100Mi"
+        service:
+          name: ${SERVICE_NAME_HEADSCALE}
+          ports:
+            - name: vpn
+              port: 8080
+            - name: api
+              port: 4000
+  - name: tailscale
+    helm:
+      componentChart: true
+      values:
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN", "SYS_MODULE"]
+              privileged: true
+            env:
+              - name: HOSTNAME
+                value: ${DOMAIN_NAME}
+            volumeMounts:
+              - containerPath: /var/lib/tailscale
+                volume:
+                  name: tailscale-data
+                  subPath: /tailscale-data
+                  readOnly: false
+        volumes:
+          - name: tailscale-data
+            size: "100Mi"
+        service:
+          name: ${SERVICE_NAME_TAILSCALE}
+          ports:
+            - name: api
+              port: 4000
+
+  - name: grid-stack-ingress
+    kubectl:
+      manifests:
+        - k8s/manifests/ingress.yaml
+
+  - name: grid-vpn-ingress
+    kubectl:
+      manifests:
+        - k8s/manifests/ingress-vpn.yaml
+
+dev:
+  ports:
+    # - name: backend
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+    #   forward:
+    #     - port: 8082
+    #       remotePort: 80
+    # - name: backend-stream
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+    #   forward:
+    #     - port: 8083
+    #       remotePort: 80
+    # - name: db
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_DB}
+    #   forward:
+    #     - port: 5432
+    #       remotePort: 5432
+    # - name: queue
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_QUEUE}
+    #   forward:
+    #     - port: 15672
+    # - name: frontend
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_FRONTEND}
+    #   forward:
+    #     - port: 8085
+    #       remotePort: 80
+    # - name: headscale
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_HEADSCALE}
+    #   forward:
+    #     - port: 8086
+    #       remotePort: 8080
+    - name: headscale-api
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_HEADSCALE}
+      forward:
+        - port: 8087
+          remotePort: 4000
+    - name: tailscale-api
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_TAILSCALE}
+      forward:
+        - port: 8088
+          remotePort: 4000
+
+  sync:
+    - name: backendsyft
+      disableDownload: true
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+      localSubPath: ../syft
+      containerPath: /app/syft
+      excludePaths: ["../syft/examples", "../syft/tests"]
+    - name: backendapp
+      disableDownload: true
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+      localSubPath: ./backend/grid
+      containerPath: /app/grid
+      excludePaths: []
+    - name: backendcache
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+      localSubPath: ./data/package-cache
+      containerPath: /root/.cache
+      excludePaths: []
+    - name: backend-streamsyft
+      disableDownload: true
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+      localSubPath: ../syft
+      containerPath: /app/syft
+      excludePaths: ["../syft/examples", "../syft/tests"]
+    - name: backend-streamapp
+      disableDownload: true
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+      localSubPath: ./backend/grid
+      containerPath: /app/grid
+      excludePaths: []
+    - name: backend-streamcache
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+      localSubPath: ./data/package-cache
+      containerPath: /root/.cache
+      excludePaths: []
+    - name: backend-workersyft
+      disableDownload: true
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
+      localSubPath: ../syft
+      containerPath: /app/syft
+      excludePaths: ["../syft/examples", "../syft/tests"]
+    - name: backend-workerapp
+      disableDownload: true
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
+      localSubPath: ./backend/grid
+      containerPath: /app/grid
+      excludePaths: []
+    - name: backend-workercache
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
+      localSubPath: ./data/package-cache
+      containerPath: /root/.cache
+      excludePaths: []
+    - name: frontend
+      disableDownload: true
+      labelSelector:
+        app.kubernetes.io/component: ${SERVICE_NAME_FRONTEND}
+      localSubPath: ./frontend/src
+      containerPath: /app/src
+      excludePaths: []
+profiles:
+  - name: domain
+    patches:
+      - op: replace
+        path: vars.name=NODE_TYPE.value
+        value: domain
+      - op: remove
+        path: dev.ports.name=headscale-api
+      - op: remove
+        path: deployments.name=headscale
+      - op: remove
+        path: images.name=headscale
+      - op: remove
+        path: deployments.name=grid-vpn-ingress
+
+  - name: network
+    patches:
+      - op: replace
+        path: vars.name=NODE_TYPE.value
+        value: network
