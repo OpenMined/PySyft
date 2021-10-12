@@ -160,11 +160,12 @@ if __name__ == "__main__":
         headscale_api_port = get_container_port_mapping(
             container_name=headscalehost, port=4000
         )
-        headscale_port = get_container_port_mapping(
-            container_name=headscalehost, port=8080
-        )
         headscale_api = f"http://localhost:{headscale_api_port}"
+
         if headscale_server is None:
+            headscale_port = get_container_port_mapping(
+                container_name=headscalehost, port=8080
+            )
             headscale_server = f"http://{headscalehost}:{headscale_port}"
     else:
         headscale_api = headscalehost
