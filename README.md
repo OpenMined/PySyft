@@ -533,9 +533,18 @@ openmined              *true*      true
 
 Now run the `dev` command with `devspace`:
 
+To run a network with headscale VPN:
+
 ```
 $ cd packages/grid
-$ devspace dev -b
+$ devspace dev -b -p network
+```
+
+To run a domain without the headscale VPN:
+
+```
+$ cd packages/grid
+$ devspace dev -b -p domain
 ```
 
 ### Connect VPN in dev
