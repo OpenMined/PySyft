@@ -41,16 +41,6 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v1
-
-      - name: Cache docker images
-        uses: Broadshield/action-docker-layer-caching@main
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        with:
-          filter: reference='openmined/*'
-
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
         id: pip-cache
@@ -76,15 +66,38 @@ jobs:
         run: |
           pip install tox --upgrade
 
+      - name: docker cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        with:
+          path: .docker-cache
+          key: ${{ runner.os }}-docker
+          restore-keys: |
+            ${{ runner.os }}-docker
+
+      - name: Load docker images
+        if: steps.changes.outputs.stack == 'true'
+        shell: bash
+        run: |
+          ./scripts/docker_load.sh
+
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.0.0-rc.2
-          curl -sSL https://github.com/docker/compose-cli/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
+          DOCKER_COMPOSE_VERSION=v2.0.1
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           tox -e stack.test.integration
+
+      - name: Save docker images
+        if: steps.changes.outputs.stack == 'true'
+        shell: bash
+        run: |
+          ./scripts/docker_save.sh
+
   stack-integration-tests-k8s:
     strategy:
       max-parallel: 1
@@ -109,16 +122,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
-
-      # In this step, this action saves a list of existing images,
-      # the cache is created without them in the post run.
-      # It also restores the cache if it exists.
-      # - name: Cache docker images
-      #   uses: broadshield/action-docker-layer-caching@main
-      #   if: steps.changes.outputs.stack == 'true'
-      #   continue-on-error: true
-      #   with:
-      #     filter: reference='openmined/*'
 
       - name: Get pip cache dir
         if: steps.changes.outputs.stack == 'true'
