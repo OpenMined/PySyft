@@ -668,10 +668,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager
         )
 
-    # TODO: Check if Sequence can be used as type hint instead
     def transpose(self, axes: Optional[Union[int, Sequence[int], Tuple[int]]] = None) -> IntermediateGammaTensor:
         # TODO: Need to check if new prime numbers are issued or if old ones are just moved around.
-
+        # TODO: Need to check what's going wrong with _values() after transposing
         num = len(self.shape)
         if not axes:
             axes = [i for i in range(num)][::-1] + [num]  # Shape of last axis mustn't change
@@ -691,18 +690,43 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager
         )
 
-    def reshape(self, *dims) -> PassthroughTensor:
-        pass
+    def reshape(self, *dims: Sequence[int]) -> IntermediateGammaTensor:
+        # The last axis isn't visible to the user and doesn't change shape
+        immutable = [self.shape[-1]]
+        if isinstance(dims, tuple):
+            dims = list(dims) + immutable
+        elif isinstance(dims, list):
+            dims += immutable
+        else:
+            raise Exception(
+                f"Unknown type: {type(dims)}"
+            )
+        return IntermediateGammaTensor(
+            term_tensor=self.term_tensor.transpose(*dims),
+            coeff_tensor=self.term_tensor.transpose(*dims),
+            bias_tensor=self.bias_tensor.transpose(*dims[:-1]),
+            scalar_manager=self.scalar_manager
+        )
 
     def resize(
         self,
         new_shape: Union[int, Tuple[int, ...]],
         refcheck: Optional[bool] = True,
-    ) -> PassthroughTensor:
-        pass
+    ) -> None:
+        if isinstance(new_shape, tuple):
+            new_shape = list(new_shape) + [self.shape[-1]]
+        self.term_tensor.resize(new_shape)
+        self.coeff_tensor.resize(new_shape)
+        self.bias_tensor.resize(new_shape[:-1])
 
-    def ravel(self, order: Optional[str] = "C") -> PassthroughTensor:
-        pass
+    def ravel(self, order: Optional[str] = "C") -> IntermediateGammaTensor:
+        # TODO: Check effect of ravel on higher dimensional arrays
+        return IntermediateGammaTensor(
+            term_tensor=self.term_tensor.ravel(order),
+            coeff_tensor=self.coeff_tensor.ravel(order),
+            bias_tensor=self.bias_tensor.ravel(order),
+            scalar_manager=self.scalar_manager
+        )
 
     def squeeze(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
@@ -739,5 +763,12 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
     def diagonal(
         self, offset: int = 0, axis1: int = 0, axis2: int = 1
-    ) -> PassthroughTensor:
+    ) -> IntermediateGammaTensor:
+        last_dim = len(self.shape) - 1
+        if axis1 == -1 or axis1 == last_dim or axis2 == -1 or axis2 == last_dim:
+            raise Exception
+
         pass
+
+
+
