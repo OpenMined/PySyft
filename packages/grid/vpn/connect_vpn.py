@@ -186,11 +186,16 @@ if __name__ == "__main__":
     time.sleep(5)
 
     stat = status(tailscale_host=tailscale_api)
-    stat_parts = re.split(r"(\s+)", stat)
-    stat_ip = stat_parts[0]
-    network_name = stat_parts[4]
 
-    assert network_name == "omnet"
+    for line in str(stat).split("\n"):
+        matches = re.match(r"^\d.+", line)
+        if matches is not None:
+            stat_parts = re.split(r"(\s+)", matches.string)
+            stat_ip = stat_parts[0]
+            network_name = stat_parts[4]
+
+            assert network_name == "omnet"
+            break
 
     nodes = list_nodes(headscale_host=headscale_api)
     for node in nodes:
