@@ -23,7 +23,6 @@ from nacl.signing import VerifyKey
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
 
 # relative
 from ....lib import lib_ast
@@ -147,7 +146,7 @@ class Node(AbstractNode):
 
             # If a DB engine isn't provided then
             if db_engine is None:
-                db_engine = create_engine("sqlite://", echo=False, poolclass=NullPool)
+                db_engine = create_engine("sqlite://", echo=False)
                 Base.metadata.create_all(db_engine)  # type: ignore
 
             db = sessionmaker(bind=db_engine)()

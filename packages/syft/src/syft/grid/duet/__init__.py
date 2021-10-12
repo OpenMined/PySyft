@@ -11,7 +11,6 @@ from typing import Optional
 import requests
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy.pool import NullPool
 
 # relative
 from ...core.common.environment import is_jupyter
@@ -214,7 +213,7 @@ def launch_duet(
 
     info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
 
-    db_engine = create_engine("sqlite://", echo=False, poolclass=NullPool)
+    db_engine = create_engine("sqlite://", echo=False)
     Base.metadata.create_all(db_engine)  # type: ignore
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
     my_domain = Domain(name="Launcher", db_engine=db_engine)
@@ -289,7 +288,7 @@ def join_duet(
 
     info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
 
-    db_engine = create_engine("sqlite://", echo=False, poolclass=NullPool)
+    db_engine = create_engine("sqlite://", echo=False)
     Base.metadata.create_all(db_engine)  # type: ignore
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
     my_domain = Domain(name="Joiner", db_engine=db_engine)
