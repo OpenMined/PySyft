@@ -237,6 +237,9 @@ def smpc_basic_op(
     return actions
 
 
+store = None
+
+
 def smpc_mul(
     nr_parties: int, self_id: UID, other_id: UID, seed_id_locations: int, node: Any
 ) -> List[SMPCActionMessage]:
@@ -251,7 +254,28 @@ def smpc_mul(
 
     actions = []
     if isinstance(other, ShareTensor):
-        raise ValueError("Not yet implemented Private Multiplication")
+        # crypto_store = ShareTensor.crypto_store
+        # _self = node.store[self_id].data
+        # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
+        result_mask = UID(UUID(bytes=generator.bytes(16)))
+        actions.append(
+            SMPCAction(
+                "spdz_mask",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=list(range(nr_parties)),
+                result_id=result_mask,
+            )
+        )
+        """
+        actions.append(
+                "multiply",
+                self_id=self_id,
+                args_id=[other_id],
+        """
+        # TODO: Here
+        # eps_share, delta = _self.child - a_share.child, other.child - b_share.child
     else:
         # All ranks should multiply by that public value
         actions.append(

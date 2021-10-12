@@ -22,6 +22,7 @@ import torch
 from syft.core.common.serde.deserialize import _deserialize as deserialize
 from syft.core.common.serde.serializable import serializable
 from syft.core.common.serde.serialize import _serialize as serialize
+from syft.core.smpc.store.crypto_store import CryptoStore
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 
@@ -54,8 +55,15 @@ RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
 CACHE_CLIENTS: Dict[Party, Any] = {}
 
 
+def populate_store(*args, **kwargs):
+    print("populate", ShareTensor.crypto_store)
+    ShareTensor.crypto_store.populate_store(*args, **kwargs)
+
+
 @serializable()
 class ShareTensor(PassthroughTensor):
+    crypto_store: Dict[Any, Any] = CryptoStore()
+
     __slots__ = (
         "rank",
         "ring_size",
@@ -84,6 +92,7 @@ class ShareTensor(PassthroughTensor):
         self.nr_parties = len(parties_info)
         self.parties_info = parties_info
         self.clients = []
+
         if clients is not None:
             self.clients = clients
         elif init_clients:
@@ -116,7 +125,6 @@ class ShareTensor(PassthroughTensor):
                     )
                     CACHE_CLIENTS[party_info] = client
                 self.clients.append(client)
-
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
         )
@@ -202,6 +210,7 @@ class ShareTensor(PassthroughTensor):
         ring_size: int = 2 ** 32,
         seed_przs: Optional[int] = None,
         generator_przs: Optional[Any] = None,
+        init_clients: bool = True,
     ) -> "ShareTensor":
 
         nr_parties = len(parties_info)
@@ -239,7 +248,7 @@ class ShareTensor(PassthroughTensor):
                 rank=rank,
                 parties_info=parties_info,
                 seed_przs=None,
-                init_clients=True,
+                init_clients=init_clients,
             )
 
         share.generator_przs = generator_shares

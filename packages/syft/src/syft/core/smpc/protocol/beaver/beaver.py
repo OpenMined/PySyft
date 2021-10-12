@@ -62,8 +62,9 @@ def _get_triples(
 
     cmd = getattr(operator, op_str)
     min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
-    seed_shares = secrets.randbits(32)
+    seed_przs = secrets.randbits(32)
 
+    parties_info = [None for _ in range(nr_parties)]
     a_rand = Tensor(
         ttp_generator.integers(
             low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=np.int32
@@ -71,9 +72,9 @@ def _get_triples(
     )
     a_shares = MPCTensor._get_shares_from_local_secret(
         secret=a_rand,
-        nr_parties=nr_parties,
+        parties_info=parties_info,
         shape=a_shape,
-        seed_shares=seed_shares,
+        seed_przs=seed_przs,
     )
 
     b_rand = Tensor(
@@ -84,15 +85,18 @@ def _get_triples(
 
     b_shares = MPCTensor._get_shares_from_local_secret(
         secret=b_rand,
-        nr_parties=nr_parties,
+        parties_info=parties_info,
         shape=b_shape,
-        seed_shares=seed_shares,
+        seed_przs=seed_przs,
     )
 
     c_val = cmd(a_rand, b_rand, **kwargs)
 
     c_shares = MPCTensor._get_shares_from_local_secret(
-        secret=c_val, nr_parties=nr_parties, shape=c_val.shape, seed_shares=seed_shares
+        secret=c_val,
+        parties_info=parties_info,
+        shape=c_val.shape,
+        seed_przs=seed_przs,
     )
 
     # We are always creating an instance

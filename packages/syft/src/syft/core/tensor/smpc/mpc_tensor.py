@@ -22,13 +22,12 @@ import torch
 
 # syft absolute
 import syft as sy
-from ...smpc.protocol.spdz import spdz
-
 from syft.core.tensor.passthrough import PassthroughTensor
 from syft.core.tensor.passthrough import SupportedChainType
 from syft.core.tensor.smpc.share_tensor import ShareTensor
 
 # relative
+from ...smpc.protocol.spdz import spdz
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
@@ -104,10 +103,6 @@ class MPCTensor(PassthroughTensor):
             raise ValueError("Shape of the secret should be known")
 
         if secret is not None:
-            if parties_info is None:
-                raise ValueError(
-                    "Parties should not be None if secret is not already secret shared"
-                )
             shares = MPCTensor._get_shares_from_secret(
                 secret=secret,
                 parties_info=parties_info,
@@ -141,8 +136,7 @@ class MPCTensor(PassthroughTensor):
         super().__init__(res)
 
     def publish(self, sigma: float) -> MPCTensor:
-
-        new_shares = list()
+        new_shares = []
         for share in self.child:
             new_share = share.publish(sigma=sigma)
             new_shares.append(new_share)
@@ -279,6 +273,7 @@ class MPCTensor(PassthroughTensor):
                 value=value,
                 shape=shape,
                 seed_przs=seed_przs,
+                init_clients=False,
             )
 
             shares.append(local_share)
@@ -544,7 +539,7 @@ class MPCTensor(PassthroughTensor):
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         if isinstance(y, MPCTensor):
-            res = spdz.mul_master(self, y, "mul")
+            res_shares = spdz.mul_master(self, y, "mul")
         else:
             res_shares = [
                 operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(y))
