@@ -42,20 +42,6 @@ images:
     context: ../
     build:
       buildKit: {}
-  worker:
-    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_CELERYWORKER}
-    tags:
-      - "######"
-      - latest
-      - "0.6.0-alpha.0"
-    createPullSecret: true
-    dockerfile: ./backend/backend.dockerfile
-    context: ../
-    build:
-      docker:
-        options:
-          target: "celery-worker"
-      buildKit: {}
   frontend:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
     tags:
@@ -258,7 +244,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_CELERYWORKER}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
               - waitforit
             args:
@@ -296,6 +282,8 @@ deployments:
                 value: "celery worker -A grid.worker -l info -Q main-queue -c 1"
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
+              - name: C_FORCE_ROOT
+                value: "1"
   - name: frontend
     helm:
       componentChart: true
