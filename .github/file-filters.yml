@@ -3,6 +3,7 @@ stack:
   - "**.py"
   - "**.cfg"
   - "**.yml"
+  - "**.yaml"
   - "**.dockerfile"
   - "**.toml"
   - "**.txt"
