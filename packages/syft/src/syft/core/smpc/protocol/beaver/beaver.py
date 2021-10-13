@@ -72,7 +72,7 @@ def _get_triples(
     )
     a_shares = MPCTensor._get_shares_from_local_secret(
         secret=a_rand,
-        parties_info=parties_info,
+        parties_info=parties_info,  # type: ignore
         shape=a_shape,
         seed_przs=seed_przs,
     )
@@ -85,7 +85,7 @@ def _get_triples(
 
     b_shares = MPCTensor._get_shares_from_local_secret(
         secret=b_rand,
-        parties_info=parties_info,
+        parties_info=parties_info,  # type: ignore
         shape=b_shape,
         seed_przs=seed_przs,
     )
@@ -94,7 +94,7 @@ def _get_triples(
 
     c_shares = MPCTensor._get_shares_from_local_secret(
         secret=c_val,
-        parties_info=parties_info,
+        parties_info=parties_info,  # type: ignore
         shape=c_val.shape,
         seed_przs=seed_przs,
     )

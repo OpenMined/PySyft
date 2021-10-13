@@ -1,15 +1,19 @@
+# stdlib
+# stdlib
+from typing import Any
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft absolute
-from syft.core.common.serde.serializable import serializable
-from syft.proto.core.tensor.party_pb2 import Party as Party_PB
+# relative
+from ....proto.core.tensor.party_pb2 import Party as Party_PB
+from ...common.serde.serializable import serializable
 
 
 @serializable()
 class Party:
     __slots__ = ("url", "port")
-    _DOCKER_HOST: str = "http://docker-host"
+    # _DOCKER_HOST: str = "http://docker-host"
 
     def __init__(self, url: str, port: int) -> None:
         # TODO: This is not used -- it is hardcoded to docker
@@ -26,7 +30,7 @@ class Party:
     def _proto2object(proto: Party_PB) -> "Party":
         # TODO: If on the same machine use docker-host - if not real address
         # How to distinguish? (if 127.0.0.1 and localhost we consider using docker-host?)
-        res = Party(url=Party._DOCKER_HOST, port=proto.port)
+        res = Party(url=proto.url, port=proto.port)
         return res
 
     @staticmethod
@@ -34,8 +38,10 @@ class Party:
         return Party_PB
 
     def __hash__(self) -> int:
-        res_str = f"{Party._DOCKER_HOST}:{self.port}"
-        return hash((Party._DOCKER_HOST, self.port))
+        # res_str = f"{self.url}:{self.port}"
+        return hash((Party.url, self.port))
 
-    def __eq__(self, other: "Party") -> bool:
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, Party):
+            return False
         return self.port == other.port

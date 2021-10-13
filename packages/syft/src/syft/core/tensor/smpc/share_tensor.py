@@ -19,14 +19,16 @@ import numpy as np
 import torch
 
 # syft absolute
-from syft.core.common.serde.deserialize import _deserialize as deserialize
-from syft.core.common.serde.serializable import serializable
-from syft.core.common.serde.serialize import _serialize as serialize
-from syft.core.smpc.store.crypto_store import CryptoStore
-from syft.core.tensor.passthrough import PassthroughTensor
-from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+# absolute
+import syft as sy
 
 # relative
+from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
+from ...smpc.store.crypto_store import CryptoStore
+from ..passthrough import PassthroughTensor  # type: ignore
 from .party import Party
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -43,9 +45,7 @@ METHODS_FORWARD_ALL_SHARES = {
     "squeeze",
     "swapaxes",
 }
-INPLACE_OPS = {
-    "resize",
-}
+INPLACE_OPS = {"resize", "put"}
 
 RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
     2 ** 32: np.int32,
@@ -55,14 +55,14 @@ RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
 CACHE_CLIENTS: Dict[Party, Any] = {}
 
 
-def populate_store(*args, **kwargs):
+def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
     print("populate", ShareTensor.crypto_store)
-    ShareTensor.crypto_store.populate_store(*args, **kwargs)
+    ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
 
 
 @serializable()
 class ShareTensor(PassthroughTensor):
-    crypto_store: Dict[Any, Any] = CryptoStore()
+    crypto_store = CryptoStore()
 
     __slots__ = (
         "rank",
@@ -81,50 +81,22 @@ class ShareTensor(PassthroughTensor):
         rank: int,
         parties_info: List[Party],
         seed_przs: int = 42,
-        clients: List[Any] = None,
-        ring_size: int = 2
-        ** 32,  # TODO: This needs to be changed to 2^64 (or other specific sizes)
+        clients: Optional[List[Any]] = None,
+        ring_size: int = 2 ** 32,
         value: Optional[Any] = None,
         init_clients: bool = False,
     ) -> None:
+        # TODO: Ring size needs to be changed to 2^64 (or other specific sizes)
         self.rank = rank
         self.ring_size = ring_size
         self.nr_parties = len(parties_info)
         self.parties_info = parties_info
-        self.clients = []
 
         if clients is not None:
             self.clients = clients
-        elif init_clients:
-            # syft absolute
-            import syft as sy
+        elif init_clients:  # type: ignore
+            self.clients = self.login_clients(parties_info)
 
-            self.clients = []
-            for party_info in parties_info:
-                print(CACHE_CLIENTS)
-                client = CACHE_CLIENTS.get(party_info, None)
-                if client is None:
-                    ## TODO: It works, but it is throwing an error and needs investigation
-                    ## Somewhere in the Grid client
-                    ## The error is thrown when generating an SMPC Tensor
-                    """
-                    sy.register(
-                        url=party_info.url,
-                        name=f"DS-{rank}",
-                        email=f"DS-{rank}@temp.com",
-                        password=f"DS-{rank}",
-                        port=party_info.port,
-                    )
-                    """
-
-                    client = sy.login(
-                        url=party_info.url,
-                        email=f"DS-{rank}@temp.com",
-                        password=f"DS-{rank}",
-                        port=party_info.port,
-                    )
-                    CACHE_CLIENTS[party_info] = client
-                self.clients.append(client)
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
         )
@@ -133,6 +105,26 @@ class ShareTensor(PassthroughTensor):
         self.generator_przs = None
         self.seed_przs = seed_przs
         super().__init__(value)
+
+    @staticmethod
+    def login_clients(parties_info: List[Party]) -> Any:
+        clients = []
+        for party_info in parties_info:
+            client = CACHE_CLIENTS.get(party_info, None)
+            if client is None:
+                client = sy.login(
+                    url=party_info.url,
+                    email="howard@mit.edu",
+                    password="astronaut",
+                    port=party_info.port,
+                )
+                base_url = client.routes[0].connection.base_url
+                client.routes[0].connection.base_url = base_url.replace(  # type: ignore
+                    "localhost", "docker-host"
+                )
+                CACHE_CLIENTS[party_info] = client
+            clients.append(client)
+        return clients
 
     def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
         return ShareTensor(
@@ -219,11 +211,10 @@ class ShareTensor(PassthroughTensor):
         if numpy_type is None:
             raise ValueError(f"Ring size {ring_size} not known how to be treated")
 
-        # syft absolute
-        from syft.core.tensor.tensor import Tensor
+        # relative
+        from ..tensor import Tensor
 
-        nr_parties = len(parties_info)
-        if (seed_przs is None) == (generator_przs is None):
+        if (seed_przs is None) and (generator_przs is None):
             raise ValueError("Only seed_przs or generator should be populated")
 
         if value is None:
@@ -248,7 +239,7 @@ class ShareTensor(PassthroughTensor):
                 value=value.child,
                 rank=rank,
                 parties_info=parties_info,
-                seed_przs=None,
+                seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
                 init_clients=init_clients,
             )
 
@@ -257,13 +248,10 @@ class ShareTensor(PassthroughTensor):
             generator_shares.integers(
                 low=share.min_value, high=share.max_value, size=shape
             )
-            for _ in parties_info
+            for _ in range(nr_parties)
         ]
 
-        if ring_size == 2:
-            share.child ^= shares[rank] ^ shares[(rank + 1) % nr_parties]
-        else:
-            share.child += shares[rank] - shares[(rank + 1) % nr_parties]
+        share.child += shares[rank] - shares[(rank + 1) % nr_parties]
 
         return share
 
@@ -428,7 +416,10 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor: Result of the operation.
         """
-        ShareTensor.sanity_checks(y)
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "matmul")
         return new_share
 
@@ -441,8 +432,49 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        ShareTensor.sanity_checks(y)
-        return y.matmul(self)
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        ShareTensor.sanity_check(y)
+        new_share = y.apply_function(self, "matmul")
+        return new_share
+
+    def __eq__(self, other: Any) -> bool:
+        """Equal operator.
+        Check if "self" is equal with another object given a set of
+            attributes to compare.
+        Args:
+            other (Any): Value to compare.
+        Returns:
+            bool: True if equal False if not.
+        """
+        # relative
+        from .... import Tensor
+
+        if (
+            isinstance(self.child, Tensor)
+            and isinstance(other.child, Tensor)
+            and (self.child != other.child).child.any()  # type: ignore
+        ):
+            return False
+
+        if (
+            isinstance(self.child, np.ndarray)
+            and isinstance(other.child, np.ndarray)
+            and (self.child != other.child).any()
+        ):
+            return False
+
+        if self.rank != other.rank:
+            return False
+
+        if self.ring_size != other.ring_size:
+            return False
+
+        if self.nr_parties != other.nr_parties:
+            return False
+
+        return True
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
     # def div(
@@ -499,10 +531,9 @@ class ShareTensor(PassthroughTensor):
 
             res = ShareTensor(
                 rank=_self.rank,
-                parties_info=self.parties_info,
+                parties_info=_self.parties_info,
                 ring_size=_self.ring_size,
                 value=new_share,
-                clients=self.clients,
             )
 
             return res
@@ -510,7 +541,7 @@ class ShareTensor(PassthroughTensor):
         return functools.partial(method_all_shares, __self)
 
     def __getattribute__(self, attr_name: str) -> Any:
-        if attr_name in METHODS_FORWARD_ALL_SHARES:
+        if attr_name in METHODS_FORWARD_ALL_SHARES or attr_name in INPLACE_OPS:
             return ShareTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)
