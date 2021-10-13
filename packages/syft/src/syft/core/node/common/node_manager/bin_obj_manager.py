@@ -38,7 +38,8 @@ class BinObjectManager(ObjectStore):
     def get_object(self, key: UID) -> Optional[StorableObject]:
         try:
             return self.__getitem__(key)
-        except Exception as e:  # noqa: F841
+        except KeyError as e:  # noqa: F841
+            print(e)
             return None
 
     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
