@@ -111,6 +111,7 @@ class ShareTensor(PassthroughTensor):
         clients = []
         for party_info in parties_info:
             client = CACHE_CLIENTS.get(party_info, None)
+            party_info.url = party_info.url.replace("localhost", "docker-host")
             if client is None:
                 client = sy.login(
                     url=party_info.url,
