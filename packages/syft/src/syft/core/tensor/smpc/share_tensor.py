@@ -84,7 +84,7 @@ class ShareTensor(PassthroughTensor):
         clients: Optional[List[Any]] = None,
         ring_size: int = 2 ** 32,
         value: Optional[Any] = None,
-        init_clients: bool = True,
+        init_clients: bool = False,
     ) -> None:
         # TODO: Ring size needs to be changed to 2^64 (or other specific sizes)
         self.rank = rank
