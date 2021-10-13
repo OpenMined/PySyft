@@ -140,7 +140,7 @@ class MPCTensor(PassthroughTensor):
             url = base_url.rsplit(":", 1)[0]
             port = int(base_url.rsplit(":", 1)[1].split("/")[0])
             parties_info.append(Party(url, port))
-
+            url = url.replace("docker-host", "localhost")
             res = PARTIES_REGISTER.get(party, None)
             if res is None:
                 sy.register(
