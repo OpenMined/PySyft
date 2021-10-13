@@ -37,3 +37,6 @@ packages/hagrid/grid
 helm-charts/**/*.tgz
 helm-charts/**/*.lock
 .helm/**
+
+# docker cache
+.docker-cache/

@@ -28,7 +28,7 @@ vars:
   - name: VERSION_HASH
     command: "python ../../VERSION hash"
   - name: NODE_TYPE
-    value: "domain"
+    value: "network"
 
 images:
   backend:
@@ -41,20 +41,6 @@ images:
     dockerfile: ./backend/backend.dockerfile
     context: ../
     build:
-      buildKit: {}
-  worker:
-    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_CELERYWORKER}
-    tags:
-      - "######"
-      - latest
-      - "0.6.0-alpha.0"
-    createPullSecret: true
-    dockerfile: ./backend/backend.dockerfile
-    context: ../
-    build:
-      docker:
-        options:
-          target: "celery-worker"
       buildKit: {}
   frontend:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
@@ -84,7 +70,6 @@ images:
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
     build:
-      disabled: $( [ $NODE_TYPE == "domain" ] && echo "true" || echo "false" )
       buildKit: {}
   tailscale:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
@@ -259,7 +244,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_CELERYWORKER}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
               - waitforit
             args:
@@ -297,6 +282,8 @@ deployments:
                 value: "celery worker -A grid.worker -l info -Q main-queue -c 1"
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
+              - name: C_FORCE_ROOT
+                value: "1"
   - name: frontend
     helm:
       componentChart: true
