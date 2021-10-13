@@ -1,5 +1,4 @@
 # stdlib
-import time
 from typing import Optional
 
 # third party
@@ -163,22 +162,7 @@ class GetObjectAction(ImmediateActionWithReply):
     ) -> ImmediateSyftMessageWithoutReply:
         try:
             try:
-                # keep five minutes seconds as max latency
-                ctr = 3000
-                while True:
-                    storable_object = node.store.get_object(key=self.id_at_location)
-                    if storable_object is None:
-                        ctr -= 1
-                        time.sleep(0.1)
-                        # We intimate user every seven seconds
-                        if ctr % 10 == 0:
-                            print("Waiting for Object to arrive...🚀")
-                    else:
-                        break
-                    if ctr <= 0:
-                        raise Exception(
-                            "Object not found or Object did not arrive at store"
-                        )
+                storable_object = node.store[self.id_at_location]
             except Exception as e:
                 log = (
                     f"Unable to Get Object with ID {self.id_at_location} from store. "
