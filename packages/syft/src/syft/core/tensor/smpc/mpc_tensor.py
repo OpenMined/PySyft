@@ -117,6 +117,7 @@ class MPCTensor(PassthroughTensor):
         #  demo?stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
 
         res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
+
         parties.sort(key=lambda party: party.name + party.id.no_dash)
 
         super().__init__(res)
