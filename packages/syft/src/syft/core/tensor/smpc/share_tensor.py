@@ -80,7 +80,7 @@ class ShareTensor(PassthroughTensor):
         self,
         rank: int,
         parties_info: List[Party],
-        seed_przs: int,
+        seed_przs: int = 42,
         clients: List[Any] = None,
         ring_size: int = 2
         ** 32,  # TODO: This needs to be changed to 2^64 (or other specific sizes)
@@ -137,7 +137,7 @@ class ShareTensor(PassthroughTensor):
     def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
         return ShareTensor(
             rank=self.rank,
-            parties=self.parties,
+            parties_info=self.parties_info,
             ring_size=self.ring_size,
             value=self.child[item],
             clients=self.clients,
@@ -145,6 +145,7 @@ class ShareTensor(PassthroughTensor):
 
     def copy_tensor(self) -> ShareTensor:
         return ShareTensor(
+            value=self.child,
             rank=self.rank,
             parties_info=self.parties_info,
             ring_size=self.ring_size,

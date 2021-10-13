@@ -24,7 +24,6 @@ class Party:
 
     @staticmethod
     def _proto2object(proto: Party_PB) -> "Party":
-        print("Hello")
         # TODO: If on the same machine use docker-host - if not real address
         # How to distinguish? (if 127.0.0.1 and localhost we consider using docker-host?)
         res = Party(url=Party._DOCKER_HOST, port=proto.port)

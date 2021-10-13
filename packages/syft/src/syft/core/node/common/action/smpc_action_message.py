@@ -237,7 +237,34 @@ def smpc_basic_op(
     return actions
 
 
-store = None
+def spdz_mask(x, y, masks):
+    crypto_store = ShareTensor.crypto_store
+    clients = x.clients
+
+    # TODO: Need a way to see how to send the eps and delta to the other parties in a deterministic way
+    # by adding the id
+    a, b, _ = crypto_store.get_primitives_from_store("beaver_mul", x.shape, y.shape)
+
+    print(a)
+    print(b)
+    delta = x.copy_tensor()
+    delta.child -= a.child
+
+    eps = y.copy_tensor()
+    eps.child -= b.child
+
+    n = len(args)
+    ids_remote_eps = args[:n]
+    ids_remote_delta = args[n:]
+
+    print(ids_remote_eps)
+    print(ids_remote_delta)
+
+    for client, id_at_location in zip(clients, ids_alocations_eps):
+        client.send(eps)
+
+    for client, id_at_location in zip(clients, ids_alocations_delta):
+        client.send(delta)
 
 
 def smpc_mul(
@@ -257,18 +284,57 @@ def smpc_mul(
         # crypto_store = ShareTensor.crypto_store
         # _self = node.store[self_id].data
         # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
-        result_mask = UID(UUID(bytes=generator.bytes(16)))
+        mask_result = UID(UUID(bytes=generator.bytes(16)))
+        store_id_masks = UID(UUID(bytes=generator.bytes(16)))
+
+        ids_local_eps = []
+        ids_local_delta = []
+
+        ids_remote_eps = []
+        ids_remote_delta = []
+
+        for i in range(nr_parties):
+            if other.rank != i:
+                ids_local_eps.append(UID(UUID(bytes=generator.bytes(16))))
+                ids_local_delta.append(UID(UUID(bytes=generator.bytes(16))))
+            else:
+                ids_remote_eps.append(UID(UUID(bytes=generator.bytes(16))))
+                ids_remote_delta.append(UID(UUID(bytes=generator.bytes(16))))
+
+        node.store[store_id_masks] = syft.lib.python.Tuple(ids_remote_eps, ids_remote_delta)
         actions.append(
-            SMPCAction(
+            SMPCActionMessage(
                 "spdz_mask",
+                self_id=self_id,
+                args_id=[other_id]
+                kwargs_id={"store_masks": store_id_masks},
+                ranks_to_run_action=list(range(nr_parties)),
+                result_id=mask_result,
+                address=node.address,
+            )
+        )
+
+        """
+        location_eps_delta_shares = []
+
+        result_eps_delta = UID(UUID(bytes=generator.bytes(16)))
+        actions.append(
+                "spdz_reveal",
                 self_id=self_id,
                 args_id=[other_id],
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_mask,
-            )
         )
-        """
+        actions.append(
+                "spdz_multiply",
+                self_id=self_id,
+                args_id=[other_id],
+                kwargs_id={},
+                ranks_to_run_action=list(range(nr_parties)),
+                result_id=result_mask,
+        )
+
         actions.append(
                 "multiply",
                 self_id=self_id,
@@ -308,5 +374,6 @@ _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_add": operator.add,
     "mpc_sub": operator.sub,
     "mpc_mul": operator.mul,
+    "spdz_mask": spdz_mask,
     "mpc_noop": deepcopy,
 }
