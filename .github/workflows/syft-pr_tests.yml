@@ -21,8 +21,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        # os: [windows-latest, ubuntu-latest, macos-latest]
-        os: [windows-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: [3.9]
         torch-version: [1.8.1]
 
@@ -66,7 +65,6 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T 1InniiKtBa0wZZMHjwc2Sl xchEHtHjMwR7Zy6R7e0zrf au.relay.tunshell.com
           pip install packaging --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
