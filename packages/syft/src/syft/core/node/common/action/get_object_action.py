@@ -164,15 +164,14 @@ class GetObjectAction(ImmediateActionWithReply):
         try:
             try:
                 # keep five minutes seconds as max latency
-                # TODO: Before Merge Should discuss with syft core team on max time.
                 ctr = 3000
                 while True:
                     storable_object = node.store.get_object(key=self.id_at_location)
                     if storable_object is None:
                         ctr -= 1
                         time.sleep(0.1)
-                        # We intimate user every ten seconds
-                        if ctr % 100 == 0:
+                        # We intimate user every seven seconds
+                        if ctr % 10 == 0:
                             print("Waiting for Object to arrive...🚀")
                     else:
                         break

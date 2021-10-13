@@ -39,7 +39,6 @@ class BinObjectManager(ObjectStore):
         try:
             return self.__getitem__(key)
         except Exception as e:  # noqa: F841
-            print(e)
             return None
 
     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
@@ -93,7 +92,7 @@ class BinObjectManager(ObjectStore):
         )
 
         if not bin_obj or not obj_metadata:
-            raise Exception("Object not found!")
+            raise Exception(f"Object not found at {key}!")
 
         obj = StorableObject(
             id=UID.from_string(bin_obj.id),

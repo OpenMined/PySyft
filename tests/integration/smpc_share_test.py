@@ -42,7 +42,6 @@ def test_mpc_private_private_op(op_str: str) -> None:
     remote_value_2 = clients[1].syft.core.tensor.tensor.Tensor(value_2)
 
     mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(1, 5))
-
     mpc_tensor_2 = MPCTensor(parties=clients, secret=remote_value_2, shape=(1,))
 
     op = getattr(operator, op_str)
