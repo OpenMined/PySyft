@@ -144,7 +144,9 @@ class ShareTensor(PassthroughTensor):
         # The secret holder should generate the shares and send them to the other parties
         generator_shares = np.random.default_rng(seed_shares)
 
-        share = value.child
+        # share = value.child  # unboxing 2?
+        print("generate_przs with", value, type(value))
+        share = getattr(value, "child", value)  # if no child we already have the leaf
         if not isinstance(share, ShareTensor):
             share = ShareTensor(value=share, rank=rank, nr_parties=nr_parties)
 
