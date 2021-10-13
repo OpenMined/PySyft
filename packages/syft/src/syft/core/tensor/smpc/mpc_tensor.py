@@ -124,7 +124,7 @@ class MPCTensor(PassthroughTensor):
     @staticmethod
     def get_parties_info(parties: List[Any]) -> List[Party]:
         # relative
-        from .....grid.client import GridHTTPConnection
+        from ....grid.client import GridHTTPConnection
 
         parties_info: List[Party] = []
         for party in parties:
