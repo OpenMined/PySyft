@@ -140,17 +140,21 @@ class MPCTensor(PassthroughTensor):
             url = base_url.rsplit(":", 1)[0]
             port = int(base_url.rsplit(":", 1)[1].split("/")[0])
             parties_info.append(Party(url, port))
-            url = url.replace("docker-host", "localhost")
             res = PARTIES_REGISTER.get(party, None)
             if res is None:
-                sy.register(
-                    name="Howard Wolowtiz",
-                    email="howard@mit.edu",
-                    password="astronaut",
-                    url=url,
-                    port=port,
-                )
                 PARTIES_REGISTER[party] = True
+                try:
+                    sy.register(
+                        name="Howard Wolowtiz",
+                        email="howard@mit.edu",
+                        password="astronaut",
+                        url=url,
+                        port=port,
+                    )
+                except Exception as e:  # noqa
+                    # TODO : should modify to return same client if registered.
+                    print("Proxy Client already User Register")
+
         return parties_info
 
     def publish(self, sigma: float) -> MPCTensor:
