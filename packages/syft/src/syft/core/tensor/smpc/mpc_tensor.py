@@ -294,6 +294,7 @@ class MPCTensor(PassthroughTensor):
                 value=value,
                 shape=shape,
                 seed_przs=seed_przs,
+                init_clients=False,
             )
 
             shares.append(local_share)

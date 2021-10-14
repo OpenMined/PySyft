@@ -99,7 +99,9 @@ def _get_triples(
         shape=c_val.shape,
         seed_przs=seed_przs,
     )
-
+    print("a", a_shares)
+    print("b", b_shares)
+    print("c", c_shares)
     # We are always creating an instance
     triple_sequential = [(a_shares, b_shares, c_shares)]
 
@@ -123,7 +125,7 @@ def _get_triples(
     triple = list(
         map(list, zip(*map(lambda x: map(list, zip(*x)), triple_sequential)))  # type: ignore
     )
-
+    print("Triple", triple)
     return triple  # type: ignore
 
 
