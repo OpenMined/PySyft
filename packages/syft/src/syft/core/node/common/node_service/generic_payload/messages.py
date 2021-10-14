@@ -57,8 +57,8 @@ class GenericPayloadMessageWithReply:
     ) -> Dict[str, Any]:
         raise NotImplementedError
 
-    def to(self, address: Address, reply_to: Address) -> GenericPayloadMessage:
+    def to(self, address: Address, reply_to: Address) -> Any:
         return self.message_type(address=address, reply_to=reply_to, payload=self)
 
-    def back_to(self, address: Address) -> GenericPayloadReplyMessage:
+    def back_to(self, address: Address) -> Any:
         return self.message_reply_type(address=address, payload=self)

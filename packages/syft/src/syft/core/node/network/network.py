@@ -35,6 +35,8 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
 from ..common.node_service.vpn.vpn_service import VPNConnectService
+from ..common.node_service.vpn.vpn_service import VPNJoinService
+from ..common.node_service.vpn.vpn_service import VPNRegisterService
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
 from .client import NetworkClient
@@ -89,6 +91,8 @@ class Network(Node):
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(VPNConnectService)
+        self.immediate_services_with_reply.append(VPNJoinService)
+        self.immediate_services_with_reply.append(VPNRegisterService)
         self.immediate_services_with_reply.append(PingService)
 
         self.requests: List[RequestMessage] = list()
