@@ -31,6 +31,7 @@ ttp_generator = np.random.default_rng()
 def _get_triples(
     op_str: str,
     nr_parties: int,
+    parties_info: List[Any],
     a_shape: Tuple[int],
     b_shape: Tuple[int],
     ring_size: int = 2 ** 32,
@@ -44,6 +45,7 @@ def _get_triples(
     Args:
         op_str (str): Operator string.
         nr_parties (int): Number of parties
+        parties_info (List[Any]): Parties connection information.
         a_shape (Tuple[int]): Shape of a from beaver triples protocol.
         b_shape (Tuple[int]): Shape of b part from beaver triples protocol.
         ring_size (int) : Ring Size of the triples to generate.
@@ -64,7 +66,6 @@ def _get_triples(
     min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
     seed_przs = secrets.randbits(32)
 
-    parties_info = [None for _ in range(nr_parties)]
     a_rand = Tensor(
         ttp_generator.integers(
             low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=np.int32
@@ -76,7 +77,7 @@ def _get_triples(
         shape=a_shape,
         seed_przs=seed_przs,
     )
-
+    seed_przs = secrets.randbits(32)
     b_rand = Tensor(
         ttp_generator.integers(
             low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=np.int32
@@ -89,7 +90,7 @@ def _get_triples(
         shape=b_shape,
         seed_przs=seed_przs,
     )
-
+    seed_przs = secrets.randbits(32)
     c_val = cmd(a_rand, b_rand, **kwargs)
 
     c_shares = MPCTensor._get_shares_from_local_secret(

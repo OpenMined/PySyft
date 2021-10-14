@@ -14,7 +14,6 @@ class CryptoPrimitiveProvider:
 
     _func_providers: Dict[str, Callable] = {}
     _ops_list: DefaultDict[str, List] = defaultdict(list)
-    cache_store: Dict[Any, Any] = {}
 
     def __init__(self) -> None:  # noqa
         raise ValueError("This class should not be initialized")
@@ -22,8 +21,7 @@ class CryptoPrimitiveProvider:
     @staticmethod
     def generate_primitives(
         op_str: str,
-        clients: List[Any],
-        parties_info: List[Any],
+        parties: List[Any],
         g_kwargs: Dict[str, Any] = {},
         p_kwargs: Dict[str, Any] = {},
     ) -> List[Any]:
@@ -31,7 +29,6 @@ class CryptoPrimitiveProvider:
 
         Args:
             op_str (str): Operator.
-            parties (List[Any]): Parties to generate primitives for.
             parties (List[Any]): Parties to generate primitives for.
             g_kwargs: Generate kwargs passed to the registered function.
             p_kwargs: Populate kwargs passed to the registered populate function.
@@ -46,7 +43,7 @@ class CryptoPrimitiveProvider:
         if op_str not in CryptoPrimitiveProvider._func_providers:
             raise ValueError(f"{op_str} not registered")
 
-        nr_parties = len(parties_info)
+        nr_parties = len(parties)
 
         generator = CryptoPrimitiveProvider._func_providers[op_str]
         primitives = generator(**g_kwargs, nr_parties=nr_parties)
@@ -57,8 +54,7 @@ class CryptoPrimitiveProvider:
             CryptoPrimitiveProvider._transfer_primitives_to_parties(
                 op_str=op_str,
                 primitives=primitives,
-                clients=clients,
-                parties_info=parties_info,
+                parties=parties,
                 p_kwargs=p_kwargs,
             )
 
@@ -70,33 +66,19 @@ class CryptoPrimitiveProvider:
     def _transfer_primitives_to_parties(
         op_str: str,
         primitives: List[Any],
-        clients: List[Any],
-        parties_info: List[Any],
+        parties: List[Any],
         p_kwargs: Dict[str, Any],
     ) -> None:
-        cache_store = CryptoPrimitiveProvider.cache_store
         if not isinstance(primitives, list):
             raise ValueError("Primitives should be a List")
 
-        if len(primitives) != len(parties_info):
+        if len(primitives) != len(parties):
             raise ValueError(
-                f"Primitives length {len(primitives)} != Parties length {len(parties_info)}"
+                f"Primitives length {len(primitives)} != Parties length {len(parties)}"
             )
 
-        if len(clients) != len(parties_info):
-            raise ValueError(
-                f"Clients length {len(clients)} != Parties Information length {len(parties_info)}"
-            )
-
-        for primitives_party, client in zip(primitives, clients):
-            if client not in cache_store:
-                cache_store[client] = client.syft.core.smpc.store.CryptoStore()
-
-            # TODO: This should be done better
-            for primitive in primitives_party[0]:
-                primitive.parties_info = parties_info
-
-            client.syft.core.tensor.smpc.share_tensor.populate_store(
+        for primitives_party, party in zip(primitives, parties):
+            party.syft.core.tensor.smpc.share_tensor.populate_store(
                 op_str, primitives_party, **p_kwargs
             )
 

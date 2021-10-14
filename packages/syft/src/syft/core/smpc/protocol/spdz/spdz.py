@@ -59,9 +59,8 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     if op_str not in EXPECTED_OPS:
         raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
 
-    clients = x.clients
+    parties = x.parties
     parties_info = x.parties_info
-    # clients = register_clients(parties)
     print("Registered Clients")
     print(cache_clients)
     print("\n\n")
@@ -71,29 +70,19 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
 
     CryptoPrimitiveProvider.generate_primitives(
         f"beaver_{op_str}",
-        clients=clients,
-        parties_info=parties_info,
+        parties=parties,
         g_kwargs={
             "a_shape": shape_x,
             "b_shape": shape_y,
+            "parties_info": parties_info,
         },
         p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
     )
 
+    # TODO: Should modify to parallel execution.
     res_shares = [operator.mul(a, b) for a, b in zip(x.child, y.child)]
 
     return res_shares  # type: ignore
-
-    # print("Generated Primitives")
-    # print("\n\n")
-
-    # # TODO: Should modify to parallel execution
-    # """
-    # shares = [
-    #     party.syft.core.smpc.protocol.spdz.spdz.mul_parties(*arg)
-    #     for arg, party in zip(args, parties)
-    # ]
-    # """
 
 
 def mul_parties(

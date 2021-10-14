@@ -8,7 +8,6 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..node.abstract.node import AbstractNodeClient
-from ..smpc.store.crypto_store import CryptoStore
 from .autodp.single_entity_phi import SingleEntityPhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .smpc.share_tensor import ShareTensor
@@ -29,15 +28,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
         "syft.core.tensor.autodp.single_entity_phi",
-        "syft.core.smpc",
-        "syft.core.smpc.store",
     ]
     classes = [
-        (
-            "syft.core.smpc.store.CryptoStore",
-            "syft.core.smpc.store.CryptoStore",
-            CryptoStore,
-        ),
         ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
         (
             "syft.core.tensor.autodp.single_entity_phi.SingleEntityPhiTensor",
