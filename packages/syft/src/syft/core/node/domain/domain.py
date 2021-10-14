@@ -419,6 +419,7 @@ class Domain(Node):
             self.environments.clear()
             self.association_requests.clear()
             self.datasets.clear()
+            self.initial_setup()
             return True
 
         return False
