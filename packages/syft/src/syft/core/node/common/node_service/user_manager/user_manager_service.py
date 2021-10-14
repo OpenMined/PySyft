@@ -61,8 +61,8 @@ def create_user_msg(
     except UserNotFoundError:
         # If email not registered, a new user can be created.
         pass
-
-    node.users.create_user_application(
+    
+    app_id = node.users.create_user_application(
         name=msg.name,
         email=msg.email,
         password=msg.password,
@@ -70,7 +70,14 @@ def create_user_msg(
         institution=msg.institution,
         website=msg.website,
     )
-
+    
+    user_role_id =  node.users.role(verify_key=verify_key).id
+    
+    if node.roles.can_create_users(role_id=user_role_id):
+        node.users.process_user_application(
+            candidate_id=app_id, status="accepted", verify_key=verify_key
+        )
+    
     return SuccessResponseMessage(
         address=msg.reply_to,
         resp_msg="User created successfully!",
