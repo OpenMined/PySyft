@@ -165,7 +165,7 @@ class CreateBudgetRequestMessage(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def _proto2object(
         proto: CreateBudgetRequestMessage_PB,
-    ) -> "CreateRequestMessage":
+    ) -> "CreateBudgetRequestMessage":
         """Creates a CreateRequestMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -590,7 +590,7 @@ class GetBudgetRequestsMessage(ImmediateSyftMessageWithReply):
     @staticmethod
     def _proto2object(
         proto: GetBudgetRequestsMessage_PB,
-    ) -> "GetRequestsMessage":
+    ) -> "GetBudgetRequestsMessage":
         """Creates a GetRequestsMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -662,7 +662,7 @@ class GetBudgetRequestsResponse(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def _proto2object(
         proto: GetBudgetRequestsResponse_PB,
-    ) -> "GetRequestsResponse":
+    ) -> "GetBudgetRequestsResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

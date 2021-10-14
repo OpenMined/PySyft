@@ -54,7 +54,7 @@ async def get_all_requests_grid(
 )
 async def get_all_budget_requests_grid(
     current_user: UserPrivate = Depends(get_current_user),
-) -> List[Request]:
+) -> List[BudgetRequestResponse]:
     try:
         return syft_requests_messages.get_all_budget_requests(current_user)
     except Exception as err:

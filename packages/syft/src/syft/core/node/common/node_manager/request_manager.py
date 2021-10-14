@@ -2,6 +2,7 @@
 from datetime import datetime
 from typing import Any
 from typing import Dict
+from typing import Optional
 
 # third party
 from sqlalchemy.engine import Engine
@@ -29,7 +30,7 @@ class RequestManager(DatabaseManager):
 
         return result
 
-    def create_request(self, **kwargs) -> Request:
+    def create_request(self, **kwargs: Any) -> Request:
         date = datetime.now()
         return self.register(id=str(UID().value), date=date, **kwargs)
 
@@ -46,7 +47,7 @@ class RequestManager(DatabaseManager):
         self.modify({"id": request_id}, {"status": status})
 
     def get_user_info(self, request_id: int) -> Dict:
-        request = super().first(id=request_id)
+        request: Optional[Request] = super().first(id=request_id)
         return {
             "name": request.user_name,
             "email": request.user_email,
@@ -57,7 +58,7 @@ class RequestManager(DatabaseManager):
         }
 
     def get_req_info(self, request_id: int) -> Dict:
-        request = super().first(id=request_id)
+        request: Optional[Request] = super().first(id=request_id)
         return {
             "id": request.id,
             "date": str(request.date),
