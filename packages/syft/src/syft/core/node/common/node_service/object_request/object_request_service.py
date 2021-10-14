@@ -151,7 +151,7 @@ def create_budget_request_msg(
 
     if _duplicate_request:
         raise DuplicateRequestException(
-            f"You have already requested {msg.object_id} ",
+            f"You have already requested this item before! ",
             node.data_requests.all(),
             "My Requests",
         )
@@ -255,7 +255,7 @@ def get_all_budget_requests(
     msg: GetBudgetRequestsMessage,
     node: Domain,
     verify_key: VerifyKey,
-) -> GetBudgetRequestsMessage:
+) -> GetBudgetRequestsResponse:
     users = node.users
 
     allowed = users.can_triage_requests(verify_key=verify_key)

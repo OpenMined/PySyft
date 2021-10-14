@@ -48,32 +48,40 @@ class RequestManager(DatabaseManager):
 
     def get_user_info(self, request_id: int) -> Dict:
         request: Optional[Request] = super().first(id=request_id)
-        return {
-            "name": request.user_name,
-            "email": request.user_email,
-            "role": request.user_role,
-            "current_budget": request.user_budget,
-            "institution": request.institution,
-            "website": request.website,
-        }
+        if request:
+            return {
+                "name": request.user_name,
+                "email": request.user_email,
+                "role": request.user_role,
+                "current_budget": request.user_budget,
+                "institution": request.institution,
+                "website": request.website,
+            }
+        else:
+            return {}
+
 
     def get_req_info(self, request_id: int) -> Dict:
         request: Optional[Request] = super().first(id=request_id)
-        return {
-            "id": request.id,
-            "date": str(request.date),
-            "status": request.status,
-            "reason": request.reason,
-            "request_type": request.request_type,
-            "current_budget": request.current_budget,
-            "requested_budget": request.requested_budget,
-            "review": {
-                "name": request.reviewer_name,
-                "role": request.reviewer_role,
-                "updated_on": str(request.updated_on),
-                "comment": request.reviewer_comment,
-            },
-        }
+        if request:
+            return {
+                "id": request.id,
+                "date": str(request.date),
+                "status": request.status,
+                "reason": request.reason,
+                "request_type": request.request_type,
+                "current_budget": request.current_budget,
+                "requested_budget": request.requested_budget,
+                "review": {
+                    "name": request.reviewer_name,
+                    "role": request.reviewer_role,
+                    "updated_on": str(request.updated_on),
+                    "comment": request.reviewer_comment,
+                },
+            }
+        else:
+            return {}
+
 
     def clear(self) -> None:
         local_session = sessionmaker(bind=self.db)()
