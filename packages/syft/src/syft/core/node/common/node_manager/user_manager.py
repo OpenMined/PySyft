@@ -97,7 +97,7 @@ class UserManager(DatabaseManager):
         daa_pdf: Optional[bytes],
         institution: Optional[str] = "",
         website: Optional[str] = "",
-    ) -> None:
+    ) -> int:
         salt, hashed = self.__salt_and_hash_password(password, 12)
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         _pdf_obj = PDFObject(binary=daa_pdf)
@@ -118,6 +118,9 @@ class UserManager(DatabaseManager):
         session_local.add(_pdf_obj)
         session_local.add(_obj)
         session_local.commit()
+        _obj_id = _obj.id
+        session_local.close()
+        return _obj_id
 
     def get_all_applicant(self) -> List[UserApplication]:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
