@@ -250,6 +250,8 @@ def spdz_multiply(
     delta_id: UID,
     node: Optional[Any] = None,
 ) -> ShareTensor:
+    print(")))))))))))))))))))))))))")
+    print("SPDZ multiply")
     crypto_store = ShareTensor.crypto_store
     nr_parties = x.nr_parties
     eps = node.store.get_object(key=eps_id)  # type: ignore
@@ -281,6 +283,8 @@ def spdz_multiply(
 
 # TODO : Should move to spdz directly in syft/core/smpc
 def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> None:  # type: ignore
+    print(")))))))))))))))))))))))))")
+    print("SPDZ Mask")
     crypto_store = ShareTensor.crypto_store
     clients = x.clients
 

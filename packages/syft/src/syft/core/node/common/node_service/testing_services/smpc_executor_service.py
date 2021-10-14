@@ -43,7 +43,12 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
 
         _self = store_object_self.data
         args = [node.store[arg_id].data for arg_id in msg.args_id]
-        kwargs = {}
+        kwargs = {}  # type: ignore
+        if "spdz" in msg.name_action:
+            eps_id = msg.kwargs_id["eps_id"]
+            delta_id = msg.kwargs_id["delta_id"]
+            kwargs.pop("eps_id")
+            kwargs.pop("delta_id")
         for key, kwarg_id in msg.kwargs_id.items():
             data = node.store[kwarg_id].data
             if data is None:
@@ -55,6 +60,9 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
         logger.warning(func)
+
+        upcasted_kwargs["eps_id"] = eps_id
+        upcasted_kwargs["delta_id"] = delta_id
         if "spdz_multiply" in msg.name_action:
             result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
         else:
