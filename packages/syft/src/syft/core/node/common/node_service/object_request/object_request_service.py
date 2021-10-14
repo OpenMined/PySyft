@@ -151,7 +151,7 @@ def create_budget_request_msg(
 
     if _duplicate_request:
         raise DuplicateRequestException(
-            f"You have already requested this item before! ",
+            "You have already requested this item before!",
             node.data_requests.all(),
             "My Requests",
         )
