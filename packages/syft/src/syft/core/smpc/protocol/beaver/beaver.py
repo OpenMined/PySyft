@@ -77,7 +77,7 @@ def _get_triples(
         shape=a_shape,
         seed_przs=seed_przs,
     )
-
+    seed_przs = secrets.randbits(32)
     b_rand = Tensor(
         ttp_generator.integers(
             low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=np.int32
@@ -90,7 +90,7 @@ def _get_triples(
         shape=b_shape,
         seed_przs=seed_przs,
     )
-
+    seed_przs = secrets.randbits(32)
     c_val = cmd(a_rand, b_rand, **kwargs)
 
     c_shares = MPCTensor._get_shares_from_local_secret(
