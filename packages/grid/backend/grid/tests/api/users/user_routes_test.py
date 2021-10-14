@@ -6,8 +6,7 @@ from starlette import status
 
 # grid absolute
 from grid.tests.utils.auth import authenticate_owner
-
-# from grid.tests.utils.user import create_user
+from grid.tests.utils.user import create_user
 
 
 class TestUsersRoutes:
