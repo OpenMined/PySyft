@@ -1,5 +1,7 @@
 # stdlib
+import operator
 import time
+from typing import List
 
 # third party
 import numpy as np
@@ -7,56 +9,85 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.tensor import Tensor
 from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 
 sy.logger.remove()
 
-PORT = 9082
 
-PARTIES = 2
+def get_clients() -> List:
+    PORT = 9082
 
-
-@pytest.mark.xfail
-@pytest.mark.integration
-def test_secret_sharing() -> None:
+    PARTIES = 2
     clients = []
     for i in range(PARTIES):
         client = sy.login(
             email="info@openmined.org", password="changethis", port=(PORT + i)
         )
         clients.append(client)
+    return clients
 
-    data = np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]], dtype=np.int64)
-    value_secret = clients[0].syft.core.tensor.tensor.Tensor(data)
+
+@pytest.mark.integration
+def test_secret_sharing() -> None:
+    clients = get_clients()
+
+    data = Tensor(child=np.array([[1, 2, 3, 4, 5], [6, 7, 8, 9, 10]], dtype=np.int32))
+    value_secret = data.send(clients[0])
+
     mpc_tensor = MPCTensor(secret=value_secret, shape=(2, 5), parties=clients)
 
-    # wait for network comms between nodes
-    time.sleep(2)
+    time.sleep(10)
 
     res = mpc_tensor.reconstruct()
-    assert (res == data).all()
+    assert (res == data.child).all()
 
-    public_value = 42
-    res_add = mpc_tensor + public_value
 
-    # wait for network comms between nodes
-    time.sleep(2)
+@pytest.mark.integration
+@pytest.mark.parametrize("op_str", ["add", "sub"])
+def test_mpc_private_private_op(op_str: str) -> None:
+    clients = get_clients()
 
-    result = res_add.reconstruct()
-    assert ((data + public_value) == result).all()
+    value_1 = Tensor(child=np.array([[1, 2, 3, 4, -5]], dtype=np.int32))
+    value_2 = Tensor(child=np.array([42], dtype=np.int32))
 
-    res_sub = mpc_tensor - public_value
+    remote_value_1 = value_1.send(clients[0])
+    remote_value_2 = value_2.send(clients[1])
 
-    # wait for network comms between nodes
-    time.sleep(2)
+    mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(1, 5))
+    mpc_tensor_2 = MPCTensor(parties=clients, secret=remote_value_2, shape=(1,))
 
-    result = res_sub.reconstruct()
-    assert ((data - public_value) == result).all()
+    op = getattr(operator, op_str)
 
-    res_mul = mpc_tensor * public_value
+    res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
-    # wait for network comms between nodes
-    time.sleep(2)
+    time.sleep(20)
 
-    result = res_mul.reconstruct()
-    assert ((data * public_value) == result).all()
+    res = res_ptr.reconstruct()
+    expected = op(value_1, value_2)
+
+    assert (res == expected.child).all()
+
+
+@pytest.mark.integration
+@pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
+def test_mpc_public_private_op(op_str: str) -> None:
+    clients = get_clients()
+
+    value_1 = Tensor(child=np.array([[1, 2, 3, 4, -5]], dtype=np.int32))
+
+    remote_value_1 = value_1.send(clients[0])
+    public_value = 27
+
+    mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(1, 5))
+
+    op = getattr(operator, op_str)
+
+    res = op(mpc_tensor_1, public_value)
+
+    time.sleep(20)
+
+    res = res.reconstruct()
+    expected = op(value_1, public_value)
+
+    assert (res == expected.child).all()
