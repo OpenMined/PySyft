@@ -576,6 +576,7 @@ class ShareTensor(PassthroughTensor):
         else:
             init_kwargs["value"] = deserialize(proto.array)
 
+        init_kwargs["init_clients"] = True
         res = ShareTensor(**init_kwargs)
         generator_przs = np.random.default_rng(proto.seed_przs)
         res.generator_przs = generator_przs

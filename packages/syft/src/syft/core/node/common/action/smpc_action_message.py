@@ -256,6 +256,8 @@ def spdz_multiply(
     nr_parties = x.nr_parties
     eps = node.store.get_object(key=eps_id)  # type: ignore
     delta = node.store.get_object(key=delta_id)  # type: ignore
+    print(eps)
+    print(delta)
     if eps is None or len(eps.data) != nr_parties:
         raise BeaverError
     if delta is None or len(delta.data) != nr_parties:
@@ -297,7 +299,12 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
 
     # TODO : Should modify , no need to send for the current client
     # As the curent client is local.
-    for client in clients:
+    # TODO: clients is empty
+    for rank, client in enumerate(clients):
+        if x.rank == rank:
+            continue
+
+        print("Client here", client)
         client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
         client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
     # As they are asynchronous , include them in a single action
@@ -337,6 +344,7 @@ def smpc_mul(
             )
         )
 
+        """
         actions.append(
             SMPCActionMessage(
                 "spdz_multiply",
@@ -348,6 +356,7 @@ def smpc_mul(
                 address=node.address,
             )
         )
+        """
 
     else:
         # All ranks should multiply by that public value
