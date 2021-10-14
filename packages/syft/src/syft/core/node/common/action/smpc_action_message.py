@@ -237,9 +237,9 @@ def smpc_basic_op(
     return actions
 
 
-def spdz_mask(x, y, masks):
+def spdz_mask(x, y, masks) -> None:  # type: ignore
     crypto_store = ShareTensor.crypto_store
-    clients = x.clients
+    # clients = x.clients
 
     # TODO: Need a way to see how to send the eps and delta to the other parties in a deterministic way
     # by adding the id
@@ -253,18 +253,18 @@ def spdz_mask(x, y, masks):
     eps = y.copy_tensor()
     eps.child -= b.child
 
-    n = len(args)
-    ids_remote_eps = args[:n]
-    ids_remote_delta = args[n:]
+    # n = len(masks)
+    # ids_remote_eps = args[:n]
+    # ids_remote_delta = args[n:]
 
-    print(ids_remote_eps)
-    print(ids_remote_delta)
+    # print(ids_remote_eps)
+    # print(ids_remote_delta)
 
-    for client, id_at_location in zip(clients, ids_alocations_eps):
-        client.send(eps)
+    # for client, id_at_location in zip(clients, ids_alocations_eps):
+    #     client.send(eps)
 
-    for client, id_at_location in zip(clients, ids_alocations_delta):
-        client.send(delta)
+    # for client, id_at_location in zip(clients, ids_alocations_delta):
+    #     client.send(delta)
 
 
 def smpc_mul(
@@ -301,12 +301,14 @@ def smpc_mul(
                 ids_remote_eps.append(UID(UUID(bytes=generator.bytes(16))))
                 ids_remote_delta.append(UID(UUID(bytes=generator.bytes(16))))
 
-        node.store[store_id_masks] = syft.lib.python.Tuple(ids_remote_eps, ids_remote_delta)
+        node.store[store_id_masks] = sy.lib.python.Tuple(
+            ids_remote_eps, ids_remote_delta
+        )
         actions.append(
             SMPCActionMessage(
                 "spdz_mask",
                 self_id=self_id,
-                args_id=[other_id]
+                args_id=[other_id],
                 kwargs_id={"store_masks": store_id_masks},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,

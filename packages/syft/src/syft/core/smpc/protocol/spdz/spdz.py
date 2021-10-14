@@ -14,7 +14,6 @@ import operator
 import time
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 
@@ -24,6 +23,7 @@ import syft as sy
 # relative
 from ....common.uid import UID
 from ....node.abstract.node import AbstractNode
+from ....node.common.client import Client
 from ....store.storeable_object import StorableObject
 from ....tensor.smpc.share_tensor import ShareTensor
 from ...store import CryptoPrimitiveProvider
@@ -54,7 +54,7 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         MPCTensor: Result of the multiplication.
     """
     # relative
-    from ....tensor.smpc.mpc_tensor import MPCTensor
+    # from ....tensor.smpc.mpc_tensor import MPCTensor
 
     if op_str not in EXPECTED_OPS:
         raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
@@ -66,8 +66,8 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     print(cache_clients)
     print("\n\n")
 
-    shape_x = tuple(x.shape)
-    shape_y = tuple(y.shape)
+    shape_x = tuple(x.shape)  # type: ignore
+    shape_y = tuple(y.shape)  # type: ignore
 
     CryptoPrimitiveProvider.generate_primitives(
         f"beaver_{op_str}",
@@ -82,18 +82,18 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
 
     res_shares = [operator.mul(a, b) for a, b in zip(x.child, y.child)]
 
-    return res_shares
+    return res_shares  # type: ignore
 
-    print("Generated Primitives")
-    print("\n\n")
+    # print("Generated Primitives")
+    # print("\n\n")
 
-    # TODO: Should modify to parallel execution
-    """
-    shares = [
-        party.syft.core.smpc.protocol.spdz.spdz.mul_parties(*arg)
-        for arg, party in zip(args, parties)
-    ]
-    """
+    # # TODO: Should modify to parallel execution
+    # """
+    # shares = [
+    #     party.syft.core.smpc.protocol.spdz.spdz.mul_parties(*arg)
+    #     for arg, party in zip(args, parties)
+    # ]
+    # """
 
 
 def mul_parties(
