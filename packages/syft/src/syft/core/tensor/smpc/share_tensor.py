@@ -75,6 +75,7 @@ class ShareTensor(PassthroughTensor):
         # Only ShareTensors with seed_przs could be sent over the wire
         "seed_przs",
         "parties_info",
+        "nr_parties",
     )
 
     def __init__(

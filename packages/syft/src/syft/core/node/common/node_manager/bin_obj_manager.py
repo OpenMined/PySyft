@@ -92,7 +92,7 @@ class BinObjectManager(ObjectStore):
         )
 
         if not bin_obj or not obj_metadata:
-            raise Exception(f"Object not found! for UID: {key}")
+            raise KeyError(f"Object not found! for UID: {key}")
 
         obj = StorableObject(
             id=UID.from_string(bin_obj.id),
