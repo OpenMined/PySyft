@@ -47,8 +47,8 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
         if "spdz" in msg.name_action:
             eps_id = msg.kwargs_id["eps_id"]
             delta_id = msg.kwargs_id["delta_id"]
-            kwargs.pop("eps_id")
-            kwargs.pop("delta_id")
+            msg.kwargs_id.pop("eps_id")
+            msg.kwargs_id.pop("delta_id")
         for key, kwarg_id in msg.kwargs_id.items():
             data = node.store[kwarg_id].data
             if data is None:
