@@ -6,7 +6,8 @@ from starlette import status
 
 # grid absolute
 from grid.tests.utils.auth import authenticate_owner
-#from grid.tests.utils.user import create_user
+
+# from grid.tests.utils.user import create_user
 
 
 class TestUsersRoutes:
@@ -16,7 +17,7 @@ class TestUsersRoutes:
             assert app.url_path_for(route_name) is not None
         for route_name in ["users:read_one", "users:update", "users:delete"]:
             assert app.url_path_for(route_name, **{"user_id": 1}) is not None
-    '''
+
     @pytest.mark.asyncio
     async def test_unauthenticated_user_cannot_create_user(
         self, app: FastAPI, client: AsyncClient
@@ -36,7 +37,6 @@ class TestUsersRoutes:
             app.url_path_for("users:create"), json=dict(user), headers=headers
         )
         assert res.status_code == status.HTTP_201_CREATED
-    '''
 
     @pytest.mark.asyncio
     async def test_list_users(self, app: FastAPI, client: AsyncClient) -> None:
@@ -51,7 +51,7 @@ class TestUsersRoutes:
             app.url_path_for("users:read_one", **{"user_id": 1}), headers=headers
         )
         assert res.status_code == status.HTTP_200_OK
-    '''
+
     @pytest.mark.asyncio
     async def test_invalid_user_raises_errors(
         self, app: FastAPI, client: AsyncClient
@@ -73,4 +73,3 @@ class TestUsersRoutes:
             app.url_path_for("users:create"), json=invalid_user, headers=headers
         )
         assert res.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
-    '''
