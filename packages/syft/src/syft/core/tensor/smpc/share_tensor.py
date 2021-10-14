@@ -95,7 +95,7 @@ class ShareTensor(PassthroughTensor):
         if clients is not None:
             self.clients = clients
         elif init_clients:  # type: ignore
-            self.clients = self.login_clients(parties_info)
+            self.clients = ShareTensor.login_clients(parties_info)
 
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
@@ -215,7 +215,7 @@ class ShareTensor(PassthroughTensor):
         # relative
         from ..tensor import Tensor
 
-        if (seed_przs is None) and (generator_przs is None):
+        if (seed_przs is None) == (generator_przs is None):
             raise ValueError("Only seed_przs or generator should be populated")
 
         if value is None:
