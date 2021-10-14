@@ -1,5 +1,11 @@
 #! /usr/bin/env bash
 
+while [ ! -f /app/syft/setup.py ]
+do
+    echo "Waiting for syft folder to sync"
+    sleep 1
+done
+
 pip install --user -e /app/syft
 
 # Let the DB start

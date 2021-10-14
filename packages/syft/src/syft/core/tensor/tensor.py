@@ -254,7 +254,7 @@ class Tensor(
             raise Exception("Data must be list or nd.array")
 
         if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
-            getattr(child, "dtype", None) != np.int32
+            getattr(child, "dtype", None) not in [np.int32, np.bool_]
             and getattr(child, "dtype", None) is not None
         ):
             raise TypeError(
