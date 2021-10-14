@@ -834,7 +834,7 @@ def test_matmul_rept(row_data_ishan: list) -> None:
         assert output_tensor.shape[-1] == other.shape[-1]
         assert output_tensor == input_tensor.child.__matmul__(other_tensor.child)
 
-        
+
 def test_entities(row_data_ishan: list, ishan: Entity, traskmaster: Entity) -> None:
     """Test that n_entities works as intended"""
     rept_tensor1 = REPT(rows=row_data_ishan)
@@ -881,7 +881,6 @@ def test_entities(row_data_ishan: list, ishan: Entity, traskmaster: Entity) -> N
         ]
     )
     assert rept_tensor3.n_entities == 2
-
 
 
 @pytest.fixture

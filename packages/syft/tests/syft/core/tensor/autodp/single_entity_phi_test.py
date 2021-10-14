@@ -1493,8 +1493,8 @@ def test_matmul_sept(
     assert output.shape[1] == other.shape[1]
     assert (output.child == reference_data.__matmul__(other.child)).all()
 
-  
-  def test_entities(
+
+def test_entities(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
