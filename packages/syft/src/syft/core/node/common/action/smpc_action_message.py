@@ -237,34 +237,66 @@ def smpc_basic_op(
     return actions
 
 
-def spdz_mask(x, y, masks) -> None:  # type: ignore
+# Purposefully raise a custom error to retry the task in celery worker.
+class BeaverError(Exception):
+    pass
+
+
+# TODO : Should move to spdz directly in syft/core/smpc
+def spdz_multiply(
+    x: ShareTensor,
+    y: ShareTensor,
+    eps_id: UID,
+    delta_id: UID,
+    node: Optional[Any] = None,
+) -> ShareTensor:
     crypto_store = ShareTensor.crypto_store
-    # clients = x.clients
+    nr_parties = x.nr_parties
+    eps = node.store.get_object(key=eps_id)  # type: ignore
+    delta = node.store.get_object(key=delta_id)  # type: ignore
+    if eps is None or len(eps.data) != nr_parties:
+        raise BeaverError
+    if delta is None or len(delta.data) != nr_parties:
+        raise BeaverError
 
-    # TODO: Need a way to see how to send the eps and delta to the other parties in a deterministic way
-    # by adding the id
-    a, b, _ = crypto_store.get_primitives_from_store("beaver_mul", x.shape, y.shape)
+    a_share, b_share, c_share = crypto_store.get_primitives_from_store(
+        "beaver_mul", x.shape, y.shape
+    )
+    eps = sum(eps.data)
+    delta = sum(delta.data)
+    op = operator.mul
+    eps_b = op(eps, b_share.child)
+    delta_a = op(a_share.child, delta)
 
-    print(a)
-    print(b)
-    delta = x.copy_tensor()
-    delta.child -= a.child
+    tensor = c_share.child + eps_b + delta_a
+    if x.rank == 0:
+        eps_delta = op(eps, delta)
+        tensor += eps_delta
 
-    eps = y.copy_tensor()
-    eps.child -= b.child
+    share = x.copy_tensor()
+    share.child = tensor  # As we do not use fixed point we neglect truncation.
 
-    # n = len(masks)
-    # ids_remote_eps = args[:n]
-    # ids_remote_delta = args[n:]
+    return share
 
-    # print(ids_remote_eps)
-    # print(ids_remote_delta)
 
-    # for client, id_at_location in zip(clients, ids_alocations_eps):
-    #     client.send(eps)
+# TODO : Should move to spdz directly in syft/core/smpc
+def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> None:  # type: ignore
+    crypto_store = ShareTensor.crypto_store
+    clients = x.clients
 
-    # for client, id_at_location in zip(clients, ids_alocations_delta):
-    #     client.send(delta)
+    a, b, _ = crypto_store.get_primitives_from_store(
+        "beaver_mul", x.shape, y.shape, remove=False  # type: ignore
+    )
+
+    eps = x - a  # beaver intermediate values.
+    delta = y - b
+
+    # TODO : Should modify , no need to send for the current client
+    # As the curent client is local.
+    for client in clients:
+        client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
+        client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
+    # As they are asynchronous , include them in a single action
 
 
 def smpc_mul(
@@ -284,66 +316,35 @@ def smpc_mul(
         # crypto_store = ShareTensor.crypto_store
         # _self = node.store[self_id].data
         # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
+
         mask_result = UID(UUID(bytes=generator.bytes(16)))
-        store_id_masks = UID(UUID(bytes=generator.bytes(16)))
+        eps_id = UID(UUID(bytes=generator.bytes(16)))
+        delta_id = UID(UUID(bytes=generator.bytes(16)))
 
-        ids_local_eps = []
-        ids_local_delta = []
-
-        ids_remote_eps = []
-        ids_remote_delta = []
-
-        for i in range(nr_parties):
-            if other.rank != i:
-                ids_local_eps.append(UID(UUID(bytes=generator.bytes(16))))
-                ids_local_delta.append(UID(UUID(bytes=generator.bytes(16))))
-            else:
-                ids_remote_eps.append(UID(UUID(bytes=generator.bytes(16))))
-                ids_remote_delta.append(UID(UUID(bytes=generator.bytes(16))))
-
-        node.store[store_id_masks] = sy.lib.python.Tuple(
-            ids_remote_eps, ids_remote_delta
-        )
         actions.append(
             SMPCActionMessage(
                 "spdz_mask",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={"store_masks": store_id_masks},
+                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,
                 address=node.address,
             )
         )
 
-        """
-        location_eps_delta_shares = []
-
-        result_eps_delta = UID(UUID(bytes=generator.bytes(16)))
         actions.append(
-                "spdz_reveal",
-                self_id=self_id,
-                args_id=[other_id],
-                kwargs_id={},
-                ranks_to_run_action=list(range(nr_parties)),
-                result_id=result_mask,
-        )
-        actions.append(
+            SMPCActionMessage(
                 "spdz_multiply",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={},
+                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
                 ranks_to_run_action=list(range(nr_parties)),
-                result_id=result_mask,
+                result_id=result_id,
+                address=node.address,
+            )
         )
 
-        actions.append(
-                "multiply",
-                self_id=self_id,
-                args_id=[other_id],
-        """
-        # TODO: Here
-        # eps_share, delta = _self.child - a_share.child, other.child - b_share.child
     else:
         # All ranks should multiply by that public value
         actions.append(
@@ -377,5 +378,6 @@ _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_sub": operator.sub,
     "mpc_mul": operator.mul,
     "spdz_mask": spdz_mask,
+    "spdz_multiply": spdz_multiply,
     "mpc_noop": deepcopy,
 }

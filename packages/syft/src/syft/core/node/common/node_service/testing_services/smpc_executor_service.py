@@ -55,7 +55,10 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
         logger.warning(func)
-        result = func(_self, *upcasted_args, **upcasted_kwargs)
+        if "spdz_multiply" in msg.name_action:
+            result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
+        else:
+            result = func(_self, *upcasted_args, **upcasted_kwargs)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive

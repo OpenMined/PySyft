@@ -150,11 +150,11 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
-        if "spdz" in self.path:
-            upcasted_kwargs["node"] = node
-
         # execute the method with the newly upcasted args and kwargs
-        result = method(*upcasted_args, **upcasted_kwargs)
+        if "beaver_populate" in self.path:
+            result = method(*upcasted_args, **upcasted_kwargs, node=node)
+        else:
+            result = method(*upcasted_args, **upcasted_kwargs)
 
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):
