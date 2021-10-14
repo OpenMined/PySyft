@@ -4,7 +4,7 @@ om_group: om
 om_homedir: "/home/{{ om_user }}"
 syft_dir: "/home/om/PySyft"
 build_dir: "/home/om/build"
-github_repo: OpenMined/PySyft
+github_repo: OpenMined/PySyft.git
 repo_branch: "0.6.0"
 docker_compose_plugin_dir: ".docker/cli-plugins"
 node_name: node

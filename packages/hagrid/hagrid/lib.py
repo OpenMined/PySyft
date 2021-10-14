@@ -94,7 +94,7 @@ def check_is_git(path: Path) -> bool:
 def get_git_repo() -> git.Repo:
     is_git = check_is_git(path=repo_src_path())
     if not EDITABLE_MODE and not is_git:
-        github_repo = "OpenMined/PySyft"
+        github_repo = "OpenMined/PySyft.git"
         git_url = f"https://github.com/{github_repo}"
         print(f"Fetching Syft + Grid Source from {git_url} to {repo_src_path()}")
         try:
