@@ -116,7 +116,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     it.request_budget(eps=200, reason='increase budget!')
 
     ca_root.requests[0].accept()
-    it_root.request[0].accept()
+    it_root.requests[0].accept()
 
     assert round(ca.privacy_budget) == 200
     assert round(it.privacy_budget) == 200
