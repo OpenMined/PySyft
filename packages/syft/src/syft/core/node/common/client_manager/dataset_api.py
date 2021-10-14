@@ -175,7 +175,7 @@ class DatasetRequestAPI(RequestAPI):
     def _repr_html_(self) -> str:
         if len(self) > 0:
             return self.dataset_list_to_html(self.all_as_datasets())
-        return "(no datasets found)Z"
+        return "(no datasets found)"
 
     @staticmethod
     def dataset_list_to_html(dataset_iterable: List[Any]) -> str:

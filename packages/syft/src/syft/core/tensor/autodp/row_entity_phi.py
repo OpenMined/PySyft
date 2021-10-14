@@ -14,6 +14,8 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
+from ....core.adp.entity import DataSubjectGroup as DSG
+from ....core.adp.entity import Entity
 from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
@@ -43,7 +45,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     tensor can have an arbitrary number of dimensions."""
 
     # a list of attributes needed for serialization using RecursiveSerde
-    __attr_allowlist__ = ["child"]
+    __attr_allowlist__ = ["child", "n_entities", "unique_entities"]
 
     def __init__(self, rows: Sequence, check_shape: bool = True):
         """Initialize a RowEntityPhiTensor
@@ -70,6 +72,26 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                     raise Exception(
                         f"All rows in RowEntityPhiTensor must match: {shape} != {row.shape}"
                     )
+
+        """Calculate the number of unique entities behind the REPT"""
+        self.unique_entities: set[Entity] = set()
+        self.n_entities = 0
+        for entity in self.entities.flatten():
+            if isinstance(entity, Entity):
+                if entity not in self.unique_entities:
+                    self.unique_entities.add(entity)
+                    self.n_entities += 1
+                else:
+                    continue
+            elif isinstance(entity, DSG):
+                for e in entity.entity_set:
+                    if e not in self.unique_entities:
+                        self.unique_entities.add(e)
+                        self.n_entities += 1
+                    else:
+                        continue
+            else:
+                raise Exception(f"{type(entity)}")
 
     @property
     def scalar_manager(self) -> TypeScalarManager:
@@ -195,9 +217,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 new_list = [child * other for child in self.child]
         elif isinstance(other, RowEntityPhiTensor):
             if is_broadcastable(self.shape, other.shape):
-                new_list = [
-                    self.child[i] * other.child[i] for i in range(len(self.child))
-                ]
+                for self_child, other_child in zip(self.child, other.child):
+                    new_list.append(self_child * other_child)
             else:
                 raise Exception(
                     f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"
