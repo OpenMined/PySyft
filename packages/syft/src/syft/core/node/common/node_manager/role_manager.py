@@ -49,6 +49,13 @@ class RoleManager(DatabaseManager):
             can_edit_domain_settings=False,
         )
 
+    def can_create_users(self, role_id: int) -> bool:
+        role = super().first(id=role_id)
+        if role:
+            return role.can_create_users
+        else:
+            return False
+
     @property
     def common_roles(self) -> List[Role]:
         return self._common_roles().all()
