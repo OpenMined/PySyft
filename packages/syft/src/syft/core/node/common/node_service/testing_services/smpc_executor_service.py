@@ -61,8 +61,9 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
         logger.warning(func)
 
-        upcasted_kwargs["eps_id"] = eps_id
-        upcasted_kwargs["delta_id"] = delta_id
+        if "spdz" in msg.name_action:
+            upcasted_kwargs["eps_id"] = eps_id
+            upcasted_kwargs["delta_id"] = delta_id
         if "spdz_multiply" in msg.name_action:
             result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
         else:
