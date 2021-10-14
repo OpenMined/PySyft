@@ -1120,6 +1120,7 @@ def test_partition_axis(
     assert reference_tensor == reference_data, "Partition did not work as expected"
 
 
+@pytest.mark.skip(reason="IGT equality bugs")
 def test_mul(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1491,6 +1492,20 @@ def test_matmul_sept(
     assert output.shape[0] == reference_data.shape[0]
     assert output.shape[1] == other.shape[1]
     assert (output.child == reference_data.__matmul__(other.child)).all()
+
+  
+  def test_entities(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test that the n_entities works for SEPTs"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+    assert isinstance(tensor, SEPT)
+    assert tensor.n_entities == 1
 
 
 # End of Ishan's tests
