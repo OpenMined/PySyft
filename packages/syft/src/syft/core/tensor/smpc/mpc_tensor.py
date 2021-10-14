@@ -576,9 +576,9 @@ class MPCTensor(PassthroughTensor):
             res_shares = [
                 operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
             ]
-            y_shape = getattr(y, "shape", (1,))
-            new_shape = MPCTensor._get_shape("mul", self.mpc_shape, y_shape)
-            res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
+        y_shape = getattr(y, "shape", (1,))
+        new_shape = MPCTensor._get_shape("mul", self.mpc_shape, y_shape)
+        res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
 
         return res
 
