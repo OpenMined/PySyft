@@ -28,7 +28,7 @@ def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
             print("///////////////////////////////////")
             print("Beaver Error occured")
             print("///////////////////////////////////")
-            raise self.retry(exc=exc)
+            raise self.retry(exc=exc, countdown=5)
     else:
         raise Exception(
             f"This worker can only handle SignedImmediateSyftMessageWithoutReply. {msg_bytes_str}"
