@@ -392,9 +392,7 @@ class PhiTensorAncestor(TensorChainManager):
         return self.__class__(self.child.gamma)
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> PhiTensorAncestor:
-        return self.__class__(
-            self.child.publish(acc=acc, sigma=sigma, user_key=user_key)
-        )
+        return self.child.publish(acc=acc, sigma=sigma, user_key=user_key)
 
     def copy(self) -> PhiTensorAncestor:
         """This should certainly be implemented by the subclass but adding this here to satisfy mypy."""
