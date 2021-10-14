@@ -276,7 +276,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
     PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
 
-    __attr_allowlist__ = ["child", "_min_vals", "_max_vals", "entity", "scalar_manager"]
+    __attr_allowlist__ = [
+        "child",
+        "_min_vals",
+        "_max_vals",
+        "entity",
+        "scalar_manager",
+        "n_entities",
+    ]
 
     def __init__(
         self,
@@ -303,6 +310,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             self.scalar_manager = VirtualMachinePrivateScalarManager()
         else:
             self.scalar_manager = scalar_manager
+
+        # Number of entities in a SEPT is by definition 1
+        self.n_entities = 1
 
     def init_pointer(
         self,
