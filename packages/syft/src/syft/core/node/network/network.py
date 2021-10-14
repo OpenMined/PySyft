@@ -28,11 +28,13 @@ from ..common.node_service.association_request.association_request_service impor
     AssociationRequestService,
 )
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
+from ..common.node_service.ping.ping_service import PingService
 from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
+from ..common.node_service.vpn.vpn_service import VPNConnectService
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
 from .client import NetworkClient
@@ -86,6 +88,8 @@ class Network(Node):
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
+        self.immediate_services_with_reply.append(VPNConnectService)
+        self.immediate_services_with_reply.append(PingService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
