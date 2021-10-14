@@ -38,6 +38,7 @@ from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
+from ..common.client_manager.vpn_api import VPNAPI
 from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import (
     GetRemainingBudgetMessage,
 )
@@ -310,6 +311,7 @@ class DomainClient(Client):
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
+        self.vpn = VPNAPI(client=self)
 
     @property
     def privacy_budget(self) -> float:
@@ -484,6 +486,9 @@ class DomainClient(Client):
                 for tag in tags:
                     state[tag] = ptr
         return self.store.pandas
+
+    def join_network(self, host_or_ip: str) -> None:
+        self.vpn.join_network(host_or_ip=host_or_ip)
 
     def load_dataset(
         self,

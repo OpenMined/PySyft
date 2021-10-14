@@ -120,9 +120,7 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
             if not host_or_ip.startswith("http"):
                 host_or_ip = f"http://{host_or_ip}"
 
-            res = requests.post(
-                f"{host_or_ip}/api/v1/vpn/register",
-            )
+            res = requests.post(f"{host_or_ip}/api/v1/vpn/register")
             res_json = res.json()
 
             if "vpn_auth_key" not in res_json:
