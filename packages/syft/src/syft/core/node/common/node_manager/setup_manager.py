@@ -8,6 +8,7 @@ from sqlalchemy.orm import sessionmaker
 
 # relative
 from ..node_table.setup import SetupConfig
+from ..node_table.pdf import PDFObject
 
 # from ..exceptions import SetupNotFoundError
 from .database_manager import DatabaseManager
@@ -46,6 +47,14 @@ class SetupManager(DatabaseManager):
 
     def update(self, **kwargs: Any) -> None:
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        if 'daa_document' in kwargs.keys():
+            _pdf_obj = PDFObject(binary=kwargs['daa_document'])
+            session_local.add(_pdf_obj)
+            session_local.commit()
+            session_local.flush()
+            session_local.refresh(_pdf_obj)
+            kwargs['daa_document'] = str(_pdf_obj.id)
+            
         session_local.query(self._schema).update(kwargs)
         session_local.commit()
         session_local.close()

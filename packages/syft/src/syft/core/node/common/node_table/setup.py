@@ -4,6 +4,7 @@ from sqlalchemy import Column
 from sqlalchemy import DateTime
 from sqlalchemy import Integer
 from sqlalchemy import String
+from sqlalchemy import ForeignKey
 
 # relative
 from . import Base
@@ -18,7 +19,7 @@ class SetupConfig(Base):
     contact = Column(String(255), default="")
     daa = Column(Boolean(), default=False)
     node_id = Column(String(32), default="")
-    daa_document = Column(String(255), default="")
+    daa_document = Column(Integer, ForeignKey("daa_pdf.id"))
     tags = Column(String(255), default="[]")
     deployed_on = Column(DateTime())
 

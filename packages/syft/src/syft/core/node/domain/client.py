@@ -384,6 +384,10 @@ class DomainClient(Client):
             response = self.routes[0].connection.reset()  # type: ignore
 
     def configure(self, **kwargs: Any) -> Any:
+        if 'daa_document' in kwargs.keys():
+            kwargs['daa_document'] = open(kwargs['daa_document'], 'rb').read()
+        else:
+            kwargs['daa_document'] = b''
         response = self._perform_grid_request(  # type: ignore
             grid_msg=UpdateSetupMessage, content=kwargs
         ).content

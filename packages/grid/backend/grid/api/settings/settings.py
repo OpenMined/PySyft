@@ -1,11 +1,15 @@
 # stdlib
 from typing import Any
 from typing import Optional
+import json
 
 # third party
 from fastapi import APIRouter
 from fastapi import Body
 from fastapi import Depends
+from fastapi import File
+from fastapi import Form
+from fastapi import UploadFile
 from fastapi.responses import JSONResponse
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
@@ -31,23 +35,27 @@ router = APIRouter()
 
 @router.post("", status_code=200, response_class=JSONResponse)
 def update_settings(
-    contact: str = Body(..., example="contact@openmined.org"),
-    domain_name: str = Body(..., example="OpenGrid"),
-    description: str = Body(..., example="A Domain Node Description ..."),
-    daa: Optional[bool] = False,
-    daa_document: Optional[str] = Body("", example="http://<daa_template>.com"),
     current_user: UserPrivate = Depends(get_current_user),
+    file: Optional[UploadFile] = File(...),
+    settings: str = Form(...),
 ) -> Any:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
+    if file:
+        pdf_file = file.file.read()  # type: ignore
+    else:
+        pdf_file = b""
+
+    dict_settings = json.loads(settings)
+    
     # Build Syft Message
     msg = UpdateSetupMessage(
         address=node.address,
-        contact=contact,
-        domain_name=domain_name,
-        description=description,
-        daa=daa,
-        daa_document=daa_document,
+        contact=dict_settings.get('contact', ""),
+        domain_name=dict_settings.get('domain_name', ""),
+        description=dict_settings.get('description', ""),
+        daa=dict_settings.get('daa', False),
+        daa_document=pdf_file,
         reply_to=node.address,
     ).sign(signing_key=user_key)
 

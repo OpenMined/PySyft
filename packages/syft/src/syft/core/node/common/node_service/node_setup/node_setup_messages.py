@@ -266,7 +266,7 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         daa: bool,
         contact: str,
         reply_to: Address,
-        daa_document: Optional[str] = "",
+        daa_document: Optional[bytes] = b'',
         tags: Optional[TypeList] = [],
         msg_id: Optional[UID] = None,
     ):
