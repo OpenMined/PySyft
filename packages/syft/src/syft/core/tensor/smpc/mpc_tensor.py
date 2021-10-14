@@ -443,11 +443,8 @@ class MPCTensor(PassthroughTensor):
 
     def __apply_public_op(self, y: Any, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
-        if op_str in {"mul", "matmul"}:
+        if op_str in {"mul", "matmul", "add", "sub"}:
             res_shares = [op(share, y) for share in self.child]
-        elif op_str in {"add", "sub"}:
-            res_shares = self.child
-            res_shares[0] = op(res_shares[0], y)
         else:
             raise ValueError(f"{op_str} not supported")
 
