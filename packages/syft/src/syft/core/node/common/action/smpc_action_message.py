@@ -296,7 +296,8 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
 
     eps = x - a  # beaver intermediate values.
     delta = y - b
-
+    print("EPS::::::::::::", eps)
+    print("Delta::::::::::::", delta)
     # TODO : Should modify , no need to send for the current client
     # As the curent client is local.
     # TODO: clients is empty
