@@ -71,6 +71,7 @@ def _get_triples(
             low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=np.int32
         )
     )
+    print("a_rand", a_rand)
     a_shares = MPCTensor._get_shares_from_local_secret(
         secret=a_rand,
         parties_info=parties_info,  # type: ignore
@@ -83,7 +84,7 @@ def _get_triples(
             low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=np.int32
         )
     )
-
+    print("b_rand", b_rand)
     b_shares = MPCTensor._get_shares_from_local_secret(
         secret=b_rand,
         parties_info=parties_info,  # type: ignore
@@ -91,8 +92,9 @@ def _get_triples(
         seed_przs=seed_przs,
     )
     seed_przs = secrets.randbits(32)
+    print("cmd", cmd)
     c_val = cmd(a_rand, b_rand)
-
+    print("c_val", c_val)
     c_shares = MPCTensor._get_shares_from_local_secret(
         secret=c_val,
         parties_info=parties_info,  # type: ignore
