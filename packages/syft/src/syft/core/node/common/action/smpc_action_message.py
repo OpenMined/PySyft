@@ -183,6 +183,7 @@ def smpc_basic_op(
     other_id: UID,
     seed_id_locations: int,
     node: Any,
+    client: Any,
 ) -> List[SMPCActionMessage]:
     """Generator for SMPC public/private operations add/sub"""
 
@@ -205,7 +206,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
     else:
@@ -217,7 +218,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=list(range(1, nr_parties)),
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
 
@@ -230,7 +231,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=[0],
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
 
@@ -332,7 +333,12 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
 
 
 def smpc_mul(
-    nr_parties: int, self_id: UID, other_id: UID, seed_id_locations: int, node: Any
+    nr_parties: int,
+    self_id: UID,
+    other_id: UID,
+    seed_id_locations: int,
+    node: Any,
+    client: Any,
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
     generator = np.random.default_rng(seed_id_locations)
@@ -361,7 +367,7 @@ def smpc_mul(
                 kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,
-                address=node.address,
+                address=client.address,
             )
         )
 
@@ -373,7 +379,7 @@ def smpc_mul(
                 kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
 
@@ -387,7 +393,7 @@ def smpc_mul(
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
 
@@ -400,7 +406,7 @@ MAP_FUNC_TO_ACTION: Dict[
 ] = {
     "__add__": functools.partial(smpc_basic_op, "add"),
     "__sub__": functools.partial(smpc_basic_op, "sub"),
-    "__mul__": smpc_mul,
+    "__mul__": smpc_mul,  # type: ignore
 }
 
 

@@ -153,6 +153,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         kwargs = {
             "seed_id_locations": int(seed_id_locations),
             "node": node,
+            "client": client,
         }
 
         # Get the list of actions to be run
