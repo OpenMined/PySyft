@@ -91,7 +91,7 @@ def _get_triples(
         seed_przs=seed_przs,
     )
     seed_przs = secrets.randbits(32)
-    c_val = cmd(a_rand, b_rand, **kwargs)
+    c_val = cmd(a_rand, b_rand)
 
     c_shares = MPCTensor._get_shares_from_local_secret(
         secret=c_val,
