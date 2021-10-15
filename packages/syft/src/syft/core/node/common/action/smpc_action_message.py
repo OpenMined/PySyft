@@ -279,6 +279,7 @@ def spdz_multiply(
 
     share = x.copy_tensor()
     share.child = tensor  # As we do not use fixed point we neglect truncation.
+    print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
     return share
 
@@ -348,7 +349,6 @@ def smpc_mul(
             )
         )
 
-        """
         actions.append(
             SMPCActionMessage(
                 "spdz_multiply",
@@ -360,7 +360,6 @@ def smpc_mul(
                 address=node.address,
             )
         )
-        """
 
     else:
         # All ranks should multiply by that public value
