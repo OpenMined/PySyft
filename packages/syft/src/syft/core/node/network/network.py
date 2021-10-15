@@ -37,6 +37,7 @@ from ..common.node_service.user_manager.user_manager_service import UserManagerS
 from ..common.node_service.vpn.vpn_service import VPNConnectService
 from ..common.node_service.vpn.vpn_service import VPNJoinService
 from ..common.node_service.vpn.vpn_service import VPNRegisterService
+from ..common.node_service.vpn.vpn_service import VPNStatusService
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
 from .client import NetworkClient
@@ -93,6 +94,7 @@ class Network(Node):
         self.immediate_services_with_reply.append(VPNConnectService)
         self.immediate_services_with_reply.append(VPNJoinService)
         self.immediate_services_with_reply.append(VPNRegisterService)
+        self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(PingService)
 
         self.requests: List[RequestMessage] = list()

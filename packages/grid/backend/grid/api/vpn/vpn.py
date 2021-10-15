@@ -17,7 +17,11 @@ from syft.core.node.common.node_service.vpn.vpn_messages import (
 from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNRegisterMessageWithReply,
 )
+from syft.core.node.common.node_service.vpn.vpn_messages import (
+    VPNStatusMessageWithReply,
+)
 from syft.core.node.common.node_service.vpn.vpn_messages import VPNJoinMessageWithReply
+from syft.lib.python.util import upcast
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
@@ -59,7 +63,7 @@ def connect(
     return {"status": status}
 
 
-# this endpoint will tell the domain to contact the supplied host network and ask
+# this endpoint will tell the node to contact the supplied host network and ask
 # for a vpn key, then use that vpn key to connect
 @router.post("/join/{host_or_ip}", status_code=200, response_class=JSONResponse)
 def join(
@@ -82,6 +86,29 @@ def join(
         pass
 
     return {"status": status}
+
+
+# this endpoint will ask the node to get the status of the vpn connection which returns
+# a bool for connected, the host details and the peers
+@router.get("/status", status_code=200, response_class=JSONResponse)
+def status(
+    current_user: Any = Depends(get_current_user),
+) -> Dict[str, Any]:
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+    msg = (
+        VPNStatusMessageWithReply(kwargs={})
+        .to(address=node.address, reply_to=node.address)
+        .sign(signing_key=user_key)
+    )
+    reply = node.recv_immediate_msg_with_reply(msg=msg).message
+
+    try:
+        return upcast(reply.payload.kwargs)
+    except Exception as e:
+        print("failed", e, type(reply), type(reply.payload))
+        pass
+
+    return {"status": "error"}
 
 
 # this endpoint will tell the network to create a vpn_auth_key for the domain to use

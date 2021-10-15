@@ -4,7 +4,6 @@ import sys
 import time
 from typing import Any
 from typing import Dict
-from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -487,8 +486,11 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def join_network(self, host_or_ip: str) -> None:
-        self.vpn.join_network(host_or_ip=host_or_ip)
+    def join_network(self, host_or_ip: str) -> bool:
+        return self.vpn.join_network(host_or_ip=host_or_ip)
+
+    def vpn_status(self) -> Dict[str, Any]:
+        return self.vpn.get_status()
 
     def load_dataset(
         self,
@@ -496,7 +498,7 @@ class DomainClient(Client):
         name: Optional[str] = None,
         description: Optional[str] = None,
         skip_checks: bool = False,
-        **metadata: TypeDict,
+        **metadata: Dict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
         if assets is None or not isinstance(assets, dict):

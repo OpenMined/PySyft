@@ -43,7 +43,7 @@ def generate_key(headscale_host: str) -> str:
     command_url = f"{headscale_host}/commands/generate_key"
     try:
         resp = requests.post(command_url, json=data)
-        report = get_result(command_url=command_url, json=resp.json())
+        report = get_result(json=resp.json())
         result_dict = dict(extract_nested_json(report))
         result = result_dict["Key"]
     except Exception as e:
@@ -66,7 +66,7 @@ def connect_with_key(tailscale_host: str, headscale_host: str, authkey: str) -> 
     command_url = f"{tailscale_host}/commands/up"
     try:
         resp = requests.post(command_url, json=data)
-        report = get_result(command_url=command_url, json=resp.json())
+        report = get_result(json=resp.json())
         return json.loads(report)["report"]
     except Exception as e:
         print("failed to make request", data, e)
@@ -79,7 +79,7 @@ def list_nodes(headscale_host: str) -> List[Dict]:
     command_url = f"{headscale_host}/commands/list_nodes"
     try:
         resp = requests.post(command_url, json=data)
-        report = get_result(command_url=command_url, json=resp.json())
+        report = get_result(json=resp.json())
         result = list(extract_nested_json(report))
     except Exception as e:
         print("failed to make request", e)
@@ -92,27 +92,20 @@ def status(tailscale_host: str) -> str:
     command_url = f"{tailscale_host}/commands/status"
     try:
         resp = requests.post(command_url, json=data)
-        report = get_result(command_url=command_url, json=resp.json())
+        report = get_result(json=resp.json())
         result = json.loads(report)["report"]
     except Exception as e:
         print("failed to make request", e)
     return result
 
 
-# the result of the first request might contain an error with the key to the existing
-# result, if thats the case we can reconstruct it
-def get_result(command_url: str, json: Dict) -> str:
-    result_url = ""
+def get_result(json: Dict) -> str:
+    result_url = json.get("result_url", "")
     tries = 0
     limit = 5
     try:
         while True:
-            if "error" in json and result_url == "":
-                key = json["error"].split(" ")[1]  # very unfriendly error
-                result_url = f"{command_url}?key={key}"
-            if result_url == "":
-                result_url = json.get("result_url", "")
-
+            print("Polling API Result", tries)
             result = requests.get(result_url)
             if "running" in result.text:
                 time.sleep(1)

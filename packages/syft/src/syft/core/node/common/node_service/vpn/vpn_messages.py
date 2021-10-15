@@ -120,8 +120,23 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
             if not host_or_ip.startswith("http"):
                 host_or_ip = f"http://{host_or_ip}"
 
-            res = requests.post(f"{host_or_ip}/api/v1/vpn/register")
-            res_json = res.json()
+            # can't import Network due to circular imports
+            if type(node).__name__ == "Network":
+                # we are already in the network and could be on the blocking backend api
+                msg = VPNRegisterMessageWithReply(kwargs={}).to(
+                    address=node.address, reply_to=node.address
+                )
+                reply = node.recv_immediate_msg_with_reply(msg=msg).message
+                res_json = {}
+                try:
+                    res_json["vpn_auth_key"] = str(
+                        reply.payload.kwargs.get("vpn_auth_key")
+                    )
+                except Exception:
+                    pass
+            else:
+                res = requests.post(f"{host_or_ip}/api/v1/vpn/register")
+                res_json = res.json()
 
             if "vpn_auth_key" not in res_json:
                 print("Registration failed", res)
@@ -201,6 +216,115 @@ def generate_key(headscale_host: str) -> Tuple[bool, str]:
     except Exception as e:
         print("failed to make request", e)
         return (False, str(e))
+
+
+@serializable(recursive_serde=True)
+@final
+class VPNStatusMessage(GenericPayloadMessage):
+    ...
+
+
+@serializable(recursive_serde=True)
+@final
+class VPNStatusReplyMessage(GenericPayloadReplyMessage):
+    ...
+
+
+@serializable(recursive_serde=True)
+@final
+class VPNStatusMessageWithReply(GenericPayloadMessageWithReply):
+    message_type = VPNStatusMessage
+    message_reply_type = VPNStatusReplyMessage
+
+    def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
+        try:
+            up, host, peers = get_status(tailscale_host="http://tailscale:4000")
+            return {"status": "ok", "connected": up, "host": host, "peers": peers}
+        except Exception as e:
+            print(f"Failed to run {type(self)}", self.kwargs, e)
+            return {"status": "error"}
+
+
+def clean_status_output(
+    input: str,
+) -> Tuple[bool, Dict[str, str], List[Dict[str, str]]]:
+    # example input
+    """
+    # Health check:
+    #     - dns: rename /etc/resolv.conf /etc/resolv.pre-tailscale-backup.conf: device or resource busy
+
+    100.64.0.1      test_domain_1        omnet        linux   -
+    100.64.0.2      test_network_1       omnet        linux   active; relay "syd", tx 1188 rx 1040
+    """
+    up = False
+    peers = []
+    host = {}
+    if "Tailscale is stopped." in input:
+        return up, host, peers
+    elif "unexpected state: NoState" in input:
+        return up, host, peers
+
+    count = 0
+    for line in str(input).split("\n"):
+        matches = re.match(r"^\d.+", line)
+        if matches is not None:
+            try:
+                stat_parts = re.split(r"(\s+)", matches.string)
+                entry = {}
+                entry["ip"] = stat_parts[0]
+                entry["hostname"] = stat_parts[2]
+                entry["network"] = stat_parts[4]
+                entry["os"] = stat_parts[6]
+                connection_info = matches.string.split(entry["os"])
+                entry["connection_info"] = "n/a"
+                if len(connection_info) > 1:
+                    connection_info = connection_info[1].strip()
+                    entry["connection_info"] = connection_info
+
+                entry["connection_status"] = "n/a"
+                if "active" in connection_info:
+                    entry["connection_status"] = "active"
+
+                if "idle" in connection_info:
+                    entry["connection_status"] = "idle"
+
+                entry["connection_type"] = "n/a"
+                if "relay" in connection_info:
+                    entry["connection_type"] = "relay"
+
+                if "direct" in connection_info:
+                    entry["connection_type"] = "direct"
+
+                if count == 0:
+                    host = entry
+                    count += 1
+                    up = True
+                else:
+                    peers.append(entry)
+
+            except Exception as e:
+                print("Error parsing tailscale status output", e)
+                pass
+
+    return up, host, peers
+
+
+def get_status(
+    tailscale_host: str,
+) -> Tuple[bool, Dict[str, str], List[Dict[str, str]]]:
+    data = {"timeout": 5}
+    command_url = f"{tailscale_host}/commands/status"
+    host = {}
+    peers = []
+    connected = False
+    try:
+        resp = requests.post(command_url, json=data)
+        report = get_result(json=resp.json())
+        cmd_output = json.loads(report)["report"]
+        connected, host, peers = clean_status_output(input=cmd_output)
+    except Exception as e:
+        print("failed to make request", e)
+    return connected, host, peers
 
 
 def get_result(json: Dict) -> str:

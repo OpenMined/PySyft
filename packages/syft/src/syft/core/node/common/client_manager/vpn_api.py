@@ -6,21 +6,44 @@ from typing import Optional
 from typing import Type
 
 # relative
+from .....lib.python.util import upcast
 from ...abstract.node import AbstractNodeClient
 from ..action.exception_action import ExceptionMessage
 from ..node_service.generic_payload.messages import GenericPayloadMessageWithReply
 from ..node_service.vpn.vpn_messages import VPNJoinMessageWithReply
+from ..node_service.vpn.vpn_messages import VPNStatusMessageWithReply
 
 
 class VPNAPI:
     def __init__(self, client: AbstractNodeClient):
         self.client = client
 
-    def join_network(self, host_or_ip: str) -> None:
-        response = self.perform_api_request(
+    def join_network(self, host_or_ip: str):
+        reply = self.perform_api_request(
             syft_msg=VPNJoinMessageWithReply, content={"host_or_ip": host_or_ip}
         )
-        logging.info(response.resp_msg)
+        logging.info(reply.payload)
+        status = "error"
+        try:
+            status = str(reply.payload.kwargs.get("status"))
+        except Exception:
+            pass
+
+        if status == "ok":
+            print(f"🔌 {self.client} successfully connected to the VPN: {host_or_ip}")
+        else:
+            print(f"❌ {self.client} failed to connect to the VPN: {host_or_ip}")
+
+    def get_status(self) -> Dict[str, Any]:
+        reply = self.perform_api_request(syft_msg=VPNStatusMessageWithReply, content={})
+        logging.info(reply.payload)
+        try:
+            return upcast(reply.payload.kwargs)
+        except Exception:
+            pass
+
+        print(f"❌ {self.client} VPN Status failed")
+        return {"status": "error"}
 
     def perform_api_request(
         self,

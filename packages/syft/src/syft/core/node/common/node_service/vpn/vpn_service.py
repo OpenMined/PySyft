@@ -20,6 +20,9 @@ from .vpn_messages import VPNJoinReplyMessage
 from .vpn_messages import VPNRegisterMessage
 from .vpn_messages import VPNRegisterMessageWithReply
 from .vpn_messages import VPNRegisterReplyMessage
+from .vpn_messages import VPNStatusMessage
+from .vpn_messages import VPNStatusMessageWithReply
+from .vpn_messages import VPNStatusReplyMessage
 
 
 class VPNConnectService(ImmediateNodeServiceWithReply):
@@ -81,3 +84,24 @@ class VPNRegisterService(ImmediateNodeServiceWithReply):
     @staticmethod
     def message_handler_types() -> List[Type[VPNRegisterMessage]]:
         return [VPNRegisterMessage]
+
+
+class VPNStatusService(ImmediateNodeServiceWithReply):
+    @staticmethod
+    @service_auth(guests_welcome=True)
+    def process(
+        node: AbstractNode,
+        msg: VPNStatusMessage,
+        verify_key: Optional[VerifyKey] = None,
+    ) -> VPNStatusReplyMessage:
+        if verify_key is None:
+            traceback_and_raise(
+                "Can't process VPNJoinService with no verification key."
+            )
+
+        result = msg.payload.run(node=node)
+        return VPNStatusMessageWithReply(kwargs=result).back_to(address=msg.reply_to)
+
+    @staticmethod
+    def message_handler_types() -> List[Type[VPNStatusMessage]]:
+        return [VPNStatusMessage]
