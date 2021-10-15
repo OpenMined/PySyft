@@ -26,7 +26,7 @@ class VPNAPI:
         status = "error"
         try:
             status = str(reply.payload.kwargs.get("status"))
-        except Exception:
+        except Exception:  # nosec
             pass
 
         if status == "ok":
@@ -39,7 +39,7 @@ class VPNAPI:
         logging.info(reply.payload)
         try:
             return upcast(reply.payload.kwargs)
-        except Exception:
+        except Exception:  # nosec
             pass
 
         print(f"❌ {self.client} VPN Status failed")

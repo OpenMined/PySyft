@@ -132,7 +132,7 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
                     res_json["vpn_auth_key"] = str(
                         reply.payload.kwargs.get("vpn_auth_key")  # type: ignore
                     )
-                except Exception:
+                except Exception:  # nosec
                     pass
             else:
                 res = requests.post(f"{host_or_ip}/api/v1/vpn/register")
