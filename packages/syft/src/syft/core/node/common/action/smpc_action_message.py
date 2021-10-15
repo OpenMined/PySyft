@@ -256,34 +256,39 @@ def spdz_multiply(
     nr_parties = x.nr_parties
     eps = node.store.get_object(key=eps_id)  # type: ignore
     delta = node.store.get_object(key=delta_id)  # type: ignore
-    print(eps)
-    print(delta)
+
     if eps is None or len(eps.data) != nr_parties:
         raise BeaverError
     if delta is None or len(delta.data) != nr_parties:
         raise BeaverError
-    print("Beaver Error surpassed*****************************88")
-    print(eps.data)
-    print(delta.data)
+    print("Beaver Error surpassed*******************************")
+
     a_share, b_share, c_share = crypto_store.get_primitives_from_store(
         "beaver_mul", x.shape, y.shape
     )
     eps = sum(eps.data).child  # type: ignore
     delta = sum(delta.data).child  # type:ignore
-    print("EPS", eps)
-    print("Delta", delta)
+    print(" Final EPS", eps)
+    print("Final Delta", delta)
+    print("A_share", a_share.child, "\n")
+    print("B_share", b_share.child, "\n")
+    print("C_share", c_share.child, "\n")
     op = operator.mul
     eps_b = op(eps, b_share.child)
+    print("EPS_B", eps_b, "\n")
     delta_a = op(a_share.child, delta)
+    print("DELTA_A", delta_a, "\n")
 
     tensor = c_share.child + eps_b + delta_a
-    print("Landmark1 77777777777777777777777777777777")
+    print("C addedTensor", tensor, "\n")
     if x.rank == 0:
         eps_delta = op(eps, delta)
+        print("EPS_DELTA", eps_delta, "\n")
         tensor += eps_delta
-    print("Landmark2 777777777777777777777777777777")
+
     share = x.copy_tensor()
     share.child = tensor  # As we do not use fixed point we neglect truncation.
+    print("Final Tensor", tensor)
     print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
     return share
@@ -302,8 +307,12 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
 
     eps = x - a  # beaver intermediate values.
     delta = y - b
-    print("EPS::::::::::::", eps)
-    print("Delta::::::::::::", delta)
+    print("x ShareTensor:", x, "\n")
+    print("y ShareTensor", y, "\n")
+    print("a ShareTensor:", a, "\n")
+    print("b ShareTensor", b, "\n")
+    print("EPS::::::::::::", eps, "\n")
+    print("Delta::::::::::::", delta, "\n")
     # TODO : Should modify , no need to send for the current client
     # As the curent client is local.
     # TODO: clients is empty

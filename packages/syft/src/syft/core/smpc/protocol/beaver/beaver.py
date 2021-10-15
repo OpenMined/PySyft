@@ -123,7 +123,9 @@ def _get_triples(
     triple = list(
         map(list, zip(*map(lambda x: map(list, zip(*x)), triple_sequential)))  # type: ignore
     )
-
+    print("a", a_rand)
+    print("b", b_rand)
+    print("c", c_val)
     return triple  # type: ignore
 
 
