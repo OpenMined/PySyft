@@ -130,7 +130,7 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
                 res_json = {}
                 try:
                     res_json["vpn_auth_key"] = str(
-                        reply.payload.kwargs.get("vpn_auth_key")
+                        reply.payload.kwargs.get("vpn_auth_key")  # type: ignore
                     )
                 except Exception:
                     pass
@@ -257,8 +257,8 @@ def clean_status_output(
     100.64.0.2      test_network_1       omnet        linux   active; relay "syd", tx 1188 rx 1040
     """
     up = False
-    peers = []
-    host = {}
+    peers: List[Dict[str, str]] = []
+    host: Dict[str, str] = {}
     if "Tailscale is stopped." in input:
         return up, host, peers
     elif "unexpected state: NoState" in input:
@@ -275,10 +275,11 @@ def clean_status_output(
                 entry["hostname"] = stat_parts[2]
                 entry["network"] = stat_parts[4]
                 entry["os"] = stat_parts[6]
-                connection_info = matches.string.split(entry["os"])
+                connection_info_parts = matches.string.split(entry["os"])
                 entry["connection_info"] = "n/a"
-                if len(connection_info) > 1:
-                    connection_info = connection_info[1].strip()
+                connection_info = ""
+                if len(connection_info_parts) > 1:
+                    connection_info = connection_info_parts[1].strip()
                     entry["connection_info"] = connection_info
 
                 entry["connection_status"] = "n/a"
@@ -314,8 +315,8 @@ def get_status(
 ) -> Tuple[bool, Dict[str, str], List[Dict[str, str]]]:
     data = {"timeout": 5}
     command_url = f"{tailscale_host}/commands/status"
-    host = {}
-    peers = []
+    host: Dict[str, str] = {}
+    peers: List[Dict[str, str]] = []
     connected = False
     try:
         resp = requests.post(command_url, json=data)

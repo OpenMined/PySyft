@@ -18,7 +18,7 @@ class VPNAPI:
     def __init__(self, client: AbstractNodeClient):
         self.client = client
 
-    def join_network(self, host_or_ip: str):
+    def join_network(self, host_or_ip: str) -> None:
         reply = self.perform_api_request(
             syft_msg=VPNJoinMessageWithReply, content={"host_or_ip": host_or_ip}
         )

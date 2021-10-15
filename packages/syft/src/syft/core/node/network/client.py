@@ -133,7 +133,7 @@ class NetworkClient(Client):
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"
 
-    def join_network(self, host_or_ip: str) -> bool:
+    def join_network(self, host_or_ip: str) -> None:
         return self.vpn.join_network(host_or_ip=host_or_ip)
 
     def vpn_status(self) -> Dict[str, Any]:
