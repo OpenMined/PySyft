@@ -266,6 +266,8 @@ def spdz_multiply(
     a_share, b_share, c_share = crypto_store.get_primitives_from_store(
         "beaver_mul", x.shape, y.shape
     )
+    print("EPS Store", eps)
+    print("Delta Store", delta)
     eps = sum(eps.data).child  # type: ignore
     delta = sum(delta.data).child  # type:ignore
     print(" Final EPS", eps)
