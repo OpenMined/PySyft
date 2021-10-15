@@ -288,7 +288,7 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
     print(")))))))))))))))))))))))))")
     print("SPDZ Mask")
     crypto_store = ShareTensor.crypto_store
-    clients = x.clients
+    clients = ShareTensor.login_clients(x.parties_info)
 
     a, b, _ = crypto_store.get_primitives_from_store(
         "beaver_mul", x.shape, y.shape, remove=False  # type: ignore
@@ -307,6 +307,8 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
         print("Client here", client)
         client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
         client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
+        print("++++++++++++++++++++++++++++++++++++++++++++++")
+        print("Values sent")
     # As they are asynchronous , include them in a single action
 
 
