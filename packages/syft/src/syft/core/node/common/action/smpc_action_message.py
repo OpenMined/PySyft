@@ -275,10 +275,11 @@ def spdz_multiply(
     delta_a = op(a_share.child, delta)
 
     tensor = c_share.child + eps_b + delta_a
+    print("Landmark1 77777777777777777777777777777777")
     if x.rank == 0:
-        eps_delta = op(eps, delta)
+        eps_delta = op(eps.child, delta.child)
         tensor += eps_delta
-
+    print("Landmark2 777777777777777777777777777777")
     share = x.copy_tensor()
     share.child = tensor  # As we do not use fixed point we neglect truncation.
     print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
