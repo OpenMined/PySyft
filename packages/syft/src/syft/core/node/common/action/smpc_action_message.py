@@ -302,8 +302,9 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
     # As the curent client is local.
     # TODO: clients is empty
     for rank, client in enumerate(clients):
-        if x.rank == rank:
-            continue
+        # if x.rank == rank:
+        #    continue
+        # George, commenting for now as we need to have node context when storing locally
 
         print("Client here", client)
         client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
