@@ -160,7 +160,10 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         actions = SMPCActionMessage.filter_actions_after_rank(
             resolved_self.data.rank, actions
         )
-
+        base_url = client.routes[0].connection.base_url
+        client.routes[0].connection.base_url = base_url.replace(
+            "localhost", "docker-host"
+        )
         for action in actions:
             client.send_immediate_msg_without_reply(msg=action)
 
