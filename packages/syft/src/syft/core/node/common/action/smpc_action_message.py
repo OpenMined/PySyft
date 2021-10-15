@@ -150,7 +150,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             name_action=proto.name_action,
             self_id=sy.deserialize(blob=proto.self_id),
             args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
-            kwargs_id={k: v for k, v in proto.kwargs_id.items()},
+            kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
             result_id=sy.deserialize(blob=proto.id_at_location),
             address=proto,
         )
