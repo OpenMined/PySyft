@@ -1,5 +1,4 @@
 # stdlib
-from random import randint
 from random import sample
 from typing import List
 
@@ -669,122 +668,6 @@ def test_or(row_count: int, ishan: Entity) -> None:
 
 
 @pytest.fixture
-def tensor1(traskmaster: Entity, row_count: int, dims: int) -> REPT:
-    """Reference tensor"""
-    data = []
-    for _ in range(row_count):
-        data.append(
-            SEPT(
-                child=np.random.randint(low=-2, high=4, size=dims),
-                entity=traskmaster,
-                max_vals=np.full(dims, 4, dtype=np.int32),
-                min_vals=np.full(dims, -2, dtype=np.int32),
-            )
-        )
-    return REPT(rows=data, check_shape=False)
-
-
-@pytest.fixture
-def tensor2(tensor1) -> REPT:
-    """Same entity, same data as reference tensor"""
-    return tensor1
-
-
-@pytest.fixture
-def tensor3(traskmaster: Entity, row_count: int, dims: int) -> REPT:
-    """Same entity, different data as reference tensor"""
-    data = []
-    for _ in range(row_count):
-        data.append(
-            SEPT(
-                child=np.random.randint(low=4, high=7, size=dims),
-                entity=traskmaster,
-                max_vals=np.full(dims, 7, dtype=np.int32),
-                min_vals=np.full(dims, 4, dtype=np.int32),
-            )
-        )
-    return REPT(rows=data, check_shape=False)
-
-
-@pytest.fixture
-def rand_int1() -> int:
-    return randint(-6, -4)
-
-
-@pytest.fixture
-def rand_int2() -> int:
-    return randint(4, 6)
-
-
-def test_le(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
-) -> None:
-    for i in tensor1.__le__(tensor2).child:
-        assert i.child.all()
-    for i in tensor1.__le__(tensor3).child:
-        assert i.child.all()
-    for i in tensor1.__le__(rand_int1).child:
-        assert not i.child.all()
-    for i in tensor1.__le__(rand_int2).child:
-        assert i.child.all()
-
-
-def test_ge(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
-) -> None:
-    for i in tensor1.__ge__(tensor2).child:
-        assert i.child.all()
-    for i in tensor1.__ge__(tensor3).child:
-        assert not i.child.all()
-    for i in tensor1.__ge__(rand_int1).child:
-        assert i.child.all()
-    for i in tensor1.__ge__(rand_int2).child:
-        assert not i.child.all()
-
-
-def test_lt(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
-) -> None:
-    for i in tensor1.__lt__(tensor2).child:
-        assert not i.child.all()
-    for i in tensor1.__lt__(tensor3).child:
-        assert i.child.all()
-    for i in tensor1.__lt__(rand_int1).child:
-        assert not i.child.all()
-    for i in tensor1.__lt__(rand_int2).child:
-        assert i.child.all()
-
-
-def test_gt(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
-) -> None:
-    for i in tensor1.__gt__(tensor2).child:
-        assert not i.child.all()
-    for i in tensor1.__gt__(tensor3).child:
-        assert not i.child.all()
-    for i in tensor1.__gt__(rand_int1).child:
-        assert i.child.all()
-    for i in tensor1.__gt__(rand_int2).child:
-        assert not i.child.all()
-
-
-def test_clip(
-    tensor1: REPT, tensor2: REPT, tensor3: REPT, rand_int1: int, rand_int2: int
-) -> None:
-    rand1 = np.random.randint(-4, 1)
-    rand2 = np.random.randint(1, 5)
-    clipped_tensor1 = tensor1.clip(rand1, rand2).child
-    clipped_tensor2 = tensor1.clip(rand2, rand1).child
-    clipped_tensor3 = tensor1.clip(rand1, None).child
-    for i in clipped_tensor1:
-        assert ((i.child >= rand1) & (i.child <= rand2)).all()
-    for i in clipped_tensor2:
-        assert (i.child == rand1).all()
-    for i in clipped_tensor3:
-        assert (i.child >= rand1).all()
-
-
-@pytest.fixture
 def pos_row_data(
     row_count: int,
     dims: int,
@@ -808,6 +691,83 @@ def pos_row_data(
             )
         )
     return reference_data
+
+
+def test_le_same_entities(row_data_trask: List) -> None:
+    tensor = REPT(rows=row_data_trask)
+    second_tensor = REPT(rows=row_data_trask)
+    third_tensor = REPT(rows=[x + 1 for x in row_data_trask])
+    assert tensor.shape == second_tensor.shape
+    assert tensor.shape == third_tensor.shape
+    output1 = tensor <= second_tensor
+    for i in range(len(tensor.child)):
+        assert (output1).child[i].child.all()
+    output2 = tensor <= third_tensor
+    for i in range(len(tensor.child)):
+        assert (output2).child[i].child.all()
+
+
+def test_ge_same_entities(row_data_trask: List) -> None:
+    tensor = REPT(rows=row_data_trask)
+    second_tensor = REPT(rows=row_data_trask)
+    third_tensor = REPT(rows=[x + 1 for x in row_data_trask])
+    assert tensor.shape == second_tensor.shape
+    assert tensor.shape == third_tensor.shape
+    output1 = tensor >= second_tensor
+    for i in range(len(tensor.child)):
+        assert (output1).child[i].child.all()
+    output2 = third_tensor >= tensor
+    for i in range(len(tensor.child)):
+        assert (output2).child[i].child.all()
+
+
+def test_lt_same_entities(row_data_trask: List) -> None:
+    tensor = REPT(rows=row_data_trask)
+    second_tensor = REPT(rows=row_data_trask)
+    third_tensor = REPT(rows=[x + 1 for x in row_data_trask])
+    assert tensor.shape == second_tensor.shape
+    assert tensor.shape == third_tensor.shape
+    output1 = tensor < second_tensor
+    for i in range(len(tensor.child)):
+        assert not (output1).child[i].child.all()
+    output2 = tensor < third_tensor
+    for i in range(len(tensor.child)):
+        assert (output2).child[i].child.all()
+
+
+def test_gt_same_entities(row_data_trask: List) -> None:
+    tensor = REPT(rows=row_data_trask)
+    second_tensor = REPT(rows=row_data_trask)
+    third_tensor = REPT(rows=[x + 1 for x in row_data_trask])
+    assert tensor.shape == second_tensor.shape
+    assert tensor.shape == third_tensor.shape
+    output1 = tensor > second_tensor
+    for i in range(len(tensor.child)):
+        assert not (output1).child[i].child.all()
+    output2 = third_tensor > tensor
+    for i in range(len(tensor.child)):
+        assert (output2).child[i].child.all()
+
+
+def test_clip(row_data_trask: List, highest: int) -> None:
+    clip_min = np.random.randint(-highest, highest / 2)
+    clip_max = np.random.randint(highest / 2, highest)
+
+    tensor = REPT(rows=row_data_trask)
+    clipped_tensor1 = tensor.clip(clip_min, clip_max)
+    clipped_tensor2 = tensor.clip(clip_max, clip_min)
+    clipped_tensor3 = tensor.clip(clip_min, None)
+    assert clipped_tensor1.shape == tensor.shape
+    assert clipped_tensor2.shape == tensor.shape
+    assert clipped_tensor3.shape == tensor.shape
+    for i in range(len(tensor.child)):
+        assert (clipped_tensor1.child[i].child >= clip_min).all() & (
+            clipped_tensor1.child[i].child <= clip_max
+        ).all()
+    for i in range(len(tensor.child)):
+        assert (clipped_tensor2.child[i].child == clip_min).all()
+    for i in range(len(tensor.child)):
+        assert (clipped_tensor3.child[i].child >= clip_min).all()
 
 
 def test_any(pos_row_data: List) -> None:
