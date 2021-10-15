@@ -39,7 +39,6 @@ class DatasetManager(DatabaseManager):
 
         print("All the dataset arguments:")
         print(kwargs)
-
         blob_metadata = {}
         str_metadata = {}
         for key, value in kwargs.items():
