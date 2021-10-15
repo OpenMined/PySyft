@@ -262,7 +262,9 @@ def spdz_multiply(
         raise BeaverError
     if delta is None or len(delta.data) != nr_parties:
         raise BeaverError
-
+    print("Beaver Error surpassed*****************************88")
+    print(eps.data)
+    print(delta.data)
     a_share, b_share, c_share = crypto_store.get_primitives_from_store(
         "beaver_mul", x.shape, y.shape
     )
