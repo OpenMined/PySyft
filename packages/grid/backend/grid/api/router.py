@@ -13,6 +13,7 @@ from grid.api.roles import roles
 from grid.api.setup import setup
 from grid.api.syft import syft
 from grid.api.users.routes import router as user_router
+from grid.api.vpn import vpn
 
 api_router = APIRouter()
 api_router.include_router(login.router, tags=["login"])
@@ -30,3 +31,4 @@ api_router.include_router(
 )
 api_router.include_router(status.router, prefix="/status")
 api_router.include_router(ping.router, prefix="/ping")
+api_router.include_router(vpn.router, prefix="/vpn")

@@ -9,7 +9,7 @@ import sympy as sp
 # relative
 from ..common.serde.serializable import serializable
 from .entity import Entity
-from .scalar import GammaScalar
+from .scalar.gamma_scalar import GammaScalar
 
 
 @serializable(recursive_serde=True)

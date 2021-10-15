@@ -27,7 +27,7 @@ class EntityManager(DatabaseManager):
         super().__init__(db=database, schema=EntityManager.schema)
 
     def register(self, name: str):  # type: ignore
-        entity = Entity(name=name)
+        entity = Entity(name)  # Constructor
         _obj: EntitySchema = self._schema(name=entity.name)  # type: ignore
         _obj.obj = entity
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
