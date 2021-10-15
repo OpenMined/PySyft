@@ -133,6 +133,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
         seed_id_locations = secrets.randbits(64)
         kwargs["seed_id_locations"] = str(seed_id_locations)
+        kwargs["client"] = __self.client
         op = attr_path_and_name.split(".")[-1]
         id_at_location = SMPCActionMessage.get_id_at_location_from_op(
             seed_id_locations, op
