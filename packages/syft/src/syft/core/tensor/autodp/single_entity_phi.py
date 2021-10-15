@@ -1367,14 +1367,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         if a_min is None and a_max is None:
             raise Exception("ValueError: clip: must set either max or min")
 
-        if isinstance(self.child, torch.Tensor):
-            self.child = self.child.numpy()
-
-        if isinstance(self.child, np.ndarray):
-            data = np.clip(self.child, a_min=a_min, a_max=a_max, *args)
-        else:
-            # self.child is singleton
-            data = max(a_min, min(self.child, a_max)) if a_min <= a_max else a_max
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.clip(a_min, a_max)
+            else:
+                # self.child is a singleton
+                data = max(a_min, min(self.child, a_max)) if a_min <= a_max else a_max
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().clip(a_min, a_max)
 
         if isinstance(self.min_vals, np.ndarray):
             min_vals = np.clip(self.min_vals, a_min=a_min, a_max=a_max, *args)
@@ -1406,17 +1406,19 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     ) -> SingleEntityPhiTensor:
         """Test whether any element along a given axis evaluates to True"""
 
-        if isinstance(self.child, torch.Tensor):
-            self.child = self.child.numpy()
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.any(
+                    axis=axis, out=np.array(True), keepdims=keepdims, where=where
+                )
+            else:
+                # self.child is a singleton
+                data = self.child != 0
 
-        if isinstance(self.child, np.ndarray):
-            # test whether any child element evaluates to True
-            data = self.child.any(
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().any(
                 axis=axis, out=np.array(True), keepdims=keepdims, where=where
             )
-        else:
-            # self.child is singleton
-            data = self.child != 0
 
         if isinstance(self.min_vals, np.ndarray):
             # test whether any min val evaluates to True
@@ -1451,17 +1453,19 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     ) -> SingleEntityPhiTensor:
         """Test whether all elements along a given axis evaluates to True"""
 
-        if isinstance(self.child, torch.Tensor):
-            self.child = self.child.numpy()
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.all(
+                    axis=axis, out=np.array(True), keepdims=keepdims, where=where
+                )
+            else:
+                # self.child is a singleton
+                data = self.child != 0
 
-        if isinstance(self.child, np.ndarray):
-            # test whether all child elements evaluate to True
-            data = self.child.all(
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().all(
                 axis=axis, out=np.array(True), keepdims=keepdims, where=where
             )
-        else:
-            # self.child is singleton
-            data = self.child != 0
 
         if isinstance(self.min_vals, np.ndarray):
             # test whether all min vals evaluate to True
@@ -1493,14 +1497,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         out: Optional[np.ndarray] = None,
     ) -> SingleEntityPhiTensor:
         """Calculate the absolute value element-wise"""
-        if isinstance(self.child, torch.Tensor):
-            self.child = self.child.numpy()
+        if is_acceptable_simple_type(self.child):
+            data = self.child.__abs__()
 
-        if isinstance(self.child, np.ndarray):
-            data = np.abs(self.child, out)  # np.abs takes max 2 arguments
-        else:
-            # self.child is singleton
-            data = abs(self.child)
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().__abs__()
 
         if isinstance(self.min_vals, np.ndarray):
             min_vals = np.abs(self.min_vals, out)
@@ -1575,14 +1576,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         self, order: Optional[str] = "K", subok: Optional[bool] = True
     ) -> SingleEntityPhiTensor:
         """Return copy of the given object"""
-        if isinstance(self.child, torch.Tensor):
-            self.child = self.child.numpy()
+        if is_acceptable_simple_type(self.child):
+            data = self.child.copy()
 
-        if isinstance(self.child, np.ndarray):
-            data = np.array(self.child, order=order, subok=subok, copy=True)
-        else:
-            # self.child is singleton
-            data = self.child
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().copy()
 
         if isinstance(self.min_vals, np.ndarray):
             min_vals = np.array(self.min_vals, order=order, subok=subok, copy=True)
@@ -1609,7 +1607,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         mode: Optional[str] = "raise",
     ) -> SingleEntityPhiTensor:
         """Take elements from an array along an axis"""
-        data = self.child.take(indices=indices, axis=axis, mode=mode)
+        if is_acceptable_simple_type(self.child):
+            data = self.child.take(indices=indices, axis=axis, mode=mode)
+
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().take(indices=indices, axis=axis, mode=mode)
+
         min_vals = self.min_vals.take(indices=indices, axis=axis, mode=mode)
         max_vals = self.max_vals.take(indices=indices, axis=axis, mode=mode)
 
@@ -1628,27 +1631,35 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         axis2: Optional[int] = 1,
     ) -> SingleEntityPhiTensor:
         """Return specified diagonals"""
-        if isinstance(self.child, torch.Tensor):
-            self.child = self.child.numpy()
+        if is_acceptable_simple_type(self.child):
+            if (
+                isinstance(self.child, int)
+                or isinstance(self.child, float)
+                or isinstance(self.child, bool)
+            ):
+                raise Exception(
+                    "ValueError: diag requires an array of at least two dimensions"
+                )
 
-        if (
-            isinstance(self.child, int)
-            or isinstance(self.child, float)
-            or isinstance(self.child, bool)
-        ):
-            raise Exception(
-                "ValueError: diag requires an array of at least two dimensions"
-            )
-
-        elif isinstance(self.child, np.matrix):
-            # Make diagonal of matrix 1-D to preserve backward compatibility.
-            data = np.asarray(self.child).diagonal(
-                offset=offset, axis1=axis1, axis2=axis2
-            )
-        else:
-            data = np.asanyarray(self.child).diagonal(
-                offset=offset, axis1=axis1, axis2=axis2
-            )
+            elif isinstance(self.child, np.matrix):
+                # Make diagonal of matrix 1-D to preserve backward compatibility.
+                data = np.asarray(self.child).diagonal(
+                    offset=offset, axis1=axis1, axis2=axis2
+                )
+            else:
+                data = np.asanyarray(self.child).diagonal(
+                    offset=offset, axis1=axis1, axis2=axis2
+                )
+        elif isinstance(self.child, torch.Tensor):
+            if isinstance(self.child.numpy(), np.matrix):
+                # Make diagonal of matrix 1-D to preserve backward compatibility.
+                data = np.asarray(self.child.numpy()).diagonal(
+                    offset=offset, axis1=axis1, axis2=axis2
+                )
+            else:
+                data = np.asanyarray(self.child.numpy()).diagonal(
+                    offset=offset, axis1=axis1, axis2=axis2
+                )
 
         if (
             isinstance(self.min_vals, int)
