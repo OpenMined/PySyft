@@ -23,8 +23,8 @@ def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
     obj_msg = deserialize(blob=msg_bytes, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
         try:
-            print(obj_msg)
-            print(type(obj_msg))
+            print(obj_msg.msg)
+            # print(type(obj_msg.))
             node.recv_immediate_msg_without_reply(msg=obj_msg)
         except BeaverError as exc:
             print("///////////////////////////////////")
