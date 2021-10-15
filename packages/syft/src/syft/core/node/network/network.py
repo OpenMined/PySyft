@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import os
 from typing import Any
@@ -14,6 +17,7 @@ from nacl.signing import VerifyKey
 # relative
 from ....lib.python import String
 from ....logger import error
+from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -26,6 +30,9 @@ from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
 from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
+)
+from ..common.node_service.node_setup.node_setup_messages import (
+    CreateInitialSetUpMessage,
 )
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
 from ..common.node_service.ping.ping_service import PingService
@@ -109,6 +116,31 @@ class Network(Node):
         self.handled_requests: Dict[Any, float] = {}
 
         self.post_init()
+
+    def initial_setup(  # nosec
+        self,
+        first_superuser_name: str = "Jane Doe",
+        first_superuser_email: str = "info@openmined.org",
+        first_superuser_password: str = "changethis",
+        first_superuser_budget: float = 5.55,
+        domain_name: str = "BigHospital",
+    ) -> Network:
+
+        # Build Syft Message
+        msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
+            address=self.address,
+            name=first_superuser_name,
+            email=first_superuser_email,
+            password=first_superuser_password,
+            domain_name=domain_name,
+            budget=first_superuser_budget,
+            reply_to=self.address,
+        ).sign(signing_key=self.signing_key)
+
+        # Process syft message
+        _ = self.recv_immediate_msg_with_reply(msg=msg).message
+
+        return self
 
     def post_init(self) -> None:
         super().post_init()
