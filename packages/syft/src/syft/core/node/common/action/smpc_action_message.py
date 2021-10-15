@@ -268,8 +268,10 @@ def spdz_multiply(
     a_share, b_share, c_share = crypto_store.get_primitives_from_store(
         "beaver_mul", x.shape, y.shape
     )
-    eps = sum(eps.data)
-    delta = sum(delta.data)
+    eps = sum(eps.data).child  # type: ignore
+    delta = sum(delta.data).child  # type:ignore
+    print("EPS", eps)
+    print("Delta", delta)
     op = operator.mul
     eps_b = op(eps, b_share.child)
     delta_a = op(a_share.child, delta)
@@ -277,7 +279,7 @@ def spdz_multiply(
     tensor = c_share.child + eps_b + delta_a
     print("Landmark1 77777777777777777777777777777777")
     if x.rank == 0:
-        eps_delta = op(eps.child, delta.child)
+        eps_delta = op(eps, delta)
         tensor += eps_delta
     print("Landmark2 777777777777777777777777777777")
     share = x.copy_tensor()
