@@ -307,12 +307,12 @@ Deploying to Azure
 3. If successful, you can now access the deployed node at the specified IP address and interact with it via the PyGrid Admin UI at http://51.124.153.133/login (change IP with yours) or use Postman
       to do API requests.
 
-.. |image0| image:: ../_static/deployment/image2.png
+.. |image0| image:: ../../_static/deployment/image2.png
    :width: 95%
    
-.. |image1| image:: ../_static/deployment/image1.png
+.. |image1| image:: ../../_static/deployment/image1.png
    :width: 95%
    
-.. |image2| image:: ../_static/deployment/image3.png
+.. |image2| image:: ../../_static/deployment/image3.png
    :width: 95%
    
