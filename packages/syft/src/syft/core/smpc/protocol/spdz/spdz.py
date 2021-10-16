@@ -11,6 +11,7 @@ from __future__ import annotations
 
 # stdlib
 import operator
+import secrets
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -77,7 +78,8 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     print("***************************")
 
     # TODO: Should modify to parallel execution.
-    res_shares = [operator.mul(a, b) for a, b in zip(x.child, y.child)]
+    kwargs = {"seed_id_locations": secrets.randbits(64)}
+    res_shares = [a.__mul__(b, **kwargs) for a, b in zip(x.child, y.child)]
 
     return res_shares  # type: ignore
 
@@ -189,8 +191,11 @@ def beaver_populate(
         id_at_location (UID): the location to store the data in.
         node Optional[AbstractNode] : The node on which the data is stored.
     """
+    print("Location", id_at_location)
     print("Beaver")
+    print("Data--------------------------------------", data)
     obj = node.store.get_object(key=id_at_location)  # type: ignore
+    print("Object ", obj)
     if obj is None:
         list_data = sy.lib.python.List([data])
         result = StorableObject(
@@ -200,15 +205,19 @@ def beaver_populate(
         )
         node.store[id_at_location] = result  # type: ignore
     elif isinstance(obj.data, sy.lib.python.List):
+        print("Entered")
         obj = obj.data
+        print("First", obj)
         obj.append(data)
+        print("Second", obj)
         result = StorableObject(
             id=id_at_location,
             data=obj,
             read_permissions={},
         )
+        print("Result", result)
         node.store[id_at_location] = result  # type: ignore
     else:
         raise Exception(f"Object at {id_at_location} should be a List or None")
-
+    print("Node value ::::::::::::", node.store.get_object(key=id_at_location))  # type: ignore
     print("Beaver Finish*************************************************")

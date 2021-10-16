@@ -126,12 +126,11 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         from ..core.node.common.action.smpc_action_message import SMPCActionMessage
 
         seed_id_locations = kwargs.get("seed_id_locations", None)
-        if seed_id_locations:
+        if seed_id_locations is None:
             raise ValueError(
-                "There should not be any kwargs named seed_id_locations in the kwargs for MPCTensor"
+                "There should be a `seed_id_olcations` kwargs when doing an operation for MPCTensor"
             )
 
-        seed_id_locations = secrets.randbits(64)
         kwargs["seed_id_locations"] = str(seed_id_locations)
         kwargs["client"] = __self.client
         op = attr_path_and_name.split(".")[-1]

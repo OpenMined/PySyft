@@ -259,6 +259,9 @@ def spdz_multiply(
     eps = node.store.get_object(key=eps_id)  # type: ignore
     delta = node.store.get_object(key=delta_id)  # type: ignore
 
+    print("EPS Store", eps)
+    print("Delta Store", delta)
+    print("NR parties", nr_parties)
     if eps is None or len(eps.data) != nr_parties:
         raise BeaverError
     if delta is None or len(delta.data) != nr_parties:
@@ -268,8 +271,7 @@ def spdz_multiply(
     a_share, b_share, c_share = crypto_store.get_primitives_from_store(
         "beaver_mul", x.shape, y.shape
     )
-    print("EPS Store", eps)
-    print("Delta Store", delta)
+
     eps = sum(eps.data).child  # type: ignore
     delta = sum(delta.data).child  # type:ignore
     print(" Final EPS", eps)
@@ -330,6 +332,8 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
         client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
         print("++++++++++++++++++++++++++++++++++++++++++++++")
         print("Values sent")
+        print("EPS_ID", eps_id)
+        print("DELTA_ID", delta_id)
     # As they are asynchronous , include them in a single action
 
 
