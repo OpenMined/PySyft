@@ -52,8 +52,6 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         self.kwargs_id = kwargs_id
         self.id_at_location = result_id
         self.ranks_to_run_action = ranks_to_run_action if ranks_to_run_action else []
-        self.address = address
-        self.msg_id = msg_id
         super().__init__(address=address, msg_id=msg_id)
 
     @staticmethod
@@ -129,6 +127,8 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             args_id=list(map(lambda x: sy.serialize(x), self.args_id)),
             kwargs_id={k: sy.serialize(v) for k, v in self.kwargs_id.items()},
             id_at_location=sy.serialize(self.id_at_location),
+            address=sy.serialize(self.address),
+            msg_id=sy.serialize(self.id),
         )
 
     @staticmethod
@@ -152,7 +152,8 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
             kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
             result_id=sy.deserialize(blob=proto.id_at_location),
-            address=proto,
+            address=sy.deserialize(blob=proto.address),
+            msg_id=sy.deserialize(blob=proto.msg_id),
         )
 
     @staticmethod
