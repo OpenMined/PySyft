@@ -195,17 +195,13 @@ class Domain(Node):
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
 
         # this needs to be defensive by checking domain_id NOT domain.id or it breaks
-        # try:
-        print("Action Message", msg)
-        print(msg.address)
-        print(msg.address.domain_id)
-        print(msg.address.device)
-        return msg.address.domain_id == self.id and msg.address.device is None
-        # except Exception as excp3:
-        #     critical(
-        #         f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
-        #     )
-        #     return False
+        try:
+            return msg.address.domain_id == self.id and msg.address.device is None
+        except Exception as excp3:
+            critical(
+                f"Error checking if {msg.pprint} is for me on {self.pprint}. {excp3}"
+            )
+            return False
 
     def set_request_status(
         self, message_request_id: UID, status: RequestStatus, client: Client
