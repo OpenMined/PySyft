@@ -136,6 +136,14 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             )
 
         resolved_kwargs.pop("seed_id_locations")
+
+        client = resolved_kwargs.get("client", None)
+        if client is None:
+            raise ValueError(
+                "Expected client to be in the kwargs to generate action for RabbitMQ"
+            )
+
+        resolved_kwargs.pop("client")
         actions_generator = SMPCActionMessage.get_action_generator_from_op(
             operation_str=method_name, nr_parties=nr_parties
         )
@@ -145,6 +153,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         kwargs = {
             "seed_id_locations": int(seed_id_locations),
             "node": node,
+            "client": client,
         }
 
         # Get the list of actions to be run
@@ -152,8 +161,10 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         actions = SMPCActionMessage.filter_actions_after_rank(
             resolved_self.data.rank, actions
         )
-
-        client = node.get_client()  # type: ignore
+        base_url = client.routes[0].connection.base_url
+        client.routes[0].connection.base_url = base_url.replace(
+            "localhost", "docker-host"
+        )
         for action in actions:
             client.send_immediate_msg_without_reply(msg=action)
 

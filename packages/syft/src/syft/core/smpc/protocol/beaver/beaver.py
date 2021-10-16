@@ -7,6 +7,7 @@ Computer Science, pages 420–432. Springer, 1991.
 
 
 # stdlib
+from copy import deepcopy
 import operator
 import secrets
 from typing import Any
@@ -31,6 +32,7 @@ ttp_generator = np.random.default_rng()
 def _get_triples(
     op_str: str,
     nr_parties: int,
+    parties_info: List[Any],
     a_shape: Tuple[int],
     b_shape: Tuple[int],
     ring_size: int = 2 ** 32,
@@ -44,6 +46,7 @@ def _get_triples(
     Args:
         op_str (str): Operator string.
         nr_parties (int): Number of parties
+        parties_info (List[Any]): Parties connection information.
         a_shape (Tuple[int]): Shape of a from beaver triples protocol.
         b_shape (Tuple[int]): Shape of b part from beaver triples protocol.
         ring_size (int) : Ring Size of the triples to generate.
@@ -62,37 +65,42 @@ def _get_triples(
 
     cmd = getattr(operator, op_str)
     min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
-    seed_shares = secrets.randbits(32)
+    seed_przs = secrets.randbits(32)
 
     a_rand = Tensor(
         ttp_generator.integers(
             low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=np.int32
         )
     )
+    print("a_rand", a_rand)
     a_shares = MPCTensor._get_shares_from_local_secret(
-        secret=a_rand,
-        nr_parties=nr_parties,
+        secret=deepcopy(a_rand),
+        parties_info=parties_info,  # type: ignore
         shape=a_shape,
-        seed_shares=seed_shares,
+        seed_przs=seed_przs,
     )
-
+    seed_przs = secrets.randbits(32)
     b_rand = Tensor(
         ttp_generator.integers(
             low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=np.int32
         )
     )
-
+    print("b_rand", b_rand)
     b_shares = MPCTensor._get_shares_from_local_secret(
-        secret=b_rand,
-        nr_parties=nr_parties,
+        secret=deepcopy(b_rand),
+        parties_info=parties_info,  # type: ignore
         shape=b_shape,
-        seed_shares=seed_shares,
+        seed_przs=seed_przs,
     )
-
-    c_val = cmd(a_rand, b_rand, **kwargs)
-
+    seed_przs = secrets.randbits(32)
+    print("cmd", cmd)
+    c_val = cmd(a_rand, b_rand)
+    print("c_val", c_val)
     c_shares = MPCTensor._get_shares_from_local_secret(
-        secret=c_val, nr_parties=nr_parties, shape=c_val.shape, seed_shares=seed_shares
+        secret=deepcopy(c_val),
+        parties_info=parties_info,  # type: ignore
+        shape=c_val.shape,
+        seed_przs=seed_przs,
     )
 
     # We are always creating an instance
@@ -118,7 +126,9 @@ def _get_triples(
     triple = list(
         map(list, zip(*map(lambda x: map(list, zip(*x)), triple_sequential)))  # type: ignore
     )
-
+    print("a", a_rand)
+    print("b", b_rand)
+    print("c", c_val)
     return triple  # type: ignore
 
 

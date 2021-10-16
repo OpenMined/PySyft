@@ -49,10 +49,6 @@ def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python._SyNone",
         ),
         (
-            "syft.core.smpc.protocol.spdz.spdz.mul_parties",
-            "syft.core.tensor.smpc.share_tensor.ShareTensor",
-        ),
-        (
             "syft.core.smpc.protocol.spdz.spdz.beaver_populate",
             "syft.lib.python._SyNone",
         ),

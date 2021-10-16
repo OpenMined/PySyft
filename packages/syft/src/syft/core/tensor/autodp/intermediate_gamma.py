@@ -428,7 +428,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             # relative
             from ..smpc.share_tensor import ShareTensor
 
-            result = ShareTensor(
+            result = ShareTensor(  # type: ignore
                 rank=self.sharetensor_values.rank,
                 nr_parties=self.sharetensor_values.nr_parties,
                 ring_size=self.sharetensor_values.ring_size,

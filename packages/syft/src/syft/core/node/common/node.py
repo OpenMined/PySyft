@@ -535,6 +535,7 @@ class Node(AbstractNode):
         contents = getattr(msg, "message", msg)  # in the event the message is unsigned
         debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {contents}")
         if self.message_is_for_me(msg=msg):
+            print("Enter signed process```````````````````````")
             debug(
                 f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
             )
