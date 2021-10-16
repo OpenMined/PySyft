@@ -11,6 +11,7 @@ from __future__ import annotations
 
 # stdlib
 import operator
+import secrets
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -77,7 +78,8 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     print("***************************")
 
     # TODO: Should modify to parallel execution.
-    res_shares = [operator.mul(a, b) for a, b in zip(x.child, y.child)]
+    kwargs = {"seed_id_locations": secrets.randbits(64)}
+    res_shares = [a.__mul__(b, **kwargs) for a, b in zip(x.child, y.child)]
 
     return res_shares  # type: ignore
 
