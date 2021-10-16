@@ -21,7 +21,7 @@ from ...core.node.domain.domain import Domain
 from ...logger import error
 from ...logger import info
 from ...logger import traceback_and_raise
-from .bcolors import bcolors
+from .bcolors import BColors
 from .exchange_ids import DuetCredentialExchanger
 from .exchange_ids import OpenGridTokenFileExchanger
 from .exchange_ids import OpenGridTokenManualInputExchanger
@@ -45,10 +45,10 @@ ADDR_REPOSITORY = (
 def generate_donation_msg(name: str) -> str:
     donate_url = "https://github.com/sponsors/OpenMined"
     donate_msg = (
-        f"\n    > ❤️ {bcolors.FAIL}Love{bcolors.ENDC} {bcolors.OKGREEN}{name}{bcolors.ENDC}? "
-        + f"{bcolors.WARNING}Please{bcolors.ENDC} {bcolors.OKBLUE}consider{bcolors.ENDC} "
-        + f"{bcolors.HEADER}supporting{bcolors.ENDC} {bcolors.FAIL}our{bcolors.ENDC} "
-        + f"{bcolors.WARNING}community!{bcolors.ENDC}"
+        f"\n    > ❤️ {BColors.FAIL}Love{BColors.ENDC} {BColors.OKGREEN}{name}{BColors.ENDC}? "
+        + f"{BColors.WARNING}Please{BColors.ENDC} {BColors.OKBLUE}consider{BColors.ENDC} "
+        + f"{BColors.HEADER}supporting{BColors.ENDC} {BColors.FAIL}our{BColors.ENDC} "
+        + f"{BColors.WARNING}community!{BColors.ENDC}"
         + f"\n    > {donate_url}"
     )
     return donate_msg
@@ -113,10 +113,10 @@ def begin_duet_logger(my_domain: Domain) -> None:
                     blink_on = (int(iterator / 5) % 2) == 0
 
                     if blink_on and n_requests > 0:
-                        left_blink = bcolors.BOLD + ">" + bcolors.ENDC
-                        right_blink = bcolors.BOLD + "<" + bcolors.ENDC
-                        left_color = bcolors.FAIL
-                        right_color = bcolors.ENDC
+                        left_blink = BColors.BOLD + ">" + BColors.ENDC
+                        right_blink = BColors.BOLD + "<" + BColors.ENDC
+                        left_color = BColors.FAIL
+                        right_color = BColors.ENDC
                     else:
                         left_blink = " "
                         right_blink = " "
@@ -200,7 +200,7 @@ def launch_duet(
         print=True,
     )
 
-    info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n", print=True)
+    info(BColors.BOLD + DUET_DONATE_MSG + BColors.BOLD + "\n", print=True)
 
     if not network_url:
         network_url = get_available_network()
@@ -211,7 +211,7 @@ def launch_duet(
 
     signaling_client = register(url=network_url)
 
-    info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
+    info("♫♫♫ > " + BColors.OKGREEN + "DONE!" + BColors.ENDC, print=True)
 
     db_engine = create_engine("sqlite://", echo=False)
     Base.metadata.create_all(db_engine)  # type: ignore
@@ -237,7 +237,7 @@ def launch_duet(
         offer=True,
     )
     info(print=True)
-    info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
+    info("♫♫♫ > " + BColors.OKGREEN + "CONNECTED!" + BColors.ENDC, print=True)
     #     return duet, my_domain.get_root_client()
     out_duet: Client = my_domain.get_root_client()
 
@@ -275,7 +275,7 @@ def join_duet(
         print=True,
     )
 
-    info(bcolors.BOLD + DUET_DONATE_MSG + bcolors.BOLD + "\n", print=True)
+    info(BColors.BOLD + DUET_DONATE_MSG + BColors.BOLD + "\n", print=True)
 
     if not network_url:
         network_url = get_available_network()
@@ -286,7 +286,7 @@ def join_duet(
 
     signaling_client = register(url=network_url)
 
-    info("♫♫♫ > " + bcolors.OKGREEN + "DONE!" + bcolors.ENDC, print=True)
+    info("♫♫♫ > " + BColors.OKGREEN + "DONE!" + BColors.ENDC, print=True)
 
     db_engine = create_engine("sqlite://", echo=False)
     Base.metadata.create_all(db_engine)  # type: ignore
@@ -316,7 +316,7 @@ def join_duet(
         offer=False,
     )
     info(print=True)
-    info("♫♫♫ > " + bcolors.OKGREEN + "CONNECTED!" + bcolors.ENDC, print=True)
+    info("♫♫♫ > " + BColors.OKGREEN + "CONNECTED!" + BColors.ENDC, print=True)
     # begin_duet_client_logger(duet.node)
 
     return duet

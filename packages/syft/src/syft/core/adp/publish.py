@@ -9,8 +9,10 @@ from copy import deepcopy
 import random
 from typing import Any
 from typing import Dict as TypeDict
+from typing import List
 from typing import List as TypeList
-from typing import Type
+from typing import Tuple
+from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
@@ -19,6 +21,7 @@ from pymbolic.mapper.substitutor import SubstitutionMapper
 from pymbolic.mapper.substitutor import make_subst_func
 
 # relative
+from .entity import DataSubjectGroup
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
@@ -126,10 +129,13 @@ def publish(
 
 def get_mechanism_for_entity(
     scalars: TypeList[Any],
-    entity: Entity,
+    entity: Union[Entity, DataSubjectGroup],
     sigma: float = 1.5,
     public_only: bool = False,
-) -> Type[iDPGaussianMechanism]:
+) -> Union[
+    List[Tuple[Entity, iDPGaussianMechanism]],
+    List[Tuple[DataSubjectGroup, iDPGaussianMechanism]],
+]:
     """
     Iterates over scalars computing its value and L attribute and builds its mechanism.
     """
@@ -150,16 +156,39 @@ def get_mechanism_for_entity(
     else:
         value = np.sqrt(np.sum(np.square(np.array([float(s.value) for s in scalars]))))
 
-    L = float(max_lipschitz_wrt_entity(scalars, entity=entity))
-
-    return iDPGaussianMechanism(
-        sigma=sigma,
-        squared_l2_norm=value,
-        squared_l2_norm_upper_bound=value_upper_bound,
-        L=L,
-        entity_name=entity.name,
-        name=m_id,
-    )
+    if isinstance(entity, DataSubjectGroup):
+        mechanisms = []
+        for e in entity.entity_set:
+            mechanisms.append(
+                (
+                    entity,
+                    iDPGaussianMechanism(
+                        sigma=sigma,
+                        squared_l2_norm=value,
+                        squared_l2_norm_upper_bound=value_upper_bound,
+                        L=float(max_lipschitz_wrt_entity(scalars, entity=e)),
+                        entity_name=e.name,
+                        name=m_id,
+                    ),
+                )
+            )
+        return mechanisms
+    elif isinstance(entity, Entity):
+        return [
+            (
+                entity,
+                iDPGaussianMechanism(
+                    sigma=sigma,
+                    squared_l2_norm=value,
+                    squared_l2_norm_upper_bound=value_upper_bound,
+                    L=float(max_lipschitz_wrt_entity(scalars, entity=entity)),
+                    entity_name=entity.name,
+                    name=m_id,
+                ),
+            )
+        ]
+    else:
+        raise Exception(f"What even is this type: {type(entity)}")
 
 
 def get_all_entity_mechanisms(
@@ -170,14 +199,17 @@ def get_all_entity_mechanisms(
     for s in scalars:
         for i_s in s.input_scalars:
             entities.add(i_s.entity)
-    return {
-        e: [
-            get_mechanism_for_entity(
-                scalars=scalars, entity=e, sigma=sigma, public_only=public_only
-            )
-        ]
-        for e in entities
-    }
+    entity_to_mechanisms: dict = {}
+    for entity in entities:
+        for flat_entity, mechanism in get_mechanism_for_entity(
+            scalars=scalars, entity=entity, sigma=sigma, public_only=public_only
+        ):
+            # We ignore entity in this case because entity might be a DataSubjectGroup,
+            # in which case flat_entity will include more entities than entity
+            if flat_entity not in entity_to_mechanisms:
+                entity_to_mechanisms[flat_entity] = list()
+            entity_to_mechanisms[flat_entity].append(mechanism)
+    return entity_to_mechanisms
 
 
 def get_remaining_budget(acc: Any, user_key: VerifyKey) -> Any:
