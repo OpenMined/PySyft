@@ -118,8 +118,6 @@ class MPCTensor(PassthroughTensor):
 
         res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
 
-        parties.sort(key=lambda party: party.name + party.id.no_dash)
-
         super().__init__(res)
 
     @staticmethod
