@@ -11,7 +11,6 @@ message SMPCActionMessage {
   repeated syft.core.common.UID args_id = 3;
   map<string, syft.core.common.UID> kwargs_id = 4;
   syft.core.common.UID id_at_location = 5;
-  repeated int32 ranks_to_run_action = 6;
-  syft.core.io.Address address = 7;
-  syft.core.common.UID msg_id = 8;
+  syft.core.io.Address address = 6;
+  syft.core.common.UID msg_id = 7;
 }

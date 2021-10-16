@@ -127,7 +127,6 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             args_id=list(map(lambda x: sy.serialize(x), self.args_id)),
             kwargs_id={k: sy.serialize(v) for k, v in self.kwargs_id.items()},
             id_at_location=sy.serialize(self.id_at_location),
-            ranks_to_run_action=self.ranks_to_run_action,
             address=sy.serialize(self.address),
             msg_id=sy.serialize(self.id),
         )
@@ -153,7 +152,6 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
             kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
             result_id=sy.deserialize(blob=proto.id_at_location),
-            ranks_to_run_action=proto.ranks_to_run_action,
             address=sy.deserialize(blob=proto.address),
             msg_id=sy.deserialize(blob=proto.msg_id),
         )
