@@ -192,6 +192,7 @@ def beaver_populate(
     print("Beaver")
     print("Data--------------------------------------", data)
     obj = node.store.get_object(key=id_at_location)  # type: ignore
+    print("Object ", obj)
     if obj is None:
         list_data = sy.lib.python.List([data])
         result = StorableObject(
@@ -201,13 +202,17 @@ def beaver_populate(
         )
         node.store[id_at_location] = result  # type: ignore
     elif isinstance(obj.data, sy.lib.python.List):
+        print("Entered")
         obj = obj.data
+        print("First", obj)
         obj.append(data)
+        print("Second", obj)
         result = StorableObject(
             id=id_at_location,
             data=obj,
             read_permissions={},
         )
+        print("Result", result)
         node.store[id_at_location] = result  # type: ignore
     else:
         raise Exception(f"Object at {id_at_location} should be a List or None")
