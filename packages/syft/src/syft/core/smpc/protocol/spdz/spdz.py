@@ -190,6 +190,7 @@ def beaver_populate(
         node Optional[AbstractNode] : The node on which the data is stored.
     """
     print("Beaver")
+    print("Data--------------------------------------", data)
     obj = node.store.get_object(key=id_at_location)  # type: ignore
     if obj is None:
         list_data = sy.lib.python.List([data])
@@ -210,5 +211,5 @@ def beaver_populate(
         node.store[id_at_location] = result  # type: ignore
     else:
         raise Exception(f"Object at {id_at_location} should be a List or None")
-
+    print("Node value ::::::::::::", node.store.get_object(key=id_at_location))  # type: ignore
     print("Beaver Finish*************************************************")
