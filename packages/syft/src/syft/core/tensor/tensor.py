@@ -201,6 +201,11 @@ class TensorPointer(Pointer):
         """
         return TensorPointer._apply_op(self, other, "mul")
 
+    def __gt__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        return TensorPointer._apply_op(self, other, "gt")
+
 
 def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
 

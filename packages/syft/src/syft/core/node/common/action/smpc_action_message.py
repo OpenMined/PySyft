@@ -29,9 +29,6 @@ from ....common.uid import UID
 from ....io.address import Address
 from ....tensor.smpc.share_tensor import ShareTensor
 
-# How many intermediary ids we generate in each smpc function
-MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
-
 
 @serializable()
 class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
@@ -88,10 +85,6 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
         generator = np.random.default_rng(seed)
-        nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[operation_str]
-        for _ in range(nr_ops):
-            generator.bytes(16)
-
         return UID(UUID(bytes=generator.bytes(16)))
 
     def __str__(self) -> str:
@@ -189,10 +182,6 @@ def smpc_basic_op(
     """Generator for SMPC public/private operations add/sub"""
 
     generator = np.random.default_rng(seed_id_locations)
-
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES[f"__{op_str}__"]):
-        generator.bytes(16)
-
     result_id = UID(UUID(bytes=generator.bytes(16)))
     other = node.store[other_id].data
 
@@ -347,10 +336,6 @@ def smpc_mul(
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
     generator = np.random.default_rng(seed_id_locations)
-
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__mul__"]):
-        generator.bytes(16)
-
     result_id = UID(UUID(bytes=generator.bytes(16)))
     other = node.store[other_id].data
 
@@ -405,6 +390,94 @@ def smpc_mul(
     return actions
 
 
+def smpc_gt(
+    nr_parties: int,
+    self_id: UID,
+    other_id: UID,
+    seed_id_locations: int,
+    node: Any,
+    client: Any,
+) -> List[SMPCActionMessage]:
+    """Generator for the smpc_mul with a public value"""
+    generator = np.random.default_rng(seed_id_locations)
+
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+    sub_result = UID(UUID(bytes=generator.bytes(16)))
+
+    x = node.store[self_id].data
+    y = node.store[other_id].data
+
+    if not isinstance(y, ShareTensor):
+        raise ValueError("Only private compare works at the moment")
+
+    actions = []
+    actions.append(
+        SMPCActionMessage(
+            "mpc_sub",
+            self_id=self_id,
+            args_id=[other_id],
+            kwargs_id={},
+            ranks_to_run_action=list(range(nr_parties)),
+            result_id=sub_result,
+            address=client.address,
+        )
+    )
+
+    actions.append(
+        SMPCActionMessage(
+            "bit_decomposition",
+            self_id=sub_result,
+            args_id=[],
+            # TODO: This value needs to be changed to something else and probably used
+            # directly the przs_generator from ShareTensor - check bit_decomposition function
+            kwargs_id={},
+            ranks_to_run_action=list(range(nr_parties)),
+            result_id=result_id,
+            address=client.address,
+        )
+    )
+    return actions
+
+
+def bit_decomposition(share: ShareTensor) -> None:  # type: ignore
+    # TODO: Probably better it would be to use the PRZS from the ShareTensor
+    seed_przs = 42
+    generator = np.random.default_rng(seed_przs)
+
+    print("NR PARTIES", share.nr_parties)
+    print("parties_info", share.parties_info)
+
+    # TODO: We need to take this 32 from the share ring_size
+    shares = []
+    for rank in range(share.nr_parties):
+        if rank == share.rank:
+            # we need to share the secret
+            value = []
+            for i in range(32):
+                new_share = share.copy_tensor()
+                new_share.child = ((new_share.child >> i) & 1).astype(np.int32)
+                value.append(new_share)
+
+        else:
+            # just generate a random number for PRZS
+            value = [None] * 32
+
+        shares = [
+            ShareTensor.generate_przs(
+                value=value[i],
+                ring_size=2,
+                rank=share.rank,
+                shape=share.child.shape,
+                generator_przs=generator,
+                parties_info=share.parties_info,
+            )
+            for i in range(32)
+        ]
+
+    print("Those are the shares", shares)
+    return shares
+
+
 # Given an SMPC Action map it to an action constructor
 MAP_FUNC_TO_ACTION: Dict[
     str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
@@ -412,6 +485,7 @@ MAP_FUNC_TO_ACTION: Dict[
     "__add__": functools.partial(smpc_basic_op, "add"),
     "__sub__": functools.partial(smpc_basic_op, "sub"),
     "__mul__": smpc_mul,  # type: ignore
+    "__gt__": smpc_gt,  # type: ignore
 }
 
 
@@ -422,5 +496,6 @@ _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_mul": operator.mul,
     "spdz_mask": spdz_mask,
     "spdz_multiply": spdz_multiply,
+    "bit_decomposition": bit_decomposition,
     "mpc_noop": deepcopy,
 }

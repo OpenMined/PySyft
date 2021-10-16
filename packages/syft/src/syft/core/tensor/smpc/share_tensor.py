@@ -210,9 +210,10 @@ class ShareTensor(PassthroughTensor):
     ) -> "ShareTensor":
 
         nr_parties = len(parties_info)
-        numpy_type = RING_SIZE_TO_TYPE.get(ring_size, None)
-        if numpy_type is None:
-            raise ValueError(f"Ring size {ring_size} not known how to be treated")
+        # TODO: We still need to use int32 since we get an error in the tensor.py
+        # numpy_type = RING_SIZE_TO_TYPE.get(ring_size, None)
+        # if numpy_type is None:
+        #    raise ValueError(f"Ring size {ring_size} not known how to be treated")
 
         # relative
         from ..tensor import Tensor
@@ -221,7 +222,7 @@ class ShareTensor(PassthroughTensor):
             raise ValueError("Only seed_przs or generator should be populated")
 
         if value is None:
-            value = Tensor(np.zeros(shape, dtype=numpy_type))
+            value = Tensor(np.zeros(shape, dtype=np.int32))
 
         # TODO: Sending the seed and having each party generate the shares is not safe
         # Since the parties would know some of the other parties shares (this might not impose a risk
@@ -449,8 +450,9 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        raise ValueError("It should not reach this point since we generate SMPCAction for this")
-
+        raise ValueError(
+            "It should not reach this point since we generate SMPCAction for this"
+        )
 
     def __eq__(self, other: Any) -> bool:
         """Equal operator.
