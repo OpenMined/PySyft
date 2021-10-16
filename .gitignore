@@ -1,7 +1,5 @@
 .mypy_cache
 .DS_Store
-build/
-_build/
 dist/
 .cache/
 .coverage
