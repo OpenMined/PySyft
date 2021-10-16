@@ -189,6 +189,7 @@ def beaver_populate(
         id_at_location (UID): the location to store the data in.
         node Optional[AbstractNode] : The node on which the data is stored.
     """
+    print("Location", id_at_location)
     print("Beaver")
     print("Data--------------------------------------", data)
     obj = node.store.get_object(key=id_at_location)  # type: ignore

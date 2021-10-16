@@ -332,6 +332,8 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
         client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
         print("++++++++++++++++++++++++++++++++++++++++++++++")
         print("Values sent")
+        print("EPS_ID", eps_id)
+        print("DELTA_ID", delta_id)
     # As they are asynchronous , include them in a single action
 
 
