@@ -1,3 +1,0 @@
-theme: jekyll-theme-cayman
-title: PySyft
-description: PySyft is a Python library for secure and private Deep Learning. PySyft decouples private data from model training, using Federated Learning, Differential Privacy, and Encrypted Computation (like Multi-Party Computation (MPC) and Homomorphic Encryption (HE) within the main Deep Learning frameworks like PyTorch and TensorFlow.
