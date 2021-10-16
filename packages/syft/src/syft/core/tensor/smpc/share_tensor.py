@@ -440,6 +440,18 @@ class ShareTensor(PassthroughTensor):
         new_share = y.apply_function(self, "matmul")
         return new_share
 
+    def gt(self, y: torch.Tensor) -> "ShareTensor":
+        """Apply the "gt" operation between "y" and "self".
+
+        Args:
+            y (torch.Tensor): self > y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        raise ValueError("It should not reach this point since we generate SMPCAction for this")
+
+
     def __eq__(self, other: Any) -> bool:
         """Equal operator.
         Check if "self" is equal with another object given a set of
@@ -592,3 +604,4 @@ class ShareTensor(PassthroughTensor):
     __rmul__ = mul
     __matmul__ = matmul
     __rmatmul__ = rmatmul
+    __gt__ = gt

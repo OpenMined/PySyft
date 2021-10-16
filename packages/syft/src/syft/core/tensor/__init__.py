@@ -179,6 +179,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
         (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.__gt__",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.__matmul__",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),

@@ -590,6 +590,17 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def gt(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        res_shares = spdz.gt_master(self, y, "mul")
+        y_shape = getattr(y, "shape", (1,))
+        new_shape = MPCTensor._get_shape("gt", self.mpc_shape, y_shape)
+        res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
+
+        return res
+
     def matmul(
         self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
     ) -> MPCTensor:
@@ -652,6 +663,7 @@ class MPCTensor(PassthroughTensor):
     __mul__ = mul
     __rmul__ = mul
     __matmul__ = matmul
+    __gt__ = gt
 
 
 @implements(MPCTensor, np.add)
@@ -667,3 +679,8 @@ def sub(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
 @implements(MPCTensor, np.multiply)
 def mul(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
     return y.mul(x)
+
+
+@implements(MPCTensor, np.greater)
+def mul(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
+    return y.gt(x)

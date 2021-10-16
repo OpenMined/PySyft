@@ -54,9 +54,6 @@ def mul_master(
     # relative
     # from ....tensor.smpc.mpc_tensor import MPCTensor
 
-    if op_str not in EXPECTED_OPS:
-        raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
-
     parties = x.parties
     parties_info = x.parties_info
 
@@ -84,6 +81,65 @@ def mul_master(
     ]
 
     return res_shares  # type: ignore
+
+
+def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
+    """Function that is executed by the orchestrator to multiply two secret values.
+
+    Args:
+        x (MPCTensor): First value to multiply with.
+        y (MPCTensor): Second value to multiply with.
+        op_str (str): Operation string.
+
+    Raises:
+        ValueError: If op_str not in EXPECTED_OPS.
+
+    Returns:
+        MPCTensor: Result of the multiplication.
+    """
+    # relative
+    # from ....tensor.smpc.mpc_tensor import MPCTensor
+
+    if op_str not in EXPECTED_OPS:
+        raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
+
+    parties = x.parties
+    parties_info = x.parties_info
+
+    shape_x = tuple(x.shape)  # type: ignore
+    shape_y = tuple(y.shape)  # type: ignore
+
+    CryptoPrimitiveProvider.generate_primitives(
+        f"beaver_{op_str}",
+        parties=parties,
+        g_kwargs={
+            "a_shape": shape_x,
+            "b_shape": shape_y,
+            "parties_info": parties_info,
+        },
+        p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+    )
+
+    # TODO: get nr of bits in another way
+    for i in range(32):
+        # There are needed 32 values for each bit
+        CryptoPrimitiveProvider.generate_primitives(
+            f"beaver_{op_str}",
+            parties=parties,
+            g_kwargs={
+                "a_shape": shape_x,
+                "b_shape": shape_y,
+                "parties_info": parties_info,
+            },
+            p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+        )
+
+    # TODO: Should modify to parallel execution.
+    kwargs = {"seed_id_locations": secrets.randbits(64)}
+    res_shares = [a.__gt__(b, **kwargs) for a, b in zip(x.child, y.child)]
+
+    return res_shares  # type: ignore
+
 
 
 # def mul_parties(
