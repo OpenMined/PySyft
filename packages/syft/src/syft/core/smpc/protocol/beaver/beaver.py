@@ -7,6 +7,7 @@ Computer Science, pages 420–432. Springer, 1991.
 
 
 # stdlib
+from copy import deepcopy
 import operator
 import secrets
 from typing import Any
@@ -71,8 +72,9 @@ def _get_triples(
             low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=np.int32
         )
     )
+    print("a_rand", a_rand)
     a_shares = MPCTensor._get_shares_from_local_secret(
-        secret=a_rand,
+        secret=deepcopy(a_rand),
         parties_info=parties_info,  # type: ignore
         shape=a_shape,
         seed_przs=seed_przs,
@@ -83,18 +85,19 @@ def _get_triples(
             low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=np.int32
         )
     )
-
+    print("b_rand", b_rand)
     b_shares = MPCTensor._get_shares_from_local_secret(
-        secret=b_rand,
+        secret=deepcopy(b_rand),
         parties_info=parties_info,  # type: ignore
         shape=b_shape,
         seed_przs=seed_przs,
     )
     seed_przs = secrets.randbits(32)
-    c_val = cmd(a_rand, b_rand, **kwargs)
-
+    print("cmd", cmd)
+    c_val = cmd(a_rand, b_rand)
+    print("c_val", c_val)
     c_shares = MPCTensor._get_shares_from_local_secret(
-        secret=c_val,
+        secret=deepcopy(c_val),
         parties_info=parties_info,  # type: ignore
         shape=c_val.shape,
         seed_przs=seed_przs,
@@ -123,7 +126,9 @@ def _get_triples(
     triple = list(
         map(list, zip(*map(lambda x: map(list, zip(*x)), triple_sequential)))  # type: ignore
     )
-
+    print("a", a_rand)
+    print("b", b_rand)
+    print("c", c_val)
     return triple  # type: ignore
 
 

@@ -529,6 +529,7 @@ class Node(AbstractNode):
 
         debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
         if self.message_is_for_me(msg=msg):
+            print("Enter signed process```````````````````````")
             debug(
                 f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
             )

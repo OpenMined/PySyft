@@ -16,13 +16,15 @@ client_sentry = Client(settings.SENTRY_DSN)
 # TODO : Should be modified to use exponential backoff (for efficiency)
 
 
-@celery_app.task(bind=True, max_retries=None, acks_late=True)
+@celery_app.task(bind=True, max_retries=4, acks_late=True)
 def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
     # use latin-1 instead of utf-8 because our bytes might not be an even number
     msg_bytes = bytes(msg_bytes_str, "latin-1")
     obj_msg = deserialize(blob=msg_bytes, from_bytes=True)
     if isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
         try:
+            print(obj_msg.message)
+            # print(type(obj_msg.))
             node.recv_immediate_msg_without_reply(msg=obj_msg)
         except BeaverError as exc:
             print("///////////////////////////////////")

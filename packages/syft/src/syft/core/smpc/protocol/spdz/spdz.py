@@ -58,14 +58,11 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
 
     parties = x.parties
     parties_info = x.parties_info
-    print("Registered Clients")
-    print(cache_clients)
-    print("\n\n")
 
     shape_x = tuple(x.shape)  # type: ignore
     shape_y = tuple(y.shape)  # type: ignore
 
-    CryptoPrimitiveProvider.generate_primitives(
+    primitives = CryptoPrimitiveProvider.generate_primitives(
         f"beaver_{op_str}",
         parties=parties,
         g_kwargs={
@@ -75,6 +72,9 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         },
         p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
     )
+    print("Primtives: ")
+    print(primitives)
+    print("***************************")
 
     # TODO: Should modify to parallel execution.
     res_shares = [operator.mul(a, b) for a, b in zip(x.child, y.child)]

@@ -150,7 +150,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             name_action=proto.name_action,
             self_id=sy.deserialize(blob=proto.self_id),
             args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
-            kwargs_id={k: v for k, v in proto.kwargs_id.items()},
+            kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
             result_id=sy.deserialize(blob=proto.id_at_location),
             address=proto,
         )
@@ -183,6 +183,7 @@ def smpc_basic_op(
     other_id: UID,
     seed_id_locations: int,
     node: Any,
+    client: Any,
 ) -> List[SMPCActionMessage]:
     """Generator for SMPC public/private operations add/sub"""
 
@@ -205,7 +206,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
     else:
@@ -217,7 +218,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=list(range(1, nr_parties)),
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
 
@@ -230,7 +231,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=[0],
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
 
@@ -256,29 +257,42 @@ def spdz_multiply(
     nr_parties = x.nr_parties
     eps = node.store.get_object(key=eps_id)  # type: ignore
     delta = node.store.get_object(key=delta_id)  # type: ignore
-    print(eps)
-    print(delta)
+
     if eps is None or len(eps.data) != nr_parties:
         raise BeaverError
     if delta is None or len(delta.data) != nr_parties:
         raise BeaverError
+    print("Beaver Error surpassed*******************************")
 
     a_share, b_share, c_share = crypto_store.get_primitives_from_store(
         "beaver_mul", x.shape, y.shape
     )
-    eps = sum(eps.data)
-    delta = sum(delta.data)
+    print("EPS Store", eps)
+    print("Delta Store", delta)
+    eps = sum(eps.data).child  # type: ignore
+    delta = sum(delta.data).child  # type:ignore
+    print(" Final EPS", eps)
+    print("Final Delta", delta)
+    print("A_share", a_share.child, "\n")
+    print("B_share", b_share.child, "\n")
+    print("C_share", c_share.child, "\n")
     op = operator.mul
     eps_b = op(eps, b_share.child)
+    print("EPS_B", eps_b, "\n")
     delta_a = op(a_share.child, delta)
+    print("DELTA_A", delta_a, "\n")
 
     tensor = c_share.child + eps_b + delta_a
+    print("C addedTensor", tensor, "\n")
     if x.rank == 0:
         eps_delta = op(eps, delta)
+        print("EPS_DELTA", eps_delta, "\n")
         tensor += eps_delta
 
     share = x.copy_tensor()
     share.child = tensor  # As we do not use fixed point we neglect truncation.
+    print("Final Tensor", tensor)
+    print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
     return share
 
@@ -288,7 +302,7 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
     print(")))))))))))))))))))))))))")
     print("SPDZ Mask")
     crypto_store = ShareTensor.crypto_store
-    clients = x.clients
+    clients = ShareTensor.login_clients(x.parties_info)
 
     a, b, _ = crypto_store.get_primitives_from_store(
         "beaver_mul", x.shape, y.shape, remove=False  # type: ignore
@@ -296,22 +310,35 @@ def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> Non
 
     eps = x - a  # beaver intermediate values.
     delta = y - b
-
+    print("x ShareTensor:", x, "\n")
+    print("y ShareTensor", y, "\n")
+    print("a ShareTensor:", a, "\n")
+    print("b ShareTensor", b, "\n")
+    print("EPS::::::::::::", eps, "\n")
+    print("Delta::::::::::::", delta, "\n")
     # TODO : Should modify , no need to send for the current client
     # As the curent client is local.
     # TODO: clients is empty
     for rank, client in enumerate(clients):
-        if x.rank == rank:
-            continue
+        # if x.rank == rank:
+        #    continue
+        # George, commenting for now as we need to have node context when storing locally
 
         print("Client here", client)
         client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
         client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
+        print("++++++++++++++++++++++++++++++++++++++++++++++")
+        print("Values sent")
     # As they are asynchronous , include them in a single action
 
 
 def smpc_mul(
-    nr_parties: int, self_id: UID, other_id: UID, seed_id_locations: int, node: Any
+    nr_parties: int,
+    self_id: UID,
+    other_id: UID,
+    seed_id_locations: int,
+    node: Any,
+    client: Any,
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
     generator = np.random.default_rng(seed_id_locations)
@@ -340,11 +367,10 @@ def smpc_mul(
                 kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,
-                address=node.address,
+                address=client.address,
             )
         )
 
-        """
         actions.append(
             SMPCActionMessage(
                 "spdz_multiply",
@@ -353,10 +379,9 @@ def smpc_mul(
                 kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
-        """
 
     else:
         # All ranks should multiply by that public value
@@ -368,7 +393,7 @@ def smpc_mul(
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=node.address,
+                address=client.address,
             )
         )
 
@@ -381,7 +406,7 @@ MAP_FUNC_TO_ACTION: Dict[
 ] = {
     "__add__": functools.partial(smpc_basic_op, "add"),
     "__sub__": functools.partial(smpc_basic_op, "sub"),
-    "__mul__": smpc_mul,
+    "__mul__": smpc_mul,  # type: ignore
 }
 
 
