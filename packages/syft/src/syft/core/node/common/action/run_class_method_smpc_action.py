@@ -13,7 +13,8 @@ import syft as sy
 
 # relative
 from ..... import lib
-from .....logger import critical
+from ..... import logger
+from ....store.storeable_object import StorableObject
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
 )
@@ -90,7 +91,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         resolved_self = node.store.get_object(key=self._self.id_at_location)
 
         if resolved_self is None:
-            critical(
+            logger.critical(
                 f"execute_action on {self.path} failed due to missing object"
                 + f" at: {self._self.id_at_location}"
             )
@@ -138,6 +139,11 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         resolved_kwargs.pop("seed_id_locations")
 
         client = resolved_kwargs.get("client", None)
+        base_url = client.routes[0].connection.base_url
+        client.routes[0].connection.base_url = base_url.replace(
+            "localhost", "docker-host"
+        )
+
         if client is None:
             raise ValueError(
                 "Expected client to be in the kwargs to generate action for RabbitMQ"
@@ -161,12 +167,94 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         actions = SMPCActionMessage.filter_actions_after_rank(
             resolved_self.data.rank, actions
         )
-        base_url = client.routes[0].connection.base_url
-        client.routes[0].connection.base_url = base_url.replace(
-            "localhost", "docker-host"
-        )
-        for action in actions:
-            client.send_immediate_msg_without_reply(msg=action)
+
+        # try 5 times
+        logger.error("-----------------------------------------------------------------------------------------")
+        actions_to_run = actions
+        for i in range(5):
+            logger.error(f"Trying to run the actions the {i} time")
+            failed_actions_to_run_next = []
+            for action in actions_to_run:
+                try:
+                    RunClassMethodSMPCAction.execute_smpc_action(action, node, verify_key)
+                except Exception as e:
+                    logger.warning(f"Error found when running {action}, {e}")
+                    failed_actions_to_run_next.append(action)
+
+            if failed_actions_to_run_next:
+                logger.info("Sleeping for 1 second to make sure we got all the dependencies")
+                actions_to_run = failed_actions_to_run_next
+                #client.send_immediate_msg_without_reply(msg=action)
+            else:
+                break
+        else:
+            logger.critical("Could not complete the execution since we still have failed actions")
+
+
+
+    @staticmethod
+    def execute_smpc_action(
+        action: Any, node: AbstractNode, verify_key: VerifyKey
+    ) -> None:  # TODO: The Any needs to be fixed
+        """Given an SMPCAction, execute it (this action is sent to the node
+        by the RabitMQ task)
+        Attributes:
+            node (AbstractNode): the node that received the message
+            msg (SMPCActionMessage): the message that should be executed
+            verify_key (VerifyKey): the verify_key
+        """
+        # relative
+        from .smpc_action_message import MAP_ACTION_TO_FUNCTION
+
+        func = MAP_ACTION_TO_FUNCTION[action.name_action]
+        store_object_self = node.store.get_object(key=action.self_id)
+        if store_object_self is None:
+            raise KeyError("Object not already in store")
+
+        _self = store_object_self.data
+        args = [node.store[arg_id].data for arg_id in action.args_id]
+        kwargs = {}
+        for key, kwarg_id in action.kwargs_id.items():
+            data = node.store[kwarg_id].data
+            if data is None:
+                raise KeyError(f"Key {key} is not available")
+
+            kwargs[key] = data
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+        result = func(_self, *upcasted_args, **upcasted_kwargs)
+
+        if lib.python.primitive_factory.isprimitive(value=result):
+            # Wrap in a SyPrimitive
+            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
+                value=result, id=action.id_at_location
+            )
+        else:
+            # TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                try:
+                    if hasattr(result, "_id"):
+                        # set the underlying id
+                        result._id = action.id_at_location
+                    else:
+                        result.id = action.id_at_location
+
+                    if result.id != action.id_at_location:
+                        raise AttributeError("IDs don't match")
+                except AttributeError as e:
+                    err = f"Unable to set id on result {type(result)}. {e}"
+                    traceback_and_raise(Exception(err))
+
+        if not isinstance(result, StorableObject):
+            result = StorableObject(
+                id=action.id_at_location,
+                data=result,
+                read_permissions=store_object_self.read_permissions,
+            )
+
+        node.store[action.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodSMPCAction_PB:
         """Returns a protobuf serialization of self.

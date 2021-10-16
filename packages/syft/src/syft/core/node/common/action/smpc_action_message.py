@@ -359,6 +359,7 @@ def smpc_mul(
         eps_id = UID(UUID(bytes=generator.bytes(16)))
         delta_id = UID(UUID(bytes=generator.bytes(16)))
 
+        print("Node address here it is", node.address.target_emoji())
         actions.append(
             SMPCActionMessage(
                 "spdz_mask",
@@ -367,7 +368,7 @@ def smpc_mul(
                 kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -379,7 +380,7 @@ def smpc_mul(
                 kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -411,7 +412,7 @@ MAP_FUNC_TO_ACTION: Dict[
 
 
 # Map given an action map it to a function that should be run on the shares"
-_MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
+MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_add": operator.add,
     "mpc_sub": operator.sub,
     "mpc_mul": operator.mul,
