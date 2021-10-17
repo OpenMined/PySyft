@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from copy import deepcopy
 import functools
 from functools import lru_cache
 import itertools
@@ -467,15 +466,15 @@ class MPCTensor(PassthroughTensor):
             Tuple[MPCTensor,Any]: Rehared Tensor values.
         """
         if ispointer(other):
-            parties = deepcopy(mpc_tensor.parties)
+            parties = mpc_tensor.parties
             client = other.client
             public_shape = other.public_shape
             if public_shape is None:
                 # TODO: Should be modified after Trask's Synthetic data PR.
                 raise ValueError("The input tensor pointer should have public shape.")
             if client not in parties:
-                parties.append(client)
-                mpc_tensor = MPCTensor.reshare(mpc_tensor, parties)
+                mpc_tensor = MPCTensor.reshare(mpc_tensor, [parties, client])
+                parties = mpc_tensor.parties
 
             other = MPCTensor(secret=other, parties=parties, shape=public_shape)
 
