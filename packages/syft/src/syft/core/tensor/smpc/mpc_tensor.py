@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from copy import deepcopy
 import functools
 from functools import lru_cache
 import itertools
@@ -466,7 +467,7 @@ class MPCTensor(PassthroughTensor):
             Tuple[MPCTensor,Any]: Rehared Tensor values.
         """
         if ispointer(other):
-            parties = mpc_tensor.parties
+            parties = deepcopy(mpc_tensor.parties)
             client = other.client
             public_shape = other.public_shape
             if public_shape is None:
