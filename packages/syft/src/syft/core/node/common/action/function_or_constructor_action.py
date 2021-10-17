@@ -118,8 +118,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                         f"Got {arg} of type {type(arg)}"
                     )
                 )
-            print(self.path)
-            print("Args", arg)
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
@@ -137,8 +135,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                         f"Got {arg} of type {type(arg)}"
                     )
                 )
-            print(self.path)
-            print("Kwargs", arg_name, arg)
             r_arg = node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
