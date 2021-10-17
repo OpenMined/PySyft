@@ -576,10 +576,10 @@ class MPCTensor(PassthroughTensor):
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         self, y = MPCTensor.sanity_checks(self, y)
-        kwargs = {"seed_id_locations": secrets.randbits(64)}
+        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
         if isinstance(y, MPCTensor):
-            res_shares = spdz.mul_master(self, y, "mul")
+            res_shares = spdz.mul_master(self, y, "mul", **kwargs)
         else:
             res_shares = [
                 getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
