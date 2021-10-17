@@ -233,18 +233,16 @@ class ShareTensor(PassthroughTensor):
         else:
             generator_shares = np.random.default_rng(seed_przs)
 
-        if isinstance(value, ShareTensor):
-            share = value
-        elif isinstance(value.child, ShareTensor):
-            share = value.child
-        else:
-            share = ShareTensor(
-                value=value.child,
-                rank=rank,
-                parties_info=parties_info,
-                seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
-                init_clients=init_clients,
-            )
+        if isinstance(value.child, ShareTensor):
+            value = value.child
+
+        share = ShareTensor(
+            value=value.child,
+            rank=rank,
+            parties_info=parties_info,
+            seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
+            init_clients=init_clients,
+        )
 
         share.generator_przs = generator_shares
         shares = [
