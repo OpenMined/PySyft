@@ -132,7 +132,7 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         )
 
     # TODO: Should modify to parallel execution.
-    kwargs = {"seed_id_locations": secrets.randbits(64)}
+    kwargs = {"seed_id_locations": secrets.randbits(2)}
     res_shares = [a.__gt__(b, **kwargs) for a, b in zip(x.child, y.child)]
 
     return res_shares  # type: ignore

@@ -38,7 +38,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         self_id: UID,
         args_id: List[UID],
         kwargs_id: Dict[str, UID],
-        result_id: UID,
+        result_id: List[UID],
         address: Address,
         ranks_to_run_action: Optional[List[int]] = None,
         msg_id: Optional[UID] = None,
@@ -119,7 +119,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             self_id=sy.serialize(self.self_id),
             args_id=list(map(lambda x: sy.serialize(x), self.args_id)),
             kwargs_id={k: sy.serialize(v) for k, v in self.kwargs_id.items()},
-            id_at_location=sy.serialize(self.id_at_location),
+            id_at_location=list(map(lambda x: sy.serialize(x), self.id_at_location)),
             address=sy.serialize(self.address),
             msg_id=sy.serialize(self.id),
         )
@@ -144,7 +144,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             self_id=sy.deserialize(blob=proto.self_id),
             args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
             kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
-            result_id=sy.deserialize(blob=proto.id_at_location),
+            result_id=list(map(lambda x: sy.deserialize(blob=x), proto.id_at_location)),
             address=sy.deserialize(blob=proto.address),
             msg_id=sy.deserialize(blob=proto.msg_id),
         )
@@ -195,7 +195,7 @@ def smpc_basic_op(
                 args_id=[other_id],
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
-                result_id=result_id,
+                result_id=[result_id],
                 address=client.address,
             )
         )
@@ -207,7 +207,7 @@ def smpc_basic_op(
                 args_id=[],
                 kwargs_id={},
                 ranks_to_run_action=list(range(1, nr_parties)),
-                result_id=result_id,
+                result_id=[result_id],
                 address=client.address,
             )
         )
@@ -220,7 +220,7 @@ def smpc_basic_op(
                 args_id=[other_id],
                 kwargs_id={},
                 ranks_to_run_action=[0],
-                result_id=result_id,
+                result_id=[result_id],
                 address=client.address,
             )
         )
@@ -252,8 +252,10 @@ def spdz_multiply(
     print("Delta Store", delta)
     print("NR parties", nr_parties)
     if eps is None or len(eps.data) != nr_parties:
+        print(len(eps.data))
         raise BeaverError
     if delta is None or len(delta.data) != nr_parties:
+        print(len(eps.data))
         raise BeaverError
     print("Beaver Error surpassed*******************************")
 
@@ -337,42 +339,45 @@ def smpc_mul(
     """Generator for the smpc_mul with a public value"""
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
-    other = node.store[other_id].data
+    # other = node.store[other_id].data
 
     actions = []
-    if isinstance(other, ShareTensor):
-        # crypto_store = ShareTensor.crypto_store
-        # _self = node.store[self_id].data
-        # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
+    # if isinstance(other, ShareTensor):
+    # crypto_store = ShareTensor.crypto_store
+    # _self = node.store[self_id].data
+    # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
 
-        mask_result = UID(UUID(bytes=generator.bytes(16)))
-        eps_id = UID(UUID(bytes=generator.bytes(16)))
-        delta_id = UID(UUID(bytes=generator.bytes(16)))
+    mask_result = UID(UUID(bytes=generator.bytes(16)))
+    eps_id = UID(UUID(bytes=generator.bytes(16)))
+    delta_id = UID(UUID(bytes=generator.bytes(16)))
+    print("EPS ID", eps_id)
+    print("DELTA ID", delta_id)
 
-        actions.append(
-            SMPCActionMessage(
-                "spdz_mask",
-                self_id=self_id,
-                args_id=[other_id],
-                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
-                ranks_to_run_action=list(range(nr_parties)),
-                result_id=mask_result,
-                address=client.address,
-            )
+    actions.append(
+        SMPCActionMessage(
+            "spdz_mask",
+            self_id=self_id,
+            args_id=[other_id],
+            kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
+            ranks_to_run_action=list(range(nr_parties)),
+            result_id=[mask_result],
+            address=client.address,
         )
+    )
 
-        actions.append(
-            SMPCActionMessage(
-                "spdz_multiply",
-                self_id=self_id,
-                args_id=[other_id],
-                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
-                ranks_to_run_action=list(range(nr_parties)),
-                result_id=result_id,
-                address=client.address,
-            )
+    actions.append(
+        SMPCActionMessage(
+            "spdz_multiply",
+            self_id=self_id,
+            args_id=[other_id],
+            kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
+            ranks_to_run_action=list(range(nr_parties)),
+            result_id=[result_id],
+            address=client.address,
         )
+    )
 
+    """
     else:
         # All ranks should multiply by that public value
         actions.append(
@@ -382,11 +387,11 @@ def smpc_mul(
                 args_id=[other_id],
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
-                result_id=result_id,
+                result_id=[result_id],
                 address=client.address,
             )
         )
-
+    """
     return actions
 
 
@@ -399,13 +404,32 @@ def smpc_gt(
     client: Any,
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
+    print("SMPC GT")
     generator = np.random.default_rng(seed_id_locations)
 
     result_id = UID(UUID(bytes=generator.bytes(16)))
     sub_result = UID(UUID(bytes=generator.bytes(16)))
 
+    # There are 2 shares because:
+    ## one share is the one from our secret
+    ## the second one is the share from the remote secret
+    ## both the secrets are in this case already shared secrets
+
+    # 32 values share 1
+    # 32 values share 2 +
+    # 1 carry           +
+    # ====================
+    # 65 ids
+    bit_decomposition_id_shares = [
+        UID(UUID(bytes=generator.bytes(16))) for _ in range(65)
+    ]
+
     x = node.store[self_id].data
     y = node.store[other_id].data
+    print("NR PARTIES", nr_parties)
+
+    crypto_store = ShareTensor.crypto_store
+    print(crypto_store.store)
 
     if not isinstance(y, ShareTensor):
         raise ValueError("Only private compare works at the moment")
@@ -418,7 +442,7 @@ def smpc_gt(
             args_id=[other_id],
             kwargs_id={},
             ranks_to_run_action=list(range(nr_parties)),
-            result_id=sub_result,
+            result_id=[sub_result],
             address=client.address,
         )
     )
@@ -428,14 +452,104 @@ def smpc_gt(
             "bit_decomposition",
             self_id=sub_result,
             args_id=[],
-            # TODO: This value needs to be changed to something else and probably used
-            # directly the przs_generator from ShareTensor - check bit_decomposition function
             kwargs_id={},
             ranks_to_run_action=list(range(nr_parties)),
-            result_id=result_id,
+            result_id=bit_decomposition_id_shares,
             address=client.address,
         )
     )
+
+    share_1_ids = bit_decomposition_id_shares[:32]
+    share_2_ids = bit_decomposition_id_shares[32:64]
+    carry_id = bit_decomposition_id_shares[-1]
+
+    # We want to run:
+    # for i in range(32):
+    #    s = a[i] + b[i] + c[i]
+    #    c[i+1] = a[i] * b[i] + c[i] * (a[i] + b[i])
+    for i in range(1):
+        print(f"FOOOOR LOOP {i}")
+        add_intermediary_res = UID(UUID(bytes=generator.bytes(16)))
+        sum_res = UID(UUID(bytes=generator.bytes(16)))
+
+        # s1 = a[i] + b[i]
+        actions.append(
+            SMPCActionMessage(
+                "mpc_add",
+                self_id=share_1_ids[i],
+                args_id=[share_2_ids[i]],
+                kwargs_id={},
+                ranks_to_run_action=list(range(nr_parties)),
+                result_id=[add_intermediary_res],
+                address=client.address,
+            )
+        )
+
+        # s2 = s1 + c[i]
+        actions.append(
+            SMPCActionMessage(
+                "mpc_add",
+                self_id=add_intermediary_res,
+                args_id=[carry_id],
+                kwargs_id={},
+                ranks_to_run_action=list(range(nr_parties)),
+                result_id=[sum_res],
+                address=client.address,
+            )
+        )
+
+        # p1 = a[i] * b[i]
+        seed_id_tmp = 4242 + i
+        generator_tmp = np.random.default_rng(seed_id_tmp)
+        mul_tmp_id_1 = UID(UUID(bytes=generator_tmp.bytes(16)))
+        actions.extend(
+            smpc_mul(
+                nr_parties=nr_parties,
+                self_id=share_1_ids[i],
+                other_id=share_2_ids[i],
+                seed_id_locations=seed_id_tmp,
+                node=node,
+                client=client,
+            )
+        )
+
+    """
+        # p2 = c[i] * (a[i] + b[i])
+        seed_id_tmp = 43 + i
+        generator_tmp = np.random.default_rng(seed_id_tmp)
+        mul_tmp_id_2 = UID(UUID(bytes=generator_tmp.bytes(16)))
+        actions.extend(smpc_mul(nr_parties, carry_id, add_intermediary_res, seed_id_tmp, node, client))
+
+        # s3 = p1 + p2
+        # c[i+1] = p1+p2
+        next_carry_id = UID(UUID(bytes=generator.bytes(16)))
+        if i != 0:
+            actions.append(
+                SMPCActionMessage(
+                    "mpc_add",
+                    self_id=mul_tmp_id_1,
+                    args_id=[mul_tmp_id_2],
+                    kwargs_id={},
+                    ranks_to_run_action=list(range(nr_parties)),
+                    result_id=[next_carry_id],
+                    address=client.address,
+                )
+            )
+        carry_id = next_carry_id
+
+    actions.append(
+        SMPCActionMessage(
+            "mpc_add",
+            self_id=mul_tmp_id_1,
+            args_id=[mul_tmp_id_2],
+            kwargs_id={},
+            ranks_to_run_action=list(range(nr_parties)),
+            result_id=[result_id],
+            address=client.address,
+        )
+    )
+    """
+
     return actions
 
 
@@ -456,25 +570,39 @@ def bit_decomposition(share: ShareTensor) -> None:  # type: ignore
             for i in range(32):
                 new_share = share.copy_tensor()
                 new_share.child = ((new_share.child >> i) & 1).astype(np.int32)
+                new_share.ring_size = 2
                 value.append(new_share)
 
         else:
             # just generate a random number for PRZS
             value = [None] * 32
 
-        shares = [
-            ShareTensor.generate_przs(
-                value=value[i],
-                ring_size=2,
-                rank=share.rank,
-                shape=share.child.shape,
-                generator_przs=generator,
-                parties_info=share.parties_info,
-            )
-            for i in range(32)
-        ]
+        shares.extend(
+            [
+                ShareTensor.generate_przs(
+                    value=value[i],
+                    ring_size=2,
+                    rank=share.rank,
+                    shape=share.child.shape,
+                    generator_przs=generator,
+                    parties_info=share.parties_info,
+                )
+                for i in range(32)
+            ]
+        )
 
-    print("Those are the shares", shares)
+    # carry values
+    shares.append(
+        ShareTensor.generate_przs(
+            value=None,
+            ring_size=2,
+            rank=share.rank,
+            shape=share.child.shape,
+            generator_przs=generator,
+            parties_info=share.parties_info,
+        )
+    )
+
     return shares
 
 

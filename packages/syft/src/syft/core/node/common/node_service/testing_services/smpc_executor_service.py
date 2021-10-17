@@ -90,11 +90,21 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))
 
-        if not isinstance(result, StorableObject):
-            result = StorableObject(
-                id=msg.id_at_location,
-                data=result,
-                read_permissions=store_object_self.read_permissions,
-            )
+        if len(msg.id_at_location) == 1:
+            if not isinstance(result, StorableObject):
+                result = StorableObject(
+                    id=msg.id_at_location,
+                    data=result,
+                    read_permissions=store_object_self.read_permissions,
+                )
 
-        node.store[msg.id_at_location] = result
+            node.store[msg.id_at_location[0]] = result
+        else:
+            for id_at_location, res in zip(msg.id_at_location, result):
+                if not isinstance(result, StorableObject):
+                    res = StorableObject(
+                        id=id_at_location,
+                        data=res,
+                        read_permissions=store_object_self.read_permissions,
+                    )
+                node.store[id_at_location] = res

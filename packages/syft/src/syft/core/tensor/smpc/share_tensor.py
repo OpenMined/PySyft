@@ -67,7 +67,7 @@ class ShareTensor(PassthroughTensor):
 
     __slots__ = (
         "rank",
-        "ring_size",
+        "_ring_size",
         "clients",  # clients connections
         "min_value",
         "max_value",
@@ -128,6 +128,17 @@ class ShareTensor(PassthroughTensor):
                 CACHE_CLIENTS[party_info] = client
             clients.append(client)
         return clients
+
+    @property
+    def ring_size(self) -> int:
+        return self._ring_size
+
+    @ring_size.setter
+    def ring_size(self, ring_size: int) -> int:
+        self._ring_size = ring_size
+        self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
+            self._ring_size
+        )
 
     def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
         return ShareTensor(
@@ -234,16 +245,19 @@ class ShareTensor(PassthroughTensor):
         else:
             generator_shares = np.random.default_rng(seed_przs)
 
-        if isinstance(value.child, ShareTensor):
-            value = value.child
-
-        share = ShareTensor(
-            value=value.child,
-            rank=rank,
-            parties_info=parties_info,
-            seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
-            init_clients=init_clients,
-        )
+        if isinstance(value, ShareTensor):
+            share = value
+        elif isinstance(value.child, ShareTensor):
+            share = value.child
+        else:
+            share = ShareTensor(
+                value=value.child,
+                ring_size=ring_size,
+                rank=rank,
+                parties_info=parties_info,
+                seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
+                init_clients=init_clients,
+            )
 
         share.generator_przs = generator_shares
         shares = [
