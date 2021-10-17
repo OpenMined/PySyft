@@ -477,7 +477,7 @@ class MPCTensor(PassthroughTensor):
                 new_parties += parties
                 mpc_tensor = MPCTensor.reshare(mpc_tensor, new_parties)
 
-            other = MPCTensor(secret=other, parties=parties, shape=public_shape)
+            other = MPCTensor(secret=other, parties=new_parties, shape=public_shape)
 
         elif isinstance(other, MPCTensor):
             p1 = set(mpc_tensor.parties)  # parties in first MPCTensor
