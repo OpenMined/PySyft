@@ -474,7 +474,7 @@ class MPCTensor(PassthroughTensor):
                 raise ValueError("The input tensor pointer should have public shape.")
             if client not in parties:
                 new_parties = [client]
-                new_parties.append(parties)
+                new_parties += parties
                 mpc_tensor = MPCTensor.reshare(mpc_tensor, new_parties)
 
             other = MPCTensor(secret=other, parties=parties, shape=public_shape)
