@@ -339,6 +339,7 @@ def smpc_mul(
     """Generator for the smpc_mul with a public value"""
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
+    print("MUL ID", result_id)
     # other = node.store[other_id].data
 
     actions = []
@@ -468,7 +469,6 @@ def smpc_gt(
     #    s = a[i] + b[i] + c[i]
     #    c[i+1] = a[i] * b[i] + c[i] * (a[i] + b[i])
     for i in range(1):
-        print(f"FOOOOR LOOP {i}")
         add_intermediary_res = UID(UUID(bytes=generator.bytes(16)))
         sum_res = UID(UUID(bytes=generator.bytes(16)))
 
@@ -499,9 +499,10 @@ def smpc_gt(
         )
 
         # p1 = a[i] * b[i]
-        seed_id_tmp = 4242 + i
+        seed_id_tmp = generator.integers(low=0, high=2**32)
         generator_tmp = np.random.default_rng(seed_id_tmp)
         mul_tmp_id_1 = UID(UUID(bytes=generator_tmp.bytes(16)))
+        print("MUL ID1", mul_tmp_id_1)
         actions.extend(
             smpc_mul(
                 nr_parties=nr_parties,
@@ -513,11 +514,11 @@ def smpc_gt(
             )
         )
 
-    """
         # p2 = c[i] * (a[i] + b[i])
-        seed_id_tmp = 43 + i
+        seed_id_tmp = generator.integers(low=0, high=2**32)
         generator_tmp = np.random.default_rng(seed_id_tmp)
         mul_tmp_id_2 = UID(UUID(bytes=generator_tmp.bytes(16)))
+        print("MUL ID2", mul_tmp_id_2)
         actions.extend(smpc_mul(nr_parties, carry_id, add_intermediary_res, seed_id_tmp, node, client))
 
         # s3 = p1 + p2
@@ -548,7 +549,6 @@ def smpc_gt(
             address=client.address,
         )
     )
-    """
 
     return actions
 

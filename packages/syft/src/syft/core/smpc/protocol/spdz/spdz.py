@@ -118,7 +118,7 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     )
 
     # TODO: get nr of bits in another way
-    for i in range(32):
+    for i in range(64):
         # There are needed 32 values for each bit
         CryptoPrimitiveProvider.generate_primitives(
             f"beaver_{op_str}",
@@ -132,7 +132,7 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         )
 
     # TODO: Should modify to parallel execution.
-    kwargs = {"seed_id_locations": secrets.randbits(2)}
+    kwargs = {"seed_id_locations": secrets.randbits(64)}
     res_shares = [a.__gt__(b, **kwargs) for a, b in zip(x.child, y.child)]
 
     return res_shares  # type: ignore
@@ -149,6 +149,7 @@ def beaver_populate(
         node Optional[AbstractNode] : The node on which the data is stored.
     """
     obj = node.store.get_object(key=id_at_location)  # type: ignore
+    print("OBJECT IN STORE", obj)
     if obj is None:
         list_data = sy.lib.python.List([data])
         result = StorableObject(
