@@ -53,7 +53,7 @@ INPLACE_OPS = {
     "resize",
 }
 
-PARTIES_REGISTER: Dict[Any, bool] = {}
+PARTIES_REGISTER_CACHE: Dict[Any, Party] = {}
 
 
 class MPCTensor(PassthroughTensor):
@@ -83,7 +83,7 @@ class MPCTensor(PassthroughTensor):
 
         self.seed_przs = seed_przs
         self.parties = parties
-        self.parties_info = self.get_parties_info(parties)
+        self.parties_info = MPCTensor.get_parties_info(parties)
         self.mpc_shape = shape
 
         # TODO: We can get this from the the secret if the secret is local
@@ -121,7 +121,7 @@ class MPCTensor(PassthroughTensor):
         super().__init__(res)
 
     @staticmethod
-    def get_parties_info(parties: List[Any]) -> List[Party]:
+    def get_parties_info(parties: Iterable[Any]) -> List[Party]:
         # relative
         from ....grid.client import GridHTTPConnection
 
@@ -135,13 +135,14 @@ class MPCTensor(PassthroughTensor):
                     + "We apologize for the inconvenience"
                     + "We will add support for local python objects very soon."
                 )
-            base_url = connection.base_url
-            url = base_url.rsplit(":", 1)[0]
-            port = int(base_url.rsplit(":", 1)[1].split("/")[0])
-            parties_info.append(Party(url, port))
-            res = PARTIES_REGISTER.get(party, None)
-            if res is None:
-                PARTIES_REGISTER[party] = True
+            party_info = PARTIES_REGISTER_CACHE.get(party, None)
+
+            if party_info is None:
+                base_url = connection.base_url
+                url = base_url.rsplit(":", 1)[0]
+                port = int(base_url.rsplit(":", 1)[1].split("/")[0])
+                party_info = Party(url, port)
+                PARTIES_REGISTER_CACHE[party] = party_info
                 try:
                     sy.register(
                         name="Howard Wolowtiz",
@@ -153,6 +154,7 @@ class MPCTensor(PassthroughTensor):
                 except Exception as e:  # noqa
                     # TODO : should modify to return same client if registered.
                     print("Proxy Client already User Register")
+            parties_info.append(party_info)
 
         return parties_info
 
@@ -432,19 +434,19 @@ class MPCTensor(PassthroughTensor):
         shape = mpc_tensor.shape
         seed_przs = mpc_tensor.seed_przs
         client_map = {share.client: share for share in mpc_tensor.child}
-        nr_parties = len(parties)
+
         if mpc_parties == parties:
             raise ValueError(
                 "Input parties for resharing are same as the input parties."
             )
-
+        parties_info = MPCTensor.get_parties_info(parties)
         shares = [client_map.get(party) for party in parties]
         for i, party in enumerate(parties):
             shares[
                 i
             ] = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
                 rank=i,
-                nr_parties=nr_parties,
+                parties_info=parties_info,
                 value=shares[i],
                 shape=shape,
                 seed_przs=seed_przs,
