@@ -488,22 +488,28 @@ class MPCTensor(PassthroughTensor):
 
         return mpc_tensor, other
 
-    def __apply_private_op(self, other: MPCTensor, op_str: str) -> List[ShareTensor]:
-        op = getattr(operator, op_str)
-        if isinstance(other, MPCTensor):
-            res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
+    def __apply_private_op(
+        self, other: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
+    ) -> List[ShareTensor]:
+        op = f"__{op_str}__"
+        if op_str in {"add", "sub"}:
+            res_shares = [
+                getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, other.child)
+            ]
         else:
-            raise ValueError(
-                "Private operations works only for the MPCTensor (at the moment...)!"
-            )
+            raise ValueError(f"MPCTensor Private {op_str} not supported")
         return res_shares
 
-    def __apply_public_op(self, y: Any, op_str: str) -> List[ShareTensor]:
-        op = getattr(operator, op_str)
+    def __apply_public_op(
+        self, y: Any, op_str: str, **kwargs: Dict[Any, Any]
+    ) -> List[ShareTensor]:
+        op = f"__{op_str}__"
         if op_str in {"mul", "matmul", "add", "sub"}:
-            res_shares = [op(share, y) for share in self.child]
+            res_shares = [
+                getattr(share, op)(share, y, **kwargs) for share in self.child
+            ]
         else:
-            raise ValueError(f"{op_str} not supported")
+            raise ValueError(f"MPCTensor Public {op_str} not supported")
 
         return res_shares
 
@@ -525,20 +531,18 @@ class MPCTensor(PassthroughTensor):
         """
 
         x, y = MPCTensor.sanity_checks(self, y)
-
+        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         if isinstance(y, MPCTensor):
-            result = x.__apply_private_op(y, op_str)
+            result = x.__apply_private_op(y, op_str, **kwargs)
         else:
-            result = x.__apply_public_op(y, op_str)
+            result = x.__apply_public_op(y, op_str, **kwargs)
 
         if isinstance(y, (float, int)):
             y_shape: Tuple[int, ...] = (1,)
         elif isinstance(y, MPCTensor):
-            y_shape = y.mpc_shape  # type: ignore
-        else:
-            y_shape = y.shape
+            y_shape = y.shape  # type: ignore
 
-        shape = MPCTensor._get_shape(op_str, self.mpc_shape, y_shape)
+        shape = MPCTensor._get_shape(op_str, self.shape, y_shape)
 
         result = MPCTensor(shares=result, shape=shape, parties=x.parties)
 
@@ -571,11 +575,13 @@ class MPCTensor(PassthroughTensor):
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         self, y = MPCTensor.sanity_checks(self, y)
+        kwargs = {"seed_id_locations": secrets.randbits(64)}
+        op = "__mul__"
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "mul")
         else:
             res_shares = [
-                operator.mul(a, b) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
+                getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
             ]
         y_shape = getattr(y, "shape", (1,))
         new_shape = MPCTensor._get_shape("mul", self.mpc_shape, y_shape)

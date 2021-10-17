@@ -10,8 +10,6 @@ SPDZ mechanism used for multiplication Contains functions that are run at:
 from __future__ import annotations
 
 # stdlib
-import operator
-import secrets
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -37,7 +35,9 @@ if TYPE_CHECKING:
     from ....tensor.smpc.mpc_tensor import MPCTensor
 
 
-def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
+def mul_master(
+    x: MPCTensor, y: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
+) -> MPCTensor:
     """Function that is executed by the orchestrator to multiply two secret values.
 
     Args:
@@ -78,8 +78,10 @@ def mul_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     print("***************************")
 
     # TODO: Should modify to parallel execution.
-    kwargs = {"seed_id_locations": secrets.randbits(64)}
-    res_shares = [a.__mul__(b, **kwargs) for a, b in zip(x.child, y.child)]
+
+    res_shares = [
+        getattr(a, "__mul__")(a, b, **kwargs) for a, b in zip(x.child, y.child)
+    ]
 
     return res_shares  # type: ignore
 
