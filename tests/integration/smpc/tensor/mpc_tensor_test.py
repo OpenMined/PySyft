@@ -95,9 +95,7 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
 
     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
 
-    mpc_tensor_1 = MPCTensor(
-        parties=clients, secret=remote_value_1, shape=(2, 2), seed_shares=52
-    )
+    mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(2, 2))
 
     op = getattr(operator, op_str)
     res = op(mpc_tensor_1, value_2)
@@ -121,9 +119,7 @@ def test_mpc_forward_methods(
 
     remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
 
-    mpc_tensor = MPCTensor(
-        parties=clients, secret=remote_value, shape=(2, 5), seed_shares=52
-    )
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 5))
 
     op_mpc = getattr(mpc_tensor, method_str)
     op = getattr(value, method_str)
