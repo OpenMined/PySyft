@@ -516,17 +516,16 @@ class MPCTensor(PassthroughTensor):
         # relative
         from ..tensor import TensorPointer
 
-        op = f"__{op_str}__"
+        op_method = f"__{op_str}__"
         if op_str in {"add", "sub"}:
             if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
-                    getattr(a, op)(a, b, **kwargs)
+                    getattr(a, op_method)(a, b, **kwargs)
                     for a, b in zip(self.child, other.child)
                 ]
             else:
-                res_shares = [
-                    getattr(a, op)(a, b) for a, b in zip(self.child, other.child)
-                ]
+                op: Callable[..., Any] = getattr(operator, op_str)
+                res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
 
         else:
             raise ValueError(f"MPCTensor Private {op_str} not supported")
@@ -538,14 +537,16 @@ class MPCTensor(PassthroughTensor):
         # relative
         from ..tensor import TensorPointer
 
-        op = f"__{op_str}__"
+        op_method = f"__{op_str}__"
         if op_str in {"mul", "matmul", "add", "sub"}:
             if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
-                    getattr(share, op)(share, y, **kwargs) for share in self.child
+                    getattr(share, op_method)(share, y, **kwargs)
+                    for share in self.child
                 ]
             else:
-                res_shares = [getattr(share, op)(share, y) for share in self.child]
+                op: Callable[..., Any] = getattr(operator, op_str)
+                res_shares = [op(share, y) for share in self.child]
 
         else:
             raise ValueError(f"MPCTensor Public {op_str} not supported")
