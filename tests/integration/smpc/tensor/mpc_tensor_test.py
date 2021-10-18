@@ -54,7 +54,7 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
-    time.sleep(20)  # TODO: should remove after polling get.
+    time.sleep(40)  # TODO: should remove after polling get.
 
     res = res_ptr.reconstruct()
     expected = op(value_1, value_2)
@@ -100,7 +100,7 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res = op(mpc_tensor_1, value_2)
 
-    time.sleep(20)  # TODO: should remove after polling get.
+    time.sleep(40)  # TODO: should remove after polling get.
     res = res.reconstruct()
 
     expected = op(value_1, value_2)
