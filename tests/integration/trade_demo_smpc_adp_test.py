@@ -33,7 +33,7 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
         "budget": 200,
     }
 
-
+@pytest.mark.skip
 @pytest.mark.integration
 def test_end_to_end_smpc_adp_trade_demo() -> None:
     # make a unique email so we can run the test isolated
