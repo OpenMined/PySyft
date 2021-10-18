@@ -1,6 +1,8 @@
 # stdlib
 import operator
 import time
+from typing import Any
+from typing import Dict as TypeDict
 
 # third party
 import numpy as np
@@ -10,6 +12,7 @@ import pytest
 import syft as sy
 from syft.core.tensor import Tensor
 from syft.core.tensor.smpc.mpc_tensor import MPCTensor
+from syft.core.tensor.smpc.mpc_tensor import ShareTensor
 
 sy.logger.remove()
 
@@ -23,14 +26,19 @@ def test_secret_sharing(get_clients) -> None:
 
     mpc_tensor = MPCTensor(secret=value_secret, shape=(2, 5), parties=clients)
 
-    time.sleep(10)
+    time.sleep(10)  # TODO: should remove after polling get.
+
+    assert len(mpc_tensor.child) == len(clients)
+
+    shares = [share.get_copy() for share in mpc_tensor.child]
+    assert all(isinstance(share, ShareTensor) for share in shares)
 
     res = mpc_tensor.reconstruct()
     assert (res == data.child).all()
 
 
 @pytest.mark.integration
-@pytest.mark.parametrize("op_str", ["add", "sub"])
+@pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
 
@@ -46,7 +54,7 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
-    time.sleep(20)
+    time.sleep(20)  # TODO: should remove after polling get.
 
     res = res_ptr.reconstruct()
     expected = op(value_1, value_2)
@@ -70,9 +78,60 @@ def test_mpc_public_private_op(get_clients, op_str: str) -> None:
 
     res = op(mpc_tensor_1, public_value)
 
-    time.sleep(20)
+    time.sleep(20)  # TODO: should remove after polling get.
 
     res = res.reconstruct()
     expected = op(value_1, public_value)
+
+    assert (res == expected.child).all()
+
+
+@pytest.mark.parametrize("op_str", ["matmul"])
+def test_mpc_matmul_public(get_clients, op_str: str) -> None:
+    clients = get_clients(2)
+
+    value_1 = np.array([[1, 7], [3, -7]], dtype=np.int32)
+    value_2 = np.array([[6, 2], [-6, 5]], dtype=np.int32)
+
+    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+
+    mpc_tensor_1 = MPCTensor(
+        parties=clients, secret=remote_value_1, shape=(2, 2), seed_shares=52
+    )
+
+    op = getattr(operator, op_str)
+    res = op(mpc_tensor_1, value_2)
+
+    time.sleep(20)  # TODO: should remove after polling get.
+    res = res.reconstruct()
+
+    expected = op(value_1, value_2)
+
+    assert (res == expected.child).all()
+
+
+@pytest.mark.parametrize(
+    "method_str, kwargs", [("sum", {"axis": 0}), ("sum", {"axis": 1})]
+)
+def test_mpc_forward_methods(
+    get_clients, method_str: str, kwargs: TypeDict[str, Any]
+) -> None:
+    clients = get_clients(2)
+    value = np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int32)
+
+    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
+
+    mpc_tensor = MPCTensor(
+        parties=clients, secret=remote_value, shape=(2, 5), seed_shares=52
+    )
+
+    op_mpc = getattr(mpc_tensor, method_str)
+    op = getattr(value, method_str)
+
+    res = op_mpc(**kwargs)
+    time.sleep(20)  # TODO: should remove after polling get.
+    res = res.reconstruct()
+
+    expected = op(**kwargs)
 
     assert (res == expected.child).all()
