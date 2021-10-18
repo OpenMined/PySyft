@@ -87,6 +87,7 @@ def _get_triples(
         )
     )
     print("b_rand", b_rand)
+
     b_shares = MPCTensor._get_shares_from_local_secret(
         secret=deepcopy(b_rand),
         parties_info=parties_info,  # type: ignore
