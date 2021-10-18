@@ -551,9 +551,14 @@ class MPCTensor(PassthroughTensor):
         Returns:
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
+        # relative
+        # relative
+        from ..tensor import TensorPointer
 
         x, y = MPCTensor.sanity_checks(self, y)
-        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
+        kwargs: Dict[Any, Any] = {}
+        if not isinstance(self.child[0], TensorPointer):
+            kwargs = {"seed_id_locations": secrets.randbits(64)}
         if isinstance(y, MPCTensor):
             result = x.__apply_private_op(y, op_str, **kwargs)
         else:
@@ -593,8 +598,14 @@ class MPCTensor(PassthroughTensor):
     def mul(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
+        # relative
+        # relative
+        from ..tensor import TensorPointer
+
         self, y = MPCTensor.sanity_checks(self, y)
-        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
+        kwargs: Dict[Any, Any] = {}
+        if not isinstance(self.child[0], TensorPointer):
+            kwargs = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "mul", **kwargs)
