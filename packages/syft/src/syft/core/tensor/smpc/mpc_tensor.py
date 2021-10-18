@@ -144,7 +144,7 @@ class MPCTensor(PassthroughTensor):
                 party_info = Party(url, port)
                 PARTIES_REGISTER_CACHE[party] = party_info
                 try:
-                    sy.register(
+                    sy.register(  # nosec
                         name="Howard Wolowtiz",
                         email="howard@mit.edu",
                         password="astronaut",
