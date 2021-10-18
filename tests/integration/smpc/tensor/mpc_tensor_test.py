@@ -44,7 +44,6 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     mpc_tensor_2 = MPCTensor(parties=clients, secret=remote_value_2, shape=(1,))
 
     op = getattr(operator, op_str)
-
     res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
     time.sleep(20)
