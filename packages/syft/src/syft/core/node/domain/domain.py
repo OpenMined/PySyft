@@ -71,6 +71,9 @@ from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
+from ..common.node_service.vpn.vpn_service import VPNConnectService
+from ..common.node_service.vpn.vpn_service import VPNJoinService
+from ..common.node_service.vpn.vpn_service import VPNStatusService
 from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
@@ -140,6 +143,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
         self.immediate_services_with_reply.append(PingService)
+        self.immediate_services_with_reply.append(VPNConnectService)
+        self.immediate_services_with_reply.append(VPNJoinService)
+        self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)
