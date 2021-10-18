@@ -687,6 +687,13 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             new_list.append(row.diagonal(offset=offset, axis1=axis1, axis2=axis2))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            
+    def round(self, decimals: int = 0) -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.round(decimals))
+            
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
 
 @implements(RowEntityPhiTensor, np.expand_dims)

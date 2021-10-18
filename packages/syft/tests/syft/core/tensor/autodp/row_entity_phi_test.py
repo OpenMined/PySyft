@@ -694,6 +694,12 @@ def test_or(row_count: int, ishan: Entity) -> None:
         assert (tensor | False) == output[index]
 
 
+def test_round(row_data_ishan: List) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    for target, output in zip(row_data_ishan, reference_tensor.round(decimals=0).child):
+        assert (target.child.astype(np.int32) == output.child).all()
+
+
 def test_entities(row_data_ishan: list, ishan: Entity, traskmaster: Entity) -> None:
     """Test that n_entities works as intended"""
     rept_tensor1 = REPT(rows=row_data_ishan)

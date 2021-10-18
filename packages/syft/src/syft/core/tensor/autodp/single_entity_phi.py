@@ -1717,6 +1717,20 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
+    def round(self, decimals: int = 0) -> SingleEntityPhiTensor:
+        if decimals != 0:
+            raise Exception(
+                "We currently only support np.int32. Sorry about the inconvenience-"
+                "we plan to support more types soon!"
+            )
+        return SingleEntityPhiTensor(
+            child=self.child.astype(dtype=np.int32),
+            min_vals=self.min_vals.astype(dtype=np.int32),
+            max_vals=self.max_vals.astype(dtype=np.int32),
+            scalar_manager=self.scalar_manager,
+            entity=self.entity,
+        )
+
 
 @implements(SingleEntityPhiTensor, np.expand_dims)
 def expand_dims(a: npt.ArrayLike, axis: Optional[int] = None) -> SingleEntityPhiTensor:
