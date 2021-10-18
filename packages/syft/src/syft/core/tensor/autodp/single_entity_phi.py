@@ -1390,19 +1390,21 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         )
 
     @staticmethod
-    def sept_like(tensor: SingleEntityPhiTensor, ent: Entity):
-        """ Create a SEPT with identical data, but belonging to a different entity"""
+    def sept_like(tensor: SingleEntityPhiTensor, ent: Entity) -> SingleEntityPhiTensor:
+        """Create a SEPT with identical data, but belonging to a different entity"""
         return SingleEntityPhiTensor(
             child=tensor.child,
             entity=ent,
             min_vals=tensor.min_vals,
             max_vals=tensor.max_vals,
-            scalar_manager=tensor.scalar_manager
+            scalar_manager=tensor.scalar_manager,
         )
 
     @staticmethod
-    def zeros_like(tensor: SingleEntityPhiTensor, ent: Optional[Entity] = None) -> SingleEntityPhiTensor:
-        """ Create a SEPT of the same shape, but with zeros as its data.
+    def zeros_like(
+        tensor: SingleEntityPhiTensor, ent: Optional[Entity] = None
+    ) -> SingleEntityPhiTensor:
+        """Create a SEPT of the same shape, but with zeros as its data.
         By default, the tensor will have the same entity, but a different entity can be passed instead.
         """
         if ent:
@@ -1411,7 +1413,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 entity=ent,
                 min_vals=np.zeros_like(tensor.min_vals),
                 max_vals=np.ones_like(tensor.max_vals),
-                scalar_manager=tensor.scalar_manager
+                scalar_manager=tensor.scalar_manager,
             )
         else:
             return SingleEntityPhiTensor(
@@ -1419,21 +1421,32 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 entity=tensor.entity,
                 min_vals=np.zeros_like(tensor.min_vals),
                 max_vals=np.ones_like(tensor.max_vals),
-                scalar_manager=tensor.scalar_manager
+                scalar_manager=tensor.scalar_manager,
             )
 
     @staticmethod
-    def ones_like(tensor: SingleEntityPhiTensor, ent: Optional[Entity] = None) -> SingleEntityPhiTensor:
-        """ Create a SEPT of the same shape, but with ones as its data
+    def ones_like(
+        tensor: SingleEntityPhiTensor, ent: Optional[Entity] = None
+    ) -> SingleEntityPhiTensor:
+        """Create a SEPT of the same shape, but with ones as its data
         By default, the tensor will have the same entity, but a different entity can be passed instead.
         """
-        return SingleEntityPhiTensor(
-            child=np.ones_like(tensor.child),
-            entity=ent,
-            min_vals=np.zeros_like(tensor.min_vals),
-            max_vals=np.ones_like(tensor.max_vals),
-            scalar_manager=tensor.scalar_manager
-        )
+        if ent:
+            return SingleEntityPhiTensor(
+                child=np.ones_like(tensor.child),
+                entity=ent,
+                min_vals=np.zeros_like(tensor.min_vals),
+                max_vals=np.ones_like(tensor.max_vals),
+                scalar_manager=tensor.scalar_manager,
+            )
+        else:
+            return SingleEntityPhiTensor(
+                child=np.ones_like(tensor.child),
+                entity=tensor.entity,
+                min_vals=np.zeros_like(tensor.min_vals),
+                max_vals=np.ones_like(tensor.max_vals),
+                scalar_manager=tensor.scalar_manager,
+            )
 
 
 @implements(SingleEntityPhiTensor, np.expand_dims)

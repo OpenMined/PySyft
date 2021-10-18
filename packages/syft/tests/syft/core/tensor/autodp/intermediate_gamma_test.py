@@ -49,20 +49,22 @@ def ref_data(dims: int) -> np.ndarray:
 
 
 @pytest.fixture
-def non_square_gamma_tensor(ref_data: np.ndarray, ishan: Entity, traskmaster: Entity, vsm: ScalarManager) -> IGT:
+def non_square_gamma_tensor(
+    ref_data: np.ndarray, ishan: Entity, traskmaster: Entity, vsm: ScalarManager
+) -> IGT:
     assert ref_data.shape[0] != ref_data.shape[1]
     return SEPT(
         child=ref_data,
         min_vals=np.ones_like(ref_data),
         max_vals=np.ones_like(ref_data) * 50,
         entity=ishan,
-        scalar_manager=vsm
+        scalar_manager=vsm,
     ) + SEPT(
         child=ref_data,
         min_vals=np.ones_like(ref_data),
         max_vals=np.ones_like(ref_data) * 50,
         entity=traskmaster,
-        scalar_manager=vsm
+        scalar_manager=vsm,
     )
 
 
@@ -78,7 +80,7 @@ def lower_bound(ref_square_data) -> np.ndarray:
 
 @pytest.fixture
 def sept_ishan(
-        ref_square_data,
+    ref_square_data,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     vsm: ScalarManager,
@@ -95,7 +97,7 @@ def sept_ishan(
 
 @pytest.fixture
 def sept_traskmaster(
-        ref_square_data,
+    ref_square_data,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     vsm: ScalarManager,
@@ -395,7 +397,7 @@ def test_tensor_creation(sept_ishan, sept_traskmaster) -> None:
 
 
 def test_transpose(non_square_gamma_tensor: IGT) -> None:
-    """ Test the transpose operator default behaviour (no args)"""
+    """Test the transpose operator default behaviour (no args)"""
     output = non_square_gamma_tensor.transpose()
     original_values = non_square_gamma_tensor._values()
 
@@ -404,6 +406,9 @@ def test_transpose(non_square_gamma_tensor: IGT) -> None:
 
     # Ensure resultant shapes are correct
     target_values = original_values.transpose()
+    print(f"original shape = {non_square_gamma_tensor.shape}")
+    print(f"target shape = {target_values.shape}")
+    print(f"output shape = {output.shape}")
     assert output.shape == target_values.shape
 
     # Test to see if _values() constructs a proper shape
@@ -413,17 +418,15 @@ def test_transpose(non_square_gamma_tensor: IGT) -> None:
 
     # Check that transposing twice undoes the operation
     assert output.transpose() == non_square_gamma_tensor
-    # assert (output.transpose()._values() == original_values).all()
+    assert (output.transpose()._values() == original_values).all()
 
     # Test to see if the values have been kept the same
     print(f"Values, {type(original_values)}")
     print(original_values)
     print(f"New Values, {type(output_values)}")
     print(output_values)
-    # assert (output_values == target_values).all()
+    assert (output_values == target_values).all()
 
     old_entities = non_square_gamma_tensor._entities()
     new_entities = output._entities()
     assert old_entities.shape != new_entities.shape
-
-

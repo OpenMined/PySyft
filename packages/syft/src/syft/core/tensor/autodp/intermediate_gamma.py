@@ -6,9 +6,9 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple
 from typing import Union
-from typing import Sequence
 
 # third party
 from nacl.signing import VerifyKey
@@ -141,6 +141,22 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
         return np.array(list(map(lambda x: x.value, self.flat_scalars))).reshape(
+            self.shape
+        )
+
+    def _max_values(self) -> np.array:
+        """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
+        DO NOT ADD THIS METHOD TO THE AST!!!
+        """
+        return np.array(list(map(lambda x: x.max_val, self.flat_scalars))).reshape(
+            self.shape
+        )
+
+    def _min_values(self) -> np.array:
+        """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
+        DO NOT ADD THIS METHOD TO THE AST!!!
+        """
+        return np.array(list(map(lambda x: x.min_val, self.flat_scalars))).reshape(
             self.shape
         )
 
@@ -438,29 +454,23 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         return result
 
     def sum(self, axis: Optional[int] = None) -> IntermediateGammaTensor:
-
-        new_term_tensor = np.swapaxes(self.term_tensor, axis, -1).squeeze(axis)  # type: ignore
-        new_coeff_tensor = np.swapaxes(self.coeff_tensor, axis, -1).squeeze(axis)  # type: ignore
-        new_bias_tensor = self.bias_tensor.sum(axis)
-
-        return IntermediateGammaTensor(
-            term_tensor=new_term_tensor,
-            coeff_tensor=new_coeff_tensor,
-            bias_tensor=new_bias_tensor,
-            scalar_manager=self.scalar_manager,
+        from .initial_gamma import InitialGammaTensor
+        return InitialGammaTensor(
+            values=self._values().sum(axis),
+            entities=self._entities().sum(axis),
+            max_vals=self._max_values().sum(axis),
+            min_vals=self._min_values().sum(axis)
         )
 
     def prod(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
     ) -> IntermediateGammaTensor:
-        new_term_tensor = self.term_tensor.prod(axis)
-        new_coeff_tensor = self.coeff_tensor.prod(axis)
-        new_bias_tensor = self.bias_tensor.prod(axis)
-        return IntermediateGammaTensor(
-            term_tensor=new_term_tensor,
-            coeff_tensor=new_coeff_tensor,
-            bias_tensor=new_bias_tensor,
-            scalar_manager=self.scalar_manager,
+        from .initial_gamma import InitialGammaTensor
+        return InitialGammaTensor(
+            values=self._values().prod(axis),
+            entities=self._entities().sum(axis),  # Entities get added (combined) instead of multiplied
+            max_vals=self._max_values().prod(axis),
+            min_vals=self._min_values().prod(axis)
         )
 
     def __add__(self, other: Any) -> IntermediateGammaTensor:
@@ -657,7 +667,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             term_tensor=self.term_tensor,
             coeff_tensor=-self.coeff_tensor,
             bias_tensor=-self.bias_tensor,
-            scalar_manager=self.scalar_manager
+            scalar_manager=self.scalar_manager,
         )
 
     def copy(self) -> IntermediateGammaTensor:
@@ -665,47 +675,47 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             term_tensor=self.term_tensor,
             coeff_tensor=self.coeff_tensor,
             bias_tensor=self.bias_tensor,
-            scalar_manager=self.scalar_manager
+            scalar_manager=self.scalar_manager,
         )
 
-    def transpose(self, axes: Optional[Union[int, Sequence[int], Tuple[int]]] = None) -> IntermediateGammaTensor:
+    def flatten(self, order: Optional[str] = "C") -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values().flatten(order),
+            entities=self._entities().flatten(order),
+            min_vals=self._min_values().flatten(order),
+            max_vals=self._max_values().flatten(order)
+        )
+
+    def transpose(
+        self, axes: Optional[Union[int, Sequence[int], Tuple[int]]] = None
+    ) -> IntermediateGammaTensor:
         # TODO: Need to check if new prime numbers are issued or if old ones are just moved around.
-        # TODO: Need to check what's going wrong with _values() after transposing
-        num = len(self.shape)
-        if not axes:
-            axes = [i for i in range(num)][::-1] + [num]  # Shape of last axis mustn't change
-        else:
-            if isinstance(axes, list):
-                axes += [num]
-            elif isinstance(axes, tuple):
-                axes = list(axes) + [num]
-            else:
-                raise Exception(
-                    f"Unknown type: {type(axes)}"
-                )
-        return IntermediateGammaTensor(
-            term_tensor=self.term_tensor.transpose(axes),
-            coeff_tensor=self.term_tensor.transpose(axes),
-            bias_tensor=self.bias_tensor.transpose(axes[:-1]),
-            scalar_manager=self.scalar_manager
+        # relative
+        from .initial_gamma import InitialGammaTensor
+
+        output_values = self._values().transpose(axes)
+        shape = output_values.shape
+
+        return InitialGammaTensor(
+            values=output_values,
+            entities=self._entities().transpose(axes),
+            min_vals=self._min_values().reshape(shape),
+            max_vals=self._max_values().reshape(shape),
         )
 
     def reshape(self, *dims: Sequence[int]) -> IntermediateGammaTensor:
-        # The last axis isn't visible to the user and doesn't change shape
-        immutable = [self.shape[-1]]
-        if isinstance(dims, tuple):
-            dims = list(dims) + immutable
-        elif isinstance(dims, list):
-            dims += immutable
-        else:
-            raise Exception(
-                f"Unknown type: {type(dims)}"
-            )
-        return IntermediateGammaTensor(
-            term_tensor=self.term_tensor.transpose(*dims),
-            coeff_tensor=self.term_tensor.transpose(*dims),
-            bias_tensor=self.bias_tensor.transpose(*dims[:-1]),
-            scalar_manager=self.scalar_manager
+        from .initial_gamma import InitialGammaTensor
+
+        output_values = self._values().reshape(*dims)
+        target_shape = output_values.shape
+
+        return InitialGammaTensor(
+            values=output_values,
+            entities=self._entities().reshape(target_shape),
+            min_vals=self._min_values().reshape(target_shape),
+            max_vals=self._max_values().reshape(target_shape)
         )
 
     def resize(
@@ -713,28 +723,55 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         new_shape: Union[int, Tuple[int, ...]],
         refcheck: Optional[bool] = True,
     ) -> None:
-        if isinstance(new_shape, tuple):
-            new_shape = list(new_shape) + [self.shape[-1]]
-        self.term_tensor.resize(new_shape)
-        self.coeff_tensor.resize(new_shape)
-        self.bias_tensor.resize(new_shape[:-1])
+        from .initial_gamma import InitialGammaTensor
+
+        output_values = self._values()
+        output_values.resize(new_shape, refcheck)
+        shape = output_values.shape
+        output_tensor = InitialGammaTensor(
+            values=output_values,
+            entities=self._entities().reshape(shape),
+            max_vals=self._max_values().reshape(shape),
+            min_vals=self._min_values().reshape(shape)
+        )
+
+        # Copy all members from the new object
+        self.__dict__ = output_tensor.__dict__
+        # self.term_tensor = output_tensor.term_tensor
+        # self.coeff_tensor = output_tensor.coeff_tensor
+        # self.bias_tensor = output_tensor.bias_tensor
 
     def ravel(self, order: Optional[str] = "C") -> IntermediateGammaTensor:
-        # TODO: Check effect of ravel on higher dimensional arrays
-        return IntermediateGammaTensor(
-            term_tensor=self.term_tensor.ravel(order),
-            coeff_tensor=self.coeff_tensor.ravel(order),
-            bias_tensor=self.bias_tensor.ravel(order),
-            scalar_manager=self.scalar_manager
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values().ravel(order),
+            entities=self._entities().ravel(order),
+            min_vals=self._min_values().ravel(order),
+            max_vals=self._max_values().ravel(order)
         )
 
     def squeeze(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
-    ) -> PassthroughTensor:
-        pass
+    ) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
 
-    def swapaxes(self, axis1: int, axis2: int) -> PassthroughTensor:
-        pass
+        return InitialGammaTensor(
+            values=self._values().squeeze(axis),
+            entities=self._entities().squeeze(axis),
+            min_vals=self._min_values().squeeze(axis),
+            max_vals=self._max_values().squeeze(axis)
+        )
+
+    def swapaxes(self, axis1: int, axis2: int) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values().swapaxes(axis1, axis2),
+            entities=self._entities().swapaxes(axis1, axis2),
+            min_vals=self._min_values().swapaxes(axis1, axis2),
+            max_vals=self._max_values().swapaxes(axis1, axis2)
+        )
 
     def partition(
         self,
@@ -742,33 +779,276 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         axis: Optional[int] = -1,
         kind: Optional[str] = "introselect",
         order: Optional[Union[int, Tuple[int, ...]]] = None,
-    ) -> PassthroughTensor:
-        pass
+    ) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values().partition(kth, axis, kind, order),
+            entities=self._entities().partition(kth, axis, kind, order),
+            min_vals=self._min_values().partition(kth, axis, kind, order),
+            max_vals=self._max_values().partition(kth, axis, kind, order)
+        )
 
     def compress(
         self, condition: List[bool], axis: int = None, out: Optional[np.ndarray] = None
     ) -> PassthroughTensor:
-        pass
+        from .initial_gamma import InitialGammaTensor
+
+        if out:
+            return InitialGammaTensor(
+                values=self._values().compress(condition, axis, out),
+                entities=self._entities().compress(condition, axis, out),
+                min_vals=self._min_values().compress(condition, axis, out),
+                max_vals=self._max_values().compress(condition, axis, out)
+            )
+        else:
+            # TODO: Check if "out" needs to be returned at all
+            out = InitialGammaTensor(
+                values=self._values().compress(condition, axis, out),
+                entities=self._entities().compress(condition, axis, out),
+                min_vals=self._min_values().compress(condition, axis, out),
+                max_vals=self._max_values().compress(condition, axis, out)
+            )
+            return out
 
     def __and__(self, other):
-        pass
+        if isinstance(other, np.ndarray):
+            if is_broadcastable(self.shape, other.shape):
+                # relative
+                from .initial_gamma import InitialGammaTensor
+
+                vals = self._values()
+                tensor = InitialGammaTensor(
+                    values=vals and other,
+                    max_vals=np.ones_like(vals),
+                    min_vals=np.zeros_like(vals),
+                    entities=self._entities(),
+                )
+            else:
+                raise Exception(
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
+                )
+        elif isinstance(other, IntermediateGammaTensor):
+            if is_broadcastable(self.shape, other.shape):
+                # relative
+                from .initial_gamma import InitialGammaTensor
+
+                self_vals = self._values()
+                other_vals = other._values()
+                tensor = InitialGammaTensor(
+                    values=self_vals and other_vals,
+                    min_vals=np.zeros_like(self_vals),
+                    max_vals=np.ones_like(self_vals),
+                    entities=self._entities() + other._entities(),
+                )
+            else:
+                raise Exception(
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
+                )
+        else:
+            raise NotImplementedError
+        return tensor
 
     def __or__(self, other):
-        pass
+        if isinstance(other, np.ndarray):
+            if is_broadcastable(self.shape, other.shape):
+                # relative
+                from .initial_gamma import InitialGammaTensor
+
+                vals = self._values()
+                tensor = InitialGammaTensor(
+                    values=vals or other,
+                    max_vals=np.ones_like(vals),
+                    min_vals=np.zeros_like(vals),
+                    entities=self._entities(),
+                )
+            else:
+                raise Exception(
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
+                )
+        elif isinstance(other, IntermediateGammaTensor):
+            if is_broadcastable(self.shape, other.shape):
+                # relative
+                from .initial_gamma import InitialGammaTensor
+
+                self_vals = self._values()
+                other_vals = other._values()
+                tensor = InitialGammaTensor(
+                    values=self_vals or other_vals,
+                    min_vals=np.zeros_like(self_vals),
+                    max_vals=np.ones_like(self_vals),
+                    entities=self._entities() + other._entities(),
+                )
+            else:
+                raise Exception(
+                    f"Tensor shapes not compatible: {self.shape} and {other.shape}"
+                )
+        else:
+            raise NotImplementedError
+        return tensor
 
     def take(
-        self, indices: Optional[Union[int, Tuple[int, ...]]] = None
-    ) -> PassthroughTensor:
-        pass
+        self, indices: Optional[Union[int, Tuple[int, ...]]] = None, axis: Optional[int] = None,
+            mode: str = 'raise'
+    ) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+        if not axis:
+            return InitialGammaTensor(
+                values=self._values().take(indices, mode),
+                entities=self._entities().take(indices, mode),
+                min_vals=self._min_values().take(indices, mode),
+                max_vals=self._max_values().take(indices, mode)
+            )
+        else:
+            return InitialGammaTensor(
+                values=self._values().take(indices, axis, mode),
+                entities=self._entities().take(indices, axis, mode),
+                min_vals=self._min_values().take(indices, axis, mode),
+                max_vals=self._max_values().take(indices, axis, mode)
+            )
 
     def diagonal(
         self, offset: int = 0, axis1: int = 0, axis2: int = 1
     ) -> IntermediateGammaTensor:
-        last_dim = len(self.shape) - 1
-        if axis1 == -1 or axis1 == last_dim or axis2 == -1 or axis2 == last_dim:
-            raise Exception
+        # Note: Currently NumPy returns a read only view, but plans to return a full copy in the future
+        from .initial_gamma import InitialGammaTensor
 
-        pass
+        return InitialGammaTensor(
+            values=self._values().diagonal(offset, axis1, axis2),
+            entities=self._entities().diagonal(offset, axis1, axis2),
+            min_vals=self._min_values().diagonal(offset, axis1, axis2),
+            max_vals=self._max_values().diagonal(offset, axis1, axis2)
+        )
 
+    def put(
+        self,
+        indices: Union[int, Tuple[int, ...], np.ndarray],
+        values: Union[int, Tuple[int, ...], np.ndarray],
+        mode: Optional[str] = "raise",
+    ) -> None:
+        from .initial_gamma import InitialGammaTensor
 
+        new_values = self._values()
 
+        # TODO: Check what happens with entities here, if data is replaced with public values?
+
+        if isinstance(values, np.ndarray):
+            for index, value in zip(indices, values):
+                new_values[index] = value
+
+            output_tensor = InitialGammaTensor(
+                values=new_values,
+                entities=self._entities(),
+                min_vals=self._min_values(),
+                max_vals=self._max_values()
+            )
+
+            self.__dict__ == output_tensor.__dict__
+
+        else:
+            raise NotImplementedError
+
+    def trace(self, offset=0, axis1=0, axis2=1) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+        return InitialGammaTensor(
+            values=self._values().trace(offset, axis1, axis2),
+            entities=self._entities().trace(offset, axis1, axis2),
+            max_vals=self._max_values().trace(offset, axis1, axis2),
+            min_vals=self._min_values().trace(offset, axis1, axis2)
+        )
+
+    def __any__(self) -> bool:
+        return self._values().any()
+
+    def __all__(self) -> bool:
+        return self._values().all()
+
+    def __abs__(self) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values().__abs__(),
+            entities=self._entities(),
+            max_vals=self._max_values().__abs__(),
+            min_vals=self._min_values().__abs__()
+        )
+
+    def __divmod__(self, other) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values() % other,
+            entities=self._entities(),
+            max_vals=self._max_values() % other,
+            min_vals=self._min_values() % other
+        )
+
+    def __floordiv__(self, other) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values() // other,
+            entities=self._entities(),
+            max_vals=self._max_values() % other,
+            min_vals=self._min_values() % other
+        )
+
+    def cumsum(self, axis: Optional[int] = None) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values().cumsum(axis),
+            entities=self._entities().cumsum(axis),
+            max_vals=self._max_values().cumsum(axis),
+            min_vals=self._min_values().cumsum(axis)
+        )
+
+    def cumprod(self, axis: Optional[int] = None) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values().cumprod(axis),
+            entities=self._entities().cumsum(axis),  # entities get summed (combined), not multiplied
+            max_vals=self._max_values().cumprod(axis),
+            min_vals=self._min_values().cumprod(axis)
+        )
+
+    def __round__(self, n=None) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        return InitialGammaTensor(
+            values=self._values().__round__(),
+            entities=self._entities(),
+            max_vals=self._max_values().__round__(),
+            min_vals=self._min_values().__round__()
+        )
+
+    def max(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        output_values = self._values().max(axis)
+        indices = output_values.argmax(axis)
+
+        return InitialGammaTensor(
+            values=output_values,
+            entities=self._entities().take(indices),
+            max_vals=self._max_values().take(indices),
+            min_vals=self._min_values().take(indices)
+        )
+
+    def min(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> IntermediateGammaTensor:
+        from .initial_gamma import InitialGammaTensor
+
+        output_values = self._values().min(axis)
+        indices = output_values.argmin(axis)
+
+        return InitialGammaTensor(
+            values=output_values,
+            entities=self._entities().take(indices),
+            max_vals=self._max_values().take(indices),
+            min_vals=self._min_values().take(indices)
+        )
