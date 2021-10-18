@@ -513,11 +513,21 @@ class MPCTensor(PassthroughTensor):
     def __apply_private_op(
         self, other: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
     ) -> List[ShareTensor]:
+        # relative
+        from ..tensor import TensorPointer
+
         op = f"__{op_str}__"
         if op_str in {"add", "sub"}:
-            res_shares = [
-                getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, other.child)
-            ]
+            if not isinstance(self.child[0], TensorPointer):
+                res_shares = [
+                    getattr(a, op)(a, b, **kwargs)
+                    for a, b in zip(self.child, other.child)
+                ]
+            else:
+                res_shares = [
+                    getattr(a, op)(a, b) for a, b in zip(self.child, other.child)
+                ]
+
         else:
             raise ValueError(f"MPCTensor Private {op_str} not supported")
         return res_shares
@@ -525,11 +535,18 @@ class MPCTensor(PassthroughTensor):
     def __apply_public_op(
         self, y: Any, op_str: str, **kwargs: Dict[Any, Any]
     ) -> List[ShareTensor]:
+        # relative
+        from ..tensor import TensorPointer
+
         op = f"__{op_str}__"
         if op_str in {"mul", "matmul", "add", "sub"}:
-            res_shares = [
-                getattr(share, op)(share, y, **kwargs) for share in self.child
-            ]
+            if not isinstance(self.child[0], TensorPointer):
+                res_shares = [
+                    getattr(share, op)(share, y, **kwargs) for share in self.child
+                ]
+            else:
+                res_shares = [getattr(share, op)(share, y) for share in self.child]
+
         else:
             raise ValueError(f"MPCTensor Public {op_str} not supported")
 
@@ -551,14 +568,9 @@ class MPCTensor(PassthroughTensor):
         Returns:
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
-        # relative
-        # relative
-        from ..tensor import TensorPointer
 
         x, y = MPCTensor.sanity_checks(self, y)
-        kwargs: Dict[Any, Any] = {}
-        if not isinstance(self.child[0], TensorPointer):
-            kwargs = {"seed_id_locations": secrets.randbits(64)}
+        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         if isinstance(y, MPCTensor):
             result = x.__apply_private_op(y, op_str, **kwargs)
         else:
@@ -598,14 +610,8 @@ class MPCTensor(PassthroughTensor):
     def mul(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        # relative
-        # relative
-        from ..tensor import TensorPointer
-
         self, y = MPCTensor.sanity_checks(self, y)
-        kwargs: Dict[Any, Any] = {}
-        if not isinstance(self.child[0], TensorPointer):
-            kwargs = {"seed_id_locations": secrets.randbits(64)}
+        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "mul", **kwargs)
