@@ -1211,7 +1211,6 @@ def test_or(reference_binary_data: np.ndarray, ishan: Entity) -> None:
     assert (output.child == target).all()
 
 
-
 def test_round(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1227,7 +1226,7 @@ def test_round(
     assert (output.min_vals == lower_bound.astype(dtype=np.int32)).all()
     assert (output.max_vals == upper_bound.astype(dtype=np.int32)).all()
 
-    
+
 def test_entities(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1240,7 +1239,6 @@ def test_entities(
     )
     assert isinstance(tensor, SEPT)
     assert tensor.n_entities == 1
-
 
 
 # End of Ishan's tests
