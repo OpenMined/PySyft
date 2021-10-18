@@ -90,10 +90,10 @@ def test_mpc_public_private_op(get_clients, op_str: str) -> None:
 def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     clients = get_clients(2)
 
-    value_1 = np.array([[1, 7], [3, -7]], dtype=np.int32)
-    value_2 = np.array([[6, 2], [-6, 5]], dtype=np.int32)
+    value_1 = Tensor(np.array([[1, 7], [3, -7]], dtype=np.int32))
+    value_2 = Tensor(np.array([[6, 2], [-6, 5]], dtype=np.int32))
 
-    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+    remote_value_1 = value_1.send(clients[0])
 
     mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(2, 2))
 
@@ -115,9 +115,9 @@ def test_mpc_forward_methods(
     get_clients, method_str: str, kwargs: TypeDict[str, Any]
 ) -> None:
     clients = get_clients(2)
-    value = np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int32)
+    value = Tensor(np.array([[1, 2, 3, 4, -5], [5, 6, 7, 8, 9]], dtype=np.int32))
 
-    remote_value = clients[0].syft.core.tensor.tensor.Tensor(value)
+    remote_value = value.send(clients[0])
 
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 5))
 

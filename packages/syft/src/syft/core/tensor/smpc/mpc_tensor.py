@@ -559,10 +559,7 @@ class MPCTensor(PassthroughTensor):
         else:
             result = x.__apply_public_op(y, op_str, **kwargs)
 
-        if isinstance(y, (float, int)):
-            y_shape: Tuple[int, ...] = (1,)
-        elif isinstance(y, MPCTensor):
-            y_shape = y.shape  # type: ignore
+        y_shape = getattr(y, "shape", (1,))
 
         shape = MPCTensor._get_shape(op_str, self.shape, y_shape)
 
