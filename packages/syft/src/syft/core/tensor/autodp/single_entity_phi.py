@@ -18,22 +18,22 @@ import numpy.typing as npt
 
 # relative
 from .... import lib
+from ....ast.klass import pointerize_args_and_kwargs
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
 from ....util import inherit_tags
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...ast.klass import pointerize_args_and_kwargs
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
+from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
 from ..broadcastable import is_broadcastable
-from ..node.common.action.run_class_method_action import RunClassMethodAction
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
