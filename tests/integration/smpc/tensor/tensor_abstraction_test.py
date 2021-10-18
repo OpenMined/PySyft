@@ -67,7 +67,7 @@ def test_tensor_abstraction_subsets(get_clients, op_str) -> None:
     time.sleep(20)  # TODO: should remove after polling get.
 
     # creates and MPCTensor between party 2,3
-    mpc_2_3 = op(mpc_1_2, tensor_pointer_3)
+    mpc_2_3 = op(tensor_pointer_2, tensor_pointer_3)
 
     time.sleep(20)  # TODO: should remove after polling get.
 
