@@ -86,6 +86,7 @@ def test_mpc_public_private_op(get_clients, op_str: str) -> None:
     assert (res == expected.child).all()
 
 
+# TODO: Rasswanth to fix later after Tensor matmul refactor
 @pytest.mark.xfail
 @pytest.mark.parametrize("op_str", ["matmul"])
 def test_mpc_matmul_public(get_clients, op_str: str) -> None:
