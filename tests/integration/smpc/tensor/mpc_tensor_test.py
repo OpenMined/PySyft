@@ -86,26 +86,27 @@ def test_mpc_public_private_op(get_clients, op_str: str) -> None:
     assert (res == expected.child).all()
 
 
-# @pytest.mark.parametrize("op_str", ["matmul"])
-# def test_mpc_matmul_public(get_clients, op_str: str) -> None:
-#     clients = get_clients(2)
+@pytest.mark.xfail
+@pytest.mark.parametrize("op_str", ["matmul"])
+def test_mpc_matmul_public(get_clients, op_str: str) -> None:
+    clients = get_clients(2)
 
-#     value_1 = np.array([[1, 7], [3, -7]], dtype=np.int32)
-#     value_2 = np.array([[6, 2], [-6, 5]], dtype=np.int32)
+    value_1 = np.array([[1, 7], [3, -7]], dtype=np.int32)
+    value_2 = np.array([[6, 2], [-6, 5]], dtype=np.int32)
 
-#     remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
+    remote_value_1 = clients[0].syft.core.tensor.tensor.Tensor(value_1)
 
-#     mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(2, 2))
+    mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(2, 2))
 
-#     op = getattr(operator, op_str)
-#     res = op(mpc_tensor_1, value_2)
+    op = getattr(operator, op_str)
+    res = op(mpc_tensor_1, value_2)
 
-#     time.sleep(40)  # TODO: should remove after polling get.
-#     res = res.reconstruct()
+    time.sleep(40)  # TODO: should remove after polling get.
+    res = res.reconstruct()
 
-#     expected = op(value_1, value_2)
+    expected = op(value_1, value_2)
 
-#     assert (res == expected).all()
+    assert (res == expected).all()
 
 
 @pytest.mark.parametrize(
