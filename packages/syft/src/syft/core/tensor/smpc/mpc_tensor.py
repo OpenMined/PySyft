@@ -428,6 +428,27 @@ class MPCTensor(PassthroughTensor):
             res_mpc(MPCTensor): Reshared MPCTensor.
         Raises:
             ValueError: If the input MPCTensor and input parties are same.
+
+        Note:
+        We provide an additional layer of abstraction such that,
+        when computation is performed on data belonging to different parties
+        The underlying secret are automatically converted into secret shares of their input.
+
+        Assume there are two parties Parties P1,P2
+
+        tensor_1 = data_pointer_1 (party 1 data)
+        tensor_2 = data_pointer_2 (party 2 data)
+
+        result -------> tensor_1+ tensor_1 (local computation as the data
+        belongs to the same party)
+
+        Interesting scenario is when
+
+        result --------> tensor_1+tensor_2
+
+        Each tensor belongs to two different parties.
+        There are automatically secret shared without the user
+        knowing that a MPCTensor is being created underneath.
         """
         mpc_parties = set(mpc_tensor.parties)
         parties = set(parties)
