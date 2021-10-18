@@ -36,8 +36,8 @@ def test_copy(get_clients) -> None:
 
     res = mpc_tensor.copy().reconstruct()
     exp_res = mpc_tensor.reconstruct()
-    # we cannot check id for copy as the values are in different locations
 
+    # we cannot check id for copy as the values are in different locations
     assert (res == exp_res).all()
 
 
