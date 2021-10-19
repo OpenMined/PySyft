@@ -363,13 +363,15 @@ def smpc_mul(
         mask_result = UID(UUID(bytes=generator.bytes(16)))
         eps_id = UID(UUID(bytes=generator.bytes(16)))
         delta_id = UID(UUID(bytes=generator.bytes(16)))
+        eps_remote_id = eps_id.send(client).id_at_location  # type: ignore
+        delta_remote_id = delta_id.send(client).id_at_location  # type: ignore
 
         actions.append(
             SMPCActionMessage(
                 "spdz_mask",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
+                kwargs_id={"eps_id": eps_remote_id, "delta_id": delta_remote_id},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,
                 address=client.address,
@@ -381,7 +383,7 @@ def smpc_mul(
                 "spdz_multiply",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
+                kwargs_id={"eps_id": eps_remote_id, "delta_id": delta_remote_id},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
                 address=client.address,
