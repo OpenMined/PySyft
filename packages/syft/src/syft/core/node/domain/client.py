@@ -14,13 +14,14 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import names
 import pandas as pd
-from pandas import DataFrame
+
+# syft absolute
+import syft as sy
 
 # relative
 from .... import deserialize
 from ....logger import traceback_and_raise
 from ....util import validate_field
-from ...common.message import SyftMessage
 from ...common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...common.uid import UID
 from ...io.address import Address
@@ -31,7 +32,6 @@ from ...pointer.pointer import Pointer
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
 from ..abstract.node import AbstractNodeClient
-from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
@@ -384,35 +384,38 @@ class DomainClient(Client):
     def get_setup(self, **kwargs: Any) -> Any:
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
-    def search(self, query: List, pandas: bool = False) -> Any:
-        response = self._perform_grid_request(
-            grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
-        )
-        if pandas:
-            response = DataFrame(response)
-
-        return response
-
     def apply_to_network(
-        self, target: Client, route_index: int = 0, **metadata: str
+        self, source_vpn: str, target: str, target_vpn: str, **metadata: str
     ) -> None:
-        self.association.create(source=self, target=target, metadata=metadata)
+        # TODO: refactor
+        # Step 1, send a message to the Network from the Users Python Context
+        # this means the first message needs to target a public IP
 
-    def _perform_grid_request(
-        self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
-    ) -> SyftMessage:
-        if content is None:
-            content = {}
-        # Build Syft Message
-        content[RequestAPIFields.ADDRESS] = self.address
-        content[RequestAPIFields.REPLY_TO] = self.address
-        signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
-        # Send to the dest
-        response = self.send_immediate_msg_with_reply(msg=signed_msg)
-        if isinstance(response, ExceptionMessage):
-            raise response.exception_type
-        else:
-            return response
+        # Step 2, is contents of message is two clients which contain the host_or_ip
+        # which both the Network and Domain can communicate on respectively
+        # Because many domains will be behind firewalls, we want to use the VPN IP
+        # as both directions should be able to connect to each other.
+
+        # source_vpn = Domain VPN host_or_ip because thats the only IP the Network
+        # can reach the Domain on, and will go into the association request table
+        # and then gets used to route all traffic from the Network node to that Domain
+
+        # target = Network host_or_ip that User can reach such as 13.64.187.229 in Azure
+
+        # target_vpn = Network VPN host_or_ip because that will be what goes into the
+        # association request table and then gets used to route all traffic from
+        # the Domain to the Network node
+
+        target_client = sy.connect(url=f"http://{target}/api/v1")
+        target_client.routes[0].connection.base_url = f"http://{target_vpn}/api/v1"
+
+        source_client_ser = sy.serialize(self)
+        source_client = sy.deserialize(source_client_ser)
+        source_client.routes[0].connection.base_url = f"http://{source_vpn}/api/v1"
+
+        self.association.create(
+            source=source_client, target=target_client, metadata=metadata
+        )
 
     @property
     def id(self) -> UID:

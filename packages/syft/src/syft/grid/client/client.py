@@ -86,17 +86,17 @@ def login(
     verbose: bool = True,
 ) -> Client:
 
-    if email is None and password is None:
+    # if email is None and password is None:
 
-        email = "info@openmined.org"
-        password = "changethis"  # nosec
+    #     email = "info@openmined.org"
+    #     password = "changethis"  # nosec
 
-        print("No email/password specified. Logging in with default...")
-        print("Don't forget to re-configure your admin email and password!!!")
+    #     print("No email/password specified. Logging in with default...")
+    #     print("Don't forget to re-configure your admin email and password!!!")
 
-    if password is None:
-        print("Welcome " + str(email) + "!")
-        password = getpass(prompt="Please enter you password:")
+    # if password is None:
+    #     print("Welcome " + str(email) + "!")
+    #     password = getpass(prompt="Please enter you password:")
 
     if port is None and not url:  # if url is used, we can ignore port
         port = int(input("Please specify the port of the domain you're logging into:"))

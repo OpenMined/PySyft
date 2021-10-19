@@ -43,7 +43,7 @@ message GetAssociationRequestMessage {
 
 message GetAssociationRequestResponse {
   syft.core.common.UID msg_id = 1;
-  map<string, string> metadata = 2;
+  map<string, string> content = 2;
   syft.core.io.Address address = 3;
   syft.core.node.common.Client source = 4;
   syft.core.node.common.Client target = 5;
@@ -59,7 +59,7 @@ message GetAssociationRequestsResponse {
   message metadata_container { map<string, string> metadata = 1; }
 
   syft.core.common.UID msg_id = 1;
-  repeated metadata_container metadatas = 2;
+  repeated metadata_container content = 2;
   syft.core.io.Address address = 4;
 }
 

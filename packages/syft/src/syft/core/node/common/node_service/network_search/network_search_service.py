@@ -24,21 +24,28 @@ class NetworkSearchService(ImmediateNodeServiceWithReply):
         msg: NetworkSearchMessage,
         verify_key: VerifyKey,
     ) -> NetworkSearchResponse:
-        queries = set(msg.content.get("query", []))
+        queries = set(msg.content)
         associations = node.association_requests.associations()  # type: ignore
 
-        def filter_domains(url: str) -> bool:
-            domain = connect(
-                url=url,  # Domain Address
-                conn_type=GridHTTPConnection,  # HTTP Connection Protocol
-            )
+        print("querues", queries)
+        print("associations", associations)
 
-            for data in domain.store:
+        def filter_domains(association: Any) -> bool:
+            print("association", association)
+            # domain = connect(
+            #     url=url,  # Domain Address
+            #     conn_type=GridHTTPConnection,  # HTTP Connection Protocol
+            # )
+            association.target
+            print("association", association, type(association))
+            print("does domain connect", association.target)
+
+            for data in association.target.store:
                 if queries.issubset(set(data.tags)):
                     return True
             return False
 
-        filtered_nodes = list(filter(lambda x: filter_domains(x.address), associations))
+        filtered_nodes = list(filter(lambda x: filter_domains(x), associations))
 
         match_nodes = [node.address for node in filtered_nodes]
 

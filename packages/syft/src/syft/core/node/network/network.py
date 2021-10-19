@@ -31,6 +31,9 @@ from ..common.node_manager.user_manager import UserManager
 from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
+from ..common.node_service.network_search.network_search_service import (
+    NetworkSearchService,
+)
 from ..common.node_service.node_setup.node_setup_messages import (
     CreateInitialSetUpMessage,
 )
@@ -103,6 +106,7 @@ class Network(Node):
         self.immediate_services_with_reply.append(VPNRegisterService)
         self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(PingService)
+        self.immediate_services_with_reply.append(NetworkSearchService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()

@@ -96,8 +96,8 @@ test_suite = [
     ),
     (
         GetAssociationRequestsResponse,
-        {"address": Address(), "metadatas": [metadata, metadata]},
-        ["address", "metadatas"],
+        {"address": Address(), "content": [metadata, metadata]},
+        ["address", "content"],
     ),
 ]
 

@@ -59,6 +59,16 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         self.target = target
         self.metadata = metadata
 
+        print(
+            "making association request message",
+            source,
+            target,
+            address,
+            reply_to,
+            metadata,
+            msg_id,
+        )
+
     def _object2proto(self) -> SendAssociationRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,
@@ -360,13 +370,13 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        metadata: Dict,
+        content: Dict,
         source: AbstractNodeClient,
         target: AbstractNodeClient,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.metadata = metadata
+        self.content = content
         self.source = source
         self.target = target
 
@@ -385,7 +395,7 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            metadata=self.metadata,
+            content=self.content,
             source=serialize(self.source),
             target=serialize(self.target),
         )
@@ -407,7 +417,7 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            metadata=dict(proto.metadata),
+            content=dict(proto.content),
             source=_deserialize(blob=proto.source),
             target=_deserialize(blob=proto.target),
         )
@@ -503,11 +513,11 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        metadatas: List[Dict],
+        content: List[Dict],
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.metadatas = metadatas
+        self.content = content
 
     def _object2proto(self) -> GetAssociationRequestsResponse_PB:
         """Returns a protobuf serialization of self.
@@ -528,8 +538,8 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
 
         metadata_constructor = GetAssociationRequestsResponse_PB.metadata_container
         _ = [
-            msg.metadatas.append(metadata_constructor(metadata=metadata))
-            for metadata in self.metadatas
+            msg.content.append(metadata_constructor(metadata=metadata))
+            for metadata in self.content
         ]
         return msg
 
@@ -549,9 +559,9 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
         return GetAssociationRequestsResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            metadatas=[
+            content=[
                 dict(metadata_container.metadata)
-                for metadata_container in proto.metadatas
+                for metadata_container in proto.content
             ],
         )
 

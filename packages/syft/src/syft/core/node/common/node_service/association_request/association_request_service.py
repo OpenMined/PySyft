@@ -68,7 +68,10 @@ def send_association_request_msg(
         info(
             f"Node {node} - send_association_request_msg: sending ReceiveAssociationRequestMessage."
         )
-        msg.target.send_immediate_msg_with_reply(msg=target_msg)
+        try:
+            msg.target.send_immediate_msg_with_reply(msg=target_msg)
+        except Exception as e:
+            print("wtf, failed to send the message", target_msg, msg.target, e)
         info(
             f"Node {node} - send_association_request_msg: received the answer from ReceiveAssociationRequestMessage."
         )
@@ -202,9 +205,11 @@ def get_association_request_msg(
             "You're not allowed to get Association Request information!"
         )
 
+    print("what did we get from the database", association_request)
+    print("what metadata", association_request.get_metadata())
     return GetAssociationRequestResponse(
         address=msg.reply_to,
-        metadata=association_request.get_metadata(),
+        content=association_request.get_metadata(),
         source=association_request.get_source(),
         target=association_request.get_target(),
     )
@@ -232,7 +237,7 @@ def get_all_association_request_msg(
 
     return GetAssociationRequestsResponse(
         address=msg.reply_to,
-        metadatas=association_requests_json,
+        content=association_requests_json,
     )
 
 
