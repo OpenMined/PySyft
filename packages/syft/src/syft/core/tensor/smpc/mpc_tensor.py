@@ -504,8 +504,16 @@ class MPCTensor(PassthroughTensor):
             p2 = set(other.parties)  # parties in second MPCTensor.
             if p1 != p2:
                 parties_union = p1.union(p2)
-                mpc_tensor = MPCTensor.reshare(mpc_tensor, parties_union)
-                other = MPCTensor.reshare(other, parties_union)
+                mpc_tensor = (
+                    MPCTensor.reshare(mpc_tensor, parties_union)
+                    if p1 != parties_union
+                    else mpc_tensor
+                )
+                other = (
+                    MPCTensor.reshare(other, parties_union)
+                    if p2 != parties_union
+                    else other
+                )
 
         return mpc_tensor, other
 
