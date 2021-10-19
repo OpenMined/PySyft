@@ -115,7 +115,6 @@ class MPCTensor(PassthroughTensor):
         # you'd need to produce 10 shares and give 9 of them to the same domain)
         # TODO captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-\
         #  demo?stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
-
         res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
 
         super().__init__(res)
