@@ -44,18 +44,6 @@ for syft_type in [
     syft_type.__module__ = __name__
 
 
-def client_send(client) -> None:  # type: ignore
-    i = Int(1)
-    base_url = client.routes[0].connection.base_url
-    if base_url.find("localhost") != -1:
-        base_url = base_url.replace("localhost", "docker-host")
-    client.routes[0].connection.base_url = base_url
-    p = i.send(client)  # type: ignore
-    print(client)
-    print(p)
-    print(i)
-
-
 def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ast = Globals(client)
 
@@ -574,10 +562,6 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.lib.python.collections.OrderedDict.dict_get",
             "syft.lib.python.Any",
-        ),
-        (
-            "syft.lib.python.client_send",
-            "syft.lib.python._SyNone",
         ),
     ]
 
