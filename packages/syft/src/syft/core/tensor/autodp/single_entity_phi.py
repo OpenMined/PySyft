@@ -275,7 +275,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
     PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
 
-    __attr_allowlist__ = ["child", "_min_vals", "_max_vals", "entity", "scalar_manager"]
+    __attr_allowlist__ = [
+        "child",
+        "_min_vals",
+        "_max_vals",
+        "entity",
+        "scalar_manager",
+        "n_entities",
+    ]
 
     def __init__(
         self,
@@ -302,6 +309,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             self.scalar_manager = VirtualMachinePrivateScalarManager()
         else:
             self.scalar_manager = scalar_manager
+
+        # Number of entities in a SEPT is by definition 1
+        self.n_entities = 1
 
     def init_pointer(
         self,
@@ -1377,6 +1387,20 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             min_vals=min_vals,
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
+        )
+
+    def round(self, decimals: int = 0) -> SingleEntityPhiTensor:
+        if decimals != 0:
+            raise Exception(
+                "We currently only support np.int32. Sorry about the inconvenience-"
+                "we plan to support more types soon!"
+            )
+        return SingleEntityPhiTensor(
+            child=self.child.astype(dtype=np.int32),
+            min_vals=self.min_vals.astype(dtype=np.int32),
+            max_vals=self.max_vals.astype(dtype=np.int32),
+            scalar_manager=self.scalar_manager,
+            entity=self.entity,
         )
 
 

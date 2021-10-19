@@ -1,4 +1,6 @@
 # stdlib
+from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -18,6 +20,7 @@ from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
+from ..common.client_manager.vpn_api import VPNAPI
 
 
 @final
@@ -53,6 +56,8 @@ class NetworkClient(Client):
         self.datasets = DatasetRequestAPI(client=self)
 
         self.post_init()
+
+        self.vpn = VPNAPI(client=self)
 
     @property
     def id(self) -> UID:
@@ -127,3 +132,9 @@ class NetworkClient(Client):
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"
+
+    def join_network(self, host_or_ip: str) -> None:
+        return self.vpn.join_network(host_or_ip=host_or_ip)
+
+    def vpn_status(self) -> Dict[str, Any]:
+        return self.vpn.get_status()
