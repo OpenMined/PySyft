@@ -20,9 +20,7 @@ from typing import Union
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
-from sqlalchemy.orm import sessionmaker
 
 # relative
 from ....lib import lib_ast
@@ -85,7 +83,6 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
 from .node_service.testing_services.repr_service import ReprService
 from .node_service.testing_services.smpc_executor_service import SMPCExecutorService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
-from .node_table import Base
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -125,7 +122,6 @@ class Node(AbstractNode):
         verify_key: Optional[VerifyKey] = None,
         TableBase: Any = None,
         db_engine: Any = None,
-        db: Any = None,
     ):
 
         # The node has a name - it exists purely to help the
@@ -143,20 +139,20 @@ class Node(AbstractNode):
 
         # If not provided a session connecting us to the database, let's just
         # initialize a database in memory
-        if db is None:
+        # if db is None:
 
-            # If a DB engine isn't provided then
-            if db_engine is None:
-                db_engine = create_engine("sqlite://", echo=False)
-                Base.metadata.create_all(db_engine)  # type: ignore
+        #     # If a DB engine isn't provided then
+        #     if db_engine is None:
+        #         db_engine = create_engine("sqlite://", echo=False)
+        #         Base.metadata.create_all(db_engine)  # type: ignore
 
-            db = sessionmaker(bind=db_engine)()
+        #     db = sessionmaker(bind=db_engine)()
 
         # cache these variables on self
         self.TableBase = TableBase
         self.db_engine = db_engine
-        self.db = db
-        self.session = db
+        # self.db = db
+        # self.session = db
 
         # launch the tables in the database
         # Tudor: experimental
@@ -532,57 +528,63 @@ class Node(AbstractNode):
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
         self.message_counter += 1
-        contents = getattr(msg, "message", msg)  # in the event the message is unsigned
-        debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {contents}")
-        if self.message_is_for_me(msg=msg):
-            debug(
-                f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
-            )
-
-            # only a small number of messages are allowed to be unsigned otherwise
-            # they need to be valid
-            if type(msg) not in self.allowed_unsigned_messages and not msg.is_valid:  # type: ignore
-                error(f"Message is not valid. {msg}")
-                traceback_and_raise(Exception("Message is not valid."))
-
-            # Process Message here
-            try:  # we use try/except here because it's marginally faster in Python
-                service = router[type(contents)]
-            except KeyError as e:
-                log = (
-                    f"The node {self.id} of type {type(self)} cannot process messages of type "
-                    + f"{type(contents)} because there is no service running to process it."
-                    + f"{e}"
+        try:
+            contents = getattr(
+                msg, "message", msg
+            )  # in the event the message is unsigned
+            debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {contents}")
+            if self.message_is_for_me(msg=msg):
+                debug(
+                    f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
                 )
-                error(log)
-                self.ensure_services_have_been_registered_error_if_not()
-                traceback_and_raise(KeyError(log))
 
-            if type(msg) in self.allowed_unsigned_messages:  # type: ignore
-                result = service.process(node=self, msg=contents, verify_key=None)
+                # only a small number of messages are allowed to be unsigned otherwise
+                # they need to be valid
+                if type(msg) not in self.allowed_unsigned_messages and not msg.is_valid:  # type: ignore
+                    error(f"Message is not valid. {msg}")
+                    traceback_and_raise(Exception("Message is not valid."))
+
+                # Process Message here
+                try:  # we use try/except here because it's marginally faster in Python
+                    service = router[type(contents)]
+                except KeyError as e:
+                    log = (
+                        f"The node {self.id} of type {type(self)} cannot process messages of type "
+                        + f"{type(contents)} because there is no service running to process it."
+                        + f"{e}"
+                    )
+                    error(log)
+                    self.ensure_services_have_been_registered_error_if_not()
+                    traceback_and_raise(KeyError(log))
+
+                if type(msg) in self.allowed_unsigned_messages:  # type: ignore
+                    result = service.process(node=self, msg=contents, verify_key=None)
+                else:
+                    result = service.process(
+                        node=self,
+                        msg=contents,
+                        verify_key=msg.verify_key,
+                    )
+                return result
+
             else:
-                result = service.process(
-                    node=self,
-                    msg=contents,
-                    verify_key=msg.verify_key,
+                debug(
+                    f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
                 )
-            return result
-
-        else:
-            debug(
-                f"> Recipient Not Found ↪️ {msg.pprint}{msg.address.target_emoji()} != {self.pprint}"
-            )
-            # Forward message onwards
-            if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
-                return self.signed_message_with_reply_forwarding_service.process(
-                    node=self,
-                    msg=msg,  # type: ignore
-                )
-            if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
-                return self.signed_message_without_reply_forwarding_service.process(
-                    node=self,
-                    msg=msg,  # type: ignore
-                )
+                # Forward message onwards
+                if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
+                    return self.signed_message_with_reply_forwarding_service.process(
+                        node=self,
+                        msg=msg,  # type: ignore
+                    )
+                if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
+                    return self.signed_message_without_reply_forwarding_service.process(
+                        node=self,
+                        msg=msg,  # type: ignore
+                    )
+        except Exception as e:
+            error(e)
+            raise e
         return None
 
     def ensure_services_have_been_registered_error_if_not(self) -> None:

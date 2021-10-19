@@ -59,16 +59,6 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
         self.target = target
         self.metadata = metadata
 
-        print(
-            "making association request message",
-            source,
-            target,
-            address,
-            reply_to,
-            metadata,
-            msg_id,
-        )
-
     def _object2proto(self) -> SendAssociationRequestMessage_PB:
         """Returns a protobuf serialization of self.
         As a requirement of all objects which inherit from Serializable,

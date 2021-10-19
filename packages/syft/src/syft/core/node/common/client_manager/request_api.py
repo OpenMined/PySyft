@@ -48,8 +48,6 @@ class RequestAPI:
             syft_msg=self.__get_message, content=kwargs
         )
 
-        print("what did we get here", association_table, type(association_table))
-
         content = getattr(
             association_table, "content", getattr(association_table, "metadata", None)
         )

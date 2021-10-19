@@ -106,7 +106,9 @@ def recv_association_request_msg(
             message="Invalid request payload, empty fields (node_name)!"
         )
     info(f"Node {node} - recv_association_request_msg: received {msg}.")
-    _previous_request = node.association_requests.contain(node=msg.target.name)
+    _previous_request = node.association_requests.contain(
+        address=msg.address.target_id.id.no_dash
+    )
     info(
         f"Node {node} - recv_association_request_msg: prev request exists {not _previous_request}."
     )
@@ -127,7 +129,7 @@ def recv_association_request_msg(
         info(
             f"Node {node} - recv_association_request_msg: answering an existing association request."
         )
-        node.association_requests.set(msg.target.name, msg.response)  # type: ignore
+        node.association_requests.set(msg.address.target_id.id.no_dash, msg.response)  # type: ignore
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -153,7 +155,7 @@ def respond_association_request_msg(
     )
     if allowed:
         # Set the status of the Association Request according to the "value" field received
-        node.association_requests.set(msg.target.name, msg.response)  # type: ignore
+        node.association_requests.set(msg.address.target_id.id.no_dash, msg.response)  # type: ignore
 
         user_priv_key = SigningKey(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore

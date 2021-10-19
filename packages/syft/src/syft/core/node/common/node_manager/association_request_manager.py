@@ -2,7 +2,6 @@
 from datetime import datetime
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Optional
 import warnings
 
@@ -54,16 +53,17 @@ class AssociationRequestManager(DatabaseManager):
         metadata[RequestAPIFields.SOURCE] = source_blob
         metadata[RequestAPIFields.TARGET] = target_blob
         metadata[RequestAPIFields.STATUS] = status
+        metadata[RequestAPIFields.ADDRESS] = source.target_id.id.no_dash
         self.register(**metadata)
 
-    def associations(self) -> List[Association]:
-        return list(self.db.session.query(Association).all())
+    # def associations(self) -> List[Association]:
+    #     return list(self.db.session.query(Association).all())
 
     def association(self, **kwargs: Dict[str, Any]) -> Optional[Association]:
         return self.db.session.query(Association).filter_by(**kwargs).first()
 
-    def set(self, node_name: str, response: str) -> None:
+    def set(self, address: str, response: str) -> None:
         self.modify(
-            {"node": node_name},
+            {"address": address},
             {"status": response, "accepted_date": datetime.now().strftime("%m/%d/%Y")},
         )

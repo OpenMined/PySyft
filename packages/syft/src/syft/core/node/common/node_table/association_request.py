@@ -49,6 +49,7 @@ class AssociationRequest(Base):
     def get_metadata(self) -> Dict[str, str]:
         return {
             "association_id": str(self.id),
+            "address": self.address,
             "requested_date": self.requested_date,
             "name": self.name,
             "email": self.email,

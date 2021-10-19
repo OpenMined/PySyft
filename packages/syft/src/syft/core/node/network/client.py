@@ -150,10 +150,11 @@ class NetworkClient(Client):
         response = self._perform_grid_request(
             grid_msg=NetworkSearchMessage, content={"content": query}
         )
+        result = response.content  # type: ignore
         if pandas:
-            response = DataFrame(response)
+            result = DataFrame(result)
 
-        return response
+        return result
 
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None

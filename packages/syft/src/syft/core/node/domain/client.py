@@ -22,6 +22,7 @@ import syft as sy
 from .... import deserialize
 from ....logger import traceback_and_raise
 from ....util import validate_field
+from ...common.message import SyftMessage
 from ...common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...common.uid import UID
 from ...io.address import Address
@@ -32,6 +33,7 @@ from ...pointer.pointer import Pointer
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
 from ..abstract.node import AbstractNodeClient
+from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
@@ -40,9 +42,6 @@ from ..common.client_manager.user_api import UserRequestAPI
 from ..common.client_manager.vpn_api import VPNAPI
 from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import (
     GetRemainingBudgetMessage,
-)
-from ..common.node_service.network_search.network_search_messages import (
-    NetworkSearchMessage,
 )
 from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
 from ..common.node_service.object_transfer.object_transfer_messages import (
@@ -369,7 +368,6 @@ class DomainClient(Client):
         self._perform_grid_request(grid_msg=LoadObjectMessage, content=content)
 
     def setup(self, *, domain_name: Optional[str], **kwargs: Any) -> Any:
-
         if domain_name is None:
             domain_name = names.get_full_name() + "'s Domain"
             logging.info(
@@ -381,37 +379,53 @@ class DomainClient(Client):
         response = self.conn.setup(**kwargs)  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
+    def _perform_grid_request(
+        self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
+    ) -> SyftMessage:
+        if content is None:
+            content = {}
+        # Build Syft Message
+        content[RequestAPIFields.ADDRESS] = self.address
+        content[RequestAPIFields.REPLY_TO] = self.address
+        signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
+        # Send to the dest
+        response = self.send_immediate_msg_with_reply(msg=signed_msg)
+        if isinstance(response, ExceptionMessage):
+            raise response.exception_type
+        else:
+            return response
+
     def get_setup(self, **kwargs: Any) -> Any:
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
     def apply_to_network(
-        self, source_vpn: str, target: str, target_vpn: str, **metadata: str
+        self, host_or_ip: str, domain_vpn_ip: str, network_vpn_ip: str, **metadata: str
     ) -> None:
         # TODO: refactor
-        # Step 1, send a message to the Network from the Users Python Context
-        # this means the first message needs to target a public IP
+        # Step 1: send a message to the Network from the Users Python Context
+        # this means the first message needs to have a public ip:port for host_or_ip
 
-        # Step 2, is contents of message is two clients which contain the host_or_ip
-        # which both the Network and Domain can communicate on respectively
-        # Because many domains will be behind firewalls, we want to use the VPN IP
+        # Step 2: the contents of message is two clients which contain the host_or_ip
+        # which both the Network and Domain can communicate on respectively and
+        # because many domains will be behind firewalls, we want to use the VPN IP
         # as both directions should be able to connect to each other.
 
-        # source_vpn = Domain VPN host_or_ip because thats the only IP the Network
+        # domain_vpn_ip = Domain VPN host_or_ip because thats the only IP the Network
         # can reach the Domain on, and will go into the association request table
         # and then gets used to route all traffic from the Network node to that Domain
 
         # target = Network host_or_ip that User can reach such as 13.64.187.229 in Azure
 
-        # target_vpn = Network VPN host_or_ip because that will be what goes into the
+        # network_vpn_ip = Network VPN host_or_ip because that will be what goes into the
         # association request table and then gets used to route all traffic from
         # the Domain to the Network node
 
-        target_client = sy.connect(url=f"http://{target}/api/v1")
-        target_client.routes[0].connection.base_url = f"http://{target_vpn}/api/v1"
+        target_client = sy.connect(url=f"http://{host_or_ip}/api/v1")
+        target_client.routes[0].connection.base_url = f"http://{network_vpn_ip}/api/v1"
 
         source_client_ser = sy.serialize(self)
         source_client = sy.deserialize(source_client_ser)
-        source_client.routes[0].connection.base_url = f"http://{source_vpn}/api/v1"
+        source_client.routes[0].connection.base_url = f"http://{domain_vpn_ip}/api/v1"
 
         self.association.create(
             source=source_client, target=target_client, metadata=metadata

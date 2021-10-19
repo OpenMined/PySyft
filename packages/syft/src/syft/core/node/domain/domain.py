@@ -99,7 +99,6 @@ class Domain(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
-        db: Any = None,
     ):
 
         if db_engine is None:
@@ -114,7 +113,6 @@ class Domain(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_engine=db_engine,
-            db=db,
         )
 
         # specific location with name
