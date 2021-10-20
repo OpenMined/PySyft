@@ -99,12 +99,14 @@ def _get_triples(
         ring_size=ring_size,
     )
     seed_przs = secrets.randbits(32)
-    c_val = cmd(a_rand, b_rand)
+    # TODO: bitwise and on passthorough tensor raises
+    # hence we do it on numpy array itself.
+    c_val = Tensor(cmd(a_rand.child, b_rand.child))
     print("c_val", c_val)
     c_shares = MPCTensor._get_shares_from_local_secret(
         secret=deepcopy(c_val),
         parties_info=parties_info,  # type: ignore
-        shape=c_val.shape,
+        shape=c_val.shape,  # type: ignore
         seed_przs=seed_przs,
         ring_size=ring_size,
     )
