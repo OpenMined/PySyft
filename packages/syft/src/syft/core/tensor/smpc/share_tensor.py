@@ -277,7 +277,8 @@ class ShareTensor(PassthroughTensor):
             for _ in range(nr_parties)
         ]
         op = ShareTensor.get_op(ring_size, "sub")
-        share.child += op(shares[rank], shares[(rank + 1) % nr_parties])
+        przs_share = op(shares[rank], shares[(rank + 1) % nr_parties])
+        share.child = op(share.child, przs_share)
 
         return share
 
