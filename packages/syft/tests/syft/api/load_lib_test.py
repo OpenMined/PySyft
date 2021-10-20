@@ -20,19 +20,19 @@ def test_load_lib() -> None:
 
 def test_load_errors(caplog: _pytest.logging.LogCaptureFixture) -> None:
     # Error if a non-supported library is loaded
-    with caplog.at_level(logging.CRITICAL, logger="syft.logger"):
+    with caplog.at_level(logging.WARNING, logger="syft.logger"):
         sy.lib.load("non_compatible")
     assert "Unable to load package support for: non_compatible." in caplog.text
     caplog.clear()
 
     # Error if non-string object type is attempted to be loaded
-    with caplog.at_level(logging.CRITICAL, logger="syft.logger"):
+    with caplog.at_level(logging.WARNING, logger="syft.logger"):
         sy.lib.load([True])
     assert "Unable to load package support for: True." in caplog.text
     caplog.clear()
 
     # Error if a non-iterable object is passed
-    with caplog.at_level(logging.CRITICAL, logger="syft.logger"):
+    with caplog.at_level(logging.WARNING, logger="syft.logger"):
         sy.lib.load(True)
     assert "Unable to load package support for any library." in caplog.text
     caplog.clear()

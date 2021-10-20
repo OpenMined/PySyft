@@ -11,6 +11,7 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # relative
+from ......logger import error
 from ......logger import info
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import SignedImmediateSyftMessageWithReply
@@ -49,6 +50,8 @@ def send_association_request_msg(
             f"Node {node} - send_association_request_msg: {node} got user performing the action. User: {user}"
         )
 
+        domain_id = msg.source.target_id.id.no_dash
+
         # Build an association request to send to the target
         user_priv_key = SigningKey(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
@@ -71,7 +74,8 @@ def send_association_request_msg(
         try:
             msg.target.send_immediate_msg_with_reply(msg=target_msg)
         except Exception as e:
-            print("wtf, failed to send the message", target_msg, msg.target, e)
+            error(f"Failed to send ReceiveAssociationRequestMessage. {e}")
+
         info(
             f"Node {node} - send_association_request_msg: received the answer from ReceiveAssociationRequestMessage."
         )
@@ -86,6 +90,7 @@ def send_association_request_msg(
             metadata=msg.metadata,
             source=msg.source,
             target=msg.target,
+            address=domain_id,
         )
     else:  # If not authorized
         raise AuthorizationError("You're not allowed to create an Association Request!")
@@ -105,10 +110,8 @@ def recv_association_request_msg(
         raise MissingRequestKeyError(
             message="Invalid request payload, empty fields (node_name)!"
         )
-    info(f"Node {node} - recv_association_request_msg: received {msg}.")
-    _previous_request = node.association_requests.contain(
-        address=msg.address.target_id.id.no_dash
-    )
+    domain_id = msg.source.target_id.id.no_dash
+    _previous_request = node.association_requests.contain(address=domain_id)
     info(
         f"Node {node} - recv_association_request_msg: prev request exists {not _previous_request}."
     )
@@ -124,12 +127,13 @@ def recv_association_request_msg(
             status=AssociationRequestResponses.PENDING,
             source=msg.source,
             target=msg.target,
+            address=domain_id,
         )
     else:
         info(
             f"Node {node} - recv_association_request_msg: answering an existing association request."
         )
-        node.association_requests.set(msg.address.target_id.id.no_dash, msg.response)  # type: ignore
+        node.association_requests.set(domain_id, msg.response)  # type: ignore
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -150,12 +154,13 @@ def respond_association_request_msg(
         )
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
+    domain_id = msg.source.target_id.id.no_dash
     info(
         f"Node {node} - respond_association_request_msg: user can approve/deny association requests."
     )
     if allowed:
         # Set the status of the Association Request according to the "value" field received
-        node.association_requests.set(msg.address.target_id.id.no_dash, msg.response)  # type: ignore
+        node.association_requests.set(domain_id, msg.response)  # type: ignore
 
         user_priv_key = SigningKey(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
@@ -207,8 +212,6 @@ def get_association_request_msg(
             "You're not allowed to get Association Request information!"
         )
 
-    print("what did we get from the database", association_request)
-    print("what metadata", association_request.get_metadata())
     return GetAssociationRequestResponse(
         address=msg.reply_to,
         content=association_request.get_metadata(),

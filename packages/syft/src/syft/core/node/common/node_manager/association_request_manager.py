@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any
 from typing import Dict
 from typing import Optional
-import warnings
 
 # third party
 from sqlalchemy.engine import Engine
@@ -39,11 +38,8 @@ class AssociationRequestManager(DatabaseManager):
         target: AbstractNodeClient,
         metadata: Dict[str, Any],
         status: str,
+        address: str,
     ) -> None:
-        if super().first(node=node):
-            super().delete(node=node)
-            warnings.warn("Association request name already exists! Overwriting.")
-
         metadata[RequestAPIFields.NODE] = node
         metadata[RequestAPIFields.REQUESTED_DATE] = datetime.now().strftime("%m/%d/%Y")
 
@@ -53,8 +49,12 @@ class AssociationRequestManager(DatabaseManager):
         metadata[RequestAPIFields.SOURCE] = source_blob
         metadata[RequestAPIFields.TARGET] = target_blob
         metadata[RequestAPIFields.STATUS] = status
-        metadata[RequestAPIFields.ADDRESS] = source.target_id.id.no_dash
-        self.register(**metadata)
+        metadata[RequestAPIFields.ADDRESS] = address
+
+        if super().first(address=address):
+            self.modify(query={"address": address}, values=metadata)
+        else:
+            self.register(**metadata)
 
     # def associations(self) -> List[Association]:
     #     return list(self.db.session.query(Association).all())
