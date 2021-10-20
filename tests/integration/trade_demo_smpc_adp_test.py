@@ -146,7 +146,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     part, the part we call "The Prestige".
     """
     # the prestige 🎩
-    time.sleep(5)
+    time.sleep(40)  # TODO: should modify after implementing polling .get()
     sycure_result = public_result.get()
     print("sycure_result", sycure_result)
     print("after ca", ca.privacy_budget)
