@@ -161,6 +161,7 @@ def mul_store_add(
     primitives: List[Any],
     a_shape: Tuple[int],
     b_shape: Tuple[int],
+    ring_size: int,
 ) -> None:
     """Add the primitives required for the "mul" operation to the CryptoStore.
 
@@ -170,7 +171,7 @@ def mul_store_add(
         a_shape (Tuple[int]): the shape of the first operand
         b_shape (Tuple[int]): the shape of the second operand
     """
-    config_key = f"beaver_mul_{a_shape}_{b_shape}"
+    config_key = f"beaver_mul_{a_shape}_{b_shape}_{ring_size}"
     if config_key in store:
         store[config_key].extend(primitives)
     else:
@@ -182,6 +183,7 @@ def mul_store_get(
     store: Dict[str, List[Any]],
     a_shape: Tuple[int, ...],
     b_shape: Tuple[int, ...],
+    ring_size: int = 2 ** 32,
     remove: bool = True,
 ) -> Any:
     """Retrieve the primitives from the CryptoStore.
@@ -200,7 +202,7 @@ def mul_store_get(
     Raises:
         EmptyPrimitiveStore: If no primitive in the store for config_key.
     """
-    config_key = f"beaver_mul_{tuple(a_shape)}_{tuple(b_shape)}"
+    config_key = f"beaver_mul_{tuple(a_shape)}_{tuple(b_shape)}_{ring_size}"
 
     try:
         primitives = store[config_key]
@@ -244,6 +246,7 @@ def matmul_store_add(
     primitives: List[Any],
     a_shape: Tuple[int],
     b_shape: Tuple[int],
+    ring_size: int,
 ) -> None:
     """Add the primitives required for the "matmul" operation to the CryptoStore.
 
@@ -254,7 +257,7 @@ def matmul_store_add(
         b_shape (Tuple[int]): The shape of the second operand.
 
     """
-    config_key = f"beaver_matmul_{a_shape}_{b_shape}"
+    config_key = f"beaver_matmul_{a_shape}_{b_shape}_{ring_size}"
     if config_key in store:
         store[config_key].extend(primitives)
     else:
@@ -266,6 +269,7 @@ def matmul_store_get(
     store: Dict[str, List[Any]],
     a_shape: Tuple[int, ...],
     b_shape: Tuple[int, ...],
+    ring_size: int = 2 ** 32,
     remove: bool = True,
 ) -> Any:
     """Retrieve the primitives from the CryptoStore.
@@ -284,7 +288,7 @@ def matmul_store_get(
     Raises:
         EmptyPrimitiveStore: If no primitive in the store for config_key.
     """
-    config_key = f"beaver_matmul_{tuple(a_shape)}_{tuple(b_shape)}"
+    config_key = f"beaver_matmul_{tuple(a_shape)}_{tuple(b_shape)}_{ring_size}"
 
     try:
         primitives = store[config_key]
