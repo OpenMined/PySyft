@@ -229,7 +229,7 @@ def smpc_basic_op(
 
 
 # Purposefully raise a custom error to retry the task in celery worker.
-class BeaverError(Exception):
+class ObjectNotInStore(Exception):
     pass
 
 
@@ -252,9 +252,9 @@ def spdz_multiply(
     print("Delta Store", delta)
     print("NR parties", nr_parties)
     if eps is None or len(eps.data) != nr_parties:
-        raise BeaverError
+        raise ObjectNotInStore
     if delta is None or len(delta.data) != nr_parties:
-        raise BeaverError
+        raise ObjectNotInStore
     print("Beaver Error surpassed*******************************")
 
     a_share, b_share, c_share = crypto_store.get_primitives_from_store(

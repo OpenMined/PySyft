@@ -72,6 +72,8 @@ def _get_triples(
             low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=np.int32
         )
     )
+
+    print("a_rand", a_rand)
     a_shares = MPCTensor._get_shares_from_local_secret(
         secret=deepcopy(a_rand),
         parties_info=parties_info,  # type: ignore
@@ -84,6 +86,8 @@ def _get_triples(
             low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=np.int32
         )
     )
+    print("b_rand", b_rand)
+
     b_shares = MPCTensor._get_shares_from_local_secret(
         secret=deepcopy(b_rand),
         parties_info=parties_info,  # type: ignore

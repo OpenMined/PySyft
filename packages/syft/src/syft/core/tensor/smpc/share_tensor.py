@@ -115,7 +115,7 @@ class ShareTensor(PassthroughTensor):
             client = CACHE_CLIENTS.get(party_info, None)
             party_info.url = party_info.url.replace("localhost", "docker-host")
             if client is None:
-                client = sy.login(
+                client = sy.login(  # nosec
                     url=party_info.url,
                     email="howard@mit.edu",
                     password="astronaut",

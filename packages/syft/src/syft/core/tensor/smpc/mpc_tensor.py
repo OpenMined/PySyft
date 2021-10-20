@@ -115,7 +115,6 @@ class MPCTensor(PassthroughTensor):
         # you'd need to produce 10 shares and give 9 of them to the same domain)
         # TODO captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-\
         #  demo?stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
-
         res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
 
         super().__init__(res)
@@ -144,7 +143,7 @@ class MPCTensor(PassthroughTensor):
                 party_info = Party(url, port)
                 PARTIES_REGISTER_CACHE[party] = party_info
                 try:
-                    sy.register(
+                    sy.register(  # nosec
                         name="Howard Wolowtiz",
                         email="howard@mit.edu",
                         password="astronaut",
@@ -428,6 +427,27 @@ class MPCTensor(PassthroughTensor):
             res_mpc(MPCTensor): Reshared MPCTensor.
         Raises:
             ValueError: If the input MPCTensor and input parties are same.
+
+        Note:
+        We provide an additional layer of abstraction such that,
+        when computation is performed on data belonging to different parties
+        The underlying secret are automatically converted into secret shares of their input.
+
+        Assume there are two parties Parties P1,P2
+
+        tensor_1 = data_pointer_1 (party 1 data)
+        tensor_2 = data_pointer_2 (party 2 data)
+
+        result -------> tensor_1+ tensor_1 (local computation as the data
+        belongs to the same party)
+
+        Interesting scenario is when
+
+        result --------> tensor_1+tensor_2
+
+        Each tensor belongs to two different parties.
+        There are automatically secret shared without the user
+        knowing that a MPCTensor is being created underneath.
         """
         mpc_parties = set(mpc_tensor.parties)
         parties = set(parties)
@@ -484,19 +504,36 @@ class MPCTensor(PassthroughTensor):
             p2 = set(other.parties)  # parties in second MPCTensor.
             if p1 != p2:
                 parties_union = p1.union(p2)
-                mpc_tensor = MPCTensor.reshare(mpc_tensor, parties_union)
-                other = MPCTensor.reshare(other, parties_union)
+                mpc_tensor = (
+                    MPCTensor.reshare(mpc_tensor, parties_union)
+                    if p1 != parties_union
+                    else mpc_tensor
+                )
+                other = (
+                    MPCTensor.reshare(other, parties_union)
+                    if p2 != parties_union
+                    else other
+                )
 
         return mpc_tensor, other
 
     def __apply_private_op(
         self, other: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
     ) -> List[ShareTensor]:
-        op = f"__{op_str}__"
+        # relative
+        from ..tensor import TensorPointer
+
+        op_method = f"__{op_str}__"
         if op_str in {"add", "sub"}:
-            res_shares = [
-                getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, other.child)
-            ]
+            if not isinstance(self.child[0], TensorPointer):
+                res_shares = [
+                    getattr(a, op_method)(a, b, **kwargs)
+                    for a, b in zip(self.child, other.child)
+                ]
+            else:
+                op: Callable[..., Any] = getattr(operator, op_str)
+                res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
+
         else:
             raise ValueError(f"MPCTensor Private {op_str} not supported")
         return res_shares
@@ -504,11 +541,20 @@ class MPCTensor(PassthroughTensor):
     def __apply_public_op(
         self, y: Any, op_str: str, **kwargs: Dict[Any, Any]
     ) -> List[ShareTensor]:
-        op = f"__{op_str}__"
+        # relative
+        from ..tensor import TensorPointer
+
+        op_method = f"__{op_str}__"
         if op_str in {"mul", "matmul", "add", "sub"}:
-            res_shares = [
-                getattr(share, op)(share, y, **kwargs) for share in self.child
-            ]
+            if not isinstance(self.child[0], TensorPointer):
+                res_shares = [
+                    getattr(share, op_method)(share, y, **kwargs)
+                    for share in self.child
+                ]
+            else:
+                op: Callable[..., Any] = getattr(operator, op_str)
+                res_shares = [op(share, y) for share in self.child]
+
         else:
             raise ValueError(f"MPCTensor Public {op_str} not supported")
 
@@ -538,10 +584,7 @@ class MPCTensor(PassthroughTensor):
         else:
             result = x.__apply_public_op(y, op_str, **kwargs)
 
-        if isinstance(y, (float, int)):
-            y_shape: Tuple[int, ...] = (1,)
-        elif isinstance(y, MPCTensor):
-            y_shape = y.shape  # type: ignore
+        y_shape = getattr(y, "shape", (1,))
 
         shape = MPCTensor._get_shape(op_str, self.shape, y_shape)
 
