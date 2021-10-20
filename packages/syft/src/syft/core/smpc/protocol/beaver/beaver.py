@@ -78,6 +78,7 @@ def _get_triples(
         parties_info=parties_info,  # type: ignore
         shape=a_shape,
         seed_przs=seed_przs,
+        ring_size=ring_size,
     )
     seed_przs = secrets.randbits(32)
     b_rand = Tensor(
@@ -90,6 +91,7 @@ def _get_triples(
         parties_info=parties_info,  # type: ignore
         shape=b_shape,
         seed_przs=seed_przs,
+        ring_size=ring_size,
     )
     seed_przs = secrets.randbits(32)
     c_val = cmd(a_rand, b_rand)
@@ -98,6 +100,7 @@ def _get_triples(
         parties_info=parties_info,  # type: ignore
         shape=c_val.shape,
         seed_przs=seed_przs,
+        ring_size=ring_size,
     )
 
     # We are always creating an instance
