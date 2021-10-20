@@ -72,7 +72,7 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
-                value=result, id=msg.id_at_location
+                value=result, id=msg.id_at_location  # type: ignore
             )
         else:
             # TODO: overload all methods to incorporate this automatically
@@ -93,7 +93,7 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
         if len(msg.id_at_location) == 1:
             if not isinstance(result, StorableObject):
                 result = StorableObject(
-                    id=msg.id_at_location,
+                    id=msg.id_at_location,  # type: ignore
                     data=result,
                     read_permissions=store_object_self.read_permissions,
                 )

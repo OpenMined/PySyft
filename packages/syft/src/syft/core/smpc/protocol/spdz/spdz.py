@@ -10,6 +10,7 @@ SPDZ mechanism used for multiplication Contains functions that are run at:
 from __future__ import annotations
 
 # stdlib
+import secrets
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -60,7 +61,7 @@ def mul_master(
     shape_x = tuple(x.shape)  # type: ignore
     shape_y = tuple(y.shape)  # type: ignore
 
-    primitives = CryptoPrimitiveProvider.generate_primitives(
+    primitives = CryptoPrimitiveProvider.generate_primitives(  # noqa
         f"beaver_{op_str}",
         parties=parties,
         g_kwargs={
