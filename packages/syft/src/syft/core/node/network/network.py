@@ -26,6 +26,8 @@ from ...io.location import SpecificLocation
 from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
 from ..common.node_manager.group_manager import GroupManager
+from ..common.node_manager.node_manager import NodeManager
+from ..common.node_manager.node_route_manager import NodeRouteManager
 from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
 from ..common.node_service.association_request.association_request_service import (
@@ -92,6 +94,8 @@ class Network(Node):
         self.users = UserManager(db_engine)
         self.roles = RoleManager(db_engine)
         self.groups = GroupManager(db_engine)
+        self.node = NodeManager(db_engine)
+        self.node_route = NodeRouteManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
 
         # Grid Network Services

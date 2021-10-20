@@ -15,10 +15,13 @@ from ......logger import error
 from ......logger import info
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import SignedImmediateSyftMessageWithReply
+from ....common.node_manager.node_manager import NodeManager
+from ....common.node_manager.node_route_manager import NodeRouteManager
 from ....domain.domain_interface import DomainInterface
 from ....domain.enums import AssociationRequestResponses
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
+from ...node_service.vpn.vpn_messages import VPNStatusMessageWithReply
 from ...node_table.association_request import AssociationRequest
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
@@ -33,6 +36,7 @@ from .association_request_messages import RespondAssociationRequestMessage
 from .association_request_messages import SendAssociationRequestMessage
 
 
+# domain gets this message from a user and will try to send to the network
 def send_association_request_msg(
     msg: SendAssociationRequestMessage,
     node: DomainInterface,
@@ -101,6 +105,7 @@ def send_association_request_msg(
     )
 
 
+# network gets the above message first and then later the domain gets this message as well
 def recv_association_request_msg(
     msg: ReceiveAssociationRequestMessage,
     node: DomainInterface,
@@ -133,7 +138,11 @@ def recv_association_request_msg(
         info(
             f"Node {node} - recv_association_request_msg: answering an existing association request."
         )
+        print("We should only be on the domain side")
         node.association_requests.set(domain_id, msg.response)  # type: ignore
+        print("what metadata", msg.metadata)
+        # get or create a new node that represents the network
+        # node = NodeManager.create_or_get_node(node_id=msg.metadata["node_id"], node_name=msg.metadata["node_name"])
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -141,11 +150,13 @@ def recv_association_request_msg(
     )
 
 
+# network owner user approves the request and sends this to the network
 def respond_association_request_msg(
     msg: RespondAssociationRequestMessage,
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
+    print("network admin approving the association request", type(node), msg)
     # Check if handshake/address/value fields are empty
     missing_paramaters = not msg.target or not msg.response
     if missing_paramaters:
@@ -166,12 +177,37 @@ def respond_association_request_msg(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
         )
 
+        metadata = {}
+        # get network metadata to send back to domain
+        try:
+            vpn_status_msg = (
+                VPNStatusMessageWithReply()
+                .to(address=node.address, reply_to=node.address)
+                .sign(signing_key=node.signing_key)
+            )
+            vpn_status = node.recv_immediate_msg_with_reply(msg=vpn_status_msg)
+            print("what response message", vpn_status, type(vpn_status))
+            print("fdsa", vpn_status.message)
+            vpn_status = vpn_status.message
+            status = vpn_status.payload.kwargs
+            print("afdsafdsa", status)
+            network_vpn_ip = status["host"]["ip"]
+            node_name = status["host"]["hostname"]
+            metadata = {
+                "host_or_ip": str(network_vpn_ip),
+                "node_id": str(node.target_id.id.no_dash),
+                "node_name": str(node_name),
+                "type": f"{str(type(node).__name__).lower()}",
+            }
+        except Exception as e:
+            print("failed to get vpn status", e)
+
         node_msg: SignedImmediateSyftMessageWithReply = (
             ReceiveAssociationRequestMessage(
                 address=msg.source.address,
                 response=msg.response,
                 reply_to=msg.target.address,
-                metadata={},
+                metadata=metadata,
                 source=msg.source,
                 target=msg.target,
             ).sign(signing_key=user_priv_key)

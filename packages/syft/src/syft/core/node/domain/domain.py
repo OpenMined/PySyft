@@ -36,6 +36,8 @@ from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
 from ..common.node_manager.dataset_manager import DatasetManager
 from ..common.node_manager.environment_manager import EnvironmentManager
+from ..common.node_manager.node_manager import NodeManager
+from ..common.node_manager.node_route_manager import NodeRouteManager
 from ..common.node_manager.request_manager import RequestManager
 from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
@@ -126,6 +128,8 @@ class Domain(Node):
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
+        self.node = NodeManager(db_engine)
+        self.node_route = NodeRouteManager(db_engine)
         self.acc = AdversarialAccountant(db_engine=db_engine, max_budget=10000)
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
