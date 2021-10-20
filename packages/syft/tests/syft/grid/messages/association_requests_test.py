@@ -81,8 +81,8 @@ test_suite = [
     ),
     (
         GetAssociationRequestResponse,
-        {"address": Address(), "metadata": metadata, "source": None, "target": None},
-        ["address", "metadata", "source", "target"],
+        {"address": Address(), "content": metadata, "source": None, "target": None},
+        ["address", "content", "source", "target"],
     ),
     (
         DeleteAssociationRequestMessage,

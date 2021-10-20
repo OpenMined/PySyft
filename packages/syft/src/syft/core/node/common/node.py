@@ -20,6 +20,7 @@ from typing import Union
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 
 # relative
@@ -83,6 +84,7 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
 from .node_service.testing_services.repr_service import ReprService
 from .node_service.testing_services.smpc_executor_service import SMPCExecutorService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
+from .node_table import Base
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -139,14 +141,9 @@ class Node(AbstractNode):
 
         # If not provided a session connecting us to the database, let's just
         # initialize a database in memory
-        # if db is None:
-
-        #     # If a DB engine isn't provided then
-        #     if db_engine is None:
-        #         db_engine = create_engine("sqlite://", echo=False)
-        #         Base.metadata.create_all(db_engine)  # type: ignore
-
-        #     db = sessionmaker(bind=db_engine)()
+        if db_engine is None:
+            db_engine = create_engine("sqlite://", echo=False)
+            Base.metadata.create_all(db_engine)  # type: ignore
 
         # cache these variables on self
         self.TableBase = TableBase
