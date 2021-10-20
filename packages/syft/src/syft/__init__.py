@@ -114,3 +114,6 @@ logger.add(sink=sys.stderr, level="CRITICAL")
 
 # TODO: remove this requirement in pytorch lightning
 client_cache: Dict[str, Any] = {}
+
+# TODO: https://github.com/OpenMined/PySyft/issues/5930
+flags._APACHE_ARROW_TENSOR_SERDE = False
