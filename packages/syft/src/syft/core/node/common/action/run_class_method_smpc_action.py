@@ -140,7 +140,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         client = resolved_kwargs.get("client", None)
         if client is None:
             raise ValueError(
-                "Expected client to be in the kwargs to generate action for RabbitMQ"
+                "Expected client to be in the kwargs to generate SMPCActionMessage"
             )
 
         resolved_kwargs.pop("client")

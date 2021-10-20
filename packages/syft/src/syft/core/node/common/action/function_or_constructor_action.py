@@ -77,33 +77,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         # left and right have the same keys
         return {k: left[k] for k in intersection}
 
-    # @staticmethod
-    # def retrieve_object(node: AbstractNode, id_at_location: UID) -> StorableObject:
-    #     try:
-    #         # keep five minutes seconds as max latency
-    #         ctr = 3000
-    #         while True:
-    #             storable_object = node.store.get_object(key=id_at_location)
-    #             if storable_object is None:
-    #                 ctr -= 1
-    #                 time.sleep(0.1)
-    #                 # We intimate user every ten seconds
-    #                 if ctr % 5 == 0:
-    #                     print("Waiting for Object to arrive...🚀")
-    #             else:
-    #                 return storable_object
-    #             if ctr <= 0:
-    #                 raise Exception(
-    #                     "Object not found or Object did not arrive at store"
-    #                 )
-    #     except Exception as e:
-    #         log = (
-    #             f"Unable to Get Object with ID {id_at_location} from store. "
-    #             + f"Possible dangling Pointer. {e}"
-    #         )
-
-    #         traceback_and_raise(Exception(log))
-
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
         result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
@@ -149,10 +122,10 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         # execute the method with the newly upcasted args and kwargs
-        if "beaver_populate" in self.path:
-            result = method(*upcasted_args, **upcasted_kwargs, node=node)
-        else:
+        if "beaver_populate" not in self.path:
             result = method(*upcasted_args, **upcasted_kwargs)
+        else:
+            result = method(*upcasted_args, **upcasted_kwargs, node=node)
 
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):

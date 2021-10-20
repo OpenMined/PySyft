@@ -115,7 +115,7 @@ class ShareTensor(PassthroughTensor):
             client = CACHE_CLIENTS.get(party_info, None)
             party_info.url = party_info.url.replace("localhost", "docker-host")
             if client is None:
-                client = sy.login(
+                client = sy.login(  # nosec
                     url=party_info.url,
                     email="howard@mit.edu",
                     password="astronaut",
@@ -134,7 +134,7 @@ class ShareTensor(PassthroughTensor):
         return self._ring_size
 
     @ring_size.setter
-    def ring_size(self, ring_size: int) -> int:
+    def ring_size(self, ring_size: int) -> None:
         self._ring_size = ring_size
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self._ring_size

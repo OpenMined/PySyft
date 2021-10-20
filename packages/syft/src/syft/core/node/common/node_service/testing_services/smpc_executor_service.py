@@ -43,14 +43,12 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
 
         _self = store_object_self.data
         args = [node.store[arg_id].data for arg_id in msg.args_id]
+
         kwargs = {}  # type: ignore
-        if "spdz" in msg.name_action:
-            eps_id = msg.kwargs_id["eps_id"]
-            delta_id = msg.kwargs_id["delta_id"]
-            msg.kwargs_id.pop("eps_id")
-            msg.kwargs_id.pop("delta_id")
         for key, kwarg_id in msg.kwargs_id.items():
-            data = node.store[kwarg_id].data
+            data = (
+                node.store[kwarg_id].data if "spdz" not in msg.name_action else kwarg_id
+            )
             if data is None:
                 raise KeyError(f"Key {key} is not available")
 
@@ -61,18 +59,15 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
         logger.warning(func)
 
-        if "spdz" in msg.name_action:
-            upcasted_kwargs["eps_id"] = eps_id
-            upcasted_kwargs["delta_id"] = delta_id
-        if "spdz_multiply" in msg.name_action:
-            result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
-        else:
+        if "spdz_multiply" not in msg.name_action:
             result = func(_self, *upcasted_args, **upcasted_kwargs)
+        else:
+            result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
-                value=result, id=msg.id_at_location
+                value=result, id=msg.id_at_location  # type: ignore
             )
         else:
             # TODO: overload all methods to incorporate this automatically
@@ -93,7 +88,7 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
         if len(msg.id_at_location) == 1:
             if not isinstance(result, StorableObject):
                 result = StorableObject(
-                    id=msg.id_at_location,
+                    id=msg.id_at_location,  # type: ignore
                     data=result,
                     read_permissions=store_object_self.read_permissions,
                 )

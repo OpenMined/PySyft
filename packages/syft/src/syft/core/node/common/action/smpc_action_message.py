@@ -229,7 +229,7 @@ def smpc_basic_op(
 
 
 # Purposefully raise a custom error to retry the task in celery worker.
-class BeaverError(Exception):
+class ObjectNotInStore(Exception):
     pass
 
 
@@ -252,11 +252,9 @@ def spdz_multiply(
     print("Delta Store", delta)
     print("NR parties", nr_parties)
     if eps is None or len(eps.data) != nr_parties:
-        print(len(eps.data))
-        raise BeaverError
+        raise ObjectNotInStore
     if delta is None or len(delta.data) != nr_parties:
-        print(len(eps.data))
-        raise BeaverError
+        raise ObjectNotInStore
     print("Beaver Error surpassed*******************************")
 
     a_share, b_share, c_share = crypto_store.get_primitives_from_store(
@@ -410,7 +408,7 @@ def smpc_gt(
 
     result_id = UID(UUID(bytes=generator.bytes(16)))
     sub_result = UID(UUID(bytes=generator.bytes(16)))
-
+    """
     # There are 2 shares because:
     ## one share is the one from our secret
     ## the second one is the share from the remote secret
@@ -420,12 +418,12 @@ def smpc_gt(
     # 32 values share 2 +
     # 1 carry           +
     # ====================
-    # 65 ids
+    # 65 ids"""
     bit_decomposition_id_shares = [
         UID(UUID(bytes=generator.bytes(16))) for _ in range(65)
     ]
 
-    x = node.store[self_id].data
+    x = node.store[self_id].data  # noqa
     y = node.store[other_id].data
     print("NR PARTIES", nr_parties)
 
@@ -499,7 +497,7 @@ def smpc_gt(
         )
 
         # p1 = a[i] * b[i]
-        seed_id_tmp = generator.integers(low=0, high=2**32)
+        seed_id_tmp = generator.integers(low=0, high=2 ** 32)
         generator_tmp = np.random.default_rng(seed_id_tmp)
         mul_tmp_id_1 = UID(UUID(bytes=generator_tmp.bytes(16)))
         print("MUL ID1", mul_tmp_id_1)
@@ -515,11 +513,15 @@ def smpc_gt(
         )
 
         # p2 = c[i] * (a[i] + b[i])
-        seed_id_tmp = generator.integers(low=0, high=2**32)
+        seed_id_tmp = generator.integers(low=0, high=2 ** 32)
         generator_tmp = np.random.default_rng(seed_id_tmp)
         mul_tmp_id_2 = UID(UUID(bytes=generator_tmp.bytes(16)))
         print("MUL ID2", mul_tmp_id_2)
-        actions.extend(smpc_mul(nr_parties, carry_id, add_intermediary_res, seed_id_tmp, node, client))
+        actions.extend(
+            smpc_mul(
+                nr_parties, carry_id, add_intermediary_res, seed_id_tmp, node, client
+            )
+        )
 
         # s3 = p1 + p2
         # c[i+1] = p1+p2
@@ -575,7 +577,7 @@ def bit_decomposition(share: ShareTensor) -> None:  # type: ignore
 
         else:
             # just generate a random number for PRZS
-            value = [None] * 32
+            value = [None] * 32  # type: ignore
 
         shares.extend(
             [
@@ -603,7 +605,7 @@ def bit_decomposition(share: ShareTensor) -> None:  # type: ignore
         )
     )
 
-    return shares
+    return shares  # type: ignore
 
 
 # Given an SMPC Action map it to an action constructor
