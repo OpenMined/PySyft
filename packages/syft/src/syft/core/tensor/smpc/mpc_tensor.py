@@ -278,6 +278,7 @@ class MPCTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         seed_przs: int,
         parties_info: List[Party],
+        ring_size: int = 2 ** 32,
     ) -> List[ShareTensor]:
         shares = []
         nr_parties = len(parties_info)
@@ -294,6 +295,7 @@ class MPCTensor(PassthroughTensor):
                 shape=shape,
                 seed_przs=seed_przs,
                 init_clients=False,
+                ring_size=ring_size,
             )
 
             shares.append(local_share)

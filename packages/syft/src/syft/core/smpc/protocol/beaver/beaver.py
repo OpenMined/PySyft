@@ -8,7 +8,6 @@ Computer Science, pages 420–432. Springer, 1991.
 
 # stdlib
 from copy import deepcopy
-import operator
 import secrets
 from typing import Any
 from typing import Dict
@@ -21,6 +20,7 @@ import numpy as np
 # relative
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
+from ....tensor.smpc.utils import RING_SIZE_TO_TYPE
 from ...store import register_primitive_generator
 from ...store import register_primitive_store_add
 from ...store import register_primitive_store_get
@@ -63,13 +63,15 @@ def _get_triples(
     # relative
     from ..... import Tensor
 
-    cmd = getattr(operator, op_str)
+    numpy_type = RING_SIZE_TO_TYPE[ring_size]
+    cmd = ShareTensor.get_op(ring_size, op_str)
+
     min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
     seed_przs = secrets.randbits(32)
 
     a_rand = Tensor(
         ttp_generator.integers(
-            low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=np.int32
+            low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=numpy_type
         )
     )
 
@@ -83,7 +85,7 @@ def _get_triples(
     seed_przs = secrets.randbits(32)
     b_rand = Tensor(
         ttp_generator.integers(
-            low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=np.int32
+            low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=numpy_type
         )
     )
     print("b_rand", b_rand)
@@ -96,6 +98,7 @@ def _get_triples(
     )
     seed_przs = secrets.randbits(32)
     c_val = cmd(a_rand, b_rand)
+    print("c_val", c_val)
     c_shares = MPCTensor._get_shares_from_local_secret(
         secret=deepcopy(c_val),
         parties_info=parties_info,  # type: ignore
@@ -126,6 +129,9 @@ def _get_triples(
     triple = list(
         map(list, zip(*map(lambda x: map(list, zip(*x)), triple_sequential)))  # type: ignore
     )
+
+    print("Triple", triple)
+
     return triple  # type: ignore
 
 

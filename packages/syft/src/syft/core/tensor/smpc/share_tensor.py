@@ -30,6 +30,7 @@ from ...common.serde.serialize import _serialize as serialize
 from ...smpc.store.crypto_store import CryptoStore
 from ..passthrough import PassthroughTensor  # type: ignore
 from .party import Party
+from .utils import RING_SIZE_TO_TYPE
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -46,11 +47,7 @@ METHODS_FORWARD_ALL_SHARES = {
     "swapaxes",
 }
 INPLACE_OPS = {"resize", "put"}
-
-RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
-    2 ** 32: np.int32,
-    2: np.int8,  # Special case: need to do reconstruct and share with XOR
-}
+BINARY_MAP = {"add": "xor", "sub": "xor", "mul": "and_"}
 
 CACHE_CLIENTS: Dict[Party, Any] = {}
 
@@ -151,9 +148,33 @@ class ShareTensor(PassthroughTensor):
     @staticmethod
     @lru_cache(32)
     def compute_min_max_from_ring(ring_size: int = 2 ** 32) -> Tuple[int, int]:
-        min_value = (-ring_size) // 2
-        max_value = (ring_size - 1) // 2
+        if ring_size == 2:
+            min_value, max_value = 0, 1
+        else:
+            min_value = (-ring_size) // 2
+            max_value = (ring_size) // 2 - 1
         return min_value, max_value
+
+    @staticmethod
+    def get_op(ring_size: int, op_str: str) -> Callable[..., Any]:
+        """Returns method attribute based on ring_size and op_str.
+        Args:
+            ring_size (int): Ring size
+            op_str (str): Operation string.
+        Returns:
+            op (Callable[...,Any]): The operation method for the op_str.
+        Raises:
+            ValueError : If invalid ring size is given as input.
+        """
+        op = None
+        if ring_size == 2:
+            op = getattr(operator, BINARY_MAP[op_str])
+        elif ring_size in RING_SIZE_TO_TYPE:
+            op = getattr(operator, op_str)
+        else:
+            raise ValueError(f"Invalid ring size: {ring_size}")
+
+        return op
 
     """ TODO: Remove this -- we would use generate_przs since the scenario we are testing is that
     the secret is remotly
@@ -210,10 +231,9 @@ class ShareTensor(PassthroughTensor):
     ) -> "ShareTensor":
 
         nr_parties = len(parties_info)
-        # TODO: We still need to use int32 since we get an error in the tensor.py
-        # numpy_type = RING_SIZE_TO_TYPE.get(ring_size, None)
-        # if numpy_type is None:
-        #    raise ValueError(f"Ring size {ring_size} not known how to be treated")
+        numpy_type = RING_SIZE_TO_TYPE.get(ring_size, None)
+        if numpy_type is None:
+            raise ValueError(f"Ring size {ring_size} not known how to be treated")
 
         # relative
         from ..tensor import Tensor
@@ -222,7 +242,7 @@ class ShareTensor(PassthroughTensor):
             raise ValueError("Only seed_przs or generator should be populated")
 
         if value is None:
-            value = Tensor(np.zeros(shape, dtype=np.int32))
+            value = Tensor(np.zeros(shape, dtype=numpy_type))
 
         # TODO: Sending the seed and having each party generate the shares is not safe
         # Since the parties would know some of the other parties shares (this might not impose a risk
@@ -248,12 +268,16 @@ class ShareTensor(PassthroughTensor):
         share.generator_przs = generator_shares
         shares = [
             generator_shares.integers(
-                low=share.min_value, high=share.max_value, size=shape
+                low=share.min_value,
+                high=share.max_value,
+                size=shape,
+                endpoint=True,
+                dtype=numpy_type,
             )
             for _ in range(nr_parties)
         ]
-
-        share.child += shares[rank] - shares[(rank + 1) % nr_parties]
+        op = ShareTensor.get_op(ring_size, "sub")
+        share.child += op(shares[rank], shares[(rank + 1) % nr_parties])
 
         return share
 
