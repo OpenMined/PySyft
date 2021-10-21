@@ -142,7 +142,12 @@ def recv_association_request_msg(
         node.association_requests.set(domain_id, msg.response)  # type: ignore
         print("what metadata", msg.metadata)
         # get or create a new node that represents the network
-        # node = NodeManager.create_or_get_node(node_id=msg.metadata["node_id"], node_name=msg.metadata["node_name"])
+        node = NodeManager.create_or_get_node(
+            node_id=msg.metadata["node_id"], node_name=msg.metadata["node_name"]
+        )
+        route = NodeRouteManager.update_route_for_node(
+            node=node, host_or_ip=msg.metadata["host_or_ip"], is_vpn=True
+        )
 
     return SuccessResponseMessage(
         address=msg.reply_to,
