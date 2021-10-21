@@ -14,6 +14,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import numpy as np
 import numpy.typing as npt
+import torch
 
 # relative
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
@@ -1387,6 +1388,80 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             min_vals=min_vals,
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
+        )
+
+    def max(
+        self,
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: Optional[int] = None,
+        where: bool = True,
+    ) -> SingleEntityPhiTensor:
+        # Note: Who knew this method had SO MANY ARGUMENTS?!?!?
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.max(axis, out, keepdims, initial, where)
+            else:
+                # This implies self.child is a singleton (int, float, bool, etc)
+                data = self.child
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().max(axis, out, keepdims, initial, where)
+        else:
+            raise NotImplementedError
+
+        if isinstance(self.min_vals, np.ndarray):
+            min_vals = self.min_vals.max(axis, out, keepdims, initial, where)
+        else:
+            min_vals = self.min_vals
+
+        if isinstance(self.max_vals, np.ndarray):
+            max_vals = self.max_vals.max(axis, out, keepdims, initial, where)
+        else:
+            max_vals = self.max_vals
+
+        return SingleEntityPhiTensor(
+            child=data,
+            max_vals=max_vals,
+            min_vals=min_vals,
+            entity=self.entity,
+        )
+
+    def min(
+        self,
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: Optional[int] = None,
+        where: bool = True,
+    ) -> SingleEntityPhiTensor:
+        # Note: Who knew this method had SO MANY ARGUMENTS?!?!?
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.min(axis, out, keepdims, initial, where)
+            else:
+                # This implies self.child is a singleton (int, float, bool, etc)
+                data = self.child
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().min(axis, out, keepdims, initial, where)
+        else:
+            raise NotImplementedError
+
+        if isinstance(self.min_vals, np.ndarray):
+            min_vals = self.min_vals.min(axis, out, keepdims, initial, where)
+        else:
+            min_vals = self.min_vals
+
+        if isinstance(self.max_vals, np.ndarray):
+            max_vals = self.max_vals.min(axis, out, keepdims, initial, where)
+        else:
+            max_vals = self.max_vals
+
+        return SingleEntityPhiTensor(
+            child=data,
+            max_vals=max_vals,
+            min_vals=min_vals,
+            entity=self.entity,
         )
 
     def round(self, decimals: int = 0) -> SingleEntityPhiTensor:
