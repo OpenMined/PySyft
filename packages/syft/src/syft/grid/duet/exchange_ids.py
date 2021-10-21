@@ -11,7 +11,7 @@ from typing import Tuple as TypeTuple
 from ...logger import debug
 from ...logger import info
 from ...logger import traceback_and_raise
-from .bcolors import bcolors
+from .bcolors import BColors
 
 
 class DuetCredentialExchanger:
@@ -42,31 +42,31 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
     def _server_exchange(self, credential: str) -> str:
         # send Server ID
         info(
-            "♫♫♫ > Duet Server ID: " + bcolors.BOLD + credential + bcolors.ENDC,
+            "♫♫♫ > Duet Server ID: " + BColors.BOLD + credential + BColors.ENDC,
             print=True,
         )
 
         info(print=True)
         info(
             "♫♫♫ > "
-            + bcolors.HEADER
+            + BColors.HEADER
             + "STEP 1:"
-            + bcolors.ENDC
+            + BColors.ENDC
             + " Send the following code to your Duet Partner!",
             print=True,
         )
         info("\nimport syft as sy", print=True)
         info(
-            'duet = sy.duet("' + bcolors.BOLD + credential + bcolors.ENDC + '")',
+            'duet = sy.duet("' + BColors.BOLD + credential + BColors.ENDC + '")',
             print=True,
         )
 
         # get Client ID
         info(
             "\n♫♫♫ > "
-            + bcolors.HEADER
+            + BColors.HEADER
             + "STEP 2:"
-            + bcolors.ENDC
+            + BColors.ENDC
             + " Ask your partner for their Client ID and enter it below!",
             print=True,
         )
@@ -84,14 +84,14 @@ class OpenGridTokenManualInputExchanger(DuetCredentialExchanger):
         info(print=True)
         info(
             "♫♫♫ > "
-            + bcolors.HEADER
+            + BColors.HEADER
             + "STEP 1:"
-            + bcolors.ENDC
+            + BColors.ENDC
             + " Send the following Duet Client ID to your duet partner!",
             print=True,
         )
         info(
-            "♫♫♫ > Duet Client ID: " + bcolors.BOLD + credential + bcolors.ENDC,
+            "♫♫♫ > Duet Client ID: " + BColors.BOLD + credential + BColors.ENDC,
             print=True,
         )
         info(print=True)
@@ -128,9 +128,9 @@ class OpenGridTokenFileExchanger(DuetCredentialExchanger):
         info(print=True)
         info(
             "♫♫♫ > "
-            + bcolors.HEADER
+            + BColors.HEADER
             + "STEP 1:"
-            + bcolors.ENDC
+            + BColors.ENDC
             + " Send the following code to your Duet Partner!",
             print=True,
         )

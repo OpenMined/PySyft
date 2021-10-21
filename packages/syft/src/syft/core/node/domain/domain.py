@@ -71,6 +71,9 @@ from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
+from ..common.node_service.vpn.vpn_service import VPNConnectService
+from ..common.node_service.vpn.vpn_service import VPNJoinService
+from ..common.node_service.vpn.vpn_service import VPNStatusService
 from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
@@ -140,6 +143,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
         self.immediate_services_with_reply.append(PingService)
+        self.immediate_services_with_reply.append(VPNConnectService)
+        self.immediate_services_with_reply.append(VPNJoinService)
+        self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)
@@ -409,6 +415,20 @@ class Domain(Node):
                         continue
                 alive_handlers.append(handler)
         self.request_handlers = alive_handlers
+
+    def clear(self, user_role: int) -> bool:
+        # Cleanup database tables
+        if user_role == self.roles.owner_role.id:
+            self.store.clear()
+            self.data_requests.clear()
+            self.users.clear()
+            self.environments.clear()
+            self.association_requests.clear()
+            self.datasets.clear()
+            self.initial_setup()
+            return True
+
+        return False
 
     def clean_up_requests(self) -> None:
         # this allows a request to be re-handled if the handler somehow failed

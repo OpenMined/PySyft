@@ -1,4 +1,7 @@
 # stdlib
+from datetime import datetime
+from json import dumps
+from json import loads
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -10,7 +13,6 @@ from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
 # relative
-from ......logger import traceback_and_raise
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithReply
 from .....io.location import SpecificLocation
@@ -25,6 +27,8 @@ from ..success_resp_message import SuccessResponseMessage
 from .node_setup_messages import CreateInitialSetUpMessage
 from .node_setup_messages import GetSetUpMessage
 from .node_setup_messages import GetSetUpResponse
+from .node_setup_messages import UpdateSetupMessage
+from .node_setup_messages import UpdateSetupResponse
 
 
 def set_node_uid(node: DomainInterface) -> None:
@@ -89,7 +93,11 @@ def create_initial_setup(
     # 5 - Save Node SetUp Configs
     try:
         node_id = node.target_id.id
-        node.setup.register(domain_name=msg.domain_name, node_id=node_id.no_dash)
+        node.setup.register(
+            domain_name=msg.domain_name,
+            node_id=node_id.no_dash,
+            deployed_on=datetime.now(),
+        )
     except Exception as e:
         print("Failed to save setup to database", e)
 
@@ -103,27 +111,35 @@ def get_setup(
     msg: GetSetUpMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetSetUpResponse:
 
-    _current_user_id = msg.content.get("current_user", None)
-
-    users = node.users
-
-    if not _current_user_id:
-        try:
-            _current_user_id = users.first(
-                verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
-            ).id
-        except Exception as e:
-            traceback_and_raise(e)
-
-    if users.role(verify_key=verify_key).name != "Owner":
-        raise AuthorizationError("You're not allowed to get setup configs!")
-    else:
-        _setup = model_to_json(node.setup.first(domain_name=node.name))
-
+    _setup = model_to_json(node.setup.first(domain_name=node.name))
+    _setup["tags"] = loads(_setup["tags"])
     return GetSetUpResponse(
         address=msg.reply_to,
-        status_code=200,
         content=_setup,
+    )
+
+
+def update_settings(
+    msg: UpdateSetupMessage, node: DomainInterface, verify_key: VerifyKey
+) -> UpdateSetupResponse:
+    if node.users.role(verify_key=verify_key).id == node.roles.owner_role.id:
+        if msg.domain_name:
+            node.name = msg.domain_name
+
+        node.setup.update(
+            domain_name=node.name,
+            description=msg.description,
+            daa=msg.daa,
+            contact=msg.contact,
+            daa_document=msg.daa_document,
+            tags=dumps(msg.tags),
+        )
+    else:
+        raise AuthorizationError("You're not allowed to get setup configs!")
+
+    return UpdateSetupResponse(
+        address=msg.reply_to,
+        content={"message": "Node settings have been updated successfully!"},
     )
 
 
@@ -132,6 +148,7 @@ class NodeSetupService(ImmediateNodeServiceWithReply):
     msg_handler_map: Dict[type, Callable] = {
         CreateInitialSetUpMessage: create_initial_setup,
         GetSetUpMessage: get_setup,
+        UpdateSetupMessage: update_settings,
     }
 
     @staticmethod
@@ -141,9 +158,10 @@ class NodeSetupService(ImmediateNodeServiceWithReply):
         msg: Union[
             CreateInitialSetUpMessage,
             GetSetUpMessage,
+            UpdateSetupMessage,
         ],
         verify_key: VerifyKey,
-    ) -> Union[SuccessResponseMessage, GetSetUpResponse]:
+    ) -> Union[SuccessResponseMessage, GetSetUpResponse, UpdateSetupMessage]:
         return NodeSetupService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
@@ -153,4 +171,5 @@ class NodeSetupService(ImmediateNodeServiceWithReply):
         return [
             CreateInitialSetUpMessage,
             GetSetUpMessage,
+            UpdateSetupMessage,
         ]

@@ -1312,7 +1312,23 @@ def test_max_args(
     assert (output.min_vals == lower_bound.max(initial=-highest)).all()
     assert (output.max_vals == upper_bound.max(initial=-highest)).all()
 
-    
+
+def test_round(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    reference_tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+    output = reference_tensor.round(decimals=0)
+    target = reference_data.astype(dtype=np.int32)
+    assert (output.child == target).all()
+    assert (output.min_vals == lower_bound.astype(dtype=np.int32)).all()
+    assert (output.max_vals == upper_bound.astype(dtype=np.int32)).all()
+
+
 def test_entities(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
