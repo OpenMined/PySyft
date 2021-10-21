@@ -115,8 +115,12 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     it = sy.login(email=unique_email, password="bazinga", port=9083)
     it.request_budget(eps=200, reason="increase budget!")
 
+    time.sleep(2)
+
     ca_root.requests[0].accept()
     it_root.requests[0].accept()
+
+    time.sleep(2)
 
     assert round(ca.privacy_budget) == 200
     assert round(it.privacy_budget) == 200
