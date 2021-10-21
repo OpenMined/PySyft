@@ -4,7 +4,6 @@ package syft.grid.messages;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
-import "proto/lib/python/list.proto";
 
 message CreateInitialSetUpMessage {
   syft.core.common.UID msg_id = 1;
