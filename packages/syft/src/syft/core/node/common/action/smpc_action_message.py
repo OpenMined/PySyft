@@ -404,7 +404,7 @@ def smpc_gt(
     result_id = UID(UUID(bytes=generator.bytes(16)))
     sub_result = UID(UUID(bytes=generator.bytes(16)))
 
-    x = node.store[self_id].data
+    x = node.store[self_id].data  # noqa
     y = node.store[other_id].data
 
     if not isinstance(y, ShareTensor):
@@ -460,7 +460,7 @@ def bit_decomposition(share: ShareTensor) -> None:  # type: ignore
 
         else:
             # just generate a random number for PRZS
-            value = [None] * 32
+            value = [None] * 32  # type: ignore
 
         shares = [
             ShareTensor.generate_przs(
@@ -475,7 +475,7 @@ def bit_decomposition(share: ShareTensor) -> None:  # type: ignore
         ]
 
     print("Those are the shares", shares)
-    return shares
+    return shares  # type: ignore
 
 
 # Given an SMPC Action map it to an action constructor

@@ -724,6 +724,6 @@ def mul(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
     return y.mul(x)
 
 
-@implements(MPCTensor, np.greater)
-def mul(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
-    return y.gt(x)
+# @implements(MPCTensor, np.greater)
+# def mul(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
+#     return y.gt(x)

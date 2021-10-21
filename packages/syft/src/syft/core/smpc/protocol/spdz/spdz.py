@@ -71,7 +71,7 @@ def mul_master(
         },
         p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
     )
-
+    print(primitives)
     # TODO: Should modify to parallel execution.
 
     res_shares = [
