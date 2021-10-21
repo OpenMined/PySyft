@@ -150,9 +150,9 @@ class MPCTensor(PassthroughTensor):
                         url=url,
                         port=port,
                     )
-                except Exception as e:  # noqa
+                except Exception as e:
                     # TODO : should modify to return same client if registered.
-                    print("Proxy Client already User Register")
+                    print("Proxy Client already User Register", e)
             parties_info.append(party_info)
 
         return parties_info
