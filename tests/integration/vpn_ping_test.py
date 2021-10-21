@@ -1,5 +1,4 @@
 # stdlib
-import os
 from typing import Any
 from typing import Dict
 import uuid
@@ -10,8 +9,6 @@ import requests
 
 # syft absolute
 import syft as sy
-
-here = os.path.dirname(__file__)
 
 NETWORK_PORT = 9081
 DOMAIN1_PORT = 9082

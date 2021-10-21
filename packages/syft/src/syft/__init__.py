@@ -74,7 +74,7 @@ from .grid.client.client import login  # noqa: F401
 from .grid.client.client import register  # noqa: F401
 
 # Convenience Functions
-from .grid.duet import bcolors  # noqa: F401
+from .grid.duet import BColors  # noqa: F401
 from .grid.duet import duet  # noqa: F401
 from .grid.duet import join_duet  # noqa: F401
 from .grid.duet import launch_duet  # noqa: F401

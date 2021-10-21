@@ -4,7 +4,6 @@ import sys
 import time
 from typing import Any
 from typing import Dict
-from typing import Dict as TypeDict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -38,6 +37,7 @@ from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
+from ..common.client_manager.vpn_api import VPNAPI
 from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import (
     GetRemainingBudgetMessage,
 )
@@ -314,6 +314,7 @@ class DomainClient(Client):
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
+        self.vpn = VPNAPI(client=self)
 
     @property
     def privacy_budget(self) -> float:
@@ -501,13 +502,19 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
+    def join_network(self, host_or_ip: str) -> None:
+        return self.vpn.join_network(host_or_ip=host_or_ip)
+
+    def vpn_status(self) -> Dict[str, Any]:
+        return self.vpn.get_status()
+
     def load_dataset(
         self,
         assets: Optional[dict] = None,
         name: Optional[str] = None,
         description: Optional[str] = None,
         skip_checks: bool = False,
-        **metadata: TypeDict,
+        **metadata: Dict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
         if assets is None or not isinstance(assets, dict):
