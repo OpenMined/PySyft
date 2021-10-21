@@ -263,6 +263,7 @@ class ShareTensor(PassthroughTensor):
             parties_info=parties_info,
             seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
             init_clients=init_clients,
+            ring_size=ring_size,
         )
 
         share.generator_przs = generator_shares
