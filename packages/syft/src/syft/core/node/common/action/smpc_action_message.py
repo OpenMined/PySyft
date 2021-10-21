@@ -390,6 +390,7 @@ def smpc_mul(
     return actions
 
 
+'''
 def smpc_gt(
     nr_parties: int,
     self_id: UID,
@@ -437,10 +438,12 @@ def smpc_gt(
         )
     )
     return actions
+'''
 
 
-def bit_decomposition(share: ShareTensor) -> None:  # type: ignore
-    # TODO: Probably better it would be to use the PRZS from the ShareTensor
+def local_bit_decomposition(share: ShareTensor) -> ShareTensor:
+    # TODO: George or Rasswanth check if we can use directly the generator from shareTensor
+    # Having this value here is not ok
     seed_przs = 42
     generator = np.random.default_rng(seed_przs)
 
@@ -478,6 +481,31 @@ def bit_decomposition(share: ShareTensor) -> None:  # type: ignore
     return shares  # type: ignore
 
 
+
+def bit_decomposition(
+    nr_parties: int,
+    self_id: UID,
+    seed_id_locations: int,
+    node: Any,
+    client: Any,
+) -> List[SMPCActionMessage]:
+    generator = np.random.default_rng(seed_id_locations)
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+
+    actions = []
+
+    actions.append(
+        SMPCActionMessage(
+            "local_decomposition",
+            self_id=self_id,
+            args_id=[],
+            kwargs_id={},
+            ranks_to_run_action=list(range(nr_parties)),
+            result_id=result_id,
+            address=client.address,
+        )
+    )
+
 # Given an SMPC Action map it to an action constructor
 MAP_FUNC_TO_ACTION: Dict[
     str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
@@ -485,7 +513,7 @@ MAP_FUNC_TO_ACTION: Dict[
     "__add__": functools.partial(smpc_basic_op, "add"),
     "__sub__": functools.partial(smpc_basic_op, "sub"),
     "__mul__": smpc_mul,  # type: ignore
-    "__gt__": smpc_gt,  # type: ignore
+    # "__gt__": smpc_gt,  # type: ignore TODO: this should be added back when we have only one action
 }
 
 

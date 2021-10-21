@@ -243,6 +243,11 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
         (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.decomposition",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+
+        (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.put",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
