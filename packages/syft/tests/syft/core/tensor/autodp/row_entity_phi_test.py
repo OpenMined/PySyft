@@ -556,14 +556,16 @@ def test_squeeze(row_data_ishan: List, ishan: Entity) -> None:
     assert output.child[0] == target, "Squeeze did not work as expected"
 
 
-def test_swapaxes(row_data_ishan: List, ishan: Entity) -> None:
+def test_swapaxes(row_data_ishan: List, ishan: Entity, highest: int, dims: int) -> None:
     """Test to see if Swapaxes works for the ideal case"""
-    data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
+    data = np.random.randint(
+        low=-highest, high=highest, size=(dims, dims), dtype=np.int32
+    )
     sept = SEPT(
         child=data,
         entity=ishan,
-        min_vals=np.ones_like(data) * -100,
-        max_vals=np.ones_like(data) * 100,
+        min_vals=np.ones_like(data) * -highest,
+        max_vals=np.ones_like(data) * highest,
     )
     reference_tensor = REPT(rows=[sept])
 
@@ -634,7 +636,7 @@ def test_mul_sept(
     if not is_broadcastable(sept.shape, rept.shape[1:]):
         print(sept.shape, rept.shape)
         with pytest.raises(Exception):
-            output = rept * sept
+            rept * sept
     else:
         print(sept.shape, rept.shape)
         output = rept * sept
@@ -657,7 +659,7 @@ def test_neg(row_data_ishan: List) -> None:
 @pytest.mark.skip(
     reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
 )
-def test_and(row_count: int, ishan: Entity) -> None:
+def test_and(row_count: int, ishan: Entity, dims: int) -> None:
     new_list = list()
     for _ in range(row_count):
         data = np.random.randint(2, size=(dims, dims))
@@ -694,6 +696,12 @@ def test_or(row_count: int, ishan: Entity) -> None:
     output = reference_tensor | False
     for index, tensor in enumerate(reference_tensor.child):
         assert (tensor | False) == output[index]
+
+
+def test_round(row_data_ishan: List) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    for target, output in zip(row_data_ishan, reference_tensor.round(decimals=0).child):
+        assert (target.child.astype(np.int32) == output.child).all()
 
 
 def test_entities(row_data_ishan: list, ishan: Entity, traskmaster: Entity) -> None:
