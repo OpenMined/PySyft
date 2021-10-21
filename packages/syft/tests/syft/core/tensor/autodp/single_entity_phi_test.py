@@ -953,7 +953,7 @@ def test_ravel(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     ishan: Entity,
-    highest,
+    highest: int,
 ) -> None:
     """Test that self.child can be ravelled for appropriate data types"""
     reference_tensor = SEPT(
@@ -974,7 +974,7 @@ def test_ravel(
     ).child.all(), "Ravelling changed the order of entries"
 
 
-def test_squeeze(highest) -> None:
+def test_squeeze(highest: int, ishan: Entity) -> None:
     """Test that squeeze works on an ideal case"""
     _data = np.random.randint(
         low=-highest, high=highest, size=(10, 1, 10, 1, 10), dtype=np.int32
@@ -1209,6 +1209,108 @@ def test_or(reference_binary_data: np.ndarray, ishan: Entity) -> None:
     output = reference_tensor | False
     target = reference_binary_data | False
     assert (output.child == target).all()
+
+
+def test_min(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test min(), without any arguments"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+    output = tensor.min()
+    target = reference_data.min()
+    assert output.child == target
+    assert output.min_vals == lower_bound.min()
+    assert output.max_vals == upper_bound.min()
+
+
+def test_min_args(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    highest: int,
+) -> None:
+    """Test the hundred different args that exist for min()"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+
+    # Test axis
+    output = tensor.min(axis=1)
+    target = reference_data.min(axis=1)
+    assert (output.child == target).all()
+    assert (output.min_vals == lower_bound.min(axis=1)).all()
+    assert (output.max_vals == upper_bound.min(axis=1)).all()
+
+    # Test keepdims
+    output = tensor.min(keepdims=True)
+    target = reference_data.min(keepdims=True)
+    assert (output.child == target).all()
+    assert (output.min_vals == lower_bound.min(keepdims=True)).all()
+    assert (output.max_vals == upper_bound.min(keepdims=True)).all()
+
+    # Test initial
+    output = tensor.min(initial=-highest)
+    target = reference_data.min(initial=-highest)
+    assert (output.child == target).all()
+    assert (output.min_vals == lower_bound.min(initial=-highest)).all()
+    assert (output.max_vals == upper_bound.min(initial=-highest)).all()
+
+
+def test_max(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test min"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+    output = tensor.max()
+    target = reference_data.max()
+    assert output.child == target
+    assert output.min_vals == lower_bound.max()
+    assert output.max_vals == upper_bound.max()
+
+
+def test_max_args(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    highest: int,
+) -> None:
+    """Test the hundred different args that exist for min()"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+
+    # Test axis
+    output = tensor.max(axis=1)
+    target = reference_data.max(axis=1)
+    assert (output.child == target).all()
+    assert (output.min_vals == lower_bound.max(axis=1)).all()
+    assert (output.max_vals == upper_bound.max(axis=1)).all()
+
+    # Test keepdims
+    output = tensor.max(keepdims=True)
+    target = reference_data.max(keepdims=True)
+    assert (output.child == target).all()
+    assert (output.min_vals == lower_bound.max(keepdims=True)).all()
+    assert (output.max_vals == upper_bound.max(keepdims=True)).all()
+
+    # Test initial
+    output = tensor.max(initial=-highest)
+    target = reference_data.max(initial=-highest)
+    assert (output.child == target).all()
+    assert (output.min_vals == lower_bound.max(initial=-highest)).all()
+    assert (output.max_vals == upper_bound.max(initial=-highest)).all()
 
 
 def test_round(

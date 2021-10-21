@@ -492,7 +492,7 @@ def test_partition(ishan: Entity) -> None:
 @pytest.mark.skipif(
     dims == 1, reason="Not enough dimensions to do the compress operation"
 )
-def test_compress(row_data_ishan: List, ishan) -> None:
+def test_compress(row_data_ishan: List, ishan: Entity) -> None:
     """Test to see if Compress works for the ideal case"""
     reference_tensor = REPT(rows=row_data_ishan)
 
@@ -554,14 +554,16 @@ def test_squeeze(row_data_ishan: List, ishan: Entity) -> None:
     assert output.child[0] == target, "Squeeze did not work as expected"
 
 
-def test_swapaxes(row_data_ishan: List, ishan: Entity) -> None:
+def test_swapaxes(row_data_ishan: List, ishan: Entity, highest: int, dims: int) -> None:
     """Test to see if Swapaxes works for the ideal case"""
-    data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
+    data = np.random.randint(
+        low=-highest, high=highest, size=(dims, dims), dtype=np.int32
+    )
     sept = SEPT(
         child=data,
         entity=ishan,
-        min_vals=np.ones_like(data) * -100,
-        max_vals=np.ones_like(data) * 100,
+        min_vals=np.ones_like(data) * -highest,
+        max_vals=np.ones_like(data) * highest,
     )
     reference_tensor = REPT(rows=[sept])
 
@@ -632,7 +634,7 @@ def test_mul_sept(
     if not is_broadcastable(sept.shape, rept.shape[1:]):
         print(sept.shape, rept.shape)
         with pytest.raises(Exception):
-            output = rept * sept
+            rept * sept
     else:
         print(sept.shape, rept.shape)
         output = rept * sept
@@ -655,7 +657,7 @@ def test_neg(row_data_ishan: List) -> None:
 @pytest.mark.skip(
     reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
 )
-def test_and(row_count: int, ishan: Entity) -> None:
+def test_and(row_count: int, ishan: Entity, dims: int) -> None:
     new_list = list()
     for _ in range(row_count):
         data = np.random.randint(2, size=(dims, dims))
