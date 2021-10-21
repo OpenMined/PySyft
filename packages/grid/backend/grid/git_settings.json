@@ -1,0 +1,5 @@
+{
+  "branch": "dev",
+  "hash": "some_hash",
+  "repository": "https://github.com/openmined/pysyft"
+}
