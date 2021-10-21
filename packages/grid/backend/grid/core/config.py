@@ -99,7 +99,7 @@ class Settings(BaseSettings):
 
     OPEN_REGISTRATION: bool = True
 
-    GIT_SETTINGS_FILE: str = './grid/git_settings.json' 
+    GIT_SETTINGS_FILE: str = "./grid/git_settings.json"
 
     class Config:
         case_sensitive = True
