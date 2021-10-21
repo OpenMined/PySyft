@@ -60,7 +60,6 @@ class RequestManager(DatabaseManager):
         else:
             return {}
 
-
     def get_req_info(self, request_id: int) -> Dict:
         request: Optional[Request] = super().first(id=request_id)
         if request:
@@ -81,7 +80,6 @@ class RequestManager(DatabaseManager):
             }
         else:
             return {}
-
 
     def clear(self) -> None:
         local_session = sessionmaker(bind=self.db)()

@@ -22,7 +22,7 @@ class TestUsersRoutes:
         self, app: FastAPI, client: AsyncClient
     ) -> None:
         user = create_user()
-        user = dict(user) # type: ignore
+        user = dict(user)  # type: ignore
         user["daa_pdf"] = ""  # type: ignore
         res = await client.post(app.url_path_for("users:create"), json=user)
         assert "Authorization" not in res.request.headers.keys()

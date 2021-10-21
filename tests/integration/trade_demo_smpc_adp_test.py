@@ -73,7 +73,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # create user
     ca_root.users.create(**get_user_details(unique_email=unique_email))
-    
+
     # Italy
     it_root = sy.login(email="info@openmined.org", password="changethis", port=9083)
     it_data = load_data(csv_file="it - feb 2021.csv")
@@ -111,9 +111,9 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Data Scientist
     ca = sy.login(email=unique_email, password="bazinga", port=9082)
-    ca.request_budget(eps=200, reason='increase budget!')
+    ca.request_budget(eps=200, reason="increase budget!")
     it = sy.login(email=unique_email, password="bazinga", port=9083)
-    it.request_budget(eps=200, reason='increase budget!')
+    it.request_budget(eps=200, reason="increase budget!")
 
     ca_root.requests[0].accept()
     it_root.requests[0].accept()

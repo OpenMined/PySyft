@@ -1,11 +1,10 @@
 # stdlib
+import json
 from typing import Any
 from typing import Optional
-import json
 
 # third party
 from fastapi import APIRouter
-from fastapi import Body
 from fastapi import Depends
 from fastapi import File
 from fastapi import Form
@@ -47,14 +46,14 @@ def update_settings(
         pdf_file = b""
 
     dict_settings = json.loads(settings)
-    
+
     # Build Syft Message
     msg = UpdateSetupMessage(
         address=node.address,
-        contact=dict_settings.get('contact', ""),
-        domain_name=dict_settings.get('domain_name', ""),
-        description=dict_settings.get('description', ""),
-        daa=dict_settings.get('daa', False),
+        contact=dict_settings.get("contact", ""),
+        domain_name=dict_settings.get("domain_name", ""),
+        description=dict_settings.get("description", ""),
+        daa=dict_settings.get("daa", False),
         daa_document=pdf_file,
         reply_to=node.address,
     ).sign(signing_key=user_key)
