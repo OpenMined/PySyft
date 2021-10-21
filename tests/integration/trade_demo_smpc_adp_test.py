@@ -30,7 +30,6 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
         "name": "Sheldon Cooper",
         "email": unique_email,
         "password": "bazinga",
-        "budget": 200,
     }
 
 
@@ -112,7 +111,12 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Data Scientist
     ca = sy.login(email=unique_email, password="bazinga", port=9082)
+    ca.request_budget(eps=200, reason="increase budget!")
     it = sy.login(email=unique_email, password="bazinga", port=9083)
+    it.request_budget(eps=200, reason="increase budget!")
+
+    ca_root.requests[0].accept()
+    it_root.requests[0].accept()
 
     assert round(ca.privacy_budget) == 200
     assert round(it.privacy_budget) == 200

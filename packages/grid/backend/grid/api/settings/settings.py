@@ -1,11 +1,14 @@
 # stdlib
+import json
 from typing import Any
+from typing import Optional
 
 # third party
 from fastapi import APIRouter
-from fastapi import Body
 from fastapi import Depends
-from fastapi import Request
+from fastapi import File
+from fastapi import Form
+from fastapi import UploadFile
 from fastapi.responses import JSONResponse
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
@@ -14,8 +17,8 @@ from nacl.signing import SigningKey
 from syft.core.node.common.action.exception_action import ExceptionMessage
 
 # syft
-from syft.core.node.common.node_service.node_setup.node_setup_service import (
-    CreateInitialSetUpMessage,
+from syft.core.node.common.node_service.node_setup.node_setup_messages import (
+    UpdateSetupMessage,
 )
 from syft.core.node.common.node_service.node_setup.node_setup_service import (
     GetSetUpMessage,
@@ -23,30 +26,37 @@ from syft.core.node.common.node_service.node_setup.node_setup_service import (
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
+from grid.api.users.models import UserPrivate
 from grid.core.node import node
 
 router = APIRouter()
 
 
 @router.post("", status_code=200, response_class=JSONResponse)
-def create_setup(
-    name: str = Body(..., example="Jane Doe"),
-    email: str = Body(..., example="info@openmined.org"),
-    password: str = Body(..., example="changethis"),
-    domain_name: str = Body(..., example="OpenGrid"),
+def update_settings(
+    current_user: UserPrivate = Depends(get_current_user),
+    file: Optional[UploadFile] = File(...),
+    settings: str = Form(...),
 ) -> Any:
-    """
-    You must pass valid email,password and domain_name to setup the initial configs.
-    """
+    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
+
+    if file:
+        pdf_file = file.file.read()  # type: ignore
+    else:
+        pdf_file = b""
+
+    dict_settings = json.loads(settings)
+
     # Build Syft Message
-    msg = CreateInitialSetUpMessage(
+    msg = UpdateSetupMessage(
         address=node.address,
-        name=name,
-        email=email,
-        password=password,
-        domain_name=domain_name,
+        contact=dict_settings.get("contact", ""),
+        domain_name=dict_settings.get("domain_name", ""),
+        description=dict_settings.get("description", ""),
+        daa=dict_settings.get("daa", False),
+        daa_document=pdf_file,
         reply_to=node.address,
-    ).sign(signing_key=node.signing_key)
+    ).sign(signing_key=user_key)
 
     # Process syft message
     reply = node.recv_immediate_msg_with_reply(msg=msg).message
@@ -56,19 +66,15 @@ def create_setup(
     if isinstance(reply, ExceptionMessage):
         resp = {"error": reply.exception_msg}
     else:
-        resp = {"message": reply.resp_msg}
-
+        resp = {"message": reply.content}
     return resp
 
 
 @router.get("", status_code=200, response_class=JSONResponse)
-def get_setup(request: Request, current_user: Any = Depends(get_current_user)) -> Any:
-    user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
-
+def get_setup() -> Any:
     msg = GetSetUpMessage(address=node.address, reply_to=node.address).sign(
-        signing_key=user_key
+        signing_key=node.signing_key
     )
 
     reply = node.recv_immediate_msg_with_reply(msg=msg)
-
-    return {"message": reply.message.content}
+    return JSONResponse(reply.message.content)
