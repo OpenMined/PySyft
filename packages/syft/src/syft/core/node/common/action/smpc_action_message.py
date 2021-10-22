@@ -342,13 +342,17 @@ def smpc_mul(
     nr_parties: int,
     self_id: UID,
     other_id: UID,
-    seed_id_locations: int,
-    node: Any,
-    client: Any,
     a_shape_id: Optional[UID] = None,
     b_shape_id: Optional[UID] = None,
+    seed_id_locations: Optional[int] = None,
+    node: Optional[Any] = None,
+    client: Optional[Any] = None,
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
+    if seed_id_locations is None or node is None or client is None:
+        raise ValueError(
+            f"The values seed_id_locations{seed_id_locations}, Node:{node} , client:{client} should not be None"
+        )
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
     other = node.store[other_id].data
