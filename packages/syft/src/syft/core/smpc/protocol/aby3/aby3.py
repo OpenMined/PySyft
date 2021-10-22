@@ -4,28 +4,13 @@ ABY3 : A Mixed Protocol Framework for Machine Learning.
 https://eprint.iacr.org/2018/403.pdf
 """
 # stdlib
-# import itertools
+from functools import reduce
 from typing import Any
 from typing import List
 
 # relative
 from ....tensor.smpc.mpc_tensor import MPCTensor
-
-# from syft.core.tensor.smpc.mpc_tensor import ShareTensor
 from ....tensor.smpc.utils import get_nr_bits
-
-# from typing import Tuple
-# from typing import Union
-
-# import numpy as np
-
-
-# from syft.core.tensor.smpc.utils import RING_SIZE_TO_TYPE
-
-# from sympc.utils import parallel_execution
-
-# gen = csprng.create_random_device_generator()
-# NR_PARTIES = 3  # constant for aby3 protocols
 
 
 class ABY3:
@@ -101,7 +86,7 @@ class ABY3:
         Returns:
             result (List[MPCTensor]): Result of the operation.
 
-        TODO: Should modify ripple carry adder to parallel prefix adder,currently unused.
+        TODO: Should modify ripple carry adder to parallel prefix adder.
         """
         ring_size = 2 ** 32
         ring_bits = get_nr_bits(ring_size)
@@ -113,85 +98,41 @@ class ABY3:
             result.append(s)
         return result
 
-    # @staticmethod
-    # def bit_decomposition(x: MPCTensor, session: Session) -> List[MPCTensor]:
-    #     """Perform ABY3 bit decomposition for conversion of arithmetic share to binary share.
+    @staticmethod
+    def bit_decomposition(x: MPCTensor) -> List[MPCTensor]:
+        """Perform ABY3 bit decomposition for conversion of arithmetic share to binary share.
 
-    #     Args:
-    #         x (MPCTensor): Arithmetic shares of secret.
-    #         session (Session): session the share belongs to.
+        Args:
+            x (MPCTensor): Arithmetic shares of secret.
 
-    #     Returns:
-    #         bin_share (List[MPCTensor]): Returns binary shares of each bit of the secret.
+        Returns:
+            bin_share (List[MPCTensor]): Returns binary shares of each bit of the secret.
 
-    #     TODO : Should be modified to use parallel prefix adder when multiprocessing
-    #     functionality is integrated,currently unused.
-    #     """
-    #     x1: List[MPCTensor] = []  # bit shares of shares
-    #     x2: List[MPCTensor] = []
-    #     x3: List[MPCTensor] = []
+        TODO : Should be modified to use parallel prefix adder when multiprocessing
+        functionality is integrated
+        """
+        nr_parties = len(x.parties)
+        ring_size = 2 ** 32  # Should extract this info better
+        ring_bits = get_nr_bits(ring_size)
+        shape = x.shape
+        parties = x.parties
+        # List which contains the share of each share.
+        res_shares: List[List[MPCTensor]] = [[] for _ in range(nr_parties)]
 
-    #     args = [[share, "2", True] for share in x.share_ptrs]
+        decomposed_shares = [
+            share.bit_decomposition(share, 2, True) for share in x.child
+        ]
 
-    #     decomposed_shares = parallel_execution(
-    #         ABY3.local_decomposition, session.parties
-    #     )(args)
+        for idx in range(ring_bits):
+            bit_shares = list(map(lambda x: x.get_tensor_list(idx), decomposed_shares))
+            bit_shares = list(
+                map(lambda x: [x[i] for i in range(nr_parties)], bit_shares)
+            )
+            bit_shares = zip(bit_shares)  # type: ignore
+            for i, bit_sh in enumerate(bit_shares):
+                mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
+                res_shares[i].append(mpc)
 
-    #     # Initially we have have List[p1,p2,p3] where p1,p2,p3 are list returned from parties.
-    #     # Each of p1,p2,p3 is List[ [x1,x2,x3] ,...] in bit length of the session ring size.
-    #     # Each element of the list is a share of the shares for each bit.
-    #     x_sh = itertools.starmap(zip, zip(*decomposed_shares))
+        bin_share = reduce(ABY3.full_adder, res_shares)
 
-    #     for x1_sh, x2_sh, x3_sh in x_sh:
-    #         x1_sh = [ptr.resolve_pointer_type() for ptr in x1_sh]
-    #         x2_sh = [ptr.resolve_pointer_type() for ptr in x2_sh]
-    #         x3_sh = [ptr.resolve_pointer_type() for ptr in x3_sh]
-
-    #         x1_m = MPCTensor(shares=x1_sh, session=session, shape=x.shape)
-    #         x2_m = MPCTensor(shares=x2_sh, session=session, shape=x.shape)
-    #         x3_m = MPCTensor(shares=x3_sh, session=session, shape=x.shape)
-
-    #         x1.append(x1_m)
-    #         x2.append(x2_m)
-    #         x3.append(x3_m)
-
-    #     x1_2 = ABY3.full_adder(x1, x2, session)
-    #     bin_share = ABY3.full_adder(x1_2, x3, session)
-
-    #     return bin_share
-
-    # @staticmethod
-    # def bit_decomposition_ttp(x: MPCTensor, session: Session) -> List[MPCTensor]:
-    #     """Perform ABY3 bit decomposition using orchestrator as ttp.
-
-    #     Args:
-    #         x (MPCTensor): Arithmetic shares of secret.
-    #         session (Session): session the share belongs to.
-
-    #     Returns:
-    #         b_sh (List[MPCTensor]): Returns binary shares of each bit of the secret.
-
-    #     TODO: We should modify to use parallel prefix adder, which requires multiprocessing.
-    #     """
-    #     # Decoding is not done as they are shares of PRRS.
-    #     tensor = x.reconstruct(decode=False)
-    #     b_sh: List[MPCTensor] = []  # binary shares of bits
-    #     ring_size = session.ring_size
-    #     shares_sum = ReplicatedSharedTensor.shares_sum
-    #     ring_bits = get_nr_bits(ring_size)
-
-    #     for idx in range(ring_bits):
-    #         bit_mask = torch.ones(tensor.shape, dtype=tensor.dtype) << idx
-    #         secret = (tensor & bit_mask).type(torch.bool)
-    #         r1 = torch.empty(size=tensor.shape, dtype=torch.bool).random_(generator=gen)
-    #         r2 = torch.empty(size=tensor.shape, dtype=torch.bool).random_(generator=gen)
-    #         r3 = shares_sum([secret, r1, r2], ring_size=2)
-    #         shares = [r1, r2, r3]
-    #         config = Config(encoder_base=1, encoder_precision=0)
-    #         sh_ptr = ReplicatedSharedTensor.distribute_shares(
-    #             shares=shares, session=session, ring_size=2, config=config
-    #         )
-    #         b_mpc = MPCTensor(shares=sh_ptr, session=session, shape=tensor.shape)
-    #         b_sh.append(b_mpc)
-
-    #     return b_sh
+        return bin_share
