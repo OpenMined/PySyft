@@ -1,8 +1,4 @@
-# stdlib
-import logging
-
 # third party
-import _pytest
 import pytest
 
 # syft absolute
