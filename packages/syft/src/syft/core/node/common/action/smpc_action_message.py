@@ -342,11 +342,11 @@ def smpc_mul(
     nr_parties: int,
     self_id: UID,
     other_id: UID,
-    a_shape_id: UID,
-    b_shape_id: UID,
     seed_id_locations: int,
     node: Any,
     client: Any,
+    a_shape_id: Optional[UID] = None,
+    b_shape_id: Optional[UID] = None,
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
     generator = np.random.default_rng(seed_id_locations)

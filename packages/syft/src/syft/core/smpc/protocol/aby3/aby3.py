@@ -55,9 +55,9 @@ class ABY3:
         # List which contains the share of a single bit
         res_shares: List[MPCTensor] = []
 
-        bit_shares = list(map(lambda x: x.get_tensor_list(0)), decomposed_shares)  # type: ignore
-        bit_shares = list(map(lambda x: [x[i] for i in range(nr_parties)], bit_shares))
-        bit_shares = zip(bit_shares)  # type: ignore
+        bit_shares = map(lambda x: x.get_tensor_list(0)), decomposed_shares  # type: ignore
+        bit_shares = map(lambda x: [x[i] for i in range(nr_parties)], bit_shares)  # type: ignore
+        bit_shares = zip(*bit_shares)  # type: ignore
         for bit_sh in bit_shares:
             mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
             res_shares.append(mpc)
@@ -115,11 +115,9 @@ class ABY3:
         ]
 
         for idx in range(ring_bits):
-            bit_shares = list(map(lambda x: x.get_tensor_list(idx), decomposed_shares))
-            bit_shares = list(
-                map(lambda x: [x[i] for i in range(nr_parties)], bit_shares)
-            )
-            bit_shares = zip(bit_shares)  # type: ignore
+            bit_shares = map(lambda x: x.get_tensor_list(idx), decomposed_shares)
+            bit_shares = map(lambda x: [x[i] for i in range(nr_parties)], bit_shares)
+            bit_shares = zip(*bit_shares)  # type: ignore
             for i, bit_sh in enumerate(bit_shares):
                 mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
                 res_shares[i].append(mpc)
