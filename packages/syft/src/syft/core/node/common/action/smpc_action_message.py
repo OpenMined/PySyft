@@ -43,6 +43,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         kwargs_id: Dict[str, UID],
         result_id: UID,
         address: Address,
+        kwargs: Dict[str, Any] = {},
         ranks_to_run_action: Optional[List[int]] = None,
         msg_id: Optional[UID] = None,
     ) -> None:
@@ -50,6 +51,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         self.self_id = self_id
         self.args_id = args_id
         self.kwargs_id = kwargs_id
+        self.kwargs = kwargs
         self.id_at_location = result_id
         self.ranks_to_run_action = ranks_to_run_action if ranks_to_run_action else []
         super().__init__(address=address, msg_id=msg_id)
@@ -95,6 +97,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         res = f"{res}Self ID: {self.self_id}, "
         res = f"{res}Args IDs: {self.args_id}, "
         res = f"{res}Kwargs IDs: {self.kwargs_id}, "
+        res = f"{res}Kwargs : {self.kwargs}, "
         res = f"{res}Result ID: {self.id_at_location}, "
         res = f"{res}Ranks to run action: {self.ranks_to_run_action}"
         return res
@@ -122,6 +125,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             self_id=sy.serialize(self.self_id),
             args_id=list(map(lambda x: sy.serialize(x), self.args_id)),
             kwargs_id={k: sy.serialize(v) for k, v in self.kwargs_id.items()},
+            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
             id_at_location=sy.serialize(self.id_at_location),
             address=sy.serialize(self.address),
             msg_id=sy.serialize(self.id),
@@ -147,6 +151,10 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             self_id=sy.deserialize(blob=proto.self_id),
             args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
             kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
+            kwargs={
+                k: sy.deserialize(blob=v, from_bytes=True)
+                for k, v in proto.kwargs.items()
+            },
             result_id=sy.deserialize(blob=proto.id_at_location),
             address=sy.deserialize(blob=proto.address),
             msg_id=sy.deserialize(blob=proto.msg_id),
@@ -366,7 +374,8 @@ def smpc_mul(
                 "spdz_mask",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={
+                kwargs_id={},
+                kwargs={
                     "eps_id": eps_id,
                     "delta_id": delta_id,
                     "a_share": a_share,
@@ -384,7 +393,8 @@ def smpc_mul(
                 "spdz_multiply",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={
+                kwargs_id={},
+                kwargs={
                     "eps_id": eps_id,
                     "delta_id": delta_id,
                     "a_share": a_share,
