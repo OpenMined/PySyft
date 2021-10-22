@@ -30,50 +30,42 @@ class ABY3:
 
         return True
 
-    # @staticmethod
-    # def bit_injection(x: MPCTensor, ring_size: int) -> MPCTensor:
-    #     """Perform ABY3 bit injection for conversion of binary share to arithmetic share.
+    @staticmethod
+    def bit_injection(x: MPCTensor, ring_size: int) -> MPCTensor:
+        """Perform ABY3 bit injection for conversion of binary share to arithmetic share.
 
-    #     Args:
-    #         x (MPCTensor) : MPCTensor with shares of bit.
-    #         ring_size (int) : Ring size of arithmetic share to convert.
+        Args:
+            x (MPCTensor) : MPCTensor with shares of bit.
+            ring_size (int) : Ring size of arithmetic share to convert.
 
-    #     Returns:
-    #         arith_share (MPCTensor): Arithmetic shares of bit in input ring size.
+        Returns:
+            arith_share (MPCTensor): Arithmetic shares of bit in input ring size.
 
-    #     Raises:
-    #         ValueError: If input tensor is not binary shared.
-    #         ValueError: If the exactly three parties are not involved in the computation.
-    #     """
-    #     input_ring = int(x.share_ptrs[0].get_ring_size().get_copy())  # input ring_size
-    #     if input_ring != 2:
-    #         raise ValueError("Bit injection works only for binary rings")
+        Raises:
+            ValueError: If input tensor is not binary shared.
+            ValueError: If the exactly three parties are not involved in the computation.
+        """
+        shape = x.shape
+        parties = x.parties
+        nr_parties = len(parties)
+        ring_size = 2 ** 32  # TODO: Should extract from global context for general case
 
-    #     args = [[share, str(ring_size)] for share in x.share_ptrs]
+        decomposed_shares = [
+            share.bit_decomposition(share, ring_size, False) for share in x.child
+        ]
+        # List which contains the share of a single bit
+        res_shares: List[MPCTensor] = []
 
-    #     decomposed_shares = parallel_execution(
-    #         ABY3.local_decomposition, session.parties
-    #     )(args)
+        bit_shares = list(map(lambda x: x.get_tensor_list(0)), decomposed_shares)  # type: ignore
+        bit_shares = list(map(lambda x: [x[i] for i in range(nr_parties)], bit_shares))
+        bit_shares = zip(bit_shares)  # type: ignore
+        for bit_sh in bit_shares:
+            mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
+            res_shares.append(mpc)
 
-    #     # Using zip for grouping on pointers is compute intensive.
-    #     x1_share = []
-    #     x2_share = []
-    #     x3_share = []
+        arith_share = reduce(lambda x, y: x + y - (x * y * 2), res_shares)
 
-    #     for share in list(
-    #         map(lambda x: x[0].resolve_pointer_type(), decomposed_shares)
-    #     ):
-    #         x1_share.append(share[0].resolve_pointer_type())
-    #         x2_share.append(share[1].resolve_pointer_type())
-    #         x3_share.append(share[2].resolve_pointer_type())
-
-    #     x1 = MPCTensor(shares=x1_share, session=session, shape=x.shape)
-    #     x2 = MPCTensor(shares=x2_share, session=session, shape=x.shape)
-    #     x3 = MPCTensor(shares=x3_share, session=session, shape=x.shape)
-
-    #     arith_share = x1 ^ x2 ^ x3
-
-    #     return arith_share
+        return arith_share
 
     @staticmethod
     def full_adder(a: List[MPCTensor], b: List[MPCTensor]) -> List[MPCTensor]:
