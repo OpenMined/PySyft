@@ -23,7 +23,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.9]
 
-    runs-on: ${{ matrix.os }}
+    runs-on: self-hosted
 
     steps:
       - uses: actions/checkout@v2
