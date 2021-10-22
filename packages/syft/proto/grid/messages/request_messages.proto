@@ -22,6 +22,28 @@ message CreateRequestResponse {
   syft.core.io.Address address = 4;
 }
 
+// Create BudgetRequestMessage
+message CreateBudgetRequestMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  float budget = 3;
+  string reason = 4;
+}
+
+message GetBudgetRequestsMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  string request_id = 3;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetBudgetRequestsResponse {
+  syft.core.common.UID msg_id = 1;
+  repeated syft.lib.python.Dict content = 3;
+  syft.core.io.Address address = 4;
+}
+
+
 // GET Request
 message GetRequestMessage {
   syft.core.common.UID msg_id = 1;

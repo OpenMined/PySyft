@@ -14,6 +14,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import numpy as np
 import numpy.typing as npt
+import torch
 
 # relative
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
@@ -824,7 +825,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         axis: Optional[int] = -1,
         kind: Optional[str] = "introselect",
         order: Optional[Union[str, List[str]]] = None,
-    ) -> None:
+    ) -> SingleEntityPhiTensor:
+        # this method mutates self
         """Interchange two axes of the Tensor"""
         if (
             isinstance(self.child, int)
@@ -862,6 +864,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             )
         else:
             self.max_vals.partition(kth, axis, kind, order)
+
+        return self
 
     # ndarray.ravel(order='C')
     def ravel(self, order: str = "C") -> SingleEntityPhiTensor:
@@ -1376,17 +1380,467 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         if a_min is None and a_max is None:
             raise Exception("ValueError: clip: must set either max or min")
 
-        data = np.clip(self.child, a_min=a_min, a_max=a_max, *args)
-        min_vals = np.clip(self.min_vals, a_min=a_min, a_max=a_max, *args)
-        max_vals = np.clip(self.max_vals, a_min=a_min, a_max=a_max, *args)
-        entity = self.entity
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.clip(a_min, a_max)
+            else:
+                # self.child is a singleton
+                data = max(a_min, min(self.child, a_max)) if a_min <= a_max else a_max
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().clip(a_min, a_max)
+
+        if isinstance(self.min_vals, np.ndarray):
+            min_vals = np.clip(self.min_vals, a_min=a_min, a_max=a_max, *args)
+        else:
+            min_vals = (
+                max(a_min, min(self.min_vals, a_max)) if a_min <= a_max else a_max
+            )
+
+        if isinstance(self.max_vals, np.ndarray):
+            max_vals = np.clip(self.max_vals, a_min=a_min, a_max=a_max, *args)
+        else:
+            max_vals = (
+                max(a_min, min(self.max_vals, a_max)) if a_min <= a_max else a_max
+            )
 
         return SingleEntityPhiTensor(
             child=data,
-            entity=entity,
+            entity=self.entity,
             min_vals=min_vals,
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
+        )
+
+    def any(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[bool] = True,
+    ) -> SingleEntityPhiTensor:
+        """Test whether any element along a given axis evaluates to True"""
+
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.any(
+                    axis=axis, out=np.array(True), keepdims=keepdims, where=where
+                )
+            else:
+                # self.child is a singleton
+                data = self.child != 0
+
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().any(
+                axis=axis, out=np.array(True), keepdims=keepdims, where=where
+            )
+
+        if isinstance(self.min_vals, np.ndarray):
+            # test whether any min val evaluates to True
+            min_vals = self.min_vals.any(
+                axis=axis, out=np.array(True), keepdims=keepdims, where=where
+            )
+        else:
+            min_vals = self.min_vals != 0
+
+        if isinstance(self.max_vals, np.ndarray):
+            # test whether any max val evaluates to True
+            max_vals = self.max_vals.any(
+                axis=axis, out=np.array(True), keepdims=keepdims, where=where
+            )
+        else:
+            max_vals = self.max_vals != 0
+
+        # * 1 just makes sure it returns integers instead of True/False
+        return SingleEntityPhiTensor(
+            child=data * 1,
+            entity=self.entity,
+            min_vals=min_vals * 1,
+            max_vals=max_vals * 1,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def all(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[bool] = True,
+    ) -> SingleEntityPhiTensor:
+        """Test whether all elements along a given axis evaluates to True"""
+
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.all(
+                    axis=axis, out=np.array(True), keepdims=keepdims, where=where
+                )
+            else:
+                # self.child is a singleton
+                data = self.child != 0
+
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().all(
+                axis=axis, out=np.array(True), keepdims=keepdims, where=where
+            )
+
+        if isinstance(self.min_vals, np.ndarray):
+            # test whether all min vals evaluate to True
+            min_vals = self.min_vals.all(
+                axis=axis, out=np.array(True), keepdims=keepdims, where=where
+            )
+        else:
+            min_vals = self.min_vals != 0
+
+        if isinstance(self.max_vals, np.ndarray):
+            # test whether all max vals evaluate to True
+            max_vals = self.max_vals.all(
+                axis=axis, out=np.array(True), keepdims=keepdims, where=where
+            )
+        else:
+            max_vals = self.max_vals != 0
+
+        # * 1 just makes sure it returns integers instead of True/False
+        return SingleEntityPhiTensor(
+            child=data * 1,
+            entity=self.entity,
+            min_vals=min_vals * 1,
+            max_vals=max_vals * 1,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def abs(
+        self,
+        out: Optional[np.ndarray] = None,
+    ) -> SingleEntityPhiTensor:
+        """Calculate the absolute value element-wise"""
+        if is_acceptable_simple_type(self.child):
+            data = self.child.__abs__()
+
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().__abs__()
+
+        if isinstance(self.min_vals, np.ndarray):
+            min_vals = np.abs(self.min_vals, out)
+        else:
+            min_vals = abs(self.min_vals)
+
+        if isinstance(self.max_vals, np.ndarray):
+            max_vals = np.abs(self.max_vals, out)
+        else:
+            max_vals = abs(self.max_vals)
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def pow(self, value: SupportedChainType) -> SingleEntityPhiTensor:
+        """Return elements raised to powers from value, element-wise"""
+
+        if isinstance(value, SingleEntityPhiTensor):
+
+            if self.entity != value.entity:
+                return NotImplemented
+
+            data = self.child ** value.child
+
+            min_min = self.min_vals ** value.min_vals
+            min_max = self.min_vals ** value.max_vals
+            max_min = self.max_vals ** value.min_vals
+            max_max = self.max_vals ** value.max_vals
+
+            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        elif is_acceptable_simple_type(value):
+
+            data = self.child ** value
+
+            min_min = self.min_vals ** value
+            min_max = self.min_vals ** value
+            max_min = self.max_vals ** value
+            max_max = self.max_vals ** value
+
+            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            entity = self.entity
+
+            return SingleEntityPhiTensor(
+                child=data,
+                entity=entity,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                scalar_manager=self.scalar_manager,
+            )
+
+        else:
+            return NotImplemented
+
+    def copy(
+        self, order: Optional[str] = "K", subok: Optional[bool] = True
+    ) -> SingleEntityPhiTensor:
+        """Return copy of the given object"""
+        if is_acceptable_simple_type(self.child):
+            data = self.child.copy()
+
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().copy()
+
+        if isinstance(self.min_vals, np.ndarray):
+            min_vals = np.array(self.min_vals, order=order, subok=subok, copy=True)
+        else:
+            min_vals = self.min_vals
+
+        if isinstance(self.max_vals, np.ndarray):
+            max_vals = np.array(self.max_vals, order=order, subok=subok, copy=True)
+        else:
+            max_vals = self.max_vals
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def take(
+        self,
+        indices: np.ArrayLike,
+        axis: Optional[int] = None,
+        mode: Optional[str] = "raise",
+    ) -> SingleEntityPhiTensor:
+        """Take elements from an array along an axis"""
+        if is_acceptable_simple_type(self.child):
+            data = self.child.take(indices=indices, axis=axis, mode=mode)
+
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().take(indices=indices, axis=axis, mode=mode)
+
+        min_vals = self.min_vals.take(indices=indices, axis=axis, mode=mode)
+        max_vals = self.max_vals.take(indices=indices, axis=axis, mode=mode)
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def diagonal(
+        self,
+        offset: Optional[int] = 0,
+        axis1: Optional[int] = 0,
+        axis2: Optional[int] = 1,
+    ) -> SingleEntityPhiTensor:
+        """Return specified diagonals"""
+        if is_acceptable_simple_type(self.child):
+            if (
+                isinstance(self.child, int)
+                or isinstance(self.child, float)
+                or isinstance(self.child, bool)
+            ):
+                raise Exception(
+                    "ValueError: diag requires an array of at least two dimensions"
+                )
+
+            elif isinstance(self.child, np.matrix):
+                # Make diagonal of matrix 1-D to preserve backward compatibility.
+                data = np.asarray(self.child).diagonal(
+                    offset=offset, axis1=axis1, axis2=axis2
+                )
+            else:
+                data = np.asanyarray(self.child).diagonal(
+                    offset=offset, axis1=axis1, axis2=axis2
+                )
+        elif isinstance(self.child, torch.Tensor):
+            if isinstance(self.child.numpy(), np.matrix):
+                # Make diagonal of matrix 1-D to preserve backward compatibility.
+                data = np.asarray(self.child.numpy()).diagonal(
+                    offset=offset, axis1=axis1, axis2=axis2
+                )
+            else:
+                data = np.asanyarray(self.child.numpy()).diagonal(
+                    offset=offset, axis1=axis1, axis2=axis2
+                )
+
+        if (
+            isinstance(self.min_vals, int)
+            or isinstance(self.min_vals, float)
+            or isinstance(self.min_vals, bool)
+        ):
+            raise Exception(
+                "ValueError: diag requires an array of at least two dimensions"
+            )
+
+        elif isinstance(self.min_vals, np.matrix):
+            # Make diagonal of matrix 1-D to preserve backward compatibility.
+            min_vals = np.asarray(self.min_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+        else:
+            min_vals = np.asanyarray(self.min_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+
+        if (
+            isinstance(self.max_vals, int)
+            or isinstance(self.max_vals, float)
+            or isinstance(self.max_vals, bool)
+        ):
+            raise Exception(
+                "ValueError: diag requires an array of at least two dimensions"
+            )
+
+        elif isinstance(self.max_vals, np.matrix):
+            # Make diagonal of matrix 1-D to preserve backward compatibility.
+            max_vals = np.asarray(self.max_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+        else:
+            max_vals = np.asanyarray(self.max_vals).diagonal(
+                offset=offset, axis1=axis1, axis2=axis2
+            )
+
+        return SingleEntityPhiTensor(
+            child=data,
+            entity=self.entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def max(
+        self,
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: Optional[int] = None,
+        where: bool = True,
+    ) -> SingleEntityPhiTensor:
+        # Note: Who knew this method had SO MANY ARGUMENTS?!?!?
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.max(axis, out, keepdims, initial, where)
+            else:
+                # This implies self.child is a singleton (int, float, bool, etc)
+                data = self.child
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().max(axis, out, keepdims, initial, where)
+        else:
+            raise NotImplementedError
+
+        if isinstance(self.min_vals, np.ndarray):
+            min_vals = self.min_vals.max(axis, out, keepdims, initial, where)
+        else:
+            min_vals = self.min_vals
+
+        if isinstance(self.max_vals, np.ndarray):
+            max_vals = self.max_vals.max(axis, out, keepdims, initial, where)
+        else:
+            max_vals = self.max_vals
+
+        return SingleEntityPhiTensor(
+            child=data,
+            max_vals=max_vals,
+            min_vals=min_vals,
+            entity=self.entity,
+        )
+
+    def min(
+        self,
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: Optional[int] = None,
+        where: bool = True,
+    ) -> SingleEntityPhiTensor:
+        # Note: Who knew this method had SO MANY ARGUMENTS?!?!?
+        if is_acceptable_simple_type(self.child):
+            if isinstance(self.child, np.ndarray):
+                data = self.child.min(axis, out, keepdims, initial, where)
+            else:
+                # This implies self.child is a singleton (int, float, bool, etc)
+                data = self.child
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().min(axis, out, keepdims, initial, where)
+        else:
+            raise NotImplementedError
+
+        if isinstance(self.min_vals, np.ndarray):
+            min_vals = self.min_vals.min(axis, out, keepdims, initial, where)
+        else:
+            min_vals = self.min_vals
+
+        if isinstance(self.max_vals, np.ndarray):
+            max_vals = self.max_vals.min(axis, out, keepdims, initial, where)
+        else:
+            max_vals = self.max_vals
+
+        return SingleEntityPhiTensor(
+            child=data,
+            max_vals=max_vals,
+            min_vals=min_vals,
+            entity=self.entity,
+        )
+
+    # TODO: Figure out how to do type annotation for dtype
+    def trace(
+        self,
+        offset: int = 0,
+        axis1: Optional[int] = 0,
+        axis2: Optional[int] = 1,
+        dtype: Optional[Any] = None,
+        out: np.ndarray = None,
+    ) -> SingleEntityPhiTensor:
+        if isinstance(self.child, np.ndarray):
+            data = self.child.trace(offset, axis1, axis2, dtype, out)
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().trace(offset, axis1, axis2, dtype, out)
+        else:
+            data = self.child * len(self.child)
+
+        if isinstance(self.min_vals, np.ndarray):
+            mins = self.min_vals.trace(offset, axis1, axis2, dtype, out)
+        else:
+            mins = self.min_vals * len(self.child)
+
+        if isinstance(self.max_vals, np.ndarray):
+            maxes = self.max_vals.trace(offset, axis1, axis2, dtype, out)
+        else:
+            maxes = self.max_vals * len(self.child)
+
+        return SingleEntityPhiTensor(
+            child=data,
+            min_vals=mins,
+            max_vals=maxes,
+            entity=self.entity,
+        )
+
+    def prod(
+        self,
+        axis: Optional[int] = None,
+        dtype: Optional[Any] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: int = 1,
+        where: Optional[bool] = True,
+    ) -> SingleEntityPhiTensor:
+        return SingleEntityPhiTensor(
+            child=self.child.prod(axis, dtype, out, keepdims, initial, where),
+            min_vals=self.min_vals.prod(axis, dtype, out, keepdims, initial, where),
+            max_vals=self.max_vals.prod(axis, dtype, out, keepdims, initial, where),
+            entity=self.entity,
         )
 
     def round(self, decimals: int = 0) -> SingleEntityPhiTensor:

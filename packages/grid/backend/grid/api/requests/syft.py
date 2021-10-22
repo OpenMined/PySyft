@@ -9,6 +9,9 @@ from syft.core.node.common.node_service.object_request.object_request_messages i
     UpdateRequestMessage,
 )
 from syft.core.node.common.node_service.object_request.object_request_service import (
+    GetBudgetRequestsMessage,
+)
+from syft.core.node.common.node_service.object_request.object_request_service import (
     GetRequestsMessage,
 )
 
@@ -17,6 +20,7 @@ from grid.api.users.models import UserPrivate
 from grid.utils import send_message_with_reply
 
 # relative
+from .models import BudgetRequestResponse
 from .models import Request
 from .models import RequestUpdate
 
@@ -24,6 +28,14 @@ from .models import RequestUpdate
 def get_all_requests(current_user: UserPrivate) -> List[Request]:
     reply = send_message_with_reply(
         signing_key=current_user.get_signing_key(), message_type=GetRequestsMessage
+    )
+    return [request.upcast() for request in reply.content]  # upcast?
+
+
+def get_all_budget_requests(current_user: UserPrivate) -> List[BudgetRequestResponse]:
+    reply = send_message_with_reply(
+        signing_key=current_user.get_signing_key(),
+        message_type=GetBudgetRequestsMessage,
     )
     return [request.upcast() for request in reply.content]  # upcast?
 

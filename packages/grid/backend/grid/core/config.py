@@ -21,7 +21,7 @@ class Settings(BaseSettings):
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
     SERVER_NAME: str = "unconfigured"
-    SERVER_HOST: AnyHttpUrl = "https://localhost"
+    SERVER_HOST: str = "https://localhost"
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
     # "http://localhost:8080", "http://local.dockertoolbox.tiangolo.com"]'
@@ -39,7 +39,7 @@ class Settings(BaseSettings):
     SENTRY_DSN: Optional[HttpUrl] = None
 
     @validator("SENTRY_DSN", pre=True)
-    def sentry_dsn_can_be_blank(cls, v: str) -> Optional[HttpUrl]:
+    def sentry_dsn_can_be_blank(cls, v: str) -> Optional[str]:
         if v is None or len(v) == 0:
             return None
         return v
@@ -88,8 +88,8 @@ class Settings(BaseSettings):
             and values.get("EMAILS_FROM_EMAIL")
         )
 
-    EMAIL_TEST_USER: EmailStr = "test@example.com"
-    FIRST_SUPERUSER: EmailStr = "info@openmined.org"
+    EMAIL_TEST_USER: EmailStr = EmailStr("test@example.com")
+    FIRST_SUPERUSER: EmailStr = EmailStr("info@openmined.org")
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
