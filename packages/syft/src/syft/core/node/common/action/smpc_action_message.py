@@ -390,58 +390,7 @@ def smpc_mul(
     return actions
 
 
-'''
-def smpc_gt(
-    nr_parties: int,
-    self_id: UID,
-    other_id: UID,
-    seed_id_locations: int,
-    node: Any,
-    client: Any,
-) -> List[SMPCActionMessage]:
-    """Generator for the smpc_mul with a public value"""
-    generator = np.random.default_rng(seed_id_locations)
-
-    result_id = UID(UUID(bytes=generator.bytes(16)))
-    sub_result = UID(UUID(bytes=generator.bytes(16)))
-
-    x = node.store[self_id].data  # noqa
-    y = node.store[other_id].data
-
-    if not isinstance(y, ShareTensor):
-        raise ValueError("Only private compare works at the moment")
-
-    actions = []
-    actions.append(
-        SMPCActionMessage(
-            "mpc_sub",
-            self_id=self_id,
-            args_id=[other_id],
-            kwargs_id={},
-            ranks_to_run_action=list(range(nr_parties)),
-            result_id=sub_result,
-            address=client.address,
-        )
-    )
-
-    actions.append(
-        SMPCActionMessage(
-            "bit_decomposition",
-            self_id=sub_result,
-            args_id=[],
-            # TODO: This value needs to be changed to something else and probably used
-            # directly the przs_generator from ShareTensor - check bit_decomposition function
-            kwargs_id={},
-            ranks_to_run_action=list(range(nr_parties)),
-            result_id=result_id,
-            address=client.address,
-        )
-    )
-    return actions
-'''
-
-
-def local_bit_decomposition(share: ShareTensor) -> ShareTensor:
+def local_decomposition(share: ShareTensor) -> ShareTensor:
     # TODO: George or Rasswanth check if we can use directly the generator from shareTensor
     # Having this value here is not ok
     seed_przs = 42
@@ -481,7 +430,6 @@ def local_bit_decomposition(share: ShareTensor) -> ShareTensor:
     return shares  # type: ignore
 
 
-
 def bit_decomposition(
     nr_parties: int,
     self_id: UID,
@@ -506,6 +454,9 @@ def bit_decomposition(
         )
     )
 
+    return actions
+
+
 # Given an SMPC Action map it to an action constructor
 MAP_FUNC_TO_ACTION: Dict[
     str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
@@ -513,6 +464,7 @@ MAP_FUNC_TO_ACTION: Dict[
     "__add__": functools.partial(smpc_basic_op, "add"),
     "__sub__": functools.partial(smpc_basic_op, "sub"),
     "__mul__": smpc_mul,  # type: ignore
+    "bit_decomposition": bit_decomposition,  # type: ignore
     # "__gt__": smpc_gt,  # type: ignore TODO: this should be added back when we have only one action
 }
 
@@ -524,6 +476,56 @@ _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_mul": operator.mul,
     "spdz_mask": spdz_mask,
     "spdz_multiply": spdz_multiply,
-    "bit_decomposition": bit_decomposition,
+    "local_decomposition": local_decomposition,
     "mpc_noop": deepcopy,
 }
+
+
+#
+# def smpc_gt(
+#     nr_parties: int,
+#     self_id: UID,
+#     other_id: UID,
+#     seed_id_locations: int,
+#     node: Any,
+#     client: Any,
+# ) -> List[SMPCActionMessage]:
+#     """Generator for the smpc_mul with a public value"""
+#     generator = np.random.default_rng(seed_id_locations)
+
+#     result_id = UID(UUID(bytes=generator.bytes(16)))
+#     sub_result = UID(UUID(bytes=generator.bytes(16)))
+
+#     x = node.store[self_id].data  # noqa
+#     y = node.store[other_id].data
+
+#     if not isinstance(y, ShareTensor):
+#         raise ValueError("Only private compare works at the moment")
+
+#     actions = []
+#     actions.append(
+#         SMPCActionMessage(
+#             "mpc_sub",
+#             self_id=self_id,
+#             args_id=[other_id],
+#             kwargs_id={},
+#             ranks_to_run_action=list(range(nr_parties)),
+#             result_id=sub_result,
+#             address=client.address,
+#         )
+#     )
+
+#     actions.append(
+#         SMPCActionMessage(
+#             "bit_decomposition",
+#             self_id=sub_result,
+#             args_id=[],
+#             # TODO: This value needs to be changed to something else and probably used
+#             # directly the przs_generator from ShareTensor - check bit_decomposition function
+#             kwargs_id={},
+#             ranks_to_run_action=list(range(nr_parties)),
+#             result_id=result_id,
+#             address=client.address,
+#         )
+#     )
+#     return actions

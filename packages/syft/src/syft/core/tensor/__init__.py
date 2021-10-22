@@ -11,6 +11,7 @@ from ..node.abstract.node import AbstractNodeClient
 from .autodp.single_entity_phi import SingleEntityPhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .smpc.share_tensor import ShareTensor
+from .smpc.tensor_list import TensorList
 from .tensor import Tensor
 from .tensor import TensorPointer  # noqa: 401
 
@@ -45,6 +46,11 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
             "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
             FixedPrecisionTensor,
+        ),
+        (
+            "syft.core.tensor.smpc.tensor_list.TensorList",
+            "syft.core.tensor.smpc.tensor_list.TensorList",
+            TensorList,
         ),
     ]
 
@@ -243,10 +249,9 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
         (
-            "syft.core.tensor.smpc.share_tensor.ShareTensor.decomposition",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.bit_decomposition",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
-
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.put",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
@@ -258,6 +263,14 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.core.tensor.smpc.share_tensor.populate_store",
             "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.core.tensor.smpc.tensor_list.TensorList.__getitem__",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.tensor_list.TensorList.get_tensor_list",
+            "syft.core.tensor.smpc.tensor_list.TensorList",
         ),
     ]
 

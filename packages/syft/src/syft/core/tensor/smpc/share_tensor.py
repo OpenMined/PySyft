@@ -480,7 +480,7 @@ class ShareTensor(PassthroughTensor):
             "It should not reach this point since we generate SMPCAction for this"
         )
 
-    def decomposition(self) -> "ShareTensor":
+    def bit_decomposition(self) -> "ShareTensor":
         """Apply the "decomposition" operation on self
 
         Args:
@@ -492,7 +492,6 @@ class ShareTensor(PassthroughTensor):
         raise ValueError(
             "It should not reach this point since we generate SMPCAction for this"
         )
-
 
     def __eq__(self, other: Any) -> bool:
         """Equal operator.

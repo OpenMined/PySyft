@@ -13,6 +13,7 @@ from __future__ import annotations
 import secrets
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
 
@@ -133,13 +134,13 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         )
 
     # TODO: Should modify to parallel execution.
-    kwargs = {"seed_id_locations": secrets.randbits(64)}
+    kwargs = {"seed_id_locations": secrets.randbits(64)}  # noqa
 
     # diff = a - b
     # bit decomposition
     # sum carry adder
     # res = sign(diff)
-    res_shares = a - b
+    res_shares = x - y
 
     nr_parties = len(parties_info)
     decompositions: List[MPCTensor] = []
@@ -149,7 +150,7 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         res = MPCTensor(shares=shares, parties=parties, shape=res_shares.shape)
         decompositions.append(res)
 
-    return decompositions
+    return decompositions  # type: ignore
 
 
 def beaver_populate(
