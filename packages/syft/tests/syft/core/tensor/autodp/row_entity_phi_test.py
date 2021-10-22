@@ -330,6 +330,7 @@ def test_add_single_entity(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     row_data_ishan: List,
+    ishan: Entity,
 ) -> None:
     """Test the addition of REPT + SEPT"""
     tensor1 = REPT(rows=row_data_ishan)
@@ -472,10 +473,11 @@ def test_transpose(row_data_ishan: List) -> None:
     assert correct_output == output.child, "Transpose did not work as expected"
 
 
-@pytest.mark.skip(reason="Temporary")
-def test_partition(ishan: Entity) -> None:
+def test_partition(ishan: Entity, highest: int, dims: int) -> None:
     """Test to see if Partition works for the ideal case"""
-    data = np.random.randint(low=-100, high=100, size=(10, 10), dtype=np.int32)
+    data = np.random.randint(
+        low=-highest, high=highest, size=(dims, dims), dtype=np.int32
+    )
     sept = SEPT(
         child=data,
         entity=ishan,

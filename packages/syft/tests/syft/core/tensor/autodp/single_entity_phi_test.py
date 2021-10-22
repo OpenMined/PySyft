@@ -242,7 +242,7 @@ def test_ne_shapes(
     lower_bound: np.ndarray,
     ishan: Entity,
     dims: int,
-    highest,
+    highest: int,
 ) -> None:
     """Test non-equality between SEPTs with different shapes"""
     reference_tensor = SEPT(
@@ -369,7 +369,7 @@ def test_add_tensor_types(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     ishan: Entity,
-    highest,
+    highest: int,
     dims: int,
 ) -> None:
     """Test addition of a SEPT with various other kinds of Tensors"""
@@ -781,7 +781,7 @@ def test_transpose_args(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     ishan: Entity,
-    highest,
+    highest: int,
 ) -> None:
     """Ensure the optional arguments passed to .transpose() work as intended."""
 
@@ -1002,7 +1002,7 @@ def test_squeeze(highest: int, ishan: Entity) -> None:
     ).child.all(), "Squeezing the tensor eliminated the wrong values"
 
 
-def test_squeeze_correct_axes(highest, ishan: Entity) -> None:
+def test_squeeze_correct_axes(highest: int, ishan: Entity) -> None:
     """Test that squeeze works on an ideal case with correct axes specified"""
     _data = np.random.randint(
         low=-1 * highest, high=highest, size=(10, 1, 10, 1, 10), dtype=np.int32
@@ -1030,7 +1030,7 @@ def test_squeeze_correct_axes(highest, ishan: Entity) -> None:
     ).child.all(), "Squeezing the tensor eliminated the wrong values"
 
 
-def test_swap_axes(highest, ishan: Entity) -> None:
+def test_swap_axes(highest: int, ishan: Entity) -> None:
     """Test that swap_axes works on an ideal case"""
     data = np.random.randint(
         low=-highest, high=highest, size=(10, 1, 10, 1, 10), dtype=np.int32
@@ -1311,6 +1311,36 @@ def test_max_args(
     assert (output.child == target).all()
     assert (output.min_vals == lower_bound.max(initial=-highest)).all()
     assert (output.max_vals == upper_bound.max(initial=-highest)).all()
+
+
+def test_trace(
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """Test whether the trace() method works"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+
+    output = tensor.trace()
+    target = reference_data.trace()
+    assert (output.child == target).all()
+    assert output.min_vals == lower_bound.trace()
+    assert output.max_vals == upper_bound.trace()
+
+
+def test_prod(
+    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+) -> None:
+    """Test whether the prod() method works"""
+    tensor = SEPT(
+        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
+    )
+
+    output = tensor.prod()
+    target = reference_data.prod()
+    assert (output.child == target).all()
+    assert output.min_vals == lower_bound.prod()
+    assert output.max_vals == upper_bound.prod()
 
 
 def test_round(

@@ -825,7 +825,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         axis: Optional[int] = -1,
         kind: Optional[str] = "introselect",
         order: Optional[Union[str, List[str]]] = None,
-    ) -> None:
+    ) -> SingleEntityPhiTensor:
+        # this method mutates self
         """Interchange two axes of the Tensor"""
         if (
             isinstance(self.child, int)
@@ -863,6 +864,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             )
         else:
             self.max_vals.partition(kth, axis, kind, order)
+
+        return self
 
     # ndarray.ravel(order='C')
     def ravel(self, order: str = "C") -> SingleEntityPhiTensor:
@@ -1788,6 +1791,55 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             child=data,
             max_vals=max_vals,
             min_vals=min_vals,
+            entity=self.entity,
+        )
+
+    # TODO: Figure out how to do type annotation for dtype
+    def trace(
+        self,
+        offset: int = 0,
+        axis1: Optional[int] = 0,
+        axis2: Optional[int] = 1,
+        dtype: Optional[Any] = None,
+        out: np.ndarray = None,
+    ) -> SingleEntityPhiTensor:
+        if isinstance(self.child, np.ndarray):
+            data = self.child.trace(offset, axis1, axis2, dtype, out)
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().trace(offset, axis1, axis2, dtype, out)
+        else:
+            data = self.child * len(self.child)
+
+        if isinstance(self.min_vals, np.ndarray):
+            mins = self.min_vals.trace(offset, axis1, axis2, dtype, out)
+        else:
+            mins = self.min_vals * len(self.child)
+
+        if isinstance(self.max_vals, np.ndarray):
+            maxes = self.max_vals.trace(offset, axis1, axis2, dtype, out)
+        else:
+            maxes = self.max_vals * len(self.child)
+
+        return SingleEntityPhiTensor(
+            child=data,
+            min_vals=mins,
+            max_vals=maxes,
+            entity=self.entity,
+        )
+
+    def prod(
+        self,
+        axis: Optional[int] = None,
+        dtype: Optional[Any] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: int = 1,
+        where: Optional[bool] = True,
+    ) -> SingleEntityPhiTensor:
+        return SingleEntityPhiTensor(
+            child=self.child.prod(axis, dtype, out, keepdims, initial, where),
+            min_vals=self.min_vals.prod(axis, dtype, out, keepdims, initial, where),
+            max_vals=self.max_vals.prod(axis, dtype, out, keepdims, initial, where),
             entity=self.entity,
         )
 

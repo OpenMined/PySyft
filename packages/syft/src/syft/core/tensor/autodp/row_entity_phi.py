@@ -592,6 +592,53 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
+    def trace(
+        self,
+        offset: int = 0,
+        axis1: int = 1,
+        axis2: int = 2,
+        dtype: Optional[Any] = np.int32,
+        out: Optional[np.ndarray] = None,
+    ) -> RowEntityPhiTensor:
+        if axis1 == 0 or axis2 == 0:
+            raise NotImplementedError  # This would create a GammaTensor
+        if dtype != np.int32:
+            raise Exception(
+                "We currently only support np.int32 dtypes for our tensors. "
+                "We will be adding support for more dtypes soon! Sorry for the inconvenience."
+            )
+
+        # Axis #1 for REPT = Axis #0 for its SEPT child, etc
+        axis1 -= 1
+        axis2 -= 1
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.trace(offset, axis1, axis2, dtype, out))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def prod(
+        self,
+        axis: int = 1,  # might be bad that the default behaviour currently is not implemented...
+        dtype: Optional[Any] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: int = 1,
+        where: Optional[bool] = True,
+    ) -> RowEntityPhiTensor:
+        if dtype and dtype != np.int32:
+            raise Exception(
+                "We currently only support np.int32 dtypes for our tensors. "
+                "We will be adding support for more dtypes soon! Sorry for the inconvenience."
+            )
+        if axis == 0:
+            raise NotImplementedError  # GammaTensor
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.prod(axis - 1, dtype, out, keepdims, initial, where))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
     def any(
         self,
         axis: Optional[int] = None,
