@@ -242,11 +242,13 @@ def spdz_multiply(
     y: ShareTensor,
     eps_id: UID,
     delta_id: UID,
+    a_share: ShareTensor,
+    b_share: ShareTensor,
+    c_share: ShareTensor,
     node: Optional[Any] = None,
 ) -> ShareTensor:
     print(")))))))))))))))))))))))))")
     print("SPDZ multiply")
-    crypto_store = ShareTensor.crypto_store
     nr_parties = x.nr_parties
     eps = node.store.get_object(key=eps_id)  # type: ignore
     delta = node.store.get_object(key=delta_id)  # type: ignore
@@ -259,10 +261,6 @@ def spdz_multiply(
     if delta is None or len(delta.data) != nr_parties:
         raise ObjectNotInStore
     print("Beaver Error surpassed*******************************")
-
-    a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-        "beaver_mul", x.shape, y.shape
-    )
 
     eps = sum(eps.data).child  # type: ignore
     delta = sum(delta.data).child  # type:ignore
@@ -293,22 +291,25 @@ def spdz_multiply(
 
 
 # TODO : Should move to spdz directly in syft/core/smpc
-def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> None:  # type: ignore
+def spdz_mask(
+    x: ShareTensor,
+    y: ShareTensor,
+    eps_id: UID,
+    delta_id: UID,
+    a_share: ShareTensor,
+    b_share: ShareTensor,
+    c_share: ShareTensor,
+) -> None:
     print(")))))))))))))))))))))))))")
     print("SPDZ Mask")
-    crypto_store = ShareTensor.crypto_store
     clients = ShareTensor.login_clients(x.parties_info)
 
-    a, b, _ = crypto_store.get_primitives_from_store(
-        "beaver_mul", x.shape, y.shape, remove=False  # type: ignore
-    )
-
-    eps = x - a  # beaver intermediate values.
-    delta = y - b
+    eps = x - a_share  # beaver intermediate values.
+    delta = y - b_share
     print("x ShareTensor:", x, "\n")
     print("y ShareTensor", y, "\n")
-    print("a ShareTensor:", a, "\n")
-    print("b ShareTensor", b, "\n")
+    print("a ShareTensor:", a_share, "\n")
+    print("b ShareTensor", b_share, "\n")
     print("EPS::::::::::::", eps, "\n")
     print("Delta::::::::::::", delta, "\n")
     # TODO : Should modify , no need to send for the current client
@@ -333,6 +334,8 @@ def smpc_mul(
     nr_parties: int,
     self_id: UID,
     other_id: UID,
+    a_shape_id: UID,
+    b_shape_id: UID,
     seed_id_locations: int,
     node: Any,
     client: Any,
@@ -341,6 +344,12 @@ def smpc_mul(
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
     other = node.store[other_id].data
+    a_shape = node.store[a_shape_id].data
+    b_shape = node.store[b_shape_id].data
+    crypto_store = ShareTensor.crypto_store
+    a_share, b_share, c_share = crypto_store.get_primitives_from_store(
+        "beaver_mul", a_shape, b_shape, remove=True  # type: ignore
+    )
 
     actions = []
     if isinstance(other, ShareTensor):
@@ -357,7 +366,13 @@ def smpc_mul(
                 "spdz_mask",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
+                kwargs_id={
+                    "eps_id": eps_id,
+                    "delta_id": delta_id,
+                    "a_share": a_share,
+                    "b_share": b_share,
+                    "c_share": c_share,
+                },
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,
                 address=client.address,
@@ -369,7 +384,13 @@ def smpc_mul(
                 "spdz_multiply",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
+                kwargs_id={
+                    "eps_id": eps_id,
+                    "delta_id": delta_id,
+                    "a_share": a_share,
+                    "b_share": b_share,
+                    "c_share": c_share,
+                },
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
                 address=client.address,

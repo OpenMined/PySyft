@@ -76,7 +76,8 @@ def mul_master(
     # TODO: Should modify to parallel execution.
 
     res_shares = [
-        getattr(a, "__mul__")(a, b, **kwargs) for a, b in zip(x.child, y.child)
+        getattr(a, "__mul__")(a, b, shape_x, shape_y, **kwargs)
+        for a, b in zip(x.child, y.child)
     ]
 
     return res_shares  # type: ignore
