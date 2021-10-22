@@ -48,7 +48,6 @@ class ABY3:
         shape = x.shape
         parties = x.parties
         nr_parties = len(parties)
-        ring_size = 2 ** 32  # TODO: Should extract from global context for general case
 
         decomposed_shares = [
             share.bit_decomposition(share, ring_size, False) for share in x.child

@@ -26,6 +26,7 @@ from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
 from ....store.storeable_object import StorableObject
 from ...store import CryptoPrimitiveProvider
+from ..aby3 import ABY3
 
 # from sympc.utils import parallel_execution
 
@@ -151,6 +152,23 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         decompositions.append(res)
 
     return decompositions  # type: ignore
+
+
+def MSB(x: MPCTensor) -> MPCTensor:
+    """Computes the MSB of the underlying share
+
+    Args:
+        x (MPCTensor): Input MPCTensor to compute MSB on.
+
+    Returns:
+        msb (MPCTensor): returns arithmetic shares of the MSB.
+    """
+    ring_size = 2 ** 32  # TODO : Should extract ring_size elsewhere for generality.
+    decomposed_shares = ABY3.bit_decomposition(x)
+    msb_share = decomposed_shares[-1]
+    msb = ABY3.bit_injection(msb_share, ring_size)
+
+    return msb
 
 
 def beaver_populate(
