@@ -28,6 +28,9 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....tensor.smpc.share_tensor import ShareTensor
+from ....tensor.smpc.tensor_list import TensorList
+from ....tensor.smpc.utils import RING_SIZE_TO_TYPE
+from ....tensor.smpc.utils import get_nr_bits
 
 
 @serializable()
@@ -390,49 +393,58 @@ def smpc_mul(
     return actions
 
 
-def local_decomposition(share: ShareTensor) -> ShareTensor:
+def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> TensorList:
+    """Performs local decomposition to generate shares of shares.
+
+    Args:
+        x (ShareTensor) : input ShareTensor.
+        ring_size (str) : Ring size to generate decomposed shares in.
+        bitwise (bool): Perform bit level decomposition on bits if set.
+
+    Returns:
+        List[List[ShareTensor]]: Decomposed shares in the given ring size.
+    """
     # TODO: George or Rasswanth check if we can use directly the generator from shareTensor
     # Having this value here is not ok
-    seed_przs = 42
-    generator = np.random.default_rng(seed_przs)
+    # seed_przs = 42
+    # generator = np.random.default_rng(seed_przs)
 
-    print("NR PARTIES", share.nr_parties)
-    print("parties_info", share.parties_info)
+    rank = x.rank
+    nr_parties = x.nr_parties
+    numpy_type = RING_SIZE_TO_TYPE[ring_size]
+    shape = x.shape
+    zero = np.zeros(shape, numpy_type)
 
-    # TODO: We need to take this 32 from the share ring_size
-    shares = []
-    for rank in range(share.nr_parties):
-        if rank == share.rank:
-            # we need to share the secret
-            value = []
-            for i in range(32):
-                new_share = share.copy_tensor()
-                new_share.child = ((new_share.child >> i) & 1).astype(np.int32)
-                value.append(new_share)
+    share_lst = TensorList()
 
-        else:
-            # just generate a random number for PRZS
-            value = [None] * 32  # type: ignore
+    input_shares = []
 
-        shares = [
-            ShareTensor.generate_przs(
-                value=value[i],
-                ring_size=2,
-                rank=share.rank,
-                shape=share.child.shape,
-                generator_przs=generator,
-                parties_info=share.parties_info,
-            )
-            for i in range(32)
-        ]
+    if bitwise:
+        ring_bits = get_nr_bits(x.ring_size)  # for bit-wise decomposition
+        input_shares = [x.bit_extraction(idx) for idx in range(ring_bits)]
+    else:
+        input_shares.append(x)
 
-    print("Those are the shares", shares)
-    return shares  # type: ignore
+    for share in input_shares:
+        share_sh = TensorList()
+        for i in range(nr_parties):
+            sh = x.copy_tensor()
+            sh.ring_size = ring_size
+            if rank != i:
+                sh.child = deepcopy(zero)
+            else:
+                sh.child = deepcopy(share.child)
+            share_sh.append(sh)
+        share_lst.append(share_sh)
+
+    return share_lst
 
 
 def bit_decomposition(
     nr_parties: int,
     self_id: UID,
+    ring_size: UID,
+    bitwise: UID,
     seed_id_locations: int,
     node: Any,
     client: Any,
@@ -446,7 +458,7 @@ def bit_decomposition(
         SMPCActionMessage(
             "local_decomposition",
             self_id=self_id,
-            args_id=[],
+            args_id=[ring_size, bitwise],
             kwargs_id={},
             ranks_to_run_action=list(range(nr_parties)),
             result_id=result_id,
