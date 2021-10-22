@@ -36,3 +36,9 @@ class TensorList:
 
     def get_tensor_list(self, item: int) -> TensorList:
         return self.list[item]
+
+    def __repr__(self) -> str:
+        str_list = ""
+        for data in self.list:
+            str_list += data.__repr__() + ","
+        return f"[{str_list}]"
