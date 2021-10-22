@@ -134,9 +134,22 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
 
     # TODO: Should modify to parallel execution.
     kwargs = {"seed_id_locations": secrets.randbits(64)}
-    res_shares = [a.__gt__(b, **kwargs) for a, b in zip(x.child, y.child)]
 
-    return res_shares  # type: ignore
+    # diff = a - b
+    # bit decomposition
+    # sum carry adder
+    # res = sign(diff)
+    res_shares = a - b
+
+    nr_parties = len(parties_info)
+    decompositions: List[MPCTensor] = []
+    decomposition = [getattr(share, "decomposition") for share in res_shares.child]
+    for i in range(32):
+        shares = [decomposition[party_idx][i] for party_idx in range(nr_parties)]
+        res = MPCTensor(shares=shares, parties=parties, shape=res_shares.shape)
+        decompositions.append(res)
+
+    return decompositions
 
 
 def beaver_populate(

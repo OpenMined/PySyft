@@ -480,6 +480,20 @@ class ShareTensor(PassthroughTensor):
             "It should not reach this point since we generate SMPCAction for this"
         )
 
+    def decomposition(self) -> "ShareTensor":
+        """Apply the "decomposition" operation on self
+
+        Args:
+            None
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        raise ValueError(
+            "It should not reach this point since we generate SMPCAction for this"
+        )
+
+
     def __eq__(self, other: Any) -> bool:
         """Equal operator.
         Check if "self" is equal with another object given a set of
