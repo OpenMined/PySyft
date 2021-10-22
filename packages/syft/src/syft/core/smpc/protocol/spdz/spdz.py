@@ -26,7 +26,6 @@ from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
 from ....store.storeable_object import StorableObject
 from ...store import CryptoPrimitiveProvider
-from ..aby3 import ABY3
 
 # from sympc.utils import parallel_execution
 
@@ -155,6 +154,9 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
 
 
 def MSB(x: MPCTensor) -> MPCTensor:
+    # relative
+    from ..aby3 import ABY3
+
     """Computes the MSB of the underlying share
 
     Args:
