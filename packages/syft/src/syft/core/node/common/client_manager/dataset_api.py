@@ -1,5 +1,6 @@
 # stdlib
 import logging
+import sys
 from typing import Any
 from typing import Dict
 from typing import List
@@ -10,7 +11,10 @@ import pandas as pd
 
 # relative
 from ..... import deserialize
+from .....core.tensor.autodp.adp_tensor import ADPTensor
+from .....core.tensor.tensor import Tensor
 from ....common import UID
+from ....common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...abstract.node import AbstractNodeClient
 from ...domain.enums import RequestAPIFields
 from ...domain.enums import ResponseObjectEnum
@@ -329,3 +333,53 @@ class Dataset:
         """
 
         return initial_boilerplate + rows + end_boilerplate
+
+    def add(self, name: str, value: Any, skip_checks: bool = False) -> None:
+        """Add a new asset to the dataset.
+
+        Args:
+            name (str): Name of the asset
+            value (dict): Value of the asset
+        """
+
+        # relative
+        from .....lib.python.util import downcast
+
+        if not skip_checks:
+            if not isinstance(value, Tensor) or not isinstance(
+                getattr(value, "child", None), ADPTensor
+            ):
+                print(
+                    "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
+                    + name
+                    + "' which cannot be tracked with differential privacy because it is a "
+                    + str(type(value))
+                    + " object.\n\n"
+                    + "This means you'll need to manually approve any requests which "
+                    + "leverage this data. If this is ok with you, proceed. If you'd like to use "
+                    + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
+                    + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                )
+
+                pref = input("Are you sure you want to proceed? (y/n)")
+
+                while pref != "y" and pref != "n":
+                    pref = input(
+                        "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                    )
+                if pref == "n":
+                    raise Exception("Dataset loading cancelled.")
+
+                asset = {name: value}
+                asset = downcast(asset)
+                binary_dataset = serialize(asset, to_bytes=True)
+
+                metadata = {"dataset_id": bytes(str(self.id), "utf-8")}
+                metadata = downcast(metadata)
+
+                sys.stdout.write("\rLoading dataset... uploading...")
+                # Add a new asset to the dataset pointer
+                DatasetRequestAPI(self.client).create_syft(
+                    dataset=binary_dataset, metadata=metadata, platform="syft"
+                )
+                sys.stdout.write("\rLoading dataset... uploading... SUCCESS!")

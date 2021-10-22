@@ -88,7 +88,9 @@ def _handle_dataset_creation_syft(
     msg: CreateDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> None:
     result = deserialize(msg.dataset, from_bytes=True)
-    dataset_id = node.datasets.register(**msg.metadata)
+    dataset_id = msg.metadata.get("dataset_id")
+    if not dataset_id:
+        dataset_id = node.datasets.register(**msg.metadata)
 
     for table_name, table in result.items():
         id_at_location = UID()
