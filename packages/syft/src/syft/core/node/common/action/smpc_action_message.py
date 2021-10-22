@@ -352,12 +352,6 @@ def smpc_mul(
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
     other = node.store[other_id].data
-    a_shape = node.store[a_shape_id].data
-    b_shape = node.store[b_shape_id].data
-    crypto_store = ShareTensor.crypto_store
-    a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-        "beaver_mul", a_shape, b_shape, remove=True  # type: ignore
-    )
 
     actions = []
     if isinstance(other, ShareTensor):
@@ -368,6 +362,12 @@ def smpc_mul(
         mask_result = UID(UUID(bytes=generator.bytes(16)))
         eps_id = UID(UUID(bytes=generator.bytes(16)))
         delta_id = UID(UUID(bytes=generator.bytes(16)))
+        a_shape = node.store[a_shape_id].data
+        b_shape = node.store[b_shape_id].data
+        crypto_store = ShareTensor.crypto_store
+        a_share, b_share, c_share = crypto_store.get_primitives_from_store(
+            "beaver_mul", a_shape, b_shape, remove=True  # type: ignore
+        )
 
         actions.append(
             SMPCActionMessage(
