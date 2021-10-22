@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from datetime import datetime
 import time
 from typing import Callable
 from typing import Dict
@@ -42,10 +43,14 @@ from ..request_handler.request_handler_messages import (
 from ..request_handler.request_handler_messages import GetAllRequestHandlersMessage
 from ..request_handler.request_handler_messages import UpdateRequestHandlerMessage
 from ..request_receiver.request_receiver_messages import RequestMessage
+from ..request_receiver.request_receiver_messages import RequestStatus
+from .object_request_messages import CreateBudgetRequestMessage
 from .object_request_messages import CreateRequestMessage
 from .object_request_messages import CreateRequestResponse
 from .object_request_messages import DeleteRequestMessage
 from .object_request_messages import DeleteRequestResponse
+from .object_request_messages import GetBudgetRequestsMessage
+from .object_request_messages import GetBudgetRequestsResponse
 from .object_request_messages import GetRequestMessage
 from .object_request_messages import GetRequestResponse
 from .object_request_messages import GetRequestsMessage
@@ -98,11 +103,11 @@ def create_request_msg(
             message="Invalid request payload, empty fields (object_id/reason/request_type)!"
         )
 
-    valid_paramaters = request_type == "permissions" or request_type == "budget"
+    valid_paramaters = request_type == "data" or request_type == "budget"
 
     if not valid_paramaters:
         raise InvalidParameterValueError(
-            message='Request type should be either "permissions” or “budget”.'
+            message='Request type should be either "data” or “budget”.'
         )
 
     requests = node.data_requests
@@ -124,6 +129,51 @@ def create_request_msg(
         address=msg.reply_to,
         status_code=200,
         content=request_json,
+    )
+
+
+def create_budget_request_msg(
+    msg: CreateBudgetRequestMessage,
+    node: Domain,
+    verify_key: VerifyKey,
+) -> None:
+    if verify_key is None:
+        raise ValueError(
+            "Can't process Request service without a given " "verification key"
+        )
+
+    # since we reject/accept requests based on the ID, we don't want there to be
+    # multiple requests with the same ID because this could cause security problems.
+    _duplicate_request = node.data_requests.contain(
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
+        status="pending",
+    )
+
+    if _duplicate_request:
+        raise DuplicateRequestException(
+            "You have already requested this item before!",
+            node.data_requests.all(),
+            "My Requests",
+        )
+
+    current_user = node.users.first(
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+    )
+
+    node.data_requests.create_request(
+        user_id=current_user.id,
+        user_name=current_user.name,
+        user_email=current_user.email,
+        user_role=node.roles.first(id=current_user.role).name,
+        user_budget=current_user.budget,
+        institution=current_user.institution,
+        website=current_user.website,
+        reason=msg.reason,
+        object_id=str(UID().value),
+        object_type="<Budget>",
+        requested_budget=msg.budget,
+        request_type="budget",
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
     )
 
 
@@ -162,7 +212,6 @@ def get_request_msg(
     return GetRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        # request_id=request_id
         request_id=request_json,
     )
 
@@ -177,14 +226,61 @@ def get_all_request_msg(
     allowed = users.can_triage_requests(verify_key=verify_key)
 
     if allowed:
-        requests = node.data_requests.all()
-        requests_json = [model_to_json(request) for request in requests]
+        requests = node.data_requests.query(request_type="data")
+        response = list()
+        for request in requests:
+            # Get current state user
+            if node.data_requests.status(request.id) == RequestStatus.Pending:
+                _user = node.users.first(id=request.user_id)
+                user = model_to_json(_user)
+                user["role"] = node.roles.first(id=_user.role).name
+                user["current_budget"] = user["budget"]
+            # Get History state user
+            else:
+                user = node.data_requests.get_user_info(request_id=request.id)
+            request = model_to_json(request)
+            response.append({"user": user, "req": request})
+
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
+
     return GetRequestsResponse(
         status_code=200,
         address=msg.reply_to,
-        content=requests_json,
+        content=response,
+    )
+
+
+def get_all_budget_requests(
+    msg: GetBudgetRequestsMessage,
+    node: Domain,
+    verify_key: VerifyKey,
+) -> GetBudgetRequestsResponse:
+    users = node.users
+
+    allowed = users.can_triage_requests(verify_key=verify_key)
+
+    if allowed:
+        requests = node.data_requests.query(request_type="budget")
+        response = list()
+        for request in requests:
+            # Get current state user
+            if node.data_requests.status(request.id) == RequestStatus.Pending:
+                _user = node.users.first(id=request.user_id)
+                user = model_to_json(_user)
+                user["role"] = node.roles.first(id=_user.role).name
+                user["current_budget"] = user["budget"]
+                request = model_to_json(request)
+            # Get History state user
+            else:
+                user = node.data_requests.get_user_info(request_id=request.id)
+                request = node.data_requests.get_req_info(request_id=request.id)
+            response.append({"user": user, "req": request})
+    else:
+        raise AuthorizationError("You're not allowed to get Request information!")
+    return GetBudgetRequestsResponse(
+        address=msg.reply_to,
+        content=response,
     )
 
 
@@ -224,11 +320,11 @@ def update_request_msg(
         # not really requesting an object per-say, we're requesting for a budget increase
         # TODO: clean up the RequestMessage API to explicitly have multiple request types, including
         # one for budget requests.
-        if "budget" in _req.object_type:
+        if "<Budget>" in _req.object_type:
             current_user = node.users.first(verify_key=_req.verify_key)
             node.users.set(
                 user_id=current_user.id,
-                budget=current_user.budget + float(_req.object_type.split(":")[1]),
+                budget=current_user.budget + _req.requested_budget,
             )
         else:
             tmp_obj = node.store[UID.from_string(_req.object_id)]
@@ -359,6 +455,7 @@ class RequestService(ImmediateNodeServiceWithReply):
         Type[CreateRequestMessage],
         Type[GetRequestMessage],
         Type[GetRequestsMessage],
+        Type[GetBudgetRequestsMessage],
         Type[UpdateRequestMessage],
         Type[DeleteRequestMessage],
         Type[RequestAnswerMessage],
@@ -370,6 +467,7 @@ class RequestService(ImmediateNodeServiceWithReply):
         CreateRequestMessage,
         GetRequestMessage,
         GetRequestsMessage,
+        GetBudgetRequestsMessage,
         UpdateRequestMessage,
         DeleteRequestMessage,
         RequestAnswerMessage,
@@ -381,6 +479,7 @@ class RequestService(ImmediateNodeServiceWithReply):
         CreateRequestResponse,
         GetRequestResponse,
         GetRequestsResponse,
+        GetBudgetRequestsResponse,
         UpdateRequestResponse,
         DeleteRequestResponse,
         RequestAnswerResponse,
@@ -392,6 +491,7 @@ class RequestService(ImmediateNodeServiceWithReply):
         CreateRequestMessage: create_request_msg,
         GetRequestMessage: get_request_msg,
         GetRequestsMessage: get_all_request_msg,
+        GetBudgetRequestsMessage: get_all_budget_requests,
         UpdateRequestMessage: update_request_msg,
         DeleteRequestMessage: del_request_msg,
         RequestAnswerMessage: request_answer_msg,
@@ -417,6 +517,7 @@ class RequestService(ImmediateNodeServiceWithReply):
             GetRequestMessage,
             GetRequestsMessage,
             GetRequestsMessage,
+            GetBudgetRequestsMessage,
             UpdateRequestMessage,
             DeleteRequestMessage,
             RequestAnswerMessage,
@@ -432,7 +533,6 @@ def build_request_message(
         raise ValueError(
             "Can't process Request service without a given " "verification key"
         )
-
     if msg.requester_verify_key != verify_key:
         raise Exception(
             "You tried to request access for a key that is not yours!"
@@ -461,10 +561,15 @@ def build_request_message(
 
     node.data_requests.create_request(
         user_id=current_user.id,
-        user_name=current_user.email,
+        user_name=current_user.name,
+        user_email=current_user.email,
+        user_role=node.roles.first(id=current_user.role).name,
+        user_budget=current_user.budget,
+        institution=current_user.institution,
+        website=current_user.website,
         object_id=str(msg.object_id.value),
         reason=msg.request_description,
-        request_type="permissions",
+        request_type="data",
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         object_type=msg.object_type,
         tags=node.store[msg.object_id]._tags if "budget" not in msg.object_type else [],
@@ -484,21 +589,29 @@ def accept_or_deny_request(
     current_user = node.users.first(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
     )
-
     _req = node.data_requests.first(id=str(_msg.request_id.value))
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
     if _msg.accept:
         if _req and _can_triage_request:
-            tmp_obj = node.store[UID.from_string(_req.object_id)]
-            tmp_obj.read_permissions[
-                VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
-            ] = _req.id
-            node.store[UID.from_string(_req.object_id)] = tmp_obj
+            if "<Budget>" in _req.object_type:
+                current_user = node.users.first(verify_key=_req.verify_key)
+                node.users.set(
+                    user_id=current_user.id,
+                    budget=current_user.budget + _req.requested_budget,
+                )
+            else:
+                tmp_obj = node.store[UID.from_string(_req.object_id)]
+                tmp_obj.read_permissions[
+                    VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
+                ] = _req.id
+                node.store[UID.from_string(_req.object_id)] = tmp_obj
+
             # TODO: In the future we'll probably need to keep a request history
             # So, instead of deleting a data access request, we would like to just change its
             # status.
             # node.data_requests.set(request_id=_req.id, status="accepted")
-            node.data_requests.delete(id=_req.id)
+            # node.data_requests.delete(id=_req.id)
+            status = "accepted"
     else:
         _req_owner = current_user.verify_key == _req.verify_key
         if _req and (_can_triage_request or _req_owner):
@@ -506,7 +619,19 @@ def accept_or_deny_request(
             # So, instead of deleting a data access request, we would like to just change its
             # status.
             # node.data_requests.set(request_id=_req.id, status="denied")
-            node.data_requests.delete(id=_req.id)
+            # node.data_requests.delete(id=_req.id)
+            status = "denied"
+
+    node.data_requests.modify(
+        {"id": _req.id},
+        {
+            "status": status,
+            "reviewer_name": current_user.name,
+            "reviewer_role": node.roles.first(id=current_user.role).name,
+            "reviewer_comment": "",
+            "updated_on": datetime.now(),
+        },
+    )  # type: ignore
 
 
 def update_req_handler(
@@ -569,6 +694,7 @@ def update_req_handler(
 class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
     INPUT_TYPE = Union[
         Type[RequestMessage],
+        Type[CreateBudgetRequestMessage],
         Type[AcceptOrDenyRequestMessage],
         Type[UpdateRequestHandlerMessage],
     ]
@@ -581,6 +707,7 @@ class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
 
     msg_handler_map: Dict[INPUT_TYPE, Callable[..., None]] = {
         RequestMessage: build_request_message,
+        CreateBudgetRequestMessage: create_budget_request_msg,
         AcceptOrDenyRequestMessage: accept_or_deny_request,
         UpdateRequestHandlerMessage: update_req_handler,
     }
@@ -602,4 +729,9 @@ class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
-        return [RequestMessage, AcceptOrDenyRequestMessage, UpdateRequestHandlerMessage]
+        return [
+            RequestMessage,
+            AcceptOrDenyRequestMessage,
+            UpdateRequestHandlerMessage,
+            CreateBudgetRequestMessage,
+        ]

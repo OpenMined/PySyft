@@ -10,7 +10,7 @@ from grid.api.meta import ping
 from grid.api.meta import status
 from grid.api.requests.routes import router as requests_router
 from grid.api.roles import roles
-from grid.api.setup import setup
+from grid.api.settings import settings
 from grid.api.syft import syft
 from grid.api.users.routes import router as user_router
 from grid.api.vpn import vpn
@@ -23,7 +23,7 @@ api_router.include_router(requests_router, prefix="/requests", tags=["requests"]
 api_router.include_router(roles.router, prefix="/roles", tags=["roles"])
 api_router.include_router(syft.router, prefix="/syft", tags=["syft"])
 api_router.include_router(datasets.router, prefix="/datasets", tags=["datasets"])
-api_router.include_router(setup.router, prefix="/setup", tags=["setup"])
+api_router.include_router(settings.router, prefix="/settings", tags=["settings"])
 api_router.include_router(
     association_requests.router,
     prefix="/association-requests",

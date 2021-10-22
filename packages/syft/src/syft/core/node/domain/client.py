@@ -44,6 +44,10 @@ from ..common.node_service.get_remaining_budget.get_remaining_budget_messages im
     GetRemainingBudgetMessage,
 )
 from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
+from ..common.node_service.node_setup.node_setup_messages import UpdateSetupMessage
+from ..common.node_service.object_request.object_request_messages import (
+    CreateBudgetRequestMessage,
+)
 from ..common.node_service.object_transfer.object_transfer_messages import (
     LoadObjectMessage,
 )
@@ -332,19 +336,10 @@ class DomainClient(Client):
                     input("Why should the domain owner give you more epsilon:")
                 )
 
-        # relative
-        from ..common.node_service.request_receiver.request_receiver_messages import (
-            RequestMessage,
-        )
-
-        msg = RequestMessage(
-            request_description=reason,
+        msg = CreateBudgetRequestMessage(
+            reason=reason,
+            budget=eps,
             address=self.address,
-            owner_address=self.address,
-            object_id=UID(),  # TODO: this is a dummy ID just to appease things
-            object_type="budget:" + str(eps),  # TODO: remove this
-            requester_verify_key=self.verify_key,
-            timeout_secs=-1,
         )
 
         self.send_immediate_msg_without_reply(msg=msg)
@@ -378,6 +373,44 @@ class DomainClient(Client):
 
         response = self.conn.setup(**kwargs)  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
+
+    def reset(self) -> None:
+        logging.warning(
+            "Node reset will delete the data, as well as the requests. Do you want to continue (y/N)?"
+        )
+        response = input().lower()
+        if response == "y":
+            response = self.routes[0].connection.reset()  # type: ignore
+
+    def configure(self, **kwargs: Any) -> Any:
+        if "daa_document" in kwargs.keys():
+            kwargs["daa_document"] = open(kwargs["daa_document"], "rb").read()
+        else:
+            kwargs["daa_document"] = b""
+        response = self._perform_grid_request(  # type: ignore
+            grid_msg=UpdateSetupMessage, content=kwargs
+        ).content
+        logging.info(response)
+
+    @property
+    def settings(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
+        return self._perform_grid_request(  # type: ignore
+            grid_msg=GetSetUpMessage, content=kwargs
+        ).content  # type : ignore
+
+    def search(self, query: List, pandas: bool = False) -> Any:
+        response = self._perform_grid_request(
+            grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
+        )
+        if pandas:
+            response = DataFrame(response)
+
+        return response
+
+    def apply_to_network(
+        self, target: Client, route_index: int = 0, **metadata: str
+    ) -> None:
+        self.association.create(source=self, target=target, metadata=metadata)
 
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
