@@ -175,8 +175,16 @@ class DatasetRequestAPI(RequestAPI):
     def __len__(self) -> int:
         return len(self.all())
 
-    def __delitem__(self, key: str) -> Any:
-        self.delete(dataset_id=key)
+    def __delitem__(self, key: int) -> Any:
+
+        try:
+            dataset = self.all()[key]
+        except IndexError as err:
+            raise err
+
+        dataset_id = dataset.get("id")
+        self.delete(dataset_id=dataset_id)
+        return True
 
     def _repr_html_(self) -> str:
         if len(self) > 0:
@@ -370,16 +378,51 @@ class Dataset:
                 if pref == "n":
                     raise Exception("Dataset loading cancelled.")
 
-                asset = {name: value}
-                asset = downcast(asset)
-                binary_dataset = serialize(asset, to_bytes=True)
-
-                metadata = {"dataset_id": bytes(str(self.id), "utf-8")}
-                metadata = downcast(metadata)
-
-                sys.stdout.write("\rLoading dataset... uploading...")
-                # Add a new asset to the dataset pointer
-                DatasetRequestAPI(self.client).create_syft(
-                    dataset=binary_dataset, metadata=metadata, platform="syft"
+            existing_asset_names = [d.get("name") for d in self.data]
+            if name in existing_asset_names:
+                raise Exception(
+                    f"\n\tIntegrityError: Asset with name: `{name}` already exists."
+                    "Please use a different name."
                 )
-                sys.stdout.write("\rLoading dataset... uploading... SUCCESS!")
+
+            asset = {name: value}
+            asset = downcast(asset)
+            binary_dataset = serialize(asset, to_bytes=True)
+
+            metadata = {"dataset_id": bytes(str(self.id), "utf-8")}
+            metadata = downcast(metadata)
+
+            sys.stdout.write("\rLoading dataset... uploading...")
+            # Add a new asset to the dataset pointer
+            DatasetRequestAPI(self.client).create_syft(
+                dataset=binary_dataset, metadata=metadata, platform="syft"
+            )
+            sys.stdout.write("\rLoading dataset... uploading... SUCCESS!")
+            self.refresh()
+
+    def delete(self, name: str) -> bool:
+        # relative
+        from .....lib.python.util import downcast
+
+        asset_id = None
+
+        for idx, d in enumerate(self.data):
+            if d["name"] == name:
+                asset_id = idx + 1  # As index starts from zero
+
+        if asset_id is None:
+            raise Exception(
+                f"\n\tAssetDoesNotExists: The asset with name `{name}` does not exists."
+            )
+
+        asset_id = downcast(asset_id)
+        DatasetRequestAPI(self.client).delete(dataset_id=asset_id)
+        self.refresh()
+
+        return True
+
+    def refresh(self) -> None:
+        """Update data to its latest state."""
+
+        datasets = DatasetRequestAPI(self.client).all()
+        self.data = datasets[self.key].get("data", [])

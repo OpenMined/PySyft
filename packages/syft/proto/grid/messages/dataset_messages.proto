@@ -54,10 +54,10 @@ message UpdateDatasetMessage {
   syft.core.io.Address reply_to = 5;
 }
 
-// UPDATE Dataset
+// DELETE Dataset
 message DeleteDatasetMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  int64 dataset_id = 3;
+  string dataset_id = 3;
   syft.core.io.Address reply_to = 4;
 }

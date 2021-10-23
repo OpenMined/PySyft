@@ -210,6 +210,8 @@ def delete_dataset_msg(
 ) -> SuccessResponseMessage:
     _allowed = node.users.can_upload_data(verify_key=verify_key)
 
+    print(msg.dataset_id)
+
     if _allowed:
         node.datasets.delete(id=msg.dataset_id)
     else:
