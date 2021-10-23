@@ -5,6 +5,7 @@ https://eprint.iacr.org/2018/403.pdf
 """
 # stdlib
 from functools import reduce
+import secrets
 from typing import Any
 from typing import List
 
@@ -49,20 +50,25 @@ class ABY3:
         parties = x.parties
         nr_parties = len(parties)
 
+        kwargs = {"seed_id_locations": secrets.randbits(64)}
         decomposed_shares = [
-            share.bit_decomposition(share, ring_size, False) for share in x.child
+            share.bit_decomposition(share, ring_size, False, **kwargs)
+            for share in x.child
         ]
         # List which contains the share of a single bit
         res_shares: List[MPCTensor] = []
 
-        bit_shares = map(lambda x: x.get_tensor_list(0)), decomposed_shares  # type: ignore
-        bit_shares = map(lambda x: [x[i] for i in range(nr_parties)], bit_shares)  # type: ignore
+        bit_shares = [share.get_tensor_list(0) for share in decomposed_shares]
+        bit_shares = [
+            [share_lst[i] for i in range(nr_parties)] for share_lst in bit_shares
+        ]
         bit_shares = zip(*bit_shares)  # type: ignore
         for bit_sh in bit_shares:
             mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
             res_shares.append(mpc)
 
-        arith_share = reduce(lambda x, y: x + y - (x * y * 2), res_shares)
+        # TODO: Should modify to xor at mpc tensor level
+        arith_share = reduce(lambda a, b: a + b - (a * b * 2), res_shares)
 
         return arith_share
 
@@ -107,16 +113,21 @@ class ABY3:
         ring_bits = get_nr_bits(ring_size)
         shape = x.shape
         parties = x.parties
+
         # List which contains the share of each share.
+        # TODO: Shouldn't this be an empty list? and we append to it?
         res_shares: List[List[MPCTensor]] = [[] for _ in range(nr_parties)]
 
+        kwargs = {"seed_id_locations": secrets.randbits(64)}
         decomposed_shares = [
-            share.bit_decomposition(share, 2, True) for share in x.child
+            share.bit_decomposition(share, 2, True, **kwargs) for share in x.child
         ]
 
         for idx in range(ring_bits):
-            bit_shares = map(lambda x: x.get_tensor_list(idx), decomposed_shares)
-            bit_shares = map(lambda x: [x[i] for i in range(nr_parties)], bit_shares)
+            bit_shares = [share.get_tensor_list(idx) for share in decomposed_shares]
+            bit_shares = [
+                [share_lst[i] for i in range(nr_parties)] for share_lst in bit_shares
+            ]
             bit_shares = zip(*bit_shares)  # type: ignore
             for i, bit_sh in enumerate(bit_shares):
                 mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
