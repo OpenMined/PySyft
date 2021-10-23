@@ -31,6 +31,7 @@ from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.tensor_list import TensorList
 from ....tensor.smpc.utils import RING_SIZE_TO_TYPE
 from ....tensor.smpc.utils import get_nr_bits
+from .exceptions import ObjectNotInStore
 
 
 @serializable()
@@ -237,11 +238,6 @@ def smpc_basic_op(
         )
 
     return actions
-
-
-# Purposefully raise a custom error to retry the task in celery worker.
-class ObjectNotInStore(Exception):
-    pass
 
 
 # TODO : Should move to spdz directly in syft/core/smpc
@@ -468,7 +464,7 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
             if rank != i:
                 sh.child = deepcopy(zero)
             else:
-                sh.child = deepcopy(share.child)
+                sh.child = deepcopy(share.child.astype(numpy_type))
             share_sh.append(sh)
         share_lst.append(share_sh)
 
