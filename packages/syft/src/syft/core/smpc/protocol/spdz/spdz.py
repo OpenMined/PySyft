@@ -23,6 +23,7 @@ from ....common.uid import UID
 from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
 from ....store.storeable_object import StorableObject
+from ....tensor.smpc.share_tensor import ShareTensor
 from ...store import CryptoPrimitiveProvider
 
 # from sympc.utils import parallel_execution
@@ -57,6 +58,7 @@ def mul_master(
 
     shape_x = tuple(x.shape)  # type: ignore
     shape_y = tuple(y.shape)  # type: ignore
+    ring_size = x.ring_size
 
     primitives = CryptoPrimitiveProvider.generate_primitives(
         f"beaver_{op_str}",
@@ -68,7 +70,6 @@ def mul_master(
         },
         p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
     )
-    print(primitives)
     # TODO: Should modify to parallel execution.
 
     res_shares = [

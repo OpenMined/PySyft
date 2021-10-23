@@ -26,12 +26,15 @@ import torch
 import syft as sy
 
 # relative
+from .... import logger
 from ...smpc.protocol.spdz import spdz
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
 from .party import Party
 from .share_tensor import ShareTensor
+from .utils import RING_SIZE_TO_TYPE
+from .utils import TYPE_TO_RING_SIZE
 from .utils import ispointer
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -62,6 +65,7 @@ class MPCTensor(PassthroughTensor):
         "mpc_shape",
         "parties",
         "parties_info",
+        "ring_size",
     )
 
     def __init__(
@@ -71,6 +75,7 @@ class MPCTensor(PassthroughTensor):
         shares: Optional[List[ShareTensor]] = None,
         shape: Optional[Tuple[int, ...]] = None,
         seed_przs: Optional[int] = None,
+        ring_size: Optional[int] = None,
     ) -> None:
 
         if secret is None and shares is None:
@@ -92,6 +97,19 @@ class MPCTensor(PassthroughTensor):
         if shape is None:
             raise ValueError("Shape of the secret should be known")
 
+        if ring_size is not None:
+            self.ring_size = ring_size
+        else:
+            secret_type = getattr(secret, "dtype", None)
+            ring_size = TYPE_TO_RING_SIZE.get(secret_type, None)
+            if ring_size is None:
+                logger.warning(
+                    "Ring size was not found for secret {secret}. Defaulting to 2**32"
+                )
+                self.ring_size = 2 ** 32
+            else:
+                self.ring_size = ring_size
+
         if secret is not None:
             shares = MPCTensor._get_shares_from_secret(
                 secret=secret,
@@ -99,6 +117,7 @@ class MPCTensor(PassthroughTensor):
                 parties_info=self.parties_info,
                 shape=shape,
                 seed_przs=seed_przs,
+                ring_size=self.ring_size,
             )
 
         if shares is None:
@@ -207,6 +226,7 @@ class MPCTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         seed_przs: int,
         parties_info: List[Party],
+        ring_size: int,
     ) -> List[ShareTensor]:
         if ispointer(secret):
             if shape is None:
@@ -217,10 +237,15 @@ class MPCTensor(PassthroughTensor):
                 parties=parties,
                 seed_przs=seed_przs,
                 parties_info=parties_info,
+                ring_size=ring_size,
             )
 
         return MPCTensor._get_shares_from_local_secret(
-            secret=secret, seed_przs=seed_przs, shape=shape, parties_info=parties_info
+            secret=secret,
+            seed_przs=seed_przs,
+            ring_size=ring_size,
+            shape=shape,
+            parties_info=parties_info,
         )
 
     @staticmethod
@@ -230,6 +255,7 @@ class MPCTensor(PassthroughTensor):
         parties: List[Any],
         seed_przs: int,
         parties_info: List[Party],
+        ring_size: int,
     ) -> List[ShareTensor]:
         shares = []
         for i, party in enumerate(parties):
@@ -255,6 +281,7 @@ class MPCTensor(PassthroughTensor):
                     shape=shape,
                     seed_przs=seed_przs,
                     share_wrapper=share_wrapper_pointer,
+                    ring_size=ring_size,
                 )
 
             else:
@@ -265,6 +292,7 @@ class MPCTensor(PassthroughTensor):
                         value=value,
                         shape=shape,
                         seed_przs=seed_przs,
+                        ring_size=ring_size,
                     )
                 )
 
@@ -332,10 +360,15 @@ class MPCTensor(PassthroughTensor):
                 )
             return tensor
 
+        dtype = RING_SIZE_TO_TYPE.get(self.ring_size, None)
+
+        if dtype is None:
+            raise ValueErorr(f"Type for ring size {ring_size} was not found!")
+
         local_shares = []
         for share in self.child:
             res = share.get()
-            res = convert_child_numpy_type(res, np.int32)
+            res = convert_child_numpy_type(res, dtype)
             local_shares.append(res)
 
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
