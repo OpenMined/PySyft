@@ -464,7 +464,7 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
             if rank != i:
                 sh.child = deepcopy(zero)
             else:
-                sh.child = deepcopy(share.child)
+                sh.child = deepcopy(share.child.astype(numpy_type))
             share_sh.append(sh)
         share_lst.append(share_sh)
 
