@@ -31,6 +31,7 @@ from ...smpc.store.crypto_store import CryptoStore
 from ..passthrough import PassthroughTensor  # type: ignore
 from .party import Party
 from .utils import RING_SIZE_TO_TYPE
+from .utils import get_nr_bits
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -480,7 +481,7 @@ class ShareTensor(PassthroughTensor):
             "It should not reach this point since we generate SMPCAction for this"
         )
 
-    def decomposition(self) -> "ShareTensor":
+    def bit_decomposition(self) -> "ShareTensor":
         """Apply the "decomposition" operation on self
 
         Args:
@@ -492,7 +493,6 @@ class ShareTensor(PassthroughTensor):
         raise ValueError(
             "It should not reach this point since we generate SMPCAction for this"
         )
-
 
     def __eq__(self, other: Any) -> bool:
         """Equal operator.
@@ -553,6 +553,33 @@ class ShareTensor(PassthroughTensor):
     #     # res = self.apply_function(y, "floordiv")
     #     res.tensor = self.tensor // y
     #     return res
+
+    def bit_extraction(self, pos: int = 0) -> ShareTensor:
+        """Extracts the bit at the specified position.
+
+        Args:
+            pos (int): position to extract bit.
+
+        Returns:
+            ShareTensor : extracted bits at specific position.
+
+        Raises:
+            ValueError: If invalid position is provided.
+        """
+        ring_bits = get_nr_bits(self.ring_size)
+        if pos < 0 or pos > ring_bits - 1:
+            raise ValueError(
+                f"Invalid position for bit_extraction: {pos}, must be in range:[0,{ring_bits-1}]"
+            )
+        shape = self.shape
+        numpy_type = RING_SIZE_TO_TYPE[self.ring_size]
+        # logical shift
+        bit_mask = np.ones(shape, dtype=numpy_type) << pos
+        value = self.child & bit_mask
+        value = value.astype(np.bool_)
+        share = self.copy_tensor()
+        share.child = value
+        return share
 
     @staticmethod
     def hook_method(__self: ShareTensor, method_name: str) -> Callable[..., Any]:

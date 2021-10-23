@@ -10,7 +10,6 @@ SPDZ mechanism used for multiplication Contains functions that are run at:
 from __future__ import annotations
 
 # stdlib
-import secrets
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -52,8 +51,6 @@ def mul_master(
     Returns:
         MPCTensor: Result of the multiplication.
     """
-    # relative
-    # from ....tensor.smpc.mpc_tensor import MPCTensor
 
     parties = x.parties
     parties_info = x.parties_info
@@ -75,7 +72,8 @@ def mul_master(
     # TODO: Should modify to parallel execution.
 
     res_shares = [
-        getattr(a, "__mul__")(a, b, **kwargs) for a, b in zip(x.child, y.child)
+        getattr(a, "__mul__")(a, b, shape_x, shape_y, **kwargs)
+        for a, b in zip(x.child, y.child)
     ]
 
     return res_shares  # type: ignore
@@ -95,8 +93,6 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     Returns:
         MPCTensor: Result of the multiplication.
     """
-    # relative
-    # from ....tensor.smpc.mpc_tensor import MPCTensor
 
     if op_str not in EXPECTED_OPS:
         raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
@@ -133,23 +129,34 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         )
 
     # TODO: Should modify to parallel execution.
-    kwargs = {"seed_id_locations": secrets.randbits(64)}
 
     # diff = a - b
     # bit decomposition
     # sum carry adder
     # res = sign(diff)
-    res_shares = a - b
+    res_shares = x - y
 
-    nr_parties = len(parties_info)
-    decompositions: List[MPCTensor] = []
-    decomposition = [getattr(share, "decomposition") for share in res_shares.child]
-    for i in range(32):
-        shares = [decomposition[party_idx][i] for party_idx in range(nr_parties)]
-        res = MPCTensor(shares=shares, parties=parties, shape=res_shares.shape)
-        decompositions.append(res)
+    return MSB(res_shares)
 
-    return decompositions
+
+def MSB(x: MPCTensor) -> MPCTensor:
+    # relative
+    from ..aby3 import ABY3
+
+    """Computes the MSB of the underlying share
+
+    Args:
+        x (MPCTensor): Input MPCTensor to compute MSB on.
+
+    Returns:
+        msb (MPCTensor): returns arithmetic shares of the MSB.
+    """
+    ring_size = 2 ** 32  # TODO : Should extract ring_size elsewhere for generality.
+    decomposed_shares = ABY3.bit_decomposition(x)
+    msb_share = decomposed_shares[-1]
+    msb = ABY3.bit_injection(msb_share, ring_size)
+
+    return msb
 
 
 def beaver_populate(

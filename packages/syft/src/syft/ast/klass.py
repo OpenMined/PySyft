@@ -127,7 +127,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         seed_id_locations = kwargs.get("seed_id_locations", None)
         if seed_id_locations is None:
             raise ValueError(
-                "There should be a `seed_id_olcations` kwargs when doing an operation for MPCTensor"
+                "There should be a `seed_id_locations` kwargs when doing an operation for MPCTensor"
             )
 
         kwargs["seed_id_locations"] = str(seed_id_locations)
