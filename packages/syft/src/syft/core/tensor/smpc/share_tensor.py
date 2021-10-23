@@ -576,7 +576,7 @@ class ShareTensor(PassthroughTensor):
         # logical shift
         bit_mask = np.ones(shape, dtype=numpy_type) << pos
         value = self.child & bit_mask
-        value.astype(np.bool_)
+        value = value.astype(np.bool_)
         share = self.copy_tensor()
         share.child = value
         return share
