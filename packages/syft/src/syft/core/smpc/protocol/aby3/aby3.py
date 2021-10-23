@@ -58,14 +58,17 @@ class ABY3:
         # List which contains the share of a single bit
         res_shares: List[MPCTensor] = []
 
-        bit_shares = map(lambda x: x.get_tensor_list(0)), decomposed_shares  # type: ignore
-        bit_shares = map(lambda x: [x[i] for i in range(nr_parties)], bit_shares)  # type: ignore
+        bit_shares = [share.get_tensor_list(0) for share in decomposed_shares]
+        bit_shares = [
+            [share_lst[i] for i in range(nr_parties)] for share_lst in bit_shares
+        ]
         bit_shares = zip(*bit_shares)  # type: ignore
         for bit_sh in bit_shares:
             mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
             res_shares.append(mpc)
 
-        arith_share = reduce(lambda x, y: x + y - (x * y * 2), res_shares)
+        # TODO: Should modify to xor at mpc tensor level
+        arith_share = reduce(lambda a, b: a + b - (a * b * 2), res_shares)
 
         return arith_share
 
@@ -110,8 +113,10 @@ class ABY3:
         ring_bits = get_nr_bits(ring_size)
         shape = x.shape
         parties = x.parties
+
         # List which contains the share of each share.
-        res_shares: List[List[MPCTensor]] = [[] for _ in range(nr_parties)] # TODO: Shouldn't this be an empty list? and we append to it?
+        # TODO: Shouldn't this be an empty list? and we append to it?
+        res_shares: List[List[MPCTensor]] = [[] for _ in range(nr_parties)]
 
         kwargs = {"seed_id_locations": secrets.randbits(64)}
         decomposed_shares = [
@@ -123,7 +128,7 @@ class ABY3:
             bit_shares = [
                 [share_lst[i] for i in range(nr_parties)] for share_lst in bit_shares
             ]
-
+            bit_shares = zip(*bit_shares)  # type: ignore
             for i, bit_sh in enumerate(bit_shares):
                 mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
                 res_shares[i].append(mpc)
