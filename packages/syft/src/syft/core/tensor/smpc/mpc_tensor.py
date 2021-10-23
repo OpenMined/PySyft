@@ -89,6 +89,11 @@ class MPCTensor(PassthroughTensor):
         self.seed_przs = seed_przs
         self.parties = parties
         self.parties_info = MPCTensor.get_parties_info(parties)
+
+        if ring_size is not None:
+            self.ring_size = ring_size
+        else:
+            self.ring_size = MPCTensor.get_ring_size_from_secret(secret)
         self.mpc_shape = shape
 
         # TODO: We can get this from the the secret if the secret is local
@@ -96,19 +101,6 @@ class MPCTensor(PassthroughTensor):
         #  =priority&stories_group_by=WORKFLOW_STATE
         if shape is None:
             raise ValueError("Shape of the secret should be known")
-
-        if ring_size is not None:
-            self.ring_size = ring_size
-        else:
-            secret_type = getattr(secret, "dtype", None)
-            ring_size = TYPE_TO_RING_SIZE.get(secret_type, None)
-            if ring_size is None:
-                logger.warning(
-                    "Ring size was not found for secret {secret}. Defaulting to 2**32"
-                )
-                self.ring_size = 2 ** 32
-            else:
-                self.ring_size = ring_size
 
         if secret is not None:
             shares = MPCTensor._get_shares_from_secret(
@@ -137,6 +129,15 @@ class MPCTensor(PassthroughTensor):
         res.sort(key=lambda share: share.client.name + share.client.id.no_dash)
 
         super().__init__(res)
+
+    @staticmethod
+    def get_ring_size_from_secret(secret: Optional[Any] = None) -> int:
+        dtype = secret.public_dtype
+        if ring_size := TYPE_TO_RING_SIZE.get(dtype, None):
+            return ring_size
+
+        logger.warning("Ring size was not found! Defaulting to 2**32.")
+        return 2 ** 32
 
     @staticmethod
     def get_parties_info(parties: Iterable[Any]) -> List[Party]:
@@ -269,6 +270,7 @@ class MPCTensor(PassthroughTensor):
                 TensorWrappedSingleEntityPhiTensorPointer,
             )
 
+            print("Reeeeemote ring_size", ring_size)
             if isinstance(secret, TensorWrappedSingleEntityPhiTensorPointer):
 
                 share_wrapper = secret.to_local_object_without_private_data_child()
@@ -408,6 +410,34 @@ class MPCTensor(PassthroughTensor):
         res = op(np.empty(x_shape), np.empty(y_shape)).shape
         cast(Tuple[int], res)
         return tuple(res)  # type: ignore
+
+    @staticmethod
+    @lru_cache(maxsize=128)
+    def _get_ring_size(
+        op_str: str,
+        x_ring_size: int,
+        y_ring_size: int,
+    ) -> Optional[int]:
+        """Get the ring_size of apply an operation on two values
+
+        Args:
+            op_str (str): the operation to be applied
+            x_ring_size (int): the ring size of op1
+            y_ring_size (int): the ring size of op2
+
+        Returns:
+            The ring size of the result
+        """
+        if (x_dtype := RING_SIZE_TO_TYPE.get(x_ring_size, None)) is None:
+            raise ValueError(f"Type for ring_size {x_ring_size} not found!")
+
+        if (y_dtype := RING_SIZE_TO_TYPE.get(y_ring_size, None)) is None:
+            raise ValueError(f"Type for ring_size {y_ring_size} not found!")
+
+        op = getattr(operator, op_str)
+        res = op(np.empty((1,), dtype=x_dtype), np.empty((1,), dtype=y_dtype)).dtype
+
+        return TYPE_TO_RING_SIZE.get(res)
 
     @staticmethod
     def hook_method(__self: MPCTensor, method_name: str) -> Callable[..., Any]:
@@ -616,14 +646,19 @@ class MPCTensor(PassthroughTensor):
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         if isinstance(y, MPCTensor):
             result = x.__apply_private_op(y, op_str, **kwargs)
+            y_ring_size = y.ring_size
         else:
             result = x.__apply_public_op(y, op_str, **kwargs)
+            y_ring_size = 2 if isinstance(y, bool) else 2 ** 32
 
         y_shape = getattr(y, "shape", (1,))
 
         shape = MPCTensor._get_shape(op_str, self.shape, y_shape)
+        ring_size = MPCTensor._get_ring_size(op_str, self.ring_size, y_ring_size)
 
-        result = MPCTensor(shares=result, shape=shape, parties=x.parties)
+        result = MPCTensor(
+            shares=result, shape=shape, ring_size=ring_size, parties=x.parties
+        )
 
         return result
 

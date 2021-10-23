@@ -9,8 +9,8 @@ from typing import Dict
 import numpy as np
 
 RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
-    2 ** 32: np.int32,
-    2: np.bool_,  # Special case: need to do reconstruct and share with XOR
+    2 ** 32: np.dtype("int32"),
+    2: np.dtype("bool"),  # Special case: need to do reconstruct and share with XOR
 }
 
 TYPE_TO_RING_SIZE: Dict[np.dtype, int] = {v: k for k, v in RING_SIZE_TO_TYPE.items()}

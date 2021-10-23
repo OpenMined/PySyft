@@ -15,5 +15,6 @@ message ShareTensor {
 
   uint32 rank = 3;
   uint32 seed_przs = 4;
-  repeated Party parties_info = 5;
+  uint32 ring_size = 5;
+  repeated Party parties_info = 6;
 }

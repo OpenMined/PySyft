@@ -94,9 +94,9 @@ class ShareTensor(PassthroughTensor):
         self,
         rank: int,
         parties_info: List[Party],
+        ring_size: int,
         seed_przs: int = 42,
         clients: Optional[List[Any]] = None,
-        ring_size: int = 2 ** 32,
         value: Optional[Any] = None,
         init_clients: bool = False,
     ) -> None:
@@ -279,8 +279,9 @@ class ShareTensor(PassthroughTensor):
             raise ValueError("Only seed_przs or generator should be populated")
 
         print("=====================================")
+        print("Secret", value)
         print("Numpy Type", numpy_type)
-        print("Ring Size", ring_size)
+        print("Ring Size", ring_size_final)
         print("=====================================")
 
         if value is None:
@@ -319,9 +320,11 @@ class ShareTensor(PassthroughTensor):
             )
             for _ in range(nr_parties)
         ]
+        print(shares)
         op = ShareTensor.get_op(ring_size_final, "sub")
         przs_share = op(shares[rank], shares[(rank + 1) % nr_parties])
         share.child = op(share.child, przs_share)
+        print("======================================>", share, share.ring_size)
 
         return share
 
@@ -397,6 +400,10 @@ class ShareTensor(PassthroughTensor):
         numpy_type = RING_SIZE_TO_TYPE.get(self.ring_size, None)
         if numpy_type is None:
             raise ValueError(f"Do not know numpy type for ring size {self.ring_size}")
+
+        print("=====================================================")
+        print("OP", op, numpy_type, self.ring_size)
+        print("====================================================")
 
         if isinstance(y, ShareTensor):
             value = op(self.child, y.child)
@@ -678,6 +685,7 @@ class ShareTensor(PassthroughTensor):
             "rank": self.rank,
             "parties_info": [serialize(party) for party in self.parties_info],
             "seed_przs": self.seed_przs,
+            "ring_size": self.ring_size,
         }
         if isinstance(self.child, np.ndarray):
             proto_init_kwargs["array"] = serialize(self.child)
@@ -694,6 +702,7 @@ class ShareTensor(PassthroughTensor):
             "rank": proto.rank,
             "parties_info": [deserialize(party) for party in proto.parties_info],
             "seed_przs": proto.seed_przs,
+            "ring_size": proto.ring_size,
         }
         if proto.HasField("tensor"):
             init_kwargs["value"] = deserialize(proto.tensor)
