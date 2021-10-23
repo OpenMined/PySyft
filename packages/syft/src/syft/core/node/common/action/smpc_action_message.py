@@ -28,7 +28,6 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....tensor.smpc.share_tensor import ShareTensor
-from .exceptions import ObjectNotInStore
 
 # How many intermediary ids we generate in each smpc function
 MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
@@ -238,6 +237,11 @@ def smpc_basic_op(
         )
 
     return actions
+
+
+# Purposefully raise a custom error to retry the task in celery worker.
+class ObjectNotInStore(Exception):
+    pass
 
 
 # TODO : Should move to spdz directly in syft/core/smpc
