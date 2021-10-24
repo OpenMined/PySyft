@@ -1,5 +1,4 @@
 # stdlib
-import os
 from typing import Any
 from typing import Dict
 import uuid
@@ -11,8 +10,6 @@ import requests
 # syft absolute
 import syft as sy
 
-here = os.path.dirname(__file__)
-
 NETWORK_PORT = 9081
 DOMAIN1_PORT = 9082
 DOMAIN2_PORT = 9083
@@ -23,7 +20,6 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
         "name": "Sheldon Cooper",
         "email": unique_email,
         "password": "bazinga",
-        "budget": 200,
     }
 
 
