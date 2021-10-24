@@ -59,5 +59,6 @@ message DeleteDatasetMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string dataset_id = 3;
-  syft.core.io.Address reply_to = 4;
+  string bin_object_id = 4;
+  syft.core.io.Address reply_to = 5;
 }

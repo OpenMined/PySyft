@@ -380,8 +380,8 @@ class Dataset:
 
             existing_asset_names = [d.get("name") for d in self.data]
             if name in existing_asset_names:
-                raise Exception(
-                    f"\n\tIntegrityError: Asset with name: `{name}` already exists."
+                raise KeyError(
+                    f"Asset with name: `{name}` already exists."
                     "Please use a different name."
                 )
 
@@ -401,22 +401,20 @@ class Dataset:
             self.refresh()
 
     def delete(self, name: str) -> bool:
-        # relative
-        from .....lib.python.util import downcast
 
         asset_id = None
 
-        for idx, d in enumerate(self.data):
+        for d in self.data:
             if d["name"] == name:
-                asset_id = idx + 1  # As index starts from zero
+                asset_id = d["id"]  # Id of the first matching name
+                break
 
         if asset_id is None:
-            raise Exception(
-                f"\n\tAssetDoesNotExists: The asset with name `{name}` does not exists."
-            )
+            raise KeyError(f"The asset with name `{name}` does not exists.")
 
-        asset_id = downcast(asset_id)
-        DatasetRequestAPI(self.client).delete(dataset_id=asset_id)
+        DatasetRequestAPI(self.client).delete(
+            dataset_id=self.id, bin_object_id=asset_id
+        )
         self.refresh()
 
         return True

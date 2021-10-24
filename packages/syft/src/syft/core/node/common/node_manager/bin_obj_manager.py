@@ -153,13 +153,6 @@ class BinObjectManager(ObjectStore):
             object_to_delete = (
                 local_session.query(BinObject).filter_by(id=str(key.value)).first()
             )
-            metadata_to_delete = (
-                local_session.query(ObjectMetadata)
-                .filter_by(obj=str(key.value))
-                .first()
-            )
-
-            local_session.delete(metadata_to_delete)
             local_session.delete(object_to_delete)
             local_session.commit()
             local_session.close()
