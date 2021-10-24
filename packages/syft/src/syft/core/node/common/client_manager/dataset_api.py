@@ -3,7 +3,9 @@ import logging
 import sys
 from typing import Any
 from typing import Dict
+from typing import Iterable
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -424,3 +426,14 @@ class Dataset:
 
         datasets = DatasetRequestAPI(self.client).all()
         self.data = datasets[self.key].get("data", [])
+
+    def iter(self, exclude: Optional[List[str]] = None) -> Iterable:
+        """Generate an asset iterable."""
+
+        exclude = [] if exclude is None else exclude
+
+        for asset in self.data:
+            asset_name = asset["name"]
+            if asset_name not in exclude:
+                asset_id = asset["id"].replace("-", "")
+                yield self.client.store[asset_id]  # type: ignore

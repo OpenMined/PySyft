@@ -227,7 +227,7 @@ def delete_dataset_msg(
 
             node.datasets.delete(id=msg.dataset_id)
     else:
-        raise AuthorizationError("You're not allowed to upload data!")
+        raise AuthorizationError("You're not allowed to delete data!")
 
     return SuccessResponseMessage(
         address=msg.reply_to,
