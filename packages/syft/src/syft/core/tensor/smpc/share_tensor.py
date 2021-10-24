@@ -686,7 +686,7 @@ class ShareTensor(PassthroughTensor):
             "rank": self.rank,
             "parties_info": [serialize(party) for party in self.parties_info],
             "seed_przs": self.seed_przs,
-            "ring_size": self.ring_size,
+            "ring_size": sy.serialize(self.ring_size, to_bytes=True),
         }
         if isinstance(self.child, np.ndarray):
             proto_init_kwargs["array"] = serialize(self.child)
@@ -703,7 +703,7 @@ class ShareTensor(PassthroughTensor):
             "rank": proto.rank,
             "parties_info": [deserialize(party) for party in proto.parties_info],
             "seed_przs": proto.seed_przs,
-            "ring_size": proto.ring_size,
+            "ring_size": int(sy.deserialize(proto.ring_size, from_bytes=True)),
         }
         if proto.HasField("tensor"):
             init_kwargs["value"] = deserialize(proto.tensor)
