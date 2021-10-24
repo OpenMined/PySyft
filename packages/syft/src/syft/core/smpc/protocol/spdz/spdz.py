@@ -23,9 +23,8 @@ from ....common.uid import UID
 from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
 from ....store.storeable_object import StorableObject
+from ....tensor.smpc import utils
 from ...store import CryptoPrimitiveProvider
-
-# from sympc.utils import parallel_execution
 
 EXPECTED_OPS = {"mul", "matmul"}
 cache_clients: Dict[Client, Client] = {}
@@ -57,7 +56,8 @@ def mul_master(
 
     shape_x = tuple(x.shape)  # type: ignore
     shape_y = tuple(y.shape)  # type: ignore
-    ring_size = x.ring_size
+
+    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
     primitives = CryptoPrimitiveProvider.generate_primitives(
         f"beaver_{op_str}",
@@ -103,6 +103,7 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
 
     shape_x = tuple(x.shape)  # type: ignore
     shape_y = tuple(y.shape)  # type: ignore
+    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
     CryptoPrimitiveProvider.generate_primitives(
         f"beaver_{op_str}",
@@ -113,6 +114,7 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
             "parties_info": parties_info,
         },
         p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+        ring_size=ring_size,
     )
 
     # TODO: get nr of bits in another way
