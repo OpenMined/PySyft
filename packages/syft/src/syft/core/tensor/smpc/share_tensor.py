@@ -23,6 +23,7 @@ import torch
 import syft as sy
 
 # relative
+from . import utils
 from .... import logger
 from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ...common.serde.deserialize import _deserialize as deserialize
@@ -31,9 +32,6 @@ from ...common.serde.serialize import _serialize as serialize
 from ...smpc.store.crypto_store import CryptoStore
 from ..passthrough import PassthroughTensor  # type: ignore
 from .party import Party
-from .utils import RING_SIZE_TO_TYPE
-from .utils import TYPE_TO_RING_SIZE
-from .utils import get_nr_bits
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -258,7 +256,9 @@ class ShareTensor(PassthroughTensor):
         numpy_type = None
         ring_size_final = None
 
-        ring_size_from_type = TYPE_TO_RING_SIZE.get(getattr(value, "dtype", None), None)
+        ring_size_from_type = utils.TYPE_TO_RING_SIZE.get(
+            getattr(value, "dtype", None), None
+        )
         if ring_size_from_type is None:
             logger.warning("Could not get ring size from {value}")
         else:
@@ -406,6 +406,7 @@ class ShareTensor(PassthroughTensor):
         print("====================================================")
 
         if isinstance(y, ShareTensor):
+            utils.get_ring_size(self, y)
             value = op(self.child, y.child)
         else:
             # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
@@ -618,7 +619,7 @@ class ShareTensor(PassthroughTensor):
         Raises:
             ValueError: If invalid position is provided.
         """
-        ring_bits = get_nr_bits(self.ring_size)
+        ring_bits = utils.get_nr_bits(self.ring_size)
         if pos < 0 or pos > ring_bits - 1:
             raise ValueError(
                 f"Invalid position for bit_extraction: {pos}, must be in range:[0,{ring_bits-1}]"

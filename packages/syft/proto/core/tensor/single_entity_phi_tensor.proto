@@ -19,6 +19,6 @@ message TensorWrappedSingleEntityPhiTensorPointer {
   string object_type = 7;
   repeated string tags = 8;
   string description = 9;
-  optional bytes public_shape = 10;
-  optional bytes public_dtype = 11;
+  bytes public_shape = 10;
+  bytes public_dtype = 11;
 }

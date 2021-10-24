@@ -144,10 +144,12 @@ class TensorPointer(Pointer):
         if self.public_shape is not None and other_shape is not None:
             result_public_shape = utils.get_shape(self.public_shape, other_shape)
 
-        if self.public_ring_size is not None and other_ring_size is not None:
-            result_public_dtype = utils.get_dtype(
-                self.public_ring_size, other_ring_size
-            )
+        if self.public_dtype is not None and other_dtype is not None:
+            if self.public_dtype != other_dtype:
+                raise ValueError(
+                    f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
+                )
+            result_public_dtype = self.public_dtype
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_type

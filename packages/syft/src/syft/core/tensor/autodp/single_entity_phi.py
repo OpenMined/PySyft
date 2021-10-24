@@ -283,6 +283,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         any of the private data therein."""
 
         public_shape = getattr(self, "public_shape", None)
+        public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=SingleEntityPhiTensor(
                 child=None,
@@ -292,6 +293,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
                 scalar_manager=self.scalar_manager,
             ),
             public_shape=public_shape,
+            public_dtype=public_dtype,
         )
 
     def _object2proto(self) -> "TensorWrappedSingleEntityPhiTensorPointer_PB":

@@ -69,7 +69,6 @@ def get_shape(
 
 @lru_cache(maxsize=128)
 def get_ring_size(
-    op_str: str,
     x_ring_size: int,
     y_ring_size: int,
 ) -> Optional[int]:
@@ -83,13 +82,9 @@ def get_ring_size(
     Returns:
         The ring size of the result
     """
-    if (x_dtype := RING_SIZE_TO_TYPE.get(x_ring_size, None)) is None:
-        raise ValueError(f"Type for ring_size {x_ring_size} not found!")
+    if x_ring_size != y_ring_size:
+        raise ValueError(
+            "Expected the same ring size for x and y ({x_ring_size} vs {y_ring_size})"
+        )
 
-    if (y_dtype := RING_SIZE_TO_TYPE.get(y_ring_size, None)) is None:
-        raise ValueError(f"Type for ring_size {y_ring_size} not found!")
-
-    op = getattr(operator, op_str)
-    res = op(np.empty((1,), dtype=x_dtype), np.empty((1,), dtype=y_dtype)).dtype
-
-    return TYPE_TO_RING_SIZE.get(res)
+    return x_ring_size

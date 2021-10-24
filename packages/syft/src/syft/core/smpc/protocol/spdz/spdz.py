@@ -23,7 +23,6 @@ from ....common.uid import UID
 from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
 from ....store.storeable_object import StorableObject
-from ....tensor.smpc.share_tensor import ShareTensor
 from ...store import CryptoPrimitiveProvider
 
 # from sympc.utils import parallel_execution
