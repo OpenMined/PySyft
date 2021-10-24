@@ -237,7 +237,7 @@ class ShareTensor(PassthroughTensor):
 
     @staticmethod
     def generate_przs(
-        value: Optional[Any],
+        value: Any,
         shape: Tuple[int, ...],
         rank: int,
         parties_info: List[Party],
@@ -266,7 +266,7 @@ class ShareTensor(PassthroughTensor):
             numpy_type = value.dtype
 
         if numpy_type is None:
-            numpy_type = RING_SIZE_TO_TYPE.get(ring_size, None)
+            numpy_type = utils.RING_SIZE_TO_TYPE.get(ring_size, None)
             ring_size_final = ring_size
 
         if numpy_type is None:
@@ -306,7 +306,7 @@ class ShareTensor(PassthroughTensor):
             parties_info=parties_info,
             seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
             init_clients=init_clients,
-            ring_size=ring_size_final,
+            ring_size=ring_size_final,  # type: ignore
         )
 
         share.generator_przs = generator_shares
@@ -397,7 +397,7 @@ class ShareTensor(PassthroughTensor):
         """
 
         op = ShareTensor.get_op(self.ring_size, op_str)
-        numpy_type = RING_SIZE_TO_TYPE.get(self.ring_size, None)
+        numpy_type = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
         if numpy_type is None:
             raise ValueError(f"Do not know numpy type for ring size {self.ring_size}")
 
@@ -625,7 +625,7 @@ class ShareTensor(PassthroughTensor):
                 f"Invalid position for bit_extraction: {pos}, must be in range:[0,{ring_bits-1}]"
             )
         shape = self.shape
-        numpy_type = RING_SIZE_TO_TYPE[self.ring_size]
+        numpy_type = utils.RING_SIZE_TO_TYPE[self.ring_size]
         # logical shift
         bit_mask = np.ones(shape, dtype=numpy_type) << pos
         value = self.child & bit_mask

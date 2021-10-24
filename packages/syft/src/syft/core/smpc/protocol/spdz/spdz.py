@@ -68,9 +68,10 @@ def mul_master(
             "parties_info": parties_info,
         },
         p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+        ring_size=ring_size,
     )
     # TODO: Should modify to parallel execution.
-
+    print("Primitves generated", primitives)
     res_shares = [
         getattr(a, "__mul__")(a, b, shape_x, shape_y, **kwargs)
         for a, b in zip(x.child, y.child)

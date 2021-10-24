@@ -129,7 +129,7 @@ class MPCTensor(PassthroughTensor):
     @staticmethod
     def get_ring_size_from_secret(secret: Optional[Any] = None) -> int:
         if utils.ispointer(secret):
-            dtype = secret.public_dtype
+            dtype = getattr(secret, "public_dtype", None)
         else:
             dtype = getattr(secret, "dtype", None)
 
@@ -366,7 +366,7 @@ class MPCTensor(PassthroughTensor):
         dtype = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
 
         if dtype is None:
-            raise ValueErorr(f"Type for ring size {ring_size} was not found!")
+            raise ValueError(f"Type for ring size {self.ring_size} was not found!")
 
         local_shares = []
         for share in self.child:

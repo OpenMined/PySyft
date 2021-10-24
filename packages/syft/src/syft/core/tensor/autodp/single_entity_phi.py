@@ -38,6 +38,7 @@ from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
+from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..tensor import Tensor
@@ -107,7 +108,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
 
     def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
-        ring_size = TYPE_TO_RING_SIZE.get(dtype, None)
+        ring_size = TYPE_TO_RING_SIZE.get(self.public_dtype, None)
         self_mpc = MPCTensor(
             secret=self,
             shape=self.public_shape,
@@ -170,23 +171,27 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
 
         result_public_shape = None
 
-        op = getattr(operator, op_str)
-
         if isinstance(other, TensorWrappedSingleEntityPhiTensorPointer):
             other_shape = other.public_shape
+            other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
+            other_dtype = np.int32
+        elif isinstance(other, bool):
+            other_shape = (1,)
+            other_dtype = np.dtype("bool")
         elif isinstance(other, np.ndarray):
             other_shape = other.shape
+            other_dtype = other.dtype
         else:
             raise ValueError(
                 f"Invalid Type for TensorWrappedSingleEntityPhiTensorPointer:{type(other)}"
             )
 
         if self.public_shape is not None and other_shape is not None:
-            result_public_shape = (
-                op(np.empty(self.public_shape), np.empty(other_shape))
-            ).shape
+            result_public_shape = utils.get_shape(
+                op_str, self.public_shape, other_shape
+            )
 
         if self.public_dtype is not None and other_dtype is not None:
             if self.public_dtype != other_dtype:
@@ -194,7 +199,6 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
                     f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
                 )
             result_public_dtype = self.public_dtype
-
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype

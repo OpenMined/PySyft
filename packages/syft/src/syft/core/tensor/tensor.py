@@ -65,7 +65,7 @@ class TensorPointer(Pointer):
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
-        ring_size = TYPE_TO_RING_SIZE.get(self.public_dtype, None)
+        ring_size = utils.TYPE_TO_RING_SIZE.get(self.public_dtype, None)
         self_mpc = MPCTensor(
             secret=self,
             shape=self.public_shape,
@@ -123,8 +123,6 @@ class TensorPointer(Pointer):
         result_public_shape = None
         result_public_dtype = None
 
-        op = getattr(operator, op_str)
-
         if isinstance(other, TensorPointer):
             other_shape = other.public_shape
             other_dtype = other.public_dtype
@@ -142,7 +140,9 @@ class TensorPointer(Pointer):
             raise ValueError(f"Invalid Type for TensorPointer:{type(other)}")
 
         if self.public_shape is not None and other_shape is not None:
-            result_public_shape = utils.get_shape(self.public_shape, other_shape)
+            result_public_shape = utils.get_shape(
+                op_str, self.public_shape, other_shape
+            )
 
         if self.public_dtype is not None and other_dtype is not None:
             if self.public_dtype != other_dtype:
@@ -152,7 +152,7 @@ class TensorPointer(Pointer):
             result_public_dtype = self.public_dtype
 
         result.public_shape = result_public_shape
-        result.public_dtype = result_public_type
+        result.public_dtype = result_public_dtype
 
         return result
 
