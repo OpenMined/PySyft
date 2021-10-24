@@ -26,6 +26,7 @@ from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
+from .smpc import utils
 from .smpc.mpc_tensor import MPCTensor
 
 
@@ -64,11 +65,12 @@ class TensorPointer(Pointer):
 
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
+        ring_size = TYPE_TO_RING_SIZE.get(self.public_dtype, None)
         self_mpc = MPCTensor(
             secret=self,
-            dtype=self.public_dtype,
             shape=self.public_shape,
             parties=all_parties,
+            ring_size=ring_size,
         )
         return self_mpc
 
@@ -140,9 +142,12 @@ class TensorPointer(Pointer):
             raise ValueError(f"Invalid Type for TensorPointer:{type(other)}")
 
         if self.public_shape is not None and other_shape is not None:
-            result_public_shape = (
-                op(np.empty(self.public_shape), np.empty(other_shape))
-            ).shape
+            result_public_shape = utils.get_shape(self.public_shape, other_shape)
+
+        if self.public_ring_size is not None and other_ring_size is not None:
+            result_public_dtype = utils.get_dtype(
+                self.public_ring_size, other_ring_size
+            )
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_type
