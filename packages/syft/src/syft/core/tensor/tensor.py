@@ -26,6 +26,7 @@ from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
+from .smpc import utils
 from .smpc.mpc_tensor import MPCTensor
 
 
@@ -44,6 +45,7 @@ class TensorPointer(Pointer):
         tags: Optional[List[str]] = None,
         description: str = "",
         public_shape: Optional[Tuple[int, ...]] = None,
+        public_dtype: Optional[Union[str, np.dtype]] = None,
     ):
 
         super().__init__(
@@ -56,9 +58,20 @@ class TensorPointer(Pointer):
 
         self.public_shape = public_shape
 
+        if isinstance(public_dtype, str):
+            self.public_dtype = np.dtype(public_dtype)
+        else:
+            self.public_dtype = public_dtype
+
     def share(self, *parties: Tuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
+        ring_size = utils.TYPE_TO_RING_SIZE.get(self.public_dtype, None)
+        self_mpc = MPCTensor(
+            secret=self,
+            shape=self.public_shape,
+            parties=all_parties,
+            ring_size=ring_size,
+        )
         return self_mpc
 
     def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
@@ -108,24 +121,38 @@ class TensorPointer(Pointer):
         )
 
         result_public_shape = None
-
-        op = getattr(operator, op_str)
+        result_public_dtype = None
 
         if isinstance(other, TensorPointer):
             other_shape = other.public_shape
+            other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
+            other_dtype = np.int32
+        elif isinstance(other, bool):
+            other_shape = (1,)
+            other_dtype = np.dtype("bool")
         elif isinstance(other, np.ndarray):
             other_shape = other.shape
+            other_dtype = other.dtype
+
         else:
             raise ValueError(f"Invalid Type for TensorPointer:{type(other)}")
 
         if self.public_shape is not None and other_shape is not None:
-            result_public_shape = (
-                op(np.empty(self.public_shape), np.empty(other_shape))
-            ).shape
+            result_public_shape = utils.get_shape(
+                op_str, self.public_shape, other_shape
+            )
+
+        if self.public_dtype is not None and other_dtype is not None:
+            if self.public_dtype != other_dtype:
+                raise ValueError(
+                    f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
+                )
+            result_public_dtype = self.public_dtype
 
         result.public_shape = result_public_shape
+        result.public_dtype = result_public_dtype
 
         return result
 
@@ -235,12 +262,15 @@ class Tensor(
     # MPCTensorAncestor,
 ):
 
-    __attr_allowlist__ = ["child", "tag_name", "public_shape"]
+    __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
 
     PointerClassOverride = TensorPointer
 
     def __init__(
-        self, child: Any, public_shape: Optional[Tuple[int, ...]] = None
+        self,
+        child: Any,
+        public_shape: Optional[Tuple[int, ...]] = None,
+        public_dtype: Optional[np.dtype] = None,
     ) -> None:
         """data must be a list of numpy array"""
 
@@ -279,8 +309,13 @@ class Tensor(
         if public_shape is None:
             public_shape = tuple(self.shape)
 
+        # set public dtype to be the dtype of the data since we have access to it at present
+        if public_dtype is None:
+            public_dtype = str(self.dtype)
+
         self.tag_name: Optional[str] = None
         self.public_shape = public_shape
+        self.public_dtype = public_dtype
 
     def tag(self, name: str) -> Tensor:
         self.tag_name = name
@@ -311,6 +346,7 @@ class Tensor(
                 max_vals=self.child.max_vals,
                 scalar_manager=self.child.scalar_manager,
                 public_shape=getattr(self, "public_shape", None),
+                public_dtype=getattr(self, "public_dtype", None),
             )
         else:
             return TensorPointer(
@@ -320,4 +356,5 @@ class Tensor(
                 tags=tags,
                 description=description,
                 public_shape=getattr(self, "public_shape", None),
+                public_dtype=getattr(self, "public_dtype", None),
             )
