@@ -406,7 +406,7 @@ class ShareTensor(PassthroughTensor):
         print("====================================================")
 
         if isinstance(y, ShareTensor):
-            utils.get_ring_size(self, y)
+            utils.get_ring_size(self.ring_size, y.ring_size)
             value = op(self.child, y.child)
         else:
             # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
