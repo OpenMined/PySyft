@@ -1247,6 +1247,64 @@ def test_cumprod(
     # assert output.shape == reference_tensor.flatten().shape
 
 
+def test_floordiv_array(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test floordiv"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    other = np.ones_like(reference_data)
+    output = reference_tensor // other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data).all()
+    assert (output.max_vals == upper_bound).all()
+    assert (output.min_vals == lower_bound).all()
+
+
+def test_floordiv_sept(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test floordiv with public SEPT"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    other = SEPT(
+        child=np.ones_like(reference_data),
+        max_vals=np.ones_like(reference_data) * 5,
+        min_vals=np.ones_like(reference_data),
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    output = reference_tensor // other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data).all()
+    assert (output.max_vals == upper_bound // 5).all()
+    assert (output.min_vals == lower_bound).all()  # Beware of division by 0 error
+
+
 def test_min(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1322,7 +1380,7 @@ def test_max_args(
     ishan: Entity,
     highest: int,
 ) -> None:
-    """Test the hundred different args that exist for min()"""
+    """Test the hundred different args that exist for max()"""
     tensor = SEPT(
         child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
     )
@@ -1347,6 +1405,231 @@ def test_max_args(
     assert (output.child == target).all()
     assert (output.min_vals == lower_bound.max(initial=-highest)).all()
     assert (output.max_vals == upper_bound.max(initial=-highest)).all()
+
+
+def test_mod_array(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test mod"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    other = np.ones_like(reference_data)
+    output = reference_tensor % other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == np.zeros_like(reference_data)).all()
+    assert (output.max_vals == np.zeros_like(upper_bound)).all()
+    assert (output.min_vals == np.zeros_like(lower_bound)).all()
+
+    other = np.ones_like(reference_data) * 4
+    output = reference_tensor % other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % 4).all()
+    assert (output.max_vals == upper_bound % 4).all()
+    assert (output.min_vals == lower_bound % 4).all()
+
+
+def test_mod_sept(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    """Test mod with public SEPT"""
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    other = SEPT(
+        child=np.ones_like(reference_data),
+        max_vals=np.ones_like(reference_data) * 5,
+        min_vals=np.ones_like(reference_data),
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    output = reference_tensor % other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == np.zeros_like(reference_data)).all()
+    assert (output.max_vals == np.zeros_like(upper_bound) % 5).all()
+    assert (
+        output.min_vals == np.zeros_like(lower_bound)
+    ).all()  # Beware of division by 0 error
+
+    other = SEPT(
+        child=np.ones_like(reference_data) * 6,
+        max_vals=np.ones_like(reference_data) * 6,
+        min_vals=np.ones_like(reference_data),
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    output = reference_tensor % other
+    assert isinstance(output, SEPT)
+    assert output.shape == reference_tensor.shape
+    assert (output.child == reference_data % 6).all()
+    assert (output.max_vals == upper_bound % 6).all()
+    assert (
+        output.min_vals == np.zeros_like(lower_bound)
+    ).all()  # Beware of division by 0 error
+
+
+def test_divmod_array(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    other = np.ones_like(reference_data) * 4
+    quotient, remainder = reference_tensor.__divmod__(other)
+    assert isinstance(quotient, SEPT)
+    assert isinstance(remainder, SEPT)
+    assert quotient.shape == reference_tensor.shape
+    assert remainder.shape == reference_tensor.shape
+    assert (quotient.child == reference_data // 4).all()
+    assert (remainder.child == reference_data % 4).all()
+    assert (quotient.max_vals == upper_bound // 4).all()
+    assert (remainder.max_vals == upper_bound % 4).all()
+    assert (quotient.min_vals == lower_bound // 4).all()
+    assert (remainder.min_vals == lower_bound % 4).all()
+
+
+def test_divmod_sept(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    other = SEPT(
+        child=np.ones_like(reference_data),
+        max_vals=np.ones_like(reference_data) * 5,
+        min_vals=np.ones_like(reference_data),
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    quotient, remainder = reference_tensor.__divmod__(other)
+    assert isinstance(quotient, SEPT)
+    assert isinstance(remainder, SEPT)
+    assert quotient.shape == reference_tensor.shape
+    assert remainder.shape == reference_tensor.shape
+    assert (quotient.child == reference_data).all()
+    assert (remainder.child == np.zeros_like(reference_data)).all()
+    assert (quotient.max_vals == upper_bound // 5).all()
+    assert (remainder.max_vals == np.zeros_like(upper_bound)).all()
+    assert (quotient.min_vals == lower_bound).all()  # Beware of division by 0 error
+    assert (
+        remainder.min_vals == np.zeros_like(lower_bound)
+    ).all()  # Beware of division by 0 error
+
+    other = SEPT(
+        child=np.ones_like(reference_data) * 6,
+        max_vals=np.ones_like(reference_data) * 6,
+        min_vals=np.ones_like(reference_data),
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+
+    quotient, remainder = reference_tensor.__divmod__(other)
+    assert isinstance(quotient, SEPT)
+    assert isinstance(remainder, SEPT)
+    assert quotient.shape == reference_tensor.shape
+    assert remainder.shape == reference_tensor.shape
+    assert (quotient.child == reference_data // 6).all()
+    assert (remainder.child == reference_data % 6).all()
+    assert (quotient.max_vals == upper_bound // 6).all()
+    assert (remainder.max_vals == upper_bound % 6).all()
+    assert (quotient.min_vals == lower_bound).all()  # Beware of division by 0 error
+    assert (
+        remainder.min_vals == np.zeros_like(lower_bound)
+    ).all()  # Beware of division by 0 error
+
+
+def test_matmul_array(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    other = np.ones_like(reference_data.T) * 5
+    output = reference_tensor.__matmul__(other)
+    assert output.shape[0] == reference_data.shape[0]
+    assert output.shape[1] == other.shape[1]
+    assert (output.child == reference_data.__matmul__(other)).all()
+
+
+def test_matmul_sept(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    traskmaster: Entity,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+) -> None:
+    reference_tensor = SEPT(
+        child=reference_data,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    data = np.ones_like(reference_data.T) * 5
+    other = SEPT(
+        child=data,
+        max_vals=np.ones_like(data) * 10,
+        min_vals=np.ones_like(data),
+        entity=ishan,
+        scalar_manager=reference_scalar_manager,
+    )
+    output = reference_tensor.__matmul__(other)
+    assert output.shape[0] == reference_data.shape[0]
+    assert output.shape[1] == other.shape[1]
+    assert (output.child == reference_data.__matmul__(other.child)).all()
 
 
 def test_trace(

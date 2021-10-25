@@ -1948,6 +1948,121 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             entity=self.entity,
         )
 
+    def __floordiv__(
+        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray) and not is_broadcastable(
+                self.shape, other.shape
+            ):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+            else:
+                data = self.child // other
+                mins = self.min_vals // other
+                maxes = self.max_vals // other
+        elif isinstance(other, SingleEntityPhiTensor):
+            if is_broadcastable(self.shape, other.shape):
+                if self.entity == other.entity:
+                    data = self.child // other.child
+                    mins = self.min_vals // other.min_vals
+                    maxes = self.max_vals // other.max_vals
+                else:
+                    # return convert_to_gamma_tensor(self) // convert_to_gamma_tensor(other)
+                    raise NotImplementedError
+            else:
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+        else:
+            raise NotImplementedError
+        return SingleEntityPhiTensor(
+            child=data,
+            max_vals=maxes,
+            min_vals=mins,
+            entity=self.entity,
+            scalar_manager=self.scalar_manager,
+        )
+
+    # TODO: Check to see if non-integers are ever introduced
+    def __mod__(
+        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray) and not is_broadcastable(
+                self.shape, other.shape
+            ):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+            else:
+                data = self.child % other
+                mins = self.min_vals % other
+                maxes = self.max_vals % other
+        elif isinstance(other, SingleEntityPhiTensor):
+            if is_broadcastable(self.shape, other.shape):
+                if self.entity == other.entity:
+                    data = self.child % other.child
+                    mins = self.min_vals % other.min_vals
+                    maxes = self.max_vals % other.max_vals
+                else:
+                    # return convert_to_gamma_tensor(self) % convert_to_gamma_tensor(other)
+                    raise NotImplementedError
+            else:
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+        else:
+            raise NotImplementedError
+        return SingleEntityPhiTensor(
+            child=data,
+            max_vals=maxes,
+            min_vals=mins,
+            entity=self.entity,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def __divmod__(
+        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    ) -> TypeTuple:
+        return self // other, self % other
+
+    def __matmul__(
+        self, other: Union[np.ndarray, SingleEntityPhiTensor]
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
+        if not isinstance(other, (np.ndarray, SingleEntityPhiTensor)):
+            raise Exception(
+                f"Matrix multiplication not yet implemented for type {type(other)}"
+            )
+        else:
+            if not is_broadcastable(self.shape, other.shape):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+            else:
+                if isinstance(other, np.ndarray):
+                    data = self.child.__matmul__(other)
+                    mins = self.min_vals.__matmul__(other)
+                    maxes = self.max_vals.__matmul__(other)
+                elif isinstance(other, SingleEntityPhiTensor):
+                    if self.entity != other.entity:
+                        # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
+                        raise NotImplementedError
+                    else:
+                        data = self.child.__matmul__(other.child)
+                        mins = self.min_vals.__matmul__(other.min_vals)
+                        maxes = self.max_vals.__matmul__(other.max_vals)
+                else:
+                    raise NotImplementedError
+                return SingleEntityPhiTensor(
+                    child=data,
+                    max_vals=maxes,
+                    min_vals=mins,
+                    entity=self.entity,
+                    scalar_manager=self.scalar_manager,
+                )
+
     def cumsum(
         self,
         axis: Optional[int] = None,
