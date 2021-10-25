@@ -27,25 +27,23 @@ class RequestAPI:
         delete_msg: Optional[Type[SyftMessage]] = None,
         response_key: str = "",
     ):
-        self.__create_message = create_msg
-        self._create_message = self.__create_message
-        self.__get_message = get_msg
-        self.__get_all_message = get_all_msg
+        self._create_message = create_msg
+        self._get_message = get_msg
         self._get_all_message = get_all_msg
-        self.__update_message = update_msg
-        self.__delete_message = delete_msg
-        self.__response_key = response_key
+        self._update_message = update_msg
+        self._delete_message = delete_msg
+        self._response_key = response_key
         self.client = client
 
     def create(self, **kwargs: Any) -> None:
         response = self.perform_api_request(
-            syft_msg=self.__create_message, content=kwargs
+            syft_msg=self._create_message, content=kwargs  # type: ignore
         )
         logging.info(response.resp_msg)
 
     def get(self, **kwargs: Any) -> Any:
         association_table = self.perform_api_request(
-            syft_msg=self.__get_message, content=kwargs
+            syft_msg=self._get_message, content=kwargs
         )
         obj_data = dict(association_table.metadata)
         obj_data[RequestAPIFields.SOURCE] = association_table.source
@@ -57,7 +55,7 @@ class RequestAPI:
         result = [
             content
             for content in self.perform_api_request(
-                syft_msg=self.__get_all_message
+                syft_msg=self._get_all_message
             ).content
         ]
 
@@ -68,19 +66,19 @@ class RequestAPI:
 
     def update(self, **kwargs: Any) -> None:
         response = self.perform_api_request(
-            syft_msg=self.__update_message, content=kwargs
+            syft_msg=self._update_message, content=kwargs
         )
         logging.info(response.resp_msg)
 
     def delete(self, **kwargs: Any) -> None:
         response = self.perform_api_request(
-            syft_msg=self.__delete_message, content=kwargs
+            syft_msg=self._delete_message, content=kwargs
         )
         logging.info(response.resp_msg)
 
     def to_obj(self, result: Any) -> Any:
         if result:
-            _class_name = self.__response_key.capitalize()
+            _class_name = self._response_key.capitalize()
             result = type(_class_name, (object,), result)()
 
         return result
@@ -101,6 +99,7 @@ class RequestAPI:
             content = {}
         content[RequestAPIFields.ADDRESS] = self.client.address
         content[RequestAPIFields.REPLY_TO] = self.client.address
+
         signed_msg = syft_msg_constructor(**content).sign(
             signing_key=self.client.signing_key
         )  # type: ignore
