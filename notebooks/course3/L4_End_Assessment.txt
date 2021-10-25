@@ -20,5 +20,5 @@ Active Learning:
 
 (a) You forgot to activate your Virtual environment
 (b) ...
-(c) 
+(c)
 
