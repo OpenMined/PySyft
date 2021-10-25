@@ -221,6 +221,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(other, RowEntityPhiTensor):
             if is_broadcastable(self.shape, other.shape):
                 for self_child, other_child in zip(self.child, other.child):
+                    if len(self.child) != len(other.child):
+                        raise ValueError(
+                            "Zipping two different lengths will drop data. "
+                            + f"{len(self.child)} vs {len(other.child)}"
+                        )
                     new_list.append(self_child * other_child)
             else:
                 raise Exception(
@@ -615,6 +620,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                     for tensor in self.child:
                         new_list.append(tensor // other.child[0])
                 else:
+                    if len(self.child) != len(other.child):
+                        raise ValueError(
+                            "Zipping two different lengths will drop data. "
+                            + f"{len(self.child)} vs {len(other.child)}"
+                        )
                     for self_tensors, other_tensors in zip(self.child, other.child):
                         new_list.append(self_tensors // other_tensors)
         else:
@@ -644,6 +654,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                     for tensor in self.child:
                         new_list.append(tensor % other.child[0])
                 else:
+                    if len(self.child) != len(other.child):
+                        raise ValueError(
+                            "Zipping two different lengths will drop data. "
+                            + f"{len(self.child)} vs {len(other.child)}"
+                        )
                     for self_tensors, other_tensors in zip(self.child, other.child):
                         new_list.append(self_tensors % other_tensors)
         else:
@@ -670,6 +685,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             for tensor in self.child:
                 new_list.append(tensor.__matmul__(other))
         elif isinstance(other, RowEntityPhiTensor):
+            if len(self.child) != len(other.child):
+                raise ValueError(
+                    "Zipping two different lengths will drop data. "
+                    + f"{len(self.child)} vs {len(other.child)}"
+                )
             for self_tensor, other_tensor in zip(self.child, other.child):
                 new_list.append(self_tensor.__matmul__(other_tensor))
         else:

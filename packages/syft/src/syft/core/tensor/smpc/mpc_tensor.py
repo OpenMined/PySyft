@@ -434,6 +434,11 @@ class MPCTensor(PassthroughTensor):
     def __apply_private_op(self, other: MPCTensor, op_str: str) -> List[ShareTensor]:
         op = getattr(operator, op_str)
         if isinstance(other, MPCTensor):
+            if len(self.child) != len(other.child):
+                raise ValueError(
+                    "Zipping two different lengths will drop data. "
+                    + f"{len(self.child)} vs {len(other.child)}"
+                )
             res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
         else:
             raise ValueError("Add works only for the MPCTensor at the moment!")

@@ -1861,15 +1861,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         if is_acceptable_simple_type(other):
-            if isinstance(other, np.ndarray):
-                if not is_broadcastable(self.shape, other.shape):
-                    raise Exception(
-                        f"Shapes not broadcastable: {self.shape} and {other.shape}"
-                    )
-                else:
-                    data = self.child // other
-                    mins = self.min_vals // other
-                    maxes = self.max_vals // other
+            if isinstance(other, np.ndarray) and not is_broadcastable(
+                self.shape, other.shape
+            ):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
             else:
                 data = self.child // other
                 mins = self.min_vals // other
@@ -1902,15 +1899,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         if is_acceptable_simple_type(other):
-            if isinstance(other, np.ndarray):
-                if not is_broadcastable(self.shape, other.shape):
-                    raise Exception(
-                        f"Shapes not broadcastable: {self.shape} and {other.shape}"
-                    )
-                else:
-                    data = self.child % other
-                    mins = self.min_vals % other
-                    maxes = self.max_vals % other
+            if isinstance(other, np.ndarray) and not is_broadcastable(
+                self.shape, other.shape
+            ):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
             else:
                 data = self.child % other
                 mins = self.min_vals % other
