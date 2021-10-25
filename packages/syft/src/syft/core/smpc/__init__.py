@@ -20,7 +20,15 @@ from .protocol import beaver  # noqa: 401 isort: skip
 def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     ast = Globals(client)
 
-    modules = ["syft", "syft.core", "syft.core.smpc", "syft.core.smpc.store"]
+    modules = [
+        "syft",
+        "syft.core",
+        "syft.core.smpc",
+        "syft.core.smpc.store",
+        "syft.core.smpc.protocol",
+        "syft.core.smpc.protocol.spdz",
+        "syft.core.smpc.protocol.spdz.spdz",
+    ]
 
     classes = [
         (
@@ -38,6 +46,10 @@ def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.smpc.store.CryptoStore.store", "syft.lib.python.Dict"),
         (
             "syft.core.smpc.store.CryptoStore.populate_store",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.core.smpc.protocol.spdz.spdz.beaver_populate",
             "syft.lib.python._SyNone",
         ),
     ]

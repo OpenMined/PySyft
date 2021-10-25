@@ -5,6 +5,7 @@ from typing import Any
 from .....logger import logger
 from ...abstract.node import AbstractNodeClient
 from ...domain.enums import ResponseObjectEnum
+from ..exceptions import AuthorizationError
 from ..node_service.user_manager.user_messages import CreateUserMessage
 from ..node_service.user_manager.user_messages import DeleteUserMessage
 from ..node_service.user_manager.user_messages import GetUserMessage
@@ -47,10 +48,17 @@ class UserRequestAPI(RequestAPI):
                 )
                 logger.info(response.resp_msg)
         except Exception as e:
-            for user in self.all():
-                if user["email"] == kwargs["email"]:
-                    print(
-                        "Ignoring: user with email:" + user["email"] + " already exists"
-                    )
-                    return
+            print("failing to create user", e)
+            try:
+                for user in self.all():
+                    if user["email"] == kwargs["email"]:
+                        print(
+                            "Ignoring: user with email:"
+                            + user["email"]
+                            + " already exists"
+                        )
+                        return
+            except AuthorizationError as exc:
+                print("No permission to check users", exc)
+
             raise e
