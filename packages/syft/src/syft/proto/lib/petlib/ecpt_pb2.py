@@ -25,9 +25,7 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1bproto/lib/petlib/ecpt.proto\x12\x0fsyft.lib.petlib\x1a!proto/lib/petlib/ecpt_group.proto"?\n\x04\x45\x63Pt\x12)\n\x05group\x18\x01 \x01(\x0b\x32\x1a.syft.lib.petlib.EcPtGroup\x12\x0c\n\x04\x64\x61ta\x18\x02 \x01(\x0c\x62\x06proto3',
-    dependencies=[
-        proto_dot_lib_dot_petlib_dot_ecpt__group__pb2.DESCRIPTOR,
-    ],
+    dependencies=[proto_dot_lib_dot_petlib_dot_ecpt__group__pb2.DESCRIPTOR,],
 )
 
 
