@@ -279,7 +279,7 @@ def spdz_multiply(
 
     eps_b = eps * b_share.child
     print("EPS_B", eps_b, "\n")
-    delta_a = a_share.child * delta  # Symmetric only for mul
+    delta_a = delta * a_share.child  # Symmetric only for mul
     print("DELTA_A", delta_a, "\n")
 
     tensor = c_share + eps_b + delta_a
