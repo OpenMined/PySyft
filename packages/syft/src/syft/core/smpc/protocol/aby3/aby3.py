@@ -64,7 +64,9 @@ class ABY3:
         ]
         bit_shares = zip(*bit_shares)  # type: ignore
         for bit_sh in bit_shares:
-            mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
+            mpc = MPCTensor(
+                shares=bit_sh, shape=shape, parties=parties, ring_size=ring_size
+            )
             res_shares.append(mpc)
 
         # TODO: Should modify to xor at mpc tensor level
@@ -130,7 +132,9 @@ class ABY3:
             ]
             bit_shares = zip(*bit_shares)  # type: ignore
             for i, bit_sh in enumerate(bit_shares):
-                mpc = MPCTensor(shares=bit_sh, shape=shape, parties=parties)
+                mpc = MPCTensor(
+                    shares=bit_sh, shape=shape, parties=parties, ring_size=2
+                )
                 res_shares[i].append(mpc)
 
         bin_share = reduce(ABY3.full_adder, res_shares)
