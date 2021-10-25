@@ -28,7 +28,6 @@ def test_connect_network_to_network() -> None:
     response = root_client.vpn_status()
     assert response["status"] == "ok"
     host = response["host"]
-    print(host)
     assert host["ip"] == NETWORK_VPN_IP
     assert host["hostname"] == "test_network_1"
     assert host["os"] == "linux"
