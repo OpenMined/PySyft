@@ -5,7 +5,7 @@ PROTO_IN="proto"
 
 command -v protoc &> /dev/null
 if [ $? -ne 0 ]; then
-    echo -ne "Install protobuf\n"
+    echo -ne "Install protobuf (the 'protoc' tool: https://google.github.io/proto-lens/installing-protoc.html)\n"
     exit 1
 fi
 
