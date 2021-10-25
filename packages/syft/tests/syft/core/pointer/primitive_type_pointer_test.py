@@ -530,8 +530,9 @@ def test_list_iterator(
     test_object_fn: Callable[[], List[int]], client: sy.VirtualMachineClient
 ) -> None:
     py_obj = test_object_fn()
-    sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
-        py_obj
+    sy_obj, remote_sy_obj = (
+        sy.lib.python.List(py_obj),
+        client.syft.lib.python.List(py_obj),
     )
 
     py_iter = iter(py_obj)
@@ -554,8 +555,9 @@ def test_list_iterator(
 @pytest.mark.parametrize("test_object", test_dict["dict"]["objects"])
 def test_dict_iterator(test_object: List, client: sy.VirtualMachineClient) -> None:
     py_obj = test_object
-    sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
-        py_obj
+    sy_obj, remote_sy_obj = (
+        sy.lib.python.List(py_obj),
+        client.syft.lib.python.List(py_obj),
     )
 
     py_iter = iter(py_obj)
@@ -580,8 +582,9 @@ def test_reversed_iterator(
     test_object_fn: Callable[[], List[int]], client: sy.VirtualMachineClient
 ) -> None:
     py_obj = test_object_fn()
-    sy_obj, remote_sy_obj = sy.lib.python.List(py_obj), client.syft.lib.python.List(
-        py_obj
+    sy_obj, remote_sy_obj = (
+        sy.lib.python.List(py_obj),
+        client.syft.lib.python.List(py_obj),
     )
 
     py_iter = reversed(py_obj)

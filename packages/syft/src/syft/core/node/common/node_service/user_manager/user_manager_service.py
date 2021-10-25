@@ -69,6 +69,7 @@ def create_user_msg(
         daa_pdf=msg.daa_pdf,
         institution=msg.institution,
         website=msg.website,
+        budget=msg.budget,
     )
 
     user_role_id = -1

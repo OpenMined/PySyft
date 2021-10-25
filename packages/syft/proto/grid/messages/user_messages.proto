@@ -19,6 +19,7 @@ message CreateUserMessage {
   string institution = 10;
   bytes daa_pdf = 11;
   syft.core.io.Address reply_to = 12;
+  double budget = 13;
 }
 
 // GET User
