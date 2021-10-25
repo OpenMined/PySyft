@@ -30,6 +30,7 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
         "name": "Sheldon Cooper",
         "email": unique_email,
         "password": "bazinga",
+        "budget": 10,
     }
 
 
@@ -130,8 +131,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     time.sleep(10)
 
-    assert round(ca.privacy_budget) == 200
-    assert round(it.privacy_budget) == 200
+    assert round(ca.privacy_budget) == 210
+    assert round(it.privacy_budget) == 210
 
     ca_data = ca.datasets[-1]["Canada Trade"]
     it_data = it.datasets[-1]["Italy Trade"]
@@ -172,8 +173,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     assert sum(sycure_result) > -100
     assert sum(sycure_result) < 100
 
-    assert ca.privacy_budget < 200
+    assert ca.privacy_budget < 210
     assert ca.privacy_budget > 10
-    assert it.privacy_budget < 200
+    assert it.privacy_budget < 210
     assert it.privacy_budget > 10
     assert ca.privacy_budget == it.privacy_budget
