@@ -698,6 +698,20 @@ def test_or(row_count: int, ishan: Entity) -> None:
         assert (tensor | False) == output[index]
 
 
+def test_cumsum(row_data_ishan: list) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor.cumsum()
+    for index, row in enumerate(row_data_ishan):
+        assert (output.child[index] == row.cumsum()).child.all()
+
+
+def test_cumprod(row_data_ishan: list) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    output = reference_tensor.cumprod()
+    for index, row in enumerate(row_data_ishan):
+        assert (output.child[index] == row.cumprod()).child.all()
+
+
 def test_round(row_data_ishan: List) -> None:
     reference_tensor = REPT(rows=row_data_ishan)
     for target, output in zip(row_data_ishan, reference_tensor.round(decimals=0).child):
