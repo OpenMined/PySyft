@@ -666,7 +666,12 @@ class MPCTensor(PassthroughTensor):
             ]
         y_shape = getattr(y, "shape", (1,))
         new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
-        res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
+        res = MPCTensor(
+            parties=self.parties,
+            shares=res_shares,
+            shape=new_shape,
+            ring_size=self.ring_size,
+        )
 
         return res
 
