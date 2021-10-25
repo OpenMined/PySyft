@@ -9,6 +9,9 @@ import secrets
 from typing import Any
 from typing import List
 
+# third party
+import numpy as np
+
 # relative
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.utils import get_nr_bits
@@ -89,7 +92,7 @@ class ABY3:
         """
         ring_size = 2 ** 32
         ring_bits = get_nr_bits(ring_size)
-        c = 0  # carry bits of addition.
+        c = np.array([0], dtype=np.bool)  # carry bits of addition.
         result: List[MPCTensor] = []
         for idx in range(ring_bits):
             s = a[idx] + b[idx] + c

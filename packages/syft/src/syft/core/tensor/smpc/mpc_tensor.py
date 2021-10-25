@@ -113,7 +113,7 @@ class MPCTensor(PassthroughTensor):
         if shares is None:
             raise ValueError("Shares should not be None at this step")
 
-        res = MPCTensor._mpc_from_shares(shares, parties=parties)
+        res = list(MPCTensor._mpc_from_shares(shares, parties=parties))
 
         # we need to make sure that when we zip up clients from
         # multiple MPC tensors that they are in corresponding order
