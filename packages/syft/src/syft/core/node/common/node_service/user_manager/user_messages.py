@@ -639,8 +639,8 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
     def __init__(  # nosec
         self,
         address: Address,
-        user_id: int,
         reply_to: Address,
+        user_id: Optional[int] = 0,
         msg_id: Optional[UID] = None,
         email: Optional[str] = "",
         password: Optional[str] = "",

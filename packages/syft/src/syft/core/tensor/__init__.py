@@ -24,8 +24,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor",
         "syft.core.tensor.tensor",
         "syft.core.tensor.smpc",
-        "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.smpc.share_tensor",
+        "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
         "syft.core.tensor.autodp.single_entity_phi",
     ]
@@ -241,6 +241,14 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.put",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.crypto_store",
+            "syft.core.smpc.store.CryptoStore",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.populate_store",
+            "syft.lib.python._SyNone",
         ),
     ]
 
