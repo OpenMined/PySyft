@@ -383,7 +383,7 @@ class Dataset:
             existing_asset_names = [d.get("name") for d in self.data]
             if name in existing_asset_names:
                 raise KeyError(
-                    f"Asset with name: `{name}` already exists."
+                    f"Asset with name: `{name}` already exists. "
                     "Please use a different name."
                 )
 
@@ -399,7 +399,7 @@ class Dataset:
             DatasetRequestAPI(self.client).create_syft(
                 dataset=binary_dataset, metadata=metadata, platform="syft"
             )
-            sys.stdout.write("\rLoading dataset... uploading... SUCCESS!")
+            sys.stdout.write("\rLoading dataset... uploading... \nSUCCESS!")
             self.refresh()
 
     def delete(self, name: str) -> bool:
