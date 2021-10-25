@@ -239,9 +239,7 @@ _RUNCLASSMETHODSMPCACTION = _descriptor.Descriptor(
         ),
     ],
     extensions=[],
-    nested_types=[
-        _RUNCLASSMETHODSMPCACTION_KWARGSENTRY,
-    ],
+    nested_types=[_RUNCLASSMETHODSMPCACTION_KWARGSENTRY,],
     enum_types=[],
     serialized_options=None,
     is_extendable=False,

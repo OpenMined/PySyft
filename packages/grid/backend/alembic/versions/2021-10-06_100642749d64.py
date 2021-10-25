@@ -28,6 +28,7 @@ def upgrade() -> None:
     op.add_column("request", sa.Column("requested_budget", sa.Float(), default=0.0))
     op.add_column("request", sa.Column("current_budget", sa.Float(), default=0.0))
     op.add_column("request", sa.Column("updated_on", sa.DateTime(), nullable=True))
+    op.add_column("syft_application", sa.Column("budget", sa.Float(), default=0.0))
 
 
 def downgrade() -> None:
