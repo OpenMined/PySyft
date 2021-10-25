@@ -112,9 +112,11 @@ def update_user_msg(
     _valid_parameters = (
         msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
     )
-    _same_user = int(node.users.get_user(verify_key).id) == msg.user_id  # type: ignore
-    _allowed = _same_user or node.users.can_create_users(verify_key=verify_key)
-
+    _allowed = msg.user_id == 0 or node.users.can_create_users(verify_key=verify_key)
+    # Change own information
+    if msg.user_id == 0:
+        msg.user_id = int(node.users.get_user(verify_key).id)
+    
     _valid_user = node.users.contain(id=msg.user_id)
 
     if not _valid_parameters:
@@ -139,10 +141,6 @@ def update_user_msg(
     # Change Name Request
     elif msg.name:
         node.users.set(user_id=str(msg.user_id), name=msg.name)
-
-    # Change budget Request
-    elif msg.budget:
-        node.users.set(user_id=str(msg.user_id), budget=msg.budget)
 
     # Change Role Request
     elif msg.role:
