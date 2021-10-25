@@ -118,7 +118,9 @@ class DatasetRequestAPI(RequestAPI):
         super().create(**kwargs)
 
     def create_grid_ui(self, path: str, **kwargs) -> Dict[str, str]:  # type: ignore
-        response = self.node.conn.send_files(path, metadata=kwargs)  # type: ignore
+        response = self.node.conn.send_files(  # type: ignore
+            "/datasets", path, form_name="metadata", form_values=kwargs
+        )  # type: ignore
         logging.info(response[RequestAPIFields.MESSAGE])
 
     def all(self) -> List[Any]:
@@ -175,7 +177,7 @@ class DatasetRequestAPI(RequestAPI):
     def _repr_html_(self) -> str:
         if len(self) > 0:
             return self.dataset_list_to_html(self.all_as_datasets())
-        return "(no datasets found)Z"
+        return "(no datasets found)"
 
     @staticmethod
     def dataset_list_to_html(dataset_iterable: List[Any]) -> str:

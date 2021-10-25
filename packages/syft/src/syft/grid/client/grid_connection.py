@@ -3,7 +3,6 @@ import io
 import json
 from typing import Any
 from typing import Dict
-from typing import Optional
 from typing import Tuple
 
 # third party
@@ -39,7 +38,8 @@ class GridHTTPConnection(HTTPConnection):
 
     def __init__(self, url: str) -> None:
         self.base_url = url
-        self.session_token: Optional[Dict[str, str]] = None
+        self.session_token: str = ""
+        self.token_type: str = "'"
 
     def _send_msg(self, msg: SyftMessage) -> requests.Response:
         """
@@ -143,7 +143,34 @@ class GridHTTPConnection(HTTPConnection):
         else:
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))
 
-    def send_files(self, file_path: str, metadata: Dict = {}) -> Dict[str, Any]:
+    def reset(self) -> Any:
+        header = {}
+
+        if self.session_token and self.token_type:
+            header = dict(
+                Authorization="Bearer "
+                + json.loads(
+                    '{"auth_token":"'
+                    + str(self.session_token)
+                    + '","token_type":"'
+                    + str(self.token_type)
+                    + '"}'
+                )["auth_token"]
+            )
+
+        response = json.loads(
+            requests.delete(
+                self.base_url + GridHTTPConnection.SYFT_ROUTE, headers=header
+            ).text
+        )
+        if response.get(RequestAPIFields.MESSAGE, None):
+            return response
+        else:
+            raise RequestAPIException(response.get(RequestAPIFields.ERROR))
+
+    def send_files(
+        self, route: str, file_path: str, form_name: str, form_values: Dict
+    ) -> Dict[str, Any]:
         header = {}
 
         if self.session_token and self.token_type:
@@ -159,11 +186,11 @@ class GridHTTPConnection(HTTPConnection):
             )
 
         files = {
-            "metadata": (None, json.dumps(metadata), "text/plain"),
+            form_name: (None, json.dumps(form_values), "text/plain"),
             "file": (file_path, open(file_path, "rb"), "application/octet-stream"),
         }
 
-        resp = requests.post(self.base_url + "/datasets", files=files, headers=header)
+        resp = requests.post(self.base_url + route, files=files, headers=header)
 
         return json.loads(resp.content)
 
@@ -196,10 +223,17 @@ class GridHTTPConnection(HTTPConnection):
 
     @staticmethod
     def _proto2object(proto: GridHTTPConnection_PB) -> "GridHTTPConnection":
-        return GridHTTPConnection(url=proto.base_url)
+        obj = GridHTTPConnection(url=proto.base_url)
+        obj.session_token = proto.session_token
+        obj.token_type = proto.token_type
+        return obj
 
     def _object2proto(self) -> GridHTTPConnection_PB:
-        return GridHTTPConnection_PB(base_url=self.base_url)
+        return GridHTTPConnection_PB(
+            base_url=self.base_url,
+            session_token=self.session_token,
+            token_type=self.token_type,
+        )
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

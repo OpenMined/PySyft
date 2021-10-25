@@ -611,13 +611,18 @@ def create_launch_docker_cmd(
     print("\n")
 
     cmd = ""
-    cmd += "DOMAIN_PORT=" + str(host_term.free_port)
+    cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
+    cmd += " DOMAIN_PORT=" + str(host_term.free_port)
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += ' DOMAIN_NAME="' + snake_name + '"'
     cmd += " NODE_TYPE=" + str(node_type.input)
     cmd += " VERSION=`python VERSION`"
     cmd += " VERSION_HASH=`python VERSION hash`"
-    cmd += " INSTALL_DEV=0 TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false INSTALL_JUPYTER=0"
+    cmd += " TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false"
+
+    build_cmd = str(cmd)
+    build_cmd += " docker compose build --parallel"
+
     cmd += " docker compose -p " + snake_name
     if str(node_type.input) == "network":
         cmd += " --profile network"
@@ -627,8 +632,7 @@ def create_launch_docker_cmd(
         cmd += " -d"
 
     cmd += " --build"  # force rebuild
-
-    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+    cmd = "cd " + GRID_SRC_PATH + "; " + build_cmd + " && " + cmd
     return cmd
 
 

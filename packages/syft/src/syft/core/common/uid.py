@@ -76,6 +76,9 @@ class UID:
             critical(f"Unable to convert {value} to UUID. {e}")
             traceback_and_raise(e)
 
+    def to_string(self) -> str:
+        return self.no_dash
+
     def __hash__(self) -> int:
         """Hashes the UID for use in dictionaries and sets
 

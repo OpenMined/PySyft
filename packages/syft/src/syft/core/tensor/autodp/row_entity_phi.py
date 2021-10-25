@@ -14,6 +14,8 @@ import numpy as np
 import numpy.typing as npt
 
 # relative
+from ....core.adp.entity import DataSubjectGroup as DSG
+from ....core.adp.entity import Entity
 from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
@@ -43,7 +45,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     tensor can have an arbitrary number of dimensions."""
 
     # a list of attributes needed for serialization using RecursiveSerde
-    __attr_allowlist__ = ["child"]
+    __attr_allowlist__ = ["child", "n_entities", "unique_entities"]
 
     def __init__(self, rows: Sequence, check_shape: bool = True):
         """Initialize a RowEntityPhiTensor
@@ -71,6 +73,26 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                         f"All rows in RowEntityPhiTensor must match: {shape} != {row.shape}"
                     )
 
+        """Calculate the number of unique entities behind the REPT"""
+        self.unique_entities: set[Entity] = set()
+        self.n_entities = 0
+        for entity in self.entities.flatten():
+            if isinstance(entity, Entity):
+                if entity not in self.unique_entities:
+                    self.unique_entities.add(entity)
+                    self.n_entities += 1
+                else:
+                    continue
+            elif isinstance(entity, DSG):
+                for e in entity.entity_set:
+                    if e not in self.unique_entities:
+                        self.unique_entities.add(e)
+                        self.n_entities += 1
+                    else:
+                        continue
+            else:
+                raise Exception(f"{type(entity)}")
+
     @property
     def scalar_manager(self) -> TypeScalarManager:
         return self.child[0].scalar_manager
@@ -89,8 +111,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     @property
     def entities(self) -> np.ndarray:
+        # we must cast the result of x.shape prod to an int because sometimes
+        # it can be a float depending on the original type which fails to
+        # multiply the [x.entity] array
         return np.array(
-            [[x.entity] * np.array(x.shape).prod() for x in self.child]
+            [[x.entity] * int(np.array(x.shape).prod()) for x in self.child]
         ).reshape(self.shape)
 
     @property
@@ -195,9 +220,13 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 new_list = [child * other for child in self.child]
         elif isinstance(other, RowEntityPhiTensor):
             if is_broadcastable(self.shape, other.shape):
-                new_list = [
-                    self.child[i] * other.child[i] for i in range(len(self.child))
-                ]
+                for self_child, other_child in zip(self.child, other.child):
+                    if len(self.child) != len(other.child):
+                        raise ValueError(
+                            "Zipping two different lengths will drop data. "
+                            + f"{len(self.child)} vs {len(other.child)}"
+                        )
+                    new_list.append(self_child * other_child)
             else:
                 raise Exception(
                     f"Tensor dims do not match for __sub__: {self.shape} != {other.shape}"
@@ -426,16 +455,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
-    def sum(
-        self, *args: Any, axis: Optional[int] = None, **kwargs: Any
-    ) -> RowEntityPhiTensor:
-
-        if axis is None or axis == 0:
-            return self.gamma.sum(axis=axis)
+    def sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
 
         new_list = list()
         for row in self.child:
-            new_list.append(row.sum(*args, axis=axis - 1, **kwargs))
+            new_list.append(row.sum(*args, **kwargs))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
@@ -560,6 +584,18 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 f"Tensor dims do not match for __ge__: {len(self.child)} != {len(other.child)}"
             )
 
+    def cumprod(self, axis: Optional[int] = None) -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.cumprod(axis))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def cumsum(self, axis: Optional[int] = None) -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.cumsum(axis))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
     def clip(
         self, a_min: npt.ArrayLike, a_max: npt.ArrayLike, *args: Any
     ) -> RowEntityPhiTensor:
@@ -570,6 +606,258 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         new_list = list()
         for row in self.child:
             new_list.append(row.clip(a_min=a_min, a_max=a_max, *args))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def __floordiv__(
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
+    ) -> RowEntityPhiTensor:
+
+        # We will let the underlying SingleEntityPhiTensor logic handle most of the errors/exceptions
+        new_list = list()
+        if is_acceptable_simple_type(other):
+            for tensor in self.child:
+                new_list.append(tensor // other)
+        elif isinstance(other, SingleEntityPhiTensor):
+            for tensor in self.child:
+                new_list.append(tensor // other)
+        elif isinstance(other, RowEntityPhiTensor):
+            if not is_broadcastable(self.shape, other.shape):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape}, {other.shape}"
+                )
+            else:
+                if other.shape[0] == 1:
+                    for tensor in self.child:
+                        new_list.append(tensor // other.child[0])
+                else:
+                    if len(self.child) != len(other.child):
+                        raise ValueError(
+                            "Zipping two different lengths will drop data. "
+                            + f"{len(self.child)} vs {len(other.child)}"
+                        )
+                    for self_tensors, other_tensors in zip(self.child, other.child):
+                        new_list.append(self_tensors // other_tensors)
+        else:
+            raise NotImplementedError
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def __mod__(
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
+    ) -> RowEntityPhiTensor:
+
+        # We will let the underlying SingleEntityPhiTensor logic handle most of the errors/exceptions
+        new_list = list()
+        if is_acceptable_simple_type(other):
+            for tensor in self.child:
+                new_list.append(tensor % other)
+        elif isinstance(other, SingleEntityPhiTensor):
+            for tensor in self.child:
+                new_list.append(tensor % other)
+        elif isinstance(other, RowEntityPhiTensor):
+            if not is_broadcastable(self.shape, other.shape):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape}, {other.shape}"
+                )
+            else:
+                if other.shape[0] == 1:
+                    for tensor in self.child:
+                        new_list.append(tensor % other.child[0])
+                else:
+                    if len(self.child) != len(other.child):
+                        raise ValueError(
+                            "Zipping two different lengths will drop data. "
+                            + f"{len(self.child)} vs {len(other.child)}"
+                        )
+                    for self_tensors, other_tensors in zip(self.child, other.child):
+                        new_list.append(self_tensors % other_tensors)
+        else:
+            raise NotImplementedError
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def __divmod__(
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
+    ) -> Tuple:
+        # Let logic written out in mod, floordiv and SEPT handle all exceptions
+        return self // other, self % other
+
+    def __matmul__(
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
+    ) -> RowEntityPhiTensor:
+        new_list = list()
+        if isinstance(other, np.ndarray):
+            for tensor in self.child:
+                new_list.append(tensor.__matmul__(other))
+        elif isinstance(other, SingleEntityPhiTensor):
+            # Whether the output of the matmul is SEPT or IGT, we let SEPT code determine that
+            for tensor in self.child:
+                new_list.append(tensor.__matmul__(other))
+        elif isinstance(other, RowEntityPhiTensor):
+            if len(self.child) != len(other.child):
+                raise ValueError(
+                    "Zipping two different lengths will drop data. "
+                    + f"{len(self.child)} vs {len(other.child)}"
+                )
+            for self_tensor, other_tensor in zip(self.child, other.child):
+                new_list.append(self_tensor.__matmul__(other_tensor))
+        else:
+            raise NotImplementedError
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def trace(
+        self,
+        offset: int = 0,
+        axis1: int = 1,
+        axis2: int = 2,
+        dtype: Optional[Any] = np.int32,
+        out: Optional[np.ndarray] = None,
+    ) -> RowEntityPhiTensor:
+        if axis1 == 0 or axis2 == 0:
+            raise NotImplementedError  # This would create a GammaTensor
+        if dtype != np.int32:
+            raise Exception(
+                "We currently only support np.int32 dtypes for our tensors. "
+                "We will be adding support for more dtypes soon! Sorry for the inconvenience."
+            )
+
+        # Axis #1 for REPT = Axis #0 for its SEPT child, etc
+        axis1 -= 1
+        axis2 -= 1
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.trace(offset, axis1, axis2, dtype, out))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def prod(
+        self,
+        axis: int = 1,  # might be bad that the default behaviour currently is not implemented...
+        dtype: Optional[Any] = None,
+        out: Optional[np.ndarray] = None,
+        keepdims: Optional[bool] = False,
+        initial: int = 1,
+        where: Optional[bool] = True,
+    ) -> RowEntityPhiTensor:
+        if dtype and dtype != np.int32:
+            raise Exception(
+                "We currently only support np.int32 dtypes for our tensors. "
+                "We will be adding support for more dtypes soon! Sorry for the inconvenience."
+            )
+        if axis == 0:
+            raise NotImplementedError  # GammaTensor
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.prod(axis - 1, dtype, out, keepdims, initial, where))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def any(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[bool] = True,
+    ) -> RowEntityPhiTensor:
+        """Test whether any element along a given axis evaluates to True"""
+
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.any(axis, keepdims, where))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def all(
+        self,
+        axis: Optional[int] = None,
+        keepdims: Optional[bool] = False,
+        where: Optional[bool] = True,
+    ) -> RowEntityPhiTensor:
+        """Test whether all elements along a given axis evaluates to True"""
+
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.all(axis, keepdims, where))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def abs(
+        self,
+        out: Optional[np.ndarray] = None,
+    ) -> RowEntityPhiTensor:
+        """Calculate the absolute value element-wise"""
+
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.abs(out))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def pow(
+        self, value: Union[RowEntityPhiTensor, AcceptableSimpleType]
+    ) -> RowEntityPhiTensor:
+        """Return elements raised to powers from value, element-wise"""
+        new_list = list()
+        if is_acceptable_simple_type(value):
+            if isinstance(value, np.ndarray):
+                new_list.append(
+                    [self.child[i].pow(value[i]) for i in range(len(self.child))]
+                )
+            else:  # int, float, bool, etc
+                new_list = [child.pow(value) for child in self.child]
+        elif isinstance(value, RowEntityPhiTensor):
+            new_list = [
+                self.child[i].pow(value.child[i]) for i in range(len(self.child))
+            ]
+        elif isinstance(value, SingleEntityPhiTensor):
+            new_list = [i.pow(value) for i in self.child]
+        else:
+            raise NotImplementedError
+
+        return RowEntityPhiTensor(rows=new_list)
+
+    def copy(
+        self, order: Optional[str] = "K", subok: Optional[bool] = True
+    ) -> RowEntityPhiTensor:
+        """Return copy of the given object"""
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.copy(order=order, subok=subok))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def take(
+        self,
+        indices: np.ArrayLike,
+        axis: Optional[int] = None,
+        mode: Optional[str] = "raise",
+    ) -> RowEntityPhiTensor:
+        """Take elements from an array along an axis"""
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.take(indices=indices, axis=axis, mode=mode))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def diagonal(
+        self,
+        offset: Optional[int] = 0,
+        axis1: Optional[int] = 0,
+        axis2: Optional[int] = 1,
+    ) -> RowEntityPhiTensor:
+        """Return specified diagonals"""
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.diagonal(offset=offset, axis1=axis1, axis2=axis2))
+
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def round(self, decimals: int = 0) -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.round(decimals))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 

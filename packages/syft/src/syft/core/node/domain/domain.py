@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import asyncio
 import os
@@ -21,6 +24,7 @@ from ....logger import debug
 from ....logger import info
 from ....logger import traceback
 from ...adp.adversarial_accountant import AdversarialAccountant
+from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -44,6 +48,9 @@ from ..common.node_service.dataset_manager.dataset_manager_service import (
 from ..common.node_service.get_remaining_budget.get_remaining_budget_service import (
     GetRemainingBudgetService,
 )
+from ..common.node_service.node_setup.node_setup_messages import (
+    CreateInitialSetUpMessage,
+)
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
 from ..common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
@@ -64,6 +71,9 @@ from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
+from ..common.node_service.vpn.vpn_service import VPNConnectService
+from ..common.node_service.vpn.vpn_service import VPNJoinService
+from ..common.node_service.vpn.vpn_service import VPNStatusService
 from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
@@ -133,6 +143,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
         self.immediate_services_with_reply.append(PingService)
+        self.immediate_services_with_reply.append(VPNConnectService)
+        self.immediate_services_with_reply.append(VPNJoinService)
+        self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)
@@ -165,6 +178,31 @@ class Domain(Node):
     def post_init(self) -> None:
         super().post_init()
         self.set_node_uid()
+
+    def initial_setup(  # nosec
+        self,
+        first_superuser_name: str = "Jane Doe",
+        first_superuser_email: str = "info@openmined.org",
+        first_superuser_password: str = "changethis",
+        first_superuser_budget: float = 5.55,
+        domain_name: str = "BigHospital",
+    ) -> Domain:
+
+        # Build Syft Message
+        msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
+            address=self.address,
+            name=first_superuser_name,
+            email=first_superuser_email,
+            password=first_superuser_password,
+            domain_name=domain_name,
+            budget=first_superuser_budget,
+            reply_to=self.address,
+        ).sign(signing_key=self.signing_key)
+
+        # Process syft message
+        _ = self.recv_immediate_msg_with_reply(msg=msg).message
+
+        return self
 
     def loud_print(self) -> None:
         install_path = os.path.abspath(
@@ -377,6 +415,20 @@ class Domain(Node):
                         continue
                 alive_handlers.append(handler)
         self.request_handlers = alive_handlers
+
+    def clear(self, user_role: int) -> bool:
+        # Cleanup database tables
+        if user_role == self.roles.owner_role.id:
+            self.store.clear()
+            self.data_requests.clear()
+            self.users.clear()
+            self.environments.clear()
+            self.association_requests.clear()
+            self.datasets.clear()
+            self.initial_setup()
+            return True
+
+        return False
 
     def clean_up_requests(self) -> None:
         # this allows a request to be re-handled if the handler somehow failed

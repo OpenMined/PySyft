@@ -5,6 +5,7 @@ from typing import Any
 from .....logger import logger
 from ...abstract.node import AbstractNodeClient
 from ...domain.enums import ResponseObjectEnum
+from ..exceptions import AuthorizationError
 from ..node_service.user_manager.user_messages import CreateUserMessage
 from ..node_service.user_manager.user_messages import DeleteUserMessage
 from ..node_service.user_manager.user_messages import GetUserMessage
@@ -33,15 +34,31 @@ class UserRequestAPI(RequestAPI):
 
     def create(self, **kwargs: Any) -> None:
         try:
-            response = self.perform_api_request(
-                syft_msg=self._create_message, content=kwargs
-            )
-            logger.info(response.resp_msg)
+            if "pdf" in kwargs.keys():
+                response = self.client.routes[0].connection.send_files(  # type: ignore
+                    "/users",
+                    kwargs.get("pdf"),
+                    form_name="new_user",
+                    form_values=kwargs,  # type: ignore
+                )  # type: ignore
+                logger.info(response)
+            else:
+                response = self.perform_api_request(
+                    syft_msg=self._create_message, content=kwargs
+                )
+                logger.info(response.resp_msg)
         except Exception as e:
-            for user in self.all():
-                if user["email"] == kwargs["email"]:
-                    print(
-                        "Ignoring: user with email:" + user["email"] + " already exists"
-                    )
-                    return
+            print("failing to create user", e)
+            try:
+                for user in self.all():
+                    if user["email"] == kwargs["email"]:
+                        print(
+                            "Ignoring: user with email:"
+                            + user["email"]
+                            + " already exists"
+                        )
+                        return
+            except AuthorizationError as exc:
+                print("No permission to check users", exc)
+
             raise e
