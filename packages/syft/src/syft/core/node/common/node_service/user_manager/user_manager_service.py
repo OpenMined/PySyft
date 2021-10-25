@@ -69,9 +69,14 @@ def create_user_msg(
         daa_pdf=msg.daa_pdf,
         institution=msg.institution,
         website=msg.website,
+        budget=msg.budget,
     )
 
-    user_role_id = node.users.role(verify_key=verify_key).id
+    user_role_id = -1
+    try:
+        user_role_id = node.users.role(verify_key=verify_key).id
+    except Exception as e:
+        print("verify_key not in db", e)
 
     if node.roles.can_create_users(role_id=user_role_id):
         node.users.process_user_application(
@@ -115,8 +120,8 @@ def update_user_msg(
     _allowed = msg.user_id == 0 or node.users.can_create_users(verify_key=verify_key)
     # Change own information
     if msg.user_id == 0:
-        msg.user_id = int(node.users.get_user(verify_key).id) # type: ignore
-    
+        msg.user_id = int(node.users.get_user(verify_key).id)  # type: ignore
+
     _valid_user = node.users.contain(id=msg.user_id)
 
     if not _valid_parameters:
@@ -194,7 +199,9 @@ def get_user_msg(
     # Check key permissions
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
     if not _allowed:
-        raise AuthorizationError("You're not allowed to get User information!")
+        raise AuthorizationError(
+            "get_user_msg You're not allowed to get User information!"
+        )
     else:
         # Extract User Columns
         user = node.users.first(id=msg.user_id)
@@ -225,7 +232,9 @@ def get_all_users_msg(
     # Check key permissions
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
     if not _allowed:
-        raise AuthorizationError("You're not allowed to get User information!")
+        raise AuthorizationError(
+            "get_all_users_msg You're not allowed to get User information!"
+        )
     else:
         # Get All Users
         users = node.users.all()
@@ -259,7 +268,9 @@ def get_applicant_users(
     # Check key permissions
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
     if not _allowed:
-        raise AuthorizationError("You're not allowed to get User information!")
+        raise AuthorizationError(
+            "get_applicant_users You're not allowed to get User information!"
+        )
     else:
         # Get All Users
         users = node.users.get_all_applicant()
@@ -327,7 +338,9 @@ def search_users_msg(
         except UserNotFoundError:
             _msg = []
     else:
-        raise AuthorizationError("You're not allowed to get User information!")
+        raise AuthorizationError(
+            "search_users_msg You're not allowed to get User information!"
+        )
 
     return SearchUsersResponse(
         address=msg.reply_to,

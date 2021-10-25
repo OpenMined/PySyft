@@ -43,9 +43,12 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
 
         _self = store_object_self.data
         args = [node.store[arg_id].data for arg_id in msg.args_id]
-        kwargs = {}
+
+        kwargs = {}  # type: ignore
         for key, kwarg_id in msg.kwargs_id.items():
-            data = node.store[kwarg_id].data
+            data = (
+                node.store[kwarg_id].data if "spdz" not in msg.name_action else kwarg_id
+            )
             if data is None:
                 raise KeyError(f"Key {key} is not available")
 
@@ -55,7 +58,11 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
         logger.warning(func)
-        result = func(_self, *upcasted_args, **upcasted_kwargs)
+
+        if "spdz_multiply" not in msg.name_action:
+            result = func(_self, *upcasted_args, **upcasted_kwargs)
+        else:
+            result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
 
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive

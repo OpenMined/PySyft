@@ -148,7 +148,7 @@ def row_data(
 
 
 @pytest.fixture
-def reference_binary_data() -> np.ndarray:
+def reference_binary_data(dims: int) -> np.ndarray:
     """Generate binary data to test the equality operators with bools"""
     binary_data = np.random.randint(2, size=(dims, dims))
     return binary_data
@@ -677,10 +677,122 @@ def test_and(row_count: int, ishan: Entity, dims: int) -> None:
         assert (tensor & False) == output[index]
 
 
+def test_floordiv_array(row_data_ishan: list) -> None:
+    """Test floordiv with np.ndarrays"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = np.ones_like(row_data_ishan[0].child)
+    output = reference_tensor // other
+    for index, tensor in enumerate(output.child):
+        assert tensor == row_data_ishan[index] // other
+
+
+def test_floordiv_sept(row_data_ishan: list) -> None:
+    """Test floordiv with SEPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = row_data_ishan[0]
+    try:
+        output = reference_tensor // other
+
+        for index, tensor in enumerate(output.child):
+            assert tensor == row_data_ishan[index] // other.child
+    except ZeroDivisionError as e:
+        print("ZeroDivisionError expected with random data", e)
+
+
+def test_floordiv_rept(row_data_ishan: list) -> None:
+    """Test floordiv with REPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other_data = [i // 2 + 1 for i in row_data_ishan]
+    other = REPT(rows=other_data)
+    try:
+        output = reference_tensor // other
+
+        for index, tensor in enumerate(output.child):
+            assert tensor == row_data_ishan[index] // other_data[index]
+    except ZeroDivisionError as e:
+        print("ZeroDivisionError expected with random data", e)
+
+
+def test_mod_array(row_data_ishan: list) -> None:
+    """Test mod with np.ndarrays"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = np.ones_like(row_data_ishan[0].child)
+    output = reference_tensor % other
+    for index, tensor in enumerate(output.child):
+        assert tensor == row_data_ishan[index] % other
+
+
+def test_mod_sept(row_data_ishan: list) -> None:
+    """Test mod with SEPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = row_data_ishan[0]
+    try:
+        output = reference_tensor % other
+
+        for index, tensor in enumerate(output.child):
+            assert tensor == row_data_ishan[index] % other.child
+    except ZeroDivisionError as e:
+        print("ZeroDivisionError expected with random data", e)
+
+
+def test_mod_rept(row_data_ishan: list) -> None:
+    """Test mod with REPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other_data = [i // 2 + 1 for i in row_data_ishan]
+    other = REPT(rows=other_data)
+    try:
+        output = reference_tensor % other
+
+        for index, tensor in enumerate(output.child):
+            assert tensor == row_data_ishan[index] // other_data[index]
+    except ZeroDivisionError as e:
+        print("ZeroDivisionError expected with random data", e)
+
+
+def test_divmod_array(row_data_ishan: list) -> None:
+    """Test divmod with np.ndarrays"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = np.ones_like(row_data_ishan[0].child)
+    quotient, remainder = reference_tensor.__divmod__(other)
+    for index, tensors in enumerate(zip(quotient.child, remainder.child)):
+        assert tensors[0] == row_data_ishan[index] % other
+        assert tensors[1] == row_data_ishan[index] % other
+
+
+def test_divmod_sept(row_data_ishan: list) -> None:
+    """Test divmod with SEPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = row_data_ishan[0]
+    try:
+        quotient, remainder = reference_tensor.__divmod__(other)
+
+        for index, tensors in enumerate(zip(quotient.child, remainder.child)):
+            assert tensors[0] == row_data_ishan[index] // other.child
+            assert tensors[1] == row_data_ishan[index] % other.child
+    except ZeroDivisionError as e:
+        print("ZeroDivisionError expected with random data", e)
+
+
+def test_divmod_rept(row_data_ishan: list) -> None:
+    """Test divmod with REPT"""
+    reference_tensor = REPT(rows=row_data_ishan)
+    other_data = [i // 2 + 1 for i in row_data_ishan]
+    other = REPT(rows=other_data)
+    try:
+        quotient, remainder = reference_tensor.__divmod__(other)
+
+        for index, tensors in enumerate(zip(quotient.child, remainder.child)):
+            assert tensors[0] == row_data_ishan[index] // other_data[index]
+            assert tensors[1] == row_data_ishan[index] % other_data[index]
+    except ZeroDivisionError as e:
+        print("ZeroDivisionError expected with random data", e)
+
+
 @pytest.mark.skip(
     reason="Test passes, but raises a Deprecation Warning for elementwise comparisons"
 )
-def test_or(row_count: int, ishan: Entity) -> None:
+def test_or(row_count: int, ishan: Entity, dims: int) -> None:
+    # this test crashes the test worker somehow??
     new_list = list()
     for _ in range(row_count):
         data = np.random.randint(2, size=(dims, dims))
@@ -696,6 +808,48 @@ def test_or(row_count: int, ishan: Entity) -> None:
     output = reference_tensor | False
     for index, tensor in enumerate(reference_tensor.child):
         assert (tensor | False) == output[index]
+
+
+def test_matmul_array(row_data_ishan: list) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = np.ones_like(row_data_ishan[0].child.T) * 5
+    output = reference_tensor.__matmul__(other)
+
+    for input_tensor, output_tensor in zip(reference_tensor.child, output.child):
+        assert output_tensor.shape[1] == reference_tensor.shape[1]
+        assert output_tensor.shape[-1] == other.shape[-1]
+        assert output_tensor == input_tensor.__matmul__(other)
+
+
+def test_matmul_sept(
+    row_data_ishan: list,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    other = row_data_ishan[0].transpose() * 2
+    output = reference_tensor.__matmul__(other)
+
+    for input_tensor, output_tensor in zip(reference_tensor.child, output.child):
+        assert output_tensor.shape[1] == reference_tensor.shape[1]
+        assert output_tensor.shape[-1] == other.shape[-1]
+        assert output_tensor == input_tensor.__matmul__(other.child)
+
+
+def test_matmul_rept(row_data_ishan: list) -> None:
+    reference_tensor = REPT(rows=row_data_ishan)
+    data = [i.transpose() * 2 for i in row_data_ishan]
+    other = REPT(rows=data)
+    output = reference_tensor.__matmul__(other)
+
+    for input_tensor, other_tensor, output_tensor in zip(
+        reference_tensor.child, other.child, output.child
+    ):
+        assert output_tensor.shape[1] == reference_tensor.shape[1]
+        assert output_tensor.shape[-1] == other.shape[-1]
+        assert output_tensor == input_tensor.child.__matmul__(other_tensor.child)
 
 
 def test_cumsum(row_data_ishan: list) -> None:

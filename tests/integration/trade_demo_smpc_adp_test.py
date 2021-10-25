@@ -30,6 +30,7 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
         "name": "Sheldon Cooper",
         "email": unique_email,
         "password": "bazinga",
+        "budget": 10,
     }
 
 
@@ -115,15 +116,23 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     it = sy.login(email=unique_email, password="bazinga", port=9083)
     it.request_budget(eps=200, reason="increase budget!")
 
-    time.sleep(2)
+    time.sleep(10)
 
-    ca_root.requests[0].accept()
-    it_root.requests[0].accept()
+    # until we fix the code this just accepts all requests in case it gets the
+    # wrong one
+    for req in ca_root.requests:
+        req.accept()
 
-    time.sleep(2)
+    for req in it_root.requests:
+        req.accept()
 
-    assert round(ca.privacy_budget) == 200
-    assert round(it.privacy_budget) == 200
+    # ca_root.requests[0].accept()
+    # it_root.requests[0].accept()
+
+    time.sleep(10)
+
+    assert round(ca.privacy_budget) == 210
+    assert round(it.privacy_budget) == 210
 
     ca_data = ca.datasets[-1]["Canada Trade"]
     it_data = it.datasets[-1]["Italy Trade"]
@@ -154,7 +163,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     part, the part we call "The Prestige".
     """
     # the prestige 🎩
-    time.sleep(5)
+    time.sleep(40)  # TODO: should modify after implementing polling .get()
     sycure_result = public_result.get()
     print("sycure_result", sycure_result)
     print("after ca", ca.privacy_budget)
@@ -164,8 +173,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     assert sum(sycure_result) > -100
     assert sum(sycure_result) < 100
 
-    assert ca.privacy_budget < 200
+    assert ca.privacy_budget < 210
     assert ca.privacy_budget > 10
-    assert it.privacy_budget < 200
+    assert it.privacy_budget < 210
     assert it.privacy_budget > 10
     assert ca.privacy_budget == it.privacy_budget

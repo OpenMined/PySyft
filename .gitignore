@@ -33,6 +33,13 @@ packages/hagrid/grid
 # vagrant
 .vagrant
 
+# venv
+venv
+
+# docs
+docs/build
+docs/source/_build
+
 # helmcharts
 helm-charts/**/*.tgz
 helm-charts/**/*.lock
