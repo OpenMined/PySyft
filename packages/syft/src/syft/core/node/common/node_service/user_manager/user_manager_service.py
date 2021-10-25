@@ -71,7 +71,11 @@ def create_user_msg(
         website=msg.website,
     )
 
-    user_role_id = node.users.role(verify_key=verify_key).id
+    user_role_id = -1
+    try:
+        user_role_id = node.users.role(verify_key=verify_key).id
+    except Exception as e:
+        print("verify_key not in db", e)
 
     if node.roles.can_create_users(role_id=user_role_id):
         node.users.process_user_application(
