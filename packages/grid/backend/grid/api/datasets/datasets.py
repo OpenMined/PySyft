@@ -17,6 +17,7 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
 # syft absolute
+from syft import deserialize
 from syft.core.node.common.action.exception_action import ExceptionMessage
 from syft.core.node.common.node_service.dataset_manager.dataset_manager_messages import (
     CreateDatasetMessage,
@@ -106,7 +107,17 @@ def get_all_dataset_metadata_route(
     if isinstance(reply, ExceptionMessage):
         return {"error": reply.exception_msg}
     else:
-        return [dataset.upcast() for dataset in reply.metadatas]
+        result = [content for content in reply.metadatas]
+
+        new_all = list()
+        for dataset in result:
+            new_dataset = {}
+            for k, v_blob in dataset.items():
+                if k not in ["str_metadata", "blob_metadata", "manifest"]:
+                    new_dataset[k] = deserialize(v_blob, from_bytes=True)
+            new_all.append(new_dataset)
+
+        return new_all
 
 
 @router.get("/{dataset_id}", status_code=200, response_class=JSONResponse)

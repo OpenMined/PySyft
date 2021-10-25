@@ -9,10 +9,16 @@ from syft.core.node.common.node_service.user_manager.user_manager_service import
     DeleteUserMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
+    GetCandidatesMessage,
+)
+from syft.core.node.common.node_service.user_manager.user_manager_service import (
     GetUserMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     GetUsersMessage,
+)
+from syft.core.node.common.node_service.user_manager.user_manager_service import (
+    ProcessUserCandidateMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     UpdateUserMessage,
@@ -20,6 +26,7 @@ from syft.core.node.common.node_service.user_manager.user_manager_service import
 
 # grid absolute
 from grid.api.users.models import User
+from grid.api.users.models import UserCandidate
 from grid.api.users.models import UserCreate
 from grid.api.users.models import UserPrivate
 from grid.api.users.models import UserUpdate
@@ -31,6 +38,25 @@ def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
         signing_key=current_user.get_signing_key(),
         message_type=CreateUserMessage,
         **dict(new_user)
+    )
+    return reply.resp_msg
+
+
+def get_user_requests(current_user: UserPrivate) -> List[UserCandidate]:
+    reply = send_message_with_reply(
+        signing_key=current_user.get_signing_key(), message_type=GetCandidatesMessage
+    )
+    return [user.upcast() for user in reply.content]
+
+
+def process_applicant_request(
+    current_user: UserPrivate, candidate_id: int, status: str
+) -> str:
+    reply = send_message_with_reply(
+        signing_key=current_user.get_signing_key(),
+        message_type=ProcessUserCandidateMessage,
+        candidate_id=candidate_id,
+        status=status,
     )
     return reply.resp_msg
 

@@ -20,7 +20,6 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
         "name": "Sheldon Cooper",
         "email": unique_email,
         "password": "bazinga",
-        "budget": 200,
     }
 
 
