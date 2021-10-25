@@ -7,7 +7,8 @@ from syft import serialize
 from syft.core.adp.entity import Entity
 from syft.core.adp.scalar.abstract.base_scalar import BaseScalar
 from syft.core.adp.scalar.abstract.intermediate_scalar import IntermediateScalar
-from syft.core.adp.scalar.gamma_scalar import GammaScalar
+
+# from syft.core.adp.scalar.gamma_scalar import GammaScalar
 from syft.core.adp.scalar.intermediate_phi_scalar import IntermediatePhiScalar
 from syft.core.adp.scalar.phi_scalar import PhiScalar
 
@@ -18,7 +19,7 @@ scalar_object_tests = [
     # BaseScalar(min_val=None, value=None, max_val=None, entity=Entity(name="test")),
     BaseScalar(min_val=1, value=None, max_val=3, entity=Entity(name="test")),
     PhiScalar(min_val=0, value=1, max_val=2, entity=Entity(name="test")),
-    GammaScalar(min_val=0, value=1, max_val=2, entity=Entity(name="test"), prime=3),
+    # GammaScalar(min_val=0, value=1, max_val=2, entity=Entity(name="test"), prime=3),
 ]
 
 

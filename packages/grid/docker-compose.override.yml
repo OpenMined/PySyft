@@ -164,8 +164,14 @@ services:
     environment:
       - NETWORK_NAME=omnet
     ports:
-      - "${HEADSCALE_PORT?8080}:8080"
       - "4000"
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-vpn-http.rule=PathPrefix(`/vpn`)
+      - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn-http.middlewares=${STACK_NAME?Variable not set}-vpn-http-stripprefix"
+      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn-http-stripprefix.stripprefix.prefixes=/vpn"
+      - traefik.http.services.${STACK_NAME?Variable not set}-vpn.loadbalancer.server.port=8080
 
   docker-host:
     depends_on:

@@ -447,8 +447,10 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
             result = ShareTensor(
                 rank=self.sharetensor_values.rank,
-                nr_parties=self.sharetensor_values.nr_parties,
+                parties_info=self.sharetensor_values.parties_info,
                 ring_size=self.sharetensor_values.ring_size,
+                seed_przs=self.sharetensor_values.seed_przs,
+                clients=self.sharetensor_values.clients,
                 value=result,
             )
         return result

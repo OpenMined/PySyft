@@ -84,6 +84,7 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
 )
 from .node_service.testing_services.repr_service import ReprService
 from .node_service.testing_services.smpc_executor_service import SMPCExecutorService
+from .node_service.vpn.vpn_messages import VPNRegisterMessage
 from .node_table import Base
 
 # this generic type for Client bound by Client
@@ -270,6 +271,9 @@ class Node(AbstractNode):
             SignedMessageWithoutReplyForwardingService()
         )
 
+        self.allowed_unsigned_messages = []
+        self.allowed_unsigned_messages.append(VPNRegisterMessage)
+
         # now we need to load the relevant frameworks onto the node
         self.lib_ast = lib_ast
         # The node needs to sign messages that it sends so that recipients know that it
@@ -408,12 +412,13 @@ class Node(AbstractNode):
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
+        contents = getattr(msg, "message", msg)
         # exceptions can be easily triggered which break any WebRTC loops
         # so we need to catch them here and respond with a special exception
         # message reply
         try:
             debug(
-                f"> Received with Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
+                f"> Received with Reply {contents.pprint} {contents.id} @ {self.pprint}"
             )
             # try to process message
             response = self.process_message(
@@ -434,8 +439,8 @@ class Node(AbstractNode):
                 )
             try:
                 # try printing a useful message
-                private_log_msg += f" by {type(msg.message)} "
-                private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
+                private_log_msg += f" by {type(contents)} "
+                private_log_msg += f"from {contents.reply_to}"  # type: ignore
             except Exception:
                 error("Unable to format the private log message")
                 pass
@@ -444,8 +449,8 @@ class Node(AbstractNode):
 
             # send the public exception back
             response = ExceptionMessage(
-                address=msg.message.reply_to,  # type: ignore
-                msg_id_causing_exception=msg.message.id,
+                address=contents.reply_to,  # type: ignore
+                msg_id_causing_exception=contents.id,
                 exception_type=type(public_exception),
                 exception_msg=str(public_exception),
             )
@@ -463,15 +468,17 @@ class Node(AbstractNode):
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply
     ) -> None:
-        debug(
-            f"> Received without Reply {msg.message.pprint} {msg.message.id} @ {self.pprint}"
-        )
+        contents = getattr(msg, "message", msg)
+        if contents:
+            debug(
+                f"> Received without Reply {contents.pprint} {contents.id} @ {self.pprint}"
+            )
 
         self.process_message(msg=msg, router=self.immediate_msg_without_reply_router)
         try:
             pass
         except Exception as e:
-            error(f"Exception processing {msg.message}. {e}")
+            error(f"Exception processing {contents}. {e}")
             # public_exception: Exception
             if isinstance(e, DuplicateRequestException):
                 private_log_msg = "An DuplicateRequestException has been triggered"
@@ -483,8 +490,8 @@ class Node(AbstractNode):
                 # )
             try:
                 # try printing a useful message
-                private_log_msg += f" by {type(msg.message)} "
-                private_log_msg += f"from {msg.message.reply_to}"  # type: ignore
+                private_log_msg += f" by {type(contents)} "
+                private_log_msg += f"from {contents.reply_to}"  # type: ignore
             except Exception:
                 error("Unable to format the private log message")
                 pass
@@ -525,34 +532,41 @@ class Node(AbstractNode):
         self, msg: SignedMessage, router: dict
     ) -> Union[SyftMessage, None]:
         self.message_counter += 1
-
-        debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {msg.message}")
+        contents = getattr(msg, "message", msg)  # in the event the message is unsigned
+        debug(f"> Processing 📨 {msg.pprint} @ {self.pprint} {contents}")
         if self.message_is_for_me(msg=msg):
+            print("Enter signed process```````````````````````")
             debug(
                 f"> Recipient Found {msg.pprint}{msg.address.target_emoji()} == {self.pprint}"
             )
-            # Process Message here
-            if not msg.is_valid:
+
+            # only a small number of messages are allowed to be unsigned otherwise
+            # they need to be valid
+            if type(msg) not in self.allowed_unsigned_messages and not msg.is_valid:  # type: ignore
                 error(f"Message is not valid. {msg}")
                 traceback_and_raise(Exception("Message is not valid."))
 
+            # Process Message here
             try:  # we use try/except here because it's marginally faster in Python
-                service = router[type(msg.message)]
+                service = router[type(contents)]
             except KeyError as e:
                 log = (
                     f"The node {self.id} of type {type(self)} cannot process messages of type "
-                    + f"{type(msg.message)} because there is no service running to process it."
+                    + f"{type(contents)} because there is no service running to process it."
                     + f"{e}"
                 )
                 error(log)
                 self.ensure_services_have_been_registered_error_if_not()
                 traceback_and_raise(KeyError(log))
 
-            result = service.process(
-                node=self,
-                msg=msg.message,
-                verify_key=msg.verify_key,
-            )
+            if type(msg) in self.allowed_unsigned_messages:  # type: ignore
+                result = service.process(node=self, msg=contents, verify_key=None)
+            else:
+                result = service.process(
+                    node=self,
+                    msg=contents,
+                    verify_key=msg.verify_key,
+                )
             return result
 
         else:

@@ -15,3 +15,4 @@ celery_app.conf.result_persistent = True
 celery_app.conf.task_routes = {
     "grid.worker.msg_without_reply": "main-queue",
 }
+celery_app.worker_prefetch_multiplier = 1
