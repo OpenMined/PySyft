@@ -91,7 +91,7 @@ class MPCTensor(PassthroughTensor):
         if ring_size is not None:
             self.ring_size = ring_size
         else:
-            self.ring_size = MPCTensor.get_ring_size(secret, shares)
+            self.ring_size = MPCTensor.get_ring_size_from_secret(secret, shares)
         self.mpc_shape = shape
 
         # TODO: We can get this from the the secret if the secret is local
@@ -129,7 +129,7 @@ class MPCTensor(PassthroughTensor):
         super().__init__(res)
 
     @staticmethod
-    def get_ring_size(
+    def get_ring_size_from_secret(
         secret: Optional[Any] = None, shares: Optional[List[Any]] = None
     ) -> int:
         if secret is None:
