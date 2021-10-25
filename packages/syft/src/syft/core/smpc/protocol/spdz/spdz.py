@@ -94,45 +94,6 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     Returns:
         MPCTensor: Result of the multiplication.
     """
-
-    if op_str not in EXPECTED_OPS:
-        raise ValueError(f"{op_str} should be in {EXPECTED_OPS}")
-
-    parties = x.parties
-    parties_info = x.parties_info
-
-    shape_x = tuple(x.shape)  # type: ignore
-    shape_y = tuple(y.shape)  # type: ignore
-    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
-
-    CryptoPrimitiveProvider.generate_primitives(
-        f"beaver_{op_str}",
-        parties=parties,
-        g_kwargs={
-            "a_shape": shape_x,
-            "b_shape": shape_y,
-            "parties_info": parties_info,
-        },
-        p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
-        ring_size=ring_size,
-    )
-
-    # TODO: get nr of bits in another way
-    for i in range(32):
-        # There are needed 32 values for each bit
-        CryptoPrimitiveProvider.generate_primitives(
-            f"beaver_{op_str}",
-            parties=parties,
-            g_kwargs={
-                "a_shape": shape_x,
-                "b_shape": shape_y,
-                "parties_info": parties_info,
-            },
-            p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
-        )
-
-    # TODO: Should modify to parallel execution.
-
     # diff = a - b
     # bit decomposition
     # sum carry adder

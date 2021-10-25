@@ -267,29 +267,31 @@ def spdz_multiply(
         raise ObjectNotInStore
     print("Beaver Error surpassed*******************************")
 
-    spdz_add_op = ShareTensor.get_op(ring_size, "add")
-    eps = reduce(spdz_multiply_op, eps.data).child  # type: ignore
-    delta = reduce(spdz_multiply_op, delta.data).child  # type:ignore
+    # TODO : Should refactor fixed precision tensor later
+
+    eps = sum(eps.data)  # type: ignore
+    delta = sum(delta.data)  # type:ignore
     print(" Final EPS", eps)
     print("Final Delta", delta)
     print("A_share", a_share.child, "\n")
     print("B_share", b_share.child, "\n")
     print("C_share", c_share.child, "\n")
 
-    eps_b = op(eps, b_share.child)
+    eps_b = eps * b_share.child
     print("EPS_B", eps_b, "\n")
-    delta_a = op(a_share.child, delta)
+    delta_a = a_share.child * delta  # Symmetric only for mul
     print("DELTA_A", delta_a, "\n")
 
-    tensor = spdz_add_op(spdz_add_op(c_share.child, eps_b), delta_a)
+    tensor = c_share + eps_b + delta_a
     print("C addedTensor", tensor, "\n")
     if x.rank == 0:
-        eps_delta = spdz_add_op(eps, delta)
+        mul_op = ShareTensor.get_op(ring_size, "mul")
+        eps_delta = mul_op(eps.child, delta.child)
         print("EPS_DELTA", eps_delta, "\n")
-        tensor = spdz_add_op(tensor, eps_delta)
+        tensor = tensor + eps_delta
 
     share = x.copy_tensor()
-    share.child = tensor  # As we do not use fixed point we neglect truncation.
+    share.child = tensor.child  # As we do not use fixed point we neglect truncation.
     print("Final Tensor", tensor)
     print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
@@ -310,11 +312,8 @@ def spdz_mask(
     print("SPDZ Mask")
     clients = ShareTensor.login_clients(x.parties_info)
 
-    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
-
-    spdz_mask_op = ShareTensor.get_op(ring_size, "sub")
-    eps = spdz_mask_op(x, a_share)  # beaver intermediate values.
-    delta = spdz_mask_op(y, b_share)
+    eps = x - a_share  # beaver intermediate values.
+    delta = y - b_share
     print("x ShareTensor:", x, "\n")
     print("y ShareTensor", y, "\n")
     print("a ShareTensor:", a_share, "\n")
@@ -371,7 +370,7 @@ def smpc_mul(
         b_shape = node.store[b_shape_id].data
         crypto_store = ShareTensor.crypto_store
         a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-            "beaver_mul", a_shape=a_shape, b_shape=b_shape, remove=True, ring_size=other.ring_size  # type: ignore
+            "beaver_mul", a_shape=a_shape, b_shape=b_shape, ring_size=other.ring_size, remove=True  # type: ignore
         )
 
         actions.append(
