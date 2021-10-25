@@ -95,6 +95,7 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker rm `docker ps -aq` --force
+          rm -rf .tox
           tox -e stack.test.integration
           docker rm `docker ps -aq` --force
 
