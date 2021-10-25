@@ -76,7 +76,7 @@ class MPCTensor(PassthroughTensor):
 
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
-        if not isinstance(shares, list):
+        if (shares is not None) and (not isinstance(shares, list)):
             raise ValueError("Shares should be a list")
 
         if seed_przs is None:
