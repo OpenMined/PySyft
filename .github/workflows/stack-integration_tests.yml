@@ -94,7 +94,9 @@ jobs:
           DOCKER_COMPOSE_VERSION=v2.0.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
+          docker rm `docker ps -aq` --force
           tox -e stack.test.integration
+          docker rm `docker ps -aq` --force
 
       # - name: Save docker images
       #   if: steps.changes.outputs.stack == 'true'
