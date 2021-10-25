@@ -69,6 +69,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         institution: str = "",
         daa_pdf: Optional[bytes] = b"",
         msg_id: Optional[UID] = None,
+        budget: Optional[float] = 0.0,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.email = email
@@ -78,6 +79,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         self.daa_pdf = daa_pdf
         self.website = website
         self.institution = institution
+        self.budget = budget
 
     def _object2proto(self) -> CreateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -102,6 +104,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             website=self.website,
             daa_pdf=self.daa_pdf,
             reply_to=serialize(self.reply_to),
+            budget=self.budget,
         )
 
     @staticmethod
@@ -129,6 +132,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             institution=proto.institution,
             daa_pdf=proto.daa_pdf,
             reply_to=_deserialize(blob=proto.reply_to),
+            budget=proto.budget,
         )
 
     @staticmethod
