@@ -403,6 +403,7 @@ class Dataset:
             self.refresh()
 
     def delete(self, name: str) -> bool:
+        """Delete the asset with the given name."""
 
         asset_id = None
 
