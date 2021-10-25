@@ -77,7 +77,7 @@ class MPCTensor(PassthroughTensor):
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
         if (shares is not None) and (not isinstance(shares, (tuple, list))):
-            raise ValueError("Shares should be a list")
+            raise ValueError("Shares should be a list or tuple")
 
         if seed_przs is None:
             # Allow the user to specify if they want to use a specific seed when generating the shares
@@ -208,8 +208,8 @@ class MPCTensor(PassthroughTensor):
         shares: List[ShareTensor],
         parties: Optional[List[Any]] = None,
     ) -> List[ShareTensor]:
-        if not isinstance(shares, list):
-            raise ValueError("_mpc_from_shares expected a list of shares")
+        if not isinstance(shares, (list, tuple)):
+            raise ValueError("_mpc_from_shares expected a list or tuple of shares")
 
         if utils.ispointer(shares[0]):
             # Remote shares
