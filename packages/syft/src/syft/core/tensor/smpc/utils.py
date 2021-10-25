@@ -5,7 +5,6 @@ from functools import lru_cache
 import operator
 from typing import Any
 from typing import Dict
-from typing import Optional
 from typing import Tuple
 from typing import cast
 
@@ -71,11 +70,10 @@ def get_shape(
 def get_ring_size(
     x_ring_size: int,
     y_ring_size: int,
-) -> Optional[int]:
+) -> int:
     """Get the ring_size of apply an operation on two values
 
     Args:
-        op_str (str): the operation to be applied
         x_ring_size (int): the ring size of op1
         y_ring_size (int): the ring size of op2
 

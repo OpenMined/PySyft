@@ -188,7 +188,7 @@ def mul_store_get(
     store: Dict[str, List[Any]],
     a_shape: Tuple[int, ...],
     b_shape: Tuple[int, ...],
-    ring_size: int = 2 ** 32,
+    ring_size: int,
     remove: bool = True,
 ) -> Any:
     """Retrieve the primitives from the CryptoStore.
@@ -274,7 +274,7 @@ def matmul_store_get(
     store: Dict[str, List[Any]],
     a_shape: Tuple[int, ...],
     b_shape: Tuple[int, ...],
-    ring_size: int = 2 ** 32,
+    ring_size: int,
     remove: bool = True,
 ) -> Any:
     """Retrieve the primitives from the CryptoStore.

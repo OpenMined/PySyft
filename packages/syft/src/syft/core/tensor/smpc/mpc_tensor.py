@@ -76,6 +76,8 @@ class MPCTensor(PassthroughTensor):
 
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
+        if (shares is not None) and (not isinstance(shares, list)):
+            raise ValueError("Shares should be a list")
 
         if seed_przs is None:
             # Allow the user to specify if they want to use a specific seed when generating the shares
@@ -89,7 +91,7 @@ class MPCTensor(PassthroughTensor):
         if ring_size is not None:
             self.ring_size = ring_size
         else:
-            self.ring_size = MPCTensor.get_ring_size_from_secret(secret)
+            self.ring_size = MPCTensor.get_ring_size(secret, shares)
         self.mpc_shape = shape
 
         # TODO: We can get this from the the secret if the secret is local
@@ -127,11 +129,17 @@ class MPCTensor(PassthroughTensor):
         super().__init__(res)
 
     @staticmethod
-    def get_ring_size_from_secret(secret: Optional[Any] = None) -> int:
-        if utils.ispointer(secret):
-            dtype = getattr(secret, "public_dtype", None)
+    def get_ring_size(
+        secret: Optional[Any] = None, shares: Optional[List[Any]] = None
+    ) -> int:
+        if secret is None:
+            value = shares[0]  # type: ignore
         else:
-            dtype = getattr(secret, "dtype", None)
+            value = secret
+        if utils.ispointer(value):
+            dtype = getattr(value, "public_dtype", None)
+        else:
+            dtype = getattr(value, "dtype", None)
 
         ring_size = utils.TYPE_TO_RING_SIZE.get(dtype, None)
         if ring_size is not None:
@@ -663,7 +671,12 @@ class MPCTensor(PassthroughTensor):
             ]
         y_shape = getattr(y, "shape", (1,))
         new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
-        res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
+        res = MPCTensor(
+            parties=self.parties,
+            shares=res_shares,
+            shape=new_shape,
+            ring_size=self.ring_size,
+        )
 
         return res
 

@@ -27,10 +27,9 @@ from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
+from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.tensor_list import TensorList
-from ....tensor.smpc.utils import RING_SIZE_TO_TYPE
-from ....tensor.smpc.utils import get_nr_bits
 from .exceptions import ObjectNotInStore
 
 
@@ -256,7 +255,9 @@ def spdz_multiply(
     nr_parties = x.nr_parties
     eps = node.store.get_object(key=eps_id)  # type: ignore
     delta = node.store.get_object(key=delta_id)  # type: ignore
+    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
+    print("RING SIZE", ring_size)
     print("EPS Store", eps)
     print("Delta Store", delta)
     print("NR parties", nr_parties)
@@ -266,28 +267,31 @@ def spdz_multiply(
         raise ObjectNotInStore
     print("Beaver Error surpassed*******************************")
 
-    eps = sum(eps.data).child  # type: ignore
-    delta = sum(delta.data).child  # type:ignore
+    # TODO : Should refactor fixed precision tensor later
+
+    eps = sum(eps.data)  # type: ignore
+    delta = sum(delta.data)  # type:ignore
     print(" Final EPS", eps)
     print("Final Delta", delta)
     print("A_share", a_share.child, "\n")
     print("B_share", b_share.child, "\n")
     print("C_share", c_share.child, "\n")
-    op = operator.mul
-    eps_b = op(eps, b_share.child)
+
+    eps_b = eps * b_share.child
     print("EPS_B", eps_b, "\n")
-    delta_a = op(a_share.child, delta)
+    delta_a = delta * a_share.child  # Symmetric only for mul
     print("DELTA_A", delta_a, "\n")
 
-    tensor = c_share.child + eps_b + delta_a
+    tensor = c_share + eps_b + delta_a
     print("C addedTensor", tensor, "\n")
     if x.rank == 0:
-        eps_delta = op(eps, delta)
+        mul_op = ShareTensor.get_op(ring_size, "mul")
+        eps_delta = mul_op(eps.child, delta.child)
         print("EPS_DELTA", eps_delta, "\n")
-        tensor += eps_delta
+        tensor = tensor + eps_delta
 
     share = x.copy_tensor()
-    share.child = tensor  # As we do not use fixed point we neglect truncation.
+    share.child = tensor.child  # As we do not use fixed point we neglect truncation.
     print("Final Tensor", tensor)
     print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
@@ -366,7 +370,7 @@ def smpc_mul(
         b_shape = node.store[b_shape_id].data
         crypto_store = ShareTensor.crypto_store
         a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-            "beaver_mul", a_shape, b_shape, remove=True  # type: ignore
+            "beaver_mul", a_shape=a_shape, b_shape=b_shape, ring_size=other.ring_size, remove=True  # type: ignore
         )
 
         actions.append(
@@ -442,7 +446,7 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
 
     rank = x.rank
     nr_parties = x.nr_parties
-    numpy_type = RING_SIZE_TO_TYPE[ring_size]
+    numpy_type = utils.RING_SIZE_TO_TYPE[ring_size]
     shape = x.shape
     zero = np.zeros(shape, numpy_type)
 
@@ -451,7 +455,7 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
     input_shares = []
 
     if bitwise:
-        ring_bits = get_nr_bits(x.ring_size)  # for bit-wise decomposition
+        ring_bits = utils.get_nr_bits(x.ring_size)  # for bit-wise decomposition
         input_shares = [x.bit_extraction(idx) for idx in range(ring_bits)]
     else:
         input_shares.append(x)

@@ -378,8 +378,13 @@ class ShareTensor(PassthroughTensor):
         if isinstance(share, float):
             raise ValueError("Type float not supported yet!")
 
-        if isinstance(share, np.ndarray) and not np.issubdtype(share.dtype, np.integer):
-            raise ValueError(f"NPArray should have type int, but found {share.dtype}")
+        if isinstance(share, np.ndarray) and (
+            not np.issubdtype(share.dtype, np.integer)
+            and share.dtype != np.dtype("bool")
+        ):
+            raise ValueError(
+                f"NPArray should have type int or bool, but found {share.dtype}"
+            )
 
         if isinstance(share, torch.Tensor) and torch.is_floating_point(share):
             raise ValueError("Torch tensor should have type int, but found float")
