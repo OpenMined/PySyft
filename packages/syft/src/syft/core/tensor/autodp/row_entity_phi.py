@@ -221,6 +221,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(other, RowEntityPhiTensor):
             if is_broadcastable(self.shape, other.shape):
                 for self_child, other_child in zip(self.child, other.child):
+                    if len(self.child) != len(other.child):
+                        raise ValueError(
+                            "Zipping two different lengths will drop data. "
+                            + f"{len(self.child)} vs {len(other.child)}"
+                        )
                     new_list.append(self_child * other_child)
             else:
                 raise Exception(
@@ -579,6 +584,18 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 f"Tensor dims do not match for __ge__: {len(self.child)} != {len(other.child)}"
             )
 
+    def cumprod(self, axis: Optional[int] = None) -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.cumprod(axis))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def cumsum(self, axis: Optional[int] = None) -> RowEntityPhiTensor:
+        new_list = list()
+        for tensor in self.child:
+            new_list.append(tensor.cumsum(axis))
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
     def clip(
         self, a_min: npt.ArrayLike, a_max: npt.ArrayLike, *args: Any
     ) -> RowEntityPhiTensor:
@@ -590,6 +607,105 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         for row in self.child:
             new_list.append(row.clip(a_min=a_min, a_max=a_max, *args))
 
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def __floordiv__(
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
+    ) -> RowEntityPhiTensor:
+
+        # We will let the underlying SingleEntityPhiTensor logic handle most of the errors/exceptions
+        new_list = list()
+        if is_acceptable_simple_type(other):
+            for tensor in self.child:
+                new_list.append(tensor // other)
+        elif isinstance(other, SingleEntityPhiTensor):
+            for tensor in self.child:
+                new_list.append(tensor // other)
+        elif isinstance(other, RowEntityPhiTensor):
+            if not is_broadcastable(self.shape, other.shape):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape}, {other.shape}"
+                )
+            else:
+                if other.shape[0] == 1:
+                    for tensor in self.child:
+                        new_list.append(tensor // other.child[0])
+                else:
+                    if len(self.child) != len(other.child):
+                        raise ValueError(
+                            "Zipping two different lengths will drop data. "
+                            + f"{len(self.child)} vs {len(other.child)}"
+                        )
+                    for self_tensors, other_tensors in zip(self.child, other.child):
+                        new_list.append(self_tensors // other_tensors)
+        else:
+            raise NotImplementedError
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def __mod__(
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
+    ) -> RowEntityPhiTensor:
+
+        # We will let the underlying SingleEntityPhiTensor logic handle most of the errors/exceptions
+        new_list = list()
+        if is_acceptable_simple_type(other):
+            for tensor in self.child:
+                new_list.append(tensor % other)
+        elif isinstance(other, SingleEntityPhiTensor):
+            for tensor in self.child:
+                new_list.append(tensor % other)
+        elif isinstance(other, RowEntityPhiTensor):
+            if not is_broadcastable(self.shape, other.shape):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape}, {other.shape}"
+                )
+            else:
+                if other.shape[0] == 1:
+                    for tensor in self.child:
+                        new_list.append(tensor % other.child[0])
+                else:
+                    if len(self.child) != len(other.child):
+                        raise ValueError(
+                            "Zipping two different lengths will drop data. "
+                            + f"{len(self.child)} vs {len(other.child)}"
+                        )
+                    for self_tensors, other_tensors in zip(self.child, other.child):
+                        new_list.append(self_tensors % other_tensors)
+        else:
+            raise NotImplementedError
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def __divmod__(
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
+    ) -> Tuple:
+        # Let logic written out in mod, floordiv and SEPT handle all exceptions
+        return self // other, self % other
+
+    def __matmul__(
+        self,
+        other: Union[AcceptableSimpleType, SingleEntityPhiTensor, RowEntityPhiTensor],
+    ) -> RowEntityPhiTensor:
+        new_list = list()
+        if isinstance(other, np.ndarray):
+            for tensor in self.child:
+                new_list.append(tensor.__matmul__(other))
+        elif isinstance(other, SingleEntityPhiTensor):
+            # Whether the output of the matmul is SEPT or IGT, we let SEPT code determine that
+            for tensor in self.child:
+                new_list.append(tensor.__matmul__(other))
+        elif isinstance(other, RowEntityPhiTensor):
+            if len(self.child) != len(other.child):
+                raise ValueError(
+                    "Zipping two different lengths will drop data. "
+                    + f"{len(self.child)} vs {len(other.child)}"
+                )
+            for self_tensor, other_tensor in zip(self.child, other.child):
+                new_list.append(self_tensor.__matmul__(other_tensor))
+        else:
+            raise NotImplementedError
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def trace(

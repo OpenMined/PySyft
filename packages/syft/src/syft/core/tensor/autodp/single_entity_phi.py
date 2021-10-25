@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import operator
 import typing
 from typing import Any
 from typing import List
@@ -17,9 +18,12 @@ import numpy.typing as npt
 import torch
 
 # relative
+from .... import lib
+from ....ast.klass import pointerize_args_and_kwargs
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
+from ....util import inherit_tags
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
@@ -27,6 +31,7 @@ from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
+from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
 from ..broadcastable import is_broadcastable
@@ -101,70 +106,106 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
     def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
         self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
-
         return self_mpc
 
-    # TODO: uncomment and fix (this came from tensor.py and just needs some quick fixes)
-    # def simple_add(self, other: Any) -> TensorPointer:
-    #     # we want to get the return type which matches the attr_path_and_name
-    #     # so we ask lib_ast for the return type name that matches out
-    #     # attr_path_and_name and then use that to get the actual pointer klass
-    #     # then set the result to that pointer klass
-    #
-    #     attr_path_and_name = "syft.core.tensor.tensor.Tensor.__add__"
-    #
-    #     result = TensorPointer(client=self.client)
-    #
-    #     # QUESTION can the id_at_location be None?
-    #     result_id_at_location = getattr(result, "id_at_location", None)
-    #
-    #     if result_id_at_location is not None:
-    #         # first downcast anything primitive which is not already PyPrimitive
-    #         (
-    #             downcast_args,
-    #             downcast_kwargs,
-    #         ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
-    #
-    #         # then we convert anything which isnt a pointer into a pointer
-    #         pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-    #             args=downcast_args,
-    #             kwargs=downcast_kwargs,
-    #             client=self.client,
-    #             gc_enabled=False,
-    #         )
-    #
-    #         cmd = RunClassMethodAction(
-    #             path=attr_path_and_name,
-    #             _self=self,
-    #             args=pointer_args,
-    #             kwargs=pointer_kwargs,
-    #             id_at_location=result_id_at_location,
-    #             address=self.client.address,
-    #         )
-    #         self.client.send_immediate_msg_without_reply(msg=cmd)
-    #
-    #     inherit_tags(
-    #         attr_path_and_name=attr_path_and_name,
-    #         result=result,
-    #         self_obj=self,
-    #         args=[other],
-    #         kwargs={},
-    #     )
-    #
-    #     result_public_shape = None
-    #
-    #     if self.public_shape is not None and other.public_shape is not None:
-    #         result_public_shape = (
-    #             np.empty(self.public_shape) + np.empty(other.public_shape)
-    #         ).shape
-    #
-    #     result.public_shape = result_public_shape
-    #
-    #     return result
+    def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
 
-    def __add__(self, other: Any) -> MPCTensor:
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
 
-        if self.client != other.client:
+        result = TensorWrappedSingleEntityPhiTensorPointer(
+            entity=self.entity,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            client=self.client,
+            scalar_manager=self.scalar_manager,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[other],
+            kwargs={},
+        )
+
+        result_public_shape = None
+
+        op = getattr(operator, op_str)
+
+        if isinstance(other, TensorWrappedSingleEntityPhiTensorPointer):
+            other_shape = other.public_shape
+        elif isinstance(other, (int, float)):
+            other_shape = (1,)
+        elif isinstance(other, np.ndarray):
+            other_shape = other.shape
+        else:
+            raise ValueError(
+                f"Invalid Type for TensorWrappedSingleEntityPhiTensorPointer:{type(other)}"
+            )
+
+        if self.public_shape is not None and other_shape is not None:
+            result_public_shape = (
+                op(np.empty(self.public_shape), np.empty(other_shape))
+            ).shape
+
+        result.public_shape = result_public_shape
+
+        return result
+
+    @staticmethod
+    def _apply_op(
+        self: TensorWrappedSingleEntityPhiTensorPointer,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+        op_str: str,
+    ) -> Union[MPCTensor, TensorWrappedSingleEntityPhiTensorPointer]:
+        """Performs the operation based on op_str
+
+        Args:
+            other (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]): second operand.
+
+        Returns:
+            Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
+        """
+        op = getattr(operator, op_str)
+
+        if (
+            isinstance(other, TensorWrappedSingleEntityPhiTensorPointer)
+            and self.client != other.client
+        ):
 
             parties = [self.client, other.client]
 
@@ -173,11 +214,61 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
                 secret=other, shape=other.public_shape, parties=parties
             )
 
-            return self_mpc + other_mpc
-        else:
-            return NotImplemented
+            return op(self_mpc, other_mpc)
 
-        # return self.simple_add(other=other)
+        elif isinstance(other, MPCTensor):
+
+            return op(other, self)
+
+        return self._apply_tensor_op(other=other, op_str=op_str)
+
+    def __add__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "add" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "add")
+
+    def __sub__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "sub" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "sub")
+
+    def __mul__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "mul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "mul")
 
     def to_local_object_without_private_data_child(self) -> SingleEntityPhiTensor:
         """Convert this pointer into a partial version of the SingleEntityPhiTensor but without
@@ -1855,6 +1946,185 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             max_vals=self.max_vals.astype(dtype=np.int32),
             scalar_manager=self.scalar_manager,
             entity=self.entity,
+        )
+
+    def __floordiv__(
+        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray) and not is_broadcastable(
+                self.shape, other.shape
+            ):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+            else:
+                data = self.child // other
+                mins = self.min_vals // other
+                maxes = self.max_vals // other
+        elif isinstance(other, SingleEntityPhiTensor):
+            if is_broadcastable(self.shape, other.shape):
+                if self.entity == other.entity:
+                    data = self.child // other.child
+                    mins = self.min_vals // other.min_vals
+                    maxes = self.max_vals // other.max_vals
+                else:
+                    # return convert_to_gamma_tensor(self) // convert_to_gamma_tensor(other)
+                    raise NotImplementedError
+            else:
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+        else:
+            raise NotImplementedError
+        return SingleEntityPhiTensor(
+            child=data,
+            max_vals=maxes,
+            min_vals=mins,
+            entity=self.entity,
+            scalar_manager=self.scalar_manager,
+        )
+
+    # TODO: Check to see if non-integers are ever introduced
+    def __mod__(
+        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
+        if is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray) and not is_broadcastable(
+                self.shape, other.shape
+            ):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+            else:
+                data = self.child % other
+                mins = self.min_vals % other
+                maxes = self.max_vals % other
+        elif isinstance(other, SingleEntityPhiTensor):
+            if is_broadcastable(self.shape, other.shape):
+                if self.entity == other.entity:
+                    data = self.child % other.child
+                    mins = self.min_vals % other.min_vals
+                    maxes = self.max_vals % other.max_vals
+                else:
+                    # return convert_to_gamma_tensor(self) % convert_to_gamma_tensor(other)
+                    raise NotImplementedError
+            else:
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+        else:
+            raise NotImplementedError
+        return SingleEntityPhiTensor(
+            child=data,
+            max_vals=maxes,
+            min_vals=mins,
+            entity=self.entity,
+            scalar_manager=self.scalar_manager,
+        )
+
+    def __divmod__(
+        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    ) -> TypeTuple:
+        return self // other, self % other
+
+    def __matmul__(
+        self, other: Union[np.ndarray, SingleEntityPhiTensor]
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
+        if not isinstance(other, (np.ndarray, SingleEntityPhiTensor)):
+            raise Exception(
+                f"Matrix multiplication not yet implemented for type {type(other)}"
+            )
+        else:
+            if not is_broadcastable(self.shape, other.shape):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+            else:
+                if isinstance(other, np.ndarray):
+                    data = self.child.__matmul__(other)
+                    mins = self.min_vals.__matmul__(other)
+                    maxes = self.max_vals.__matmul__(other)
+                elif isinstance(other, SingleEntityPhiTensor):
+                    if self.entity != other.entity:
+                        # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
+                        raise NotImplementedError
+                    else:
+                        data = self.child.__matmul__(other.child)
+                        mins = self.min_vals.__matmul__(other.min_vals)
+                        maxes = self.max_vals.__matmul__(other.max_vals)
+                else:
+                    raise NotImplementedError
+                return SingleEntityPhiTensor(
+                    child=data,
+                    max_vals=maxes,
+                    min_vals=mins,
+                    entity=self.entity,
+                    scalar_manager=self.scalar_manager,
+                )
+
+    def cumsum(
+        self,
+        axis: Optional[int] = None,
+        dtype: Optional[Any] = None,
+        out: np.ndarray = None,
+    ) -> SingleEntityPhiTensor:
+        if dtype and dtype != np.int32:
+            raise Exception(
+                "We currently only support np.int32 dtypes. "
+                "We have plans to support more in the future though!"
+            )
+        if isinstance(self.child, np.ndarray):
+            data = self.child.cumsum(axis, dtype, out)
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().cumsum(axis, dtype, out)
+        else:
+            data = self.child * len(self.child)
+
+        if isinstance(self.min_vals, np.ndarray):
+            mins = self.min_vals.cumsum(axis, dtype, out)
+        else:
+            mins = self.min_vals * len(self.child)
+
+        if isinstance(self.max_vals, np.ndarray):
+            maxes = self.max_vals.cumsum(axis, dtype, out)
+        else:
+            maxes = self.max_vals * len(self.child)
+
+        return SingleEntityPhiTensor(
+            child=data, min_vals=mins, max_vals=maxes, entity=self.entity
+        )
+
+    def cumprod(
+        self,
+        axis: Optional[int] = None,
+        dtype: Optional[Any] = None,
+        out: np.ndarray = None,
+    ) -> SingleEntityPhiTensor:
+        if dtype and dtype != np.int32:
+            raise Exception(
+                "We currently only support np.int32 dtypes. "
+                "We have plans to support more in the future though!"
+            )
+        if isinstance(self.child, np.ndarray):
+            data = self.child.cumprod(axis, dtype, out)
+        elif isinstance(self.child, torch.Tensor):
+            data = self.child.numpy().cumprod(axis, dtype, out)
+        else:
+            data = self.child * len(self.child)
+
+        if isinstance(self.min_vals, np.ndarray):
+            mins = self.min_vals.cumprod(axis, dtype, out)
+        else:
+            mins = self.min_vals * len(self.child)
+
+        if isinstance(self.max_vals, np.ndarray):
+            maxes = self.max_vals.cumprod(axis, dtype, out)
+        else:
+            maxes = self.max_vals * len(self.child)
+
+        return SingleEntityPhiTensor(
+            child=data, min_vals=mins, max_vals=maxes, entity=self.entity
         )
 
 

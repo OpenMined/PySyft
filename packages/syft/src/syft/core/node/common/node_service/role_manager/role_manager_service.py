@@ -139,7 +139,9 @@ def get_role_msg(
         role = node.roles.first(id=msg.role_id)
         _msg = model_to_json(role)
     else:
-        raise AuthorizationError("You're not allowed to get User information!")
+        raise AuthorizationError(
+            "get_role_msg You're not allowed to get User information!"
+        )
 
     return GetRoleResponse(address=msg.reply_to, content=_msg)
 
