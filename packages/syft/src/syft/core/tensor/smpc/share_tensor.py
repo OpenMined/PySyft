@@ -125,10 +125,11 @@ class ShareTensor(PassthroughTensor):
             client = CACHE_CLIENTS.get(party_info, None)
             party_info.url = party_info.url.replace("localhost", "docker-host")
             if client is None:
+                # TODO: refactor to use a guest account
                 client = sy.login(  # nosec
                     url=party_info.url,
-                    email="howard@mit.edu",
-                    password="astronaut",
+                    email="info@openmined.org",
+                    password="changethis",
                     port=party_info.port,
                 )
                 base_url = client.routes[0].connection.base_url

@@ -15,6 +15,7 @@ from grid.api.users.models import UserPrivate
 
 # relative
 from . import syft as syft_requests_messages
+from .models import BudgetRequestResponse
 from .models import Request
 from .models import RequestUpdate
 
@@ -30,7 +31,7 @@ router = APIRouter()
 
 
 @router.get(
-    "",
+    "/data",
     response_model=List[Request],
     name="requests:read_all",
     status_code=status.HTTP_200_OK,
@@ -40,6 +41,22 @@ async def get_all_requests_grid(
 ) -> List[Request]:
     try:
         return syft_requests_messages.get_all_requests(current_user)
+    except Exception as err:
+        logger.error(err)
+        raise_generic_private_error()
+
+
+@router.get(
+    "/budget",
+    response_model=List[BudgetRequestResponse],
+    name="requests:read_all",
+    status_code=status.HTTP_200_OK,
+)
+async def get_all_budget_requests_grid(
+    current_user: UserPrivate = Depends(get_current_user),
+) -> List[BudgetRequestResponse]:
+    try:
+        return syft_requests_messages.get_all_budget_requests(current_user)
     except Exception as err:
         logger.error(err)
         raise_generic_private_error()

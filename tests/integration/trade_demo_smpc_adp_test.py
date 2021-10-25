@@ -30,7 +30,6 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
         "name": "Sheldon Cooper",
         "email": unique_email,
         "password": "bazinga",
-        "budget": 200,
     }
 
 
@@ -112,7 +111,24 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Data Scientist
     ca = sy.login(email=unique_email, password="bazinga", port=9082)
+    ca.request_budget(eps=200, reason="increase budget!")
     it = sy.login(email=unique_email, password="bazinga", port=9083)
+    it.request_budget(eps=200, reason="increase budget!")
+
+    time.sleep(10)
+
+    # until we fix the code this just accepts all requests in case it gets the
+    # wrong one
+    for req in ca_root.requests:
+        req.accept()
+
+    for req in it_root.requests:
+        req.accept()
+
+    # ca_root.requests[0].accept()
+    # it_root.requests[0].accept()
+
+    time.sleep(10)
 
     assert round(ca.privacy_budget) == 200
     assert round(it.privacy_budget) == 200

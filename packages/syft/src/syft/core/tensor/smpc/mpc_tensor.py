@@ -171,9 +171,9 @@ class MPCTensor(PassthroughTensor):
                         url=url,
                         port=port,
                     )
-                except Exception as e:  # noqa
+                except Exception as e:
                     # TODO : should modify to return same client if registered.
-                    print("Proxy Client already User Register")
+                    print("Proxy Client already User Register", e)
             parties_info.append(party_info)
 
         return parties_info
@@ -543,6 +543,11 @@ class MPCTensor(PassthroughTensor):
 
         op_method = f"__{op_str}__"
         if op_str in {"add", "sub"}:
+            if len(self.child) != len(other.child):
+                raise ValueError(
+                    "Zipping two different lengths will drop data. "
+                    + f"{len(self.child)} vs {len(other.child)}"
+                )
             if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
                     getattr(a, op_method)(a, b, **kwargs)
