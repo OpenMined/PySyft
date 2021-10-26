@@ -473,6 +473,7 @@ def test_transpose(row_data_ishan: List) -> None:
     assert correct_output == output.child, "Transpose did not work as expected"
 
 
+@pytest.mark.skip(reason="Not supporting partition for this release")
 def test_partition(ishan: Entity, highest: int, dims: int) -> None:
     """Test to see if Partition works for the ideal case"""
     data = np.random.randint(
@@ -713,6 +714,7 @@ def test_floordiv_rept(row_data_ishan: list) -> None:
         print("ZeroDivisionError expected with random data", e)
 
 
+@pytest.mark.skip(reason="Not supporting mod for 0.6.0 release")
 def test_mod_array(row_data_ishan: list) -> None:
     """Test mod with np.ndarrays"""
     reference_tensor = REPT(rows=row_data_ishan)
@@ -722,6 +724,7 @@ def test_mod_array(row_data_ishan: list) -> None:
         assert tensor == row_data_ishan[index] % other
 
 
+@pytest.mark.skip(reason="Not supporting mod for 0.6.0 release")
 def test_mod_sept(row_data_ishan: list) -> None:
     """Test mod with SEPT"""
     reference_tensor = REPT(rows=row_data_ishan)
@@ -735,6 +738,7 @@ def test_mod_sept(row_data_ishan: list) -> None:
         print("ZeroDivisionError expected with random data", e)
 
 
+@pytest.mark.skip(reason="Not supporting mod for 0.6.0 release")
 def test_mod_rept(row_data_ishan: list) -> None:
     """Test mod with REPT"""
     reference_tensor = REPT(rows=row_data_ishan)
@@ -749,6 +753,7 @@ def test_mod_rept(row_data_ishan: list) -> None:
         print("ZeroDivisionError expected with random data", e)
 
 
+@pytest.mark.skip(reason="Not supporting mod for 0.6.0 release")
 def test_divmod_array(row_data_ishan: list) -> None:
     """Test divmod with np.ndarrays"""
     reference_tensor = REPT(rows=row_data_ishan)
@@ -759,6 +764,7 @@ def test_divmod_array(row_data_ishan: list) -> None:
         assert tensors[1] == row_data_ishan[index] % other
 
 
+@pytest.mark.skip(reason="Not supporting mod for 0.6.0 release")
 def test_divmod_sept(row_data_ishan: list) -> None:
     """Test divmod with SEPT"""
     reference_tensor = REPT(rows=row_data_ishan)
@@ -773,6 +779,7 @@ def test_divmod_sept(row_data_ishan: list) -> None:
         print("ZeroDivisionError expected with random data", e)
 
 
+@pytest.mark.skip(reason="Not supporting mod for 0.6.0 release")
 def test_divmod_rept(row_data_ishan: list) -> None:
     """Test divmod with REPT"""
     reference_tensor = REPT(rows=row_data_ishan)

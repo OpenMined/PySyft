@@ -513,7 +513,7 @@ class PhiTensorAncestor(TensorChainManager):
                 max_vals = (self.child * 0) + max_val
             else:
                 raise Exception(
-                    "min_val should be a float, got " + str(type(min_val)) + " instead."
+                    "max_val should be a float, got " + str(type(min_val)) + " instead."
                 )
 
             self.push_abstraction_top(
@@ -545,7 +545,7 @@ class PhiTensorAncestor(TensorChainManager):
                     max_vals = (self.child[i : i + 1] * 0) + max_val  # noqa: E203
                 else:
                     raise Exception(
-                        "min_val should be a float, got "
+                        "max_val should be a float, got "
                         + str(type(min_val))
                         + " instead."
                     )
