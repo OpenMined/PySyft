@@ -191,8 +191,7 @@ services:
       - net_admin
       - net_raw
     mem_limit: 8M
-    restart_policy:
-      delay: 5s
+    restart: always
 
 networks:
   traefik-public:
