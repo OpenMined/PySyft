@@ -185,7 +185,21 @@ class DatasetRequestAPI(RequestAPI):
             raise err
 
         dataset_id = dataset.get("id")
+        dataset_name = dataset.get("name", "")
+
+        pref = input(
+            f"You are about to delete the `{dataset_name}` ? 🚨 \n"
+            "All information related to this dataset will be permanantely deleted.\n"
+            "Please enter y/n to proceed: "
+        )
+        while pref != "y" and pref != "n":
+            pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
+        if pref == "n":
+            raise Exception("Dataset deletion is cancelled.")
+
         self.delete(dataset_id=dataset_id)
+        sys.stdout.write(f"Dataset: `{dataset_name}` is successfully deleted.")
+
         return True
 
     def _repr_html_(self) -> str:
@@ -414,6 +428,16 @@ class Dataset:
 
         if asset_id is None:
             raise KeyError(f"The asset with name `{name}` does not exists.")
+
+        pref = input(
+            f"You are about to permanantely delete the asset `{name}` ? 🚨 \n"
+            "Please enter y/n to proceed: "
+        )
+        while pref != "y" and pref != "n":
+            pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
+        if pref == "n":
+            sys.stdout.write("Asset deletion cancelled.")
+            return False
 
         DatasetRequestAPI(self.client).delete(
             dataset_id=self.id, bin_object_id=asset_id
