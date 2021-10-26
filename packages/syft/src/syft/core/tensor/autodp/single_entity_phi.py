@@ -923,53 +923,53 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def partition(
-        self,
-        kth: Union[int, List[int], np.ndarray],
-        axis: Optional[int] = -1,
-        kind: Optional[str] = "introselect",
-        order: Optional[Union[str, List[str]]] = None,
-    ) -> SingleEntityPhiTensor:
-        # this method mutates self
-        """Interchange two axes of the Tensor"""
-        if (
-            isinstance(self.child, int)
-            or isinstance(self.child, float)
-            or isinstance(self.child, bool)
-        ):
-            # For these singleton data types, the partition operation is meaningless, so don't change them.
-            print(
-                f"Warning: Tensor data was of type {type(self.child)}, partition operation had no effect."
-            )
-        else:
-            self.child.partition(kth, axis, kind, order)
-
-            # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
-        if (
-            isinstance(self.min_vals, int)
-            or isinstance(self.min_vals, float)
-            or isinstance(self.min_vals, bool)
-        ):
-            # For these singleton data types, the partition operation is meaningless, so don't change them.
-            print(
-                f"Warning: Min_vals metadata was of type {type(self.min_vals)}, partition operation had no effect."
-            )
-        else:
-            self.min_vals.partition(kth, axis, kind, order)
-
-        if (
-            isinstance(self.max_vals, int)
-            or isinstance(self.max_vals, float)
-            or isinstance(self.max_vals, bool)
-        ):
-            # For these singleton data types, the partition operation is meaningless, so don't change them.
-            print(
-                f"Warning: Max_vals metadata was of type {type(self.max_vals)}, partition operation had no effect."
-            )
-        else:
-            self.max_vals.partition(kth, axis, kind, order)
-
-        return self
+    # def partition(
+    #     self,
+    #     kth: Union[int, List[int], np.ndarray],
+    #     axis: Optional[int] = -1,
+    #     kind: Optional[str] = "introselect",
+    #     order: Optional[Union[str, List[str]]] = None,
+    # ) -> SingleEntityPhiTensor:
+    #     # this method mutates self
+    #     """Interchange two axes of the Tensor"""
+    #     if (
+    #         isinstance(self.child, int)
+    #         or isinstance(self.child, float)
+    #         or isinstance(self.child, bool)
+    #     ):
+    #         # For these singleton data types, the partition operation is meaningless, so don't change them.
+    #         print(
+    #             f"Warning: Tensor data was of type {type(self.child)}, partition operation had no effect."
+    #         )
+    #     else:
+    #         self.child.partition(kth, axis, kind, order)
+    #
+    #         # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+    #     if (
+    #         isinstance(self.min_vals, int)
+    #         or isinstance(self.min_vals, float)
+    #         or isinstance(self.min_vals, bool)
+    #     ):
+    #         # For these singleton data types, the partition operation is meaningless, so don't change them.
+    #         print(
+    #             f"Warning: Min_vals metadata was of type {type(self.min_vals)}, partition operation had no effect."
+    #         )
+    #     else:
+    #         self.min_vals.partition(kth, axis, kind, order)
+    #
+    #     if (
+    #         isinstance(self.max_vals, int)
+    #         or isinstance(self.max_vals, float)
+    #         or isinstance(self.max_vals, bool)
+    #     ):
+    #         # For these singleton data types, the partition operation is meaningless, so don't change them.
+    #         print(
+    #             f"Warning: Max_vals metadata was of type {type(self.max_vals)}, partition operation had no effect."
+    #         )
+    #     else:
+    #         self.max_vals.partition(kth, axis, kind, order)
+    #
+    #     return self
 
     # ndarray.ravel(order='C')
     def ravel(self, order: str = "C") -> SingleEntityPhiTensor:
@@ -2057,48 +2057,49 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    # TODO: Check to see if non-integers are ever introduced
-    def __mod__(
-        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
-    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
-        if is_acceptable_simple_type(other):
-            if isinstance(other, np.ndarray) and not is_broadcastable(
-                self.shape, other.shape
-            ):
-                raise Exception(
-                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
-                )
-            else:
-                data = self.child % other
-                mins = self.min_vals % other
-                maxes = self.max_vals % other
-        elif isinstance(other, SingleEntityPhiTensor):
-            if is_broadcastable(self.shape, other.shape):
-                if self.entity == other.entity:
-                    data = self.child % other.child
-                    mins = self.min_vals % other.min_vals
-                    maxes = self.max_vals % other.max_vals
-                else:
-                    # return convert_to_gamma_tensor(self) % convert_to_gamma_tensor(other)
-                    raise NotImplementedError
-            else:
-                raise Exception(
-                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
-                )
-        else:
-            raise NotImplementedError
-        return SingleEntityPhiTensor(
-            child=data,
-            max_vals=maxes,
-            min_vals=mins,
-            entity=self.entity,
-            scalar_manager=self.scalar_manager,
-        )
-
-    def __divmod__(
-        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
-    ) -> TypeTuple:
-        return self // other, self % other
+    #
+    # # TODO: Check to see if non-integers are ever introduced
+    # def __mod__(
+    #     self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    # ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
+    #     if is_acceptable_simple_type(other):
+    #         if isinstance(other, np.ndarray) and not is_broadcastable(
+    #             self.shape, other.shape
+    #         ):
+    #             raise Exception(
+    #                 f"Shapes not broadcastable: {self.shape} and {other.shape}"
+    #             )
+    #         else:
+    #             data = self.child % other
+    #             mins = self.min_vals % other
+    #             maxes = self.max_vals % other
+    #     elif isinstance(other, SingleEntityPhiTensor):
+    #         if is_broadcastable(self.shape, other.shape):
+    #             if self.entity == other.entity:
+    #                 data = self.child % other.child
+    #                 mins = self.min_vals % other.min_vals
+    #                 maxes = self.max_vals % other.max_vals
+    #             else:
+    #                 # return convert_to_gamma_tensor(self) % convert_to_gamma_tensor(other)
+    #                 raise NotImplementedError
+    #         else:
+    #             raise Exception(
+    #                 f"Shapes not broadcastable: {self.shape} and {other.shape}"
+    #             )
+    #     else:
+    #         raise NotImplementedError
+    #     return SingleEntityPhiTensor(
+    #         child=data,
+    #         max_vals=maxes,
+    #         min_vals=mins,
+    #         entity=self.entity,
+    #         scalar_manager=self.scalar_manager,
+    #     )
+    # #
+    # # def __divmod__(
+    # #     self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    # # ) -> TypeTuple:
+    # #     return self // other, self % other
 
     def __matmul__(
         self, other: Union[np.ndarray, SingleEntityPhiTensor]
