@@ -26,8 +26,8 @@ class NodeManager(DatabaseManager):
             print(
                 "we just created the node whats the obj",
                 type(node),
-                node.id,
-                node.node_uid,
+                node.id,  # type: ignore
+                node.node_uid,  # type: ignore
             )
             node = self.first(node_uid=node_uid)
         return node
