@@ -557,6 +557,70 @@ def test_ravel(non_square_gamma_tensor: IGT) -> None:
     assert old_entities.shape != new_entities.shape
 
 
+def test_cumsum(non_square_gamma_tensor: IGT) -> None:
+    """Test the cumsum operator default behaviour (no args)"""
+    output = non_square_gamma_tensor.cumsum()
+    original_values = non_square_gamma_tensor._values()
+
+    # Ensure both of these have the same shapes to begin with
+    assert non_square_gamma_tensor.shape == original_values.shape
+
+    # Ensure resultant shapes are correct
+    target_values = original_values.cumsum()
+    print(f"original shape = {non_square_gamma_tensor.shape}")
+    print(f"target shape = {target_values.shape}")
+    print(f"output shape = {output.shape}")
+    assert output.shape == target_values.shape
+
+    # Test to see if _values() constructs a proper shape
+    output_values = output._values()
+    assert output_values.shape != original_values.shape
+    assert output_values.shape == target_values.shape
+
+    # Test to see if the values have been kept the same
+    print(f"Values, {type(original_values)}")
+    print(original_values)
+    print(f"New Values, {type(output_values)}")
+    print(output_values)
+    assert (output_values == target_values).all()
+
+    old_entities = non_square_gamma_tensor._entities()
+    new_entities = output._entities()
+    assert old_entities.shape != new_entities.shape
+
+
+def test_cumprod(non_square_gamma_tensor: IGT) -> None:
+    """Test the cumprod operator default behaviour (no args)"""
+    output = non_square_gamma_tensor.cumprod()
+    original_values = non_square_gamma_tensor._values()
+
+    # Ensure both of these have the same shapes to begin with
+    assert non_square_gamma_tensor.shape == original_values.shape
+
+    # Ensure resultant shapes are correct
+    target_values = original_values.cumprod()
+    print(f"original shape = {non_square_gamma_tensor.shape}")
+    print(f"target shape = {target_values.shape}")
+    print(f"output shape = {output.shape}")
+    assert output.shape == target_values.shape
+
+    # Test to see if _values() constructs a proper shape
+    output_values = output._values()
+    assert output_values.shape != original_values.shape
+    assert output_values.shape == target_values.shape
+
+    # Test to see if the values have been kept the same
+    print(f"Values, {type(original_values)}")
+    print(original_values)
+    print(f"New Values, {type(output_values)}")
+    print(output_values)
+    assert (output_values == target_values).all()
+
+    old_entities = non_square_gamma_tensor._entities()
+    new_entities = output._entities()
+    assert old_entities.shape != new_entities.shape
+
+
 @pytest.mark.skip(reason="Temporary, while __init__ is being fixed")
 def test_max(non_square_gamma_tensor: IGT) -> None:
     """Test the max operator default behaviour (no args)"""
