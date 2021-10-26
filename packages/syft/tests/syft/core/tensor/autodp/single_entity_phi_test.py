@@ -143,8 +143,8 @@ def test_eq_diff_entities(
     lower_bound: np.ndarray,
     ishan: Entity,
     traskmaster: Entity,
-) -> SEPT:
-    """Test equality between Private Tensors with different owners. This is currently not implemented."""
+) -> None:
+    """Test equality between Private Tensors with different owners."""
     tensor1 = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
@@ -155,8 +155,11 @@ def test_eq_diff_entities(
         min_vals=lower_bound,
     )
 
-    with pytest.raises(NotImplementedError):
-        return tensor1 == tensor2
+    result = tensor1 == tensor2
+    assert isinstance(result, IGT), "Equality returns wrong value"
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_eq_ndarray(
@@ -295,15 +298,17 @@ def test_ne_diff_entities(
     )
 
     comparison_tensor = SEPT(
-        child=reference_data,
+        child=reference_data + 1,
         entity=traskmaster,
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
 
-    with pytest.raises(NotImplementedError):
-        reference_tensor != comparison_tensor
-    return None
+    result = reference_tensor != comparison_tensor
+    assert isinstance(result, IGT)
+    assert not result._values().any()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_add_wrong_types(
@@ -1082,7 +1087,8 @@ def test_compress(
     ), "Compress did not work as expected"
 
 
-@pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
+# @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
+@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
 def test_partition(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1101,7 +1107,8 @@ def test_partition(
     assert reference_tensor == reference_data, "Partition did not work as expected"
 
 
-@pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
+# @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
+@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
 def test_partition_axis(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1407,6 +1414,7 @@ def test_max_args(
     assert (output.max_vals == upper_bound.max(initial=-highest)).all()
 
 
+@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
 def test_mod_array(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1441,6 +1449,7 @@ def test_mod_array(
     assert (output.min_vals == lower_bound % 4).all()
 
 
+@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
 def test_mod_sept(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1491,6 +1500,7 @@ def test_mod_sept(
     ).all()  # Beware of division by 0 error
 
 
+@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
 def test_divmod_array(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1521,6 +1531,7 @@ def test_divmod_array(
     assert (remainder.min_vals == lower_bound % 4).all()
 
 
+@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
 def test_divmod_sept(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1754,7 +1765,11 @@ def test_le_diff_entities(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
     )
 
-    assert tensor1.__le__(tensor2) == NotImplemented
+    result = tensor1 <= tensor2
+    assert isinstance(result, IGT)
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_ge_same_entities(
@@ -1795,7 +1810,11 @@ def test_ge_diff_entities(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
     )
 
-    assert tensor1.__ge__(tensor2) == NotImplemented
+    result = tensor1 <= tensor2
+    assert isinstance(result, IGT)
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_lt_same_entities(
@@ -1833,10 +1852,17 @@ def test_lt_diff_entities(
     )
     # same data, different entity
     tensor2 = SEPT(
-        child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data + 1,
+        entity=ent2,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
 
-    assert tensor1.__lt__(tensor2) == NotImplemented
+    result = tensor1 < tensor2
+    assert isinstance(result, IGT)
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_gt_same_entities(
@@ -1871,14 +1897,18 @@ def test_gt_diff_entities(
     ent2: Entity,
 ) -> None:
     tensor1 = SEPT(
-        child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data + 1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
     # same data, different entity
     tensor2 = SEPT(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
     )
 
-    assert tensor1.__gt__(tensor2) == NotImplemented
+    result = tensor1 > tensor2
+    assert isinstance(result, IGT)
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_clip(
