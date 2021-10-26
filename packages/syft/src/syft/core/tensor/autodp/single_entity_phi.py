@@ -1285,14 +1285,16 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def __le__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __le__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) <= convert_to_gamma_tensor(other)
 
             if len(self.child) != len(other.child):
                 raise Exception(
@@ -1333,14 +1335,16 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             return NotImplemented
 
-    def __ge__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __ge__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) >= convert_to_gamma_tensor(other)
 
             if len(self.child) != len(other.child):
                 raise Exception(
@@ -1381,14 +1385,16 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             return NotImplemented
 
-    def __lt__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __lt__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) < convert_to_gamma_tensor(other)
 
             if len(self.child) != len(other.child):
                 raise Exception(
@@ -1436,7 +1442,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) > convert_to_gamma_tensor(other)
 
             if len(self.child) != len(other.child):
                 raise Exception(

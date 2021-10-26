@@ -1765,7 +1765,11 @@ def test_le_diff_entities(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
     )
 
-    assert tensor1.__le__(tensor2) == NotImplemented
+    result = tensor1 <= tensor2
+    assert isinstance(result, IGT)
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_ge_same_entities(
@@ -1806,7 +1810,11 @@ def test_ge_diff_entities(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
     )
 
-    assert tensor1.__ge__(tensor2) == NotImplemented
+    result = tensor1 <= tensor2
+    assert isinstance(result, IGT)
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_lt_same_entities(
@@ -1844,10 +1852,17 @@ def test_lt_diff_entities(
     )
     # same data, different entity
     tensor2 = SEPT(
-        child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data + 1,
+        entity=ent2,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
 
-    assert tensor1.__lt__(tensor2) == NotImplemented
+    result = tensor1 < tensor2
+    assert isinstance(result, IGT)
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_gt_same_entities(
@@ -1882,14 +1897,18 @@ def test_gt_diff_entities(
     ent2: Entity,
 ) -> None:
     tensor1 = SEPT(
-        child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data + 1, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
     # same data, different entity
     tensor2 = SEPT(
         child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
     )
 
-    assert tensor1.__gt__(tensor2) == NotImplemented
+    result = tensor1 > tensor2
+    assert isinstance(result, IGT)
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_clip(
