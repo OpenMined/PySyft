@@ -45,8 +45,8 @@ def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, Any]:
     vpn_status = node.recv_immediate_msg_with_reply(msg=vpn_status_msg)
     print("what response message", vpn_status, type(vpn_status))
     print("fdsa", vpn_status.message)
-    vpn_status = vpn_status.message
-    status = vpn_status.payload.kwargs
+    vpn_status_message_contents = vpn_status.message
+    status = vpn_status_message_contents.payload.kwargs  # type: ignore
     print("afdsafdsa", status)
     network_vpn_ip = status["host"]["ip"]
     node_name = status["host"]["hostname"]
@@ -181,18 +181,18 @@ def recv_association_request_msg(
 
         # get or create a new node that represents the network
         try:
-            print("before saving the data", node, node.node)
-            node_row = node.node.create_or_get_node(
+            print("before saving the data", node, node.node)  # type: ignore
+            node_row = node.node.create_or_get_node(  # type: ignore
                 node_uid=msg.metadata["node_id"], node_name=msg.metadata["node_name"]
             )
             print("got the first node row", node_row)
-            node.node_route.update_route_for_node(
+            node.node_route.update_route_for_node(  # type: ignore
                 node_id=node_row.id, host_or_ip=msg.metadata["host_or_ip"], is_vpn=True
             )
             print("after saving the data")
 
-            node.add_route(
-                node_id=UID(msg.metadata["node_id"]),
+            node.add_route(  # type: ignore
+                node_id=UID.from_string(msg.metadata["node_id"]),
                 node_name=msg.metadata["node_name"],
                 host_or_ip=msg.metadata["host_or_ip"],
                 is_vpn=True,
