@@ -362,7 +362,9 @@ class Node(AbstractNode):
             node_type=str(type(self).__name__),
         )
 
-    def add_route(node_id: UID, node_name: str, host_or_ip: str, is_vpn: bool) -> None:
+    def add_route(
+        self, node_id: UID, node_name: str, host_or_ip: str, is_vpn: bool
+    ) -> None:
         pass
         # node.add_route(
         #     node_id=node_row.node_id,
