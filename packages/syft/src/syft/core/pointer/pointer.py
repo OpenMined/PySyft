@@ -162,7 +162,7 @@ class Pointer(AbstractPointer):
     def __repr__(self) -> str:
         return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
 
-    def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
+    def _get(self, delete_obj: bool = False, verbose: bool = False) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -287,7 +287,7 @@ class Pointer(AbstractPointer):
         request_block: bool = False,
         timeout_secs: int = 20,
         reason: str = "",
-        delete_obj: bool = True,
+        delete_obj: bool = False,
         verbose: bool = False,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
