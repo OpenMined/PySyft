@@ -233,6 +233,67 @@ def test_lt(
         assert entity == dsg
 
 
+def test_pos(
+    gamma_tensor_min: IGT,
+    gamma_tensor_ref: IGT,
+    gamma_tensor_max: IGT,
+    dsg: DSG,
+) -> None:
+
+    assert isinstance(gamma_tensor_min, IGT)
+    assert isinstance(gamma_tensor_ref, IGT)
+    assert isinstance(gamma_tensor_max, IGT)
+
+    assert (gamma_tensor_max == +gamma_tensor_max).values.all()
+    assert (gamma_tensor_ref == +gamma_tensor_ref).values.all()
+    assert (gamma_tensor_min == +gamma_tensor_min).values.all()
+
+    output = +gamma_tensor_min
+    for entity in output._entities().flatten():
+        assert isinstance(entity, DSG)
+        assert entity == dsg
+
+
+def test_neg(
+    gamma_tensor_min: IGT,
+    gamma_tensor_ref: IGT,
+    gamma_tensor_max: IGT,
+    dsg: DSG,
+) -> None:
+
+    assert isinstance(gamma_tensor_min, IGT)
+    assert isinstance(gamma_tensor_ref, IGT)
+    assert isinstance(gamma_tensor_max, IGT)
+
+    assert (gamma_tensor_max * -1 == -gamma_tensor_max).values.all()
+    assert (gamma_tensor_ref * -1 == -gamma_tensor_ref).values.all()
+    assert (gamma_tensor_min * -1 == -gamma_tensor_min).values.all()
+
+    output = -gamma_tensor_min
+    for entity in output._entities().flatten():
+        assert isinstance(entity, DSG)
+        assert entity == dsg
+
+
+def test_copy(
+    gamma_tensor_min: IGT,
+    gamma_tensor_ref: IGT,
+    gamma_tensor_max: IGT,
+    dsg: DSG,
+) -> None:
+
+    output = gamma_tensor_min.copy()
+
+    assert isinstance(gamma_tensor_min, IGT)
+    assert isinstance(output, IGT)
+
+    assert (output == gamma_tensor_min).values.all()
+
+    for entity in output._entities().flatten():
+        assert isinstance(entity, DSG)
+        assert entity == dsg
+
+
 def test_eq(
     gamma_tensor_min: IGT,
     gamma_tensor_ref: IGT,
@@ -419,6 +480,38 @@ def test_transpose(non_square_gamma_tensor: IGT) -> None:
     # Check that transposing twice undoes the operation
     assert output.transpose() == non_square_gamma_tensor
     assert (output.transpose()._values() == original_values).all()
+
+    # Test to see if the values have been kept the same
+    print(f"Values, {type(original_values)}")
+    print(original_values)
+    print(f"New Values, {type(output_values)}")
+    print(output_values)
+    assert (output_values == target_values).all()
+
+    old_entities = non_square_gamma_tensor._entities()
+    new_entities = output._entities()
+    assert old_entities.shape != new_entities.shape
+
+
+def test_flatten(non_square_gamma_tensor: IGT) -> None:
+    """Test the flatten operator default behaviour (no args)"""
+    output = non_square_gamma_tensor.flatten()
+    original_values = non_square_gamma_tensor._values()
+
+    # Ensure both of these have the same shapes to begin with
+    assert non_square_gamma_tensor.shape == original_values.shape
+
+    # Ensure resultant shapes are correct
+    target_values = original_values.flatten()
+    print(f"original shape = {non_square_gamma_tensor.shape}")
+    print(f"target shape = {target_values.shape}")
+    print(f"output shape = {output.shape}")
+    assert output.shape == target_values.shape
+
+    # Test to see if _values() constructs a proper shape
+    output_values = output._values()
+    assert output_values.shape != original_values.shape
+    assert output_values.shape == target_values.shape
 
     # Test to see if the values have been kept the same
     print(f"Values, {type(original_values)}")
