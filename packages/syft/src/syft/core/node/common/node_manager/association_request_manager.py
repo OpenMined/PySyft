@@ -40,21 +40,24 @@ class AssociationRequestManager(DatabaseManager):
         status: str,
         address: str,
     ) -> None:
-        metadata[RequestAPIFields.NODE] = node
-        metadata[RequestAPIFields.REQUESTED_DATE] = datetime.now().strftime("%m/%d/%Y")
+        table_fields = {}
+        table_fields[RequestAPIFields.NODE] = node
+        table_fields[RequestAPIFields.REQUESTED_DATE] = datetime.now().strftime(
+            "%m/%d/%Y"
+        )
 
         source_blob = serialize(source, to_bytes=True)
         target_blob = serialize(target, to_bytes=True)
 
-        metadata[RequestAPIFields.SOURCE] = source_blob
-        metadata[RequestAPIFields.TARGET] = target_blob
-        metadata[RequestAPIFields.STATUS] = status
-        metadata[RequestAPIFields.ADDRESS] = address
+        table_fields[RequestAPIFields.SOURCE] = source_blob
+        table_fields[RequestAPIFields.TARGET] = target_blob
+        table_fields[RequestAPIFields.STATUS] = status
+        table_fields[RequestAPIFields.ADDRESS] = address
 
         if super().first(address=address):
-            self.modify(query={"address": address}, values=metadata)
+            self.modify(query={"address": address}, values=table_fields)
         else:
-            self.register(**metadata)
+            self.register(**table_fields)
 
     # def associations(self) -> List[Association]:
     #     return list(self.db.session.query(Association).all())

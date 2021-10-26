@@ -12,5 +12,5 @@ class Node(Base):
     __tablename__ = "node"
 
     id = Column(Integer(), primary_key=True, autoincrement=True)
-    node_id = Column(String(255))
+    node_uid = Column(String(255))
     node_name = Column(String(255))

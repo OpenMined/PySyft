@@ -1,11 +1,5 @@
-# stdlib
-from typing import Any
-from typing import Dict
-from typing import List
-
 # third party
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Query
 
 # relative
 from ..node_table.node_route import NodeRoute
@@ -19,18 +13,20 @@ class NodeRouteManager(DatabaseManager):
         super().__init__(schema=NodeRouteManager.schema, db=database)
 
     def update_route_for_node(
-        self, node_id: str, host_or_ip: str, is_vpn: bool = False
+        self, node_id: int, host_or_ip: str, is_vpn: bool = False
     ) -> NodeRoute:
-        # node_id is a UID as a string with no_dash
+        # node_id is a database int id
         # host_or_ip can have a port as well
 
         node_route = self.first(host_or_ip=host_or_ip)
         if node_route:
             self.modify(
-                {"host_or_ip": host_or_ip}, {"is_vpn": is_vpn, "node_id": node_id}
+                query={"host_or_ip": host_or_ip},
+                values={"is_vpn": is_vpn, "node_id": node_id},
             )
         else:
-            node_route = self.register(
-                {"node_id": node_id, "host_or_ip": host_or_ip, "is_vpn": is_vpn}
+            self.register(
+                **{"node_id": node_id, "host_or_ip": host_or_ip, "is_vpn": is_vpn}
             )
+            node_route = self.first(host_or_ip=host_or_ip)
         return node_route

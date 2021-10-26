@@ -321,6 +321,7 @@ def create_launch_cmd(
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
 ) -> str:
+    parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
@@ -338,7 +339,10 @@ def create_launch_cmd(
 
         if version:
             parsed_kwargs = {}
-            parsed_kwargs["build"] = str_to_bool(cast(str, kwargs["build"]))
+            build = True
+            if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
+                build = False
+            parsed_kwargs["build"] = build
             return create_launch_docker_cmd(
                 verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
             )

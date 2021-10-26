@@ -1,14 +1,7 @@
-# stdlib
-from typing import Any
-from typing import Dict
-from typing import List
-
 # third party
 from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Query
 
 # relative
-from ..exceptions import RoleNotFoundError
 from ..node_table.node import Node
 from .database_manager import DatabaseManager
 
@@ -19,11 +12,22 @@ class NodeManager(DatabaseManager):
     def __init__(self, database: Engine) -> None:
         super().__init__(schema=NodeManager.schema, db=database)
 
-    def create_or_get_node(self, node_id: str, node_name: str) -> Node:
-        # node_id is a UID as a string with no_dash
-        node = self.first(node_id=node_id)
+    def create_or_get_node(self, node_uid: str, node_name: str) -> Node:
+        print("1", node_uid, node_name)
+        # node_uid is a UID as a string with no_dash
+        node = self.first(node_uid=node_uid)
+        print("2")
+        print("is there a node with this id", node, node_uid)
         if node:
-            self.modify({"node_id": node_id}, {"node_name": node_name})
+            print("update the node")
+            self.modify(query={"node_uid": node_uid}, values={"node_name": node_name})
         else:
-            node = self.register({"node_id": node_id, "node_name": node_name})
+            self.register(**{"node_uid": node_uid, "node_name": node_name})
+            print(
+                "we just created the node whats the obj",
+                type(node),
+                node.id,
+                node.node_uid,
+            )
+            node = self.first(node_uid=node_uid)
         return node

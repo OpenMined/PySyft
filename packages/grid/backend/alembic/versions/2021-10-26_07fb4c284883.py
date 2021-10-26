@@ -7,7 +7,8 @@ Create Date: 2021-10-26 10:41:09.286331
 """
 import sqlalchemy as sa
 
-from alembic import op
+# third party
+from alembic import op  # type: ignore
 
 # revision identifiers, used by Alembic.
 revision = "07fb4c284883"
@@ -20,7 +21,7 @@ def upgrade() -> None:
     op.create_table(
         "node",
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
-        sa.Column("node_id", sa.String(length=255)),
+        sa.Column("node_uid", sa.String(length=255)),
         sa.Column("node_name", sa.String(length=255)),
         sa.PrimaryKeyConstraint("id"),
     )

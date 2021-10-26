@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
@@ -15,6 +16,7 @@ from ......logger import error
 from ......logger import info
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import SignedImmediateSyftMessageWithReply
+from ....common import UID
 from ....common.node_manager.node_manager import NodeManager
 from ....common.node_manager.node_route_manager import NodeRouteManager
 from ....domain.domain_interface import DomainInterface
@@ -34,6 +36,30 @@ from .association_request_messages import GetAssociationRequestsResponse
 from .association_request_messages import ReceiveAssociationRequestMessage
 from .association_request_messages import RespondAssociationRequestMessage
 from .association_request_messages import SendAssociationRequestMessage
+
+
+def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, Any]:
+    vpn_status_msg = (
+        VPNStatusMessageWithReply()
+        .to(address=node.address, reply_to=node.address)
+        .sign(signing_key=node.signing_key)
+    )
+    vpn_status = node.recv_immediate_msg_with_reply(msg=vpn_status_msg)
+    print("what response message", vpn_status, type(vpn_status))
+    print("fdsa", vpn_status.message)
+    vpn_status = vpn_status.message
+    status = vpn_status.payload.kwargs
+    print("afdsafdsa", status)
+    network_vpn_ip = status["host"]["ip"]
+    node_name = status["host"]["hostname"]
+    metadata = {
+        "host_or_ip": str(network_vpn_ip),
+        "node_id": str(node.target_id.id.no_dash),
+        "node_name": str(node_name),
+        "type": f"{str(type(node).__name__).lower()}",
+    }
+    print("prepared the metadata", metadata)
+    return metadata
 
 
 # domain gets this message from a user and will try to send to the network
@@ -61,11 +87,24 @@ def send_association_request_msg(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
         )
 
+        metadata = dict(msg.metadata)
+        # get domain metadata to send to the network
+        try:
+            # TODO: refactor to not stuff our vpn_metadata into the normal metadata
+            # because it gets blindly **splatted into the database
+            vpn_metadata = get_vpn_status_metadata(node=node)
+            print("did we get the domains metadata", vpn_metadata)
+            metadata.update(vpn_metadata)
+            print("what is the msg metadata", metadata)
+            # print("updated_metadata", updated_metadata)
+        except Exception as e:
+            print("failed to get vpn status", e)
+
         target_msg: SignedImmediateSyftMessageWithReply = (
             ReceiveAssociationRequestMessage(
                 address=msg.target.address,
                 reply_to=msg.source.address,
-                metadata=msg.metadata,
+                metadata=metadata,
                 source=msg.source,
                 target=msg.target,
             ).sign(signing_key=user_priv_key)
@@ -141,13 +180,27 @@ def recv_association_request_msg(
         print("We should only be on the domain side")
         node.association_requests.set(domain_id, msg.response)  # type: ignore
         print("what metadata", msg.metadata)
+
         # get or create a new node that represents the network
-        node = NodeManager.create_or_get_node(
-            node_id=msg.metadata["node_id"], node_name=msg.metadata["node_name"]
-        )
-        route = NodeRouteManager.update_route_for_node(
-            node=node, host_or_ip=msg.metadata["host_or_ip"], is_vpn=True
-        )
+        try:
+            print("before saving the data", node, node.node)
+            node_row = node.node.create_or_get_node(
+                node_uid=msg.metadata["node_id"], node_name=msg.metadata["node_name"]
+            )
+            print("got the first node row", node_row)
+            node.node_route.update_route_for_node(
+                node_id=node_row.id, host_or_ip=msg.metadata["host_or_ip"], is_vpn=True
+            )
+            print("after saving the data")
+
+            node.add_route(
+                node_id=UID(msg.metadata["node_id"]),
+                node_name=msg.metadata["node_name"],
+                host_or_ip=msg.metadata["host_or_ip"],
+                is_vpn=True,
+            )
+        except Exception as e:
+            print("failed to save the data and call add_route", e)
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -185,28 +238,11 @@ def respond_association_request_msg(
         metadata = {}
         # get network metadata to send back to domain
         try:
-            vpn_status_msg = (
-                VPNStatusMessageWithReply()
-                .to(address=node.address, reply_to=node.address)
-                .sign(signing_key=node.signing_key)
-            )
-            vpn_status = node.recv_immediate_msg_with_reply(msg=vpn_status_msg)
-            print("what response message", vpn_status, type(vpn_status))
-            print("fdsa", vpn_status.message)
-            vpn_status = vpn_status.message
-            status = vpn_status.payload.kwargs
-            print("afdsafdsa", status)
-            network_vpn_ip = status["host"]["ip"]
-            node_name = status["host"]["hostname"]
-            metadata = {
-                "host_or_ip": str(network_vpn_ip),
-                "node_id": str(node.target_id.id.no_dash),
-                "node_name": str(node_name),
-                "type": f"{str(type(node).__name__).lower()}",
-            }
+            metadata = get_vpn_status_metadata(node=node)
         except Exception as e:
             print("failed to get vpn status", e)
 
+        print("sent the metadata", metadata)
         node_msg: SignedImmediateSyftMessageWithReply = (
             ReceiveAssociationRequestMessage(
                 address=msg.source.address,

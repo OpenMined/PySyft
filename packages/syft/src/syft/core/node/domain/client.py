@@ -29,6 +29,9 @@ from ...io.address import Address
 from ...io.location import Location
 from ...io.location.specific import SpecificLocation
 from ...io.route import Route
+from ...node.common.node_service.network_search.network_search_messages import (
+    NetworkSearchMessage,
+)
 from ...pointer.pointer import Pointer
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
@@ -403,14 +406,9 @@ class DomainClient(Client):
             grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
         )
         if pandas:
-            response = DataFrame(response)
+            response = pd.DataFrame(response)
 
         return response
-
-    def apply_to_network(
-        self, target: Client, route_index: int = 0, **metadata: str
-    ) -> None:
-        self.association.create(source=self, target=target, metadata=metadata)
 
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None

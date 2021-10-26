@@ -362,6 +362,15 @@ class Node(AbstractNode):
             node_type=str(type(self).__name__),
         )
 
+    def add_route(node_id: UID, node_name: str, host_or_ip: str, is_vpn: bool) -> None:
+        pass
+        # node.add_route(
+        #     node_id=node_row.node_id,
+        #     node_name=node_route_row.node_name,
+        #     host_or_ip=node_route_row.host_or_ip,
+        #     is_vpn=True,
+        # )
+
     @property
     def known_nodes(self) -> List[Client]:
         """This is a property which returns a list of all known node
