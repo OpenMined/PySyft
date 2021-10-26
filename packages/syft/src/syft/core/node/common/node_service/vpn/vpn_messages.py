@@ -346,4 +346,4 @@ def get_result(json: Dict) -> str:
                 return str(result.text)
     except Exception as e:
         print("Failed to get result", json, e)
-    return ""
+    return "{}"

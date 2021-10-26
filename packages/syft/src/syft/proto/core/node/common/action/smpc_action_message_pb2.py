@@ -235,7 +235,9 @@ _SMPCACTIONMESSAGE = _descriptor.Descriptor(
         ),
     ],
     extensions=[],
-    nested_types=[_SMPCACTIONMESSAGE_KWARGSIDENTRY,],
+    nested_types=[
+        _SMPCACTIONMESSAGE_KWARGSIDENTRY,
+    ],
     enum_types=[],
     serialized_options=None,
     is_extendable=False,

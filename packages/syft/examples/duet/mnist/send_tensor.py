@@ -18,7 +18,10 @@ def do() -> None:
     # syft absolute
     import syft as sy
 
-    _ = sy.logger.add(sink="syft_do.log", level="TRACE",)
+    _ = sy.logger.add(
+        sink="syft_do.log",
+        level="TRACE",
+    )
 
     duet = sy.launch_duet(loopback=True, network_url="http://localhost:5000")
     duet.requests.add_handler(action="accept")
@@ -37,7 +40,10 @@ def ds() -> None:
     # syft absolute
     import syft as sy
 
-    _ = sy.logger.add(sink="syft_ds.log", level="TRACE",)
+    _ = sy.logger.add(
+        sink="syft_ds.log",
+        level="TRACE",
+    )
 
     duet = sy.join_duet(loopback=True, network_url="http://localhost:5000")
     time.sleep(1)

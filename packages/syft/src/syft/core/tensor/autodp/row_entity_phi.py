@@ -59,7 +59,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         self.child: Sequence
         super().__init__(rows)
 
-        # include this check because it's expensvie to check and sometimes we can skip it when
+        # include this check because it's expensive to check and sometimes we can skip it when
         # we already know the rows are identically shaped.
         if check_shape:
 
@@ -149,7 +149,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 if is_acceptable_simple_type(other):
                     new_list.append(self.child[i] == other)
                 else:
-                    new_list.append(self.child[i] == other.child[i])
+                    result = self.child[i] == other.child[i]
+                    if isinstance(result, InitialGammaTensor):
+                        raise NotImplementedError  # Need to determine if we need a new GammaTensor Type
+                    else:
+                        new_list.append(self.child[i] == other.child[i])
             return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             raise Exception(

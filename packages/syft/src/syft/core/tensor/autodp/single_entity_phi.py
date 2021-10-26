@@ -497,7 +497,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         )
 
     # Check for shape1 = (1,s), and shape2 = (,s) --> as an example
-    def __eq__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __eq__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         if is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
                 # If other is a Numpy Array, we need to check if shapes can be broadcast
@@ -512,9 +514,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 data = self.child == other
         elif isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
-                raise NotImplementedError(
-                    "Operation not implemented yet for different entities"
-                )
+                return convert_to_gamma_tensor(self) == convert_to_gamma_tensor(other)
             else:
                 if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
                     data = self.child == other.child
@@ -537,17 +537,30 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def __ne__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __ne__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         # Make use of the equal operator we just implemented, and invert the result
         opposite_result = self.__eq__(other)
 
-        return SingleEntityPhiTensor(
-            child=np.invert(opposite_result.child),
-            entity=opposite_result.entity,
-            min_vals=opposite_result.min_vals,
-            max_vals=opposite_result.max_vals,
-            scalar_manager=opposite_result.scalar_manager,
-        )
+        if isinstance(opposite_result, SingleEntityPhiTensor):
+            return SingleEntityPhiTensor(
+                child=np.invert(opposite_result.child),
+                entity=opposite_result.entity,
+                min_vals=opposite_result.min_vals,
+                max_vals=opposite_result.max_vals,
+                scalar_manager=opposite_result.scalar_manager,
+            )
+        elif isinstance(opposite_result, InitialGammaTensor):
+            return InitialGammaTensor(
+                values=opposite_result.values,
+                entities=opposite_result.entities,
+                min_vals=opposite_result.min_vals,
+                max_vals=opposite_result.max_vals,
+                scalar_manager=opposite_result.scalar_manager,
+            )
+        else:
+            raise Exception
 
     def __abs__(self) -> SingleEntityPhiTensor:
 
@@ -681,7 +694,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def __mul__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __mul__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         if isinstance(other, SingleEntityPhiTensor):
 
@@ -910,53 +925,53 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def partition(
-        self,
-        kth: Union[int, List[int], np.ndarray],
-        axis: Optional[int] = -1,
-        kind: Optional[str] = "introselect",
-        order: Optional[Union[str, List[str]]] = None,
-    ) -> SingleEntityPhiTensor:
-        # this method mutates self
-        """Interchange two axes of the Tensor"""
-        if (
-            isinstance(self.child, int)
-            or isinstance(self.child, float)
-            or isinstance(self.child, bool)
-        ):
-            # For these singleton data types, the partition operation is meaningless, so don't change them.
-            print(
-                f"Warning: Tensor data was of type {type(self.child)}, partition operation had no effect."
-            )
-        else:
-            self.child.partition(kth, axis, kind, order)
-
-            # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
-        if (
-            isinstance(self.min_vals, int)
-            or isinstance(self.min_vals, float)
-            or isinstance(self.min_vals, bool)
-        ):
-            # For these singleton data types, the partition operation is meaningless, so don't change them.
-            print(
-                f"Warning: Min_vals metadata was of type {type(self.min_vals)}, partition operation had no effect."
-            )
-        else:
-            self.min_vals.partition(kth, axis, kind, order)
-
-        if (
-            isinstance(self.max_vals, int)
-            or isinstance(self.max_vals, float)
-            or isinstance(self.max_vals, bool)
-        ):
-            # For these singleton data types, the partition operation is meaningless, so don't change them.
-            print(
-                f"Warning: Max_vals metadata was of type {type(self.max_vals)}, partition operation had no effect."
-            )
-        else:
-            self.max_vals.partition(kth, axis, kind, order)
-
-        return self
+    # def partition(
+    #     self,
+    #     kth: Union[int, List[int], np.ndarray],
+    #     axis: Optional[int] = -1,
+    #     kind: Optional[str] = "introselect",
+    #     order: Optional[Union[str, List[str]]] = None,
+    # ) -> SingleEntityPhiTensor:
+    #     # this method mutates self
+    #     """Interchange two axes of the Tensor"""
+    #     if (
+    #         isinstance(self.child, int)
+    #         or isinstance(self.child, float)
+    #         or isinstance(self.child, bool)
+    #     ):
+    #         # For these singleton data types, the partition operation is meaningless, so don't change them.
+    #         print(
+    #             f"Warning: Tensor data was of type {type(self.child)}, partition operation had no effect."
+    #         )
+    #     else:
+    #         self.child.partition(kth, axis, kind, order)
+    #
+    #         # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+    #     if (
+    #         isinstance(self.min_vals, int)
+    #         or isinstance(self.min_vals, float)
+    #         or isinstance(self.min_vals, bool)
+    #     ):
+    #         # For these singleton data types, the partition operation is meaningless, so don't change them.
+    #         print(
+    #             f"Warning: Min_vals metadata was of type {type(self.min_vals)}, partition operation had no effect."
+    #         )
+    #     else:
+    #         self.min_vals.partition(kth, axis, kind, order)
+    #
+    #     if (
+    #         isinstance(self.max_vals, int)
+    #         or isinstance(self.max_vals, float)
+    #         or isinstance(self.max_vals, bool)
+    #     ):
+    #         # For these singleton data types, the partition operation is meaningless, so don't change them.
+    #         print(
+    #             f"Warning: Max_vals metadata was of type {type(self.max_vals)}, partition operation had no effect."
+    #         )
+    #     else:
+    #         self.max_vals.partition(kth, axis, kind, order)
+    #
+    #     return self
 
     # ndarray.ravel(order='C')
     def ravel(self, order: str = "C") -> SingleEntityPhiTensor:
@@ -1272,14 +1287,16 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def __le__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __le__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) <= convert_to_gamma_tensor(other)
 
             if len(self.child) != len(other.child):
                 raise Exception(
@@ -1320,14 +1337,16 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             return NotImplemented
 
-    def __ge__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __ge__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) >= convert_to_gamma_tensor(other)
 
             if len(self.child) != len(other.child):
                 raise Exception(
@@ -1368,14 +1387,16 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             return NotImplemented
 
-    def __lt__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __lt__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, SingleEntityPhiTensor):
 
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) < convert_to_gamma_tensor(other)
 
             if len(self.child) != len(other.child):
                 raise Exception(
@@ -1423,7 +1444,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
             if self.entity != other.entity:
                 # this should return a GammaTensor
-                return NotImplemented
+                return convert_to_gamma_tensor(self) > convert_to_gamma_tensor(other)
 
             if len(self.child) != len(other.child):
                 raise Exception(
@@ -1703,6 +1724,65 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             max_vals=max_vals,
             scalar_manager=self.scalar_manager,
         )
+
+    @staticmethod
+    def sept_like(tensor: SingleEntityPhiTensor, ent: Entity) -> SingleEntityPhiTensor:
+        """Create a SEPT with identical data, but belonging to a different entity"""
+        return SingleEntityPhiTensor(
+            child=tensor.child,
+            entity=ent,
+            min_vals=tensor.min_vals,
+            max_vals=tensor.max_vals,
+            scalar_manager=tensor.scalar_manager,
+        )
+
+    @staticmethod
+    def zeros_like(
+        tensor: SingleEntityPhiTensor, ent: Optional[Entity] = None
+    ) -> SingleEntityPhiTensor:
+        """Create a SEPT of the same shape, but with zeros as its data.
+        By default, the tensor will have the same entity, but a different entity can be passed instead.
+        """
+        if ent:
+            return SingleEntityPhiTensor(
+                child=np.zeros_like(tensor.child),
+                entity=ent,
+                min_vals=np.zeros_like(tensor.min_vals),
+                max_vals=np.ones_like(tensor.max_vals),
+                scalar_manager=tensor.scalar_manager,
+            )
+        else:
+            return SingleEntityPhiTensor(
+                child=np.zeros_like(tensor.child),
+                entity=tensor.entity,
+                min_vals=np.zeros_like(tensor.min_vals),
+                max_vals=np.ones_like(tensor.max_vals),
+                scalar_manager=tensor.scalar_manager,
+            )
+
+    @staticmethod
+    def ones_like(
+        tensor: SingleEntityPhiTensor, ent: Optional[Entity] = None
+    ) -> SingleEntityPhiTensor:
+        """Create a SEPT of the same shape, but with ones as its data
+        By default, the tensor will have the same entity, but a different entity can be passed instead.
+        """
+        if ent:
+            return SingleEntityPhiTensor(
+                child=np.ones_like(tensor.child),
+                entity=ent,
+                min_vals=np.zeros_like(tensor.min_vals),
+                max_vals=np.ones_like(tensor.max_vals),
+                scalar_manager=tensor.scalar_manager,
+            )
+        else:
+            return SingleEntityPhiTensor(
+                child=np.ones_like(tensor.child),
+                entity=tensor.entity,
+                min_vals=np.zeros_like(tensor.min_vals),
+                max_vals=np.ones_like(tensor.max_vals),
+                scalar_manager=tensor.scalar_manager,
+            )
 
     def take(
         self,
@@ -1985,48 +2065,49 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    # TODO: Check to see if non-integers are ever introduced
-    def __mod__(
-        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
-    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
-        if is_acceptable_simple_type(other):
-            if isinstance(other, np.ndarray) and not is_broadcastable(
-                self.shape, other.shape
-            ):
-                raise Exception(
-                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
-                )
-            else:
-                data = self.child % other
-                mins = self.min_vals % other
-                maxes = self.max_vals % other
-        elif isinstance(other, SingleEntityPhiTensor):
-            if is_broadcastable(self.shape, other.shape):
-                if self.entity == other.entity:
-                    data = self.child % other.child
-                    mins = self.min_vals % other.min_vals
-                    maxes = self.max_vals % other.max_vals
-                else:
-                    # return convert_to_gamma_tensor(self) % convert_to_gamma_tensor(other)
-                    raise NotImplementedError
-            else:
-                raise Exception(
-                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
-                )
-        else:
-            raise NotImplementedError
-        return SingleEntityPhiTensor(
-            child=data,
-            max_vals=maxes,
-            min_vals=mins,
-            entity=self.entity,
-            scalar_manager=self.scalar_manager,
-        )
-
-    def __divmod__(
-        self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
-    ) -> TypeTuple:
-        return self // other, self % other
+    #
+    # # TODO: Check to see if non-integers are ever introduced
+    # def __mod__(
+    #     self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    # ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
+    #     if is_acceptable_simple_type(other):
+    #         if isinstance(other, np.ndarray) and not is_broadcastable(
+    #             self.shape, other.shape
+    #         ):
+    #             raise Exception(
+    #                 f"Shapes not broadcastable: {self.shape} and {other.shape}"
+    #             )
+    #         else:
+    #             data = self.child % other
+    #             mins = self.min_vals % other
+    #             maxes = self.max_vals % other
+    #     elif isinstance(other, SingleEntityPhiTensor):
+    #         if is_broadcastable(self.shape, other.shape):
+    #             if self.entity == other.entity:
+    #                 data = self.child % other.child
+    #                 mins = self.min_vals % other.min_vals
+    #                 maxes = self.max_vals % other.max_vals
+    #             else:
+    #                 # return convert_to_gamma_tensor(self) % convert_to_gamma_tensor(other)
+    #                 raise NotImplementedError
+    #         else:
+    #             raise Exception(
+    #                 f"Shapes not broadcastable: {self.shape} and {other.shape}"
+    #             )
+    #     else:
+    #         raise NotImplementedError
+    #     return SingleEntityPhiTensor(
+    #         child=data,
+    #         max_vals=maxes,
+    #         min_vals=mins,
+    #         entity=self.entity,
+    #         scalar_manager=self.scalar_manager,
+    #     )
+    # #
+    # # def __divmod__(
+    # #     self, other: Union[AcceptableSimpleType, SingleEntityPhiTensor]
+    # # ) -> TypeTuple:
+    # #     return self // other, self % other
 
     def __matmul__(
         self, other: Union[np.ndarray, SingleEntityPhiTensor]
