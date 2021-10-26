@@ -23,7 +23,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n"proto/lib/statsmodels/family.proto\x12\x14syft.lib.statsmodels\x1a\x1dproto/lib/python/string.proto"]\n\x0b\x46\x61milyProto\x12\'\n\x06\x66\x61mily\x18\x01 \x01(\x0b\x32\x17.syft.lib.python.String\x12%\n\x04link\x18\x02 \x01(\x0b\x32\x17.syft.lib.python.Stringb\x06proto3',
-    dependencies=[proto_dot_lib_dot_python_dot_string__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_lib_dot_python_dot_string__pb2.DESCRIPTOR,
+    ],
 )
 
 

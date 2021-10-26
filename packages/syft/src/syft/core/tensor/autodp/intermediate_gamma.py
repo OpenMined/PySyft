@@ -1069,6 +1069,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             max_vals=self._max_values().cumprod(axis),
             min_vals=self._min_values().cumprod(axis),
         )
+
     #
     # def __round__(self, n: Optional[int] = None) -> IntermediateGammaTensor:
     #     # relative

@@ -143,8 +143,8 @@ def test_eq_diff_entities(
     lower_bound: np.ndarray,
     ishan: Entity,
     traskmaster: Entity,
-) -> SEPT:
-    """Test equality between Private Tensors with different owners. This is currently not implemented."""
+) -> None:
+    """Test equality between Private Tensors with different owners."""
     tensor1 = SEPT(
         child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
@@ -155,8 +155,11 @@ def test_eq_diff_entities(
         min_vals=lower_bound,
     )
 
-    with pytest.raises(NotImplementedError):
-        return tensor1 == tensor2
+    result = tensor1 == tensor2
+    assert isinstance(result, IGT), "Equality returns wrong value"
+    assert result._values().all()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_eq_ndarray(
@@ -295,15 +298,17 @@ def test_ne_diff_entities(
     )
 
     comparison_tensor = SEPT(
-        child=reference_data,
+        child=reference_data + 1,
         entity=traskmaster,
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
 
-    with pytest.raises(NotImplementedError):
-        reference_tensor != comparison_tensor
-    return None
+    result = reference_tensor != comparison_tensor
+    assert isinstance(result, IGT)
+    assert not result._values().any()
+    assert (result._max_values() == np.ones_like(result._max_values())).all()
+    assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_add_wrong_types(

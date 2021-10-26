@@ -497,7 +497,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         )
 
     # Check for shape1 = (1,s), and shape2 = (,s) --> as an example
-    def __eq__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __eq__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         if is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
                 # If other is a Numpy Array, we need to check if shapes can be broadcast
@@ -512,9 +514,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 data = self.child == other
         elif isinstance(other, SingleEntityPhiTensor):
             if self.entity != other.entity:
-                raise NotImplementedError(
-                    "Operation not implemented yet for different entities"
-                )
+                return convert_to_gamma_tensor(self) == convert_to_gamma_tensor(other)
             else:
                 if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
                     data = self.child == other.child
@@ -537,17 +537,30 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def __ne__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __ne__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         # Make use of the equal operator we just implemented, and invert the result
         opposite_result = self.__eq__(other)
 
-        return SingleEntityPhiTensor(
-            child=np.invert(opposite_result.child),
-            entity=opposite_result.entity,
-            min_vals=opposite_result.min_vals,
-            max_vals=opposite_result.max_vals,
-            scalar_manager=opposite_result.scalar_manager,
-        )
+        if isinstance(opposite_result, SingleEntityPhiTensor):
+            return SingleEntityPhiTensor(
+                child=np.invert(opposite_result.child),
+                entity=opposite_result.entity,
+                min_vals=opposite_result.min_vals,
+                max_vals=opposite_result.max_vals,
+                scalar_manager=opposite_result.scalar_manager,
+            )
+        elif isinstance(opposite_result, InitialGammaTensor):
+            return InitialGammaTensor(
+                values=opposite_result.values,
+                entities=opposite_result.entities,
+                min_vals=opposite_result.min_vals,
+                max_vals=opposite_result.max_vals,
+                scalar_manager=opposite_result.scalar_manager,
+            )
+        else:
+            raise Exception
 
     def __abs__(self) -> SingleEntityPhiTensor:
 
