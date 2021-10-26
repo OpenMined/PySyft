@@ -321,6 +321,7 @@ def create_launch_cmd(
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
 ) -> str:
+    parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
