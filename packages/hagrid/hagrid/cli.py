@@ -339,7 +339,10 @@ def create_launch_cmd(
 
         if version:
             parsed_kwargs = {}
-            parsed_kwargs["build"] = str_to_bool(cast(str, kwargs["build"]))
+            build = True
+            if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
+                build = False
+            parsed_kwargs["build"] = build
             return create_launch_docker_cmd(
                 verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
             )
