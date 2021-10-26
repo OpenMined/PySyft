@@ -23,6 +23,7 @@ class UserApplication(Base):
     added_by = Column(String(2048))
     website = Column(String(2048))
     institution = Column(String(2048))
+    budget = Column(Float(), default=0.0)
 
     def __str__(self) -> str:
         return (

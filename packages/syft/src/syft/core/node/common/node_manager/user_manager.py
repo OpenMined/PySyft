@@ -97,6 +97,7 @@ class UserManager(DatabaseManager):
         daa_pdf: Optional[bytes],
         institution: Optional[str] = "",
         website: Optional[str] = "",
+        budget: Optional[float] = 0.0,
     ) -> int:
         salt, hashed = self.__salt_and_hash_password(password, 12)
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
@@ -114,6 +115,7 @@ class UserManager(DatabaseManager):
             daa_pdf=_pdf_obj.id,
             institution=institution,
             website=website,
+            budget=budget,
         )
         session_local.add(_pdf_obj)
         session_local.add(_obj)
@@ -150,7 +152,7 @@ class UserManager(DatabaseManager):
                 name=candidate.name,
                 email=candidate.email,
                 role=self.roles.ds_role.id,
-                budget=0,
+                budget=candidate.budget,
                 private_key=encoded_pk,
                 verify_key=encoded_vk,
                 hashed_password=candidate.hashed_password,

@@ -23,9 +23,13 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.9]
 
-    runs-on: ${{ matrix.os }}
+    runs-on: self-hosted
 
     steps:
+      - name: set permissions on work folder for self-runners
+        run: |
+          sudo chown -R $USER:$USER ~/actions-runner/openmined/
+
       - uses: actions/checkout@v2
 
       - name: Check for file changes
@@ -76,11 +80,11 @@ jobs:
           restore-keys: |
             ${{ runner.os }}-docker
 
-      - name: Load docker images
-        if: steps.changes.outputs.stack == 'true'
-        shell: bash
-        run: |
-          ./scripts/docker_load.sh
+      # - name: Load docker images
+      #   if: steps.changes.outputs.stack == 'true'
+      #   shell: bash
+      #   run: |
+      #     ./scripts/docker_load.sh
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
@@ -90,13 +94,16 @@ jobs:
           DOCKER_COMPOSE_VERSION=v2.0.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
+          docker rm `docker ps -aq` --force || true
+          rm -rf .tox
           tox -e stack.test.integration
+          docker rm `docker ps -aq` --force || true
 
-      - name: Save docker images
-        if: steps.changes.outputs.stack == 'true'
-        shell: bash
-        run: |
-          ./scripts/docker_save.sh
+      # - name: Save docker images
+      #   if: steps.changes.outputs.stack == 'true'
+      #   shell: bash
+      #   run: |
+      #     ./scripts/docker_save.sh
 
   stack-integration-tests-k8s:
     strategy:
