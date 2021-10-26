@@ -712,6 +712,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().flatten(order),
             min_vals=self._min_values().flatten(order),
             max_vals=self._max_values().flatten(order),
+            scalar_manager=self.scalar_manager,
         )
 
     def transpose(
@@ -729,6 +730,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().transpose(axes),
             min_vals=self._min_values().reshape(shape),
             max_vals=self._max_values().reshape(shape),
+            scalar_manager=self.scalar_manager,
         )
 
     def reshape(self, *dims: Sequence[int]) -> IntermediateGammaTensor:
@@ -743,6 +745,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().reshape(target_shape),
             min_vals=self._min_values().reshape(target_shape),
             max_vals=self._max_values().reshape(target_shape),
+            scalar_manager=self.scalar_manager,
         )
 
     def resize(
@@ -761,6 +764,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().reshape(shape),
             max_vals=self._max_values().reshape(shape),
             min_vals=self._min_values().reshape(shape),
+            scalar_manager=self.scalar_manager,
         )
 
         # Copy all members from the new object
@@ -778,6 +782,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().ravel(order),
             min_vals=self._min_values().ravel(order),
             max_vals=self._max_values().ravel(order),
+            scalar_manager=self.scalar_manager,
         )
 
     def squeeze(
@@ -791,6 +796,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().squeeze(axis),
             min_vals=self._min_values().squeeze(axis),
             max_vals=self._max_values().squeeze(axis),
+            scalar_manager=self.scalar_manager,
         )
 
     def swapaxes(self, axis1: int, axis2: int) -> IntermediateGammaTensor:
@@ -802,6 +808,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().swapaxes(axis1, axis2),
             min_vals=self._min_values().swapaxes(axis1, axis2),
             max_vals=self._max_values().swapaxes(axis1, axis2),
+            scalar_manager=self.scalar_manager,
         )
 
     # def partition(
@@ -836,6 +843,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 entities=self._entities().compress(condition, axis, out),
                 min_vals=self._min_values().compress(condition, axis, out),
                 max_vals=self._max_values().compress(condition, axis, out),
+                scalar_manager=self.scalar_manager,  # TODO: Check if removing this creates a backdoor to data
             )
         else:
             # TODO: Check if "out" needs to be returned at all
@@ -844,6 +852,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 entities=self._entities().compress(condition, axis, out),
                 min_vals=self._min_values().compress(condition, axis, out),
                 max_vals=self._max_values().compress(condition, axis, out),
+                scalar_manager=self.scalar_manager,
             )
             return out
 
@@ -942,6 +951,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 entities=self._entities().take(indices, mode),
                 min_vals=self._min_values().take(indices, mode),
                 max_vals=self._max_values().take(indices, mode),
+                scalar_manager=self.scalar_manager,
             )
         else:
             return InitialGammaTensor(
@@ -949,6 +959,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 entities=self._entities().take(indices, axis, mode),
                 min_vals=self._min_values().take(indices, axis, mode),
                 max_vals=self._max_values().take(indices, axis, mode),
+                scalar_manager=self.scalar_manager,
             )
 
     def diagonal(
@@ -963,6 +974,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().diagonal(offset, axis1, axis2),
             min_vals=self._min_values().diagonal(offset, axis1, axis2),
             max_vals=self._max_values().diagonal(offset, axis1, axis2),
+            scalar_manager=self.scalar_manager,
         )
 
     def put(
@@ -987,6 +999,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 entities=self._entities(),
                 min_vals=self._min_values(),
                 max_vals=self._max_values(),
+                scalar_manager=self.scalar_manager,
             )
 
             self.__dict__ == output_tensor.__dict__
@@ -1005,6 +1018,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().trace(offset, axis1, axis2),
             max_vals=self._max_values().trace(offset, axis1, axis2),
             min_vals=self._min_values().trace(offset, axis1, axis2),
+            scalar_manager=self.scalar_manager,
         )
 
     def __any__(self) -> bool:
@@ -1022,6 +1036,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities(),
             max_vals=self._max_values().__abs__(),
             min_vals=self._min_values().__abs__(),
+            scalar_manager=self.scalar_manager,
         )
 
     # def __divmod__(self, other: Union[int, np.ndarray]) -> IntermediateGammaTensor:
@@ -1055,6 +1070,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().cumsum(axis),
             max_vals=self._max_values().cumsum(axis),
             min_vals=self._min_values().cumsum(axis),
+            scalar_manager=self.scalar_manager,
         )
 
     def cumprod(self, axis: Optional[int] = None) -> IntermediateGammaTensor:
@@ -1068,6 +1084,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             ),  # entities get summed (combined), not multiplied
             max_vals=self._max_values().cumprod(axis),
             min_vals=self._min_values().cumprod(axis),
+            scalar_manager=self.scalar_manager,
         )
 
     #
@@ -1112,4 +1129,5 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             entities=self._entities().take(indices),
             max_vals=self._max_values().take(indices),
             min_vals=self._min_values().take(indices),
+            scalar_manager=self.scalar_manager,
         )

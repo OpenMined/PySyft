@@ -694,7 +694,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def __mul__(self, other: SupportedChainType) -> SingleEntityPhiTensor:
+    def __mul__(
+        self, other: SupportedChainType
+    ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         if isinstance(other, SingleEntityPhiTensor):
 
