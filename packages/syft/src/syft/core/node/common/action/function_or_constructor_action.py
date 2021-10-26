@@ -15,6 +15,7 @@ import syft as sy
 
 # relative
 from ..... import lib
+from .....logger import critical
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_function_or_constructor_pb2 import (
     RunFunctionOrConstructorAction as RunFunctionOrConstructorAction_PB,
@@ -28,6 +29,7 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from ..util import listify
 from .common import ImmediateActionWithoutReply
+from .exceptions import ObjectNotInStore
 
 
 @serializable()
@@ -91,7 +93,13 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                         f"Got {arg} of type {type(arg)}"
                     )
                 )
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get_object(key=arg.id_at_location)
+            if r_arg is None:
+                critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {arg.id_at_location}"
+                )
+                raise ObjectNotInStore
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -108,7 +116,13 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                         f"Got {arg} of type {type(arg)}"
                     )
                 )
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get_object(key=arg.id_at_location)
+            if r_arg is None:
+                critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {arg.id_at_location}"
+                )
+                raise ObjectNotInStore
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )

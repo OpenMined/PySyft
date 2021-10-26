@@ -27,6 +27,7 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from .exceptions import ObjectNotInStore
 
 
 @serializable()
@@ -115,29 +116,44 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {self._self.id_at_location}"
                 )
-                return
-            result_read_permissions = resolved_self.read_permissions
+                if "smpc" in self.path:
+                    raise ObjectNotInStore
+            result_read_permissions = resolved_self.read_permissions  # type: ignore
         else:
             result_read_permissions = {}
 
         resolved_args = list()
         tag_args = []
         for arg in self.args:
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get_object(key=arg.id_at_location)
+            if r_arg is None:
+                critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {arg.id_at_location}"
+                )
+                if "smpc" in self.path:
+                    raise ObjectNotInStore
             result_read_permissions = self.intersect_keys(
-                result_read_permissions, r_arg.read_permissions
+                result_read_permissions, r_arg.read_permissions  # type: ignore
             )
-            resolved_args.append(r_arg.data)
+            resolved_args.append(r_arg.data)  # type: ignore
             tag_args.append(r_arg)
 
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get_object(key=arg.id_at_location)
+            if r_arg is None:
+                critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {arg.id_at_location}"
+                )
+                if "smpc" in self.path:
+                    raise ObjectNotInStore
             result_read_permissions = self.intersect_keys(
-                result_read_permissions, r_arg.read_permissions
+                result_read_permissions, r_arg.read_permissions  # type: ignore
             )
-            resolved_kwargs[arg_name] = r_arg.data
+            resolved_kwargs[arg_name] = r_arg.data  # type: ignore
             tag_kwargs[arg_name] = r_arg
 
         (
