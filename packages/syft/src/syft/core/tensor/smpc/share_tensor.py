@@ -279,12 +279,6 @@ class ShareTensor(PassthroughTensor):
         if (seed_przs is None) == (generator_przs is None):
             raise ValueError("Only seed_przs or generator should be populated")
 
-        print("=====================================")
-        print("Secret", value)
-        print("Numpy Type", numpy_type)
-        print("Ring Size", ring_size_final)
-        print("=====================================")
-
         if value is None:
             value = Tensor(np.zeros(shape, dtype=numpy_type))
 
@@ -321,11 +315,10 @@ class ShareTensor(PassthroughTensor):
             )
             for _ in range(nr_parties)
         ]
-        print(shares)
+
         op = ShareTensor.get_op(ring_size_final, "sub")
         przs_share = op(shares[rank], shares[(rank + 1) % nr_parties])
         share.child = op(share.child, przs_share)
-        print("======================================>", share, share.ring_size)
 
         return share
 
