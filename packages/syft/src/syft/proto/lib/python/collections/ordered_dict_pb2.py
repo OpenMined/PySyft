@@ -25,7 +25,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n/proto/lib/python/collections/ordered_dict.proto\x12\x1bsyft.lib.python.collections\x1a%proto/core/common/common_object.proto"N\n\x0bOrderedDict\x12\x0c\n\x04keys\x18\x01 \x03(\x0c\x12\x0e\n\x06values\x18\x02 \x03(\x0c\x12!\n\x02id\x18\x03 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
-    dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+    ],
 )
 
 
