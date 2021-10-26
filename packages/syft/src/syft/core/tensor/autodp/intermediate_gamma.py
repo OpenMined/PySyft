@@ -804,22 +804,22 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             max_vals=self._max_values().swapaxes(axis1, axis2),
         )
 
-    def partition(
-        self,
-        kth: Union[int, Tuple[int, ...]],
-        axis: Optional[int] = -1,
-        kind: Optional[str] = "introselect",
-        order: Optional[Union[int, Tuple[int, ...]]] = None,
-    ) -> IntermediateGammaTensor:
-        # relative
-        from .initial_gamma import InitialGammaTensor
-
-        return InitialGammaTensor(
-            values=self._values().partition(kth, axis, kind, order),
-            entities=self._entities().partition(kth, axis, kind, order),
-            min_vals=self._min_values().partition(kth, axis, kind, order),
-            max_vals=self._max_values().partition(kth, axis, kind, order),
-        )
+    # def partition(
+    #     self,
+    #     kth: Union[int, Tuple[int, ...]],
+    #     axis: Optional[int] = -1,
+    #     kind: Optional[str] = "introselect",
+    #     order: Optional[Union[int, Tuple[int, ...]]] = None,
+    # ) -> IntermediateGammaTensor:
+    #     # relative
+    #     from .initial_gamma import InitialGammaTensor
+    #
+    #     return InitialGammaTensor(
+    #         values=self._values().partition(kth, axis, kind, order),
+    #         entities=self._entities().partition(kth, axis, kind, order),
+    #         min_vals=self._min_values().partition(kth, axis, kind, order),
+    #         max_vals=self._max_values().partition(kth, axis, kind, order),
+    #     )
 
     def compress(
         self,
@@ -1024,16 +1024,16 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             min_vals=self._min_values().__abs__(),
         )
 
-    def __divmod__(self, other: Union[int, np.ndarray]) -> IntermediateGammaTensor:
-        # relative
-        from .initial_gamma import InitialGammaTensor
-
-        return InitialGammaTensor(
-            values=self._values() % other,
-            entities=self._entities(),
-            max_vals=self._max_values() % other,
-            min_vals=self._min_values() % other,
-        )
+    # def __divmod__(self, other: Union[int, np.ndarray]) -> IntermediateGammaTensor:
+    #     # relative
+    #     from .initial_gamma import InitialGammaTensor
+    #
+    #     return InitialGammaTensor(
+    #         values=self._values() % other,
+    #         entities=self._entities(),
+    #         max_vals=self._max_values() % other,
+    #         min_vals=self._min_values() % other,
+    #     )
 
     def __floordiv__(self, other: Union[int, np.ndarray]) -> IntermediateGammaTensor:
         # relative
@@ -1069,17 +1069,17 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             max_vals=self._max_values().cumprod(axis),
             min_vals=self._min_values().cumprod(axis),
         )
-
-    def __round__(self, n: Optional[int] = None) -> IntermediateGammaTensor:
-        # relative
-        from .initial_gamma import InitialGammaTensor
-
-        return InitialGammaTensor(
-            values=self._values().__round__(n),
-            entities=self._entities(),
-            max_vals=self._max_values().__round__(n),
-            min_vals=self._min_values().__round__(n),
-        )
+    #
+    # def __round__(self, n: Optional[int] = None) -> IntermediateGammaTensor:
+    #     # relative
+    #     from .initial_gamma import InitialGammaTensor
+    #
+    #     return InitialGammaTensor(
+    #         values=self._values().__round__(n),
+    #         entities=self._entities(),
+    #         max_vals=self._max_values().__round__(n),
+    #         min_vals=self._min_values().__round__(n),
+    #     )
 
     def max(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
