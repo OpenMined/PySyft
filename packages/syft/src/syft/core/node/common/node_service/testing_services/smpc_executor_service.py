@@ -46,13 +46,12 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
 
         kwargs = {}  # type: ignore
         for key, kwarg_id in msg.kwargs_id.items():
-            data = (
-                node.store[kwarg_id].data if "spdz" not in msg.name_action else kwarg_id
-            )
+            data = node.store[kwarg_id].data
             if data is None:
                 raise KeyError(f"Key {key} is not available")
 
             kwargs[key] = data
+        kwargs = {**kwargs, **msg.kwargs}
         (
             upcasted_args,
             upcasted_kwargs,
