@@ -1,17 +1,17 @@
 """empty message
 
-Revision ID: dcb90aad2c12
-Revises: 239c5dd652ba
-Create Date: 2021-10-20 16:56:21.015916
+Revision ID: 07fb4c284883
+Revises: 100642749d64
+Create Date: 2021-10-26 10:41:09.286331
 
 """
-# third party
-from alembic import op
 import sqlalchemy as sa
 
+from alembic import op
+
 # revision identifiers, used by Alembic.
-revision = "dcb90aad2c12"
-down_revision = "239c5dd652ba"
+revision = "07fb4c284883"
+down_revision = "100642749d64"
 branch_labels = None
 depends_on = None
 
