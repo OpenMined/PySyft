@@ -113,6 +113,13 @@ def clean(location: str) -> None:
     help="Optional: print the cmd without running it",
 )
 @click.option(
+    "--build",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: enable or disable forcing re-build",
+)
+@click.option(
     "--auth_type",
     default=None,
     type=click.Choice(["key", "password"], case_sensitive=False),
@@ -330,8 +337,10 @@ def create_launch_cmd(
             version = "n/a"
 
         if version:
+            parsed_kwargs = {}
+            parsed_kwargs["build"] = str_to_bool(cast(str, kwargs["build"]))
             return create_launch_docker_cmd(
-                verb=verb, docker_version=version, tail=tail
+                verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
             )
     elif host in ["vm"]:
         if (
@@ -582,7 +591,10 @@ def create_launch_cmd(
 
 
 def create_launch_docker_cmd(
-    verb: GrammarVerb, docker_version: str, tail: bool = True
+    verb: GrammarVerb,
+    docker_version: str,
+    kwargs: TypeDict[str, Any],
+    tail: bool = True,
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
@@ -620,8 +632,9 @@ def create_launch_docker_cmd(
     cmd += " VERSION_HASH=`python VERSION hash`"
     cmd += " TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false"
 
-    build_cmd = str(cmd)
-    build_cmd += " docker compose build --parallel"
+    if kwargs["build"] is True:
+        build_cmd = str(cmd)
+        build_cmd += " docker compose build --parallel"
 
     cmd += " docker compose -p " + snake_name
     if str(node_type.input) == "network":
@@ -631,8 +644,10 @@ def create_launch_docker_cmd(
     if not tail:
         cmd += " -d"
 
-    cmd += " --build"  # force rebuild
-    cmd = "cd " + GRID_SRC_PATH + "; " + build_cmd + " && " + cmd
+    if kwargs["build"] is True:
+        cmd += " --build"  # force rebuild
+        cmd = build_cmd + " && " + cmd
+    cmd = "cd " + GRID_SRC_PATH + "; " + cmd
     return cmd
 
 
