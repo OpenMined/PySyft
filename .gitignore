@@ -1,7 +1,5 @@
 .mypy_cache
 .DS_Store
-build/
-_build/
 dist/
 .cache/
 .coverage
@@ -28,3 +26,5 @@ examples/duet/mnist/data/*
 **/*.log
 **/*.sqlite
 **/*.sqlite-journal
+
+.doctrees/
