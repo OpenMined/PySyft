@@ -26,3 +26,5 @@ examples/duet/mnist/data/*
 **/*.log
 **/*.sqlite
 **/*.sqlite-journal
+
+.doctrees/
