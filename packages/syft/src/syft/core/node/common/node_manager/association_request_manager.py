@@ -49,15 +49,15 @@ class AssociationRequestManager(DatabaseManager):
         source_blob = serialize(source, to_bytes=True)
         target_blob = serialize(target, to_bytes=True)
 
-        table_fields[RequestAPIFields.SOURCE] = source_blob
-        table_fields[RequestAPIFields.TARGET] = target_blob
+        table_fields[RequestAPIFields.SOURCE] = source_blob  # type: ignore
+        table_fields[RequestAPIFields.TARGET] = target_blob  # type: ignore
         table_fields[RequestAPIFields.STATUS] = status
         table_fields[RequestAPIFields.ADDRESS] = address
 
         if super().first(address=address):
             self.modify(query={"address": address}, values=table_fields)
         else:
-            self.register(**table_fields)
+            self.register(**table_fields)  # type: ignore
 
     # def associations(self) -> List[Association]:
     #     return list(self.db.session.query(Association).all())
