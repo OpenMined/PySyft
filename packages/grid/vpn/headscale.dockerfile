@@ -8,8 +8,7 @@ RUN --mount=type=cache,target=/root/.cache \
     pip install --user -r requirements.txt
 
 COPY ./headscale.sh /headscale/headscale.sh
-COPY ./derp.yaml /headscale/derp.yaml
-COPY ./config.json /headscale/config.json
+COPY ./config.yaml /headscale/config.yaml
 COPY ./headscale.py /headscale/headscale.py
 
 ENV NETWORK_NAME="omnet"

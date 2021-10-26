@@ -25,7 +25,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
     serialized_pb=b'\n\x1aproto/lib/torch/size.proto\x12\x0esyft.lib.torch\x1a%proto/core/common/common_object.proto"7\n\x04Size\x12\x0c\n\x04\x64\x61ta\x18\x01 \x03(\x04\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3',
-    dependencies=[proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,],
+    dependencies=[
+        proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+    ],
 )
 
 
