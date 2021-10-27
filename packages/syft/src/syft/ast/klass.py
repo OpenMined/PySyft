@@ -33,7 +33,6 @@ from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_m
 )
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
-from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
@@ -895,11 +894,13 @@ class Class(Callable):
 
             return target_object
         except Exception as e:
-            critical(
-                "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
-                "StaticAttribute, be sure they have been added to the AST. Falling back on"
-                "__getattr__ to search in self.attrs for the requested field."
-            )
+            # TODO: this gets really chatty when doing SMPC mulitplication. Figure out why.
+            # critical(
+            #     f"{self.path_and_name}__getattribute__[{item}] failed. If you
+            #     are trying to access an EnumAttribute or a "
+            #     "StaticAttribute, be sure they have been added to the AST. Falling back on"
+            #     "__getattr__ to search in self.attrs for the requested field."
+            # )
             traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
