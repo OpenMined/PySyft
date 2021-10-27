@@ -15,8 +15,8 @@ clients = []
 
 
 def login_clients() -> None:
-    PORT = 9082
-    PARTIES = 3
+    PORT = 8081
+    PARTIES = 1
     for i in range(PARTIES):
         client = sy.login(
             email="info@openmined.org", password="changethis", port=(PORT + i)
