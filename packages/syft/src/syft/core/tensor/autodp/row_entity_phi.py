@@ -130,7 +130,13 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         entities = []
         mins = []
         maxes = []
-        target_shape = [len(input_list)] + list(input_list[0].shape)
+
+        if len(input_list) > 1:
+            target_shape = [len(input_list)] + list(input_list[0].shape)
+        else:
+            print(type(input_list), input_list)
+            target_shape = input_list[0].shape
+
         for tensor in input_list:
             if isinstance(tensor, SingleEntityPhiTensor):
                 values.append(tensor.child)
@@ -174,7 +180,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     def shape(self) -> Tuple[Any, ...]:
         return tuple([len(self.child)] + list(self.child[0].shape))
 
-    def __eq__(self, other: Any) -> RowEntityPhiTensor:
+    def __eq__(self, other: Any) -> Union[RowEntityPhiTensor, IGT]:
 
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
@@ -186,13 +192,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                     result = self.child[i] == other.child[i]
                     if isinstance(result, InitialGammaTensor):
                         gamma_output = True
-                        raise NotImplementedError  # Need to determine if we need a new GammaTensor Type
-                    else:
-                        new_list.append(self.child[i] == other.child[i])
+                    new_list.append(result)
             if not gamma_output:
                 return RowEntityPhiTensor(rows=new_list, check_shape=False)
             else:
-                return RowEntityPhiTensor(rows=new_list, check_shape=False).gamma
+                return RowEntityPhiTensor.convert_to_gamma(new_list)
         else:
             raise Exception(
                 f"Tensor dims do not match for __eq__: {len(self.child)} != {len(other.child)}"

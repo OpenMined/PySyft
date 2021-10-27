@@ -183,13 +183,12 @@ def test_eq_diff_tensors(row_data_ishan: List) -> None:
 
 
 def test_eq_diff_entities(
-    row_data_ishan: List,
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     ishan: Entity,
     traskmaster: Entity,
-) -> REPT:
+) -> None:
     """Test equality between REPTs with different owners"""
     data1 = SEPT(
         child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
@@ -200,11 +199,12 @@ def test_eq_diff_entities(
         min_vals=lower_bound,
         entity=traskmaster,
     )
-    tensor1 = REPT(rows=data1)
-    tensor2 = REPT(rows=data2)
-
-    with pytest.raises(NotImplementedError):
-        return tensor1 == tensor2
+    tensor1 = REPT(rows=[data1, data2])
+    tensor2 = REPT(rows=[data2, data1])
+    output = tensor2 == tensor1
+    assert isinstance(output, IGT)
+    assert output._entities().shape == output.shape
+    assert (output._values() == np.ones_like(reference_data)).all()
 
 
 # TODO: Update this test after REPT.all() and .any() are implemented, and check `assert not comparison_result`
