@@ -679,6 +679,7 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
+            id_at_location_override: Optional[UID] = None,
         ) -> Pointer:
             """Send obj to client and return pointer to the object.
 
@@ -726,7 +727,10 @@ class Class(Callable):
                 attach_tags(self, tags)
                 attach_description(self, description)
 
-            id_at_location = UID()
+            if id_at_location_override is not None:
+                id_at_location = id_at_location_override
+            else:
+                id_at_location = UID()
 
             if hasattr(self, "init_pointer"):
                 constructor = self.init_pointer
