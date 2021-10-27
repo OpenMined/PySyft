@@ -362,6 +362,14 @@ class MPCTensor(PassthroughTensor):
 
         return self
 
+    def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> "MPCTensor":
+        """Block until all shares have been created or until timeout expires."""
+
+        for share in self.child:
+            share.block_with_timeout(secs=secs, secs_per_poll=secs_per_poll)
+
+        return self
+
     def reconstruct(self) -> np.ndarray:
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point. We need to have this fail well with a nice
