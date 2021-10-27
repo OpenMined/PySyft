@@ -25,7 +25,7 @@ class PeerDiscoveryService(ImmediateNodeServiceWithReply):
         verify_key: Optional[VerifyKey] = None,
     ) -> PeerDiscoveryReplyMessage:
         # this service requires no verify_key because its currently public
-        result = msg.payload.run(node=node)
+        result = msg.payload.run(node=node, verify_key=verify_key)
         return PeerDiscoveryMessageWithReply(kwargs=result).back_to(
             address=msg.reply_to
         )
