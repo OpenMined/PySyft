@@ -7,20 +7,27 @@ from typing import Optional
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pandas import DataFrame
 from typing_extensions import final
 
 # relative
 from ....logger import traceback_and_raise
+from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
+from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
 from ..common.client_manager.vpn_api import VPNAPI
+from ..common.node_service.network_search.network_search_messages import (
+    NetworkSearchMessage,
+)
+from ..domain.enums import RequestAPIFields
 
 
 @final
@@ -138,3 +145,29 @@ class NetworkClient(Client):
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
+
+    def search(self, query: List, pandas: bool = False) -> Any:
+        response = self._perform_grid_request(
+            grid_msg=NetworkSearchMessage, content={"content": query}
+        )
+        result = response.content  # type: ignore
+        if pandas:
+            result = DataFrame(result)
+
+        return result
+
+    def _perform_grid_request(
+        self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
+    ) -> SyftMessage:
+        if content is None:
+            content = {}
+        # Build Syft Message
+        content[RequestAPIFields.ADDRESS] = self.address
+        content[RequestAPIFields.REPLY_TO] = self.address
+        signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
+        # Send to the dest
+        response = self.send_immediate_msg_with_reply(msg=signed_msg)
+        if isinstance(response, ExceptionMessage):
+            raise response.exception_type
+        else:
+            return response

@@ -27,6 +27,7 @@ from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..types import AcceptableSimpleType
 from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
+from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
 
 
@@ -122,6 +123,44 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     def gamma(self) -> InitialGammaTensor:
         return self.create_gamma()
 
+    @staticmethod
+    def convert_to_gamma(input_list: List) -> IGT:
+        """This converts a REPT's data into a GammaTensor without having to initialize it. Used in comparison ops"""
+        values = []
+        entities = []
+        mins = []
+        maxes = []
+
+        if len(input_list) > 1:
+            target_shape = [len(input_list)] + list(input_list[0].shape)
+        else:
+            print(type(input_list), input_list)
+            target_shape = input_list[0].shape
+
+        for tensor in input_list:
+            if isinstance(tensor, SingleEntityPhiTensor):
+                values.append(tensor.child)
+                entity_array = np.array(tensor.entity, dtype=object).repeat(
+                    len(tensor.child.flatten())
+                )
+                entities.append(entity_array.reshape(tensor.shape))
+                mins.append(tensor.min_vals)
+                maxes.append(tensor.max_vals)
+            elif isinstance(tensor, IGT):
+                values.append(tensor._values())
+                entities.append(tensor._entities())
+                mins.append(tensor._min_values())
+                maxes.append(tensor._max_values())
+            else:
+                raise Exception(f"Unknown type in REPT: {type(tensor)}")
+        return InitialGammaTensor(
+            values=np.concatenate(values).reshape(target_shape),
+            entities=np.concatenate(entities).reshape(target_shape),
+            min_vals=np.concatenate(mins).reshape(target_shape),
+            max_vals=np.concatenate(maxes).reshape(target_shape),
+            scalar_manager=input_list[0].scalar_manager,
+        )
+
     def create_gamma(
         self, scalar_manager: Optional[TypeScalarManager] = None
     ) -> InitialGammaTensor:
@@ -141,34 +180,49 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     def shape(self) -> Tuple[Any, ...]:
         return tuple([len(self.child)] + list(self.child[0].shape))
 
-    def __eq__(self, other: Any) -> RowEntityPhiTensor:
+    def __eq__(self, other: Any) -> Union[RowEntityPhiTensor, IGT]:
 
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
+            gamma_output = False
             for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
                     new_list.append(self.child[i] == other)
                 else:
                     result = self.child[i] == other.child[i]
                     if isinstance(result, InitialGammaTensor):
-                        raise NotImplementedError  # Need to determine if we need a new GammaTensor Type
-                    else:
-                        new_list.append(self.child[i] == other.child[i])
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+                        gamma_output = True
+                    new_list.append(result)
+            if not gamma_output:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return RowEntityPhiTensor.convert_to_gamma(new_list)
         else:
             raise Exception(
                 f"Tensor dims do not match for __eq__: {len(self.child)} != {len(other.child)}"
             )
 
-    def __ne__(self, other: Any) -> RowEntityPhiTensor:
-        opposite_result = self.__eq__(other)
+    def __ne__(self, other: Any) -> Union[RowEntityPhiTensor, IGT]:
 
-        # Normal inversion on (opposite_result.child) might not work on nested lists
-        result = []
-        for row in opposite_result.child:
-            result.append(np.invert(row))
-
-        return RowEntityPhiTensor(rows=result)
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
+            new_list = list()
+            gamma_output = False
+            for i in range(len(self.child)):
+                if is_acceptable_simple_type(other):
+                    new_list.append(self.child[i] != other)
+                else:
+                    result = self.child[i] != other.child[i]
+                    if isinstance(result, InitialGammaTensor):
+                        gamma_output = True
+                    new_list.append(result)
+            if not gamma_output:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return RowEntityPhiTensor.convert_to_gamma(new_list)
+        else:
+            raise Exception(
+                f"Tensor dims do not match for __ne__: {len(self.child)} != {len(other.child)}"
+            )
 
     def __add__(
         self, other: Union[RowEntityPhiTensor, AcceptableSimpleType]
@@ -486,25 +540,21 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     def __le__(self, other: Any) -> RowEntityPhiTensor:
 
-        # if the tensor being compared is a public tensor / int / float / etc.
-        if is_acceptable_simple_type(other):
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
+            gamma_output = False
             for i in range(len(self.child)):
-                new_list.append(self.child[i] <= other)
-
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
-
-        if len(self.child) == len(other.child):
-            # tensors have different entities
-            if not (self.entities == other.entities).all():
-                raise Exception("Tensor owners do not match")
-
-            new_list = list()
-            for i in range(len(self.child)):
-                new_list.append(self.child[i] <= other.child[i])
-
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
-
+                if is_acceptable_simple_type(other):
+                    new_list.append(self.child[i] <= other)
+                else:
+                    result = self.child[i] <= other.child[i]
+                    if isinstance(result, InitialGammaTensor):
+                        gamma_output = True
+                    new_list.append(result)
+            if not gamma_output:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return RowEntityPhiTensor.convert_to_gamma(new_list)
         else:
             raise Exception(
                 f"Tensor dims do not match for __le__: {len(self.child)} != {len(other.child)}"
@@ -512,25 +562,21 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     def __lt__(self, other: Any) -> RowEntityPhiTensor:
 
-        # if the tensor being compared is a public tensor / int / float / etc.
-        if is_acceptable_simple_type(other):
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
+            gamma_output = False
             for i in range(len(self.child)):
-                new_list.append(self.child[i] < other)
-
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
-
-        if len(self.child) == len(other.child):
-            # tensors have different entities
-            if not (self.entities == other.entities).all():
-                raise Exception("Tensor owners do not match")
-
-            new_list = list()
-            for i in range(len(self.child)):
-                new_list.append(self.child[i] < other.child[i])
-
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
-
+                if is_acceptable_simple_type(other):
+                    new_list.append(self.child[i] < other)
+                else:
+                    result = self.child[i] < other.child[i]
+                    if isinstance(result, InitialGammaTensor):
+                        gamma_output = True
+                    new_list.append(result)
+            if not gamma_output:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return RowEntityPhiTensor.convert_to_gamma(new_list)
         else:
             raise Exception(
                 f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"
@@ -538,25 +584,21 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     def __gt__(self, other: Any) -> RowEntityPhiTensor:
 
-        # if the tensor being compared is a public tensor / int / float / etc.
-        if is_acceptable_simple_type(other):
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
+            gamma_output = False
             for i in range(len(self.child)):
-                new_list.append(self.child[i] > other)
-
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
-
-        if len(self.child) == len(other.child):
-            # tensors have different entities
-            if not (self.entities == other.entities).all():
-                raise Exception("Tensor owners do not match")
-
-            new_list = list()
-            for i in range(len(self.child)):
-                new_list.append(self.child[i] > other.child[i])
-
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
-
+                if is_acceptable_simple_type(other):
+                    new_list.append(self.child[i] > other)
+                else:
+                    result = self.child[i] > other.child[i]
+                    if isinstance(result, InitialGammaTensor):
+                        gamma_output = True
+                    new_list.append(result)
+            if not gamma_output:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return RowEntityPhiTensor.convert_to_gamma(new_list)
         else:
             raise Exception(
                 f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"
@@ -564,25 +606,21 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     def __ge__(self, other: Any) -> RowEntityPhiTensor:
 
-        # if the tensor being compared is a public tensor / int / float / etc.
-        if is_acceptable_simple_type(other):
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
+            gamma_output = False
             for i in range(len(self.child)):
-                new_list.append(self.child[i] >= other)
-
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
-
-        if len(self.child) == len(other.child):
-            # tensors have different entities
-            if not (self.entities == other.entities).all():
-                raise Exception("Tensor owners do not match")
-
-            new_list = list()
-            for i in range(len(self.child)):
-                new_list.append(self.child[i] >= other.child[i])
-
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
-
+                if is_acceptable_simple_type(other):
+                    new_list.append(self.child[i] >= other)
+                else:
+                    result = self.child[i] >= other.child[i]
+                    if isinstance(result, InitialGammaTensor):
+                        gamma_output = True
+                    new_list.append(result)
+            if not gamma_output:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return RowEntityPhiTensor.convert_to_gamma(new_list)
         else:
             raise Exception(
                 f"Tensor dims do not match for __ge__: {len(self.child)} != {len(other.child)}"

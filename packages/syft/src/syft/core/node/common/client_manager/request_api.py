@@ -45,7 +45,14 @@ class RequestAPI:
         association_table = self.perform_api_request(
             syft_msg=self._get_message, content=kwargs
         )
-        obj_data = dict(association_table.metadata)
+
+        content = getattr(
+            association_table, "content", getattr(association_table, "metadata", None)
+        )
+        if content is None:
+            raise Exception(f"{type(self)} has no content or metadata field")
+
+        obj_data = dict(content)
         obj_data[RequestAPIFields.SOURCE] = association_table.source
         obj_data[RequestAPIFields.TARGET] = association_table.target
 

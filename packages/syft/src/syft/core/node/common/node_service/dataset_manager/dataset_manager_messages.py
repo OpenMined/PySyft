@@ -489,10 +489,12 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
         address: Address,
         dataset_id: str,
         reply_to: Address,
+        bin_object_id: Optional[str] = None,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.dataset_id = dataset_id
+        self.bin_object_id = bin_object_id
 
     def _object2proto(self) -> DeleteDatasetMessage_PB:
         """Returns a protobuf serialization of self.
@@ -510,6 +512,7 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
             msg_id=serialize(self.id),
             address=serialize(self.address),
             dataset_id=self.dataset_id,
+            bin_object_id=self.bin_object_id,
             reply_to=serialize(self.reply_to),
         )
 
@@ -531,6 +534,7 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
             dataset_id=proto.dataset_id,
+            bin_object_id=proto.bin_object_id,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
