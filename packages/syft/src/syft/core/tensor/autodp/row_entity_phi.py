@@ -27,6 +27,7 @@ from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..types import AcceptableSimpleType
 from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
+from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
 
 
@@ -122,6 +123,38 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     def gamma(self) -> InitialGammaTensor:
         return self.create_gamma()
 
+    @staticmethod
+    def convert_to_gamma(input_list: List) -> IGT:
+        """ This converts a REPT's data into a GammaTensor without having to initialize it. Used in comparison ops"""
+        values = []
+        entities = []
+        mins = []
+        maxes = []
+        target_shape = [len(input_list)] + list(input_list[0].shape)
+        for tensor in input_list:
+            if isinstance(tensor, SingleEntityPhiTensor):
+                values.append(tensor.child)
+                entity_array = np.array(tensor.entity, dtype=object).repeat(len(tensor.child.flatten()))
+                entities.append(entity_array.reshape(tensor.shape))
+                mins.append(tensor.min_vals)
+                maxes.append(tensor.max_vals)
+            elif isinstance(tensor, IGT):
+                values.append(tensor._values())
+                entities.append(tensor._entities())
+                mins.append(tensor._min_values())
+                maxes.append(tensor._max_values())
+            else:
+                raise Exception(
+                    f"Unknown type in REPT: {type(tensor)}"
+                )
+        return InitialGammaTensor(
+            values=np.concatenate(values).reshape(target_shape),
+            entities=np.concatenate(entities).reshape(target_shape),
+            min_vals=np.concatenate(mins).reshape(target_shape),
+            max_vals=np.concatenate(maxes).reshape(target_shape),
+            scalar_manager=input_list[0].scalar_manager
+        )
+
     def create_gamma(
         self, scalar_manager: Optional[TypeScalarManager] = None
     ) -> InitialGammaTensor:
@@ -145,16 +178,21 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             new_list = list()
+            gamma_output = False
             for i in range(len(self.child)):
                 if is_acceptable_simple_type(other):
                     new_list.append(self.child[i] == other)
                 else:
                     result = self.child[i] == other.child[i]
                     if isinstance(result, InitialGammaTensor):
+                        gamma_output = True
                         raise NotImplementedError  # Need to determine if we need a new GammaTensor Type
                     else:
                         new_list.append(self.child[i] == other.child[i])
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            if not gamma_output:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False).gamma
         else:
             raise Exception(
                 f"Tensor dims do not match for __eq__: {len(self.child)} != {len(other.child)}"

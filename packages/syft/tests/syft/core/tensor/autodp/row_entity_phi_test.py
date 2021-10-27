@@ -1120,3 +1120,39 @@ def test_diagonal(row_data_trask: List, dims: int) -> None:
             assert (
                 tensor_diagonal.child[i].child[j] == tensor.child[i].child[j][j]
             ).all()
+
+
+def test_converter(
+        row_data_ishan: List, traskmaster: Entity, ishan: Entity, highest: int, scalar_manager: ScalarManager
+) -> None:
+    # Test that SEPTs can be converted
+    output = REPT.convert_to_gamma(row_data_ishan)
+    assert isinstance(output, IGT)
+    assert output._entities().shape == output.shape
+
+    new_data = row_data_ishan[0].child
+
+    # Test with just a list of IGTs
+    igt1 = SEPT(
+        child=new_data,
+        entity=traskmaster,
+        min_vals=np.ones_like(new_data) * -highest,
+        max_vals=np.ones_like(new_data) * highest,
+        scalar_manager=scalar_manager,
+    ) + SEPT(
+        child=new_data,
+        entity=ishan,
+        min_vals=np.ones_like(new_data) * -highest,
+        max_vals=np.ones_like(new_data) * highest,
+        scalar_manager=scalar_manager,
+    )
+    igt2 = igt1 + 1
+    assert isinstance(igt1, IGT)
+    output = REPT.convert_to_gamma([igt1, igt2])
+    assert isinstance(output, IGT)
+
+    # Test hybrid
+    assert new_data.shape == igt1.shape
+    output = REPT.convert_to_gamma([igt1, row_data_ishan[0]])
+    assert isinstance(output, IGT)
+    assert output._entities().shape == output.shape
