@@ -15,9 +15,9 @@ id = UID(UUID("a8ac0c37382584a1082c710b0b38f6a3"))
 
 def get_set(node: AbstractNode) -> Set:
     obj = node.store.get_object(key=id)
-    if isinstance(obj.data, Set):
+    if obj is None:
         return obj.data
-    elif obj is None:
+    elif isinstance(obj.data, Set):
         return Set([])
     else:
         raise ValueError(
