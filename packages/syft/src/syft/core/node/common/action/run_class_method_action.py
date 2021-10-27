@@ -116,8 +116,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {self._self.id_at_location}"
                 )
-                if "smpc" in self.path:
-                    raise ObjectNotInStore
+                raise ObjectNotInStore
             result_read_permissions = resolved_self.read_permissions  # type: ignore
         else:
             result_read_permissions = {}
@@ -131,8 +130,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {arg.id_at_location}"
                 )
-                if "smpc" in self.path:
-                    raise ObjectNotInStore
+                raise ObjectNotInStore
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
             )
@@ -148,8 +146,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {arg.id_at_location}"
                 )
-                if "smpc" in self.path:
-                    raise ObjectNotInStore
+                raise ObjectNotInStore
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
             )
