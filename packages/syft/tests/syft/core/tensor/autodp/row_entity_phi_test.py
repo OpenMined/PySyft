@@ -135,10 +135,7 @@ def row_data_trask(
 
 
 @pytest.fixture
-def row_data_kritika(
-    row_data_trask: list,
-    kritika: Entity
-) -> List:
+def row_data_kritika(row_data_trask: list, kritika: Entity) -> List:
     """This generates a random number of SEPTs to populate the REPTs."""
     output = []
     for tensor in row_data_trask:
