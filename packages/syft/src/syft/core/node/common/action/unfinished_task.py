@@ -1,9 +1,9 @@
 # stdlib
-from typing import Set as TypeSet
+from typing import List as TypeList
 from uuid import UUID
 
 # relative
-from .....lib.python import Set
+from .....lib.python import List
 from ....common import UID
 from ....common.message import SignedImmediateSyftMessageWithoutReply
 from ....store.storeable_object import StorableObject
@@ -13,35 +13,35 @@ from .exceptions import RetriableError
 id = UID(UUID("a8ac0c37382584a1082c710b0b38f6a3"))
 
 
-def get_set(node: AbstractNode) -> Set:
+def get_list(node: AbstractNode) -> List:
     obj = node.store.get_object(key=id)
     if obj is None:
-        return Set([])
-    elif isinstance(obj.data, Set):
+        return List()
+    elif isinstance(obj.data, List):
         return obj.data
     else:
         raise ValueError(
-            f"Unfinished task Object should be {obj} should be a Set or None"
+            f"Unfinished task Object should be {obj} should be a List or None"
         )
 
 
-def update_set(
-    task_set: TypeSet[SignedImmediateSyftMessageWithoutReply], node: AbstractNode
+def update_list(
+    task_list: TypeList[SignedImmediateSyftMessageWithoutReply], node: AbstractNode
 ) -> None:
-    obj = StorableObject(data=task_set, id=id)
+    obj = StorableObject(data=task_list, id=id)
     node.store[id] = obj
 
 
 def register_unfinished_task(
     message: SignedImmediateSyftMessageWithoutReply, node: AbstractNode
 ) -> None:
-    UNFINISHED_TASKS: TypeSet[SignedImmediateSyftMessageWithoutReply] = get_set(node)
-    UNFINISHED_TASKS.add(message)
-    update_set(UNFINISHED_TASKS, node)
+    UNFINISHED_TASKS: TypeList[SignedImmediateSyftMessageWithoutReply] = get_list(node)
+    UNFINISHED_TASKS.append(message)
+    update_list(UNFINISHED_TASKS, node)
 
 
 def proceed_unfinished_tasks(node: AbstractNode) -> None:
-    UNFINISHED_TASKS: TypeSet[SignedImmediateSyftMessageWithoutReply] = get_set(node)
+    UNFINISHED_TASKS: TypeList[SignedImmediateSyftMessageWithoutReply] = get_list(node)
     for unfinished_task in UNFINISHED_TASKS:
         try:
             node.recv_immediate_msg_without_reply(unfinished_task)
@@ -54,4 +54,4 @@ def proceed_unfinished_tasks(node: AbstractNode) -> None:
             else:
                 print("Hello3")
                 raise e
-    update_set(UNFINISHED_TASKS, node)
+    update_list(UNFINISHED_TASKS, node)
