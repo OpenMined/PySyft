@@ -318,7 +318,7 @@ class DomainClient(Client):
 
     def obj_exists(self, obj_id: UID) -> bool:
         msg = DoesObjectExistMessage(obj_id=obj_id)
-        return self.send_immediate_msg_with_reply(msg=msg).payload
+        return self.send_immediate_msg_with_reply(msg=msg).payload  # type: ignore
 
     @property
     def privacy_budget(self) -> float:

@@ -21,7 +21,7 @@ class DoesObjectExistMessage(NodeRunnableMessageWithReply):
     def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
 
         try:
-            storable_object = node.store[self.obj_id]  # type: ignore
+            node.store[self.obj_id]  # type: ignore
             return True
-        except Exception as e:
+        except Exception:
             return False
