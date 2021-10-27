@@ -715,7 +715,9 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
-    def __rmul__(self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]) -> MPCTensor:
+    def __rmul__(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
         return self * y
 
     def __gt__(
