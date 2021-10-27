@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
 
 # third party
 from nacl.signing import SigningKey
@@ -24,8 +25,14 @@ from ..common.client_manager.dataset_api import DatasetRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
 from ..common.client_manager.vpn_api import VPNAPI
+from ..common.node_service.generic_payload.messages import (
+    GenericPayloadMessageWithReply,
+)
 from ..common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
+)
+from ..common.node_service.peer_discovery.peer_discovery_messages import (
+    PeerDiscoveryMessageWithReply,
 )
 from ..domain.enums import RequestAPIFields
 
@@ -156,6 +163,29 @@ class NetworkClient(Client):
 
         return result
 
+    def domains(self, pandas: bool = True) -> Any:
+        response = self.perform_api_request_generic(
+            syft_msg=PeerDiscoveryMessageWithReply, content={}
+        )
+        result = response.payload.kwargs  # type: ignore
+
+        if result["status"] == "ok":
+            data = result["data"]
+            if pandas:
+                data = DataFrame(data)
+
+            return data
+        return {"status": "error"}
+
+    # TODO: @Ionesio
+    # rename to match API
+    # def domains__getter__(self, id: int) -> Union[Client, ProxyClient]:
+    # if not is_vpn:
+    # sy.connect(url="...")
+    # else is_vpn:
+    # sy.connect(url=NETWORK_PUBLIC_IP, address=DOMAIN_ADDRESS)
+    #   self.domains[id]
+
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
     ) -> SyftMessage:
@@ -166,6 +196,31 @@ class NetworkClient(Client):
         content[RequestAPIFields.REPLY_TO] = self.address
         signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
         # Send to the dest
+        response = self.send_immediate_msg_with_reply(msg=signed_msg)
+        if isinstance(response, ExceptionMessage):
+            raise response.exception_type
+        else:
+            return response
+
+    def perform_api_request_generic(
+        self,
+        syft_msg: Optional[Type[GenericPayloadMessageWithReply]],
+        content: Optional[Dict[Any, Any]] = None,
+    ) -> Any:
+        if syft_msg is None:
+            raise ValueError(
+                "Can't perform this type of api request, the message is None."
+            )
+        else:
+            syft_msg_constructor = syft_msg
+
+        if content is None:
+            content = {}
+        signed_msg = (
+            syft_msg_constructor(kwargs=content)
+            .to(address=self.address, reply_to=self.address)
+            .sign(signing_key=self.signing_key)
+        )  # type: ignore
         response = self.send_immediate_msg_with_reply(msg=signed_msg)
         if isinstance(response, ExceptionMessage):
             raise response.exception_type

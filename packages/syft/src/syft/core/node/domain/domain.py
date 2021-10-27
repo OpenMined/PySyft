@@ -174,6 +174,9 @@ class Domain(Node):
 
         self.post_init()
 
+        # get all the peer clients into memory
+        self.reload_peer_clients()
+
         # run the handlers in an asyncio future
         asyncio.ensure_future(self.run_handlers())
 

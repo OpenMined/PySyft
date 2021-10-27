@@ -189,14 +189,8 @@ def recv_association_request_msg(
         node.node_route.update_route_for_node(  # type: ignore
             node_id=node_id, host_or_ip=msg.metadata["host_or_ip"], is_vpn=is_vpn
         )
-        node.add_route(  # type: ignore
-            node_id=UID.from_string(msg.metadata["node_id"]),
-            node_name=msg.metadata["node_name"],
-            host_or_ip=msg.metadata["host_or_ip"],
-            is_vpn=is_vpn,
-        )
     except Exception as e:
-        error(f"Failed to save the data and call add_route. {e}")
+        error(f"Failed to save the node and node_route rows. {e}")
 
     return SuccessResponseMessage(
         address=msg.reply_to,

@@ -78,32 +78,32 @@ def test_connect_domain1_to_network() -> None:
     assert result["status"] == "ok"
 
 
-@pytest.mark.integration
-def test_connect_domain2_to_network() -> None:
-    root_client = sy.login(
-        email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN2_PORT
-    )
+# @pytest.mark.integration
+# def test_connect_domain2_to_network() -> None:
+#     root_client = sy.login(
+#         email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=DOMAIN2_PORT
+#     )
 
-    # test Syft API
-    root_client.join_network(host_or_ip=NETWORK_PUBLIC_HOST)
+#     # test Syft API
+#     root_client.join_network(host_or_ip=NETWORK_PUBLIC_HOST)
 
-    response = root_client.vpn_status()
-    assert response["status"] == "ok"
-    host = response["host"]
-    assert host["ip"] == DOMAIN2_VPN_IP
-    assert host["hostname"] == "test_domain_2"
-    assert host["os"] == "linux"
+#     response = root_client.vpn_status()
+#     assert response["status"] == "ok"
+#     host = response["host"]
+#     assert host["ip"] == DOMAIN2_VPN_IP
+#     assert host["hostname"] == "test_domain_2"
+#     assert host["os"] == "linux"
 
-    url = f"http://localhost:{DOMAIN2_PORT}/api/v1/login"
-    auth_response = requests.post(
-        url, json={"email": TEST_ROOT_EMAIL, "password": TEST_ROOT_PASS}
-    )
-    auth = auth_response.json()
+#     url = f"http://localhost:{DOMAIN2_PORT}/api/v1/login"
+#     auth_response = requests.post(
+#         url, json={"email": TEST_ROOT_EMAIL, "password": TEST_ROOT_PASS}
+#     )
+#     auth = auth_response.json()
 
-    # test HTTP API
-    url = f"http://localhost:{DOMAIN2_PORT}/api/v1/vpn/join/{NETWORK_PUBLIC_HOST}"
-    headers = {"Authorization": f"Bearer {auth['access_token']}"}
-    response = requests.post(url, headers=headers)
+#     # test HTTP API
+#     url = f"http://localhost:{DOMAIN2_PORT}/api/v1/vpn/join/{NETWORK_PUBLIC_HOST}"
+#     headers = {"Authorization": f"Bearer {auth['access_token']}"}
+#     response = requests.post(url, headers=headers)
 
-    result = response.json()
-    assert result["status"] == "ok"
+#     result = response.json()
+#     assert result["status"] == "ok"

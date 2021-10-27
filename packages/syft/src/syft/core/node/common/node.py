@@ -23,6 +23,9 @@ from nacl.signing import VerifyKey
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 
+# syft absolute
+import syft as sy
+
 # relative
 from ....lib import lib_ast
 from ....logger import debug
@@ -38,7 +41,6 @@ from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
-from ...io.address import Address
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
@@ -85,6 +87,7 @@ from .node_service.testing_services.repr_service import ReprService
 from .node_service.testing_services.smpc_executor_service import SMPCExecutorService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
 from .node_table import Base
+from .node_table.node import Node as NodeRow
 
 # this generic type for Client bound by Client
 ClientT = TypeVar("ClientT", bound=Client)
@@ -290,7 +293,7 @@ class Node(AbstractNode):
         self.guest_verify_key_registry = set()
         self.admin_verify_key_registry = set()
         self.cpl_ofcr_verify_key_registry = set()
-        self.in_memory_client_registry = {}
+        self.peer_route_clients: Dict[UID, Dict[str, Dict[str, Client]]] = {}
         # TODO: remove hacky signaling_msgs when SyftMessages become Storable.
         self.signaling_msgs = {}
 
@@ -362,53 +365,99 @@ class Node(AbstractNode):
             node_type=str(type(self).__name__),
         )
 
+    def add_peer_routes(self, peer: NodeRow) -> None:
+        try:
+            routes = self.node_route.query(node_id=peer.id)
+            for route in routes:
+                self.add_route(
+                    node_id=peer.node_uid,
+                    node_name=peer.node_name,
+                    host_or_ip=route.host_or_ip,
+                    is_vpn=route.is_vpn,
+                )
+        except Exception as e:
+            error(f"Failed to add route to peer {peer}. {e}")
+
+    def reload_peer_clients(self) -> None:
+        peers = self.node.all()
+        for peer in peers:
+            self.add_peer_routes(peer=peer)
+        debug("Finished loading all the peer clients", self.peer_route_clients)
+
     def add_route(
         self, node_id: UID, node_name: str, host_or_ip: str, is_vpn: bool
     ) -> None:
-        pass
-        # node.add_route(
-        #     node_id=node_row.node_id,
-        #     node_name=node_route_row.node_name,
-        #     host_or_ip=node_route_row.host_or_ip,
-        #     is_vpn=True,
-        # )
+        debug(f"Adding route {node_id}, {node_name}, {host_or_ip}, {is_vpn}")
+        vpn_key = "vpn" if is_vpn else "public"
 
-    @property
-    def known_nodes(self) -> List[Client]:
-        """This is a property which returns a list of all known node
-        by returning the clients we used to interact with them from
-        the object store."""
-        return list(self.in_memory_client_registry.values())
+        # make sure the node_id is in the Dict
+        if node_id not in self.peer_route_clients:
+            self.peer_route_clients[node_id] = {"vpn": {}, "public": {}}
+
+        if host_or_ip not in self.peer_route_clients[node_id][vpn_key]:
+            # connect and save the client
+            client = sy.connect(url=f"http://{host_or_ip}/api/v1")
+            self.peer_route_clients[node_id][vpn_key][host_or_ip] = client
+
+    def get_peer_client(self, node_id: UID, only_vpn: bool = True) -> Optional[Client]:
+        # if we don't have it see if we can get it from the db first
+        if node_id not in self.peer_route_clients:
+            peer = self.node.first(node_uid=node_id)
+            self.add_peer_routes(peer=peer)
+
+        if node_id in self.peer_route_clients:
+            routes = self.peer_route_clients[node_id]
+
+            # if we want VPN only then check there are some
+            if only_vpn and "vpn" in routes and len(routes["vpn"]) == 0:
+                # we want VPN only but there are none
+                return None
+            elif "vpn" in routes and len(routes["vpn"]) > 0:
+                # if we have VPN lets use it
+                return list(routes["vpn"].values())[0]
+            elif "public" in routes and len(routes["public"]) > 0:
+                # we only have public and don't care
+                return list(routes["public"].values())[0]
+
+        # there are no routes for this ID
+        return None
+
+    # @property
+    # def known_nodes(self) -> List[Client]:
+    #     """This is a property which returns a list of all known node
+    #     by returning the clients we used to interact with them from
+    #     the object store."""
+    #     return list(self.in_memory_client_registry.values())
 
     @property
     def id(self) -> UID:
         traceback_and_raise(NotImplementedError)
 
-    @property
-    def known_child_nodes(self) -> List[Address]:
-        debug(f"> {self.pprint} Getting known Children Nodes")
-        if self.child_type_client_type is not None:
-            return [
-                client
-                for client in self.in_memory_client_registry.values()
-                if all(
-                    [
-                        self.network is None
-                        or client.network is None
-                        or self.network == client.network,
-                        self.domain is None
-                        or client.domain is None
-                        or self.domain == client.domain,
-                        self.device is None
-                        or client.device is None
-                        or self.device == client.device,
-                        self.vm is None or client.vm is None or self.vm == client.vm,
-                    ]
-                )
-            ]
-        else:
-            debug(f"> Node {self.pprint} has no children")
-            return []
+    # @property
+    # def known_child_nodes(self) -> List[Address]:
+    #     debug(f"> {self.pprint} Getting known Children Nodes")
+    #     if self.child_type_client_type is not None:
+    #         return [
+    #             client
+    #             for client in self.in_memory_client_registry.values()
+    #             if all(
+    #                 [
+    #                     self.network is None
+    #                     or client.network is None
+    #                     or self.network == client.network,
+    #                     self.domain is None
+    #                     or client.domain is None
+    #                     or self.domain == client.domain,
+    #                     self.device is None
+    #                     or client.device is None
+    #                     or self.device == client.device,
+    #                     self.vm is None or client.vm is None or self.vm == client.vm,
+    #                 ]
+    #             )
+    #         ]
+    #     else:
+    #         debug(f"> Node {self.pprint} has no children")
+    #         return []
 
     def message_is_for_me(self, msg: Union[SyftMessage, SignedMessage]) -> bool:
         traceback_and_raise(NotImplementedError)
