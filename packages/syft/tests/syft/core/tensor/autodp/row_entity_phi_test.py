@@ -29,6 +29,11 @@ def traskmaster() -> Entity:
 
 
 @pytest.fixture
+def kritika() -> Entity:
+    return Entity(name="Kritika")
+
+
+@pytest.fixture
 def dims() -> int:
     """This generates a random integer for the number of dimensions in our testing tensors"""
     dims = int(max(3, np.random.randint(10) + 3))  # Avoid size 0 and 1
@@ -127,6 +132,18 @@ def row_data_trask(
             )
         )
     return reference_data
+
+
+@pytest.fixture
+def row_data_kritika(
+    row_data_trask: list,
+    kritika: Entity
+) -> List:
+    """This generates a random number of SEPTs to populate the REPTs."""
+    output = []
+    for tensor in row_data_trask:
+        output.append(SEPT.sept_like(tensor, kritika))
+    return output
 
 
 @pytest.fixture
@@ -967,6 +984,15 @@ def test_le_same_entities(row_data_trask: List) -> None:
         assert (output2).child[i].child.all()
 
 
+def test_le_diff_entities(row_data_trask: List, row_data_kritika: List) -> None:
+    tensor = REPT(rows=row_data_trask)
+    second_tensor = REPT(rows=row_data_kritika)
+    assert tensor.shape == second_tensor.shape
+    output = tensor <= second_tensor
+    assert isinstance(output, IGT)
+    assert (output._values() == np.ones_like(output._values())).all()
+
+
 def test_ge_same_entities(row_data_trask: List) -> None:
     tensor = REPT(rows=row_data_trask)
     second_tensor = REPT(rows=row_data_trask)
@@ -979,6 +1005,15 @@ def test_ge_same_entities(row_data_trask: List) -> None:
     output2 = third_tensor >= tensor
     for i in range(len(tensor.child)):
         assert (output2).child[i].child.all()
+
+
+def test_ge_diff_entities(row_data_trask: List, row_data_kritika: List) -> None:
+    tensor = REPT(rows=row_data_trask)
+    second_tensor = REPT(rows=row_data_kritika)
+    assert tensor.shape == second_tensor.shape
+    output = tensor >= second_tensor
+    assert isinstance(output, IGT)
+    assert (output._values() == np.ones_like(output._values())).all()
 
 
 def test_lt_same_entities(row_data_trask: List) -> None:
@@ -995,6 +1030,15 @@ def test_lt_same_entities(row_data_trask: List) -> None:
         assert (output2).child[i].child.all()
 
 
+def test_lt_diff_entities(row_data_trask: List, row_data_kritika: List) -> None:
+    tensor = REPT(rows=row_data_trask)
+    second_tensor = REPT(rows=row_data_kritika)
+    assert tensor.shape == second_tensor.shape
+    output = tensor < second_tensor
+    assert isinstance(output, IGT)
+    assert (output._values() == np.zeros_like(output._values())).all()
+
+
 def test_gt_same_entities(row_data_trask: List) -> None:
     tensor = REPT(rows=row_data_trask)
     second_tensor = REPT(rows=row_data_trask)
@@ -1007,6 +1051,15 @@ def test_gt_same_entities(row_data_trask: List) -> None:
     output2 = third_tensor > tensor
     for i in range(len(tensor.child)):
         assert (output2).child[i].child.all()
+
+
+def test_gt_diff_entities(row_data_trask: List, row_data_kritika: List) -> None:
+    tensor = REPT(rows=row_data_trask)
+    second_tensor = REPT(rows=row_data_kritika)
+    assert tensor.shape == second_tensor.shape
+    output = tensor > second_tensor
+    assert isinstance(output, IGT)
+    assert (output._values() == np.zeros_like(output._values())).all()
 
 
 def test_clip(row_data_trask: List, highest: int) -> None:
