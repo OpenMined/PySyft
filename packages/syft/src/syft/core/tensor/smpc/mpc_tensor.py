@@ -528,14 +528,38 @@ class MPCTensor(PassthroughTensor):
         return res_mpc
 
     @staticmethod
-    def sanity_checks(mpc_tensor: MPCTensor, other: Any) -> Tuple[MPCTensor, Any]:
-        """Performs sanity checks to share data to whole superset of parites involved.
+    def force_matching_shareholders_across_private_args(
+        mpc_tensor: MPCTensor, other: Any
+    ) -> Tuple[MPCTensor, Any]:
+        """When performing SMPC across multiple private arguments, we need to ensure that all private
+        variables have compatible shareholders. This entails taking each argument's list of shareholders
+        (including self), computing the union of all shareholders, and then sharing/re-sharing each
+        argument across all shareholders. Once all private arguments have the same set of shareholders, we
+        are ready to perform private SMPC operations.
+
+        The reason this is ok to do from a security standpoint is that, for any object, expanding the set of
+        shareholders doesn't reveal any additional information about that object to new shareholders. It just gives
+        new shareholders VETO power over any operations on the object, VETO power over any derivative creations from
+        the object, and VETO power over the decryption of either the object or its derivatives.
+
+        This trust model fits data science well because it means that if you're... say... adding a tensor owned by Bob
+        with a tensor owned by Alice, the result should be under joint control of both Bob and Alice. That is to say,
+        both Bob and Alice should have to agree in order for the result to be used or decrypted. In order to create this
+        property, we must first take each argument going into said addition and expand the shareholders of both
+        sides of the addition to be both Bob and Alice so that the result of the addition is also owned by Bob and
+        Alice.
+
+        For more information on this, see courses.openmined.org. https://mortendahl.github.io/ is also great.
+
         Args:
             mpc_tensor(MPCTensor): input MPCTensor to perform sanity check on.
             other (Any): input operand.
         Returns:
             Tuple[MPCTensor,Any]: Rehared Tensor values.
         """
+
+        # if self is MPCTensor and other is Pointer (not SMPC shared), then share other
+        # so that this operation can be between two SMPC tensors.
         if utils.ispointer(other):
             parties = mpc_tensor.parties
             client = other.client
@@ -633,8 +657,10 @@ class MPCTensor(PassthroughTensor):
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
 
-        x, y = MPCTensor.sanity_checks(self, y)
+        x, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
+
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
+
         if isinstance(y, MPCTensor):
             result = x.__apply_private_op(y, op_str, **kwargs)
             y_ring_size = y.ring_size
@@ -695,7 +721,7 @@ class MPCTensor(PassthroughTensor):
     def __mul__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.sanity_checks(self, y)
+        self, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
         if isinstance(y, MPCTensor):
@@ -723,7 +749,7 @@ class MPCTensor(PassthroughTensor):
     def __gt__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.sanity_checks(self, y)
+        self, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
         res_shares = spdz.gt_master(self, y, "mul")
         y_shape = getattr(y, "shape", (1,))
         new_shape = utils.get_shape("gt", self.mpc_shape, y_shape)
