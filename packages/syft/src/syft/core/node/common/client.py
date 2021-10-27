@@ -97,6 +97,9 @@ class Client(AbstractNodeClient):
 
         self.store = StoreClient(client=self)
 
+    def obj_exists(self, obj_id: UID) -> bool:
+        raise NotImplemented
+
     @property
     def icon(self) -> str:
         icon = "📡"
