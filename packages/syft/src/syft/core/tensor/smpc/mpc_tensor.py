@@ -528,7 +528,7 @@ class MPCTensor(PassthroughTensor):
         return res_mpc
 
     @staticmethod
-    def force_matching_shareholders_across_private_args(
+    def force_matching_shareholders_across_self_and_other_if_other_is_private(
         mpc_tensor: MPCTensor, other: Any
     ) -> Tuple[MPCTensor, Any]:
         """When performing SMPC across multiple private arguments, we need to ensure that all private
@@ -558,38 +558,83 @@ class MPCTensor(PassthroughTensor):
             Tuple[MPCTensor,Any]: Rehared Tensor values.
         """
 
-        # if self is MPCTensor and other is Pointer (not SMPC shared), then share other
-        # so that this operation can be between two SMPC tensors.
+        # If the other argument is a pointer, then it only has one "shareholder" (the domain which is storing the
+        # object the pointer is pointing to). Since this is being called on an MPCTensor (self), which always has
+        # multiple shareholders, then we need to share the current pointer with the shareholders of self
+        # so that self and other can be used in tensor operations (such as __add__, __mul__, etc.)
         if utils.ispointer(other):
+
+            # self parties
             parties = mpc_tensor.parties
+
+            # the party of the pointer
             client = other.client
+
+            # Since it's theoretically possible for shape information to be based on private data, we
+            # track shape on pointers and MPCTensors on the client side and use client side logic to
+            # determine what the resulting shape of each operation should be. That way, no shape information
+            # passes from server -> client which could leak info. In this case, since we're just SMPC sharing
+            # a pointer, the result has the same shape as the pointer.
             public_shape = other.public_shape
+
+            #if the pointer doesn't have public shape something went wrong (legacy code?) so trigger an error.
             if public_shape is None:
                 # TODO: Should be modified after Trask's Synthetic data PR.
+                # TRASK: I'm not sure this to do is required. All pointers have public shape
+                # information and so raising an exception here is appropriate.
+                # I'm not confident enough to delete this to do yet though.
                 raise ValueError("The input tensor pointer should have public shape.")
+
+            # now we must calculate all of the shareholders who need to have shared ownership over 'other' before
+            # we can compute on it with 'self' (mpc_tensor).
+
+            # Special Case: if the 'other' pointer is NOT pointing to any of the shareholders of 'self' (mpc_tensor),
+            # then we must add one additional shareholder to 'self' (mpc_tensor), the owner of the pointer.
             if client not in parties:
                 new_parties = [client]
                 new_parties += parties
                 mpc_tensor = MPCTensor.reshare(mpc_tensor, new_parties)
 
+            # In all cases, we must MPC share the pointer 'other' across all parties of SMPCTensor
+            # Look closely and you'll see that new_parties includes the pointer's owner in all cases
+            # because of the previous check. Also, even though 'other' is a Pointer, we can just pass
+            # it into the MPCTensor constructor because it knows how to handle pointer arguments (it will smpc share
+            # the pointer).
             other = MPCTensor(secret=other, parties=new_parties, shape=public_shape)
 
+        # However, if the 'other' argument is instead an MPCTensor, then we must compute the union of the two sets
+        # of shareholders and reshare both 'self' (mpc_tensor) and 'other' so that both have the same shareholders.
+        # That is to say, if self and other had 2 and 3 non-overlapping shareholders respectively, we must
+        # create two new variables (overloaded to be mpc_tensor, and other) which both have the same 5 shareholders.
         elif isinstance(other, MPCTensor):
-            p1 = set(mpc_tensor.parties)  # parties in first MPCTensor
-            p2 = set(other.parties)  # parties in second MPCTensor.
+
+            p1 = set(mpc_tensor.parties)  # parties/shareholders in first MPCTensor
+            p2 = set(other.parties)  # parties/shareholders in second MPCTensor.
+
+            # if the two MPCTensors don't have the same parties, expand them to the union of both
             if p1 != p2:
+
+                # calculate the union of all shareholders
                 parties_union = p1.union(p2)
+
+                # expand 'self' to include the shareholders from 'other'
                 mpc_tensor = (
                     MPCTensor.reshare(mpc_tensor, parties_union)
                     if p1 != parties_union
                     else mpc_tensor
                 )
+
+                # expand 'other' to include the shareholders from 'self'
                 other = (
                     MPCTensor.reshare(other, parties_union)
                     if p2 != parties_union
                     else other
                 )
 
+        # return a new 'self' and a new 'other' ready for MPC computation!
+        # Note: if 'other' was a public value (not a Pointer or an MPCTensor), it would have been
+        # unmodified in this method. It's also ready for computation but it'll end up just being
+        # sent to the remote worker as a public value at a later step.
         return mpc_tensor, other
 
     def __apply_private_op(
@@ -657,7 +702,7 @@ class MPCTensor(PassthroughTensor):
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
 
-        x, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
+        x, y = MPCTensor.force_matching_shareholders_across_self_and_other_if_other_is_private(self, y)
 
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
 
@@ -721,7 +766,7 @@ class MPCTensor(PassthroughTensor):
     def __mul__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
+        self, y = MPCTensor.force_matching_shareholders_across_self_and_other_if_other_is_private(self, y)
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
         if isinstance(y, MPCTensor):
@@ -749,7 +794,7 @@ class MPCTensor(PassthroughTensor):
     def __gt__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
+        self, y = MPCTensor.force_matching_shareholders_across_self_and_other_if_other_is_private(self, y)
         res_shares = spdz.gt_master(self, y, "mul")
         y_shape = getattr(y, "shape", (1,))
         new_shape = utils.get_shape("gt", self.mpc_shape, y_shape)
