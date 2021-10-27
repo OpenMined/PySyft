@@ -528,7 +528,7 @@ class MPCTensor(PassthroughTensor):
         return res_mpc
 
     @staticmethod
-    def force_matching_shareholders_across_self_and_other_if_other_is_private(
+    def force_matching_shareholders_across_private_args(
         mpc_tensor: MPCTensor, other: Any
     ) -> Tuple[MPCTensor, Any]:
         """When performing SMPC across multiple private arguments, we need to ensure that all private
@@ -577,7 +577,7 @@ class MPCTensor(PassthroughTensor):
             # a pointer, the result has the same shape as the pointer.
             public_shape = other.public_shape
 
-            #if the pointer doesn't have public shape something went wrong (legacy code?) so trigger an error.
+            # if the pointer doesn't have public shape something went wrong (legacy code?) so trigger an error.
             if public_shape is None:
                 # TODO: Should be modified after Trask's Synthetic data PR.
                 # TRASK: I'm not sure this to do is required. All pointers have public shape
@@ -690,9 +690,7 @@ class MPCTensor(PassthroughTensor):
         y: Union[int, float, torch.Tensor, np.ndarray, MPCTensor],
         op_str: str,
     ) -> MPCTensor:
-        """Apply an operation on "self" which is a MPCTensor "y".
-
-         This function checks if "y" is private or public value.
+        """Apply an operation on "self" with argument "y" which can be one of many possible types.
 
         Args:
             y (Union[int, float, torch.Tensor, np.ndarray, MPCTensor]: tensor to apply the operation.
@@ -702,30 +700,68 @@ class MPCTensor(PassthroughTensor):
             MPCTensor. the operation "op_str" applied on "self" and "y"
         """
 
-        x, y = MPCTensor.force_matching_shareholders_across_self_and_other_if_other_is_private(self, y)
+        # Step 1: if y is private, we need to make sure that x and y have the same shareholders.
+        # if y is public, then do nothing.
+        x, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
 
+        # Step 2: For SMPC operations, each shareholder computes the full list of actions
+        # that every shareholder will run (including what IDs those operations will have, produce,
+        # etc.) They then select the subset of actions that only they (Shareholder <x>) will actually
+        # execute and then executes them. In order for all parties to generate the list of actions
+        # identically, they need to coordinate their random number generators (primarliy so that they generate the
+        # same IDs for objects). This is the seed which provides for that coordination.
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
 
+        # Step 3: Check that ring size matches between self and arguments.
+        # Ring size needs to match between the arguments that go in and the argument that comes out.
+        # Ring size corresponds to the type of data passed in (int32 vs int64 for example). See
+        # get_ring_size_from_secret for more details. More on ring sizes in courses.openmined.org
         if isinstance(y, MPCTensor):
-            result = x.__apply_private_op(y, op_str, **kwargs)
+            # if y is private then the ring size is an attribute explicitly encoded
             y_ring_size = y.ring_size
+
         else:
-            result = x.__apply_public_op(y, op_str, **kwargs)
+            # if y is some sort of public value (like an int or numpy array), then we need
+            # to infer it from the data type using a helper function
             y_ring_size = MPCTensor.get_ring_size_from_secret(y)
 
+        # If the ring sizes don't match then we can't do the computation so we'll trigger an error
+        # before the computation occurs.
         if self.ring_size != y_ring_size:
             raise ValueError(
                 f"Ring size mismatch between self {self.ring_size} and other {y_ring_size}"
             )
 
+        # Step 4: Execute computation
+
+        # If y is private, then run the private op algorithm
+        if isinstance(y, MPCTensor):
+            resulting_shares = x.__apply_private_op(y, op_str, **kwargs)
+        # If y is public tensor, then run the simpler public op algorithm
+        else:
+            resulting_shares = x.__apply_public_op(y, op_str, **kwargs)
+
+        # Step 5: Calculate shape of result using only publicly available data (so not conditioned on private data).
+
+        # For this step, first we need to get shape information from y. Usually this is an attribute 'shape'
+        # but in the case that it isn't available, we'll default to (1,) such as if a scalar is passed in. Honestly
+        # this is an opportunity for bugs and needs to be addressed. TODO: more concrete support for inferring shape.
         y_shape = getattr(y, "shape", (1,))
 
+        # infer the shape of the result using only public information about the shape of the inputs
+        # to the operation and the operation itself.
         shape = utils.get_shape(op_str, self.shape, y_shape)
 
+        # Step 6: Calculate the ring size of the result
+        # TODO (from TRASK): could this actually change? Why do we need to infer this?
         ring_size = utils.get_ring_size(self.ring_size, y_ring_size)
 
+        # Step 7: Create the resulting MPCTensor object.
+        # Note: this doesn't mean the computation has completed. This MPCTensor object is merely a pointer
+        # to where the result of the MPC computation will be deposited. Call .block to wait for the computation
+        # to be finished.
         result = MPCTensor(
-            shares=result, shape=shape, ring_size=ring_size, parties=x.parties
+            shares=resulting_shares, shape=shape, ring_size=ring_size, parties=x.parties
         )
 
         return result
@@ -766,7 +802,7 @@ class MPCTensor(PassthroughTensor):
     def __mul__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.force_matching_shareholders_across_self_and_other_if_other_is_private(self, y)
+        self, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
         if isinstance(y, MPCTensor):
@@ -794,7 +830,9 @@ class MPCTensor(PassthroughTensor):
     def __gt__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.force_matching_shareholders_across_self_and_other_if_other_is_private(self, y)
+
+        self, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
+
         res_shares = spdz.gt_master(self, y, "mul")
         y_shape = getattr(y, "shape", (1,))
         new_shape = utils.get_shape("gt", self.mpc_shape, y_shape)
