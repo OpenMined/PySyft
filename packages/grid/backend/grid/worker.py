@@ -33,7 +33,7 @@ def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
             print("Hello1")
             if isinstance(e, RetriableError):
                 print("Hello2")
-                register_unfinished_task(obj_msg)
+                register_unfinished_task(obj_msg,node)
             else:
                 print("Hello3")
                 raise e
