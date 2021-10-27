@@ -673,16 +673,26 @@ class MPCTensor(PassthroughTensor):
         res = self.__apply_op(y, "add")
         return res
 
-    def sub(self, y: MPCTensor) -> MPCTensor:
+    def __add__(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        return self.__apply_op(y, "add")
+
+    def __radd__(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        return self.__apply_op(y, "add")
+
+    def __sub__(self, y: MPCTensor) -> MPCTensor:
         res = self.__apply_op(y, "sub")
         return res
 
-    def rsub(self, y: MPCTensor) -> MPCTensor:
+    def __rsub__(self, y: MPCTensor) -> MPCTensor:
         new_self = self * (-1)
         res = new_self.__apply_op(y, "add")
         return res
 
-    def mul(
+    def __mul__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         self, y = MPCTensor.sanity_checks(self, y)
@@ -705,7 +715,10 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
-    def gt(
+    def __rmul__(self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]):
+        return self * y
+
+    def __gt__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         self, y = MPCTensor.sanity_checks(self, y)
@@ -716,7 +729,7 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
-    def matmul(
+    def __matmul__(
         self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
     ) -> MPCTensor:
         """Apply the "matmul" operation between "self" and "y"
@@ -770,15 +783,6 @@ class MPCTensor(PassthroughTensor):
 
         res = MPCTensor(shares=shares, parties=self.parties, shape=self.shape)
         return res
-
-    __add__ = add
-    __radd__ = add
-    __sub__ = sub
-    __rsub__ = rsub
-    __mul__ = mul
-    __rmul__ = mul
-    __matmul__ = matmul
-    __gt__ = gt
 
 
 @implements(MPCTensor, np.add)
