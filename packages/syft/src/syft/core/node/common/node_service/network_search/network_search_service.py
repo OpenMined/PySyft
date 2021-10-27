@@ -6,10 +6,10 @@ from typing import Type
 from nacl.signing import VerifyKey
 
 # relative
-from ......grid.client.client import connect
-from ......grid.client.grid_connection import GridHTTPConnection
+from ...... import deserialize
 from .....common.message import ImmediateSyftMessageWithReply
 from ....abstract.node import AbstractNode
+from ...node_table.association_request import AssociationRequest
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from .network_search_messages import NetworkSearchMessage
@@ -24,22 +24,18 @@ class NetworkSearchService(ImmediateNodeServiceWithReply):
         msg: NetworkSearchMessage,
         verify_key: VerifyKey,
     ) -> NetworkSearchResponse:
-        queries = set(msg.content.get("query", []))
-        associations = node.association_requests.associations()  # type: ignore
+        queries = set(msg.content)
+        associations = node.association_requests.all()  # type: ignore
 
-        def filter_domains(url: str) -> bool:
-            domain = connect(
-                url=url,  # Domain Address
-                conn_type=GridHTTPConnection,  # HTTP Connection Protocol
-            )
-
-            for data in domain.store:
+        def filter_domains(association: AssociationRequest) -> bool:
+            # source is the domain in an association
+            source = deserialize(association.source, from_bytes=True)
+            for data in source.store:
                 if queries.issubset(set(data.tags)):
                     return True
             return False
 
-        filtered_nodes = list(filter(lambda x: filter_domains(x.address), associations))
-
+        filtered_nodes = list(filter(lambda x: filter_domains(x), associations))
         match_nodes = [node.address for node in filtered_nodes]
 
         return NetworkSearchResponse(

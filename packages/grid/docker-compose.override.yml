@@ -45,6 +45,7 @@ services:
   backend:
     volumes:
       - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
       - ../syft:/app/syft
       - ../../notebooks:/notebooks
       - ./data/package-cache:/root/.cache
@@ -74,6 +75,7 @@ services:
       - backend
     volumes:
       - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
     environment:
@@ -101,6 +103,7 @@ services:
       - backend
     volumes:
       - ./backend/grid:/app/grid #- ./backend/app:/app
+      - ./backend/alembic:/app/alembic
       - ../syft:/app/syft #- ../syft:/app/syft
       - ../../notebooks:/notebooks
       - ./data/package-cache:/root/.cache

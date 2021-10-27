@@ -26,10 +26,15 @@ from ...io.location import SpecificLocation
 from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
 from ..common.node_manager.group_manager import GroupManager
+from ..common.node_manager.node_manager import NodeManager
+from ..common.node_manager.node_route_manager import NodeRouteManager
 from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
 from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
+)
+from ..common.node_service.network_search.network_search_service import (
+    NetworkSearchService,
 )
 from ..common.node_service.node_setup.node_setup_messages import (
     CreateInitialSetUpMessage,
@@ -69,7 +74,6 @@ class Network(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
-        db: Any = None,
     ):
         super().__init__(
             name=name,
@@ -80,7 +84,6 @@ class Network(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_engine=db_engine,
-            db=db,
         )
 
         # specific location with name
@@ -91,6 +94,8 @@ class Network(Node):
         self.users = UserManager(db_engine)
         self.roles = RoleManager(db_engine)
         self.groups = GroupManager(db_engine)
+        self.node = NodeManager(db_engine)
+        self.node_route = NodeRouteManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
 
         # Grid Network Services
@@ -103,6 +108,7 @@ class Network(Node):
         self.immediate_services_with_reply.append(VPNRegisterService)
         self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(PingService)
+        self.immediate_services_with_reply.append(NetworkSearchService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
