@@ -22,6 +22,7 @@ from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
+from ..common.client_manager.domain_api import DomainRequestAPI
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
 from ..common.client_manager.vpn_api import VPNAPI
@@ -68,6 +69,7 @@ class NetworkClient(Client):
         self.roles = RoleRequestAPI(client=self)
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
+        self.domains = DomainRequestAPI(client=self)
 
         self.post_init()
 
@@ -162,20 +164,6 @@ class NetworkClient(Client):
             result = DataFrame(result)
 
         return result
-
-    def domains(self, pandas: bool = True) -> Any:
-        response = self.perform_api_request_generic(
-            syft_msg=PeerDiscoveryMessageWithReply, content={}
-        )
-        result = response.payload.kwargs  # type: ignore
-
-        if result["status"] == "ok":
-            data = result["data"]
-            if pandas:
-                data = DataFrame(data)
-
-            return data
-        return {"status": "error"}
 
     # TODO: @Ionesio
     # rename to match API
