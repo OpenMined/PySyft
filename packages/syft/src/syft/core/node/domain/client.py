@@ -14,7 +14,6 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import names
 import pandas as pd
-from pandas import DataFrame
 
 # relative
 from .... import deserialize
@@ -27,6 +26,9 @@ from ...io.address import Address
 from ...io.location import Location
 from ...io.location.specific import SpecificLocation
 from ...io.route import Route
+from ...node.common.node_service.network_search.network_search_messages import (
+    NetworkSearchMessage,
+)
 from ...pointer.pointer import Pointer
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
@@ -40,9 +42,6 @@ from ..common.client_manager.user_api import UserRequestAPI
 from ..common.client_manager.vpn_api import VPNAPI
 from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import (
     GetRemainingBudgetMessage,
-)
-from ..common.node_service.network_search.network_search_messages import (
-    NetworkSearchMessage,
 )
 from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
 from ..common.node_service.node_setup.node_setup_messages import UpdateSetupMessage
@@ -364,7 +363,6 @@ class DomainClient(Client):
         self._perform_grid_request(grid_msg=LoadObjectMessage, content=content)
 
     def setup(self, *, domain_name: Optional[str], **kwargs: Any) -> Any:
-
         if domain_name is None:
             domain_name = names.get_full_name() + "'s Domain"
             logging.info(
@@ -405,14 +403,9 @@ class DomainClient(Client):
             grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
         )
         if pandas:
-            response = DataFrame(response)
+            response = pd.DataFrame(response)
 
         return response
-
-    def apply_to_network(
-        self, target: Client, route_index: int = 0, **metadata: str
-    ) -> None:
-        self.association.create(source=self, target=target, metadata=metadata)
 
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
@@ -429,6 +422,33 @@ class DomainClient(Client):
             raise response.exception_type
         else:
             return response
+
+    def get_setup(self, **kwargs: Any) -> Any:
+        return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
+
+    def apply_to_network(
+        self, domain_vpn_ip: str, network_vpn_ip: str, **metadata: str
+    ) -> None:
+        # TODO: refactor
+        # Step 1: send a message to the Network from the Domain
+        # this means the first message contains the VPN IP for the network
+
+        # Step 2: the contents of message is the VPN IPs, because many domains
+        # will be behind firewalls, we want to use the VPN IP as both directions should
+        # be able to connect to each other
+
+        # domain_vpn_ip = Domain VPN host_or_ip because thats the only IP the Network
+        # can reach the Domain on, and will go into the association request table
+        # after the association is approved these IPs will be added to the node and
+        # node_route tables to route all traffic from the Network node to that Domain
+
+        # network_vpn_ip = Network VPN host_or_ip because that will be what goes into the
+        # association request table and then gets used to route all traffic from
+        # the Domain to the Network node
+
+        self.association.create(
+            source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
+        )
 
     @property
     def id(self) -> UID:

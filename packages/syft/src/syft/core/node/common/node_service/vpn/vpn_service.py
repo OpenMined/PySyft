@@ -27,7 +27,6 @@ from .vpn_messages import VPNStatusReplyMessage
 
 class VPNConnectService(ImmediateNodeServiceWithReply):
     @staticmethod
-    # @service_auth(root_only=True)
     @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
@@ -49,7 +48,6 @@ class VPNConnectService(ImmediateNodeServiceWithReply):
 
 class VPNJoinService(ImmediateNodeServiceWithReply):
     @staticmethod
-    # @service_auth(root_only=True)
     @service_auth(guests_welcome=True)
     def process(
         node: AbstractNode,
