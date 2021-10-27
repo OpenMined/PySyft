@@ -15,6 +15,7 @@ import numpy as np
 # relative
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.utils import get_nr_bits
+from ...store.crypto_primitive_provider import CryptoPrimitiveProvider
 
 
 class ABY3:
@@ -90,7 +91,27 @@ class ABY3:
 
         TODO: Should modify ripple carry adder to parallel prefix adder.
         """
+        parties = a[0].parties
+        parties_info = a[0].parties_info
+
+        shape_x = tuple(a[0].shape)  # type: ignore
+        shape_y = tuple(b[0].shape)  # type: ignore
         ring_size = 2 ** 32
+
+        # For ring_size 2 we generate those before hand
+        primitives = CryptoPrimitiveProvider.generate_primitives(
+            f"beaver_mul",
+            nr_instances=32,
+            parties=parties,
+            g_kwargs={
+                "a_shape": shape_x,
+                "b_shape": shape_y,
+                "parties_info": parties_info,
+            },
+            p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+            ring_size=2,
+        )
+
         ring_bits = get_nr_bits(ring_size)
         c = np.array([0], dtype=np.bool)  # carry bits of addition.
         result: List[MPCTensor] = []
