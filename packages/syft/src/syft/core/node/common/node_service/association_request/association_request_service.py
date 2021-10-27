@@ -11,6 +11,9 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
+# syft absolute
+import syft as sy
+
 # relative
 from ......logger import error
 from ......logger import info
@@ -43,11 +46,8 @@ def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, Any]:
         .sign(signing_key=node.signing_key)
     )
     vpn_status = node.recv_immediate_msg_with_reply(msg=vpn_status_msg)
-    print("what response message", vpn_status, type(vpn_status))
-    print("fdsa", vpn_status.message)
     vpn_status_message_contents = vpn_status.message
     status = vpn_status_message_contents.payload.kwargs  # type: ignore
-    print("afdsafdsa", status)
     network_vpn_ip = status["host"]["ip"]
     node_name = status["host"]["hostname"]
     metadata = {
@@ -56,8 +56,12 @@ def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, Any]:
         "node_name": str(node_name),
         "type": f"{str(type(node).__name__).lower()}",
     }
-    print("prepared the metadata", metadata)
     return metadata
+
+
+def check_if_is_vpn(host_or_ip: str) -> bool:
+    VPN_IP_SUBNET = "100.64.0."
+    return host_or_ip.startswith(VPN_IP_SUBNET)
 
 
 # domain gets this message from a user and will try to send to the network
@@ -78,8 +82,6 @@ def send_association_request_msg(
             f"Node {node} - send_association_request_msg: {node} got user performing the action. User: {user}"
         )
 
-        domain_id = msg.source.target_id.id.no_dash
-
         # Build an association request to send to the target
         user_priv_key = SigningKey(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
@@ -91,17 +93,19 @@ def send_association_request_msg(
             # TODO: refactor to not stuff our vpn_metadata into the normal metadata
             # because it gets blindly **splatted into the database
             vpn_metadata = get_vpn_status_metadata(node=node)
-            print("did we get the domains metadata", vpn_metadata)
             metadata.update(vpn_metadata)
-            print("what is the msg metadata", metadata)
-            # print("updated_metadata", updated_metadata)
         except Exception as e:
-            print("failed to get vpn status", e)
+            error(f"failed to get vpn status. {e}")
+
+        metadata["node_name"] = (
+            node.name if node.name else ""
+        )  # tell the network what our name is
+        target_client = sy.connect(url=f"http://{msg.target}/api/v1")
 
         target_msg: SignedImmediateSyftMessageWithReply = (
             ReceiveAssociationRequestMessage(
-                address=msg.target.address,
-                reply_to=msg.source.address,
+                address=target_client.address,
+                reply_to=node.address,
                 metadata=metadata,
                 source=msg.source,
                 target=msg.target,
@@ -113,7 +117,8 @@ def send_association_request_msg(
             f"Node {node} - send_association_request_msg: sending ReceiveAssociationRequestMessage."
         )
         try:
-            msg.target.send_immediate_msg_with_reply(msg=target_msg)
+            # we need target
+            target_client.send_immediate_msg_with_reply(msg=target_msg)
         except Exception as e:
             error(f"Failed to send ReceiveAssociationRequestMessage. {e}")
 
@@ -126,12 +131,11 @@ def send_association_request_msg(
             f"Node {node} - send_association_request_msg: adding requests to the Database."
         )
         node.association_requests.create_association_request(
-            node=msg.target.name,  # type: ignore
+            node_name=target_client.name,  # type: ignore
+            node_address=target_client.target_id.id.no_dash,  # type: ignore
             status=AssociationRequestResponses.PENDING,
-            metadata=msg.metadata,
             source=msg.source,
             target=msg.target,
-            address=domain_id,
         )
     else:  # If not authorized
         raise AuthorizationError("You're not allowed to create an Association Request!")
@@ -148,57 +152,51 @@ def recv_association_request_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    if not msg.target.name:
-        raise MissingRequestKeyError(
-            message="Invalid request payload, empty fields (node_name)!"
-        )
-    domain_id = msg.source.target_id.id.no_dash
-    _previous_request = node.association_requests.contain(address=domain_id)
+    _previous_request = node.association_requests.contain(
+        source=msg.source, target=msg.target
+    )
     info(
         f"Node {node} - recv_association_request_msg: prev request exists {not _previous_request}."
     )
 
     # Create a new Association Request if the handshake value doesn't exist in the database
     if not _previous_request:
+        # this side happens on the network
         info(
             f"Node {node} - recv_association_request_msg: creating a new association request."
         )
         node.association_requests.create_association_request(
-            node=msg.target.name,
-            metadata=dict(msg.metadata),
+            node_name=msg.metadata["node_name"],
+            node_address=msg.reply_to.target_id.id.no_dash,
             status=AssociationRequestResponses.PENDING,
             source=msg.source,
             target=msg.target,
-            address=domain_id,
         )
     else:
+        # this side happens on the domain
         info(
             f"Node {node} - recv_association_request_msg: answering an existing association request."
         )
-        print("We should only be on the domain side")
-        node.association_requests.set(domain_id, msg.response)  # type: ignore
-        print("what metadata", msg.metadata)
+        node.association_requests.set(source=msg.source, target=msg.target, response=msg.response)  # type: ignore
 
-        # get or create a new node that represents the network
-        try:
-            print("before saving the data", node, node.node)  # type: ignore
-            node_row = node.node.create_or_get_node(  # type: ignore
-                node_uid=msg.metadata["node_id"], node_name=msg.metadata["node_name"]
-            )
-            print("got the first node row", node_row)
-            node.node_route.update_route_for_node(  # type: ignore
-                node_id=node_row.id, host_or_ip=msg.metadata["host_or_ip"], is_vpn=True
-            )
-            print("after saving the data")
-
-            node.add_route(  # type: ignore
-                node_id=UID.from_string(msg.metadata["node_id"]),
-                node_name=msg.metadata["node_name"],
-                host_or_ip=msg.metadata["host_or_ip"],
-                is_vpn=True,
-            )
-        except Exception as e:
-            print("failed to save the data and call add_route", e)
+    # get or create a new node and node_route which represents the opposing node which
+    # is supplied in the metadata
+    try:
+        node_id = node.node.create_or_get_node(  # type: ignore
+            node_uid=msg.metadata["node_id"], node_name=msg.metadata["node_name"]
+        )
+        is_vpn = check_if_is_vpn(host_or_ip=msg.metadata["host_or_ip"])
+        node.node_route.update_route_for_node(  # type: ignore
+            node_id=node_id, host_or_ip=msg.metadata["host_or_ip"], is_vpn=is_vpn
+        )
+        node.add_route(  # type: ignore
+            node_id=UID.from_string(msg.metadata["node_id"]),
+            node_name=msg.metadata["node_name"],
+            host_or_ip=msg.metadata["host_or_ip"],
+            is_vpn=is_vpn,
+        )
+    except Exception as e:
+        error(f"Failed to save the data and call add_route. {e}")
 
     return SuccessResponseMessage(
         address=msg.reply_to,
@@ -212,7 +210,6 @@ def respond_association_request_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    print("network admin approving the association request", type(node), msg)
     # Check if handshake/address/value fields are empty
     missing_paramaters = not msg.target or not msg.response
     if missing_paramaters:
@@ -221,14 +218,14 @@ def respond_association_request_msg(
         )
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
-    domain_id = msg.source.target_id.id.no_dash
+
     info(
         f"Node {node} - respond_association_request_msg: user can approve/deny association requests."
     )
     if allowed:
         # Set the status of the Association Request according to the "value" field received
-        node.association_requests.set(domain_id, msg.response)  # type: ignore
 
+        node.association_requests.set(source=msg.source, target=msg.target, response=msg.response)  # type: ignore
         user_priv_key = SigningKey(
             node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
         )
@@ -238,28 +235,34 @@ def respond_association_request_msg(
         try:
             metadata = get_vpn_status_metadata(node=node)
         except Exception as e:
-            print("failed to get vpn status", e)
+            error(f"Failed to get vpn status. {e}")
 
-        print("sent the metadata", metadata)
-        node_msg: SignedImmediateSyftMessageWithReply = (
-            ReceiveAssociationRequestMessage(
-                address=msg.source.address,
-                response=msg.response,
-                reply_to=msg.target.address,
-                metadata=metadata,
-                source=msg.source,
-                target=msg.target,
-            ).sign(signing_key=user_priv_key)
-        )
+        # create a client to the source
+        source_client = sy.connect(url=f"http://{msg.source}/api/v1")
 
-        info(
-            f"Node {node} - respond_association_request_msg: sending ReceiveAssociationRequestMessage."
-        )
+        try:
+            node_msg: SignedImmediateSyftMessageWithReply = (
+                ReceiveAssociationRequestMessage(
+                    address=source_client.address,
+                    response=msg.response,
+                    reply_to=node.address,
+                    metadata=metadata,
+                    source=msg.source,
+                    target=msg.target,
+                ).sign(signing_key=user_priv_key)
+            )
 
-        msg.source.send_immediate_msg_with_reply(msg=node_msg)
-        info(
-            f"Node {node} - respond_association_request_msg: ReceiveAssociationRequestMessage got back."
-        )
+            info(
+                f"Node {node} - respond_association_request_msg: sending ReceiveAssociationRequestMessage."
+            )
+
+            source_client.send_immediate_msg_with_reply(msg=node_msg)
+
+            info(
+                f"Node {node} - respond_association_request_msg: ReceiveAssociationRequestMessage got back."
+            )
+        except Exception as e:
+            error(f"Failed to send ReceiveAssociationRequestMessage to the domain. {e}")
 
     else:  # If not allowed
         raise AuthorizationError("You're not allowed to create an Association Request!")
@@ -290,8 +293,8 @@ def get_association_request_msg(
     return GetAssociationRequestResponse(
         address=msg.reply_to,
         content=association_request.get_metadata(),
-        source=association_request.get_source(),
-        target=association_request.get_target(),
+        source=association_request.source,
+        target=association_request.target,
     )
 
 

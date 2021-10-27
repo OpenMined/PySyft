@@ -1,18 +1,13 @@
 # stdlib
 from datetime import datetime
 from typing import Any
-from typing import Dict
-from typing import Optional
 
 # third party
 from sqlalchemy.engine import Engine
 
 # relative
-from ..... import serialize
-from ...abstract.node import AbstractNodeClient
 from ...domain.enums import RequestAPIFields
 from ..exceptions import AssociationRequestError
-from ..node_table.association import Association
 from ..node_table.association_request import AssociationRequest
 from .database_manager import DatabaseManager
 
@@ -33,40 +28,35 @@ class AssociationRequestManager(DatabaseManager):
 
     def create_association_request(
         self,
-        node: str,
-        source: AbstractNodeClient,
-        target: AbstractNodeClient,
-        metadata: Dict[str, Any],
+        node_name: str,
+        node_address: str,
+        source: str,
+        target: str,
         status: str,
-        address: str,
     ) -> None:
         table_fields = {}
-        table_fields[RequestAPIFields.NODE] = node
+        table_fields["node_name"] = node_name
         table_fields[RequestAPIFields.REQUESTED_DATE] = datetime.now().strftime(
             "%m/%d/%Y"
         )
 
-        source_blob = serialize(source, to_bytes=True)
-        target_blob = serialize(target, to_bytes=True)
-
-        table_fields[RequestAPIFields.SOURCE] = source_blob  # type: ignore
-        table_fields[RequestAPIFields.TARGET] = target_blob  # type: ignore
+        table_fields[RequestAPIFields.SOURCE] = source
+        table_fields[RequestAPIFields.TARGET] = target
         table_fields[RequestAPIFields.STATUS] = status
-        table_fields[RequestAPIFields.ADDRESS] = address
+        table_fields["node_address"] = node_address
 
-        if super().first(address=address):
-            self.modify(query={"address": address}, values=table_fields)
-        else:
+        try:
+            self.first(**{"source": source, "target": target})
+            self.modify(query={"source": source, "target": target}, values=table_fields)
+        except AssociationRequestError:
+            # no existing AssociationRequest so lets make one
             self.register(**table_fields)  # type: ignore
 
-    # def associations(self) -> List[Association]:
-    #     return list(self.db.session.query(Association).all())
-
-    def association(self, **kwargs: Dict[str, Any]) -> Optional[Association]:
-        return self.db.session.query(Association).filter_by(**kwargs).first()
-
-    def set(self, address: str, response: str) -> None:
+    def set(self, source: str, target: str, response: str) -> None:
         self.modify(
-            {"address": address},
-            {"status": response, "accepted_date": datetime.now().strftime("%m/%d/%Y")},
+            query={"source": source, "target": target},
+            values={
+                "status": response,
+                "accepted_date": datetime.now().strftime("%m/%d/%Y"),
+            },
         )

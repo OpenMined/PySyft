@@ -35,7 +35,6 @@ def test_domain1_association_network1() -> None:
     DOMAIN_VPN_IP, NETWORK_VPN_IP = get_vpn_ips(vpn_status=vpn_status)
 
     domain.apply_to_network(
-        host_or_ip=NETWORK_PUBLIC_HOST,
         domain_vpn_ip=DOMAIN_VPN_IP,
         network_vpn_ip=NETWORK_VPN_IP,
     )
@@ -45,7 +44,7 @@ def test_domain1_association_network1() -> None:
     )
     associations = network.association.all()
     for association in associations:
-        if association["address"] == domain.target_id.id.no_dash:
+        if association["node_address"] == domain.target_id.id.no_dash:
             request_id = int(association["association_id"])
 
     network.association[request_id].accept()
@@ -63,7 +62,6 @@ def test_domain2_association_network1() -> None:
     DOMAIN_VPN_IP, NETWORK_VPN_IP = get_vpn_ips(vpn_status=vpn_status)
 
     domain.apply_to_network(
-        host_or_ip=NETWORK_PUBLIC_HOST,
         domain_vpn_ip=DOMAIN_VPN_IP,
         network_vpn_ip=NETWORK_VPN_IP,
     )
@@ -73,7 +71,7 @@ def test_domain2_association_network1() -> None:
     )
     associations = network.association.all()
     for association in associations:
-        if association["address"] == domain.target_id.id.no_dash:
+        if association["node_address"] == domain.target_id.id.no_dash:
             request_id = int(association["association_id"])
 
     network.association[request_id].accept()

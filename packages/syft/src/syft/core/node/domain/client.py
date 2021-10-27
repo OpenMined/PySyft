@@ -15,9 +15,6 @@ from nacl.signing import VerifyKey
 import names
 import pandas as pd
 
-# syft absolute
-import syft as sy
-
 # relative
 from .... import deserialize
 from ....logger import traceback_and_raise
@@ -430,36 +427,27 @@ class DomainClient(Client):
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
     def apply_to_network(
-        self, host_or_ip: str, domain_vpn_ip: str, network_vpn_ip: str, **metadata: str
+        self, domain_vpn_ip: str, network_vpn_ip: str, **metadata: str
     ) -> None:
         # TODO: refactor
-        # Step 1: send a message to the Network from the Users Python Context
-        # this means the first message needs to have a public ip:port for host_or_ip
+        # Step 1: send a message to the Network from the Domain
+        # this means the first message contains the VPN IP for the network
 
-        # Step 2: the contents of message is two clients which contain the host_or_ip
-        # which both the Network and Domain can communicate on respectively and
-        # because many domains will be behind firewalls, we want to use the VPN IP
-        # as both directions should be able to connect to each other.
+        # Step 2: the contents of message is the VPN IPs, because many domains
+        # will be behind firewalls, we want to use the VPN IP as both directions should
+        # be able to connect to each other
 
         # domain_vpn_ip = Domain VPN host_or_ip because thats the only IP the Network
         # can reach the Domain on, and will go into the association request table
-        # and then gets used to route all traffic from the Network node to that Domain
-
-        # target = Network host_or_ip that User can reach such as 13.64.187.229 in Azure
+        # after the association is approved these IPs will be added to the node and
+        # node_route tables to route all traffic from the Network node to that Domain
 
         # network_vpn_ip = Network VPN host_or_ip because that will be what goes into the
         # association request table and then gets used to route all traffic from
         # the Domain to the Network node
 
-        target_client = sy.connect(url=f"http://{host_or_ip}/api/v1")
-        target_client.routes[0].connection.base_url = f"http://{network_vpn_ip}/api/v1"
-
-        source_client_ser = sy.serialize(self)
-        source_client = sy.deserialize(source_client_ser)
-        source_client.routes[0].connection.base_url = f"http://{domain_vpn_ip}/api/v1"
-
         self.association.create(
-            source=source_client, target=target_client, metadata=metadata
+            source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
         )
 
     @property
