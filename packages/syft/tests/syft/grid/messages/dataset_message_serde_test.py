@@ -50,7 +50,7 @@ test_suite = [
     ),
     (
         GetDatasetMessage,
-        {"address": Address(), "dataset_id": 123, "reply_to": Address()},
+        {"address": Address(), "dataset_id": 3, "reply_to": Address()},
         ["address", "dataset_id", "reply_to"],
     ),
     (
@@ -75,7 +75,7 @@ test_suite = [
         UpdateDatasetMessage,
         {
             "address": Address(),
-            "dataset_id": 123,
+            "dataset_id": 3,
             "metadata": metadata,
             "reply_to": Address(),
         },
@@ -83,7 +83,11 @@ test_suite = [
     ),
     (
         DeleteDatasetMessage,
-        {"address": Address(), "dataset_id": 123, "reply_to": Address()},
+        {
+            "address": Address(),
+            "dataset_id": "8f2c411b-fcb7-4059-a0ee-aa370ed03e0c",
+            "reply_to": Address(),
+        },
         ["address", "dataset_id", "reply_to"],
     ),
 ]

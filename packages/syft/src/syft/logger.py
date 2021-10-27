@@ -81,6 +81,7 @@ def create_log_and_print_function(level: str) -> Callable:
             msg = f"failed to log exception. {e}"
             try:
                 logger.debug(msg)
+
             except Exception as e:
                 print(f"{msg}. {e}")
 
