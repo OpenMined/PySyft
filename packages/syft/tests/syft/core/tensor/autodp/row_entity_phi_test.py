@@ -1123,7 +1123,11 @@ def test_diagonal(row_data_trask: List, dims: int) -> None:
 
 
 def test_converter(
-        row_data_ishan: List, traskmaster: Entity, ishan: Entity, highest: int, scalar_manager: ScalarManager
+    row_data_ishan: List,
+    traskmaster: Entity,
+    ishan: Entity,
+    highest: int,
+    scalar_manager: ScalarManager,
 ) -> None:
     # Test that SEPTs can be converted
     output = REPT.convert_to_gamma(row_data_ishan)

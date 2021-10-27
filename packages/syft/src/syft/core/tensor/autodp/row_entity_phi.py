@@ -125,7 +125,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     @staticmethod
     def convert_to_gamma(input_list: List) -> IGT:
-        """ This converts a REPT's data into a GammaTensor without having to initialize it. Used in comparison ops"""
+        """This converts a REPT's data into a GammaTensor without having to initialize it. Used in comparison ops"""
         values = []
         entities = []
         mins = []
@@ -140,7 +140,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         for tensor in input_list:
             if isinstance(tensor, SingleEntityPhiTensor):
                 values.append(tensor.child)
-                entity_array = np.array(tensor.entity, dtype=object).repeat(len(tensor.child.flatten()))
+                entity_array = np.array(tensor.entity, dtype=object).repeat(
+                    len(tensor.child.flatten())
+                )
                 entities.append(entity_array.reshape(tensor.shape))
                 mins.append(tensor.min_vals)
                 maxes.append(tensor.max_vals)
@@ -150,15 +152,13 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 mins.append(tensor._min_values())
                 maxes.append(tensor._max_values())
             else:
-                raise Exception(
-                    f"Unknown type in REPT: {type(tensor)}"
-                )
+                raise Exception(f"Unknown type in REPT: {type(tensor)}")
         return InitialGammaTensor(
             values=np.concatenate(values).reshape(target_shape),
             entities=np.concatenate(entities).reshape(target_shape),
             min_vals=np.concatenate(mins).reshape(target_shape),
             max_vals=np.concatenate(maxes).reshape(target_shape),
-            scalar_manager=input_list[0].scalar_manager
+            scalar_manager=input_list[0].scalar_manager,
         )
 
     def create_gamma(
