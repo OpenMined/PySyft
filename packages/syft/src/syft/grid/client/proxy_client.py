@@ -4,24 +4,24 @@ from typing import Any
 from typing import Optional
 from typing import List
 from typing import Type
-from syft.core.common.message import EventualSyftMessageWithoutReply
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.message import SignedEventualSyftMessageWithoutReply
-from syft.core.common.message import SignedImmediateSyftMessageWithReply
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.common.message import SyftMessage
-from syft.core.node.network.client import NetworkClient
-from syft.core.node.domain.client import DomainClient
-from syft.core.node.common.client import Client
-from syft.core.io.route import Route
-from syft.core.io.route import SoloRoute
-from syft.core.io.location import SpecificLocation
-from syft.core.io.location import Location
+from ...core.common.message import EventualSyftMessageWithoutReply
+from ...core.common.message import ImmediateSyftMessageWithReply
+from ...core.common.message import ImmediateSyftMessageWithoutReply
+from ...core.common.message import SignedEventualSyftMessageWithoutReply
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.message import SyftMessage
+from ...core.node.network.client import NetworkClient
+from ...core.node.domain.client import DomainClient
+from ...core.node.common.client import Client
+from ...core.io.route import Route
+from ...core.io.route import SoloRoute
+from ...core.io.location import SpecificLocation
+from ...core.io.location import Location
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from syft.core.common.uid import UID
-from syft.grid.client.grid_connection import GridHTTPConnection
+from ...core.common.uid import UID
+from .client.grid_connection import GridHTTPConnection
 
 
 class ProxyClient(DomainClient):
