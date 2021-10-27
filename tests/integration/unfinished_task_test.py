@@ -3,7 +3,7 @@ from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.store.storeable_object import StorableObject
 
 
-def test_tensor_abstraction_pointer(get_clients) -> None:
+def test_unfinished_task(get_clients) -> None:
     client = get_clients(1)[0]
 
     list_pointer = client.syft.lib.python.List()
