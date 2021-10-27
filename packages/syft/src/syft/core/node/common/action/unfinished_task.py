@@ -1,35 +1,47 @@
 # stdlib
-from typing import Set
+from typing import Set as TypeSet
 from uuid import UUID
 
-# syft absolute
-import syft as sy
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.node.common.action.exceptions import RetriableError
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.common import UID
-from syft.lib.python import Set
+# relative
+from .....lib.python import Set
+from ....common import UID
+from ....common.message import SignedImmediateSyftMessageWithoutReply
+from ....store.storeable_object import StorableObject
+from ...abstract.node import AbstractNode
+from .exceptions import RetriableError
 
 id = UID(UUID("a8ac0c37382584a1082c710b0b38f6a3"))
 
+
 def get_set(node: AbstractNode) -> Set:
     obj = node.store.get_object(key=id)
-    if isinstance(obj,Set):
-        return obj
+    if isinstance(obj.data, Set):
+        return obj.data
     elif obj is None:
         return Set([])
     else:
-        raise ValueError(f"Unfinished task Object should be {obj} should be a Set or None")
+        raise ValueError(
+            f"Unfinished task Object should be {obj} should be a Set or None"
+        )
 
 
-def register_unfinished_task(message: SignedImmediateSyftMessageWithoutReply,node: AbstractNode) -> None:
-    UNFINISHED_TASKS: Set[SignedImmediateSyftMessageWithoutReply] = get_set(node)
+def update_set(
+    task_set: TypeSet[SignedImmediateSyftMessageWithoutReply], node: AbstractNode
+) -> None:
+    obj = StorableObject(data=task_set, id=id)
+    node.store[id] = obj
+
+
+def register_unfinished_task(
+    message: SignedImmediateSyftMessageWithoutReply, node: AbstractNode
+) -> None:
+    UNFINISHED_TASKS: TypeSet[SignedImmediateSyftMessageWithoutReply] = get_set(node)
     UNFINISHED_TASKS.add(message)
-    node.store[id] = UNFINISHED_TASKS
+    update_set(UNFINISHED_TASKS, node)
 
 
 def proceed_unfinished_tasks(node: AbstractNode) -> None:
-    UNFINISHED_TASKS: Set[SignedImmediateSyftMessageWithoutReply] = get_set(node)
+    UNFINISHED_TASKS: TypeSet[SignedImmediateSyftMessageWithoutReply] = get_set(node)
     for unfinished_task in UNFINISHED_TASKS:
         try:
             node.recv_immediate_msg_without_reply(unfinished_task)
@@ -42,4 +54,4 @@ def proceed_unfinished_tasks(node: AbstractNode) -> None:
             else:
                 print("Hello3")
                 raise e
-    node.store[id] = UNFINISHED_TASKS
+    update_set(UNFINISHED_TASKS, node)
