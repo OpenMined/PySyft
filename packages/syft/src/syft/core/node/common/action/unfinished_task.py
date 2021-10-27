@@ -16,9 +16,9 @@ id = UID(UUID("a8ac0c37382584a1082c710b0b38f6a3"))
 def get_set(node: AbstractNode) -> Set:
     obj = node.store.get_object(key=id)
     if obj is None:
-        return obj.data
-    elif isinstance(obj.data, Set):
         return Set([])
+    elif isinstance(obj.data, Set):
+        return obj.data
     else:
         raise ValueError(
             f"Unfinished task Object should be {obj} should be a Set or None"
