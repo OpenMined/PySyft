@@ -29,7 +29,7 @@ def register_unfinished_task(message: SignedImmediateSyftMessageWithoutReply,nod
 
 
 def proceed_unfinished_tasks(node: AbstractNode) -> None:
-    UNFINISHED_TASKS: Set[SignedImmediateSyftMessageWithoutReply]
+    UNFINISHED_TASKS: Set[SignedImmediateSyftMessageWithoutReply] = get_set(node)
     for unfinished_task in UNFINISHED_TASKS:
         try:
             node.recv_immediate_msg_without_reply(unfinished_task)
