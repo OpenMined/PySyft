@@ -19,7 +19,6 @@ from ......logger import error
 from ......logger import info
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import SignedImmediateSyftMessageWithReply
-from ....common import UID
 from ....domain.domain_interface import DomainInterface
 from ....domain.enums import AssociationRequestResponses
 from ...exceptions import AuthorizationError

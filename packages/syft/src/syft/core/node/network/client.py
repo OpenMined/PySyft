@@ -32,9 +32,6 @@ from ..common.node_service.generic_payload.messages import (
 from ..common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
-from ..common.node_service.peer_discovery.peer_discovery_messages import (
-    PeerDiscoveryMessageWithReply,
-)
 from ..domain.enums import RequestAPIFields
 
 

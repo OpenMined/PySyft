@@ -50,15 +50,12 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
             ]:
                 if scope_id is not None:
                     debug(f"> Lookup: {scope_id.emoji()}")
-                    print("Scope ID: ", scope_id)
-                    print("My Client Keys: ", node.peer_route_clients.keys())
                     if scope_id in node.peer_route_clients.keys():
                         client = node.peer_route_clients[scope_id]
-                        print("My Client: ", client)
-                        if client['vpn']:
-                            in_memory_client = client['vpn']
+                        if client["vpn"]:
+                            in_memory_client = client["vpn"]
                         else:
-                            in_memory_client = client['public']
+                            in_memory_client = client["public"]
                         return in_memory_client.send_immediate_msg_without_reply(
                             msg=msg
                         )
@@ -106,15 +103,12 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
             ]:
                 if scope_id is not None:
                     debug(f"> Lookup: {scope_id.emoji()}")
-                    print("Scope ID: ", scope_id)
-                    print("My Client Keys: ", node.peer_route_clients.keys())
                     if scope_id in node.peer_route_clients.keys():
-                        print("My Client: ", client)
                         client = node.peer_route_clients[scope_id]
-                        if client['vpn']:
-                            in_memory_client = client['vpn']
+                        if client["vpn"]:
+                            in_memory_client = client["vpn"]
                         else:
-                            in_memory_client = client['public']
+                            in_memory_client = client["public"]
 
                         return in_memory_client.send_immediate_msg_with_reply(msg=msg)
         except Exception as e:

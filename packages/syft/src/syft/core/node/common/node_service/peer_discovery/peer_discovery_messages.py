@@ -37,7 +37,7 @@ class PeerDiscoveryMessageWithReply(GenericPayloadMessageWithReply):
     message_reply_type = PeerDiscoveryReplyMessage
 
     def run(
-            self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
+        self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         try:
             # peer_route_clients: Dict[UID, Dict[str, Dict[str, Client]]] = {}
@@ -67,7 +67,7 @@ class GetPeerInfoMessageWithReply(GenericPayloadMessageWithReply):
         self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         try:
-            peer = node.node.first(node_uid=str(self.kwargs['uid']))
+            peer = node.node.first(node_uid=str(self.kwargs["uid"]))
             peer_route = {}
             if peer:
                 route = node.node_route.first(node_id=peer.id)
@@ -75,7 +75,7 @@ class GetPeerInfoMessageWithReply(GenericPayloadMessageWithReply):
                 peer_route["name"] = peer.node_name
                 peer_route["host_or_ip"] = route.host_or_ip
                 peer_route["is_vpn"] = route.is_vpn
-            return {'status': 'ok', 'data': peer_route} 
+            return {"status": "ok", "data": peer_route}
         except Exception as e:
             print(f"Failed to run {type(self)}", self.kwargs, e)
             return {"status": "error"}

@@ -44,10 +44,8 @@ class RequestAPI:
 
     def get(self, **kwargs: Any) -> Any:
         return self.to_obj(
-                self.perform_api_request(
-                    syft_msg=self._get_message, content=kwargs
-                    )
-                )
+            self.perform_api_request(syft_msg=self._get_message, content=kwargs)
+        )
 
     def all(self) -> List[Any]:
         result = [
