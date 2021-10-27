@@ -49,7 +49,7 @@ class GenericPayloadMessageWithReply:
     message_type = GenericPayloadMessage
     message_reply_type = GenericPayloadReplyMessage
 
-    def __init__(self, kwargs: Dict[str, Any]) -> None:
+    def __init__(self, kwargs: Dict[str, Any] = {}) -> None:
         self.kwargs = kwargs
 
     def run(
