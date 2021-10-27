@@ -4,13 +4,12 @@ package syft.grid.messages;
 
 import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
-import "proto/core/node/common/client.proto";
 
 message SendAssociationRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
-  syft.core.node.common.Client source = 3;
-  syft.core.node.common.Client target = 4;
+  string source = 3;
+  string target = 4;
   syft.core.io.Address reply_to = 5;
   map<string, string> metadata = 6;
 }
@@ -21,16 +20,16 @@ message ReceiveAssociationRequestMessage {
   map<string, string> metadata = 3;
   string response = 4;
   syft.core.io.Address reply_to = 5;
-  syft.core.node.common.Client source = 6;
-  syft.core.node.common.Client target = 7;
+  string source = 6;
+  string target = 7;
 }
 
 message RespondAssociationRequestMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   string response = 3;
-  syft.core.node.common.Client source = 4;
-  syft.core.node.common.Client target = 5;
+  string source = 4;
+  string target = 5;
   syft.core.io.Address reply_to = 6;
 }
 
@@ -43,10 +42,10 @@ message GetAssociationRequestMessage {
 
 message GetAssociationRequestResponse {
   syft.core.common.UID msg_id = 1;
-  map<string, string> metadata = 2;
+  map<string, string> content = 2;
   syft.core.io.Address address = 3;
-  syft.core.node.common.Client source = 4;
-  syft.core.node.common.Client target = 5;
+  string source = 4;
+  string target = 5;
 }
 
 message GetAssociationRequestsMessage {
@@ -59,7 +58,7 @@ message GetAssociationRequestsResponse {
   message metadata_container { map<string, string> metadata = 1; }
 
   syft.core.common.UID msg_id = 1;
-  repeated metadata_container metadatas = 2;
+  repeated metadata_container content = 2;
   syft.core.io.Address address = 4;
 }
 

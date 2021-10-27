@@ -190,11 +190,11 @@ def load(
                 try:
                     _load_lib(lib=str(lib), options=options)
                 except VendorLibraryImportException as e:
-                    critical(e)
+                    warning(e)
                 except Exception as e:
-                    critical(f"Unable to load package support for: {lib}. {e}")
+                    warning(f"Unable to load package support for: {lib}. {e}")
             else:
-                critical(
+                warning(
                     f"Unable to load package support for: {lib}. Pass lib name as string object."
                 )
     else:
