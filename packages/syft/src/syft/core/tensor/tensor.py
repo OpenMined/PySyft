@@ -175,12 +175,10 @@ class TensorPointer(Pointer):
         if isinstance(other, TensorPointer) and self.client != other.client:
 
             parties = [self.client, other.client]
-
             self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
             other_mpc = MPCTensor(
                 secret=other, shape=other.public_shape, parties=parties
             )
-
             return op(self_mpc, other_mpc)
 
         elif isinstance(other, MPCTensor):

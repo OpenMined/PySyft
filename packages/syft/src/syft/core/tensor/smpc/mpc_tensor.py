@@ -179,10 +179,12 @@ class MPCTensor(PassthroughTensor):
                         password="astronaut",
                         url=url,
                         port=port,
+                        verbose=False,
                     )
-                except Exception as e:
+                except Exception:
+                    """"""
                     # TODO : should modify to return same client if registered.
-                    print("Proxy Client already User Register", e)
+                    # print("Proxy Client already User Register", e)
             parties_info.append(party_info)
 
         return parties_info
@@ -280,7 +282,6 @@ class MPCTensor(PassthroughTensor):
                 TensorWrappedSingleEntityPhiTensorPointer,
             )
 
-            print("Reeeeemote ring_size", ring_size)
             if isinstance(secret, TensorWrappedSingleEntityPhiTensorPointer):
 
                 share_wrapper = secret.to_local_object_without_private_data_child()
@@ -354,6 +355,22 @@ class MPCTensor(PassthroughTensor):
                 reason=reason, block=block, timeout_secs=timeout_secs, verbose=verbose
             )
 
+    @property
+    def block(self) -> "MPCTensor":
+        """Block until all shares have been created."""
+        for share in self.child:
+            share.block
+
+        return self
+
+    def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> "MPCTensor":
+        """Block until all shares have been created or until timeout expires."""
+
+        for share in self.child:
+            share.block_with_timeout(secs=secs, secs_per_poll=secs_per_poll)
+
+        return self
+
     def reconstruct(self) -> np.ndarray:
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point. We need to have this fail well with a nice
@@ -376,6 +393,14 @@ class MPCTensor(PassthroughTensor):
 
         if dtype is None:
             raise ValueError(f"Type for ring size {self.ring_size} was not found!")
+
+        for share in self.child:
+            if not share.exists:
+                raise Exception(
+                    "One of the shares doesn't exist. This probably means the SMPC "
+                    "computation isn't yet complete. Try again in a moment or call .block.reconstruct()"
+                    "instead to block until the SMPC operation is complete which creates this variable."
+                )
 
         local_shares = []
         for share in self.child:
