@@ -21,7 +21,7 @@ from .. import ast
 from .. import lib
 from ..core.common.group import VERIFYALL
 from ..core.common.uid import UID
-from ..core.node.common.action.container_action import ContainerAction
+from ..core.node.common.action.action_sequence import ActionSequence
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
@@ -680,7 +680,7 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
-            immediate: bool = True,
+            **kwargs: Dict[str, Any],
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
             """Send obj to client and return pointer to the object.
 
@@ -759,6 +759,8 @@ class Class(Callable):
                 search_permissions={VERIFYALL: None} if pointable else {},
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
+
+            immediate = kwargs.get("immediate", None)
 
             if immediate:
                 # Step 3: send message
@@ -991,7 +993,7 @@ def pointerize_args_and_kwargs(
         else:
             pointer_kwargs[k] = arg
 
-    msg = ContainerAction(obj_lst=obj_lst, address=client.address)
+    msg = ActionSequence(obj_lst=obj_lst, address=client.address)
 
     # send message to client
     client.send_immediate_msg_without_reply(msg=msg)

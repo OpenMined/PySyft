@@ -10,8 +10,8 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # relative
-from .....proto.core.node.common.action.container_pb2 import (
-    ContainerAction as ContainerAction_PB,
+from .....proto.core.node.common.action.action_sequence_pb2 import (
+    ActionSequence as ActionSequence_PB,
 )
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
@@ -22,7 +22,7 @@ from .save_object_action import SaveObjectAction
 
 
 @serializable()
-class ContainerAction(ImmediateActionWithoutReply):
+class ActionSequence(ImmediateActionWithoutReply):
     def __init__(
         self,
         obj_lst: List[SaveObjectAction],
@@ -41,23 +41,23 @@ class ContainerAction(ImmediateActionWithoutReply):
             if len(obj_str) < 50
             else obj_str[:50] + " ... " + obj_str[neg_index:]
         )
-        return f"ContainerAction {obj_str}"
+        return f"ActionSequence {obj_str}"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         for obj in self.obj_lst:
             obj.execute_action(node=node, verify_key=verify_key)
 
-    def _object2proto(self) -> ContainerAction_PB:
+    def _object2proto(self) -> ActionSequence_PB:
         obj_lst = list(map(lambda x: sy.serialize(x), self.obj_lst))
         addr = sy.serialize(self.address)
-        return ContainerAction_PB(obj=obj_lst, address=addr)
+        return ActionSequence_PB(obj=obj_lst, address=addr)
 
     @staticmethod
-    def _proto2object(proto: ContainerAction_PB) -> "ContainerAction":
+    def _proto2object(proto: ActionSequence_PB) -> "ActionSequence":
         obj_lst = list(map(lambda x: sy.deserialize(blob=x), proto.obj))
         addr = sy.deserialize(blob=proto.address)
-        return ContainerAction(obj_lst=obj_lst, address=addr)
+        return ActionSequence(obj_lst=obj_lst, address=addr)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return ContainerAction_PB
+        return ActionSequence_PB
