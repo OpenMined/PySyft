@@ -188,7 +188,9 @@ class TensorPointer(Pointer):
         return self._apply_tensor_op(other=other, op_str=op_str)
 
     def __add__(
-        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Any,
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "add" operation between "self" and "other"
 

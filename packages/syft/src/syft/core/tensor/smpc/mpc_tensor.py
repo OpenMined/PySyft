@@ -732,9 +732,12 @@ class MPCTensor(PassthroughTensor):
             other_shape,
         ) = MPCTensor.prepare_arguments_and_run_checks(self, other)
 
+        print("A:" + str(self_shrs[0]))
+        print("B:" + str(other_shrs[0]))
+
         # Step 6: Execute the SMPC operation
         # TODO: some complex hooking logic on ShareTensor means we're passing in 'a' twice
-        res_shares = [a.__add__(a, b, **kwargs) for a, b in zip(self_shrs, other_shrs)]
+        res_shares = [a.__add__(b, **kwargs) for a, b in zip(self_shrs, other_shrs)]
 
         # Step 7: Calculate shape of result using only publicly available data (so not conditioned on private data).
         public_shape = utils.get_shape_ndarray_method_from_shapes(
