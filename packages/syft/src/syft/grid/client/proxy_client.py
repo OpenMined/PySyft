@@ -21,7 +21,8 @@ from ...core.io.location import Location
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from ...core.common.uid import UID
-from .client.grid_connection import GridHTTPConnection
+from .grid_connection import GridHTTPConnection
+
 
 
 class ProxyClient(DomainClient):
