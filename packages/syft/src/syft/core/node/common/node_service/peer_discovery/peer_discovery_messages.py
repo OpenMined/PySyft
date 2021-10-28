@@ -4,7 +4,9 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
+from typing import cast
 
 # third party
 from nacl.signing import VerifyKey
@@ -12,7 +14,9 @@ from typing_extensions import final
 
 # relative
 from .....common.serde.serializable import serializable
-from ....abstract.node import AbstractNode
+from ....abstract.node_service_interface import NodeServiceInterface
+from ...node_table.node import Node as NodeRow
+from ...node_table.node_route import NodeRoute as NodeRouteRow
 from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage
@@ -37,13 +41,12 @@ class PeerDiscoveryMessageWithReply(GenericPayloadMessageWithReply):
     message_reply_type = PeerDiscoveryReplyMessage
 
     def run(
-        self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
+        self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         try:
-            # peer_route_clients: Dict[UID, Dict[str, Dict[str, Client]]] = {}
             peer_routes = []
             for peer in node.node.all():
-                routes = node.node_route.query(node_id=peer.id)
+                routes: List[NodeRouteRow] = node.node_route.query(node_id=peer.id)
                 for route in routes:
                     peer_route = {}
                     peer_route["id"] = peer.node_uid
@@ -64,17 +67,21 @@ class GetPeerInfoMessageWithReply(GenericPayloadMessageWithReply):
     message_reply_type = PeerDiscoveryReplyMessage
 
     def run(
-        self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
+        self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         try:
+            # TODO: handle multiple routes and possibly prefer vpn connections
             peer = node.node.first(node_uid=str(self.kwargs["uid"]))
             peer_route = {}
             if peer:
+                peer = cast(NodeRow, peer)
                 route = node.node_route.first(node_id=peer.id)
-                peer_route["id"] = peer.node_uid
-                peer_route["name"] = peer.node_name
-                peer_route["host_or_ip"] = route.host_or_ip
-                peer_route["is_vpn"] = route.is_vpn
+                if route:
+                    route = cast(NodeRouteRow, route)
+                    peer_route["id"] = peer.node_uid
+                    peer_route["name"] = peer.node_name
+                    peer_route["host_or_ip"] = route.host_or_ip
+                    peer_route["is_vpn"] = route.is_vpn
             return {"status": "ok", "data": peer_route}
         except Exception as e:
             print(f"Failed to run {type(self)}", self.kwargs, e)

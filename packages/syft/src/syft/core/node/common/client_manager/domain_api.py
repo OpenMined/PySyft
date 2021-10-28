@@ -1,20 +1,17 @@
 # stdlib
 from typing import Any
 from typing import List
+from typing import Union
 
 # third party
 from pandas import DataFrame
-from nacl.signing import SigningKey
-
 
 # relative
 from .....core.common.uid import UID
-from .....core.io.address import Address
-from .....grid.client.grid_connection import GridHTTPConnection
 from .....grid.client.proxy_client import ProxyClient
-from .....core.io.location import SpecificLocation
-from .....core.io.route import SoloRoute
-from ...abstract.node import AbstractNodeClient
+from .....lib.python import String
+from .....logger import error
+from ....node.common import AbstractNodeClient
 from ..node_service.peer_discovery.peer_discovery_messages import (
     GetPeerInfoMessageWithReply,
 )
@@ -26,13 +23,9 @@ from .request_api import RequestAPI
 
 class DomainRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
-        super().__init__(
-            client=client,
-            get_all_msg=PeerDiscoveryMessageWithReply,
-            get_msg=GetPeerInfoMessageWithReply,
-        )
+        super().__init__(client=client)
 
-    def all(self, pandas=True) -> List[Any]:
+    def all(self, pandas: bool = True) -> List[Any]:
         response = self.perform_api_request_generic(
             syft_msg=PeerDiscoveryMessageWithReply, content={}
         )
@@ -44,43 +37,47 @@ class DomainRequestAPI(RequestAPI):
                 data = DataFrame(data)
 
             return data
-        return {"status": "error"}
+        return []
 
-    def get(self, node_uid: str) -> object:
+    def get(self, key: Union[str, int, UID, String]) -> ProxyClient:  # type: ignore
+        # to make sure we target the remote Domain through the proxy we need to
+        # construct an 💠 Address which includes the correct UID for the Domain
+        # position in the 4 hierarchical locations
+        node_uid = key
+        try:
+            if isinstance(node_uid, int):
+                domain_metadata = self.all(pandas=False)[node_uid]
+                node_uid = str(domain_metadata["id"])
+            elif isinstance(node_uid, String):
+                node_uid = node_uid.upcast()
+        except Exception as e:
+            error(f"Invalid int or String key for list of Domain Clients. {e}")
+
+        if isinstance(node_uid, UID):
+            node_uid = node_uid.no_dash
+
+        if not isinstance(node_uid, str):
+            msg = (
+                f"Unable to get ProxyClient with key with type {type(node_uid)} {node_uid}. "
+                "API Request requires key to resolve to a str."
+            )
+            error(msg)
+            raise Exception(msg)
         response = self.perform_api_request_generic(
             syft_msg=GetPeerInfoMessageWithReply, content={"uid": node_uid}
         )
 
-        result = response.payload.kwargs.upcast() # type: ignore
-        spec_location = SpecificLocation(UID.from_string(result['data']["id"]))
-        addr = Address(name=result['data']['name'], domain=spec_location)
+        result = response.payload.kwargs.upcast()  # type: ignore
 
-        conn = GridHTTPConnection(url=self.client.routes[0].connection.base_url)
-        metadata = conn._get_metadata()  # type: ignore
-        _user_key = SigningKey.generate()
-
-
-        (
-            spec_location,
-            name,
-            client_id,
-        ) = ProxyClient.deserialize_client_metadata_from_node(metadata=metadata)
-
-        # Create a new Solo Route using the selected connection type
-        route = SoloRoute(destination=spec_location, connection=conn)
-
-        
-        proxy_client = ProxyClient(
-                name=addr.name,
-                routes=[route],
-                signing_key=_user_key,
-                domain=addr.domain
+        # a ProxyClient requires an existing NetworkClient and a Remote Domain Address
+        # or a known Domain Node UID, and a Node Name
+        proxy_client = ProxyClient.create(
+            proxy_node_client=self.client,
+            remote_domain=node_uid,
+            domain_name=result["data"]["name"],
         )
-        
-        # Set Domain's proxy address
-        proxy_client.proxy_address = proxy_address
-        
+
         return proxy_client
-    
-    def __getitem__(self, node_uid: str) -> object:
-        return self.get(node_uid=node_uid)
+
+    def __getitem__(self, key: Union[str, int, UID]) -> ProxyClient:
+        return self.get(key=key)

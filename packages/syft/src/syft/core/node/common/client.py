@@ -37,16 +37,11 @@ from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
-from ...io.route import SoloRoute
-from ...io.virtual import VirtualClientConnection
 from ...pointer.garbage_collection import GarbageCollection
 from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from .action.exception_action import ExceptionMessage
-from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
-    RegisterChildNodeMessage,
-)
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
 

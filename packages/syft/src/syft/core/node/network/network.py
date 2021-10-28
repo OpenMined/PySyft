@@ -127,9 +127,6 @@ class Network(Node):
 
         self.post_init()
 
-        # get all the peer clients into memory
-        self.reload_peer_clients()
-
     def initial_setup(  # nosec
         self,
         first_superuser_name: str = "Jane Doe",

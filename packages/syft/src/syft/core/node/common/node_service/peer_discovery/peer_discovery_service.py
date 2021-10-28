@@ -7,8 +7,7 @@ from typing import Type
 from nacl.signing import VerifyKey
 
 # relative
-from ......util import traceback_and_raise
-from ....abstract.node import AbstractNode
+from ....abstract.node_service_interface import NodeServiceInterface
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from .peer_discovery_messages import PeerDiscoveryMessage
@@ -20,7 +19,7 @@ class PeerDiscoveryService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: NodeServiceInterface,
         msg: PeerDiscoveryMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> PeerDiscoveryReplyMessage:
