@@ -32,6 +32,7 @@ from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
 from .party import Party
 from .share_tensor import ShareTensor
+from syft.ast.klass import get_run_class_method
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -562,8 +563,11 @@ class MPCTensor(PassthroughTensor):
                     for a, b in zip(self.child, other.child)
                 ]
             else:
-                op: Callable[..., Any] = getattr(operator, op_str)
-                res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
+                res_shares=[]
+                attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
+                op = get_run_class_method(attr_path_and_name,SMPC=True)
+                for x,y in zip(self.child,other.child):
+                    res_shares.append(op(a,b,**kwargs))
 
         else:
             raise ValueError(f"MPCTensor Private {op_str} not supported")
@@ -583,8 +587,11 @@ class MPCTensor(PassthroughTensor):
                     for share in self.child
                 ]
             else:
-                op: Callable[..., Any] = getattr(operator, op_str)
-                res_shares = [op(share, y) for share in self.child]
+                res_shares=[]
+                attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
+                op = get_run_class_method(attr_path_and_name,SMPC=True)
+                for share in self.child:
+                    res_shares.append(op(share,y,**kwargs))
 
         else:
             raise ValueError(f"MPCTensor Public {op_str} not supported")

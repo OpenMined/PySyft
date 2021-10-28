@@ -18,6 +18,7 @@ import numpy as np
 
 # syft absolute
 import syft as sy
+from syft import Tensor
 
 # relative
 from .....proto.core.node.common.action.smpc_action_message_pb2 import (
@@ -197,7 +198,7 @@ def smpc_basic_op(
     other = node.store[other_id].data
 
     actions = []
-    if isinstance(other, ShareTensor):
+    if isinstance(other, (ShareTensor,Tensor)):
         # All parties should add the other share if empty list
         actions.append(
             SMPCActionMessage(
