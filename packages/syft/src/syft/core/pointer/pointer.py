@@ -165,15 +165,13 @@ class Pointer(AbstractPointer):
             time.sleep(0.2)
         return self
 
-    def block_with_timeout(
-        self, secs: int, seconds_per_poll: int = 1
-    ) -> AbstractPointer:
+    def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
 
         total_secs = secs
 
         while not self.exists and secs > 0:
-            time.sleep(seconds_per_poll)
-            secs -= seconds_per_poll
+            time.sleep(secs_per_poll)
+            secs -= secs_per_poll
 
         if not self.exists:
             raise Exception(

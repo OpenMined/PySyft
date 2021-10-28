@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Union
 
 # third party
+from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 
 # relative
@@ -19,6 +20,11 @@ from .grid_connection import GridHTTPConnection
 
 
 class ProxyClient(DomainClient):
+    def post_init(self) -> None:
+        # use post_init so we don't need to re-implement an empty regular init
+        super().post_init()
+        self.logged_in = False
+
     @staticmethod
     def create(
         proxy_node_client: AbstractNodeClient,
@@ -66,3 +72,27 @@ class ProxyClient(DomainClient):
         )
 
         return proxy_client
+
+    def login(self, email: str, password: str) -> ProxyClient:
+        result = self.users.login(email=email, password=password)
+        try:
+            if result["status"] == "ok":
+                _user_key = SigningKey(
+                    result["data"]["key"].encode(), encoder=HexEncoder
+                )
+                self.signing_key = _user_key
+                self.verify_key = self.signing_key.verify_key
+                print(f"Logged in to {self.name} as {email}")
+                self.logged_in = True
+            else:
+                print(f"Failed to login as {email}")
+        except Exception as e:
+            print(f"Failed to decode private key. {e}")
+        return self
+
+    def logout(self) -> ProxyClient:
+        print(f"Logged out of account. You are now a Guest on {self.name}")
+        self.signing_key = SigningKey.generate()
+        self.verify_key = self.signing_key.verify_key
+        self.logged_in = False
+        return self
