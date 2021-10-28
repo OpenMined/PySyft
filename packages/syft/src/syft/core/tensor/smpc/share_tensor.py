@@ -416,7 +416,7 @@ class ShareTensor(PassthroughTensor):
         res.child = value
         return res
 
-    def add(
+    def __add__(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
     ) -> "ShareTensor":
         """Apply the "add" operation between "self" and "y".
@@ -433,6 +433,11 @@ class ShareTensor(PassthroughTensor):
         new_share = self.apply_function(y, "add")
 
         return new_share
+
+    def __radd__(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        return self.__add__(y)
 
     def sub(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
@@ -720,8 +725,6 @@ class ShareTensor(PassthroughTensor):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return ShareTensor_PB
 
-    __add__ = add
-    __radd__ = add
     __sub__ = sub
     __rsub__ = rsub
     __mul__ = mul
