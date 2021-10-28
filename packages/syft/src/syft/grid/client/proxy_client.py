@@ -11,7 +11,6 @@ from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
-from ...core.node.network.client import NetworkClient
 from ...core.node.domain.client import DomainClient
 from ...core.node.common.client import Client
 from ...core.io.route import Route
