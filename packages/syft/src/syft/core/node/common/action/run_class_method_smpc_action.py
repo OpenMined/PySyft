@@ -23,7 +23,6 @@ from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .exceptions import ObjectNotInStore
-from syft import Tensor
 
 
 @serializable()
@@ -88,6 +87,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # relative
         from .smpc_action_message import SMPCActionMessage
+        from syft import Tensor
 
         resolved_self = node.store.get_object(key=self._self.id_at_location)
 
