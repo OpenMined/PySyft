@@ -652,3 +652,25 @@ def test_max(non_square_gamma_tensor: IGT) -> None:
     old_entities = non_square_gamma_tensor._entities()
     new_entities = output._entities()
     assert old_entities.shape != new_entities.shape
+
+
+def test_mul_public(gamma_tensor_min: IGT) -> None:
+    """Test public multiplication of IGTs"""
+    target = gamma_tensor_min._values() * 2
+    output = gamma_tensor_min * 2
+    assert isinstance(output, IGT)
+    assert (output._values() == target).all()
+    assert (output._min_values() == gamma_tensor_min._min_values() * 2).all()
+    assert (output._max_values() == gamma_tensor_min._max_values() * 2).all()
+    assert (output._entities() == gamma_tensor_min._entities()).all()
+
+
+def test_diagonal(gamma_tensor_min: IGT) -> None:
+    """Test diagonal, without any additional arguments"""
+    target = gamma_tensor_min._values().diagonal()
+    output = gamma_tensor_min.diagonal()
+    assert isinstance(output, IGT)
+    assert (output._values() == target).all()
+    assert (output._min_values() == gamma_tensor_min._min_values().diagonal()).all()
+    assert (output._max_values() == gamma_tensor_min._max_values().diagonal()).all()
+    assert (output._entities() == gamma_tensor_min._entities().diagonal()).all()
