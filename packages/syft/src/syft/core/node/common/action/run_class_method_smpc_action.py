@@ -86,8 +86,8 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # relative
+        from ..... import Tensor
         from .smpc_action_message import SMPCActionMessage
-        from syft import Tensor
 
         resolved_self = node.store.get_object(key=self._self.id_at_location)
 
@@ -143,12 +143,12 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         method_name = self.path.split(".")[-1]
         value = resolved_self.data
-        if isinstance(value ,Tensor):
+        if isinstance(value, Tensor):
             nr_parties = value.child.child.nr_parties
             rank = value.child.child.rank
         else:
             nr_parties = value.nr_parties
-            rank  = value.rank
+            rank = value.rank
 
         seed_id_locations = resolved_kwargs.get("seed_id_locations", None)
         if seed_id_locations is None:
@@ -177,12 +177,9 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             "client": client,
         }
 
-
         # Get the list of actions to be run
         actions = actions_generator(*args_id, **kwargs)  # type: ignore
-        actions = SMPCActionMessage.filter_actions_after_rank(
-            rank, actions
-        )
+        actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
         base_url = client.routes[0].connection.base_url
         client.routes[0].connection.base_url = base_url.replace(
             "localhost", "docker-host"

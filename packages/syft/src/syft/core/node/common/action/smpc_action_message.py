@@ -19,7 +19,6 @@ import numpy as np
 # syft absolute
 import syft as sy
 
-
 # relative
 from .....proto.core.node.common.action.smpc_action_message_pb2 import (
     SMPCActionMessage as SMPCActionMessage_PB,
@@ -191,7 +190,9 @@ def smpc_basic_op(
     node: Any,
     client: Any,
 ) -> List[SMPCActionMessage]:
-    from syft import Tensor
+    # relative
+    from ..... import Tensor
+
     """Generator for SMPC public/private operations add/sub"""
 
     generator = np.random.default_rng(seed_id_locations)
@@ -199,7 +200,7 @@ def smpc_basic_op(
     other = node.store[other_id].data
 
     actions = []
-    if isinstance(other, (ShareTensor,Tensor)):
+    if isinstance(other, (ShareTensor, Tensor)):
         # All parties should add the other share if empty list
         actions.append(
             SMPCActionMessage(
@@ -252,9 +253,11 @@ def spdz_multiply(
     c_share: ShareTensor,
     node: Optional[Any] = None,
 ) -> ShareTensor:
-    from syft import Tensor
+    # relative
+    from ..... import Tensor
+
     TENSOR_FLAG = False
-    if isinstance(x,Tensor) and isinstance (y,Tensor):
+    if isinstance(x, Tensor) and isinstance(y, Tensor):
         TENSOR_FLAG = True
         t1 = x
         t2 = y
@@ -307,7 +310,7 @@ def spdz_multiply(
     print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
     if TENSOR_FLAG:
-        t = t1*t2
+        t = t1 * t2
         t.child.child = share
         return t
     else:
@@ -324,8 +327,10 @@ def spdz_mask(
     b_share: ShareTensor,
     c_share: ShareTensor,
 ) -> None:
-    from syft import Tensor
-    if isinstance(x,Tensor) and isinstance (y,Tensor):
+    # relative
+    from ..... import Tensor
+
+    if isinstance(x, Tensor) and isinstance(y, Tensor):
         x = x.child.child
         y = y.child.child
 
@@ -370,7 +375,9 @@ def smpc_mul(
     client: Optional[Any] = None,
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
-    from syft import Tensor
+    # relative
+    from ..... import Tensor
+
     if seed_id_locations is None or node is None or client is None:
         raise ValueError(
             f"The values seed_id_locations{seed_id_locations}, Node:{node} , client:{client} should not be None"
@@ -380,11 +387,11 @@ def smpc_mul(
     other = node.store[other_id].data
 
     actions = []
-    if isinstance(other, (ShareTensor,Tensor)):
+    if isinstance(other, (ShareTensor, Tensor)):
         # crypto_store = ShareTensor.crypto_store
         # _self = node.store[self_id].data
         # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
-        if isinstance(other,ShareTensor):
+        if isinstance(other, ShareTensor):
             ring_size = other.ring_size
         else:
             ring_size = other.child.child.ring_size

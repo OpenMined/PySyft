@@ -459,7 +459,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     def gamma(self) -> InitialGammaTensor:
 
         """Property to cast this tensor into a GammaTensor"""
-        return self.create_gamma()
+        # return self.create_gamma()
+        return self
 
     def create_gamma(
         self, scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None
@@ -728,8 +729,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         if isinstance(other, SingleEntityPhiTensor):
 
-            if self.entity != other.entity:
-                return convert_to_gamma_tensor(self) * convert_to_gamma_tensor(other)
+            # if self.entity != other.entity:
+            #     return convert_to_gamma_tensor(self) * convert_to_gamma_tensor(other)
 
             data = self.child * other.child
 
