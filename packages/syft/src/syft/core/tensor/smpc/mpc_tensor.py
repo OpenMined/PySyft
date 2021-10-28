@@ -4,7 +4,6 @@ from __future__ import annotations
 # stdlib
 import functools
 import itertools
-import operator
 import secrets
 from typing import Any
 from typing import Callable

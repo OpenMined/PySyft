@@ -38,8 +38,6 @@ if TYPE_CHECKING:
 def mul_master(
     x: MPCTensor, y: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
 ) -> MPCTensor:
-    # relative
-    from ..... import Tensor
 
     """Function that is executed by the orchestrator to multiply two secret values.
 
@@ -88,7 +86,6 @@ def mul_master(
         op = get_run_class_method(attr_path_and_name, SMPC=True)
         for a, b in zip(x.child, y.child):
             res_shares.append(op(a, a, b, shape_x, shape_y, **kwargs))
-
 
     return res_shares  # type: ignore
 
