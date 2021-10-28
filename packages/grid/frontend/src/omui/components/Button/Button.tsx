@@ -48,7 +48,7 @@ const variants = (color: string): Record<ButtonVariant, string> => ({
   link: 'text-primary-600 hover:underline dark:text-primary-200'
 })
 
-const defaultClasses = 'inline-flex items-center rounded space-x-1.5'
+const defaultClasses = 'inline-flex items-center rounded space-x-1.5 outline-none'
 const disabledClasses = 'opacity-40 pointer-events-none'
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
