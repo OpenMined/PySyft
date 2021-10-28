@@ -54,6 +54,7 @@ from ..common.node_service.object_transfer.object_transfer_messages import (
 from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
+from ..common.node_service.simple.obj_exists import DoesObjectExistMessage
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
@@ -314,6 +315,10 @@ class DomainClient(Client):
         self.association = AssociationRequestAPI(client=self)
         self.datasets = DatasetRequestAPI(client=self)
         self.vpn = VPNAPI(client=self)
+
+    def obj_exists(self, obj_id: UID) -> bool:
+        msg = DoesObjectExistMessage(obj_id=obj_id)
+        return self.send_immediate_msg_with_reply(msg=msg).payload  # type: ignore
 
     @property
     def privacy_budget(self) -> float:

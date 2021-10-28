@@ -83,7 +83,7 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
-    verbose: bool = True,
+    verbose: Optional[bool] = True,
 ) -> Client:
 
     # if email is None and password is None:
@@ -146,6 +146,7 @@ def register(
     password: Optional[str] = None,
     url: Optional[str] = None,
     port: Optional[int] = None,
+    verbose: Optional[bool] = True,
 ) -> Client:
     if name is None:
         name = input("Please enter your name:")
@@ -168,7 +169,10 @@ def register(
     x = requests.post(register_url, data=json.dumps(myobj))
 
     if "error" not in json.loads(x.text):
-        print("Successfully registered! Logging in...")
-        return login(url=url, port=port, email=email, password=password)
+        if verbose:
+            print("Successfully registered! Logging in...")
+        return login(
+            url=url, port=port, email=email, password=password, verbose=verbose
+        )
 
     raise Exception(x.text)
