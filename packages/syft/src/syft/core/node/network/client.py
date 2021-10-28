@@ -152,24 +152,19 @@ class NetworkClient(Client):
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
 
-    def search(self, query: List, pandas: bool = False) -> Any:
+    def search(self, query: List, pandas: bool = True) -> Any:
         response = self._perform_grid_request(
             grid_msg=NetworkSearchMessage, content={"content": query}
         )
         result = response.content  # type: ignore
+        if result["status"] == "ok":
+            result = result["data"]
+        else:
+            result = []
         if pandas:
             result = DataFrame(result)
 
         return result
-
-    # TODO: @Ionesio
-    # rename to match API
-    # def domains__getter__(self, id: int) -> Union[Client, ProxyClient]:
-    # if not is_vpn:
-    # sy.connect(url="...")
-    # else is_vpn:
-    # sy.connect(url=NETWORK_PUBLIC_IP, address=DOMAIN_ADDRESS)
-    #   self.domains[id]
 
     def _perform_grid_request(
         self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
