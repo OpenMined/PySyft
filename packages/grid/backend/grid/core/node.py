@@ -16,9 +16,9 @@ from grid.db.session import get_db_engine
 from grid.db.session import get_db_session
 
 if settings.NODE_TYPE.lower() == "domain":
-    node = Domain("Domain", db_engine=get_db_engine())
+    node = Domain("Domain", db_engine=get_db_engine(), settings=settings)
 elif settings.NODE_TYPE.lower() == "network":
-    node = Network("Network", db_engine=get_db_engine())
+    node = Network("Network", db_engine=get_db_engine(), settings=settings)
 else:
     raise Exception(
         "Don't know NODE_TYPE "
