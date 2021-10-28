@@ -71,9 +71,9 @@ def get_shape_ndarray_method_from_shapes(
     ndarray_method_str: str,
     self_shape: Tuple[int],
     other_shape: Tuple[int],
-    *args,
-    **kwargs
-) -> Tuple[int]:
+    *args: Any,
+    **kwargs: Any
+) -> Tuple[int, ...]:
     mock_self = np.empty(self_shape)
     mock_other = np.empty(other_shape)
     out_shape = getattr(mock_self, ndarray_method_str)(

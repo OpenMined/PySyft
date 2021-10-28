@@ -641,7 +641,9 @@ class MPCTensor(PassthroughTensor):
         return self, other
 
     @staticmethod
-    def prepare_arguments_and_run_checks(self, other):
+    def prepare_arguments_and_run_checks(
+        self: MPCTensor, other: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> Any:
 
         # Step 1: if other is private, we need to make sure that self and other have the same shareholders.
         # if other is public, then do nothing.
