@@ -567,7 +567,7 @@ class MPCTensor(PassthroughTensor):
                 attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
                 op = get_run_class_method(attr_path_and_name,SMPC=True)
                 for x,y in zip(self.child,other.child):
-                    res_shares.append(op(x,y,**kwargs))
+                    res_shares.append(op(x,x,y,**kwargs))
 
         else:
             raise ValueError(f"MPCTensor Private {op_str} not supported")
