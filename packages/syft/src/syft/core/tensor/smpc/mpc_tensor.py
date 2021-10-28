@@ -27,6 +27,7 @@ import syft as sy
 from . import utils
 from .... import logger
 from ...smpc.protocol.spdz import spdz
+from ...smpc.store import CryptoPrimitiveProvider
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
@@ -594,6 +595,8 @@ class MPCTensor(PassthroughTensor):
                 new_parties = [client]
                 new_parties += parties
                 mpc_tensor = MPCTensor.reshare(mpc_tensor, new_parties)
+            else:
+                new_parties = parties
 
             # In all cases, we must MPC share the pointer 'other' across all parties of SMPCTensor
             # Look closely and you'll see that new_parties includes the pointer's owner in all cases
@@ -637,24 +640,200 @@ class MPCTensor(PassthroughTensor):
         # sent to the remote worker as a public value at a later step.
         return mpc_tensor, other
 
+    @staticmethod
+    def prepare_arguments_and_run_checks(self, y):
+
+        # Step 1: if y is private, we need to make sure that x and y have the same shareholders.
+        # if y is public, then do nothing.
+        x, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
+
+        # Step 2: calculate random seed (a single int) to send to all shareholders
+        # For SMPC operations, each shareholder computes the full list of actions
+        # that every shareholder will run (including what IDs those operations will have, produce,
+        # etc.) They then select the subset of actions that only they (Shareholder <x>) will actually
+        # execute and then executes them. In order for all parties to generate the list of actions
+        # identically, they need to coordinate their random number generators (primarliy so that they generate the
+        # same IDs for objects). This is the seed which provides for that coordination.
+        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
+
+        # Step 3: Check that ring size matches between self and arguments.
+        # Ring size needs to match between the arguments that go in.
+        # Ring size corresponds to the type of data passed in (int32 vs int64 for example). See
+        # get_ring_size_from_secret for more details. More on ring sizes in courses.openmined.org
+        if isinstance(y, MPCTensor):
+            # if y is private then the ring size is an attribute explicitly encoded
+            y_ring_size = y.ring_size
+
+        else:
+            # if y is some sort of public value (like an int or numpy array), then we need
+            # to infer it from the data type using a helper function
+            y_ring_size = MPCTensor.get_ring_size_from_secret(y)
+
+        # If the ring sizes don't match then we can't do the computation so we'll trigger an error
+        # before the computation occurs.
+        if self.ring_size != y_ring_size:
+            raise ValueError(
+                f"Ring size mismatch between self {self.ring_size} and other {y_ring_size}"
+            )
+
+        # Step 4: Calculate the ring size of the result
+        # TODO (from TRASK): could this actually change? Why do we need to infer this?
+        ring_size = utils.get_ring_size(self.ring_size, y_ring_size)
+
+        if not isinstance(y, MPCTensor):
+            y_shares = itertools.repeat(y)
+        else:
+            y_shares = y.child
+
+        # Step 5: Calculate argument shapes
+        x_shape = tuple(getattr(x, "shape", (1,)))
+        y_shape = tuple(getattr(y, "shape", (1,)))
+
+        return (
+            x.child,
+            y_shares,
+            kwargs,
+            ring_size,
+            x.parties,
+            x.parties_info,
+            x_shape,
+            y_shape,
+        )
+
+    def __add__(
+        self, other: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        """Apply the "add" operation between "self" and "other".
+
+        Args:
+            y (Union[MPCTensor, torch.Tensor, float, int]): self + y
+
+        Returns:
+            MPCTensor. Result of the operation.
+        """
+
+        # Step 1: if other is private, we need to make sure that self and other have the same shareholders.
+        # Step 2: calculate random seed (a single int) to send to all shareholders
+        # Step 3: Check that ring size matches between self and arguments.
+        # Step 4: Calculate the ring size of the result
+        # Step 5: Calculate argument shapes
+        (
+            self_shrs,
+            other_shrs,
+            kwargs,
+            ring_size,
+            parties,
+            parties_info,
+            self_shape,
+            other_shape,
+        ) = MPCTensor.prepare_arguments_and_run_checks(self, other)
+
+        # Step 6: Execute the SMPC operation
+        # TODO: some complex hooking logic on ShareTensor means we're passing in 'a' twice
+        res_shares = [a.__add__(a, b, **kwargs) for a, b in zip(self_shrs, other_shrs)]
+
+        # Step 7: Calculate shape of result using only publicly available data (so not conditioned on private data).
+        public_shape = utils.get_shape_ndarray_method_from_shapes("__add__", self_shape, other_shape)
+
+        # Step 8: Create the resulting MPCTensor object.
+        # Note: this doesn't mean the computation has completed. This MPCTensor object is merely a pointer
+        # to where the result of the MPC computation will be deposited. Call .block to wait for the computation
+        # to be finished.
+        result = MPCTensor(
+            shares=res_shares, shape=public_shape, ring_size=ring_size, parties=parties
+        )
+
+        return result
+
+    def __mul__(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+
+        # Step 1: if y is private, we need to make sure that x and y have the same shareholders.
+        # Step 2: calculate random seed (a single int) to send to all shareholders
+        # Step 3: Check that ring size matches between self and arguments.
+        # Step 4: Calculate the ring size of the result
+        # Step 5: Calculate argument shapes
+        (
+            x_shrs,
+            y_shrs,
+            kwargs,
+            ring_size,
+            parties,
+            parties_info,
+            shape_x,
+            shape_y,
+        ) = MPCTensor.prepare_arguments_and_run_checks(self, y)
+
+        # Step 6: If y is private and we're doing private-private mul, create beaver triples.
+        if isinstance(y, MPCTensor):
+
+            CryptoPrimitiveProvider.generate_primitives(
+                "beaver_mul",
+                parties=parties,
+                g_kwargs={
+                    "a_shape": shape_x,
+                    "b_shape": shape_y,
+                    "parties_info": parties_info,
+                },
+                p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+                ring_size=ring_size,
+            )
+
+        # Step 6: Execute the SMPC operation
+        res_shares = [
+            # TODO: some complex hooking logic on ShareTensor means we're passing in 'a' twice
+            a.__mul__(a, b, shape_x, shape_y, **kwargs)
+            for a, b in zip(x_shrs, y_shrs)
+        ]
+
+        # Step 7: Calculate shape of result using only publicly available data (so not conditioned on private data).
+        public_shape = utils.get_shape_ndarray_method_from_shapes(
+            "__mul__", shape_x, shape_y
+        )
+
+        # Step 8: Create the resulting MPCTensor object.
+        # Note: this doesn't mean the computation has completed. This MPCTensor object is merely a pointer
+        # to where the result of the MPC computation will be deposited. Call .block to wait for the computation
+        # to be finished.
+        res = MPCTensor(
+            parties=self.parties,
+            shares=res_shares,
+            shape=public_shape,
+            ring_size=self.ring_size,
+        )
+
+        return res
+
     def __apply_private_op(
         self, other: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
     ) -> List[ShareTensor]:
+
         # relative
         from ..tensor import TensorPointer
 
+        # TODO: this is hacky and won't work for all ops.
         op_method = f"__{op_str}__"
+
+        # TODO: this is a strange place for this to live. If an unsupported op is being requested
+        # we shouldn't have gotten this far.
         if op_str in {"add", "sub"}:
+
+            # Double-check to make sure that all MPCTensor objects have the same number of shares
+            # TODO: while this is in practice redundant it's also insufficient because we need to make sure
+            # they actually have the same shareholders, not just the same number of shareholders.
             if len(self.child) != len(other.child):
                 raise ValueError(
                     "Zipping two different lengths will drop data. "
                     + f"{len(self.child)} vs {len(other.child)}"
                 )
+
             if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
                     getattr(a, op_method)(a, b, **kwargs)
                     for a, b in zip(self.child, other.child)
                 ]
+            # TODO: when does this get called? Why would a share not be a TensorPointer?
             else:
                 op: Callable[..., Any] = getattr(operator, op_str)
                 res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
@@ -669,8 +848,13 @@ class MPCTensor(PassthroughTensor):
         # relative
         from ..tensor import TensorPointer
 
+        # TODO: this is hacky and won't work for all (non-duner) ops
         op_method = f"__{op_str}__"
+
+        # TODO: this is a strange place for this allowlist to live.
         if op_str in {"mul", "matmul", "add", "sub"}:
+
+            # TODO: it's clear that this if statement is necessary
             if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
                     getattr(share, op_method)(share, y, **kwargs)
@@ -713,7 +897,7 @@ class MPCTensor(PassthroughTensor):
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
 
         # Step 3: Check that ring size matches between self and arguments.
-        # Ring size needs to match between the arguments that go in and the argument that comes out.
+        # Ring size needs to match between the arguments that go in.
         # Ring size corresponds to the type of data passed in (int32 vs int64 for example). See
         # get_ring_size_from_secret for more details. More on ring sizes in courses.openmined.org
         if isinstance(y, MPCTensor):
@@ -766,25 +950,6 @@ class MPCTensor(PassthroughTensor):
 
         return result
 
-    def add(
-        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
-    ) -> MPCTensor:
-        """Apply the "add" operation between "self" and "y".
-
-        Args:
-            y (Union[MPCTensor, torch.Tensor, float, int]): self + y
-
-        Returns:
-            MPCTensor. Result of the operation.
-        """
-        res = self.__apply_op(y, "add")
-        return res
-
-    def __add__(
-        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
-    ) -> MPCTensor:
-        return self.__apply_op(y, "add")
-
     def __radd__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
@@ -797,29 +962,6 @@ class MPCTensor(PassthroughTensor):
     def __rsub__(self, y: MPCTensor) -> MPCTensor:
         new_self = self * (-1)
         res = new_self.__apply_op(y, "add")
-        return res
-
-    def __mul__(
-        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
-    ) -> MPCTensor:
-        self, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
-        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
-        op = "__mul__"
-        if isinstance(y, MPCTensor):
-            res_shares = spdz.mul_master(self, y, "mul", **kwargs)
-        else:
-            res_shares = [
-                getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
-            ]
-        y_shape = getattr(y, "shape", (1,))
-        new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
-        res = MPCTensor(
-            parties=self.parties,
-            shares=res_shares,
-            shape=new_shape,
-            ring_size=self.ring_size,
-        )
-
         return res
 
     def __rmul__(
