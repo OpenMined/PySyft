@@ -13,12 +13,12 @@ from .exceptions import RetriableError
 id = UID(UUID("a8ac0c37382584a1082c710b0b38f6a3"))
 
 
-def get_list(node: AbstractNode) -> List:
+def get_list(node: AbstractNode) -> TypeList[SignedImmediateSyftMessageWithoutReply]:
     obj = node.store.get_object(key=id)
     if obj is None:
-        return List()
+        return List()  # type: ignore
     elif isinstance(obj.data, List):
-        return obj.data
+        return obj.data  # type: ignore
     else:
         raise ValueError(
             f"Unfinished task Object should be {obj} should be a List or None"
