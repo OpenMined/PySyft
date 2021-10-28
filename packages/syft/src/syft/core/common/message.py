@@ -220,6 +220,9 @@ class SignedMessage(SyftMessage):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return SignedMessage_PB
 
+    def __hash__(self) -> int:
+        return hash((self.signature, self.verify_key))
+
 
 class SignedImmediateSyftMessageWithReply(SignedMessage):
     """ """
