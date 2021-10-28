@@ -47,11 +47,6 @@ def proceed_unfinished_tasks(node: AbstractNode) -> None:
             node.recv_immediate_msg_without_reply(unfinished_task)
             UNFINISHED_TASKS.remove(unfinished_task)
         except Exception as e:
-            print("Hello1")
-            if isinstance(e, RetriableError):
-                print("Hello2")
-                print("Task Not Ready Yet")
-            else:
-                print("Hello3")
+            if not isinstance(e, RetriableError):
                 raise e
     update_list(UNFINISHED_TASKS, node)

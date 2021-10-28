@@ -30,12 +30,9 @@ def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
             node.recv_immediate_msg_without_reply(msg=obj_msg)
             proceed_unfinished_tasks(node)
         except Exception as e:
-            print("Hello1")
             if isinstance(e, RetriableError):
-                print("Hello2")
                 register_unfinished_task(obj_msg, node)
             else:
-                print("Hello3")
                 raise e
     else:
         raise Exception(
