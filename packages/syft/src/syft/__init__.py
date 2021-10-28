@@ -120,23 +120,23 @@ client_cache: Dict[str, Any] = {}
 flags._APACHE_ARROW_TENSOR_SERDE = False
 
 
-def module_property(func):
+def module_property(func: Any) -> None:
     """Decorator to turn module functions into properties.
     Function names must be prefixed with an underscore."""
     module = sys.modules[func.__module__]
 
-    def base_getattr(name):
+    def base_getattr(name: str) -> None:
         raise AttributeError(f"module '{module.__name__}' has no attribute '{name}'")
 
     old_getattr = getattr(module, "__getattr__", base_getattr)
 
-    def new_getattr(name):
+    def new_getattr(name: str) -> Any:
         if f"_{name}" == func.__name__:
             return func()
         else:
             return old_getattr(name)
 
-    module.__getattr__ = new_getattr
+    module.__getattr__ = new_getattr  # type: ignore
     return func
 
 

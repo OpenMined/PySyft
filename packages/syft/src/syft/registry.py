@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-import sys
 from typing import Any
 from typing import Dict
 from typing import Union
@@ -13,7 +12,7 @@ import requests
 
 # relative
 from . import login
-from .core.node.network.client import NetworkClient
+from .core.node.common.client import Client
 from .logger import error
 from .logger import warning
 
@@ -38,7 +37,7 @@ class NetworkRegistry:
     def _repr_html_(self) -> str:
         return pd.DataFrame(self.networks)._repr_html_()
 
-    def create_client(self, network: Dict[str, Any]) -> NetworkClient:
+    def create_client(self, network: Dict[str, Any]) -> Client:
         try:
             host_or_ip = network["host_or_ip"]
             port = int(network["port"])
@@ -46,8 +45,9 @@ class NetworkRegistry:
             return login(url=f"{protocol}://{host_or_ip}", port=port)
         except Exception as e:
             error(f"Failed to login with: {network}. {e}")
+            raise e
 
-    def __getitem__(self, key: Union[str, int]) -> NetworkClient:
+    def __getitem__(self, key: Union[str, int]) -> Client:
         if isinstance(key, int):
             return self.create_client(network=self.networks[key])
         else:
