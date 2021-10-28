@@ -82,7 +82,6 @@ def test_mpc_public_private_op(get_clients, op_str: str) -> None:
     res.block_with_timeout(secs=20)
     # time.sleep(20)  # TODO: should remove after polling get.
 
-
     res = res.reconstruct()
     expected = op(value_1, public_value)
 
