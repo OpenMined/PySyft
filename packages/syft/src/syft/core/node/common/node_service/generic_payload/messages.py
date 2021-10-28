@@ -14,7 +14,7 @@ from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.uid import UID
 from .....io.address import Address
-from ....abstract.node import AbstractNode
+from ....abstract.node_service_interface import NodeServiceInterface
 
 
 class GenericPayloadMessage(ImmediateSyftMessageWithReply):
@@ -50,10 +50,12 @@ class GenericPayloadMessageWithReply:
     message_reply_type = GenericPayloadReplyMessage
 
     def __init__(self, kwargs: Dict[str, Any] = {}) -> None:
+        if hasattr(kwargs, "upcast"):
+            kwargs = kwargs.upcast()  # type: ignore
         self.kwargs = kwargs
 
     def run(
-        self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
+        self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         raise NotImplementedError
 

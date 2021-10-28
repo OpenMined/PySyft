@@ -21,6 +21,7 @@ from .. import ast
 from .. import lib
 from ..core.common.group import VERIFYALL
 from ..core.common.uid import UID
+from ..core.node.common.action.action_sequence import ActionSequence
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
@@ -33,7 +34,6 @@ from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_m
 )
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
-from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
@@ -679,7 +679,10 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
-        ) -> Pointer:
+            id_at_location_override: Optional[UID] = None,
+            **kwargs: Dict[str, Any],
+        ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
+
             """Send obj to client and return pointer to the object.
 
             Args:
@@ -726,7 +729,10 @@ class Class(Callable):
                 attach_tags(self, tags)
                 attach_description(self, description)
 
-            id_at_location = UID()
+            if id_at_location_override is not None:
+                id_at_location = id_at_location_override
+            else:
+                id_at_location = UID()
 
             if hasattr(self, "init_pointer"):
                 constructor = self.init_pointer
@@ -758,11 +764,16 @@ class Class(Callable):
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
-            # Step 3: send message
-            client.send_immediate_msg_without_reply(msg=obj_msg)
+            immediate = kwargs.get("immediate", True)
 
-            # Step 4: return pointer
-            return ptr
+            if immediate:
+                # Step 3: send message
+                client.send_immediate_msg_without_reply(msg=obj_msg)
+
+                # Step 4: return pointer
+                return ptr
+            else:
+                return ptr, obj_msg
 
         aggressive_set_attr(obj=outer_self.object_ref, name="send", attr=send)
 
@@ -891,11 +902,13 @@ class Class(Callable):
 
             return target_object
         except Exception as e:
-            critical(
-                "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
-                "StaticAttribute, be sure they have been added to the AST. Falling back on"
-                "__getattr__ to search in self.attrs for the requested field."
-            )
+            # TODO: this gets really chatty when doing SMPC mulitplication. Figure out why.
+            # critical(
+            #     f"{self.path_and_name}__getattribute__[{item}] failed. If you
+            #     are trying to access an EnumAttribute or a "
+            #     "StaticAttribute, be sure they have been added to the AST. Falling back on"
+            #     "__getattr__ to search in self.attrs for the requested field."
+            # )
             traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
@@ -964,12 +977,14 @@ def pointerize_args_and_kwargs(
     # this ensures that any args which are passed in from the user side are first
     # converted to pointers and sent then the pointer values are used for the
     # method invocation
+    obj_lst = []
     pointer_args = []
     pointer_kwargs = {}
     for arg in args:
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=not gc_enabled)
+            arg_ptr, obj = arg.send(client, pointable=not gc_enabled, immediate=False)
+            obj_lst.append(obj)
             pointer_args.append(arg_ptr)
         else:
             pointer_args.append(arg)
@@ -978,9 +993,15 @@ def pointerize_args_and_kwargs(
     for k, arg in kwargs.items():
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=True)
+            arg_ptr, obj = arg.send(client, pointable=not gc_enabled, immediate=False)
+            obj_lst.append(obj)
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg
+
+    msg = ActionSequence(obj_lst=obj_lst, address=client.address)
+
+    # send message to client
+    client.send_immediate_msg_without_reply(msg=msg)
 
     return pointer_args, pointer_kwargs

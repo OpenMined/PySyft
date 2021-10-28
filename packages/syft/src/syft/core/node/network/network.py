@@ -13,6 +13,7 @@ from typing import Union
 import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pydantic import BaseSettings
 
 # relative
 from ....lib.python import String
@@ -40,6 +41,9 @@ from ..common.node_service.node_setup.node_setup_messages import (
     CreateInitialSetUpMessage,
 )
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
+from ..common.node_service.peer_discovery.peer_discovery_service import (
+    PeerDiscoveryService,
+)
 from ..common.node_service.ping.ping_service import PingService
 from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
@@ -74,6 +78,7 @@ class Network(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
+        settings: BaseSettings = BaseSettings(),
     ):
         super().__init__(
             name=name,
@@ -85,6 +90,9 @@ class Network(Node):
             verify_key=verify_key,
             db_engine=db_engine,
         )
+
+        # share settings with the FastAPI application level
+        self.settings = settings
 
         # specific location with name
         self.network = SpecificLocation(name=self.name)
@@ -109,6 +117,7 @@ class Network(Node):
         self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(NetworkSearchService)
+        self.immediate_services_with_reply.append(PeerDiscoveryService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()

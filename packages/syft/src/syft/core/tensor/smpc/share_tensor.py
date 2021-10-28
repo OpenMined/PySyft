@@ -131,6 +131,7 @@ class ShareTensor(PassthroughTensor):
                     email="info@openmined.org",
                     password="changethis",
                     port=party_info.port,
+                    verbose=False,
                 )
                 base_url = client.routes[0].connection.base_url
                 client.routes[0].connection.base_url = base_url.replace(  # type: ignore

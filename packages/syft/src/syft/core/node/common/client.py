@@ -37,16 +37,11 @@ from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
-from ...io.route import SoloRoute
-from ...io.virtual import VirtualClientConnection
 from ...pointer.garbage_collection import GarbageCollection
 from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from .action.exception_action import ExceptionMessage
-from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
-    RegisterChildNodeMessage,
-)
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
 
@@ -96,6 +91,9 @@ class Client(AbstractNodeClient):
         self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
+
+    def obj_exists(self, obj_id: UID) -> bool:
+        raise NotImplementedError
 
     @property
     def icon(self) -> str:
@@ -149,66 +147,67 @@ class Client(AbstractNodeClient):
             except Exception as e:
                 critical(f"Failed to set python attribute on client. {e}")
 
-    def add_me_to_my_address(self) -> None:
-        traceback_and_raise(NotImplementedError)
+    # def add_me_to_my_address(self) -> None:
+    #     traceback_and_raise(NotImplementedError)
 
-    def register_in_memory_client(self, client: AbstractNodeClient) -> None:
-        # WARNING: Gross hack
-        route_index = self.default_route_index
-        # this ID should be unique but persistent so that lookups are universal
-        route = self.routes[route_index]
-        if isinstance(route, SoloRoute):
-            connection = route.connection
-            if isinstance(connection, VirtualClientConnection):
-                connection.server.node.in_memory_client_registry[
-                    client.address.target_id.id
-                ] = client
-            else:
-                traceback_and_raise(
-                    Exception(
-                        "Unable to save client reference without VirtualClientConnection"
-                    )
-                )
-        else:
-            traceback_and_raise(
-                Exception("Unable to save client reference without SoloRoute")
-            )
+    # def register_in_memory_client(self, client: AbstractNodeClient) -> None:
+    #     # WARNING: Gross hack
+    #     route_index = self.default_route_index
+    #     # this ID should be unique but persistent so that lookups are universal
+    #     route = self.routes[route_index]
+    #     if isinstance(route, SoloRoute):
+    #         connection = route.connection
+    #         if isinstance(connection, VirtualClientConnection):
+    #             connection.server.node.in_memory_client_registry[
+    #                 client.address.target_id.id
+    #             ] = client
+    #         else:
+    #             traceback_and_raise(
+    #                 Exception(
+    #                     "Unable to save client reference without VirtualClientConnection"
+    #                 )
+    #             )
+    #     else:
+    #         traceback_and_raise(
+    #             Exception("Unable to save client reference without SoloRoute")
+    #         )
 
-    def register(self, client: AbstractNodeClient) -> None:
-        debug(f"> Registering {client.pprint} with {self.pprint}")
-        self.register_in_memory_client(client=client)
-        msg = RegisterChildNodeMessage(
-            lookup_id=client.id,
-            child_node_client_address=client.address,
-            address=self.address,
-        )
+    # not being used
+    # def register(self, client: AbstractNodeClient) -> None:
+    #     debug(f"> Registering {client.pprint} with {self.pprint}")
+    #     self.register_in_memory_client(client=client)
+    #     msg = RegisterChildNodeMessage(
+    #         lookup_id=client.id,
+    #         child_node_client_address=client.address,
+    #         address=self.address,
+    #     )
 
-        if self.network is not None:
-            client.network = (
-                self.network if self.network is not None else client.network
-            )
+    #     if self.network is not None:
+    #         client.network = (
+    #             self.network if self.network is not None else client.network
+    #         )
 
-        # QUESTION
-        # if the client is a network and the domain is not none this will set it
-        # on the network causing an exception
-        # but we can't check if the client is a NetworkClient here because
-        # this is a superclass of NetworkClient
-        # Remove: if self.domain is not None:
-        # then see the test line node_test.py:
-        # bob_network_client.register(client=bob_domain_client)
-        if self.domain is not None:
-            client.domain = self.domain if self.domain is not None else client.domain
+    #     # QUESTION
+    #     # if the client is a network and the domain is not none this will set it
+    #     # on the network causing an exception
+    #     # but we can't check if the client is a NetworkClient here because
+    #     # this is a superclass of NetworkClient
+    #     # Remove: if self.domain is not None:
+    #     # then see the test line node_test.py:
+    #     # bob_network_client.register(client=bob_domain_client)
+    #     if self.domain is not None:
+    #         client.domain = self.domain if self.domain is not None else client.domain
 
-        if self.device is not None:
-            client.device = self.device if self.device is not None else client.device
+    #     if self.device is not None:
+    #         client.device = self.device if self.device is not None else client.device
 
-            if self.device != client.device:
-                raise AttributeError("Devices don't match")
+    #         if self.device != client.device:
+    #             raise AttributeError("Devices don't match")
 
-        if self.vm is not None:
-            client.vm = self.vm
+    #     if self.vm is not None:
+    #         client.vm = self.vm
 
-        self.send_immediate_msg_without_reply(msg=msg)
+    #     self.send_immediate_msg_without_reply(msg=msg)
 
     @property
     def id(self) -> UID:

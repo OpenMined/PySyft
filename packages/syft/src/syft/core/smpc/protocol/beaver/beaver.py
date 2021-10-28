@@ -75,7 +75,6 @@ def _get_triples(
         )
     )
 
-    print("a_rand", a_rand)
     a_shares = MPCTensor._get_shares_from_local_secret(
         secret=deepcopy(a_rand),
         parties_info=parties_info,  # type: ignore
@@ -89,7 +88,6 @@ def _get_triples(
             low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=numpy_type
         )
     )
-    print("b_rand", b_rand)
 
     b_shares = MPCTensor._get_shares_from_local_secret(
         secret=deepcopy(b_rand),
@@ -102,7 +100,6 @@ def _get_triples(
     # TODO: bitwise and on passthorough tensor raises
     # hence we do it on numpy array itself.
     c_val = Tensor(cmd(a_rand.child, b_rand.child))
-    print("c_val", c_val)
     c_shares = MPCTensor._get_shares_from_local_secret(
         secret=deepcopy(c_val),
         parties_info=parties_info,  # type: ignore
@@ -134,8 +131,6 @@ def _get_triples(
     triple = list(
         map(list, zip(*map(lambda x: map(list, zip(*x)), triple_sequential)))  # type: ignore
     )
-
-    print("Triple", triple)
 
     return triple  # type: ignore
 
