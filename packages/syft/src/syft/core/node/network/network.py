@@ -13,6 +13,7 @@ from typing import Union
 import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pydantic import BaseSettings
 
 # relative
 from ....lib.python import String
@@ -77,6 +78,7 @@ class Network(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
+        settings: BaseSettings = BaseSettings(),
     ):
         super().__init__(
             name=name,
@@ -88,6 +90,9 @@ class Network(Node):
             verify_key=verify_key,
             db_engine=db_engine,
         )
+
+        # share settings with the FastAPI application level
+        self.settings = settings
 
         # specific location with name
         self.network = SpecificLocation(name=self.name)
