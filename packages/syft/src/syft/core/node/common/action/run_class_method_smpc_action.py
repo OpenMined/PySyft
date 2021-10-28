@@ -22,6 +22,7 @@ from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from .exceptions import ObjectNotInStore
 
 
 @serializable()
@@ -94,13 +95,20 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
                 f"execute_action on {self.path} failed due to missing object"
                 + f" at: {self._self.id_at_location}"
             )
-            return
+            raise ObjectNotInStore
         result_read_permissions = resolved_self.read_permissions
 
         resolved_args = list()
         tag_args = []
         for arg in self.args:
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get_object(key=arg.id_at_location)
+            if r_arg is None:
+                critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {arg.id_at_location}"
+                )
+                raise ObjectNotInStore
+
             # TODO: Think of a way to free the memory
             # del node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
@@ -112,7 +120,13 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get_object(arg.id_at_location)
+            if r_arg is None:
+                critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {arg.id_at_location}"
+                )
+                raise ObjectNotInStore
             # TODO: Think of a way to free the memory
             # del node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
