@@ -44,7 +44,7 @@ def register_unfinished_task(
 
 def proceed_unfinished_tasks(node: AbstractNode) -> None:
     UNFINISHED_TASKS: TypeSet[SignedImmediateSyftMessageWithoutReply] = get_set(node)
-    for unfinished_task in UNFINISHED_TASKS:
+    for unfinished_task in UNFINISHED_TASKS.copy():
         try:
             node.recv_immediate_msg_without_reply(unfinished_task)
             UNFINISHED_TASKS.remove(unfinished_task)
