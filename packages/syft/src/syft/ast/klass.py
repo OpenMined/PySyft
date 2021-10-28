@@ -83,7 +83,7 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
     return new_pointer
 
 
-def get_run_class_method(attr_path_and_name: str) -> CallableT:
+def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> CallableT:
     """Create a function for class method in `attr_path_and_name` for remote execution.
 
     Args:
@@ -248,7 +248,9 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
     from ..core.node.common.action.smpc_action_message import MAP_FUNC_TO_ACTION
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]
-    if "ShareTensor" in attr_path_and_name and method_name in MAP_FUNC_TO_ACTION:
+    if SMPC or (
+        "ShareTensor" in attr_path_and_name and method_name in MAP_FUNC_TO_ACTION
+    ):
         return run_class_smpc_method
 
     return run_class_method

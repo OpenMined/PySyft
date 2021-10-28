@@ -19,6 +19,7 @@ from typing import TYPE_CHECKING
 import syft as sy
 
 # relative
+from .....ast.klass import get_run_class_method
 from ....common.uid import UID
 from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
 def mul_master(
     x: MPCTensor, y: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
 ) -> MPCTensor:
+
     """Function that is executed by the orchestrator to multiply two secret values.
 
     Args:
@@ -50,6 +52,9 @@ def mul_master(
     Returns:
         MPCTensor: Result of the multiplication.
     """
+
+    # relative
+    from ....tensor.tensor import TensorPointer
 
     parties = x.parties
     parties_info = x.parties_info
@@ -71,11 +76,17 @@ def mul_master(
         ring_size=ring_size,
     )
     # TODO: Should modify to parallel execution.
-
-    res_shares = [
-        getattr(a, "__mul__")(a, b, shape_x, shape_y, **kwargs)
-        for a, b in zip(x.child, y.child)
-    ]
+    if not isinstance(x.child[0], TensorPointer):
+        res_shares = [
+            getattr(a, "__mul__")(a, b, shape_x, shape_y, **kwargs)
+            for a, b in zip(x.child, y.child)
+        ]
+    else:
+        res_shares = []
+        attr_path_and_name = f"{x.child[0].path_and_name}.__{op_str}__"
+        op = get_run_class_method(attr_path_and_name, SMPC=True)
+        for a, b in zip(x.child, y.child):
+            res_shares.append(op(a, a, b, shape_x, shape_y, **kwargs))
 
     return res_shares  # type: ignore
 
