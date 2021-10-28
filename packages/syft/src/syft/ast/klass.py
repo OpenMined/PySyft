@@ -34,7 +34,6 @@ from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_m
 )
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
-from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
@@ -680,8 +679,10 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
+            id_at_location_override: Optional[UID] = None,
             **kwargs: Dict[str, Any],
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
+
             """Send obj to client and return pointer to the object.
 
             Args:
@@ -728,7 +729,10 @@ class Class(Callable):
                 attach_tags(self, tags)
                 attach_description(self, description)
 
-            id_at_location = UID()
+            if id_at_location_override is not None:
+                id_at_location = id_at_location_override
+            else:
+                id_at_location = UID()
 
             if hasattr(self, "init_pointer"):
                 constructor = self.init_pointer
@@ -898,11 +902,13 @@ class Class(Callable):
 
             return target_object
         except Exception as e:
-            critical(
-                "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
-                "StaticAttribute, be sure they have been added to the AST. Falling back on"
-                "__getattr__ to search in self.attrs for the requested field."
-            )
+            # TODO: this gets really chatty when doing SMPC mulitplication. Figure out why.
+            # critical(
+            #     f"{self.path_and_name}__getattribute__[{item}] failed. If you
+            #     are trying to access an EnumAttribute or a "
+            #     "StaticAttribute, be sure they have been added to the AST. Falling back on"
+            #     "__getattr__ to search in self.attrs for the requested field."
+            # )
             traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
