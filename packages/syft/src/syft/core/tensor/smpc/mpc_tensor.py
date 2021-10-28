@@ -530,7 +530,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def force_matching_shareholders_across_private_args(
-        mpc_tensor: MPCTensor, other: Any
+        self: MPCTensor, other: Any
     ) -> Tuple[MPCTensor, Any]:
         """When performing SMPC across multiple private arguments, we need to ensure that all private
         variables have compatible shareholders. This entails taking each argument's list of shareholders
@@ -553,7 +553,7 @@ class MPCTensor(PassthroughTensor):
         For more information on this, see courses.openmined.org. https://mortendahl.github.io/ is also great.
 
         Args:
-            mpc_tensor(MPCTensor): input MPCTensor to perform sanity check on.
+            self(MPCTensor): input MPCTensor to perform sanity check on.
             other (Any): input operand.
         Returns:
             Tuple[MPCTensor,Any]: Rehared Tensor values.
@@ -566,7 +566,7 @@ class MPCTensor(PassthroughTensor):
         if utils.ispointer(other):
 
             # self parties
-            parties = mpc_tensor.parties
+            parties = self.parties
 
             # the party of the pointer
             client = other.client
@@ -587,14 +587,14 @@ class MPCTensor(PassthroughTensor):
                 raise ValueError("The input tensor pointer should have public shape.")
 
             # now we must calculate all of the shareholders who need to have shared ownership over 'other' before
-            # we can compute on it with 'self' (mpc_tensor).
+            # we can compute on it with 'self').
 
-            # Special Case: if the 'other' pointer is NOT pointing to any of the shareholders of 'self' (mpc_tensor),
-            # then we must add one additional shareholder to 'self' (mpc_tensor), the owner of the pointer.
+            # Special Case: if the 'other' pointer is NOT pointing to any of the shareholders of 'self',
+            # then we must add one additional shareholder to 'self', the owner of the pointer.
             if client not in parties:
                 new_parties = [client]
                 new_parties += parties
-                mpc_tensor = MPCTensor.reshare(mpc_tensor, new_parties)
+                self = MPCTensor.reshare(self, new_parties)
             else:
                 new_parties = parties
 
@@ -606,12 +606,12 @@ class MPCTensor(PassthroughTensor):
             other = MPCTensor(secret=other, parties=new_parties, shape=public_shape)
 
         # However, if the 'other' argument is instead an MPCTensor, then we must compute the union of the two sets
-        # of shareholders and reshare both 'self' (mpc_tensor) and 'other' so that both have the same shareholders.
+        # of shareholders and reshare both 'self' and 'other' so that both have the same shareholders.
         # That is to say, if self and other had 2 and 3 non-overlapping shareholders respectively, we must
-        # create two new variables (overloaded to be mpc_tensor, and other) which both have the same 5 shareholders.
+        # create two new variables (overloaded to be self, and other) which both have the same 5 shareholders.
         elif isinstance(other, MPCTensor):
 
-            p1 = set(mpc_tensor.parties)  # parties/shareholders in first MPCTensor
+            p1 = set(self.parties)  # parties/shareholders in first MPCTensor
             p2 = set(other.parties)  # parties/shareholders in second MPCTensor.
 
             # if the two MPCTensors don't have the same parties, expand them to the union of both
@@ -621,10 +621,10 @@ class MPCTensor(PassthroughTensor):
                 parties_union = p1.union(p2)
 
                 # expand 'self' to include the shareholders from 'other'
-                mpc_tensor = (
-                    MPCTensor.reshare(mpc_tensor, parties_union)
+                self = (
+                    MPCTensor.reshare(self, parties_union)
                     if p1 != parties_union
-                    else mpc_tensor
+                    else self
                 )
 
                 # expand 'other' to include the shareholders from 'self'
@@ -638,14 +638,16 @@ class MPCTensor(PassthroughTensor):
         # Note: if 'other' was a public value (not a Pointer or an MPCTensor), it would have been
         # unmodified in this method. It's also ready for computation but it'll end up just being
         # sent to the remote worker as a public value at a later step.
-        return mpc_tensor, other
+        return self, other
 
     @staticmethod
-    def prepare_arguments_and_run_checks(self, y):
+    def prepare_arguments_and_run_checks(self, other):
 
-        # Step 1: if y is private, we need to make sure that x and y have the same shareholders.
-        # if y is public, then do nothing.
-        x, y = MPCTensor.force_matching_shareholders_across_private_args(self, y)
+        # Step 1: if other is private, we need to make sure that self and other have the same shareholders.
+        # if other is public, then do nothing.
+        self, other = MPCTensor.force_matching_shareholders_across_private_args(
+            self, other
+        )
 
         # Step 2: calculate random seed (a single int) to send to all shareholders
         # For SMPC operations, each shareholder computes the full list of actions
@@ -660,44 +662,44 @@ class MPCTensor(PassthroughTensor):
         # Ring size needs to match between the arguments that go in.
         # Ring size corresponds to the type of data passed in (int32 vs int64 for example). See
         # get_ring_size_from_secret for more details. More on ring sizes in courses.openmined.org
-        if isinstance(y, MPCTensor):
-            # if y is private then the ring size is an attribute explicitly encoded
-            y_ring_size = y.ring_size
+        if isinstance(other, MPCTensor):
+            # if other is private then the ring size is an attribute explicitly encoded
+            other_ring_size = other.ring_size
 
         else:
-            # if y is some sort of public value (like an int or numpy array), then we need
+            # if other is some sort of public value (like an int or numpy array), then we need
             # to infer it from the data type using a helper function
-            y_ring_size = MPCTensor.get_ring_size_from_secret(y)
+            other_ring_size = MPCTensor.get_ring_size_from_secret(other)
 
         # If the ring sizes don't match then we can't do the computation so we'll trigger an error
         # before the computation occurs.
-        if self.ring_size != y_ring_size:
+        if self.ring_size != other_ring_size:
             raise ValueError(
-                f"Ring size mismatch between self {self.ring_size} and other {y_ring_size}"
+                f"Ring size mismatch between self {self.ring_size} and other {other_ring_size}"
             )
 
         # Step 4: Calculate the ring size of the result
         # TODO (from TRASK): could this actually change? Why do we need to infer this?
-        ring_size = utils.get_ring_size(self.ring_size, y_ring_size)
+        ring_size = utils.get_ring_size(self.ring_size, other_ring_size)
 
-        if not isinstance(y, MPCTensor):
-            y_shares = itertools.repeat(y)
+        if not isinstance(other, MPCTensor):
+            other_shares = itertools.repeat(other)
         else:
-            y_shares = y.child
+            other_shares = other.child
 
         # Step 5: Calculate argument shapes
-        x_shape = tuple(getattr(x, "shape", (1,)))
-        y_shape = tuple(getattr(y, "shape", (1,)))
+        self_shape = tuple(getattr(self, "shape", (1,)))
+        other_shape = tuple(getattr(other, "shape", (1,)))
 
         return (
-            x.child,
-            y_shares,
+            self.child,
+            other_shares,
             kwargs,
             ring_size,
-            x.parties,
-            x.parties_info,
-            x_shape,
-            y_shape,
+            self.parties,
+            self.parties_info,
+            self_shape,
+            other_shape,
         )
 
     def __add__(
@@ -733,7 +735,9 @@ class MPCTensor(PassthroughTensor):
         res_shares = [a.__add__(a, b, **kwargs) for a, b in zip(self_shrs, other_shrs)]
 
         # Step 7: Calculate shape of result using only publicly available data (so not conditioned on private data).
-        public_shape = utils.get_shape_ndarray_method_from_shapes("__add__", self_shape, other_shape)
+        public_shape = utils.get_shape_ndarray_method_from_shapes(
+            "__add__", self_shape, other_shape
+        )
 
         # Step 8: Create the resulting MPCTensor object.
         # Note: this doesn't mean the computation has completed. This MPCTensor object is merely a pointer
@@ -746,50 +750,50 @@ class MPCTensor(PassthroughTensor):
         return result
 
     def __mul__(
-        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+        self, other: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
 
-        # Step 1: if y is private, we need to make sure that x and y have the same shareholders.
+        # Step 1: if other is private, we need to make sure that self and other have the same shareholders.
         # Step 2: calculate random seed (a single int) to send to all shareholders
         # Step 3: Check that ring size matches between self and arguments.
         # Step 4: Calculate the ring size of the result
         # Step 5: Calculate argument shapes
         (
-            x_shrs,
-            y_shrs,
+            self_shrs,
+            other_shrs,
             kwargs,
             ring_size,
             parties,
             parties_info,
-            shape_x,
-            shape_y,
-        ) = MPCTensor.prepare_arguments_and_run_checks(self, y)
+            self_shape,
+            other_shape,
+        ) = MPCTensor.prepare_arguments_and_run_checks(self, other)
 
-        # Step 6: If y is private and we're doing private-private mul, create beaver triples.
-        if isinstance(y, MPCTensor):
+        # Step 6: If other is private and we're doing private-private mul, create beaver triples.
+        if isinstance(other, MPCTensor):
 
             CryptoPrimitiveProvider.generate_primitives(
                 "beaver_mul",
                 parties=parties,
                 g_kwargs={
-                    "a_shape": shape_x,
-                    "b_shape": shape_y,
+                    "a_shape": self_shape,
+                    "b_shape": other_shape,
                     "parties_info": parties_info,
                 },
-                p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+                p_kwargs={"a_shape": self_shape, "b_shape": other_shape},
                 ring_size=ring_size,
             )
 
         # Step 6: Execute the SMPC operation
         res_shares = [
             # TODO: some complex hooking logic on ShareTensor means we're passing in 'a' twice
-            a.__mul__(a, b, shape_x, shape_y, **kwargs)
-            for a, b in zip(x_shrs, y_shrs)
+            a.__mul__(a, b, self_shape, other_shape, **kwargs)
+            for a, b in zip(self_shrs, other_shrs)
         ]
 
         # Step 7: Calculate shape of result using only publicly available data (so not conditioned on private data).
         public_shape = utils.get_shape_ndarray_method_from_shapes(
-            "__mul__", shape_x, shape_y
+            "__mul__", self_shape, other_shape
         )
 
         # Step 8: Create the resulting MPCTensor object.
