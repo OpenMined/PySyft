@@ -50,14 +50,17 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
             ]:
                 if scope_id is not None:
                     debug(f"> Lookup: {scope_id.emoji()}")
-                    if scope_id in node.in_memory_client_registry:
-                        in_memory_client = node.in_memory_client_registry[scope_id]
-                        return in_memory_client.send_immediate_msg_without_reply(
-                            msg=msg
-                        )
+                    client = node.get_peer_client(node_id=scope_id, only_vpn=False)
+                    if client:
+                        return client.send_immediate_msg_without_reply(msg=msg)
+                    else:
+                        raise Exception
         except Exception as e:
             # TODO: Need to not catch blanket exceptions
-            error(f"{addr} not on nodes in_memory_client. {e}")
+            error(
+                f"Failed to forward {msg}. "
+                f"No client for {addr} in node.get_peer_client. {e}"
+            )
             pass
         debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
         traceback_and_raise(
@@ -99,12 +102,17 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
             ]:
                 if scope_id is not None:
                     debug(f"> Lookup: {scope_id.emoji()}")
-                    if scope_id in node.in_memory_client_registry:
-                        in_memory_client = node.in_memory_client_registry[scope_id]
-                        return in_memory_client.send_immediate_msg_with_reply(msg=msg)
+                    client = node.get_peer_client(node_id=scope_id, only_vpn=False)
+                    if client:
+                        return client.send_immediate_msg_with_reply(msg=msg)
+                    else:
+                        raise Exception
         except Exception as e:
             # TODO: Need to not catch blanket exceptions
-            error(f"{addr} not on nodes in_memory_client. {e}")
+            error(
+                f"Failed to forward {msg}. "
+                f"No client for {addr} in node.get_peer_client. {e}"
+            )
             pass
         debug(f"> ❌ {node.pprint} 🤷🏾‍♀️ {addr.target_emoji()}")
         traceback_and_raise(
