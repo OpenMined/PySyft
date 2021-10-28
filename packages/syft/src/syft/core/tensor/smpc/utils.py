@@ -66,21 +66,6 @@ def get_shape(
     return tuple(res)  # type: ignore
 
 
-def get_shape_ndarray_method(
-    ndarray_method_str: str, self: Any, other: Any, *args, **kwargs
-) -> Tuple[int]:
-    self_shape = getattr(self, "shape", (1,))
-    other_shape = getattr(other, "shape", (1,))
-
-    return get_shape_ndarray_method_from_shapes(
-        ndarray_method_str=ndarray_method_str,
-        self_shape=self_shape,
-        other_shape=other_shape,
-        *args,
-        **kwargs
-    )
-
-
 @lru_cache(maxsize=128)
 def get_shape_ndarray_method_from_shapes(
     ndarray_method_str: str,
