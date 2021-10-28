@@ -8,7 +8,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ......util import traceback_and_raise
-from ....abstract.node import AbstractNode
+from ....abstract.node_service_interface import NodeServiceInterface
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from .vpn_messages import VPNConnectMessage
@@ -29,7 +29,7 @@ class VPNConnectService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: NodeServiceInterface,
         msg: VPNConnectMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> VPNConnectReplyMessage:
@@ -50,7 +50,7 @@ class VPNJoinService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: NodeServiceInterface,
         msg: VPNJoinMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> VPNJoinReplyMessage:
@@ -71,7 +71,7 @@ class VPNRegisterService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: NodeServiceInterface,
         msg: VPNRegisterMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> VPNRegisterReplyMessage:
@@ -88,7 +88,7 @@ class VPNStatusService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: NodeServiceInterface,
         msg: VPNStatusMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> VPNStatusReplyMessage:
