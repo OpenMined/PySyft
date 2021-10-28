@@ -85,7 +85,7 @@ def mul_master(
         attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
         op = get_run_class_method(attr_path_and_name,SMPC=True)
         for x,y in zip(self.child,other.child):
-            res_shares.append(op(x,y,shape_x,shape_y,**kwargs))
+            res_shares.append(op(x,x,y,shape_x,shape_y,**kwargs))
     
 
     return res_shares  # type: ignore

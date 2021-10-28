@@ -253,6 +253,14 @@ def spdz_multiply(
     node: Optional[Any] = None,
 ) -> ShareTensor:
     from syft import Tensor
+    TENSOR_FLAG = False
+    if isinstance(x,Tensor) and isinstance (y,Tensor):
+        TENSOR_FLAG = True
+        t1 = x
+        t2 = y
+        x = x.child.child
+        y = y.child.child
+
     print(")))))))))))))))))))))))))")
     print("SPDZ multiply")
     nr_parties = x.nr_parties
@@ -298,7 +306,12 @@ def spdz_multiply(
     print("Final Tensor", tensor)
     print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
-    return share
+    if TENSOR_FLAG:
+        t = t1*t2
+        t.child.child = share
+        return t
+    else:
+        return share
 
 
 # TODO : Should move to spdz directly in syft/core/smpc
@@ -312,7 +325,7 @@ def spdz_mask(
     c_share: ShareTensor,
 ) -> None:
     from syft import Tensor
-    if isinstance(x,Tensor) and (y,Tensor):
+    if isinstance(x,Tensor) and isinstance (y,Tensor):
         x = x.child.child
         y = y.child.child
 
