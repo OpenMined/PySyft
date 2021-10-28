@@ -42,6 +42,23 @@ class AssociationRequestAPI(RequestAPI):
             "You can not update an association request, try to send another one instead."
         )
 
+    def get(self, **kwargs: Any) -> Any:
+        association_table = self.perform_api_request(
+            syft_msg=self._get_message, content=kwargs
+        )
+
+        content = getattr(
+            association_table, "content", getattr(association_table, "metadata", None)
+        )
+        if content is None:
+            raise Exception(f"{type(self)} has no content or metadata field")
+
+        obj_data = dict(content)
+        obj_data[RequestAPIFields.SOURCE] = association_table.source
+        obj_data[RequestAPIFields.TARGET] = association_table.target
+
+        return self.to_obj(obj_data)
+
     def __getitem__(self, key: int) -> Any:
         return self.get(association_id=key)
 
