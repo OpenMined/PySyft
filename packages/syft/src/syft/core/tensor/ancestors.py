@@ -468,6 +468,8 @@ class PhiTensorAncestor(TensorChainManager):
             for e in entities:
                 if isinstance(e, str):
                     _entities.append(Entity(e))
+                elif isinstance(e, int):
+                    _entities.append(Entity(str(e)))
                 elif isinstance(e, Entity):
                     _entities.append(e)
                 elif isinstance(e, (list, np.ndarray)):
