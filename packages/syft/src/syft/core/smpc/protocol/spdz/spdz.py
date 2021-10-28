@@ -52,6 +52,7 @@ def mul_master(
     Returns:
         MPCTensor: Result of the multiplication.
     """
+    
     # relative
     from ....tensor.tensor import TensorPointer
 
