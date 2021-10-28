@@ -4,7 +4,9 @@ from raven import Client
 # syft absolute
 from syft import deserialize  # type: ignore
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.node.common.action.smpc_action_message import ObjectNotInStore
+from syft.core.node.common.action.exceptions import RetriableError
+from syft.core.node.common.action.unfinished_task import proceed_unfinished_tasks
+from syft.core.node.common.action.unfinished_task import register_unfinished_task
 
 # grid absolute
 from grid.core.celery_app import celery_app
@@ -26,8 +28,12 @@ def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
     if isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
         try:
             node.recv_immediate_msg_without_reply(msg=obj_msg)
-        except ObjectNotInStore as exc:
-            raise self.retry(exc=exc, countdown=0.1)
+            proceed_unfinished_tasks(node)
+        except Exception as e:
+            if isinstance(e, RetriableError):
+                register_unfinished_task(obj_msg, node)
+            else:
+                raise e
     else:
         raise Exception(
             f"This worker can only handle SignedImmediateSyftMessageWithoutReply. {msg_bytes_str}"
