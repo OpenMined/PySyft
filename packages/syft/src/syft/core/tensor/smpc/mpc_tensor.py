@@ -1086,17 +1086,17 @@ class MPCTensor(PassthroughTensor):
 
 @implements(MPCTensor, np.add)
 def add(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
-    return y.add(x)
+    return y + x
 
 
 @implements(MPCTensor, np.subtract)
 def sub(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
-    return y.rsub(x)
+    return y.__rsub__(x)
 
 
 @implements(MPCTensor, np.multiply)
 def mul(x: np.ndarray, y: MPCTensor) -> SupportedChainType:
-    return y.mul(x)
+    return y * x
 
 
 # @implements(MPCTensor, np.greater)
