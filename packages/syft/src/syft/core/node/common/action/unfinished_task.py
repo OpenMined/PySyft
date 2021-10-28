@@ -10,7 +10,10 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .exceptions import RetriableError
 
+#Setting a deterministic location to access the unfinished tasks.
+#TODO: Should modify it to to be able to parallel processin on the unfinished tasks
 id = UID(UUID("a8ac0c37382584a1082c710b0b38f6a3"))
+
 
 
 def get_list(node: AbstractNode) -> TypeList[SignedImmediateSyftMessageWithoutReply]:
