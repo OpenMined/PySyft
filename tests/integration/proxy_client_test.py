@@ -7,6 +7,7 @@ import syft as sy
 
 NETWORK_PORT = 9081
 DOMAIN1_PORT = 9082
+DOMAIN1_VPN_IP = "100.64.0.2"
 
 
 @pytest.mark.integration
@@ -19,7 +20,7 @@ def test_domain1_via_network_proxy_client() -> None:
     )
 
     x = torch.Tensor([1, 2, 3])
-    x_ptr = x.send(domain_client, tags=["my_tensor"])
+    x_ptr = x.send(domain_client, tags=["findmytensor"])
 
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
@@ -33,3 +34,15 @@ def test_domain1_via_network_proxy_client() -> None:
     y_ptr = proxy_client.store[x_ptr.id_at_location.no_dash]
     assert x_ptr.id_at_location == y_ptr.id_at_location
     assert type(x_ptr).__name__ == type(y_ptr).__name__
+
+
+@pytest.mark.integration
+def test_search_network() -> None:
+    network_client = sy.login(port=NETWORK_PORT)
+
+    query = ["findmytensor"]
+    result = network_client.search(query=query, pandas=False)
+
+    assert len(result) == 1
+    assert result[0]["name"] == "test_domain_1"
+    assert result[0]["host_or_ip"] == DOMAIN1_VPN_IP

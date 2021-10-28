@@ -379,6 +379,22 @@ class Node(AbstractNode):
         except Exception as e:
             error(f"Failed to add route to peer {peer}. {e}")
 
+    def reload_peer_clients(self) -> None:
+        peers = self.node.all()  # type: ignore
+        for peer in peers:
+            self.add_peer_routes(peer=peer)
+        debug("Finished loading all the peer clients", self.peer_route_clients)
+
+    def all_peer_clients(self) -> Dict[UID, List[Client]]:
+        # get all the routes for each client and sort by VPN first
+        all_clients = {}
+        for node_id in self.peer_route_clients.keys():
+            all_clients[node_id] = list(
+                self.peer_route_clients[node_id]["vpn"].values()
+            ) + list(self.peer_route_clients[node_id]["public"].values())
+
+        return all_clients
+
     def add_route(
         self, node_id: UID, node_name: str, host_or_ip: str, is_vpn: bool
     ) -> None:
