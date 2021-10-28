@@ -50,15 +50,13 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
             ]:
                 if scope_id is not None:
                     debug(f"> Lookup: {scope_id.emoji()}")
-                    if scope_id in node.peer_route_clients.keys():
-                        client = node.peer_route_clients[scope_id]
-                        if client["vpn"]:
-                            in_memory_client = client["vpn"]
-                        else:
-                            in_memory_client = client["public"]
-                        return in_memory_client.send_immediate_msg_without_reply(
-                            msg=msg
-                        )
+                    client = node.get_peer_client(node_id=scope_id)
+                    if client:
+                        return client.send_immediate_msg_without_reply(
+                                msg=msg
+                            )
+                    else:
+                        raise Exception
         except Exception as e:
             # TODO: Need to not catch blanket exceptions
             error(f"{addr} not on nodes in_memory_client. {e}")
@@ -103,14 +101,11 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
             ]:
                 if scope_id is not None:
                     debug(f"> Lookup: {scope_id.emoji()}")
-                    if scope_id in node.peer_route_clients.keys():
-                        client = node.peer_route_clients[scope_id]
-                        if client["vpn"]:
-                            in_memory_client = client["vpn"]
-                        else:
-                            in_memory_client = client["public"]
-
-                        return in_memory_client.send_immediate_msg_with_reply(msg=msg)
+                    client = node.get_peer_client(node_id=scope_id)
+                    if client:
+                        return client.send_immediate_msg_with_reply(msg=msg)
+                    else:
+                        raise Exception
         except Exception as e:
             # TODO: Need to not catch blanket exceptions
             error(f"{addr} not on nodes in_memory_client. {e}")
