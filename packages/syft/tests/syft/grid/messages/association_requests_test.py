@@ -11,7 +11,6 @@ import pytest
 from syft import deserialize
 from syft import serialize
 from syft.core.io.address import Address
-from syft.core.node.abstract.node import AbstractNodeClient
 from syft.core.node.common.node_service.association_request.association_request_service import (
     DeleteAssociationRequestMessage,
 )
@@ -43,8 +42,8 @@ test_suite = [
     (
         SendAssociationRequestMessage,
         {
-            "source": None,
-            "target": None,
+            "source": "127.0.0.1:8082",
+            "target": "127.0.0.1:8081",
             "address": Address(),
             "reply_to": Address(),
             "metadata": metadata,
@@ -54,8 +53,8 @@ test_suite = [
     (
         ReceiveAssociationRequestMessage,
         {
-            "source": None,
-            "target": None,
+            "source": "127.0.0.1:8082",
+            "target": "127.0.0.1:8081",
             "address": Address(),
             "reply_to": Address(),
             "metadata": metadata,
@@ -66,8 +65,8 @@ test_suite = [
     (
         RespondAssociationRequestMessage,
         {
-            "source": None,
-            "target": None,
+            "source": "127.0.0.1:8082",
+            "target": "127.0.0.1:8081",
             "reply_to": Address(),
             "address": Address(),
             "response": "deny",
@@ -81,8 +80,13 @@ test_suite = [
     ),
     (
         GetAssociationRequestResponse,
-        {"address": Address(), "metadata": metadata, "source": None, "target": None},
-        ["address", "metadata", "source", "target"],
+        {
+            "address": Address(),
+            "content": metadata,
+            "source": "127.0.0.1:8082",
+            "target": "127.0.0.1:8081",
+        },
+        ["address", "content", "source", "target"],
     ),
     (
         DeleteAssociationRequestMessage,
@@ -96,8 +100,8 @@ test_suite = [
     ),
     (
         GetAssociationRequestsResponse,
-        {"address": Address(), "metadatas": [metadata, metadata]},
-        ["address", "metadatas"],
+        {"address": Address(), "content": [metadata, metadata]},
+        ["address", "content"],
     ),
 ]
 
@@ -107,14 +111,7 @@ def test_create(
     msg_constructor: Callable,
     kwargs: Dict[str, Any],
     test_fields: List[str],
-    client: AbstractNodeClient,
 ) -> None:
-    if "source" in kwargs:
-        kwargs["source"] = client
-
-    if "target" in kwargs:
-        kwargs["target"] = client
-
     msg = msg_constructor(**kwargs)
     regenerated_message = deserialize(serialize(msg))
 

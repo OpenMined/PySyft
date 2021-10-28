@@ -49,11 +49,7 @@ class CryptoStore:
         populate_func(self.store, primitives, *args, **kwargs)
 
     def get_primitives_from_store(
-        self,
-        op_str: str,
-        nr_instances: int = 1,
-        *args: List[Any],
-        **kwargs: Dict[Any, Any]
+        self, op_str: str, ring_size: int, *args: List[Any], **kwargs: Dict[Any, Any]
     ) -> List[Any]:
         """Get primitives from store.
 
@@ -67,5 +63,7 @@ class CryptoStore:
             Dict[Any, Any]: Primitives.
         """
         retrieve_func = CryptoStore._func_get_store[op_str]
-        primitives = retrieve_func(self.store, nr_instances, *args, **kwargs)
+        primitives = retrieve_func(
+            store=self.store, ring_size=ring_size, *args, **kwargs
+        )
         return primitives

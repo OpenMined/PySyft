@@ -62,6 +62,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
             return (1,)
         return tuple(self.child.shape)
 
+    @property
+    def dtype(self) -> np.dtype:
+        return self.child.dtype
+
     # @property
     # def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
     #     """There are 3 options for where shape information can be sourced from:

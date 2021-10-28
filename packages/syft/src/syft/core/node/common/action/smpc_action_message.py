@@ -27,10 +27,10 @@ from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
+from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
-
-# How many intermediary ids we generate in each smpc function
-MAP_FUNC_TO_NR_GENERATOR_INVOKES = {"__add__": 0, "__mul__": 0, "__sub__": 0}
+from ....tensor.smpc.tensor_list import TensorList
+from .exceptions import ObjectNotInStore
 
 
 @serializable()
@@ -43,6 +43,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         kwargs_id: Dict[str, UID],
         result_id: UID,
         address: Address,
+        kwargs: Dict[str, Any] = {},
         ranks_to_run_action: Optional[List[int]] = None,
         msg_id: Optional[UID] = None,
     ) -> None:
@@ -50,6 +51,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         self.self_id = self_id
         self.args_id = args_id
         self.kwargs_id = kwargs_id
+        self.kwargs = kwargs
         self.id_at_location = result_id
         self.ranks_to_run_action = ranks_to_run_action if ranks_to_run_action else []
         super().__init__(address=address, msg_id=msg_id)
@@ -88,10 +90,6 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
     @staticmethod
     def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
         generator = np.random.default_rng(seed)
-        nr_ops = MAP_FUNC_TO_NR_GENERATOR_INVOKES[operation_str]
-        for _ in range(nr_ops):
-            generator.bytes(16)
-
         return UID(UUID(bytes=generator.bytes(16)))
 
     def __str__(self) -> str:
@@ -99,6 +97,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         res = f"{res}Self ID: {self.self_id}, "
         res = f"{res}Args IDs: {self.args_id}, "
         res = f"{res}Kwargs IDs: {self.kwargs_id}, "
+        res = f"{res}Kwargs : {self.kwargs}, "
         res = f"{res}Result ID: {self.id_at_location}, "
         res = f"{res}Ranks to run action: {self.ranks_to_run_action}"
         return res
@@ -126,6 +125,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             self_id=sy.serialize(self.self_id),
             args_id=list(map(lambda x: sy.serialize(x), self.args_id)),
             kwargs_id={k: sy.serialize(v) for k, v in self.kwargs_id.items()},
+            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
             id_at_location=sy.serialize(self.id_at_location),
             address=sy.serialize(self.address),
             msg_id=sy.serialize(self.id),
@@ -151,6 +151,10 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             self_id=sy.deserialize(blob=proto.self_id),
             args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
             kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
+            kwargs={
+                k: sy.deserialize(blob=v, from_bytes=True)
+                for k, v in proto.kwargs.items()
+            },
             result_id=sy.deserialize(blob=proto.id_at_location),
             address=sy.deserialize(blob=proto.address),
             msg_id=sy.deserialize(blob=proto.msg_id),
@@ -189,10 +193,6 @@ def smpc_basic_op(
     """Generator for SMPC public/private operations add/sub"""
 
     generator = np.random.default_rng(seed_id_locations)
-
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES[f"__{op_str}__"]):
-        generator.bytes(16)
-
     result_id = UID(UUID(bytes=generator.bytes(16)))
     other = node.store[other_id].data
 
@@ -239,26 +239,25 @@ def smpc_basic_op(
     return actions
 
 
-# Purposefully raise a custom error to retry the task in celery worker.
-class ObjectNotInStore(Exception):
-    pass
-
-
 # TODO : Should move to spdz directly in syft/core/smpc
 def spdz_multiply(
     x: ShareTensor,
     y: ShareTensor,
     eps_id: UID,
     delta_id: UID,
+    a_share: ShareTensor,
+    b_share: ShareTensor,
+    c_share: ShareTensor,
     node: Optional[Any] = None,
 ) -> ShareTensor:
     print(")))))))))))))))))))))))))")
     print("SPDZ multiply")
-    crypto_store = ShareTensor.crypto_store
     nr_parties = x.nr_parties
     eps = node.store.get_object(key=eps_id)  # type: ignore
     delta = node.store.get_object(key=delta_id)  # type: ignore
+    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
+    print("RING SIZE", ring_size)
     print("EPS Store", eps)
     print("Delta Store", delta)
     print("NR parties", nr_parties)
@@ -268,32 +267,31 @@ def spdz_multiply(
         raise ObjectNotInStore
     print("Beaver Error surpassed*******************************")
 
-    a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-        "beaver_mul", x.shape, y.shape
-    )
+    # TODO : Should refactor fixed precision tensor later
 
-    eps = sum(eps.data).child  # type: ignore
-    delta = sum(delta.data).child  # type:ignore
+    eps = sum(eps.data)  # type: ignore
+    delta = sum(delta.data)  # type:ignore
     print(" Final EPS", eps)
     print("Final Delta", delta)
     print("A_share", a_share.child, "\n")
     print("B_share", b_share.child, "\n")
     print("C_share", c_share.child, "\n")
-    op = operator.mul
-    eps_b = op(eps, b_share.child)
+
+    eps_b = eps * b_share.child
     print("EPS_B", eps_b, "\n")
-    delta_a = op(a_share.child, delta)
+    delta_a = delta * a_share.child  # Symmetric only for mul
     print("DELTA_A", delta_a, "\n")
 
-    tensor = c_share.child + eps_b + delta_a
+    tensor = c_share + eps_b + delta_a
     print("C addedTensor", tensor, "\n")
     if x.rank == 0:
-        eps_delta = op(eps, delta)
+        mul_op = ShareTensor.get_op(ring_size, "mul")
+        eps_delta = mul_op(eps.child, delta.child)
         print("EPS_DELTA", eps_delta, "\n")
-        tensor += eps_delta
+        tensor = tensor + eps_delta
 
     share = x.copy_tensor()
-    share.child = tensor  # As we do not use fixed point we neglect truncation.
+    share.child = tensor.child  # As we do not use fixed point we neglect truncation.
     print("Final Tensor", tensor)
     print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
@@ -301,22 +299,25 @@ def spdz_multiply(
 
 
 # TODO : Should move to spdz directly in syft/core/smpc
-def spdz_mask(x: ShareTensor, y: ShareTensor, eps_id: UID, delta_id: UID) -> None:  # type: ignore
+def spdz_mask(
+    x: ShareTensor,
+    y: ShareTensor,
+    eps_id: UID,
+    delta_id: UID,
+    a_share: ShareTensor,
+    b_share: ShareTensor,
+    c_share: ShareTensor,
+) -> None:
     print(")))))))))))))))))))))))))")
     print("SPDZ Mask")
-    crypto_store = ShareTensor.crypto_store
     clients = ShareTensor.login_clients(x.parties_info)
 
-    a, b, _ = crypto_store.get_primitives_from_store(
-        "beaver_mul", x.shape, y.shape, remove=False  # type: ignore
-    )
-
-    eps = x - a  # beaver intermediate values.
-    delta = y - b
+    eps = x - a_share  # beaver intermediate values.
+    delta = y - b_share
     print("x ShareTensor:", x, "\n")
     print("y ShareTensor", y, "\n")
-    print("a ShareTensor:", a, "\n")
-    print("b ShareTensor", b, "\n")
+    print("a ShareTensor:", a_share, "\n")
+    print("b ShareTensor", b_share, "\n")
     print("EPS::::::::::::", eps, "\n")
     print("Delta::::::::::::", delta, "\n")
     # TODO : Should modify , no need to send for the current client
@@ -341,16 +342,18 @@ def smpc_mul(
     nr_parties: int,
     self_id: UID,
     other_id: UID,
-    seed_id_locations: int,
-    node: Any,
-    client: Any,
+    a_shape_id: Optional[UID] = None,
+    b_shape_id: Optional[UID] = None,
+    seed_id_locations: Optional[int] = None,
+    node: Optional[Any] = None,
+    client: Optional[Any] = None,
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
+    if seed_id_locations is None or node is None or client is None:
+        raise ValueError(
+            f"The values seed_id_locations{seed_id_locations}, Node:{node} , client:{client} should not be None"
+        )
     generator = np.random.default_rng(seed_id_locations)
-
-    for _ in range(MAP_FUNC_TO_NR_GENERATOR_INVOKES["__mul__"]):
-        generator.bytes(16)
-
     result_id = UID(UUID(bytes=generator.bytes(16)))
     other = node.store[other_id].data
 
@@ -363,13 +366,26 @@ def smpc_mul(
         mask_result = UID(UUID(bytes=generator.bytes(16)))
         eps_id = UID(UUID(bytes=generator.bytes(16)))
         delta_id = UID(UUID(bytes=generator.bytes(16)))
+        a_shape = node.store[a_shape_id].data
+        b_shape = node.store[b_shape_id].data
+        crypto_store = ShareTensor.crypto_store
+        a_share, b_share, c_share = crypto_store.get_primitives_from_store(
+            "beaver_mul", a_shape=a_shape, b_shape=b_shape, ring_size=other.ring_size, remove=True  # type: ignore
+        )
 
         actions.append(
             SMPCActionMessage(
                 "spdz_mask",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
+                kwargs_id={},
+                kwargs={
+                    "eps_id": eps_id,
+                    "delta_id": delta_id,
+                    "a_share": a_share,
+                    "b_share": b_share,
+                    "c_share": c_share,
+                },
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,
                 address=client.address,
@@ -381,7 +397,14 @@ def smpc_mul(
                 "spdz_multiply",
                 self_id=self_id,
                 args_id=[other_id],
-                kwargs_id={"eps_id": eps_id, "delta_id": delta_id},
+                kwargs_id={},
+                kwargs={
+                    "eps_id": eps_id,
+                    "delta_id": delta_id,
+                    "a_share": a_share,
+                    "b_share": b_share,
+                    "c_share": c_share,
+                },
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
                 address=client.address,
@@ -405,6 +428,82 @@ def smpc_mul(
     return actions
 
 
+def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> TensorList:
+    """Performs local decomposition to generate shares of shares.
+
+    Args:
+        x (ShareTensor) : input ShareTensor.
+        ring_size (str) : Ring size to generate decomposed shares in.
+        bitwise (bool): Perform bit level decomposition on bits if set.
+
+    Returns:
+        List[List[ShareTensor]]: Decomposed shares in the given ring size.
+    """
+    # TODO: George or Rasswanth check if we can use directly the generator from shareTensor
+    # Having this value here is not ok
+    # seed_przs = 42
+    # generator = np.random.default_rng(seed_przs)
+
+    rank = x.rank
+    nr_parties = x.nr_parties
+    numpy_type = utils.RING_SIZE_TO_TYPE[ring_size]
+    shape = x.shape
+    zero = np.zeros(shape, numpy_type)
+
+    share_lst = TensorList()
+
+    input_shares = []
+
+    if bitwise:
+        ring_bits = utils.get_nr_bits(x.ring_size)  # for bit-wise decomposition
+        input_shares = [x.bit_extraction(idx) for idx in range(ring_bits)]
+    else:
+        input_shares.append(x)
+
+    for share in input_shares:
+        share_sh = TensorList()
+        for i in range(nr_parties):
+            sh = x.copy_tensor()
+            sh.ring_size = ring_size
+            if rank != i:
+                sh.child = deepcopy(zero)
+            else:
+                sh.child = deepcopy(share.child.astype(numpy_type))
+            share_sh.append(sh)
+        share_lst.append(share_sh)
+
+    return share_lst
+
+
+def bit_decomposition(
+    nr_parties: int,
+    self_id: UID,
+    ring_size: UID,
+    bitwise: UID,
+    seed_id_locations: int,
+    node: Any,
+    client: Any,
+) -> List[SMPCActionMessage]:
+    generator = np.random.default_rng(seed_id_locations)
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+
+    actions = []
+
+    actions.append(
+        SMPCActionMessage(
+            "local_decomposition",
+            self_id=self_id,
+            args_id=[ring_size, bitwise],
+            kwargs_id={},
+            ranks_to_run_action=list(range(nr_parties)),
+            result_id=result_id,
+            address=client.address,
+        )
+    )
+
+    return actions
+
+
 # Given an SMPC Action map it to an action constructor
 MAP_FUNC_TO_ACTION: Dict[
     str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
@@ -412,6 +511,8 @@ MAP_FUNC_TO_ACTION: Dict[
     "__add__": functools.partial(smpc_basic_op, "add"),
     "__sub__": functools.partial(smpc_basic_op, "sub"),
     "__mul__": smpc_mul,  # type: ignore
+    "bit_decomposition": bit_decomposition,  # type: ignore
+    # "__gt__": smpc_gt,  # type: ignore TODO: this should be added back when we have only one action
 }
 
 
@@ -422,5 +523,56 @@ _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
     "mpc_mul": operator.mul,
     "spdz_mask": spdz_mask,
     "spdz_multiply": spdz_multiply,
+    "local_decomposition": local_decomposition,
     "mpc_noop": deepcopy,
 }
+
+
+#
+# def smpc_gt(
+#     nr_parties: int,
+#     self_id: UID,
+#     other_id: UID,
+#     seed_id_locations: int,
+#     node: Any,
+#     client: Any,
+# ) -> List[SMPCActionMessage]:
+#     """Generator for the smpc_mul with a public value"""
+#     generator = np.random.default_rng(seed_id_locations)
+
+#     result_id = UID(UUID(bytes=generator.bytes(16)))
+#     sub_result = UID(UUID(bytes=generator.bytes(16)))
+
+#     x = node.store[self_id].data  # noqa
+#     y = node.store[other_id].data
+
+#     if not isinstance(y, ShareTensor):
+#         raise ValueError("Only private compare works at the moment")
+
+#     actions = []
+#     actions.append(
+#         SMPCActionMessage(
+#             "mpc_sub",
+#             self_id=self_id,
+#             args_id=[other_id],
+#             kwargs_id={},
+#             ranks_to_run_action=list(range(nr_parties)),
+#             result_id=sub_result,
+#             address=client.address,
+#         )
+#     )
+
+#     actions.append(
+#         SMPCActionMessage(
+#             "bit_decomposition",
+#             self_id=sub_result,
+#             args_id=[],
+#             # TODO: This value needs to be changed to something else and probably used
+#             # directly the przs_generator from ShareTensor - check bit_decomposition function
+#             kwargs_id={},
+#             ranks_to_run_action=list(range(nr_parties)),
+#             result_id=result_id,
+#             address=client.address,
+#         )
+#     )
+#     return actions
