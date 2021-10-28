@@ -760,7 +760,7 @@ class Class(Callable):
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
-            immediate = kwargs.get("immediate", None)
+            immediate = kwargs.get("immediate", True)
 
             if immediate:
                 # Step 3: send message
