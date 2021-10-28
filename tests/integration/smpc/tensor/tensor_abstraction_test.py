@@ -2,7 +2,6 @@
 
 # stdlib
 import operator
-import time
 
 # third party
 import numpy as np

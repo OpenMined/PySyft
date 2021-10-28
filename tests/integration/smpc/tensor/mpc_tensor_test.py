@@ -1,6 +1,5 @@
 # stdlib
 import operator
-import time
 from typing import Any
 from typing import Dict as TypeDict
 
