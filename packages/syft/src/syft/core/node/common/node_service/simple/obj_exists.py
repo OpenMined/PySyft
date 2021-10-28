@@ -1,5 +1,4 @@
 # stdlib
-from typing import Any
 from typing import Optional
 
 # third party
@@ -7,10 +6,10 @@ from nacl.signing import VerifyKey
 
 # relative
 from ... import UID
+from ......logger import info
 from ....abstract.node import AbstractNode
 from .simple_messages import NodeRunnableMessageWithReply
 
-from ......logger import info
 
 class DoesObjectExistMessage(NodeRunnableMessageWithReply):
 
