@@ -811,6 +811,65 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def __radd__(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        return self + y
+
+    def __sub__(self, other: MPCTensor) -> MPCTensor:
+        """Apply the "sub" operation between "self" and "other".
+
+        Args:
+            other (Union[MPCTensor, torch.Tensor, float, int]): self - other
+
+        Returns:
+            MPCTensor. Result of the operation.
+        """
+
+        # Step 1: if other is private, we need to make sure that self and other have the same shareholders.
+        # Step 2: calculate random seed (a single int) to send to all shareholders
+        # Step 3: Check that ring size matches between self and arguments.
+        # Step 4: Calculate the ring size of the result
+        # Step 5: Calculate argument shapes
+        (
+            self_shrs,
+            other_shrs,
+            kwargs,
+            ring_size,
+            parties,
+            parties_info,
+            self_shape,
+            other_shape,
+        ) = MPCTensor.prepare_arguments_and_run_checks(self, other)
+
+        # Step 6: Execute the SMPC operation
+        # TODO: some complex hooking logic on ShareTensor means we're passing in 'a' twice
+        res_shares = [a.__sub__(a, b, **kwargs) for a, b in zip(self_shrs, other_shrs)]
+
+        # Step 7: Calculate shape of result using only publicly available data (so not conditioned on private data).
+        public_shape = utils.get_shape_ndarray_method_from_shapes(
+            "__sub__", self_shape, other_shape
+        )
+
+        # Step 8: Create the resulting MPCTensor object.
+        # Note: this doesn't mean the computation has completed. This MPCTensor object is merely a pointer
+        # to where the result of the MPC computation will be deposited. Call .block to wait for the computation
+        # to be finished.
+        result = MPCTensor(
+            shares=res_shares, shape=public_shape, ring_size=ring_size, parties=parties
+        )
+
+        return result
+
+    def __rsub__(self, y: MPCTensor) -> MPCTensor:
+        new_self = self * (-1)
+        return y + new_self
+
+    def __rmul__(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        return self * y
+
     def __apply_private_op(
         self, other: MPCTensor, op_str: str, **kwargs: Dict[Any, Any]
     ) -> List[ShareTensor]:
@@ -955,25 +1014,6 @@ class MPCTensor(PassthroughTensor):
         )
 
         return result
-
-    def __radd__(
-        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
-    ) -> MPCTensor:
-        return self.__apply_op(y, "add")
-
-    def __sub__(self, y: MPCTensor) -> MPCTensor:
-        res = self.__apply_op(y, "sub")
-        return res
-
-    def __rsub__(self, y: MPCTensor) -> MPCTensor:
-        new_self = self * (-1)
-        res = new_self.__apply_op(y, "add")
-        return res
-
-    def __rmul__(
-        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
-    ) -> MPCTensor:
-        return self * y
 
     def __gt__(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
