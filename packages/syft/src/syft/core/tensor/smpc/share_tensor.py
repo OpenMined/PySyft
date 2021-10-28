@@ -478,10 +478,10 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        if isinstance(y, ShareTensor):
-            raise ValueError(
-                "We should not reach this point for private multiplication. Only public one"
-            )
+        # if isinstance(y, ShareTensor):
+        #     raise ValueError(
+        #         "We should not reach this point for private multiplication. Only public one"
+        #     )
 
         ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "mul")
