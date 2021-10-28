@@ -401,13 +401,12 @@ class Node(AbstractNode):
 
     def get_peer_client(self, node_id: UID, only_vpn: bool = True) -> Optional[Client]:
         # if we don't have it see if we can get it from the db first
-        if node_id not in self.peer_route_clients:
-            peer = self.node.first(node_uid=node_id)
+        if node_id.no_dash not in self.peer_route_clients:
+            peer = self.node.first(node_uid=node_id.no_dash)
             self.add_peer_routes(peer=peer)
 
-        if node_id in self.peer_route_clients:
-            routes = self.peer_route_clients[node_id]
-
+        if node_id.no_dash in self.peer_route_clients.keys():
+            routes = self.peer_route_clients[node_id.no_dash]
             # if we want VPN only then check there are some
             if only_vpn and "vpn" in routes and len(routes["vpn"]) == 0:
                 # we want VPN only but there are none
