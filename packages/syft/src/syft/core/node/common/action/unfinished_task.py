@@ -15,10 +15,10 @@ from .exceptions import RetriableError
 id = UID(UUID("a8ac0c37382584a1082c710b0b38f6a3"))
 
 
-def get_set(node: AbstractNode) -> Set:
+def get_set(node: AbstractNode) -> TypeSet:
     obj = node.store.get_object(key=id)
     if obj is None:
-        return Set([])
+        return Set(set())
     elif isinstance(obj.data, Set):
         return obj.data
     else:
