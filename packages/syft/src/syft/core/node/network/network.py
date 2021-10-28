@@ -40,6 +40,9 @@ from ..common.node_service.node_setup.node_setup_messages import (
     CreateInitialSetUpMessage,
 )
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
+from ..common.node_service.peer_discovery.peer_discovery_service import (
+    PeerDiscoveryService,
+)
 from ..common.node_service.ping.ping_service import PingService
 from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
@@ -109,6 +112,7 @@ class Network(Node):
         self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(NetworkSearchService)
+        self.immediate_services_with_reply.append(PeerDiscoveryService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()

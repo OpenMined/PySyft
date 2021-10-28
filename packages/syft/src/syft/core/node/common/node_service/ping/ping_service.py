@@ -8,7 +8,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ......util import traceback_and_raise
-from ....abstract.node import AbstractNode
+from ....abstract.node_service_interface import NodeServiceInterface
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from .ping_messages import PingMessage
@@ -22,7 +22,7 @@ class PingService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: NodeServiceInterface,
         msg: PingMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> PingReplyMessage:
