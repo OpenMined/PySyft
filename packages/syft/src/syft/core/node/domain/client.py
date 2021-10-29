@@ -414,55 +414,61 @@ class DomainClient(Client):
     def get_setup(self, **kwargs: Any) -> Any:
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
-    def apply_to_network(self, client: AbstractNodeClient, **metadata: str) -> None:
-        # TODO: refactor
-        # Step 1: send a message to the Network from the Domain
-        # this means the first message contains the VPN IP for the network
+    def apply_to_network(
+        self,
+        client: Optional[AbstractNodeClient] = None,
+        **metadata: str,
+    ) -> None:
+        try:
+            # joining the network might take some time and won't block
+            self.join_network(client=client)
 
-        # Step 2: the contents of message is the VPN IPs, because many domains
-        # will be behind firewalls, we want to use the VPN IP as both directions should
-        # be able to connect to each other
+            timeout = 30
+            connected = False
+            network_vpn_ip = ""
+            domain_vpn_ip = ""
 
-        # domain_vpn_ip = Domain VPN host_or_ip because thats the only IP the Network
-        # can reach the Domain on, and will go into the association request table
-        # after the association is approved these IPs will be added to the node and
-        # node_route tables to route all traffic from the Network node to that Domain
+            # get the vpn ips
+            print("Waiting to connect to VPN.")
+            while timeout > 0 and connected is False:
+                timeout -= 1
+                try:
+                    vpn_status = self.vpn_status()
+                    if vpn_status["connected"]:
+                        print("Connected to VPN")
+                        connected = True
+                        continue
+                except Exception as e:
+                    print(f"Failed to get vpn status. {e}")
+                print(".", end="")
+                time.sleep(1)
 
-        # network_vpn_ip = Network VPN host_or_ip because that will be what goes into the
-        # association request table and then gets used to route all traffic from
-        # the Domain to the Network node
+            for peer in vpn_status["peers"]:
+                if peer["hostname"] == client.name:  # type: ignore
+                    network_vpn_ip = peer["ip"]
+            try:
+                domain_vpn_ip = self.vpn_status()["host"]["ip"]
+            except Exception as e:
+                print(f"Failed to get vpn host ip. {e}")
 
-        self.join_network(client=client)
+            if network_vpn_ip == "":
+                raise Exception(
+                    f"Cant find the network node {client.name} in {vpn_status}"  # type: ignore
+                )
+            if domain_vpn_ip == "":
+                raise Exception(f"No host ip in {vpn_status}")
 
-        for peer in self.vpn_status()["peers"]:
-            if peer["hostname"] == client.name:
-                network_vpn_ip = peer["ip"]
+            self.association.create(
+                source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
+            )
 
-        domain_vpn_ip = self.vpn_status()["host"]["ip"]
-
-        self.association.create(
-            source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
-        )
-
-        print("Application submitted.")
+            print("Application submitted.")
+        except Exception as e:
+            print(f"Failed to apply to network with {client}. {e}")
 
     @property
     def id(self) -> UID:
         return self.domain.id
-
-    # # TODO: @Madhava make work
-    # @property
-    # def accountant(self):
-    #     """Queries some service that returns a pointer to the ONLY real accountant for this
-    #     user that actually affects object permissions when used in a .publish() method. Other accountant
-    #     objects might exist in the object store but .publish() is just for simulation and won't change
-    #     the permissions on the object it's called on."""
-
-    # # TODO: @Madhava make work
-    # def create_simulated_accountant(self, init_with_budget_remaining=True):
-    #     """Creates an accountant in the remote store. If init_with_budget_remaining=True then the accountant
-    #     is a copy of an existing accountant. If init_with_budget_remaining=False then it is a fresh accountant
-    #     with the sam max budget."""
 
     @property
     def device(self) -> Optional[Location]:
@@ -517,19 +523,6 @@ class DomainClient(Client):
                 for tag in tags:
                     state[tag] = ptr
         return self.store.pandas
-
-    def join_network(
-        self,
-        client: Optional[AbstractNodeClient] = None,
-        host_or_ip: Optional[str] = None,
-    ) -> None:
-        if client is None and host_or_ip is None:
-            raise ValueError(
-                "join_network requires a Client object or host_or_ip string"
-            )
-        if client is not None:
-            host_or_ip = client.routes[0].connection.host  # type: ignore
-        return self.vpn.join_network(host_or_ip=str(host_or_ip))
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
