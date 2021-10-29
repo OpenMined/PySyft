@@ -42,17 +42,15 @@ router = APIRouter()
 
 @router.post("/request", status_code=200, response_class=JSONResponse)
 def send_association_request(
+    target: str,
+    source: str,
     current_user: Any = Depends(get_current_user),
-    name: str = Body(..., example="Nodes Association Request"),
-    target: str = Body(..., example="http://<target_address>/api/v1"),
-    sender: str = Body(..., example="http://<node_address>/api/v1"),
 ) -> Any:
     """Sends a new association request to the target address
     Args:
         current_user : Current session.
-        name: Association request name.
         target: Target address.
-        sender: Sender address.
+        source: Source address.
     Returns:
         resp: JSON structure containing a log message
     """
@@ -62,9 +60,9 @@ def send_association_request(
     # Build Syft Message
     msg = SendAssociationRequestMessage(
         address=node.address,
-        name=name,
+        metadata={},
         target=target,
-        sender=sender,
+        source=source,
         reply_to=node.address,
     ).sign(signing_key=user_key)
 
@@ -84,17 +82,15 @@ def send_association_request(
 @router.post("/receive", status_code=201, response_class=JSONResponse)
 def receive_association_request(
     name: str = Body(..., example="Nodes Association Request"),
-    handshake: str = Body(..., example="<hash_code>"),
-    sender: str = Body(..., example="http://<node_address>/api/v1"),
+    source: str = Body(..., example="http://<node_address>/api/v1"),
     target: str = Body(..., example="http://<target_address>/api/v1"),
 ) -> Dict[str, str]:
     """Receives a new association request to the sender address
     Args:
         current_user : Current session.
         name: Association request name.
-        handshake: Code attached to this association request.
         target: Target address.
-        sender: Sender address.
+        source: Source address.
     Returns:
         resp: JSON structure containing a log message
     """
@@ -102,8 +98,7 @@ def receive_association_request(
     msg = ReceiveAssociationRequestMessage(
         address=node.address,
         name=name,
-        handshake=handshake,
-        sender=sender,
+        source=source,
         target=target,
         reply_to=node.address,
     ).sign(signing_key=SigningKey.generate())
@@ -120,11 +115,9 @@ def receive_association_request(
 
 @router.post("/reply", status_code=201, response_class=JSONResponse)
 def respond_association_request(
+    source: str,
+    target: str,
     current_user: Any = Depends(get_current_user),
-    handshake: str = Body(..., example="<hash_code>"),
-    value: str = Body(..., example="<hash_code>"),
-    target: str = Body(..., example="http://<target_address>/api/v1"),
-    sender: str = Body(..., example="http://<node_address>/api/v1"),
 ) -> Dict[str, str]:
     """Replies an association request
 
@@ -143,10 +136,8 @@ def respond_association_request(
     # Build Syft Message
     msg = RespondAssociationRequestMessage(
         address=node.address,
-        value=value,
-        handshake=handshake,
         target=target,
-        sender=sender,
+        source=source,
         reply_to=node.address,
     ).sign(signing_key=user_key)
 

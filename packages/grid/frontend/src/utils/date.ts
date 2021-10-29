@@ -8,7 +8,7 @@ dayjs.extend(localizedFormat)
 
 type DateArgs = string | number | Date | Dayjs
 
-export function format(date: DateArgs): string {
+export function formatWithLocale(date: DateArgs): string {
   return dayjs(date).format('l')
 }
 
@@ -18,4 +18,8 @@ export function formatFullDate(date: DateArgs): string {
 
 export function dateFromNow(date: DateArgs): string {
   return dayjs(date).fromNow()
+}
+
+export function formatDate(date: DateArgs): string {
+  return dayjs(date).format('YYYY-MMM-DD HH:mm')
 }
