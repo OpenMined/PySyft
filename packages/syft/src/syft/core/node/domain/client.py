@@ -439,10 +439,12 @@ class DomainClient(Client):
                 network_vpn_ip = peer["ip"]
 
         domain_vpn_ip = self.vpn_status()["host"]["ip"]
-        print(network_vpn_ip, domain_vpn_ip)
+
         self.association.create(
             source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
         )
+
+        print('Application submitted.')
 
     @property
     def id(self) -> UID:
