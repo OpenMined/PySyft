@@ -476,6 +476,15 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
     # Having this value here is not ok
     # seed_przs = 42
     # generator = np.random.default_rng(seed_przs)
+    # absolute
+    # relative
+    from ..... import Tensor
+
+    TENSOR_FLAG = False
+    if isinstance(x, Tensor):
+        TENSOR_FLAG = True
+        t = x
+        x = x.child.child
 
     rank = x.rank
     nr_parties = x.nr_parties
@@ -502,7 +511,12 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
                 sh.child = deepcopy(zero)
             else:
                 sh.child = deepcopy(share.child.astype(numpy_type))
-            share_sh.append(sh)
+            if TENSOR_FLAG:
+                t_sh = t.copy()
+                t_sh.child.child = sh
+                share_sh.append(t_sh)  # type: ignore
+            else:
+                share_sh.append(sh)
         share_lst.append(share_sh)
 
     return share_lst

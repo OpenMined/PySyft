@@ -356,3 +356,6 @@ class Tensor(
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
+
+    def bit_decomposition(self) -> Tensor:
+        raise ValueError("Should not reach this point")
