@@ -26,7 +26,7 @@ def test_secret_sharing(get_clients) -> None:
     mpc_tensor = MPCTensor(secret=value_secret, shape=(2, 5), parties=clients)
 
     # time.sleep(10)  # TODO: should remove after polling get.
-    mpc_tensor.block_with_timeout(secs=10)
+    mpc_tensor.block_with_timeout(secs=20)
 
     assert len(mpc_tensor.child) == len(clients)
 

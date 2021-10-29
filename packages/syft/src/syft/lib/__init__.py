@@ -17,7 +17,6 @@ import warnings
 from cachetools import cached
 from cachetools.keys import hashkey
 from packaging import version
-import wrapt
 
 # relative
 from ..ast.globals import Globals
@@ -30,11 +29,9 @@ from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from .misc import create_union_ast
-from .plan import create_plan_ast
+from .numpy import create_ast
 from .python import create_python_ast
-from .remote_dataloader import create_remote_dataloader_ast
 from .torch import create_torch_ast
-from .torchvision import create_torchvision_ast
 
 
 class VendorLibraryImportException(Exception):
@@ -233,28 +230,21 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     """
     python_ast = create_python_ast(client=client)
     torch_ast = create_torch_ast(client=client)
-    torchvision_ast = create_torchvision_ast(client=client)
-    # numpy_ast = create_numpy_ast()
-    plan_ast = create_plan_ast(client=client)
+    numpy_ast = create_ast(client=client)
     adp_ast = create_adp_ast(client=client)
     client_ast = create_client_ast(client=client)
-    remote_dataloader_ast = create_remote_dataloader_ast(client=client)
     tensor_ast = create_tensor_ast(client=client)
     smpc_ast = create_smpc_ast(client=client)
 
     lib_ast = Globals(client=client)
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
-    lib_ast.add_attr(attr_name="torchvision", attr=torchvision_ast.attrs["torchvision"])
-    lib_ast.syft.add_attr("core", attr=plan_ast.syft.core)
-    lib_ast.syft.core.add_attr("adp", attr=adp_ast.syft.core.adp)
+    lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
+    lib_ast.syft.add_attr("core", attr=adp_ast.syft.core)
     lib_ast.syft.core.add_attr("node", attr=client_ast.syft.core.node)
     lib_ast.syft.core.add_attr("common", attr=client_ast.syft.core.common)
-    lib_ast.syft.core.add_attr("smpc", attr=smpc_ast.syft.core.smpc)
     lib_ast.syft.core.add_attr("tensor", attr=tensor_ast.syft.core.tensor)
-    lib_ast.syft.core.add_attr(
-        "remote_dataloader", remote_dataloader_ast.syft.core.remote_dataloader
-    )
+    lib_ast.syft.core.add_attr("smpc", attr=smpc_ast.syft.core.smpc)
 
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
@@ -267,27 +257,12 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
 lib_ast = create_lib_ast(None)
 
 
-@wrapt.when_imported("gym")
-@wrapt.when_imported("opacus")
-@wrapt.when_imported("numpy")
-@wrapt.when_imported("sklearn")
-@wrapt.when_imported("pandas")
-@wrapt.when_imported("PIL")
-@wrapt.when_imported("petlib")
-@wrapt.when_imported("openmined_psi")
-@wrapt.when_imported("pydp")
-@wrapt.when_imported("statsmodels")
-@wrapt.when_imported("sympc")
-@wrapt.when_imported("tenseal")
-@wrapt.when_imported("xgboost")
-@wrapt.when_imported("zksk")
-@wrapt.when_imported("pytorch_lightning")
-@wrapt.when_imported("transformers")
-def post_import_hook_third_party(module: TypeAny) -> None:
-    """
-    Note: This needs to be after `lib_ast` because code above uses lib-ast
-    """
-    # msg = f"inside post_import_hook_third_party module_name {module.__name__}"
-    # warning(msg, print=True)
-    # warnings.warn(msg, DeprecationWarning)
-    load(module.__name__, ignore_warning=True)
+# @wrapt.when_imported("numpy")
+# def post_import_hook_third_party(module: TypeAny) -> None:
+#     """
+#     Note: This needs to be after `lib_ast` because code above uses lib-ast
+#     """
+#     # msg = f"inside post_import_hook_third_party module_name {module.__name__}"
+#     # warning(msg, print=True)
+#     # warnings.warn(msg, DeprecationWarning)
+#     load(module.__name__, ignore_warning=True)

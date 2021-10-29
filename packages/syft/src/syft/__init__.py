@@ -30,7 +30,6 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` 
 from pathlib import Path
 import sys
 from typing import Any
-from typing import Dict
 
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
@@ -43,7 +42,6 @@ from . import logger  # noqa: F401
 
 # ASTRACT OBJECT IMPORTS
 from .core import common  # noqa: F401
-from .core.common import event_loop  # noqa: F401
 
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
@@ -61,8 +59,6 @@ from .core.node.network.network import NetworkClient  # noqa: F401
 # Convenience Constructors
 from .core.node.vm.vm import VirtualMachine  # noqa: F401
 from .core.node.vm.vm import VirtualMachineClient  # noqa: F401
-from .core.plan.plan import Plan  # noqa: F401
-from .core.plan.plan_builder import make_plan  # noqa: F401
 from .core.tensor import autodp  # noqa: F401
 from .core.tensor import autograd  # noqa: F401
 from .core.tensor.autodp import row_entity_phi  # noqa: F401
@@ -73,20 +69,10 @@ from .grid.client.client import connect  # noqa: F401
 from .grid.client.client import login  # noqa: F401
 from .grid.client.client import register  # noqa: F401
 
-# Convenience Functions
-from .grid.duet import BColors  # noqa: F401
-from .grid.duet import duet  # noqa: F401
-from .grid.duet import join_duet  # noqa: F401
-from .grid.duet import launch_duet  # noqa: F401
-from .grid.duet import test_duet_network  # noqa: F401
-
 # Convenience Objects
 from .lib import lib_ast  # noqa: F401
 from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
-from .lib.torch.module import Module  # noqa: F401
-from .lib.torch.module import SyModule  # noqa: F401
-from .lib.torch.module import SySequential  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 
 if sys.version_info[:2] >= (3, 8):
@@ -111,10 +97,6 @@ finally:
 sys.path.append(str(Path(__file__)))
 
 logger.add(sink=sys.stderr, level="CRITICAL")
-
-
-# TODO: remove this requirement in pytorch lightning
-client_cache: Dict[str, Any] = {}
 
 # TODO: https://github.com/OpenMined/PySyft/issues/5930
 flags._APACHE_ARROW_TENSOR_SERDE = False
