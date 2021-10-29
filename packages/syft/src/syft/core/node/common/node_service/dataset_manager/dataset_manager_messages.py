@@ -358,7 +358,10 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
         for _metadata in self.metadatas:
             metadata = {}
             for k, v in _metadata.items():
-                metadata[k] = serialize(v, to_bytes=True)
+                if not isinstance(v, bytes):
+                    metadata[k] = serialize(v, to_bytes=True)
+                else:
+                    metadata[k] = v
 
             cm = metadata_container(metadata=metadata)
             msg.metadatas.append(cm)
