@@ -713,6 +713,18 @@ def test_mul_private(gamma_tensor_min: IGT, sept_ishan) -> None:
     # assert (output._entities() == gamma_tensor_min._entities()).all()
 
 
+def test_matmul_public(gamma_tensor_min: IGT) -> None:
+    """Test public matrix multiplication of IGTs"""
+    other = np.ones_like(gamma_tensor_min._values())
+    target = gamma_tensor_min._values() @ other
+    output = gamma_tensor_min @ other
+    assert isinstance(output, IGT)
+    assert (output._values() == target).all()
+    # assert (output._min_values() == gamma_tensor_min._min_values() * 2).all()
+    # assert (output._max_values() == gamma_tensor_min._max_values() * 2).all()
+    # assert (output._entities() == gamma_tensor_min._entities()).all()
+
+
 def test_diagonal(gamma_tensor_min: IGT) -> None:
     """Test diagonal, without any additional arguments"""
     target = gamma_tensor_min._values().diagonal()

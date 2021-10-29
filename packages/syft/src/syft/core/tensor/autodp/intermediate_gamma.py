@@ -690,6 +690,24 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
+    def __matmul__(self, other: Any) -> IntermediateGammaTensor:
+        # relative
+        from .initial_gamma import InitialGammaTensor
+
+        self_values = self._values()
+        self_entities = self._entities()
+        self_min = self._min_values()
+        self_max = self._max_values()
+
+        # Private-Public
+        if isinstance(other, np.ndarray):
+            return InitialGammaTensor(
+                values=self_values.__matmul__(other),
+                entities=self_entities.__matmul__(other),
+                min_vals=self_min.__matmul__(other),
+                max_vals=self_max.__matmul__(other),
+            )
+
     def __pos__(self) -> IntermediateGammaTensor:
         return self
 
