@@ -527,8 +527,8 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def join_network(self, host_or_ip: str) -> None:
-        return self.vpn.join_network(host_or_ip=host_or_ip)
+    def join_network(self, client: "NetworkClient") -> None:
+        return self.vpn.join_network(host_or_ip=client.routes[0].connection.host)
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
