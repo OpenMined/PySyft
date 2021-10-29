@@ -116,8 +116,9 @@ class ABY3:
         c = np.array([0], dtype=np.bool)  # carry bits of addition.
         result: List[MPCTensor] = []
         for idx in range(ring_bits):
-            s = a[idx] + b[idx] + c
-            c = a[idx] * b[idx] + c * (a[idx] + b[idx])
+            s_tmp = a[idx] + b[idx]
+            s = s_tmp + c
+            c = a[idx] * b[idx] + c * s_tmp
             result.append(s)
         return result
 
