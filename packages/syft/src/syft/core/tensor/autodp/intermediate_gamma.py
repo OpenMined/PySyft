@@ -629,8 +629,10 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 raise Exception(
                     "Cannot add two tensors with different symbol encodings"
                 )
-            from .single_entity_phi import SingleEntityPhiTensor
+            # relative
             from .dp_tensor_converter import convert_to_gamma_tensor
+            from .single_entity_phi import SingleEntityPhiTensor
+
             if isinstance(other, SingleEntityPhiTensor):
                 other = convert_to_gamma_tensor(other)
 
@@ -1027,11 +1029,17 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def __any__(self) -> bool:
-        return self._values().any()
+    def any(self) -> bool:
+        for i in self._values():
+            if i.any():
+                return True
+        return False
 
-    def __all__(self) -> bool:
-        return self._values().all()
+    def all(self) -> bool:
+        for i in self._values():
+            if not i.all():
+                return False
+        return True
 
     def __abs__(self) -> IntermediateGammaTensor:
         # relative

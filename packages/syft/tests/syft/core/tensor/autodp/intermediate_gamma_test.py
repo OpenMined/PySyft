@@ -704,10 +704,13 @@ def test_mul_private(gamma_tensor_min: IGT, sept_ishan) -> None:
     output = gamma_tensor_min * sept_ishan
     assert isinstance(output, IGT)
     assert (output._values() == target).all()
-    assert (output._min_values() == gamma_tensor_min._min_values() * sept_ishan.min_vals).all()
-    assert (output._max_values() == gamma_tensor_min._max_values() * sept_ishan.max_vals).all()
+    assert (
+        output._min_values() == gamma_tensor_min._min_values() * sept_ishan.min_vals
+    ).all()
+    assert (
+        output._max_values() == gamma_tensor_min._max_values() * sept_ishan.max_vals
+    ).all()
     # assert (output._entities() == gamma_tensor_min._entities()).all()
-
 
 
 def test_diagonal(gamma_tensor_min: IGT) -> None:
@@ -751,6 +754,18 @@ def test_abs(gamma_tensor_min: IGT) -> None:
     output = abs(gamma_tensor_min)
     assert isinstance(output, IGT)
     assert output == gamma_tensor_min
+
+
+def test_all(gamma_tensor_min: IGT) -> None:
+    target = True
+    output = gamma_tensor_min.all()
+    assert output == target
+
+
+def test_any(gamma_tensor_min: IGT) -> None:
+    target = True
+    output = gamma_tensor_min.any()
+    assert output == target
 
 
 def test_swapaxes(gamma_tensor_min: IGT) -> None:
