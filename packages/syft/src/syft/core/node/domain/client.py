@@ -44,7 +44,6 @@ from ..common.node_service.get_remaining_budget.get_remaining_budget_messages im
     GetRemainingBudgetMessage,
 )
 from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
-from ..common.node_service.node_setup.node_setup_messages import UpdateSetupMessage
 from ..common.node_service.object_request.object_request_messages import (
     CreateBudgetRequestMessage,
 )
@@ -386,22 +385,6 @@ class DomainClient(Client):
         response = input().lower()
         if response == "y":
             response = self.routes[0].connection.reset()  # type: ignore
-
-    def configure(self, **kwargs: Any) -> Any:
-        if "daa_document" in kwargs.keys():
-            kwargs["daa_document"] = open(kwargs["daa_document"], "rb").read()
-        else:
-            kwargs["daa_document"] = b""
-        response = self._perform_grid_request(  # type: ignore
-            grid_msg=UpdateSetupMessage, content=kwargs
-        ).content
-        logging.info(response)
-
-    @property
-    def settings(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
-        return self._perform_grid_request(  # type: ignore
-            grid_msg=GetSetUpMessage, content=kwargs
-        ).content  # type : ignore
 
     def search(self, query: List, pandas: bool = False) -> Any:
         response = self._perform_grid_request(
