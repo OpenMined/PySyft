@@ -621,7 +621,6 @@ def test_cumprod(non_square_gamma_tensor: IGT) -> None:
     assert old_entities.shape != new_entities.shape
 
 
-@pytest.mark.skip(reason="Temporary, while __init__ is being fixed")
 def test_max(non_square_gamma_tensor: IGT) -> None:
     """Test the max operator default behaviour (no args)"""
     output = non_square_gamma_tensor.max()
@@ -632,6 +631,38 @@ def test_max(non_square_gamma_tensor: IGT) -> None:
 
     # Ensure resultant shapes are correct
     target_values = original_values.max()
+    print(f"original shape = {non_square_gamma_tensor.shape}")
+    print(f"target shape = {target_values.shape}")
+    print(f"output shape = {output.shape}")
+    assert output.shape == target_values.shape
+
+    # Test to see if _values() constructs a proper shape
+    output_values = output._values()
+    assert output_values.shape != original_values.shape
+    assert output_values.shape == target_values.shape
+
+    # Test to see if the values have been kept the same
+    print(f"Values, {type(original_values)}")
+    print(original_values)
+    print(f"New Values, {type(output_values)}")
+    print(output_values)
+    assert (output_values == target_values).all()
+
+    old_entities = non_square_gamma_tensor._entities()
+    new_entities = output._entities()
+    assert old_entities.shape != new_entities.shape
+
+
+def test_min(non_square_gamma_tensor: IGT) -> None:
+    """Test the min operator default behaviour (no args)"""
+    output = non_square_gamma_tensor.min()
+    original_values = non_square_gamma_tensor._values()
+
+    # Ensure both of these have the same shapes to begin with
+    assert non_square_gamma_tensor.shape == original_values.shape
+
+    # Ensure resultant shapes are correct
+    target_values = original_values.min()
     print(f"original shape = {non_square_gamma_tensor.shape}")
     print(f"target shape = {target_values.shape}")
     print(f"output shape = {output.shape}")
@@ -665,6 +696,20 @@ def test_mul_public(gamma_tensor_min: IGT) -> None:
     assert (output._entities() == gamma_tensor_min._entities()).all()
 
 
+@pytest.mark.skip(reason="Still not working")
+def test_mul_private(gamma_tensor_min: IGT, sept_ishan) -> None:
+    """Test public multiplication of IGTs"""
+    assert sept_ishan.shape == gamma_tensor_min.shape
+    target = gamma_tensor_min._values() * sept_ishan.child
+    output = gamma_tensor_min * sept_ishan
+    assert isinstance(output, IGT)
+    assert (output._values() == target).all()
+    assert (output._min_values() == gamma_tensor_min._min_values() * sept_ishan.min_vals).all()
+    assert (output._max_values() == gamma_tensor_min._max_values() * sept_ishan.max_vals).all()
+    # assert (output._entities() == gamma_tensor_min._entities()).all()
+
+
+
 def test_diagonal(gamma_tensor_min: IGT) -> None:
     """Test diagonal, without any additional arguments"""
     target = gamma_tensor_min._values().diagonal()
@@ -674,3 +719,47 @@ def test_diagonal(gamma_tensor_min: IGT) -> None:
     assert (output._min_values() == gamma_tensor_min._min_values().diagonal()).all()
     assert (output._max_values() == gamma_tensor_min._max_values().diagonal()).all()
     assert (output._entities() == gamma_tensor_min._entities().diagonal()).all()
+
+
+def test_reshape(gamma_tensor_min: IGT) -> None:
+    """Note: for now, resize == reshape"""
+    target = gamma_tensor_min._values().flatten()
+    print(target.shape, len(target))
+    output = gamma_tensor_min.reshape(int(len(target)))
+    assert isinstance(output, IGT)
+    assert (output._values() == target).all()
+
+
+def test_resize(gamma_tensor_min: IGT) -> None:
+    """Note: for now, resize == reshape"""
+    target = gamma_tensor_min._values().flatten()
+    print(target.shape, len(target))
+    output = gamma_tensor_min.resize(int(len(target)))
+    assert isinstance(output, IGT)
+    assert (output._values() == target).all()
+
+
+def test_compress(gamma_tensor_min: IGT) -> None:
+    target = gamma_tensor_min._values().compress([False, True], axis=0)
+    output = gamma_tensor_min.compress([False, True], axis=0)
+    assert isinstance(output, IGT)
+    assert (output._values() == target).all()
+
+
+@pytest.mark.skip(reason="Temporary")
+def test_abs(gamma_tensor_min: IGT) -> None:
+    output = abs(gamma_tensor_min)
+    assert isinstance(output, IGT)
+    assert output == gamma_tensor_min
+
+
+def test_swapaxes(gamma_tensor_min: IGT) -> None:
+    target = gamma_tensor_min._values().swapaxes(0, 1)
+    output = gamma_tensor_min.swapaxes(0, 1)
+    assert (target == output._values()).all()
+
+
+def test_squeeze(gamma_tensor_min: IGT) -> None:
+    target = gamma_tensor_min._values().squeeze()
+    output = gamma_tensor_min.squeeze()
+    assert (target == output._values()).all()
