@@ -44,7 +44,6 @@ from ..common.node_service.get_remaining_budget.get_remaining_budget_messages im
     GetRemainingBudgetMessage,
 )
 from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
-from ..common.node_service.node_setup.node_setup_messages import UpdateSetupMessage
 from ..common.node_service.object_request.object_request_messages import (
     CreateBudgetRequestMessage,
 )
@@ -387,22 +386,6 @@ class DomainClient(Client):
         if response == "y":
             response = self.routes[0].connection.reset()  # type: ignore
 
-    def configure(self, **kwargs: Any) -> Any:
-        if "daa_document" in kwargs.keys():
-            kwargs["daa_document"] = open(kwargs["daa_document"], "rb").read()
-        else:
-            kwargs["daa_document"] = b""
-        response = self._perform_grid_request(  # type: ignore
-            grid_msg=UpdateSetupMessage, content=kwargs
-        ).content
-        logging.info(response)
-
-    @property
-    def settings(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
-        return self._perform_grid_request(  # type: ignore
-            grid_msg=GetSetUpMessage, content=kwargs
-        ).content  # type : ignore
-
     def search(self, query: List, pandas: bool = False) -> Any:
         response = self._perform_grid_request(
             grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
@@ -431,9 +414,7 @@ class DomainClient(Client):
     def get_setup(self, **kwargs: Any) -> Any:
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
-    def apply_to_network(
-        self, domain_vpn_ip: str, network_vpn_ip: str, **metadata: str
-    ) -> None:
+    def apply_to_network(self, client: AbstractNodeClient, **metadata: str) -> None:
         # TODO: refactor
         # Step 1: send a message to the Network from the Domain
         # this means the first message contains the VPN IP for the network
@@ -451,9 +432,19 @@ class DomainClient(Client):
         # association request table and then gets used to route all traffic from
         # the Domain to the Network node
 
+        self.join_network(client=client)
+
+        for peer in self.vpn_status()["peers"]:
+            if peer["hostname"] == client.name:
+                network_vpn_ip = peer["ip"]
+
+        domain_vpn_ip = self.vpn_status()["host"]["ip"]
+
         self.association.create(
             source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
         )
+
+        print("Application submitted.")
 
     @property
     def id(self) -> UID:
@@ -527,8 +518,18 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def join_network(self, host_or_ip: str) -> None:
-        return self.vpn.join_network(host_or_ip=host_or_ip)
+    def join_network(
+        self,
+        client: Optional[AbstractNodeClient] = None,
+        host_or_ip: Optional[str] = None,
+    ) -> None:
+        if client is None and host_or_ip is None:
+            raise ValueError(
+                "join_network requires a Client object or host_or_ip string"
+            )
+        if client is not None:
+            host_or_ip = client.routes[0].connection.host  # type: ignore
+        return self.vpn.join_network(host_or_ip=str(host_or_ip))
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
