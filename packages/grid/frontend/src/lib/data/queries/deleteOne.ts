@@ -1,4 +1,4 @@
-import api from '@/utils/api-axios'
+import api from '@/utils/api'
 
 export type DeleteOneArgs<T> = {
   data: T
@@ -8,6 +8,6 @@ export type DeleteOneArgs<T> = {
 
 export async function deleteOne<T>({id, queryKeys}: DeleteOneArgs<T>) {
   const [route] = queryKeys
-  const res = await api.delete(`${route}/${id}`)
-  return res.data
+  const res = (await api.delete(`${route}/${id}`).json()) as T
+  return res
 }

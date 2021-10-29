@@ -1,25 +1,13 @@
-import type {FunctionComponent} from 'react'
-import {QueryCache, QueryClient, QueryClientProvider} from 'react-query'
+import {useState} from 'react'
+import {QueryClient, QueryClientProvider} from 'react-query'
 import {AuthProvider} from '@/context/auth-context'
-import api from '@/utils/api-axios'
 
-const queryClient = new QueryClient({
-  defaultOptions: {
-    queries: {
-      queryFn: async ({queryKey}) => {
-        const {data} = await api(queryKey[0])
-        return data
-      },
-      refetchInterval: 5 * 60 * 1000
-    }
-  },
-  queryCache: new QueryCache()
-})
+export default function AppProviders({children}) {
+  const [queryClient] = useState(() => new QueryClient())
 
-const AppProviders: FunctionComponent = ({children}) => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>{children}</AuthProvider>
-  </QueryClientProvider>
-)
-
-export {AppProviders}
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AuthProvider>{children}</AuthProvider>
+    </QueryClientProvider>
+  )
+}

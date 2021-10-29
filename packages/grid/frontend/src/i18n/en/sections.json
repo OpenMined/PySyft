@@ -1,0 +1,18 @@
+{
+  "users": {
+    "heading": "Users",
+    "description": "Manage users, edit user permissions and credentials."
+  },
+  "networks": {
+    "heading": "Networks",
+    "description": "Networks are the primary way you’ll attract Data Scientists to your Domain node. You can think of network nodes as hubs that connect different domain nodes, allowing Data Scientists to go to one place to find the type of datasets they want to work off of. You can join the available networks as a <a>guest</a> below."
+  },
+  "permissions": {
+    "heading": "Permisssions",
+    "description": "Permissions for a user are set by their assigned role. These permissions are used for managing the domain. Review and customize what permissions apply to the roles below."
+  },
+  "settings": {
+    "heading": "Domain Settings",
+    "description": "Provide contextual information for the {{domain_name}} node and set structural configurations."
+  }
+}
