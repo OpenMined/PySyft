@@ -696,21 +696,23 @@ def test_mul_public(gamma_tensor_min: IGT) -> None:
     assert (output._entities() == gamma_tensor_min._entities()).all()
 
 
-@pytest.mark.skip(reason="Still not working")
-def test_mul_private(gamma_tensor_min: IGT, sept_ishan) -> None:
+@pytest.mark.skip(reason="Still not working for IGT * IGT, or IGT * SEPT :(")
+def test_mul_private(gamma_tensor_min: IGT, gamma_tensor_ref: IGT) -> None:
     """Test public multiplication of IGTs"""
-    assert sept_ishan.shape == gamma_tensor_min.shape
-    target = gamma_tensor_min._values() * sept_ishan.child
-    output = gamma_tensor_min * sept_ishan
+    assert gamma_tensor_ref.shape == gamma_tensor_min.shape
+    target = gamma_tensor_min._values() * gamma_tensor_ref._values()
+    output = gamma_tensor_min * gamma_tensor_ref
     assert isinstance(output, IGT)
     assert (output._values() == target).all()
     assert (
-        output._min_values() == gamma_tensor_min._min_values() * sept_ishan.min_vals
+        output._min_values()
+        == gamma_tensor_min._min_values() * gamma_tensor_ref._min_values()
     ).all()
     assert (
-        output._max_values() == gamma_tensor_min._max_values() * sept_ishan.max_vals
+        output._max_values()
+        == gamma_tensor_min._max_values() * gamma_tensor_ref._max_values()
     ).all()
-    # assert (output._entities() == gamma_tensor_min._entities()).all()
+    assert (output._entities() == gamma_tensor_min._entities()).all()  # No new
 
 
 def test_matmul_public(gamma_tensor_min: IGT) -> None:
