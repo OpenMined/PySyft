@@ -193,7 +193,8 @@ class GetObjectAction(ImmediateActionWithReply):
                     debug(
                         f"Calling delete on Object with ID {self.id_at_location} in store."
                     )
-                    node.store.delete(key=self.id_at_location)
+                    if not node.store.is_dataset(key=self.id_at_location):  # type: ignore
+                        node.store.delete(key=self.id_at_location)
                 except Exception as e:
                     log = (
                         f"> GetObjectAction delete exception {self.id_at_location} {e}"

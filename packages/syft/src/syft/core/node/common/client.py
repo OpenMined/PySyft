@@ -21,6 +21,7 @@ import syft as sy
 from ....logger import critical
 from ....logger import debug
 from ....logger import error
+from ....logger import info
 from ....logger import traceback_and_raise
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
@@ -146,6 +147,28 @@ class Client(AbstractNodeClient):
 
             except Exception as e:
                 critical(f"Failed to set python attribute on client. {e}")
+
+    def configure(self, **kwargs: Any) -> Any:
+        # relative
+        from .node_service.node_setup.node_setup_messages import UpdateSetupMessage
+
+        if "daa_document" in kwargs.keys():
+            kwargs["daa_document"] = open(kwargs["daa_document"], "rb").read()
+        else:
+            kwargs["daa_document"] = b""
+        response = self._perform_grid_request(  # type: ignore
+            grid_msg=UpdateSetupMessage, content=kwargs
+        ).content
+        info(response)
+
+    @property
+    def settings(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
+        # relative
+        from .node_service.node_setup.node_setup_messages import GetSetUpMessage
+
+        return self._perform_grid_request(  # type: ignore
+            grid_msg=GetSetUpMessage, content=kwargs
+        ).content  # type : ignore
 
     # def add_me_to_my_address(self) -> None:
     #     traceback_and_raise(NotImplementedError)
