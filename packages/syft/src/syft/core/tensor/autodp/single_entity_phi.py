@@ -41,6 +41,7 @@ from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
+from ..smpc.share_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
@@ -1752,6 +1753,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         elif isinstance(self.child, torch.Tensor):
             data = self.child.numpy().copy()
+
+        elif isinstance(self.child, ShareTensor):
+            data = self.child.copy()
 
         if isinstance(self.min_vals, np.ndarray):
             min_vals = np.array(self.min_vals, order=order, subok=subok, copy=True)

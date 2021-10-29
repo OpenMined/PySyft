@@ -160,7 +160,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.put", "syft.core.tensor.tensor.Tensor"),
         (
             "syft.core.tensor.tensor.Tensor.bit_decomposition",
-            "syft.core.tensor.tensor.Tensor",
+            "syft.core.tensor.smpc.tensor_list.TensorList",
         ),
         # # SMPC
         # (
