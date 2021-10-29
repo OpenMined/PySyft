@@ -664,12 +664,8 @@ class ShareTensor(PassthroughTensor):
                 method(*args, **kwargs)
                 new_share = share
 
-            res = ShareTensor(
-                rank=_self.rank,
-                parties_info=_self.parties_info,
-                ring_size=_self.ring_size,
-                value=new_share,
-            )
+            res = _self.copy_tensor()
+            res.child = new_share
 
             return res
 
