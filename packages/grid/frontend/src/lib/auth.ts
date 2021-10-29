@@ -1,35 +1,31 @@
 import jwtDecode from 'jwt-decode'
-import domainAPI, {ErrorMessage} from '@/utils/api-axios'
+import api from '@/utils/api'
+import {parseCookies, setCookie, destroyCookie} from 'nookies'
+import type {Credentials} from '@/types/Login'
 
-const AUTH_KEY = '__pygrid_admin_auth'
+const GRID_KEY = 'grid'
 
-export function setToken(token: string): string {
-  if (typeof window !== 'undefined') {
-    localStorage.setItem(AUTH_KEY, token)
-  }
-
-  return token
-}
-
-export function getToken(): string {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem(AUTH_KEY)
-  }
-}
-
-export function getDecodedToken(): {id: number} {
-  const token = getToken()
-  return jwtDecode(token)
+export function getToken() {
+  const parsedCookies = parseCookies()
+  return parsedCookies?.[GRID_KEY]
 }
 
 export function logout() {
-  if (typeof window !== 'undefined') {
-    localStorage.removeItem(AUTH_KEY)
-  }
+  destroyCookie(null, GRID_KEY)
 }
 
-export function login(credentials: {email: string; password: string}): Promise<string | ErrorMessage> {
-  return domainAPI.post<{access_token: string}>('/login', credentials).then(response => {
-    setToken(response.data.access_token)
-  })
+export function decodeToken() {
+  const token = getToken()
+  if (!token) return null
+  return jwtDecode(token)
+}
+
+export async function login({email, password}: {email: string; password: string}) {
+  try {
+    const token: Credentials = await api.post('login', {json: {email, password}}).json()
+    setCookie(null, GRID_KEY, token.access_token, {maxAge: 30 * 24 * 60 * 60 * 5, path: '/'})
+    return 'ok'
+  } catch (err) {
+    throw err
+  }
 }

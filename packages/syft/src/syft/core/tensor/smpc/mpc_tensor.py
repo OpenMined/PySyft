@@ -4,7 +4,6 @@ from __future__ import annotations
 # stdlib
 import functools
 import itertools
-import operator
 import secrets
 from typing import Any
 from typing import Callable
@@ -26,6 +25,7 @@ import syft as sy
 # relative
 from . import utils
 from .... import logger
+from ....ast.klass import get_run_class_method
 from ...smpc.protocol.spdz import spdz
 from ...smpc.store import CryptoPrimitiveProvider
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -903,8 +903,11 @@ class MPCTensor(PassthroughTensor):
                 ]
             # TODO: when does this get called? Why would a share not be a TensorPointer?
             else:
-                op: Callable[..., Any] = getattr(operator, op_str)
-                res_shares = [op(a, b) for a, b in zip(self.child, other.child)]
+                res_shares = []
+                attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
+                op = get_run_class_method(attr_path_and_name, SMPC=True)
+                for x, y in zip(self.child, other.child):
+                    res_shares.append(op(x, x, y, **kwargs))
 
         else:
             raise ValueError(f"MPCTensor Private {op_str} not supported")
@@ -929,8 +932,11 @@ class MPCTensor(PassthroughTensor):
                     for share in self.child
                 ]
             else:
-                op: Callable[..., Any] = getattr(operator, op_str)
-                res_shares = [op(share, y) for share in self.child]
+                res_shares = []
+                attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
+                op = get_run_class_method(attr_path_and_name, SMPC=True)
+                for share in self.child:
+                    res_shares.append(op(share, y, **kwargs))
 
         else:
             raise ValueError(f"MPCTensor Public {op_str} not supported")

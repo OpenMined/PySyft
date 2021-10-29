@@ -1,0 +1,9 @@
+{
+  "have-an-account": "Have an account already?",
+  "login-here": "Login here",
+  "apply-for-account": "Apply for an Account",
+  "with-daa": {
+    "upload-signed": "Upload Signed DAA",
+    "description": "This domain requires a Data Access Agreement (DAA) to be signed before an account can be made. Please download the agreement at the link below and upload a signed version when you are ready to apply."
+  }
+}

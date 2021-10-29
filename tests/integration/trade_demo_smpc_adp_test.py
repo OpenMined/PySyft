@@ -148,6 +148,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     """
     # the pledge 🦜
     result = ca_data + it_data
+    result.block_with_timeout(40)
 
     """
     Cutter: The second act is called "The Turn". The mathemagician takes the ordinary

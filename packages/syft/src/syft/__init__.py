@@ -87,6 +87,7 @@ from .lib import load_lib  # noqa: F401
 from .lib.torch.module import Module  # noqa: F401
 from .lib.torch.module import SyModule  # noqa: F401
 from .lib.torch.module import SySequential  # noqa: F401
+from .registry import NetworkRegistry  # noqa: F401
 
 if sys.version_info[:2] >= (3, 8):
     # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
@@ -117,3 +118,28 @@ client_cache: Dict[str, Any] = {}
 
 # TODO: https://github.com/OpenMined/PySyft/issues/5930
 flags._APACHE_ARROW_TENSOR_SERDE = False
+
+
+def module_property(func: Any) -> None:
+    """Decorator to turn module functions into properties.
+    Function names must be prefixed with an underscore."""
+    module = sys.modules[func.__module__]
+
+    def base_getattr(name: str) -> None:
+        raise AttributeError(f"module '{module.__name__}' has no attribute '{name}'")
+
+    old_getattr = getattr(module, "__getattr__", base_getattr)
+
+    def new_getattr(name: str) -> Any:
+        if f"_{name}" == func.__name__:
+            return func()
+        else:
+            return old_getattr(name)
+
+    module.__getattr__ = new_getattr  # type: ignore
+    return func
+
+
+@module_property
+def _networks() -> NetworkRegistry:
+    return NetworkRegistry()
