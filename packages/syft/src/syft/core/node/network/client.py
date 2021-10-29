@@ -18,6 +18,7 @@ from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
+from ..abstract.node import AbstractNodeClient
 from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
@@ -146,8 +147,18 @@ class NetworkClient(Client):
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"
 
-    def join_network(self, host_or_ip: str) -> None:
-        return self.vpn.join_network(host_or_ip=host_or_ip)
+    def join_network(
+        self,
+        client: Optional[AbstractNodeClient] = None,
+        host_or_ip: Optional[str] = None,
+    ) -> None:
+        if client is None and host_or_ip is None:
+            raise ValueError(
+                "join_network requires a Client object or host_or_ip string"
+            )
+        if client is not None:
+            host_or_ip = client.routes[0].connection.host  # type: ignore
+        return self.vpn.join_network(host_or_ip=str(host_or_ip))
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()

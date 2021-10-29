@@ -518,8 +518,18 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def join_network(self, client: AbstractNodeClient) -> None:
-        return self.vpn.join_network(host_or_ip=client.routes[0].connection.host)
+    def join_network(
+        self,
+        client: Optional[AbstractNodeClient] = None,
+        host_or_ip: Optional[str] = None,
+    ) -> None:
+        if client is None and host_or_ip is None:
+            raise ValueError(
+                "join_network requires a Client object or host_or_ip string"
+            )
+        if client is not None:
+            host_or_ip = client.routes[0].connection.host  # type: ignore
+        return self.vpn.join_network(host_or_ip=str(host_or_ip))
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
