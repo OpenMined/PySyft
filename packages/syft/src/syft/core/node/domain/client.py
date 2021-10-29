@@ -414,9 +414,7 @@ class DomainClient(Client):
     def get_setup(self, **kwargs: Any) -> Any:
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
-    def apply_to_network(
-        self, domain_vpn_ip: str, network_vpn_ip: str, **metadata: str
-    ) -> None:
+    def apply_to_network(self, client: AbstractNodeClient, **metadata: str) -> None:
         # TODO: refactor
         # Step 1: send a message to the Network from the Domain
         # this means the first message contains the VPN IP for the network
@@ -434,9 +432,19 @@ class DomainClient(Client):
         # association request table and then gets used to route all traffic from
         # the Domain to the Network node
 
+        self.join_network(client=client)
+
+        for peer in self.vpn_status()["peers"]:
+            if peer["hostname"] == client.name:
+                network_vpn_ip = peer["ip"]
+
+        domain_vpn_ip = self.vpn_status()["host"]["ip"]
+
         self.association.create(
             source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
         )
+
+        print('Application submitted.')
 
     @property
     def id(self) -> UID:
@@ -510,8 +518,8 @@ class DomainClient(Client):
                     state[tag] = ptr
         return self.store.pandas
 
-    def join_network(self, host_or_ip: str) -> None:
-        return self.vpn.join_network(host_or_ip=host_or_ip)
+    def join_network(self, client: AbstractNodeClient) -> None:
+        return self.vpn.join_network(host_or_ip=client.routes[0].connection.host)
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
