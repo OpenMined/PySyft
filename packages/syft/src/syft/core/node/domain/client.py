@@ -444,7 +444,7 @@ class DomainClient(Client):
             source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
         )
 
-        print('Application submitted.')
+        print("Application submitted.")
 
     @property
     def id(self) -> UID:
