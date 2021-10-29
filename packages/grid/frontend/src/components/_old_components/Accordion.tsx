@@ -5,33 +5,29 @@ import {ChevronRightIcon} from '@heroicons/react/outline'
 import AnimateHeight from 'react-animate-height'
 import type {ReactNode} from 'react'
 
-function AccordionSummary({isOpen, openClasses, children}) {
+function AccordionSummary({isOpen, children}) {
   return (
-    <div className={cn('cursor-pointer px-4 py-3 flex items-center space-x-2', isOpen && openClasses)}>
+    <div className="cursor-pointer px-4 py-5 flex items-center space-x-2 bg-white hover:bg-sky-100">
       <ChevronRightIcon className={cn('mx-2 my-1 w-6 h-6 text-gray-500 transition transform', isOpen && 'rotate-90')} />
       <div className="flex items-center justify-between w-full">{children}</div>
     </div>
   )
 }
 
-// todo: untangle classes
-export function AccordionListItem({openClasses = '', children}: {openClasses?: string; children: ReactNode}) {
+export function AccordionListItem({children}: {children: ReactNode}) {
   const [summary, ...panel] = Children.toArray(children)
-
   return (
     <div role="region">
       <Disclosure>
         {({open}) => (
           <>
-            <Disclosure.Button as="div" className="w-full">
-              <AccordionSummary openClasses={openClasses} isOpen={open}>
-                {summary}
-              </AccordionSummary>
-            </Disclosure.Button>
+            <h3>
+              <Disclosure.Button as="div" className="w-full">
+                <AccordionSummary isOpen={open}>{summary}</AccordionSummary>
+              </Disclosure.Button>
+            </h3>
             <AnimateHeight duration={200} height={open ? 'auto' : 0}>
-              <Disclosure.Panel static>
-                <div className={cn('p-4 pb-8', open && openClasses)}>{panel}</div>
-              </Disclosure.Panel>
+              <Disclosure.Panel static>{panel}</Disclosure.Panel>
             </AnimateHeight>
           </>
         )}
@@ -41,7 +37,7 @@ export function AccordionListItem({openClasses = '', children}: {openClasses?: s
 }
 
 function AccordionRoot({children}) {
-  return <div className="grid grid-cols-1 divide-y divide-gray-200 border border-gray-200 rounded-md">{children}</div>
+  return <div className="grid grid-cols-1 divide-y divide-gray-200 border border-gray-200">{children}</div>
 }
 
 export const Accordion = Object.assign(AccordionRoot, {Item: AccordionListItem})
