@@ -53,14 +53,14 @@ RING_SIZE_TO_OP = {
         "add": operator.xor,
         "sub": operator.xor,
         "mul": operator.and_,
-        "gt" : operator.gt,
+        "gt": operator.gt,
     },
     2
     ** 32: {
         "add": operator.add,
         "sub": operator.sub,
         "mul": operator.mul,
-        "gt" : operator.gt,
+        "gt": operator.gt,
     },
 }
 

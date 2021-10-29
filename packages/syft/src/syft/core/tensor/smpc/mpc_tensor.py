@@ -615,7 +615,7 @@ class MPCTensor(PassthroughTensor):
                 attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
                 op = get_run_class_method(attr_path_and_name, SMPC=True)
                 for share in self.child:
-                    res_shares.append(op(share,share, y, **kwargs))
+                    res_shares.append(op(share, share, y, **kwargs))
 
         else:
             raise ValueError(f"MPCTensor Public {op_str} not supported")
@@ -691,23 +691,26 @@ class MPCTensor(PassthroughTensor):
     def mul(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        from syft.core.tensor.tensor import TensorPointer
+        # relative
+        from ..tensor import TensorPointer
+
         self, y = MPCTensor.sanity_checks(self, y)
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
+        res_shares: List[Any] = []
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "mul", **kwargs)
         else:
-            if not isinstance(self.child[0],TensorPointer):
+            if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
                     getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
                 ]
             else:
-                res_shares = []
+
                 attr_path_and_name = f"{self.child[0].path_and_name}.__mul__"
-                op = get_run_class_method(attr_path_and_name, SMPC=True)
-                for share in self.child: 
-                    res_shares.append(op(share, share, y, **kwargs))
+                tensor_op = get_run_class_method(attr_path_and_name, SMPC=True)
+                for share in self.child:
+                    res_shares.append(tensor_op(share, share, y, **kwargs))
 
         y_shape = getattr(y, "shape", (1,))
         new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
