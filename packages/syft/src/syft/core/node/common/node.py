@@ -456,7 +456,7 @@ class Node(AbstractNode):
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
         contents = getattr(msg, "message", msg)
-        # exceptions can be easily triggered which break any WebRTC loops
+        # exceptions can be easily triggered which break any loops
         # so we need to catch them here and respond with a special exception
         # message reply
         try:
