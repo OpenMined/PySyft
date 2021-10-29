@@ -170,67 +170,29 @@ class Client(AbstractNodeClient):
             grid_msg=GetSetUpMessage, content=kwargs
         ).content  # type : ignore
 
-    # def add_me_to_my_address(self) -> None:
-    #     traceback_and_raise(NotImplementedError)
-
-    # def register_in_memory_client(self, client: AbstractNodeClient) -> None:
-    #     # WARNING: Gross hack
-    #     route_index = self.default_route_index
-    #     # this ID should be unique but persistent so that lookups are universal
-    #     route = self.routes[route_index]
-    #     if isinstance(route, SoloRoute):
-    #         connection = route.connection
-    #         if isinstance(connection, VirtualClientConnection):
-    #             connection.server.node.in_memory_client_registry[
-    #                 client.address.target_id.id
-    #             ] = client
-    #         else:
-    #             traceback_and_raise(
-    #                 Exception(
-    #                     "Unable to save client reference without VirtualClientConnection"
-    #                 )
-    #             )
-    #     else:
-    #         traceback_and_raise(
-    #             Exception("Unable to save client reference without SoloRoute")
-    #         )
-
-    # not being used
-    # def register(self, client: AbstractNodeClient) -> None:
-    #     debug(f"> Registering {client.pprint} with {self.pprint}")
-    #     self.register_in_memory_client(client=client)
-    #     msg = RegisterChildNodeMessage(
-    #         lookup_id=client.id,
-    #         child_node_client_address=client.address,
-    #         address=self.address,
-    #     )
-
-    #     if self.network is not None:
-    #         client.network = (
-    #             self.network if self.network is not None else client.network
-    #         )
-
-    #     # QUESTION
-    #     # if the client is a network and the domain is not none this will set it
-    #     # on the network causing an exception
-    #     # but we can't check if the client is a NetworkClient here because
-    #     # this is a superclass of NetworkClient
-    #     # Remove: if self.domain is not None:
-    #     # then see the test line node_test.py:
-    #     # bob_network_client.register(client=bob_domain_client)
-    #     if self.domain is not None:
-    #         client.domain = self.domain if self.domain is not None else client.domain
-
-    #     if self.device is not None:
-    #         client.device = self.device if self.device is not None else client.device
-
-    #         if self.device != client.device:
-    #             raise AttributeError("Devices don't match")
-
-    #     if self.vm is not None:
-    #         client.vm = self.vm
-
-    #     self.send_immediate_msg_without_reply(msg=msg)
+    def join_network(
+        self,
+        client: Optional[AbstractNodeClient] = None,
+        host_or_ip: Optional[str] = None,
+    ) -> None:
+        # this asks for a VPN key so it must be on a public interface hence the
+        # client or a public host_or_ip
+        try:
+            if client is None and host_or_ip is None:
+                raise ValueError(
+                    "join_network requires a Client object or host_or_ip string"
+                )
+            if client is not None:
+                # connection.host has a http protocol
+                connection_host = client.routes[0].connection.host  # type: ignore
+                parts = connection_host.split("://")
+                host_or_ip = parts[1]
+                # if we are using localhost to connect we need to change to docker-host
+                # so that the domain container can connect to the host not itself
+                host_or_ip = str(host_or_ip).replace("localhost", "docker-host")
+            return self.vpn.join_network(host_or_ip=str(host_or_ip))  # type: ignore
+        except Exception as e:
+            print(f"Failed to join network with {host_or_ip}. {e}")
 
     @property
     def id(self) -> UID:
