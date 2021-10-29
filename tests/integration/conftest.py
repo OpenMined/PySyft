@@ -18,10 +18,13 @@ def login_clients() -> None:
     PORT = 9082
     PARTIES = 3
     for i in range(PARTIES):
-        client = sy.login(
-            email="info@openmined.org", password="changethis", port=(PORT + i)
-        )
-        clients.append(client)
+        try:
+            client = sy.login(
+                email="info@openmined.org", password="changethis", port=(PORT + i)
+            )
+            clients.append(client)
+        except Exception as e:
+            print(f"Cant connect to client {i}. We might have less running. {e}")
 
 
 @pytest.fixture
