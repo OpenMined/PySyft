@@ -121,9 +121,6 @@ def login(
         logging.info(
             "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
         )
-        print(
-            "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
-        )
     else:
         credentials = {"email": email, "password": password}
 
@@ -134,6 +131,8 @@ def login(
         # bit of fanciness
         sys.stdout.write(" done! \t Logging into")
         sys.stdout.write(" " + str(node.name) + "... ")
+        if email is None or password is None:
+            sys.stdout.write("as GUEST...")
         time.sleep(1)  # ok maybe too fancy... but c'mon don't you want to be fancy?
         print("done!")
 
