@@ -719,7 +719,6 @@ class MPCTensor(PassthroughTensor):
         self, y = MPCTensor.sanity_checks(self, y)
         mpc_res = spdz.gt_master(self, y, "mul")
         y_shape = getattr(y, "shape", (1,))
-        new_shape = utils.get_shape("gt", self.mpc_shape, y_shape)
 
         return mpc_res
 

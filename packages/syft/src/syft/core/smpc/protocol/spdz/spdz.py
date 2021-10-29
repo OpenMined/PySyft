@@ -66,7 +66,7 @@ def mul_master(
 
     if ring_size != 2:
         # For ring_size 2 we generate those before hand
-        primitives = CryptoPrimitiveProvider.generate_primitives(
+        CryptoPrimitiveProvider.generate_primitives(
             f"beaver_{op_str}",
             parties=parties,
             g_kwargs={
