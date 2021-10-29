@@ -444,7 +444,7 @@ class DomainClient(Client):
             source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
         )
 
-        print('Application submitted.')
+        print("Application submitted.")
 
     @property
     def id(self) -> UID:
@@ -519,7 +519,7 @@ class DomainClient(Client):
         return self.store.pandas
 
     def join_network(self, client: AbstractNodeClient) -> None:
-        return self.vpn.join_network(host_or_ip=client.routes[0].connection.host)
+        return self.vpn.join_network(host_or_ip=client.routes[0].connection.host)  # type: ignore
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
