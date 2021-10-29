@@ -707,6 +707,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 min_vals=self_min.__matmul__(other),
                 max_vals=self_max.__matmul__(other),
             )
+        raise NotImplementedError  # Haven't yet added private-private support
 
     def __pos__(self) -> IntermediateGammaTensor:
         return self
