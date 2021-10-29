@@ -707,7 +707,29 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 min_vals=self_min.__matmul__(other),
                 max_vals=self_max.__matmul__(other),
             )
-        raise NotImplementedError  # Haven't yet added private-private support
+        else:  # Private-Private
+            # relative
+            from .single_entity_phi import SingleEntityPhiTensor
+
+            if isinstance(other, SingleEntityPhiTensor):
+                # relative
+                from .dp_tensor_converter import convert_to_gamma_tensor
+
+                other_gamma = convert_to_gamma_tensor(other)
+                return InitialGammaTensor(
+                    values=self_values.__matmul__(other_gamma._values()),
+                    entities=self_entities.__matmul__(other_gamma._entities()),
+                    min_vals=self_min.__matmul__(other_gamma._min_values()),
+                    max_vals=self_max.__matmul__(other_gamma._max_values()),
+                )
+            elif isinstance(other, IntermediateGammaTensor):
+                return InitialGammaTensor(
+                    values=self_values.__matmul__(other._values()),
+                    entities=self_entities.__matmul__(other._entities()),
+                    min_vals=self_min.__matmul__(other._min_values()),
+                    max_vals=self_max.__matmul__(other._max_values()),
+                )
+            raise NotImplementedError
 
     def __pos__(self) -> IntermediateGammaTensor:
         return self

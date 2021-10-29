@@ -720,9 +720,36 @@ def test_matmul_public(gamma_tensor_min: IGT) -> None:
     output = gamma_tensor_min @ other
     assert isinstance(output, IGT)
     assert (output._values() == target).all()
-    # assert (output._min_values() == gamma_tensor_min._min_values() * 2).all()
-    # assert (output._max_values() == gamma_tensor_min._max_values() * 2).all()
-    # assert (output._entities() == gamma_tensor_min._entities()).all()
+    assert (
+        output._min_values() == gamma_tensor_min._min_values().__matmul__(other)
+    ).all()
+    assert (
+        output._max_values() == gamma_tensor_min._max_values().__matmul__(other)
+    ).all()
+    assert (output._entities() == gamma_tensor_min._entities().__matmul__(other)).all()
+
+
+def test_matmul_private(gamma_tensor_min: IGT, sept_ishan: SEPT) -> None:
+    """Test private matrix multiplication of IGTs"""
+    other = sept_ishan
+    target = gamma_tensor_min._values() @ other.child
+    output = gamma_tensor_min @ other
+    assert isinstance(output, IGT)
+    assert (output._values() == target).all()
+    assert (
+        output._min_values()
+        == gamma_tensor_min._min_values().__matmul__(other.min_vals)
+    ).all()
+    assert (
+        output._max_values()
+        == gamma_tensor_min._max_values().__matmul__(other.max_vals)
+    ).all()
+    assert (
+        output._entities()
+        == gamma_tensor_min._entities().__matmul__(
+            convert_to_gamma_tensor(other)._entities()
+        )
+    ).all()
 
 
 def test_diagonal(gamma_tensor_min: IGT) -> None:
