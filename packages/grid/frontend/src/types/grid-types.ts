@@ -92,10 +92,14 @@ export interface Me {
 }
 
 export interface Settings {
-  // FIX: Which one is it? :)
-  domainName: string
-  nodeName: string
+  domain_name: string
+  description: string
+  deployed_on: Date | string
   id: number
+  daa: boolean
+  daa_document: string
+  node_id: string
+  tags: string[]
 }
 
 export interface DomainStatus {

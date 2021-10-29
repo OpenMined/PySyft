@@ -1,0 +1,11 @@
+{
+  "alert": "Your profile information is public-facing information that other users and node owners can see.",
+  "profile": "Profile",
+  "password": "Password",
+  "delete": "Delete Account",
+  "delete-account-copy": "When you delete your user account all information relating to you will be deleted as well as any permissions and requests. If you are the domain owner the domain node will be deleted as well and will be closed to all users. To transfer ownership of a domain node before deleting your account you can follow the instructions here.",
+  "account-delete-warning-heading": "Are you sure you want to delete your account?",
+  "account-delete-warning-copy": "If deleted all uploaded documents will be deleted and all open requests will be closed. Keep in mind any legal agreements pertaining to the use of your data requests will still apply according to the terms of the agreement signed. If you would like to proceed press “Delete Account” if not you can click “Cancel”.",
+  "account-delete-success-heading": "Your account has been deleted",
+  "account-delete-success-copy": "To help us improve future experiences, could you share with us any frustrations or suggestions you have with or for the PyGrid UI Platform?"
+}

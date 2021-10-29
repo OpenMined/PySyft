@@ -6,6 +6,7 @@ import type {ErrorMessage} from '@/utils/api-axios'
 
 interface Crudify<T> {
   queryKeys: string[]
+  invalidateKeys?: string[]
   fetchAllFn: QueryFunction<T[]>
   fetchOneFn: QueryFunction<T>
   createFn: MutationFunction<T>
@@ -17,7 +18,15 @@ const invalidateQueriesConfig = {
   refetchInactive: true
 }
 
-function useCrudifyRQ<T>({queryKeys, fetchAllFn, fetchOneFn, createFn, updateFn, deleteFn}: Crudify<T>) {
+function useCrudifyRQ<T>({
+  queryKeys,
+  invalidateKeys,
+  fetchAllFn,
+  fetchOneFn,
+  createFn,
+  updateFn,
+  deleteFn
+}: Crudify<T>) {
   const queryClient = useQueryClient()
 
   const useAll = (config: UseQueryOptions<T[]> = {}) => useQuery<T[], ErrorMessage>(queryKeys, fetchAllFn, config)
@@ -30,6 +39,7 @@ function useCrudifyRQ<T>({queryKeys, fetchAllFn, fetchOneFn, createFn, updateFn,
       ...config,
       onSuccess: (...args) => {
         queryClient.invalidateQueries(queryKeys, invalidateQueriesConfig)
+        queryClient.invalidateQueries(invalidateKeys, invalidateQueriesConfig)
         if (config.onSuccess) {
           config.onSuccess(...args)
         }
@@ -42,6 +52,7 @@ function useCrudifyRQ<T>({queryKeys, fetchAllFn, fetchOneFn, createFn, updateFn,
       onSuccess: (...args) => {
         queryClient.invalidateQueries([id, ...queryKeys], invalidateQueriesConfig)
         queryClient.invalidateQueries(queryKeys, invalidateQueriesConfig)
+        queryClient.invalidateQueries(invalidateKeys, invalidateQueriesConfig)
         if (config.onSuccess) {
           config.onSuccess(...args)
         }
@@ -53,6 +64,7 @@ function useCrudifyRQ<T>({queryKeys, fetchAllFn, fetchOneFn, createFn, updateFn,
       ...config,
       onSuccess: (...args) => {
         queryClient.invalidateQueries(queryKeys, invalidateQueriesConfig)
+        queryClient.invalidateQueries(invalidateKeys, invalidateQueriesConfig)
         if (config.onSuccess) {
           config.onSuccess(...args)
         }
@@ -62,9 +74,10 @@ function useCrudifyRQ<T>({queryKeys, fetchAllFn, fetchOneFn, createFn, updateFn,
   return {all: useAll, one: useOne, create: useCreate, update: useUpdate, remove: useDelete}
 }
 
-export function useCrudify<T>(queryKeys: string[]) {
+export function useCrudify<T>(queryKeys: string[], invalidateKeys?: string[]) {
   return useCrudifyRQ<T>({
     queryKeys,
+    invalidateKeys,
     fetchAllFn: fetchAll,
     fetchOneFn: fetchOne,
     createFn: createOne,

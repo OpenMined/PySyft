@@ -1,78 +1,47 @@
-import {useMemo, useState} from 'react'
-import {flatten, uniq} from 'lodash'
-import {Page, NormalButton, SpinnerWithText, MutationError} from '@/components'
-import {PermissionList, CreateRole} from '@/components/pages/permissions'
-import {PermissionsFilter} from '@/components/FilterMenu'
+import {faCheck, faSpinner} from '@fortawesome/free-solid-svg-icons'
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
+import {H4, ListInnerContainer, Select, Text} from '@/omui'
+import {SingleCenter} from '@/components/Layouts'
+import {PermissionsAccordion} from '@/components/Permissions/PermissionAccordion'
+import {TopContent} from '@/components/lib'
 import {useRoles} from '@/lib/data'
-import {useEnhancedCurrentUser} from '@/lib/users/self'
-import {gridPermissions} from '@/utils'
-import type {Role} from '@/types/grid-types'
-
-const permissionList = Object.keys(gridPermissions)
-
-interface PermissionsList {
-  roles: Role[]
-  isLoading: boolean
-  isError: boolean
-  errorMessage: string
-}
-
-function PermissionsList({roles, isLoading, isError, errorMessage}: PermissionsList) {
-  if (isLoading) return <SpinnerWithText>Loading the list of available tensors</SpinnerWithText>
-  if (isError) return <MutationError isError error="Unable to load tensors" description={errorMessage} />
-  return <PermissionList roles={roles} />
-}
+import {singularOrPlural} from '@/utils'
+import {t} from '@/i18n'
+import {sections} from '@/content'
 
 export default function Permissions() {
-  const {all} = useRoles()
-  const {data: roles, isLoading, isError, error} = all()
-  const me = useEnhancedCurrentUser()
-
-  const [openCreatePanel, setOpen] = useState<boolean>(false)
-
-  const [filters, setFilters] = useState([])
-  const filtered = useMemo(
-    () =>
-      (filters.some(filter => filter)
-        ? uniq(
-            flatten(
-              filters.map((isSelected, index) => {
-                if (isSelected) {
-                  const permission = permissionList[index]
-                  return roles.filter(role => role[permission])
-                }
-                return null
-              })
-            ).filter((role: Role) => role)
-          )
-        : roles ?? []
-      ).sort((a: Role, b: Role) => a.id - b.id),
-    [filters, roles]
-  )
+  const {data: roles, isLoading} = useRoles().all()
+  const results = {length: 4}
 
   return (
-    <Page title="Roles and Permissions" description="Create new roles and edit the permissions attached to each role">
-      <section className="flex justify-between">
-        <PermissionsFilter setSelectedFilters={setFilters} />
-        {me?.permissions?.canEditRoles && (
-          <div>
-            <NormalButton
-              className={`flex-shrink-0 bg-gray-900 text-white bg-opacity-80 hover:bg-opacity-100`}
-              onClick={() => setOpen(true)}>
-              Create Role
-            </NormalButton>
-          </div>
+    <SingleCenter>
+      <TopContent
+        heading={sections.permissions.heading}
+        icon={() => <FontAwesomeIcon icon={faCheck} className="text-3xl" />}
+      />
+      <Text as="p" className="col-span-7 mt-8 text-gray-600">
+        {sections.permissions.description}
+      </Text>
+      <div className="mt-12 col-span-4 flex items-center">
+        <button className="w-full">
+          <Select placeholder="Filter by permissions" />
+        </button>
+        <ListInnerContainer>
+          <div className="rounded-full bg-gray-200 w-1.5 h-1.5" />
+        </ListInnerContainer>
+        <Text className="flex-shrink-0">
+          {results.length} {singularOrPlural(t('result'), t('results'), results.length)}
+        </Text>
+      </div>
+      <div className="col-span-full mt-10 space-y-4">
+        <H4>Roles</H4>
+        {isLoading && (
+          <Text size="xl">
+            <FontAwesomeIcon icon={faSpinner} />
+          </Text>
         )}
-      </section>
-      {openCreatePanel && (
-        <section>
-          <CreateRole onClose={() => setOpen(false)} />
-        </section>
-      )}
-
-      <section>
-        <PermissionsList roles={filtered} isLoading={isLoading} isError={isError} errorMessage={error?.message} />
-      </section>
-    </Page>
+        {roles?.length > 0 && <PermissionsAccordion roles={roles} />}
+      </div>
+    </SingleCenter>
   )
 }

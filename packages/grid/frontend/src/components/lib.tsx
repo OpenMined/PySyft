@@ -1,130 +1,117 @@
-import React, {forwardRef} from 'react'
 import cn from 'classnames'
-import {XCircleIcon} from '@heroicons/react/solid'
-import type {ReactNode, FunctionComponent, PropsWithChildren, ComponentPropsWithoutRef} from 'react'
+import {QuickNav} from './QuickNav'
+import {Badge, H2, Icon, Input, Tag, Text} from '@/omui'
+import {Tooltip} from 'react-tippy'
+import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
+import {faInfoCircle, faSearch} from '@fortawesome/free-solid-svg-icons'
 
-export const Alert: FunctionComponent<{
-  className?: string
-  error: string
-  description: string
-}> = ({className, error, description}) => (
-  <div className={cn('p-4 rounded-md bg-red-50', className)}>
-    <div className="flex">
-      <div className="flex-shrink-0">
-        <XCircleIcon className="w-5 h-5 text-red-500" />
+import type {User} from '@/types/user'
+import type {ReactNode} from 'react'
+
+import commonStrings from '@/i18n/en/common.json'
+
+const Optional = props => (
+  <Text {...props} className={cn('text-primary-600 italic pl-1', props?.className)}>
+    Optional
+  </Text>
+)
+
+const InputCopyToClipboard = ({url, text}: {url: string; text: string}) => (
+  <div style={{width: 368}}>
+    <Input variant="outline" addonRight={<Text size="sm">{text}</Text>} defaultValue={url} />
+  </div>
+)
+
+const TopContent = ({icon, heading}: {icon?: ReactNode; heading: string | ReactNode}) => (
+  <div className="col-span-full">
+    <div className="flex justify-between">
+      <div className="flex items-center space-x-3">
+        {icon && <Icon icon={icon} variant="ghost" size="xl" />}
+        {typeof heading === 'string' && <H2>{heading}</H2>}
+        {typeof heading === 'object' && heading}
       </div>
-      <div className="ml-3">
-        <h3 className="text-sm font-medium text-red-800">{error}</h3>
-        {description && <div className="mt-2 text-sm text-red-700">{description}</div>}
-      </div>
+      <QuickNav />
     </div>
   </div>
 )
-interface NormalInput {
-  pre?: string
-  type?: string
-  label?: string
-  hint?: string
-  error?: string
-  id: string
-  className?: string
-  placeholder?: string
-  container?: string
+
+function SearchInput() {
+  return <Input variant="outline" addonLeft={<FontAwesomeIcon icon={faSearch} />} addonUnstyled placeholder="Search" />
 }
 
-function WrapComponent({container = '', id, label, hint, error, children}: PropsWithChildren<NormalInput>) {
+function Tip({position, children}) {
   return (
-    <div className={cn(container)}>
-      {label && (
-        <label htmlFor={id} className="block ml-1 text-sm font-medium text-gray-700 capitalize">
-          {label}
-        </label>
+    <Tooltip position={position} html={<div className="px-2 py-0.5">{children}</div>}>
+      <FontAwesomeIcon icon={faInfoCircle} className="text-sm" />
+    </Tooltip>
+  )
+}
+
+function Dot({color = 'gray-400'}) {
+  return (
+    <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center">
+      <div className={`rounded-full bg-${color} w-1.5 h-1.5`} />
+    </div>
+  )
+}
+
+function NameAndBadge({name, role, onClick}: User) {
+  return (
+    <div className="flex space-x-2 items-center">
+      {onClick ? (
+        <button onClick={onClick}>
+          <Text size="sm" className="cursor-pointer" underline>
+            {name}
+          </Text>
+        </button>
+      ) : (
+        <Text size="sm">{name}</Text>
       )}
-      {children}
-      {hint && <p className="mt-1 ml-1 text-xs text-gray-400">{hint}</p>}
-      {error && <p className="mt-1 ml-1 text-xs text-red-800">{error}</p>}
+      {role && (
+        <Badge variant="primary" type="subtle">
+          {role}
+        </Badge>
+      )}
     </div>
   )
 }
 
-export const TextArea = forwardRef<HTMLTextAreaElement, NormalInput & ComponentPropsWithoutRef<'textarea'>>(
-  function InputField(props, ref) {
-    return (
-      <WrapComponent {...props}>
-        <textarea
-          {...props}
-          ref={ref}
-          className={cn(
-            'block w-full py-1.5 sm:py-2 border-gray-300 rounded-md shadow-sm sm:text-sm placeholder-gray-400',
-            props.error ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-indigo-500 focus:border-indigo-500',
-            props.className
-          )}
-        />
-      </WrapComponent>
-    )
-  }
-)
-function PreInput({children}: {children: ReactNode}) {
+function Tags({tags}: {tags: Array<string>}) {
+  if (tags?.length < 1) return null
+
   return (
-    <div className="inline-block mt-auto">
-      <div className="flex items-center p-2 text-sm text-gray-500 border border-r-0 border-gray-300 shadow-sm bg-blueGray-200 rounded-l-md">
-        {children}
-      </div>
+    <div className="flex flex-wrap -mt-2">
+      {tags.map(tag => (
+        <Tag tagType="round" variant="primary" className="mr-2 mt-2" size="sm">
+          {tag}
+        </Tag>
+      ))}
     </div>
   )
 }
 
-export const Input = forwardRef<HTMLInputElement, NormalInput & ComponentPropsWithoutRef<'input'>>(function InputField(
-  props,
-  ref
-) {
+function Footer({className}) {
   return (
-    <WrapComponent {...props}>
-      <div className="flex">
-        {props.pre && <PreInput>{props.pre}</PreInput>}
-        <input
-          {...props}
-          type={props.type ?? 'text'}
-          ref={ref}
-          className={cn(
-            'block py-1.5 sm:py-2 w-full border-gray-300 rounded-md shadow-sm sm:text-sm placeholder-gray-400',
-            props.error ? 'focus:ring-red-500 focus:border-red-500' : 'focus:ring-indigo-500 focus:border-indigo-500',
-            props.className
-          )}
-        />
-      </div>
-    </WrapComponent>
+    <footer className={cn('flex items-center space-x-2 py-10', className)}>
+      <Text size="xs">{commonStrings.empowered}</Text>
+      <img src="/assets/small-om-logo.png" className="h-6" />
+    </footer>
   )
-})
-
-interface SelectInput extends NormalInput {
-  options: {value: string | number; label: string}[]
-  defaultValue?: string
 }
 
-export const Select = forwardRef<HTMLSelectElement, SelectInput & ComponentPropsWithoutRef<'select'>>(
-  function SelectField(props, ref) {
-    const {placeholder, options, ...selectProps} = props
-    return (
-      <WrapComponent {...props}>
-        <select
-          defaultValue={props.value ? undefined : ''}
-          {...selectProps}
-          ref={ref}
-          placeholder="kakakaka"
-          className="block w-full py-1.5 sm:py-2 pl-3 pr-10 mt-1 text-base border-gray-300 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm rounded-md invalid:text-gray-400 placeholder-gray-50">
-          {placeholder && (
-            <option value="" disabled hidden>
-              {placeholder}
-            </option>
-          )}
-          {options.map(({value, label}) => (
-            <option key={`option-${value}`} value={value}>
-              {label}
-            </option>
-          ))}
-        </select>
-      </WrapComponent>
-    )
-  }
-)
+function ButtonGroup({children}) {
+  return <div className="space-x-4 pt-6">{children}</div>
+}
+
+export {
+  ButtonGroup,
+  Dot,
+  Footer,
+  NameAndBadge,
+  Optional,
+  InputCopyToClipboard,
+  SearchInput,
+  Tags,
+  TopContent,
+  Tip as Tooltip
+}
