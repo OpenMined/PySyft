@@ -502,7 +502,7 @@ def local_decomposition(
         input_shares.append(x)
 
     for share in input_shares:
-        # share_sh = TensorList()
+
         for i in range(nr_parties):
             id_at_location = UID(UUID(bytes=generator.bytes(16)))
             sh = x.copy_tensor()
@@ -517,7 +517,6 @@ def local_decomposition(
                 node.store[id_at_location] = t_sh  # type: ignore
             else:
                 node.store[id_at_location] = sh  # type: ignore
-        # share_lst.append(share_sh)
 
     return None
 

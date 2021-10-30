@@ -72,7 +72,6 @@ class ABY3:
             ]
         else:
             decomposed_shares = []
-            attr_path_and_name = f"{x.child[0].path_and_name}.bit_decomposition"
             op = get_run_class_method(attr_path_and_name, SMPC=True)
             for share in x.child:
                 decomposed_shares.append(op(share, share, ring_size, False, **kwargs))
@@ -208,16 +207,47 @@ class ABY3:
         _ = UID(UUID(bytes=generator.bytes(16)))
 
         nr_parties = len(parties)
-        resolved_pointer_type = []
-        for party in parties:
-            resolved_pointer_type.append(party.lib_ast.query(path_and_name))
+        resolved_pointer_type = [
+            party.lib_ast.query(path_and_name) for party in parties
+        ]
 
-        # TODO : Simplify it.
+        """
+        Consider bit decomposition.
+        We create a share of share such that.
+        Assume we are operating in ring_size 2**32(32 bits)
+        Since we operate in n-out-of-n secret sharing, each party has a single share.
+        Consider two parties such that a secret x is split as
+        x = x1+x2
+        To create share of shares,we use the intuition that the shares not held by party are made zero
+
+                    Party1        Party2
+
+        x1           x1             0
+
+        x2           0               x2
+
+        x_i_j denotes the shares held by jth party of ith share
+
+        x_1_1 = x1
+        x_1_2 = 0
+        x_2_1 = 0
+        x_2_2 = x2
+
+        Party 1 = [x_1_1,x_2_1]
+        Party 2  =[x_1_2,x_2_2]
+
+        Now each party party has share of shares
+        In bit decomposition, we split each bit and create share of shares
+
+        Party 1 = [ [share of shares of first bit] ,[...second bit] ...[ nth bit]]
+
+        Note: Count (share of shares for a particular bit) = number of parties
+        """
         share_pointers: List[List[List[Any]]] = [[] for _ in range(nr_parties)]
 
         for _ in range(ring_bits * nr_parties):
+            id_at_location = UID(UUID(bytes=generator.bytes(16)))
             for idx, party in enumerate(parties):
-                id_at_location = UID(UUID(bytes=generator.bytes(16)))
                 result = resolved_pointer_type[idx].pointer_type(client=party)
                 result.id_at_location = id_at_location
                 share_pointers[idx].append(result)
