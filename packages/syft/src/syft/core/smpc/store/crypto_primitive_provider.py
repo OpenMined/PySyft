@@ -24,6 +24,7 @@ class CryptoPrimitiveProvider:
         parties: List[Any],
         g_kwargs: Dict[str, Any] = {},
         p_kwargs: Dict[str, Any] = {},
+        nr_instances: int = 1,
         ring_size: int = 2 ** 32,
     ) -> List[Any]:
         """Generate "op_str" primitives.
@@ -47,7 +48,12 @@ class CryptoPrimitiveProvider:
         nr_parties = len(parties)
 
         generator = CryptoPrimitiveProvider._func_providers[op_str]
-        primitives = generator(**g_kwargs, nr_parties=nr_parties, ring_size=ring_size)
+        primitives = generator(
+            **g_kwargs,
+            nr_instances=nr_instances,
+            nr_parties=nr_parties,
+            ring_size=ring_size,
+        )
 
         if p_kwargs is not None:
             """Do not transfer the primitives if there is not specified a
@@ -81,6 +87,8 @@ class CryptoPrimitiveProvider:
             )
 
         for primitives_party, party in zip(primitives, parties):
+            print(primitives_party)
+            print("Ring size", ring_size)
             party.syft.core.tensor.smpc.share_tensor.populate_store(
                 op_str, primitives_party, **p_kwargs, ring_size=ring_size
             )

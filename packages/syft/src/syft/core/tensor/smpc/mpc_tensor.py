@@ -76,6 +76,7 @@ class MPCTensor(PassthroughTensor):
 
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
+
         if (shares is not None) and (not isinstance(shares, (tuple, list))):
             raise ValueError("Shares should be a list or tuple")
 
@@ -727,12 +728,9 @@ class MPCTensor(PassthroughTensor):
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         self, y = MPCTensor.sanity_checks(self, y)
-        res_shares = spdz.gt_master(self, y, "mul")
-        y_shape = getattr(y, "shape", (1,))
-        new_shape = utils.get_shape("gt", self.mpc_shape, y_shape)
-        res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
+        mpc_res = spdz.gt_master(self, y, "mul")
 
-        return res
+        return mpc_res
 
     def matmul(
         self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
