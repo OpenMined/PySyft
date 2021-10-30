@@ -462,7 +462,7 @@ def smpc_mul(
 
 
 def local_decomposition(
-    x: ShareTensor, ring_size: int, bitwise: bool, seed_id: str, node: Any
+    x: ShareTensor, ring_size: int, bitwise: bool, seed_id_locations: str, node: Any
 ) -> None:
     """Performs local decomposition to generate shares of shares.
 
@@ -476,7 +476,7 @@ def local_decomposition(
     """
     # Currently we cannot serialize integers exceeding signed positive integer
     # TODO: can be modified to google.protobuf.any
-    seed_id_locations = int(seed_id)
+    seed_id_locations = int(seed_id_locations)  # type: ignore
     generator = np.random.default_rng(seed_id_locations)
     # Skip the first ID ,as it is used for None return type in run class method.
     _ = UID(UUID(bytes=generator.bytes(16)))
