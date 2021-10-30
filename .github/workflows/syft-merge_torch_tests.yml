@@ -81,7 +81,6 @@ jobs:
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install -r requirements.unstable.txt
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Check import works without dev packages

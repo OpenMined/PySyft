@@ -12,8 +12,6 @@ on:
   pull_request:
     branches:
       - dev
-    paths:
-      - "packages/syft/tests/trigger/version_tests"
   workflow_dispatch:
     inputs:
       none:
@@ -25,82 +23,6 @@ defaults:
     working-directory: ./packages/syft
 
 jobs:
-  # python-tests-all-versions:
-  #   if: github.repository == 'OpenMined/PySyft' # don't run on forks
-  #   strategy:
-  #     fail-fast: false
-  #     max-parallel: 99
-  #     matrix:
-  #       branches: ["dev"]
-  #       os: [windows-latest, ubuntu-latest, macos-latest]
-  #       python-version: [3.7, 3.8, 3.9]
-  #       torch-version: [1.6.0, 1.7.1, 1.8.1]
-  #       exclude:
-  #         - python-version: 3.9
-  #           torch-version: 1.6.0
-  #         - python-version: 3.9
-  #           torch-version: 1.7.1
-
-  #   runs-on: ${{ matrix.os }}
-  #   steps:
-  #     - name: Checkout
-  #       uses: actions/checkout@v2
-  #       with:
-  #         ref: ${{ matrix.branches }}
-
-  #     - name: Set up Python ${{ matrix.python-version }}
-  #       uses: actions/setup-python@v2
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-
-  #     - name: Upgrade pip
-  #       run: |
-  #         pip install --upgrade --user pip
-
-  #     - name: Get pip cache dir
-  #       id: pip-cache
-  #       run: |
-  #         echo "::set-output name=dir::$(pip cache dir)"
-
-  #     - name: pip cache
-  #       uses: actions/cache@v2
-  #       with:
-  #         path: ${{ steps.pip-cache.outputs.dir }}
-  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('./setup.cfg') }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-
-  #     - name: Install Dependencies
-  #       run: |
-  #         pip install packaging wheel --default-timeout=60
-  #         python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-  #         grep -A 3 "torch_ecosystem" setup.cfg
-  #         pip install -r requirements.unstable.txt
-  #         pip install -e .[ci-all] -f https://download.pytorch.org/whl/torch_stable.html
-  #         python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
-  #         pip install "pillow>=8.3.1"
-
-  #     - name: Scan for security issues
-  #       run: |
-  #         bandit -r src
-  #         safety check
-
-  #     - name: Run normal tests
-  #       run: |
-  #         pytest -m 'fast or slow' --cov syft --cov-fail-under 70 -n auto
-
-  #     - name: Install libomp for XGBoost
-  #       if: startsWith(runner.os, 'macos')
-  #       run: |
-  #         brew install libomp
-  #         pip uninstall python-dp -y
-
-  #     - name: Run supported library tests
-  #       run: |
-  #         pytest -m libs --co
-  #         pytest -m libs -n auto -k "not tenseal" --suppress-no-test-exit-code
-  #         pytest -m libs -n 1 -k "tenseal" --suppress-no-test-exit-code
-
   pytorch-tests-all-versions:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     strategy:
@@ -151,9 +73,7 @@ jobs:
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           grep -A 3 "torch_ecosystem" setup.cfg
-          pip install -r requirements.unstable.txt
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
-          pip install "pillow>=8.3.1"
 
       - name: Check import works without dev packages
         run: |

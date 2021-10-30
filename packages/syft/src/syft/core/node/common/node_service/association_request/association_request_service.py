@@ -106,7 +106,7 @@ def send_association_request_msg(
                 address=target_client.address,
                 reply_to=node.address,
                 metadata=metadata,
-                source=msg.source,
+                source=vpn_metadata["host_or_ip"],
                 target=msg.target,
             ).sign(signing_key=user_priv_key)
         )

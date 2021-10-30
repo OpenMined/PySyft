@@ -1,17 +1,22 @@
+import React, {useState} from 'react'
 import {ReactQueryDevtools} from 'react-query/devtools'
-import {AppProviders} from '@/context'
-import {CheckAuthRoute} from '@/components/auth-route'
+import {Hydrate, QueryClient, QueryClientProvider} from 'react-query'
+import {config} from '@fortawesome/fontawesome-svg-core'
 import type {AppProps} from 'next/app'
 
 import '@/styles/globals.css'
+import '../../node_modules/@fortawesome/fontawesome-svg-core/styles.css'
 
-export default function PyGridAdmin({Component, pageProps}: AppProps) {
+config.autoAddCss = false
+
+export default function PyGridUI({Component, pageProps}: AppProps) {
+  const [queryClient] = useState(() => new QueryClient())
   return (
-    <AppProviders>
-      <CheckAuthRoute>
+    <QueryClientProvider client={queryClient}>
+      <Hydrate state={pageProps.dehydratedState}>
         <Component {...pageProps} />
-      </CheckAuthRoute>
-      {process.env.ENVIRONMENT === 'development' && <ReactQueryDevtools initialIsOpen={false} />}
-    </AppProviders>
+      </Hydrate>
+      {process.env.NEXT_PUBLIC_ENVIRONMENT !== 'development' && <ReactQueryDevtools initialIsOpen={false} />}
+    </QueryClientProvider>
   )
 }

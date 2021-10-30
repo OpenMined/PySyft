@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@import url('https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Rubik:wght@500;900&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fira+Code:wght@400;500;700&display=swap');
+
+@layer components {
+  .omui-sidebar button {
+    @apply p-2 rounded;
+  }
+  .omui-sidebar button:hover {
+    @apply bg-primary-100 text-primary-600 dark:bg-primary-500 dark:text-white;
+  }
+  .omui-sidebar button:disabled {
+    @apply opacity-40 pointer-events-none;
+  }
+
+  .omui-sidebar a:hover {
+    @apply text-primary-600 underline;
+  }
+}
