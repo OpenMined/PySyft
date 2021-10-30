@@ -35,6 +35,7 @@ def _get_triples(
     parties_info: List[Any],
     a_shape: Tuple[int],
     b_shape: Tuple[int],
+    nr_instances: int = 1,
     ring_size: int = 2 ** 32,
     **kwargs: Dict[Any, Any],
 ) -> Tuple[Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]]:
@@ -67,49 +68,59 @@ def _get_triples(
     cmd = ShareTensor.get_op(ring_size, op_str)
 
     min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
-    seed_przs = secrets.randbits(32)
 
-    a_rand = Tensor(
-        ttp_generator.integers(
-            low=min_value, high=max_value, size=a_shape, endpoint=True, dtype=numpy_type
+    triples = []
+    for i in range(nr_instances):
+        seed_przs = secrets.randbits(32)
+        a_rand = Tensor(
+            ttp_generator.integers(
+                low=min_value,
+                high=max_value,
+                size=a_shape,
+                endpoint=True,
+                dtype=numpy_type,
+            )
         )
-    )
 
-    a_shares = MPCTensor._get_shares_from_local_secret(
-        secret=deepcopy(a_rand),
-        parties_info=parties_info,  # type: ignore
-        shape=a_shape,
-        seed_przs=seed_przs,
-        ring_size=ring_size,
-    )
-    seed_przs = secrets.randbits(32)
-    b_rand = Tensor(
-        ttp_generator.integers(
-            low=min_value, high=max_value, size=b_shape, endpoint=True, dtype=numpy_type
+        a_shares = MPCTensor._get_shares_from_local_secret(
+            secret=deepcopy(a_rand),
+            parties_info=parties_info,  # type: ignore
+            shape=a_shape,
+            seed_przs=seed_przs,
+            ring_size=ring_size,
         )
-    )
+        seed_przs = secrets.randbits(32)
+        b_rand = Tensor(
+            ttp_generator.integers(
+                low=min_value,
+                high=max_value,
+                size=b_shape,
+                endpoint=True,
+                dtype=numpy_type,
+            )
+        )
 
-    b_shares = MPCTensor._get_shares_from_local_secret(
-        secret=deepcopy(b_rand),
-        parties_info=parties_info,  # type: ignore
-        shape=b_shape,
-        seed_przs=seed_przs,
-        ring_size=ring_size,
-    )
-    seed_przs = secrets.randbits(32)
-    # TODO: bitwise and on passthorough tensor raises
-    # hence we do it on numpy array itself.
-    c_val = Tensor(cmd(a_rand.child, b_rand.child))
-    c_shares = MPCTensor._get_shares_from_local_secret(
-        secret=deepcopy(c_val),
-        parties_info=parties_info,  # type: ignore
-        shape=c_val.shape,  # type: ignore
-        seed_przs=seed_przs,
-        ring_size=ring_size,
-    )
+        b_shares = MPCTensor._get_shares_from_local_secret(
+            secret=deepcopy(b_rand),
+            parties_info=parties_info,  # type: ignore
+            shape=b_shape,
+            seed_przs=seed_przs,
+            ring_size=ring_size,
+        )
+        seed_przs = secrets.randbits(32)
+        # TODO: bitwise and on passthorough tensor raises
+        # hence we do it on numpy array itself.
+        c_val = Tensor(cmd(a_rand.child, b_rand.child))
+        c_shares = MPCTensor._get_shares_from_local_secret(
+            secret=deepcopy(c_val),
+            parties_info=parties_info,  # type: ignore
+            shape=c_val.shape,  # type: ignore
+            seed_przs=seed_przs,
+            ring_size=ring_size,
+        )
 
-    # We are always creating an instance
-    triple_sequential = [(a_shares, b_shares, c_shares)]
+        # We are always creating an instance
+        triples.append((a_shares, b_shares, c_shares))
 
     """
     Example -- for n_instances=2 and n_parties=2:
@@ -128,11 +139,9 @@ def _get_triples(
     The first party (party 0) receives Row 0 and the second party (party 1) receives Row 1
     """
 
-    triple = list(
-        map(list, zip(*map(lambda x: map(list, zip(*x)), triple_sequential)))  # type: ignore
-    )
+    res_triples = list(zip(*[zip(*triple) for triple in triples]))
 
-    return triple  # type: ignore
+    return res_triples  # type: ignore
 
 
 # Beaver Operations defined for Multiplication
@@ -173,9 +182,9 @@ def mul_store_add(
     """
     config_key = f"beaver_mul_{a_shape}_{b_shape}_{ring_size}"
     if config_key in store:
-        store[config_key].extend(primitives)
+        store[config_key].extend(list(primitives))
     else:
-        store[config_key] = primitives
+        store[config_key] = list(primitives)
 
 
 @register_primitive_store_get("beaver_mul")
@@ -259,9 +268,9 @@ def matmul_store_add(
     """
     config_key = f"beaver_matmul_{a_shape}_{b_shape}_{ring_size}"
     if config_key in store:
-        store[config_key].extend(primitives)
+        store[config_key].extend(list(primitives))
     else:
-        store[config_key] = primitives
+        store[config_key] = list(primitives)
 
 
 @register_primitive_store_get("beaver_matmul")
