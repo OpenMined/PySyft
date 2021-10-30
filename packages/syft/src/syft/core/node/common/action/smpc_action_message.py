@@ -29,7 +29,6 @@ from ....common.uid import UID
 from ....io.address import Address
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
-from ....tensor.smpc.tensor_list import TensorList
 from .exceptions import ObjectNotInStore
 
 
@@ -461,7 +460,9 @@ def smpc_mul(
     return actions
 
 
-def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> TensorList:
+def local_decomposition(
+    x: ShareTensor, ring_size: int, bitwise: bool, seed_id_locations: int, node: Any
+) -> None:
     """Performs local decomposition to generate shares of shares.
 
     Args:
@@ -472,11 +473,7 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
     Returns:
         List[List[ShareTensor]]: Decomposed shares in the given ring size.
     """
-    # TODO: George or Rasswanth check if we can use directly the generator from shareTensor
-    # Having this value here is not ok
-    # seed_przs = 42
-    # generator = np.random.default_rng(seed_przs)
-    # absolute
+    generator = np.random.default_rng(seed_id_locations)
     # relative
     from ..... import Tensor
 
@@ -492,7 +489,7 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
     shape = x.shape
     zero = np.zeros(shape, numpy_type)
 
-    share_lst = TensorList()
+    # share_lst = TensorList()
 
     input_shares = []
 
@@ -503,8 +500,9 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
         input_shares.append(x)
 
     for share in input_shares:
-        share_sh = TensorList()
+        # share_sh = TensorList()
         for i in range(nr_parties):
+            id_at_location = UID(UUID(bytes=generator.bytes(16)))
             sh = x.copy_tensor()
             sh.ring_size = ring_size
             if rank != i:
@@ -514,12 +512,12 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
             if TENSOR_FLAG:
                 t_sh = t.copy()
                 t_sh.child.child = sh
-                share_sh.append(t_sh)  # type: ignore
+                node.store[id_at_location] = t_sh  # type: ignore
             else:
-                share_sh.append(sh)
-        share_lst.append(share_sh)
+                node.store[id_at_location] = sh  # type: ignore
+        # share_lst.append(share_sh)
 
-    return share_lst
+    return None
 
 
 def bit_decomposition(
@@ -542,6 +540,7 @@ def bit_decomposition(
             self_id=self_id,
             args_id=[ring_size, bitwise],
             kwargs_id={},
+            kwargs={"seed_id_locations": seed_id_locations},
             ranks_to_run_action=list(range(nr_parties)),
             result_id=result_id,
             address=client.address,
