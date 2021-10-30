@@ -27,6 +27,7 @@ from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
+from ....store.storeable_object import StorableObject
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
 from .exceptions import ObjectNotInStore
@@ -461,7 +462,7 @@ def smpc_mul(
 
 
 def local_decomposition(
-    x: ShareTensor, ring_size: int, bitwise: bool, seed_id_locations: int, node: Any
+    x: ShareTensor, ring_size: int, bitwise: bool, seed_id: str, node: Any
 ) -> None:
     """Performs local decomposition to generate shares of shares.
 
@@ -473,6 +474,9 @@ def local_decomposition(
     Returns:
         List[List[ShareTensor]]: Decomposed shares in the given ring size.
     """
+    # Currently we cannot serialize integers exceeding signed positive integer
+    # TODO: can be modified to google.protobuf.any
+    seed_id_locations = int(seed_id)
     generator = np.random.default_rng(seed_id_locations)
     # Skip the first ID ,as it is used for None return type in run class method.
     _ = UID(UUID(bytes=generator.bytes(16)))
@@ -514,9 +518,15 @@ def local_decomposition(
             if TENSOR_FLAG:
                 t_sh = t.copy()
                 t_sh.child.child = sh
-                node.store[id_at_location] = t_sh  # type: ignore
+                data = t_sh
             else:
-                node.store[id_at_location] = sh  # type: ignore
+                data = sh
+            store_obj = StorableObject(
+                id=id_at_location,
+                data=data,
+                read_permissions={},
+            )
+            node.store[id_at_location] = store_obj
 
     return None
 
@@ -541,7 +551,7 @@ def bit_decomposition(
             self_id=self_id,
             args_id=[ring_size, bitwise],
             kwargs_id={},
-            kwargs={"seed_id_locations": seed_id_locations},
+            kwargs={"seed_id_locations": str(seed_id_locations)},
             ranks_to_run_action=list(range(nr_parties)),
             result_id=result_id,
             address=client.address,

@@ -255,7 +255,7 @@ class ABY3:
         share_pointers = [
             [
                 share_lst[i : i + nr_parties]  # noqa
-                for i in range(len(share_lst), nr_parties)
+                for i in range(0, len(share_lst), nr_parties)
             ]
             for share_lst in share_pointers
         ]
