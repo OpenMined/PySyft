@@ -182,9 +182,9 @@ def mul_store_add(
     """
     config_key = f"beaver_mul_{a_shape}_{b_shape}_{ring_size}"
     if config_key in store:
-        store[config_key].extend(primitives)
+        store[config_key].extend(list(primitives))
     else:
-        store[config_key] = primitives
+        store[config_key] = list(primitives)
 
 
 @register_primitive_store_get("beaver_mul")
@@ -268,9 +268,9 @@ def matmul_store_add(
     """
     config_key = f"beaver_matmul_{a_shape}_{b_shape}_{ring_size}"
     if config_key in store:
-        store[config_key].extend(primitives)
+        store[config_key].extend(list(primitives))
     else:
-        store[config_key] = primitives
+        store[config_key] = list(primitives)
 
 
 @register_primitive_store_get("beaver_matmul")
