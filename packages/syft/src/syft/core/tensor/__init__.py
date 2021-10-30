@@ -25,7 +25,6 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor.tensor",
         "syft.core.tensor.smpc",
         "syft.core.tensor.smpc.share_tensor",
-        "syft.core.tensor.smpc.tensor_list",
         "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
         "syft.core.tensor.autodp.single_entity_phi",
