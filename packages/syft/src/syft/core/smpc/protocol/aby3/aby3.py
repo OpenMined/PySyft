@@ -119,7 +119,7 @@ class ABY3:
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
             "beaver_mul",
-            nr_instances=32,
+            nr_instances=64,
             parties=parties,
             g_kwargs={
                 "a_shape": shape_x,
