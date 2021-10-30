@@ -474,6 +474,8 @@ def local_decomposition(
         List[List[ShareTensor]]: Decomposed shares in the given ring size.
     """
     generator = np.random.default_rng(seed_id_locations)
+    # Skip the first ID ,as it is used for None return type in run class method.
+    _ = UID(UUID(bytes=generator.bytes(16)))
     # relative
     from ..... import Tensor
 

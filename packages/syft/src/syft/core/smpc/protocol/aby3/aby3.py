@@ -182,6 +182,9 @@ class ABY3:
         parties: List[Any], ring_bits: int, path_and_name: str, seed_id_locations: int
     ) -> List[List[List[ShareTensor]]]:
         generator = np.random.default_rng(seed_id_locations)
+        # Skip the first ID ,as it is used for None return type in run class method.
+        _ = UID(UUID(bytes=generator.bytes(16)))
+
         nr_parties = len(parties)
         resolved_pointer_type = []
         for party in parties:
