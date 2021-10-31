@@ -2,86 +2,70 @@
 from __future__ import annotations
 
 # stdlib
+from copy import deepcopy
+import functools
+import operator
 from typing import Any
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from uuid import UUID
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+import numpy as np
 
 # syft absolute
 import syft as sy
 
 # relative
-from .....proto.core.node.common.action.smpc_action_message_pb2 import (
-    SMPCActionMessage as SMPCActionMessage_PB,
+from .....proto.core.node.common.action.smpc_action_seq_batch_message_pb2 import (
+    SMPCActionSeqBatchMessage as SMPCActionSeqBatchMessage_PB,
 )
 from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
+from .exceptions import ObjectNotInStore
 
 
 @serializable()
-class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
+class SMPCActionSeqBatchMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
-        name_action: str,
-        self_id: UID,
-        args_id: List[UID],
-        kwargs_id: Dict[str, UID],
-        result_id: UID,
+        smpc_actions: List[SMPCaction],
         address: Address,
-        kwargs: Optional[Dict[str, Any]] = None,
-        ranks_to_run_action: Optional[List[int]] = None,
         msg_id: Optional[UID] = None,
     ) -> None:
-        self.name_action = name_action
-        self.self_id = self_id
-        self.args_id = args_id
-        self.kwargs_id = kwargs_id
-        if kwargs is None:
-            self.kwargs = {}
-        else:
-            self.kwargs = kwargs
-        self.id_at_location = result_id
-        self.ranks_to_run_action = ranks_to_run_action if ranks_to_run_action else []
+        self.smpc_actions = smpc_actions
         super().__init__(address=address, msg_id=msg_id)
 
     @staticmethod
-    def filter_actions_after_rank(
-        rank: int, actions: List[SMPCActionMessage]
-    ) -> List[SMPCActionMessage]:
-        """
-        Filter the actions depending on the rank of each party
-
+    def get_action_generator_from_op(
+        operation_str: str, nr_parties: int
+    ) -> Callable[[UID, UID, int, Any], Any]:
+        """ "
+        Get the generator for the operation provided by the argument
         Arguments:
-            rank (int): the rank of the party
-            actions (List[SMPCActionMessage]):
+            operation_str (str): the name of the operation
 
         """
-        res_actions = []
-        for action in actions:
-            if rank in action.ranks_to_run_action:
-                res_actions.append(action)
+        return functools.partial(MAP_FUNC_TO_ACTION[operation_str], nr_parties)
 
-        return res_actions
+    @staticmethod
+    def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
+        generator = np.random.default_rng(seed)
+        return UID(UUID(bytes=generator.bytes(16)))
 
     def __str__(self) -> str:
-        res = f"SMPCAction: {self.name_action}, "
-        res = f"{res}Self ID: {self.self_id}, "
-        res = f"{res}Args IDs: {self.args_id}, "
-        res = f"{res}Kwargs IDs: {self.kwargs_id}, "
-        res = f"{res}Kwargs : {self.kwargs}, "
-        res = f"{res}Result ID: {self.id_at_location}, "
-        res = f"{res}Ranks to run action: {self.ranks_to_run_action}"
+        res = f"SMPCActionSeqBatch:\n"
+        res = f"{self.smpc_actions}"
         return res
 
     __repr__ = __str__
 
-    def _object2proto(self) -> SMPCActionMessage_PB:
+    def _object2proto(self) -> SMPCActionSeqBatchMessage_PB:
         """Returns a protobuf serialization of self.
 
         As a requirement of all objects which inherit from Serializable,
@@ -89,7 +73,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         Protobuf object so that it can be further serialized.
 
         :return: returns a protobuf object
-        :rtype: SMPCActionMessage_PB
+        :rtype: SMPCActionSeqBatchMessage_PB
 
         .. note::
             This method is purely an internal method. Please use serialize(object) or one of
@@ -97,25 +81,20 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             object.
         """
 
-        return SMPCActionMessage_PB(
-            name_action=self.name_action,
-            self_id=sy.serialize(self.self_id),
-            args_id=list(map(lambda x: sy.serialize(x), self.args_id)),
-            kwargs_id={k: sy.serialize(v) for k, v in self.kwargs_id.items()},
-            kwargs={k: sy.serialize(v, to_bytes=True) for k, v in self.kwargs.items()},
-            id_at_location=sy.serialize(self.id_at_location),
+        return SMPCActionSeqBatchMessage_PB(
+            smpc_actions=list(map(lambda x: sy.serialize(x), self.smpc_actions)),
             address=sy.serialize(self.address),
             msg_id=sy.serialize(self.id),
         )
 
     @staticmethod
-    def _proto2object(proto: SMPCActionMessage_PB) -> SMPCActionMessage:
+    def _proto2object(proto: SMPCActionSeqBatchMessage_PB) -> SMPCActionSeqBatchMessage:
         """Creates a ObjectWithID from a protobuf
 
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
 
-        :return: returns an instance of SMPCActionMessage
+        :return: returns an instance of SMPCActionSeqBatchMessage
         :rtype: SMPCActionMessage
 
         .. note::
@@ -123,16 +102,10 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
 
-        return SMPCActionMessage(
-            name_action=proto.name_action,
-            self_id=sy.deserialize(blob=proto.self_id),
-            args_id=list(map(lambda x: sy.deserialize(blob=x), proto.args_id)),
-            kwargs_id={k: sy.deserialize(blob=v) for k, v in proto.kwargs_id.items()},
-            kwargs={
-                k: sy.deserialize(blob=v, from_bytes=True)
-                for k, v in proto.kwargs.items()
-            },
-            result_id=sy.deserialize(blob=proto.id_at_location),
+        return SMPCActionSeqBatchMessage(
+            smpc_actions=list(
+                map(lambda x: sy.deserialize(blob=x), proto.smpc_actions)
+            ),
             address=sy.deserialize(blob=proto.address),
             msg_id=sy.deserialize(blob=proto.msg_id),
         )
@@ -155,4 +128,4 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
 
         """
 
-        return SMPCActionMessage_PB
+        return SMPCActionSeqBatchMessage_PB
