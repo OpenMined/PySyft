@@ -58,7 +58,10 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
         logger.warning(func)
 
-        if "spdz_multiply" not in msg.name_action:
+        if (
+            "spdz_multiply" not in msg.name_action
+            and "local_decomposition" not in msg.name_action
+        ):
             result = func(_self, *upcasted_args, **upcasted_kwargs)
         else:
             result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)

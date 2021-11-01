@@ -27,9 +27,9 @@ from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
+from ....store.storeable_object import StorableObject
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
-from ....tensor.smpc.tensor_list import TensorList
 from .exceptions import ObjectNotInStore
 
 
@@ -461,7 +461,9 @@ def smpc_mul(
     return actions
 
 
-def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> TensorList:
+def local_decomposition(
+    x: ShareTensor, ring_size: int, bitwise: bool, seed_id_locations: str, node: Any
+) -> None:
     """Performs local decomposition to generate shares of shares.
 
     Args:
@@ -472,11 +474,12 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
     Returns:
         List[List[ShareTensor]]: Decomposed shares in the given ring size.
     """
-    # TODO: George or Rasswanth check if we can use directly the generator from shareTensor
-    # Having this value here is not ok
-    # seed_przs = 42
-    # generator = np.random.default_rng(seed_przs)
-    # absolute
+    # Currently we cannot serialize integers exceeding signed positive integer
+    # TODO: can be modified to google.protobuf.any
+    seed_id_locations = int(seed_id_locations)  # type: ignore
+    generator = np.random.default_rng(seed_id_locations)
+    # Skip the first ID ,as it is used for None return type in run class method.
+    _ = UID(UUID(bytes=generator.bytes(16)))
     # relative
     from ..... import Tensor
 
@@ -492,7 +495,7 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
     shape = x.shape
     zero = np.zeros(shape, numpy_type)
 
-    share_lst = TensorList()
+    # share_lst = TensorList()
 
     input_shares = []
 
@@ -503,8 +506,9 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
         input_shares.append(x)
 
     for share in input_shares:
-        share_sh = TensorList()
+
         for i in range(nr_parties):
+            id_at_location = UID(UUID(bytes=generator.bytes(16)))
             sh = x.copy_tensor()
             sh.ring_size = ring_size
             if rank != i:
@@ -514,12 +518,17 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
             if TENSOR_FLAG:
                 t_sh = t.copy()
                 t_sh.child.child = sh
-                share_sh.append(t_sh)  # type: ignore
+                data = t_sh
             else:
-                share_sh.append(sh)
-        share_lst.append(share_sh)
+                data = sh
+            store_obj = StorableObject(
+                id=id_at_location,
+                data=data,
+                read_permissions={},
+            )
+            node.store[id_at_location] = store_obj
 
-    return share_lst
+    return None
 
 
 def bit_decomposition(
@@ -542,6 +551,7 @@ def bit_decomposition(
             self_id=self_id,
             args_id=[ring_size, bitwise],
             kwargs_id={},
+            kwargs={"seed_id_locations": str(seed_id_locations)},
             ranks_to_run_action=list(range(nr_parties)),
             result_id=result_id,
             address=client.address,
