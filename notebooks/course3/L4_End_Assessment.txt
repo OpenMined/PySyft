@@ -1,6 +1,6 @@
 List of potential questions for L4 (Node Deployment):
 
-Passive Learning:
+Passive Learning/Long Answer:
 
 - What purpose does HAGrid serve in the PySyft ecosystem?
 - What's the difference between Docker and Hagrid?
@@ -8,7 +8,7 @@ Passive Learning:
 - How much RAM is recommended to allocate to Docker when running a domain node?
 
 
-Active Learning:
+Active Learning/Multiple Choice:
 
 - Your friend notices that PySyft freezes when running a command. When she checks the HAgrid logs, she notices that the time taken to run any operation is very high. What would you recommend she does to have a better experience?
 (a) Allocate more RAM to Docker
@@ -22,3 +22,14 @@ Active Learning:
 (b) ...
 (c)
 
+
+- You're working with a domain node that you deployed locally as a Data Owner. Suddenly, there's a power cut and your Internet Connection becomes unstable. How does your domain node get affected?
+
+(a) It doesn't- your domain node is deployed locally on your machine, and not on the Internet
+(b) It automatically causes the domain node to be inaccessible and crash.
+
+- How should you be installing Hagrid and PySyft?
+
+(a) Installing using pip
+(b) Install using a virtual environment, such as Conda
+(c) By cloning the GitHub repo, and installing from Source
