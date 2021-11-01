@@ -158,6 +158,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.transpose", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__pos__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.put", "syft.core.tensor.tensor.Tensor"),
+        (
+            "syft.core.tensor.tensor.Tensor.bit_decomposition",
+            "syft.core.tensor.smpc.tensor_list.TensorList",
+        ),
         # # SMPC
         # (
         #     "syft.core.tensor.tensor.Tensor.fix_precision",
@@ -272,6 +276,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.core.tensor.smpc.tensor_list.TensorList.get_tensor_list",
             "syft.core.tensor.smpc.tensor_list.TensorList",
+        ),
+        (
+            "syft.core.tensor.smpc.tensor_list.TensorList.get_tensor_pointer",
+            "syft.core.tensor.tensor.Tensor",
         ),
     ]
 

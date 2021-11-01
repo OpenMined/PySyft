@@ -76,6 +76,7 @@ class MPCTensor(PassthroughTensor):
 
         if secret is None and shares is None:
             raise ValueError("Secret or shares should be populated!")
+
         if (shares is not None) and (not isinstance(shares, (tuple, list))):
             raise ValueError("Shares should be a list or tuple")
 
@@ -181,7 +182,7 @@ class MPCTensor(PassthroughTensor):
                         verbose=False,
                     )
                 except Exception:
-                    """"""
+                    """ """
                     # TODO : should modify to return same client if registered.
                     # print("Proxy Client already User Register", e)
             parties_info.append(party_info)
@@ -615,7 +616,7 @@ class MPCTensor(PassthroughTensor):
                 attr_path_and_name = f"{self.child[0].path_and_name}.__{op_str}__"
                 op = get_run_class_method(attr_path_and_name, SMPC=True)
                 for share in self.child:
-                    res_shares.append(op(share, y, **kwargs))
+                    res_shares.append(op(share, share, y, **kwargs))
 
         else:
             raise ValueError(f"MPCTensor Public {op_str} not supported")
@@ -691,15 +692,27 @@ class MPCTensor(PassthroughTensor):
     def mul(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
+        # relative
+        from ..tensor import TensorPointer
+
         self, y = MPCTensor.sanity_checks(self, y)
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
+        res_shares: List[Any] = []
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "mul", **kwargs)
         else:
-            res_shares = [
-                getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
-            ]
+            if not isinstance(self.child[0], TensorPointer):
+                res_shares = [
+                    getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
+                ]
+            else:
+
+                attr_path_and_name = f"{self.child[0].path_and_name}.__mul__"
+                tensor_op = get_run_class_method(attr_path_and_name, SMPC=True)
+                for share in self.child:
+                    res_shares.append(tensor_op(share, share, y, **kwargs))
+
         y_shape = getattr(y, "shape", (1,))
         new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
         res = MPCTensor(
@@ -715,12 +728,9 @@ class MPCTensor(PassthroughTensor):
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         self, y = MPCTensor.sanity_checks(self, y)
-        res_shares = spdz.gt_master(self, y, "mul")
-        y_shape = getattr(y, "shape", (1,))
-        new_shape = utils.get_shape("gt", self.mpc_shape, y_shape)
-        res = MPCTensor(parties=self.parties, shares=res_shares, shape=new_shape)
+        mpc_res = spdz.gt_master(self, y, "mul")
 
-        return res
+        return mpc_res
 
     def matmul(
         self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]

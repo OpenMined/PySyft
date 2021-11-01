@@ -53,12 +53,14 @@ RING_SIZE_TO_OP = {
         "add": operator.xor,
         "sub": operator.xor,
         "mul": operator.and_,
+        "gt": operator.gt,
     },
     2
     ** 32: {
         "add": operator.add,
         "sub": operator.sub,
         "mul": operator.mul,
+        "gt": operator.gt,
     },
 }
 
@@ -530,9 +532,12 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        raise ValueError(
-            "It should not reach this point since we generate SMPCAction for this"
-        )
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "gt")
+        return new_share
 
     def bit_decomposition(self) -> "ShareTensor":
         """Apply the "decomposition" operation on self
@@ -664,12 +669,8 @@ class ShareTensor(PassthroughTensor):
                 method(*args, **kwargs)
                 new_share = share
 
-            res = ShareTensor(
-                rank=_self.rank,
-                parties_info=_self.parties_info,
-                ring_size=_self.ring_size,
-                value=new_share,
-            )
+            res = _self.copy_tensor()
+            res.child = new_share
 
             return res
 

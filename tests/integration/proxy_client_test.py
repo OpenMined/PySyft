@@ -76,7 +76,7 @@ def test_proxy_login_logout_network() -> None:
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
 
-    proxy_client = network_client.domains[0]
+    proxy_client = network_client.domains[domain_client.id.no_dash]
 
     # cant get it as a guest
     with pytest.raises(UnknownPrivateException):

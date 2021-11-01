@@ -1,14 +1,13 @@
 import {useRouter} from 'next/router'
-import {useAuth} from '@/context/auth-context'
-import {useDomainStatus} from '@/lib/data'
+import {useSettings} from '@/lib/data'
+import {getToken} from '@/lib/auth'
 
 export default function Home() {
   const router = useRouter()
-  const {getToken} = useAuth()
   const isAuthenticated = getToken()
-  const {data} = useDomainStatus()
+  const {data: settings} = useSettings().all()
 
-  if (typeof window !== 'undefined' && data) {
+  if (typeof window !== 'undefined' && settings) {
     if (isAuthenticated) {
       router.replace('/users')
       return null

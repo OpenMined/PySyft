@@ -64,17 +64,20 @@ def mul_master(
 
     ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
-    CryptoPrimitiveProvider.generate_primitives(
-        f"beaver_{op_str}",
-        parties=parties,
-        g_kwargs={
-            "a_shape": shape_x,
-            "b_shape": shape_y,
-            "parties_info": parties_info,
-        },
-        p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
-        ring_size=ring_size,
-    )
+    if ring_size != 2:
+        # For ring_size 2 we generate those before hand
+        CryptoPrimitiveProvider.generate_primitives(
+            f"beaver_{op_str}",
+            parties=parties,
+            g_kwargs={
+                "a_shape": shape_x,
+                "b_shape": shape_y,
+                "parties_info": parties_info,
+            },
+            p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+            ring_size=ring_size,
+        )
+
     # TODO: Should modify to parallel execution.
     if not isinstance(x.child[0], TensorPointer):
         res_shares = [

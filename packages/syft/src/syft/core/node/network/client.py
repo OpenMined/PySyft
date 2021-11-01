@@ -18,6 +18,7 @@ from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
+from ..abstract.node import AbstractNodeClient
 from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
@@ -146,8 +147,28 @@ class NetworkClient(Client):
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"
 
-    def join_network(self, host_or_ip: str) -> None:
-        return self.vpn.join_network(host_or_ip=host_or_ip)
+    def join_network(
+        self,
+        client: Optional[AbstractNodeClient] = None,
+        host_or_ip: Optional[str] = None,
+    ) -> None:
+        # this asks for a VPN key so it must be on a public interface hence the
+        # client or a public host_or_ip
+        try:
+            if client is None and host_or_ip is None:
+                raise ValueError(
+                    "join_network requires a Client object or host_or_ip string"
+                )
+            if client is not None:
+                # connection.host has http
+                connection_host = client.routes[0].connection.host  # type: ignore
+                host_or_ip = connection_host.split("://")[1]
+                # if we are connecting with localhost we need to change to docker-host
+                # so that the domain connects to the host and not the container
+                host_or_ip = str(host_or_ip).replace("localhost", "docker-host")
+            return self.vpn.join_network(host_or_ip=str(host_or_ip))
+        except Exception as e:
+            print(f"Failed to join network with {host_or_ip} {e}")
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()
