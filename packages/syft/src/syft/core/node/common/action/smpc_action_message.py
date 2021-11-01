@@ -43,7 +43,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         kwargs_id: Dict[str, UID],
         result_id: UID,
         address: Address,
-        kwargs: Dict[str, Any] = {},
+        kwargs: Optional[Dict[str, Any]] = None,
         ranks_to_run_action: Optional[List[int]] = None,
         msg_id: Optional[UID] = None,
     ) -> None:
@@ -51,7 +51,10 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         self.self_id = self_id
         self.args_id = args_id
         self.kwargs_id = kwargs_id
-        self.kwargs = kwargs
+        if kwargs is None:
+            self.kwargs = {}
+        else:
+            self.kwargs = kwargs
         self.id_at_location = result_id
         self.ranks_to_run_action = ranks_to_run_action if ranks_to_run_action else []
         super().__init__(address=address, msg_id=msg_id)
