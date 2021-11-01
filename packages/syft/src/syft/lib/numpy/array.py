@@ -63,7 +63,11 @@ def protobuf_serialize(obj: np.ndarray) -> NumpyProto:
         # same original unsigned values on the other side
         obj = obj.astype(DTYPE_REFACTOR[original_dtype])
 
-    tensor = torch.from_numpy(obj).clone()
+    # Cloning seems to cause the worker to freeze if the array is larger than around
+    # 800k in data and since we are serializing it immediately afterwards I don't
+    # think its needed anyway
+    # tensor = torch.from_numpy(obj).clone()
+    tensor = torch.from_numpy(obj)
     tensor_bytes = tensor_serializer(tensor)
     dtype = original_dtype.name
     return NumpyProto(proto_data=tensor_bytes, dtype=dtype)
