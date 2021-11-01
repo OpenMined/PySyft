@@ -51,7 +51,7 @@ class SMPCActionMessage(ImmediateSyftMessageWithoutReply):
         self.self_id = self_id
         self.args_id = args_id
         self.kwargs_id = kwargs_id
-        if kwargs is None
+        if kwargs is None:
             self.kwargs = {}
         else:
             self.kwargs = kwargs
