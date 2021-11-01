@@ -1,4 +1,4 @@
-"""Specific sympc exceptions."""
+"""Specific SMPC exceptions."""
 
 
 class EmptyPrimitiveStore(Exception):

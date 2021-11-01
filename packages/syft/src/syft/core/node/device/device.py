@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Union
@@ -19,8 +20,6 @@ from ..common.node import Node
 from ..vm.client import VirtualMachineClient
 from ..vm.vm import VirtualMachine
 from .client import DeviceClient
-from .device_type.device_type import DeviceType
-from .device_type.unknown import unknown_device
 
 
 @final
@@ -39,7 +38,7 @@ class Device(Node):
         domain: Optional[Location] = None,
         device: SpecificLocation = SpecificLocation(),
         vm: Optional[Location] = None,
-        device_type: DeviceType = unknown_device,
+        device_type: Any = None,
         vms: Dict[UID, VirtualMachine] = {},
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,

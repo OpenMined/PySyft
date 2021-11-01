@@ -27,6 +27,7 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from .exceptions import ObjectNotInStore
 
 
 @serializable()
@@ -115,29 +116,41 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     f"execute_action on {self.path} failed due to missing object"
                     + f" at: {self._self.id_at_location}"
                 )
-                return
-            result_read_permissions = resolved_self.read_permissions
+                raise ObjectNotInStore
+            result_read_permissions = resolved_self.read_permissions  # type: ignore
         else:
             result_read_permissions = {}
 
         resolved_args = list()
         tag_args = []
         for arg in self.args:
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get_object(key=arg.id_at_location)
+            if r_arg is None:
+                critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {arg.id_at_location}"
+                )
+                raise ObjectNotInStore
             result_read_permissions = self.intersect_keys(
-                result_read_permissions, r_arg.read_permissions
+                result_read_permissions, r_arg.read_permissions  # type: ignore
             )
-            resolved_args.append(r_arg.data)
+            resolved_args.append(r_arg.data)  # type: ignore
             tag_args.append(r_arg)
 
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get_object(key=arg.id_at_location)
+            if r_arg is None:
+                critical(
+                    f"execute_action on {self.path} failed due to missing object"
+                    + f" at: {arg.id_at_location}"
+                )
+                raise ObjectNotInStore
             result_read_permissions = self.intersect_keys(
-                result_read_permissions, r_arg.read_permissions
+                result_read_permissions, r_arg.read_permissions  # type: ignore
             )
-            resolved_kwargs[arg_name] = r_arg.data
+            resolved_kwargs[arg_name] = r_arg.data  # type: ignore
             tag_kwargs[arg_name] = r_arg
 
         (
@@ -159,46 +172,17 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             )
             method_name = self.path.split(".")[-1]
 
-            # relative
-            from ....plan.plan import Plan
+            target_method = getattr(resolved_self.data, method_name, None)
 
-            if (
-                isinstance(resolved_self.data, Plan)
-                and method_name == "__call__"
-                or (
-                    hasattr(resolved_self.data, "forward")
-                    and (
-                        resolved_self.data.forward.__class__.__name__ == "Plan"
-                        or getattr(resolved_self.data.forward, "__name__", None)
-                        == "_compile_and_forward"
-                    )
-                    and method_name in ["__call__", "forward"]
+            if id(target_method) != id(method):
+                warning(
+                    f"Method {method_name} overwritten on object {resolved_self.data}"
                 )
-            ):
-
-                if len(self.args) > 0:
-                    traceback_and_raise(
-                        ValueError(
-                            "You passed args to Plan.__call__, while it only accepts kwargs"
-                        )
-                    )
-                if method.__name__ == "_forward_unimplemented":
-                    method = resolved_self.data.forward
-                    result = method(node, verify_key, **self.kwargs)
-                else:
-                    result = method(resolved_self.data, node, verify_key, **self.kwargs)
+                method = target_method
             else:
-                target_method = getattr(resolved_self.data, method_name, None)
+                method = functools.partial(method, resolved_self.data)
 
-                if id(target_method) != id(method):
-                    warning(
-                        f"Method {method_name} overwritten on object {resolved_self.data}"
-                    )
-                    method = target_method
-                else:
-                    method = functools.partial(method, resolved_self.data)
-
-                result = method(*upcasted_args, **upcasted_kwargs)
+            result = method(*upcasted_args, **upcasted_kwargs)
 
         # TODO: add numpy support https://github.com/OpenMined/PySyft/issues/5164
         if "numpy." in str(type(result)):

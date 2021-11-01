@@ -1,16 +1,23 @@
-export const DATA_CENTRIC = ''
-export const SETUP = '/setup'
-export const USERS = '/users'
-export const ROLES = '/roles'
+const DATASETS = 'datasets'
+const SETUP = 'settings'
+const USERS = 'users'
+const ROLES = 'roles'
+const ASSOCIATION_REQUEST = 'association-requests'
+const STATUS = 'status'
+const REQUESTS = 'requests'
+const APPLICANT = 'applicants'
 
 export const cacheKeys = {
-  requests: `${DATA_CENTRIC}/requests`,
-  models: `${DATA_CENTRIC}/models`,
-  tensors: `${DATA_CENTRIC}/tensors`,
-  datasets: `${DATA_CENTRIC}/datasets`,
+  association_request: `${ASSOCIATION_REQUEST}`,
+  applicant_users: `${USERS}/${APPLICANT}`,
+  requests: `${REQUESTS}`,
+  data: `${REQUESTS}/data`,
+  budget: `${REQUESTS}/budget`,
+  datasets: `${DATASETS}`,
   users: `${USERS}`,
   me: `${USERS}/me`,
   roles: `${ROLES}`,
   settings: `${SETUP}`,
-  status: `/status`
+  status: `${STATUS}`,
+  ping: `ping`
 }

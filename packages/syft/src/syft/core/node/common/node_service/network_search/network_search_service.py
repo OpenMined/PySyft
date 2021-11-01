@@ -1,17 +1,20 @@
 # stdlib
 from typing import List
+from typing import Set
 from typing import Type
 
 # third party
 from nacl.signing import VerifyKey
 
 # relative
-from ......grid.client.client import connect
-from ......grid.client.grid_connection import GridHTTPConnection
+from ......logger import error
 from .....common.message import ImmediateSyftMessageWithReply
+from .....common.uid import UID
 from ....abstract.node import AbstractNode
+from ....domain.client import DomainClient
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
+from ..peer_discovery.peer_discovery_messages import node_id_to_peer_route_metadata
 from .network_search_messages import NetworkSearchMessage
 from .network_search_messages import NetworkSearchResponse
 
@@ -24,26 +27,44 @@ class NetworkSearchService(ImmediateNodeServiceWithReply):
         msg: NetworkSearchMessage,
         verify_key: VerifyKey,
     ) -> NetworkSearchResponse:
-        queries = set(msg.content.get("query", []))
-        associations = node.association_requests.associations()  # type: ignore
+        queries = set(msg.content)
 
-        def filter_domains(url: str) -> bool:
-            domain = connect(
-                url=url,  # Domain Address
-                conn_type=GridHTTPConnection,  # HTTP Connection Protocol
-            )
+        # refresh any missing peer clients
+        node.reload_peer_clients()  # type: ignore
 
-            for data in domain.store:
-                if queries.issubset(set(data.tags)):
+        def query_client_store(client: DomainClient, tags: Set[str]) -> bool:
+            # source is the domain in an association
+            for data in client.store:
+                if tags.issubset(set(data.tags)):
                     return True
             return False
 
-        filtered_nodes = list(filter(lambda x: filter_domains(x.address), associations))
+        tested_nodes: Set[UID] = set()
+        matching_nodes: Set[UID] = set()
+        for node_id, clients in node.all_peer_clients().items():  # type: ignore
+            # try each client / route one after the next
+            for client in clients:
+                try:
+                    # only check a client once
+                    if node_id not in tested_nodes and query_client_store(
+                        client=client, tags=queries
+                    ):
+                        matching_nodes.add(node_id)
+                except Exception as e:
+                    error(f"Failed to query {node_id} with {client}. {e}")
 
-        match_nodes = [node.address for node in filtered_nodes]
+        peer_routes = []
+        for node_id in matching_nodes:
+            node_row = node.node.first(node_uid=node_id.no_dash)  # type: ignore
+            if node_row:
+                peer_routes += node_id_to_peer_route_metadata(
+                    node=node, node_row=node_row  # type: ignore
+                )
 
         return NetworkSearchResponse(
-            address=msg.reply_to, status_code=200, content={"match-nodes": match_nodes}
+            address=msg.reply_to,
+            status_code=200,
+            content={"status": "ok", "data": peer_routes},
         )
 
     @staticmethod

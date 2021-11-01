@@ -88,7 +88,9 @@ def _handle_dataset_creation_syft(
     msg: CreateDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> None:
     result = deserialize(msg.dataset, from_bytes=True)
-    dataset_id = node.datasets.register(**msg.metadata)
+    dataset_id = msg.metadata.get("dataset_id")
+    if not dataset_id:
+        dataset_id = node.datasets.register(**msg.metadata)
 
     for table_name, table in result.items():
         id_at_location = UID()
@@ -202,16 +204,30 @@ def update_dataset_msg(
 
 
 def delete_dataset_msg(
-    msg: UpdateDatasetMessage,
+    msg: DeleteDatasetMessage,
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     _allowed = node.users.can_upload_data(verify_key=verify_key)
 
     if _allowed:
-        node.datasets.delete(id=msg.dataset_id)
+        # If bin object id exists, then only delete the bin object in the dataset.
+        # Otherwise, delete the whole dataset.
+        if msg.bin_object_id:
+            key = UID(msg.bin_object_id)  # type: ignore
+            node.store.delete(key)
+        else:
+            ds, objs = node.datasets.get(msg.dataset_id)
+
+            if not ds:
+                raise DatasetNotFoundError
+            # Delete all the bin objects related to the dataset
+            for obj in objs:
+                node.store.delete(UID(obj.obj))  # type: ignore
+
+            node.datasets.delete(id=msg.dataset_id)
     else:
-        raise AuthorizationError("You're not allowed to upload data!")
+        raise AuthorizationError("You're not allowed to delete data!")
 
     return SuccessResponseMessage(
         address=msg.reply_to,

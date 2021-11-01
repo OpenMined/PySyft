@@ -20,8 +20,8 @@ class RoleManager(DatabaseManager):
         super().__init__(schema=RoleManager.schema, db=database)
 
     @property
-    def user_role(self) -> Role:
-        return self.first(name="User")
+    def ds_role(self) -> Role:
+        return self.first(name="Data Scientist")
 
     @property
     def owner_role(self) -> Role:
@@ -48,6 +48,13 @@ class RoleManager(DatabaseManager):
             can_upload_legal_document=False,
             can_edit_domain_settings=False,
         )
+
+    def can_create_users(self, role_id: int) -> bool:
+        role = super().first(id=role_id)
+        if role:
+            return role.can_create_users
+        else:
+            return False
 
     @property
     def common_roles(self) -> List[Role]:

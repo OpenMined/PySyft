@@ -17,6 +17,7 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     recursive_serde_pb2 as proto_dot_core_dot_common_dot_recursive__serde__pb2,
 )
+from syft.proto.core.tensor import party_pb2 as proto_dot_core_dot_tensor_dot_party__pb2
 from syft.proto.lib.numpy import array_pb2 as proto_dot_lib_dot_numpy_dot_array__pb2
 
 DESCRIPTOR = _descriptor.FileDescriptor(
@@ -25,10 +26,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b"\n$proto/core/tensor/share_tensor.proto\x12\x10syft.core.tensor\x1a\x1bproto/lib/numpy/array.proto\x1a'proto/core/common/recursive_serde.proto\"\x98\x01\n\x0bShareTensor\x12\x32\n\x06tensor\x18\x01 \x01(\x0b\x32 .syft.core.common.RecursiveSerdeH\x00\x12+\n\x05\x61rray\x18\x02 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtoH\x00\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x12\n\nnr_parties\x18\x04 \x01(\rB\x06\n\x04\x64\x61tab\x06proto3",
+    serialized_pb=b"\n$proto/core/tensor/share_tensor.proto\x12\x10syft.core.tensor\x1a\x1bproto/lib/numpy/array.proto\x1a'proto/core/common/recursive_serde.proto\x1a\x1dproto/core/tensor/party.proto\"\xd9\x01\n\x0bShareTensor\x12\x32\n\x06tensor\x18\x01 \x01(\x0b\x32 .syft.core.common.RecursiveSerdeH\x00\x12+\n\x05\x61rray\x18\x02 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtoH\x00\x12\x0c\n\x04rank\x18\x03 \x01(\r\x12\x11\n\tseed_przs\x18\x04 \x01(\r\x12\x11\n\tring_size\x18\x05 \x01(\x0c\x12-\n\x0cparties_info\x18\x06 \x03(\x0b\x32\x17.syft.core.tensor.PartyB\x06\n\x04\x64\x61tab\x06proto3",
     dependencies=[
         proto_dot_lib_dot_numpy_dot_array__pb2.DESCRIPTOR,
         proto_dot_core_dot_common_dot_recursive__serde__pb2.DESCRIPTOR,
+        proto_dot_core_dot_tensor_dot_party__pb2.DESCRIPTOR,
     ],
 )
 
@@ -99,8 +101,8 @@ _SHARETENSOR = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="nr_parties",
-            full_name="syft.core.tensor.ShareTensor.nr_parties",
+            name="seed_przs",
+            full_name="syft.core.tensor.ShareTensor.seed_przs",
             index=3,
             number=4,
             type=13,
@@ -108,6 +110,44 @@ _SHARETENSOR = _descriptor.Descriptor(
             label=1,
             has_default_value=False,
             default_value=0,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="ring_size",
+            full_name="syft.core.tensor.ShareTensor.ring_size",
+            index=4,
+            number=5,
+            type=12,
+            cpp_type=9,
+            label=1,
+            has_default_value=False,
+            default_value=b"",
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
+        _descriptor.FieldDescriptor(
+            name="parties_info",
+            full_name="syft.core.tensor.ShareTensor.parties_info",
+            index=5,
+            number=6,
+            type=11,
+            cpp_type=10,
+            label=3,
+            has_default_value=False,
+            default_value=[],
             message_type=None,
             enum_type=None,
             containing_type=None,
@@ -135,8 +175,8 @@ _SHARETENSOR = _descriptor.Descriptor(
             fields=[],
         ),
     ],
-    serialized_start=129,
-    serialized_end=281,
+    serialized_start=160,
+    serialized_end=377,
 )
 
 _SHARETENSOR.fields_by_name[
@@ -145,6 +185,9 @@ _SHARETENSOR.fields_by_name[
 _SHARETENSOR.fields_by_name[
     "array"
 ].message_type = proto_dot_lib_dot_numpy_dot_array__pb2._NUMPYPROTO
+_SHARETENSOR.fields_by_name[
+    "parties_info"
+].message_type = proto_dot_core_dot_tensor_dot_party__pb2._PARTY
 _SHARETENSOR.oneofs_by_name["data"].fields.append(_SHARETENSOR.fields_by_name["tensor"])
 _SHARETENSOR.fields_by_name["tensor"].containing_oneof = _SHARETENSOR.oneofs_by_name[
     "data"

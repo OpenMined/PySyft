@@ -1,0 +1,11 @@
+{
+  "active": {
+    "alert": "Active users are users who you have manually created or users who have been allocated a privacy budget"
+  },
+  "pending": {
+    "alert": "Pending users are users who have applied to your domain but who are not yet authorized to perform data requests. You can review their uploaded Data Access Agreements(DAA) below and choose to accept or deny their account applications."
+  },
+  "denied": {
+    "alert": "Denied users are users who have applied to your domain but who have been denied access to make data requests."
+  }
+}

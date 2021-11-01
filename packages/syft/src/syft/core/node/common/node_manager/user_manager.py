@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 from typing import Any
 from typing import List
 from typing import Optional
@@ -10,17 +11,21 @@ from bcrypt import checkpw
 from bcrypt import gensalt
 from bcrypt import hashpw
 from nacl.encoding import HexEncoder
+from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseModel
 from pydantic import EmailStr
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query
+from sqlalchemy.orm import sessionmaker
 
 # relative
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
+from ..node_table.pdf import PDFObject
 from ..node_table.roles import Role
 from ..node_table.user import SyftUser
+from ..node_table.user import UserApplication
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
@@ -84,6 +89,92 @@ class UserManager(DatabaseManager):
             org_users = org_users + list(super().query(role=role.id))
         return org_users
 
+    def create_user_application(
+        self,
+        name: str,
+        email: str,
+        password: str,
+        daa_pdf: Optional[bytes],
+        institution: Optional[str] = "",
+        website: Optional[str] = "",
+        budget: Optional[float] = 0.0,
+    ) -> int:
+        salt, hashed = self.__salt_and_hash_password(password, 12)
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        _pdf_obj = PDFObject(binary=daa_pdf)
+        session_local.add(_pdf_obj)
+        session_local.commit()
+        session_local.flush()
+        session_local.refresh(_pdf_obj)
+
+        _obj = UserApplication(
+            name=name,
+            email=email,
+            salt=salt,
+            hashed_password=hashed,
+            daa_pdf=_pdf_obj.id,
+            institution=institution,
+            website=website,
+            budget=budget,
+        )
+        session_local.add(_pdf_obj)
+        session_local.add(_obj)
+        session_local.commit()
+        _obj_id = _obj.id
+        session_local.close()
+        return _obj_id
+
+    def get_all_applicant(self) -> List[UserApplication]:
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        result = list(session_local.query(UserApplication).all())
+        session_local.close()
+        return result
+
+    def process_user_application(
+        self, candidate_id: int, status: str, verify_key: VerifyKey
+    ) -> None:
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        candidate = (
+            session_local.query(UserApplication).filter_by(id=candidate_id).first()
+        )
+        session_local.close()
+
+        if status == "accepted":
+            # Generate a new signing key
+            _private_key = SigningKey.generate()
+
+            encoded_pk = _private_key.encode(encoder=HexEncoder).decode("utf-8")
+            encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode(
+                "utf-8"
+            )
+            added_by = self.get_user(verify_key).name  # type: ignore
+            self.register(
+                name=candidate.name,
+                email=candidate.email,
+                role=self.roles.ds_role.id,
+                budget=candidate.budget,
+                private_key=encoded_pk,
+                verify_key=encoded_vk,
+                hashed_password=candidate.hashed_password,
+                salt=candidate.salt,
+                daa_pdf=candidate.daa_pdf,
+                added_by=added_by,
+                institution=candidate.institution,
+                website=candidate.website,
+                created_at=datetime.now(),
+            )
+        else:
+            status = "rejected"
+
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        candidate = (
+            session_local.query(UserApplication).filter_by(id=candidate_id).first()
+        )
+        candidate.status = status
+        session_local.flush()
+        session_local.commit()
+        session_local.close()
+
     def signup(
         self,
         name: str,
@@ -104,6 +195,7 @@ class UserManager(DatabaseManager):
             verify_key=verify_key,
             hashed_password=hashed,
             salt=salt,
+            created_at=datetime.now(),
         )
 
     def query(self, **kwargs: Any) -> Query:

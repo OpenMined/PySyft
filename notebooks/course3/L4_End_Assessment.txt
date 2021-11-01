@@ -1,0 +1,24 @@
+List of potential questions for L4 (Node Deployment):
+
+Passive Learning:
+
+- What purpose does HAGrid serve in the PySyft ecosystem?
+- What's the difference between Docker and Hagrid?
+- Which of the above can be used to create a domain node?
+- How much RAM is recommended to allocate to Docker when running a domain node?
+
+
+Active Learning:
+
+- Your friend notices that PySyft freezes when running a command. When she checks the HAgrid logs, she notices that the time taken to run any operation is very high. What would you recommend she does to have a better experience?
+(a) Allocate more RAM to Docker
+(b) Retry running the command with fewer datapoints at a time
+(c) Check how much Hard drive space Docker has left, and if necessary, allocate more.
+(d) All of the above
+
+- You follow the Notebook and successfully install HAgrid, and are able to run commands successfully. Satisfied, you close everything. The next day, you open a Notebook and try to connect to your domain node, but are getting errors saying: `Error: ____ command not found`. What could be the source of the error?
+
+(a) You forgot to activate your Virtual environment
+(b) ...
+(c)
+

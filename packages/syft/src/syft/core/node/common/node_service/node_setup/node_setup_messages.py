@@ -1,6 +1,7 @@
 # stdlib
 import json
 from typing import Dict
+from typing import List as TypeList
 from typing import Optional
 
 # third party
@@ -38,12 +39,10 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
         reply_to: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
 
     def _object2proto(self) -> GetSetUpMessage_PB:
         """Returns a protobuf serialization of self.
@@ -60,7 +59,6 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
         return GetSetUpMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
             reply_to=serialize(self.reply_to),
         )
 
@@ -81,7 +79,6 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
         return GetSetUpMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -109,12 +106,10 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
         self.content = content
 
     def _object2proto(self) -> GetSetUpResponse_PB:
@@ -132,7 +127,6 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
         return GetSetUpResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -153,7 +147,6 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
         return GetSetUpResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 
@@ -268,12 +261,22 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
     def __init__(
         self,
         address: Address,
-        content: Dict,
+        domain_name: str,
+        description: str,
+        daa: bool,
+        contact: str,
         reply_to: Address,
+        daa_document: Optional[bytes] = b"",
+        tags: Optional[TypeList] = [],
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
-        self.content = content
+        self.daa = daa
+        self.contact = contact
+        self.description = description
+        self.domain_name = domain_name
+        self.daa_document = daa_document
+        self.tags = tags
 
     def _object2proto(self) -> UpdateSetupMessage_PB:
         """Returns a protobuf serialization of self.
@@ -290,7 +293,12 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         return UpdateSetupMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            content=json.dumps(self.content),
+            domain_name=self.domain_name,
+            contact=self.contact,
+            daa=self.daa,
+            description=self.description,
+            daa_document=self.daa_document,
+            tags=self.tags,
             reply_to=serialize(self.reply_to),
         )
 
@@ -311,7 +319,12 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         return UpdateSetupMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            content=json.loads(proto.content),
+            daa=proto.daa,
+            contact=proto.contact,
+            domain_name=proto.domain_name,
+            description=proto.description,
+            daa_document=proto.daa_document,
+            tags=[tag for tag in proto.tags],
             reply_to=_deserialize(blob=proto.reply_to),
         )
 
@@ -339,12 +352,10 @@ class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        status_code: int,
         content: Dict,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.status_code = status_code
         self.content = content
 
     def _object2proto(self) -> UpdateSetupResponse_PB:
@@ -362,7 +373,6 @@ class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
         return UpdateSetupResponse_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            status_code=self.status_code,
             content=json.dumps(self.content),
         )
 
@@ -383,7 +393,6 @@ class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
         return UpdateSetupResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            status_code=proto.status_code,
             content=json.loads(proto.content),
         )
 

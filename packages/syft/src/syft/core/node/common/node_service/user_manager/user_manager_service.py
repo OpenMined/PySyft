@@ -22,10 +22,13 @@ from ..node_service import ImmediateNodeServiceWithReply
 from ..success_resp_message import SuccessResponseMessage
 from .user_messages import CreateUserMessage
 from .user_messages import DeleteUserMessage
+from .user_messages import GetCandidatesMessage
+from .user_messages import GetCandidatesResponse
 from .user_messages import GetUserMessage
 from .user_messages import GetUserResponse
 from .user_messages import GetUsersMessage
 from .user_messages import GetUsersResponse
+from .user_messages import ProcessUserCandidateMessage
 from .user_messages import SearchUsersMessage
 from .user_messages import SearchUsersResponse
 from .user_messages import UpdateUserMessage
@@ -36,6 +39,11 @@ def create_user_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
+    # Check if node requires daa document
+    if node.setup.first(domain_name=node.name).daa and not msg.daa_pdf:
+        raise AuthorizationError(
+            message="You can't apply a new User without a DAA document!"
+        )
 
     # Check if email/password fields are empty
     if not msg.email or not msg.password:
@@ -54,62 +62,50 @@ def create_user_msg(
         # If email not registered, a new user can be created.
         pass
 
-    # 2 - Custom Type
-    # Create a custom user (with a custom role)
-    # This user can only be created by using an account with "can_create_users" permissions
-    def create_custom_user() -> None:
-        _owner_role = node.roles.owner_role
-        if msg.role != _owner_role.name:
-            # Generate a new signing key
-            _private_key = SigningKey.generate()
-            node.users.signup(
-                name=msg.name,
-                email=msg.email,
-                password=msg.password,
-                budget=msg.budget,
-                role=node.roles.first(name=msg.role).id,
-                private_key=_private_key.encode(encoder=HexEncoder).decode("utf-8"),
-                verify_key=_private_key.verify_key.encode(encoder=HexEncoder).decode(
-                    "utf-8"
-                ),
-            )
-        # If purposed role is Owner
-        else:
-            raise AuthorizationError(
-                message='You can\'t create a new User with "Owner" role!'
-            )
+    app_id = node.users.create_user_application(
+        name=msg.name,
+        email=msg.email,
+        password=msg.password,
+        daa_pdf=msg.daa_pdf,
+        institution=msg.institution,
+        website=msg.website,
+        budget=msg.budget,
+    )
 
-    # 3 - Standard type
-    # Create a common user with no special permissions
-    def create_standard_user() -> None:
+    user_role_id = -1
+    try:
+        user_role_id = node.users.role(verify_key=verify_key).id
+    except Exception as e:
+        print("verify_key not in db", e)
 
-        # Generate a new signing key
-        _private_key = SigningKey.generate()
-
-        encoded_pk = _private_key.encode(encoder=HexEncoder).decode("utf-8")
-        encoded_vk = _private_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")
-
-        node.users.signup(
-            name=msg.name,
-            email=msg.email,
-            password=msg.password,
-            budget=msg.budget,
-            role=node.roles.first(name="Data Scientist").id,
-            private_key=encoded_pk,
-            verify_key=encoded_vk,
+    if node.roles.can_create_users(role_id=user_role_id):
+        node.users.process_user_application(
+            candidate_id=app_id, status="accepted", verify_key=verify_key
         )
-
-    # Main logic
-    _allowed = node.users.can_create_users(verify_key=verify_key)
-
-    if msg.role and _allowed:
-        create_custom_user()
-    else:
-        create_standard_user()
 
     return SuccessResponseMessage(
         address=msg.reply_to,
         resp_msg="User created successfully!",
+    )
+
+
+def accept_or_deny_candidate(
+    msg: ProcessUserCandidateMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,
+) -> SuccessResponseMessage:
+    if True:  # node.users.can_create_users(verify_key=verify_key):
+        node.users.process_user_application(
+            candidate_id=msg.candidate_id, status=msg.status, verify_key=verify_key
+        )
+    else:
+        raise AuthorizationError(
+            message="You're not allowed to create a new User using this email!"
+        )
+
+    return SuccessResponseMessage(
+        address=msg.reply_to,
+        resp_msg="User application processed successfully!",
     )
 
 
@@ -121,8 +117,10 @@ def update_user_msg(
     _valid_parameters = (
         msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
     )
-    _same_user = int(node.users.get_user(verify_key).id) == msg.user_id  # type: ignore
-    _allowed = _same_user or node.users.can_create_users(verify_key=verify_key)
+    _allowed = msg.user_id == 0 or node.users.can_create_users(verify_key=verify_key)
+    # Change own information
+    if msg.user_id == 0:
+        msg.user_id = int(node.users.get_user(verify_key).id)  # type: ignore
 
     _valid_user = node.users.contain(id=msg.user_id)
 
@@ -149,10 +147,6 @@ def update_user_msg(
     elif msg.name:
         node.users.set(user_id=str(msg.user_id), name=msg.name)
 
-    # Change budget Request
-    elif msg.budget:
-        node.users.set(user_id=str(msg.user_id), budget=msg.budget)
-
     # Change Role Request
     elif msg.role:
         target_user = node.users.first(id=msg.user_id)
@@ -166,9 +160,26 @@ def update_user_msg(
         # If all premises were respected
         if _allowed:
             new_role_id = node.roles.first(name=msg.role).id
+            node.users.set(user_id=msg.user_id, role=new_role_id)  # type: ignore
+        elif (  # Transfering Owner's role
+            msg.role == node.roles.owner_role.name  # target role == Owner
+            and node.users.role(verify_key=verify_key).name
+            == node.roles.owner_role.name  # Current user is the current node owner.
+        ):
+            new_role_id = node.roles.first(name=msg.role).id
             node.users.set(user_id=str(msg.user_id), role=new_role_id)
-        elif msg.role == node.roles.owner_role.name:
-            raise AuthorizationError("You can't change it to Owner role!")
+            current_user = node.users.get_user(verify_key=verify_key)
+            node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)  # type: ignore
+            # Updating current node keys
+            root_key = SigningKey(
+                current_user.private_key.encode("utf-8"), encoder=HexEncoder  # type: ignore
+            )
+            node.signing_key = root_key
+            node.verify_key = root_key.verify_key
+            # IDK why, but we also have a different var (node.root_verify_key)
+            # defined at ...common.node.py that points to the verify_key.
+            # So we need to update it as well.
+            node.root_verify_key = root_key.verify_key
         elif target_user.role == node.roles.owner_role.id:
             raise AuthorizationError("You're not allowed to change Owner user roles!")
         else:
@@ -188,7 +199,9 @@ def get_user_msg(
     # Check key permissions
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
     if not _allowed:
-        raise AuthorizationError("You're not allowed to get User information!")
+        raise AuthorizationError(
+            "get_user_msg You're not allowed to get User information!"
+        )
     else:
         # Extract User Columns
         user = node.users.first(id=msg.user_id)
@@ -219,14 +232,15 @@ def get_all_users_msg(
     # Check key permissions
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
     if not _allowed:
-        raise AuthorizationError("You're not allowed to get User information!")
+        raise AuthorizationError(
+            "get_all_users_msg You're not allowed to get User information!"
+        )
     else:
         # Get All Users
         users = node.users.all()
         _msg = []
         for user in users:
             _user_json = model_to_json(user)
-
             # Use role name instead of role ID.
             _user_json["role"] = node.roles.first(id=_user_json["role"]).name
 
@@ -241,6 +255,34 @@ def get_all_users_msg(
             _msg.append(_user_json)
 
     return GetUsersResponse(
+        address=msg.reply_to,
+        content=_msg,
+    )
+
+
+def get_applicant_users(
+    msg: GetCandidatesMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,
+) -> GetCandidatesResponse:
+    # Check key permissions
+    _allowed = node.users.can_triage_requests(verify_key=verify_key)
+    if not _allowed:
+        raise AuthorizationError(
+            "get_applicant_users You're not allowed to get User information!"
+        )
+    else:
+        # Get All Users
+        users = node.users.get_all_applicant()
+        _msg = []
+        _user_json = {}
+        for user in users:
+            _user_json = model_to_json(user)
+            if user.daa_pdf:
+                _user_json["daa_pdf"] = user.daa_pdf
+            _msg.append(_user_json)
+
+    return GetCandidatesResponse(
         address=msg.reply_to,
         content=_msg,
     )
@@ -296,7 +338,9 @@ def search_users_msg(
         except UserNotFoundError:
             _msg = []
     else:
-        raise AuthorizationError("You're not allowed to get User information!")
+        raise AuthorizationError(
+            "search_users_msg You're not allowed to get User information!"
+        )
 
     return SearchUsersResponse(
         address=msg.reply_to,
@@ -312,6 +356,8 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         Type[GetUsersMessage],
         Type[DeleteUserMessage],
         Type[SearchUsersMessage],
+        Type[GetCandidatesMessage],
+        Type[ProcessUserCandidateMessage],
     ]
 
     INPUT_MESSAGES = Union[
@@ -327,6 +373,7 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         SuccessResponseMessage,
         GetUserResponse,
         GetUsersResponse,
+        GetCandidatesResponse,
         SearchUsersResponse,
     ]
 
@@ -337,6 +384,8 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         GetUsersMessage: get_all_users_msg,
         DeleteUserMessage: del_user_msg,
         SearchUsersMessage: search_users_msg,
+        GetCandidatesMessage: get_applicant_users,
+        ProcessUserCandidateMessage: accept_or_deny_candidate,
     }
 
     @staticmethod
@@ -346,7 +395,6 @@ class UserManagerService(ImmediateNodeServiceWithReply):
         msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
     ) -> OUTPUT_MESSAGES:
-
         reply = UserManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )
@@ -362,4 +410,6 @@ class UserManagerService(ImmediateNodeServiceWithReply):
             GetUsersMessage,
             DeleteUserMessage,
             SearchUsersMessage,
+            GetCandidatesMessage,
+            ProcessUserCandidateMessage,
         ]

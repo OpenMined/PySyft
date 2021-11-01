@@ -16,6 +16,7 @@ from typing import Union
 import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pydantic import BaseSettings
 
 # relative
 from ....lib.python import String
@@ -36,6 +37,8 @@ from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
 from ..common.node_manager.dataset_manager import DatasetManager
 from ..common.node_manager.environment_manager import EnvironmentManager
+from ..common.node_manager.node_manager import NodeManager
+from ..common.node_manager.node_route_manager import NodeRouteManager
 from ..common.node_manager.request_manager import RequestManager
 from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
@@ -70,6 +73,7 @@ from ..common.node_service.simple.simple_service import SimpleService
 from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
+from ..common.node_service.user_auth.user_auth_service import UserLoginService
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
 from ..common.node_service.vpn.vpn_service import VPNConnectService
 from ..common.node_service.vpn.vpn_service import VPNJoinService
@@ -99,7 +103,7 @@ class Domain(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
-        db: Any = None,
+        settings: BaseSettings = BaseSettings(),
     ):
 
         if db_engine is None:
@@ -114,8 +118,10 @@ class Domain(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_engine=db_engine,
-            db=db,
         )
+
+        # share settings with the FastAPI application level
+        self.settings = settings
 
         # specific location with name
         self.domain = SpecificLocation(name=self.name)
@@ -128,6 +134,8 @@ class Domain(Node):
         self.association_requests = AssociationRequestManager(db_engine)
         self.data_requests = RequestManager(db_engine)
         self.datasets = DatasetManager(db_engine)
+        self.node = NodeManager(db_engine)
+        self.node_route = NodeRouteManager(db_engine)
         self.acc = AdversarialAccountant(db_engine=db_engine, max_budget=10000)
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
@@ -153,6 +161,7 @@ class Domain(Node):
         self.immediate_services_with_reply.append(DatasetManagerService)
         # self.immediate_services_with_reply.append(TransferObjectService)
         self.immediate_services_with_reply.append(RequestService)
+        self.immediate_services_with_reply.append(UserLoginService)
 
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
 
@@ -415,6 +424,20 @@ class Domain(Node):
                         continue
                 alive_handlers.append(handler)
         self.request_handlers = alive_handlers
+
+    def clear(self, user_role: int) -> bool:
+        # Cleanup database tables
+        if user_role == self.roles.owner_role.id:
+            self.store.clear()
+            self.data_requests.clear()
+            self.users.clear()
+            self.environments.clear()
+            self.association_requests.clear()
+            self.datasets.clear()
+            self.initial_setup()
+            return True
+
+        return False
 
     def clean_up_requests(self) -> None:
         # this allows a request to be re-handled if the handler somehow failed
