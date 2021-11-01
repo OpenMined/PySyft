@@ -97,28 +97,7 @@ def status(tailscale_host: str) -> str:
     except Exception as e:
         print("failed to make request", e)
     return result
-def simple_tailscale_key_check(tailscale_host: str) -> str:
-    data = {"timeout": 5}
-    result = ""
-    command_url = f"{tailscale_host}/commands/check_key"
-    try:
-        resp = requests.post(command_url, json=data)
-        report = get_result(json=resp.json())
-        result = json.loads(report)["report"]
-    except Exception as e:
-        print("failed to make request", e)
-    return result
-def simple_headscale_key_check(headscale_host: str) -> str:
-    data = {"timeout": 5}
-    result = ""
-    command_url = f"{headscale_host}/commands/check_key"
-    try:
-        resp = requests.post(command_url, json=data)
-        report = get_result(json=resp.json())
-        result = json.loads(report)["report"]
-    except Exception as e:
-        print("failed to make request", e)
-    return result
+
 
 def get_result(json: Dict) -> str:
     result_url = json.get("result_url", "")
@@ -139,19 +118,7 @@ def get_result(json: Dict) -> str:
     except Exception as e:
         print("Failed to get result", json, e)
     return ""
-    # simple PoC to validate key sec check from env.
 
-def poc():
-    headkey = simple_headscale_key_check(headscale_host=headscale_api)
-    tailkey = simple_tailscale_key_check(tailscale_host=tailscale_api)
-    if str(headkey).split("\n")[0]== str(tailkey).split("\n")[0]:
-        print("key match, genuine container")
-    else:
-        print("rogue container")
-    
-
-
- 
 
 # make sure you have a network node running:
 # $ hagrid launch node network to docker:8081+
@@ -204,7 +171,6 @@ if __name__ == "__main__":
     print(f"tailscale API: {tailscale_api}")
     print(f"headscale API: {headscale_api}")
     print(f"headscale Server: {headscale_server}")
-    poc()
 
     authkey = generate_key(headscale_host=headscale_api)
     _ = connect_with_key(
@@ -232,7 +198,3 @@ if __name__ == "__main__":
 
         if stat_ip == ip_address:
             print(f"Node: {hostname} Connected to {network_name} with IP: {ip_address}")
-
-
-   
-

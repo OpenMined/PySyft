@@ -56,7 +56,7 @@ services:
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - PORT=8001
-      - STACK_API_KEY=hex_key_value   # Dynamic keys in future
+      - STACK_API_KEY=$STACK_API_KEY
 
     build:
       context: ../
@@ -87,7 +87,7 @@ services:
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - STREAM_QUEUE=1
       - PORT=8011
-      - STACK_API_KEY=hex_key_value   # Dynamic keys in future
+      - STACK_API_KEY=$STACK_API_KEY
 
     build:
       context: ../
@@ -117,7 +117,7 @@ services:
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - C_FORCE_ROOT=1
-      - STACK_API_KEY=hex_key_value   # Dynamic keys in future
+      - STACK_API_KEY=$STACK_API_KEY
 
     build:
       context: ../
@@ -149,12 +149,12 @@ services:
       dockerfile: tailscale.dockerfile
     environment:
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
-      - STACK_API_KEY=hex_key_value   # Dynamic keys in future
+      - STACK_API_KEY=$STACK_API_KEY
 
     volumes:
       - tailscale-data:/var/lib/tailscale
       - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
-     # - ./grid/vpn:/tailscale
+      # - ./grid/vpn:/tailscale
     cap_add: # Required for tailscale to work
       - net_admin
       - sys_module
@@ -175,10 +175,10 @@ services:
       dockerfile: headscale.dockerfile
     volumes:
       - headscale-data:/headscale/data
-     # - ./grid/vpn:/headscale
+      # - ./grid/vpn:/headscale
     environment:
       - NETWORK_NAME=omnet
-      - STACK_API_KEY=hex_key_value   # Dynamic keys in future
+      - STACK_API_KEY=$STACK_API_KEY
     ports:
       - "4000"
     labels:
