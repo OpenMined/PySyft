@@ -3,12 +3,11 @@ from typing import Any
 from typing import List
 from typing import Optional
 
-# syft relative
-from ..common.uid import UID
-from .serde import Serializable
+# relative
+from .uid import UID
 
 
-class AbstractPointer(Serializable):
+class AbstractPointer:
     def __init__(
         self,
         client: Any,

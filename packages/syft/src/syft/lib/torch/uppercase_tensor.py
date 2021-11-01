@@ -3,13 +3,13 @@
 # third party
 import torch as th
 
-# syft relative
-from ...generate_wrapper import GenerateWrapper
-from ...lib.torch.tensor_util import tensor_deserializer
-from ...lib.torch.tensor_util import tensor_serializer
+# relative
+from ...core.common.serde.serializable import serializable
 from ...logger import warning
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
 from ...proto.lib.torch.tensor_pb2 import TensorProto as Tensor_PB
+from .tensor_util import tensor_deserializer
+from .tensor_util import tensor_serializer
 
 torch_tensor_type = type(th.tensor([1, 2, 3]))
 
@@ -58,7 +58,7 @@ def proto2object(proto: Tensor_PB) -> th.Tensor:
     return tensor
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=torch_tensor_type,
     import_path="torch.Tensor",
     protobuf_scheme=Tensor_PB,

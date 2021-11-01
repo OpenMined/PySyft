@@ -8,12 +8,12 @@ from typing import List
 from packaging import version
 import torch
 
-# syft relative
-from ...generate_wrapper import GenerateWrapper
-from ...lib.util import full_name_with_name
+# relative
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.torch.returntypes_pb2 import ReturnTypes as ReturnTypes_PB
-from ..torch.tensor_util import tensor_deserializer
-from ..torch.tensor_util import tensor_serializer
+from ..util import full_name_with_name
+from .tensor_util import tensor_deserializer
+from .tensor_util import tensor_serializer
 
 # TODO: a better way. Loot at https://github.com/OpenMined/PySyft/issues/5249
 module_type = type(torch)
@@ -113,7 +113,7 @@ def wrap_type(typ: type, fields: List[str]) -> None:
         values = [tensor_deserializer(x) for x in proto.values]
         return typ(values)
 
-    GenerateWrapper(
+    serializable(generate_wrapper=True)(
         wrapped_type=typ,
         import_path=f"{typ.__module__}.{typ.__name__}",
         protobuf_scheme=ReturnTypes_PB,

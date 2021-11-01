@@ -1,0 +1,20 @@
+{
+  "domain-description": "Domain Description",
+  "general": "General",
+  "reset": "Reset/Purge Domain Node",
+  "reset-copy": "Description here of what this option means. Also might want to provide a link out that explains how to delete a node via command line.",
+  "reset-confirmation-heading": "Are you sure you want to Reset/Purge this Domain node?",
+  "reset-confirmation-copy": "Description here of what this option means. Also might want to provide a link out that explains how to delete a node via command line.",
+  "reset-success-heading": "Your Domain node has been Reset/Purged",
+  "reset-success-copy": "To help us improve future experiences could you share with us any frustrations or suggestions you have with or for the PyGridUI Platform?",
+  "support-email": "Support email",
+  "support-email-label": "An email available for users to use when they have specific questions about your domain node",
+  "tags": "Tags",
+  "require-daa": "Require Data Access Agreement",
+  "require-daa-copy": "If enabled this will require any user not manualy created by an admin to upload a signed legal document of your choosing before being able to apply for an account on this domain node.",
+  "daa": "Data Access Agreement",
+  "daa-copy": "A Data Access Agreement (DAA) is a... Please upload the legal agreement you would like to require for your domain users.",
+  "daa-alert": "If you need to change your data access agreement, please contact OpenMined at support@openmined.org and we will help walk you through the process.",
+  "update-version": "Update version",
+  "update-version-copy": "Please enter the [PLACEHOLDER] repository and branch in the fields below then press “Check for Update” to check for any library updates."
+}

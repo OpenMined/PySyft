@@ -9,7 +9,7 @@ from typing import Set
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
-# syft relative
+# relative
 from ....logger import traceback_and_raise
 from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
@@ -18,6 +18,25 @@ from ...common.uid import UID
 from ...io.address import Address
 from ...io.location import Location
 from ...store import ObjectStore
+
+
+class AbstractNodeClient(Address):
+    lib_ast: Any  # Can't import Globals (circular reference)
+    # TODO: remove hacky in_memory_client_registry
+    in_memory_client_registry: Dict[Any, Any]
+    signing_key: SigningKey
+    """"""
+
+    @property
+    def id(self) -> UID:
+        """This client points to an node, this returns the id of that node."""
+        traceback_and_raise(NotImplementedError)
+
+    def send_immediate_msg_without_reply(self, msg: Any) -> Any:
+        raise NotImplementedError
+
+    def send_immediate_msg_with_reply(self, msg: Any) -> Any:
+        raise NotImplementedError
 
 
 class AbstractNode(Address):
@@ -29,6 +48,7 @@ class AbstractNode(Address):
     guest_verify_key_registry: Set[VerifyKey]
     admin_verify_key_registry: Set[VerifyKey]
     cpl_ofcr_verify_key_registry: Set[VerifyKey]
+    acc: Optional[Any]
 
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
@@ -92,17 +112,7 @@ class AbstractNode(Address):
 
         return keys
 
-
-class AbstractNodeClient(Address):
-    lib_ast: Any  # Can't import Globals (circular reference)
-    # TODO: remove hacky in_memory_client_registry
-    in_memory_client_registry: Dict[Any, Any]
-    """"""
-
-    @property
-    def id(self) -> UID:
-        """This client points to an node, this returns the id of that node."""
+    def get_peer_client(
+        self, node_id: UID, only_vpn: bool = True
+    ) -> Optional[AbstractNodeClient]:
         traceback_and_raise(NotImplementedError)
-
-    def send_immediate_msg_without_reply(self, msg: Any) -> Any:
-        raise NotImplementedError

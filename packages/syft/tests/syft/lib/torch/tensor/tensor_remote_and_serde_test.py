@@ -7,14 +7,15 @@ import torch as th
 
 # syft absolute
 import syft as sy
-from syft.core.node.common.service.auth import AuthorizationException
+from syft.core.node.common.node_service.auth import AuthorizationException
 
 
 @pytest.mark.slow
-def test_torch_remote_tensor_register(
-    node: sy.VirtualMachine, client: sy.VirtualMachineClient
-) -> None:
+def test_torch_remote_tensor_register() -> None:
     """Test if sending a tensor will be registered on the remote worker."""
+    node = sy.VirtualMachine(name="alice")
+    client = node.get_client()
+
     x = th.tensor([-1, 0, 1, 2, 3, 4])
     ptr = x.send(client, pointable=False)
 
@@ -31,10 +32,10 @@ def test_torch_remote_tensor_register(
     assert len(node.store) == 0  # Get removes the object
 
 
-def test_torch_remote_tensor_with_send(
-    node: sy.VirtualMachine, client: sy.VirtualMachineClient
-) -> None:
+def test_torch_remote_tensor_with_send() -> None:
     """Test sending tensor on the remote worker with send method."""
+    node = sy.VirtualMachine(name="alice")
+    client = node.get_client()
 
     x = th.tensor([-1, 0, 1, 2, 3, 4])
     ptr = x.send(client)
@@ -94,13 +95,14 @@ def test_torch_no_read_permissions(
     assert x.grad == x2.grad
 
 
-def test_torch_garbage_collect(
-    node: sy.VirtualMachine, client: sy.VirtualMachineClient
-) -> None:
+def test_torch_garbage_collect() -> None:
     """
     Test if sending a tensor and then deleting the pointer removes the object
     from the remote worker.
     """
+    node = sy.VirtualMachine(name="alice")
+    client = node.get_client()
+
     x = th.tensor([-1, 0, 1, 2, 3, 4])
     ptr = x.send(client, pointable=False)
 

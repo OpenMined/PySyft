@@ -4,13 +4,11 @@ from typing import Union
 # third party
 from google.protobuf.message import Message
 
-# syft relative
-from ....logger import debug
+# relative
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import validate_type
-from .serializable import Serializable
 
 
 def _serialize(
@@ -45,21 +43,33 @@ def _serialize(
     :rtype: Union[str, bytes, Message]
     """
 
-    is_serializable: Serializable
-    if not isinstance(obj, Serializable):
-        if hasattr(obj, "_sy_serializable_wrapper_type"):
-            is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
-        else:
-            traceback_and_raise(
-                Exception(
-                    f"Object {type(obj)} is not serializable and has no _sy_serializable_wrapper_type"
-                )
-            )
+    # relative
+    from ....lib.python.primitive_factory import isprimitive
+
+    # we have an unboxed primitive type so we need to mirror that on deserialize
+    if isprimitive(obj):
+        # relative
+        from ....lib.python.primitive_factory import PrimitiveFactory
+
+        obj = PrimitiveFactory.generate_primitive(value=obj, temporary_box=True)
+        if hasattr(obj, "temporary_box"):
+            # TODO: can remove this once all of PrimitiveFactory.generate_primitive
+            # supports temporary_box and is tested
+            obj.temporary_box = True  # type: ignore
+
+    if hasattr(obj, "_sy_serializable_wrapper_type"):
+        is_serializable = obj._sy_serializable_wrapper_type(value=obj)  # type: ignore
     else:
         is_serializable = obj
 
+    # traceback_and_raise(
+    #     Exception(
+    #         f"Object {type(obj)} is not serializable and has no _sy_serializable_wrapper_type"
+    #     )
+    # )
+
     if to_bytes:
-        debug(f"Serializing {type(is_serializable)}")
+        # debug(f"Serializing {type(is_serializable)}")
         # indent=None means no white space or \n in the serialized version
         # this is compatible with json.dumps(x, indent=None)
         serialized_data = is_serializable._object2proto().SerializeToString()

@@ -1,42 +1,87 @@
 # stdlib
+import logging
+import sys
 import time
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import names
 import pandas as pd
 
-# syft relative
+# relative
+from .... import deserialize
 from ....logger import traceback_and_raise
 from ....util import validate_field
+from ...common.message import SyftMessage
+from ...common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...common.uid import UID
+from ...io.address import Address
 from ...io.location import Location
-from ...io.location import SpecificLocation
+from ...io.location.specific import SpecificLocation
 from ...io.route import Route
+from ...node.common.node_service.network_search.network_search_messages import (
+    NetworkSearchMessage,
+)
+from ...pointer.pointer import Pointer
+from ...tensor.autodp.adp_tensor import ADPTensor
+from ...tensor.tensor import Tensor
+from ..abstract.node import AbstractNodeClient
+from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
-from .service import RequestMessage
+from ..common.client_manager.association_api import AssociationRequestAPI
+from ..common.client_manager.dataset_api import DatasetRequestAPI
+from ..common.client_manager.role_api import RoleRequestAPI
+from ..common.client_manager.user_api import UserRequestAPI
+from ..common.client_manager.vpn_api import VPNAPI
+from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import (
+    GetRemainingBudgetMessage,
+)
+from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
+from ..common.node_service.object_request.object_request_messages import (
+    CreateBudgetRequestMessage,
+)
+from ..common.node_service.object_transfer.object_transfer_messages import (
+    LoadObjectMessage,
+)
+from ..common.node_service.request_receiver.request_receiver_messages import (
+    RequestMessage,
+)
+from ..common.node_service.simple.obj_exists import DoesObjectExistMessage
+from .enums import PyGridClientEnums
+from .enums import RequestAPIFields
 
 
-class RequestQueueClient:
+class RequestQueueClient(AbstractNodeClient):
     def __init__(self, client: Client) -> None:
         self.client = client
         self.handlers = RequestHandlerQueueClient(client=client)
 
+        self.users = UserRequestAPI(client=self)
+        self.roles = RoleRequestAPI(client=self)
+        self.association = AssociationRequestAPI(client=self)
+        self.datasets = DatasetRequestAPI(client=self)
+
     @property
     def requests(self) -> List[RequestMessage]:
-        # syft absolute
-        from syft.core.node.domain.service.get_all_requests_service import (
+
+        # relative
+        from ..common.node_service.get_all_requests.get_all_requests_messages import (
             GetAllRequestsMessage,
         )
 
         msg = GetAllRequestsMessage(
             address=self.client.address, reply_to=self.client.address
         )
+
+        blob = serialize(msg, to_bytes=True)
+        msg = deserialize(blob, from_bytes=True)
 
         requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
 
@@ -70,6 +115,9 @@ class RequestQueueClient:
 
     def __repr__(self) -> str:
         return repr(self.requests)
+
+    def _repr_html_(self) -> str:
+        return self.pandas._repr_html_()
 
     @property
     def pandas(self) -> pd.DataFrame:
@@ -148,8 +196,8 @@ class RequestQueueClient:
         return handler_opts
 
     def _update_handler(self, request_handler: Dict[str, Any], keep: bool) -> None:
-        # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
+        # relative
+        from ..common.node_service.request_handler.request_handler_messages import (
             UpdateRequestHandlerMessage,
         )
 
@@ -165,8 +213,8 @@ class RequestHandlerQueueClient:
 
     @property
     def handlers(self) -> List[Dict]:
-        # syft absolute
-        from syft.core.node.domain.service.request_handler_service import (
+        # relative
+        from ..common.node_service.request_handler.request_handler_messages import (
             GetAllRequestHandlersMessage,
         )
 
@@ -258,7 +306,165 @@ class DomainClient(Client):
         )
 
         self.requests = RequestQueueClient(client=self)
+
         self.post_init()
+
+        self.users = UserRequestAPI(client=self)
+        self.roles = RoleRequestAPI(client=self)
+        self.association = AssociationRequestAPI(client=self)
+        self.datasets = DatasetRequestAPI(client=self)
+        self.vpn = VPNAPI(client=self)
+
+    def obj_exists(self, obj_id: UID) -> bool:
+        msg = DoesObjectExistMessage(obj_id=obj_id)
+        return self.send_immediate_msg_with_reply(msg=msg).payload  # type: ignore
+
+    @property
+    def privacy_budget(self) -> float:
+        msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
+        return self.send_immediate_msg_with_reply(msg).budget  # type: ignore
+
+    def request_budget(
+        self,
+        eps: float = 0.0,
+        reason: str = "",
+        skip_checks: bool = False,
+    ) -> Any:
+
+        if not skip_checks:
+            if eps == 0.0:
+                eps = float(input("Please specify how much more epsilon you want:"))
+
+            if reason == "":
+                reason = str(
+                    input("Why should the domain owner give you more epsilon:")
+                )
+
+        msg = CreateBudgetRequestMessage(
+            reason=reason,
+            budget=eps,
+            address=self.address,
+        )
+
+        self.send_immediate_msg_without_reply(msg=msg)
+
+        print(
+            "Requested "
+            + str(eps)
+            + " epsilon of budget. Call .privacy_budget to see if your budget has arrived!"
+        )
+
+    def load(
+        self, obj_ptr: Type[Pointer], address: Address, pointable: bool = False
+    ) -> None:
+        content = {
+            RequestAPIFields.ADDRESS: serialize(address)
+            .SerializeToString()  # type: ignore
+            .decode(PyGridClientEnums.ENCODING),
+            RequestAPIFields.UID: str(obj_ptr.id_at_location.value),
+            RequestAPIFields.POINTABLE: pointable,
+        }
+        self._perform_grid_request(grid_msg=LoadObjectMessage, content=content)
+
+    def setup(self, *, domain_name: Optional[str], **kwargs: Any) -> Any:
+        if domain_name is None:
+            domain_name = names.get_full_name() + "'s Domain"
+            logging.info(
+                "No Domain Name provided... picking randomly as: " + domain_name
+            )
+
+        kwargs["domain_name"] = domain_name
+
+        response = self.conn.setup(**kwargs)  # type: ignore
+        logging.info(response[RequestAPIFields.MESSAGE])
+
+    def reset(self) -> None:
+        logging.warning(
+            "Node reset will delete the data, as well as the requests. Do you want to continue (y/N)?"
+        )
+        response = input().lower()
+        if response == "y":
+            response = self.routes[0].connection.reset()  # type: ignore
+
+    def search(self, query: List, pandas: bool = False) -> Any:
+        response = self._perform_grid_request(
+            grid_msg=NetworkSearchMessage, content={RequestAPIFields.QUERY: query}
+        )
+        if pandas:
+            response = pd.DataFrame(response)
+
+        return response
+
+    def _perform_grid_request(
+        self, grid_msg: Any, content: Optional[Dict[Any, Any]] = None
+    ) -> SyftMessage:
+        if content is None:
+            content = {}
+        # Build Syft Message
+        content[RequestAPIFields.ADDRESS] = self.address
+        content[RequestAPIFields.REPLY_TO] = self.address
+        signed_msg = grid_msg(**content).sign(signing_key=self.signing_key)
+        # Send to the dest
+        response = self.send_immediate_msg_with_reply(msg=signed_msg)
+        if isinstance(response, ExceptionMessage):
+            raise response.exception_type
+        else:
+            return response
+
+    def get_setup(self, **kwargs: Any) -> Any:
+        return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
+
+    def apply_to_network(
+        self,
+        client: Optional[AbstractNodeClient] = None,
+        **metadata: str,
+    ) -> None:
+        try:
+            # joining the network might take some time and won't block
+            self.join_network(client=client)
+
+            timeout = 30
+            connected = False
+            network_vpn_ip = ""
+            domain_vpn_ip = ""
+
+            # get the vpn ips
+            print("Waiting to connect to VPN.")
+            while timeout > 0 and connected is False:
+                timeout -= 1
+                try:
+                    vpn_status = self.vpn_status()
+                    if vpn_status["connected"]:
+                        print("Connected to VPN")
+                        connected = True
+                        continue
+                except Exception as e:
+                    print(f"Failed to get vpn status. {e}")
+                print(".", end="")
+                time.sleep(1)
+
+            for peer in vpn_status["peers"]:
+                if peer["hostname"] == client.name:  # type: ignore
+                    network_vpn_ip = peer["ip"]
+            try:
+                domain_vpn_ip = self.vpn_status()["host"]["ip"]
+            except Exception as e:
+                print(f"Failed to get vpn host ip. {e}")
+
+            if network_vpn_ip == "":
+                raise Exception(
+                    f"Cant find the network node {client.name} in {vpn_status}"  # type: ignore
+                )
+            if domain_vpn_ip == "":
+                raise Exception(f"No host ip in {vpn_status}")
+
+            self.association.create(
+                source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
+            )
+
+            print("Application submitted.")
+        except Exception as e:
+            print(f"Failed to apply to network with {client}. {e}")
 
     @property
     def id(self) -> UID:
@@ -308,7 +514,7 @@ class DomainClient(Client):
 
     def __repr__(self) -> str:
         no_dash = str(self.id).replace("-", "")
-        return f"<{type(self).__name__}: {no_dash}>"
+        return f"<{type(self).__name__} - {self.name}: {no_dash}>"
 
     def update_vars(self, state: dict) -> pd.DataFrame:
         for ptr in self.store.store:
@@ -317,3 +523,211 @@ class DomainClient(Client):
                 for tag in tags:
                     state[tag] = ptr
         return self.store.pandas
+
+    def vpn_status(self) -> Dict[str, Any]:
+        return self.vpn.get_status()
+
+    def load_dataset(
+        self,
+        assets: Optional[dict] = None,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        skip_checks: bool = False,
+        **metadata: Dict,
+    ) -> None:
+        sys.stdout.write("Loading dataset...")
+        if assets is None or not isinstance(assets, dict):
+            raise Exception(
+                "Missing Assets: Oops!... You forgot to include your data! (or you passed it in the wrong way) \n\n"
+                "You must call load_dataset() with a dictionary of assets which are the "
+                "private dataset objects (tensors) you wish to allow someone else to study "
+                "while PySyft protects it using various privacy enhancing technologies. \n\n"
+                "For example, the MNIST dataset is comprised of 6 tensors, so we would create an assets "
+                "dictionary with 6 keys (strings) mapping to the 6 tensors of MNIST.\n\n"
+                "Please pass in a dictionary where the key is the name of the asset and the value is "
+                "the private dataset object (tensor) itself. We recommend uploading assets which "
+                "are differential-privacy trackable objects, such as a syft.Tensor() wrapped "
+                "numpy.int32 or numpy.float32 object which you then call .private() on. \n\nOnce "
+                "you have an assets dictionary call load_dataset(assets=<your dict of objects>)."
+            )
+        sys.stdout.write("\rLoading dataset... checking assets...")
+
+        if name is None:
+            raise Exception(
+                "Missing Name: Oops!... You forgot to name your dataset!\n\n"
+                "It's important to give your dataset a clear and descriptive name because"
+                " the name is the primary way in which potential users of the dataset will"
+                " identify it.\n\n"
+                'Retry with a string name. I.e., .load_dataset(name="<your name here>)"'
+            )
+        sys.stdout.write("\rLoading dataset... checking dataset name for uniqueness...")
+        datasets = self.datasets
+
+        if not skip_checks:
+            for i in range(len(datasets)):
+                d = datasets[i]
+                sys.stdout.write(".")
+                if name == d.name:
+                    print(
+                        "\n\nWARNING - Dataset Name Conflict: A dataset named '"
+                        + name
+                        + "' already exists.\n"
+                    )
+                    pref = input("Do you want to upload this dataset anyway? (y/n)")
+                    while pref != "y" and pref != "n":
+                        pref = input(
+                            "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                        )
+                    if pref == "n":
+                        raise Exception("Dataset loading cancelled.")
+                    else:
+                        print()  # just for the newline
+                        break
+
+        sys.stdout.write(
+            "\rLoading dataset... checking dataset name for uniqueness..."
+            "                                                          "
+            "                                                          "
+        )
+
+        if description is None:
+            raise Exception(
+                "Missing Description: Oops!... You forgot to describe your dataset!\n\n"
+                "It's *very* important to give your dataset a very clear and complete description"
+                " because your users will need to be able to find this dataset (the description is used for search)"
+                " AND they will need enough information to be able to know that the dataset is what they're"
+                " looking for AND how to use it.\n\n"
+                "Start by describing where the dataset came from, how it was collected, and how its formatted."
+                "Refer to each object in 'assets' individually so that your users will know which is which. Don't"
+                " be afraid to be longwinded. :) Your users will thank you."
+            )
+
+        sys.stdout.write(
+            "\rLoading dataset... checking asset types...                              "
+        )
+
+        # relative
+        from ....lib.python.util import downcast
+
+        if not skip_checks:
+            for asset_name, asset in assets.items():
+
+                if not isinstance(asset, Tensor) or not isinstance(
+                    getattr(asset, "child", None), ADPTensor
+                ):
+
+                    print(
+                        "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
+                        + asset_name
+                        + "' which cannot be tracked with differential privacy because it is a "
+                        + str(type(asset))
+                        + " object.\n\n"
+                        + "This means you'll need to manually approve any requests which "
+                        + "leverage this data. If this is ok with you, proceed. If you'd like to use "
+                        + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
+                        + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                    )
+
+                    pref = input("Are you sure you want to proceed? (y/n)")
+
+                    while pref != "y" and pref != "n":
+                        pref = input(
+                            "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                        )
+                    if pref == "n":
+                        raise Exception("Dataset loading cancelled.")
+
+        metadata["name"] = bytes(name, "utf-8")  # type: ignore
+        metadata["description"] = bytes(description, "utf-8")  # type: ignore
+
+        for k, v in metadata.items():
+            if isinstance(v, str):  # type: ignore
+                metadata[k] = bytes(v, "utf-8")  # type: ignore
+
+        assets = downcast(assets)
+        metadata = downcast(metadata)
+
+        binary_dataset = serialize(assets, to_bytes=True)
+
+        sys.stdout.write("\rLoading dataset... uploading...                        ")
+        self.datasets.create_syft(
+            dataset=binary_dataset, metadata=metadata, platform="syft"
+        )
+        sys.stdout.write(
+            "\rLoading dataset... uploading... SUCCESS!                        "
+        )
+
+        print(
+            "\n\nRun <your client variable>.datasets to see your new dataset loaded into your machine!"
+        )
+
+    def create_dataset(
+        self,
+        name: Optional[str] = None,
+        description: Optional[str] = None,
+        skip_checks: bool = False,
+        **metadata: Dict,
+    ) -> None:
+        # relative
+        from ....lib.python.util import downcast
+
+        if name is None:
+            raise Exception(
+                "Missing Name: Oops!... You forgot to name your dataset!\n\n"
+                "It's important to give your dataset a clear and descriptive name because"
+                " the name is the primary way in which potential users of the dataset will"
+                " identify it.\n\n"
+                'Retry with a string name. I.e., .load_dataset(name="<your name here>)"'
+            )
+
+        datasets = self.datasets
+
+        if not skip_checks:
+            for i in range(len(datasets)):
+                d = datasets[i]
+                sys.stdout.write(".")
+                if name == d.name:
+                    print(
+                        "\n\nWARNING - Dataset Name Conflict: A dataset named '"
+                        + name
+                        + "' already exists.\n"
+                    )
+                    pref = input("Do you want to upload this dataset anyway? (y/n)")
+                    while pref != "y" and pref != "n":
+                        pref = input(
+                            "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                        )
+                    if pref == "n":
+                        raise Exception("Dataset loading cancelled.")
+                    else:
+                        print()  # just for the newline
+                        break
+
+        if description is None:
+            raise Exception(
+                "Missing Description: Oops!... You forgot to describe your dataset!\n\n"
+                "It's *very* important to give your dataset a very clear and complete description"
+                " because your users will need to be able to find this dataset (the description is used for search)"
+                " AND they will need enough information to be able to know that the dataset is what they're"
+                " looking for AND how to use it.\n\n"
+                "Start by describing where the dataset came from, how it was collected, and how its formatted."
+                "Refer to each object in 'assets' individually so that your users will know which is which. Don't"
+                " be afraid to be longwinded. :) Your users will thank you."
+            )
+
+        metadata["name"] = bytes(name, "utf-8")  # type: ignore
+        metadata["description"] = bytes(description, "utf-8")  # type: ignore
+
+        for k, v in metadata.items():
+            if isinstance(v, str):  # type: ignore
+                metadata[k] = bytes(v, "utf-8")  # type: ignore
+
+        assets = downcast({})
+        binary_dataset = serialize(assets, to_bytes=True)
+
+        metadata = downcast(metadata)
+
+        self.datasets.create_syft(
+            dataset=binary_dataset, metadata=metadata, platform="syft"
+        )
+        sys.stdout.write("Creating an empty dataset... Creating... SUCCESS!")

@@ -2,12 +2,11 @@
 from typing import List
 from typing import Optional
 
-# syft relative
-from .serde.serializable import Serializable
+# relative
 from .uid import UID
 
 
-class AbstractStorableObject(Serializable):
+class AbstractStorableObject:
 
     data: object
     id: UID

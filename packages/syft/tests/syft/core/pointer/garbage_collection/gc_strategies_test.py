@@ -10,7 +10,8 @@ from syft.core.pointer.garbage_collection import gc_get_default_strategy
 from syft.core.pointer.garbage_collection import gc_set_default_strategy
 
 
-def test_gc_simple_strategy(node: sy.VirtualMachine) -> None:
+def test_gc_simple_strategy() -> None:
+    node = sy.VirtualMachine(name="alice")
     client = node.get_client()
 
     x = torch.tensor([1, 2, 3, 4])
@@ -23,8 +24,8 @@ def test_gc_simple_strategy(node: sy.VirtualMachine) -> None:
     assert len(node.store) == 0
 
 
-def test_gc_batched_strategy_setter(node: sy.VirtualMachine) -> None:
-
+def test_gc_batched_strategy_setter() -> None:
+    node = sy.VirtualMachine(name="alice")
     client = node.get_client()
     client.gc.gc_strategy = GCBatched(threshold=10)
 
@@ -40,7 +41,9 @@ def test_gc_batched_strategy_setter(node: sy.VirtualMachine) -> None:
     assert len(node.store) == 0
 
 
-def test_gc_batched_strategy_gc_constructor(node: sy.VirtualMachine) -> None:
+def test_gc_batched_strategy_gc_constructor() -> None:
+    # don't share a VM with other tests
+    node = sy.VirtualMachine()
     client = node.get_client()
     client.gc = GarbageCollection("gcbatched", 5)
 
@@ -71,7 +74,8 @@ def test_gc_change_default_gc_strategy(node: sy.VirtualMachine) -> None:
     assert res
 
 
-def test_gc_batched_delete_at_change(node: sy.VirtualMachine) -> None:
+def test_gc_batched_delete_at_change() -> None:
+    node = sy.VirtualMachine(name="alice")
     client = node.get_client()
 
     # Change the strategy

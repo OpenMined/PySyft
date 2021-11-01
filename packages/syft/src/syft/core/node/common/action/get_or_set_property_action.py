@@ -12,15 +12,16 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
-# syft relative
+# syft absolute
+import syft as sy
+
+# relative
 from ..... import lib
-from ..... import serialize
 from .....proto.core.node.common.action.get_set_property_pb2 import (
     GetOrSetPropertyAction as GetOrSetPropertyAction_PB,
 )
 from .....util import inherit_tags
-from ....common.serde.deserialize import _deserialize
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
@@ -35,7 +36,7 @@ class PropertyActions(Enum):
     DEL = 3
 
 
-@bind_protobuf
+@serializable()
 class GetOrSetPropertyAction(ImmediateActionWithoutReply):
     def __init__(
         self,
@@ -66,8 +67,11 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         return RunClassMethodAction.intersect_keys(left, right)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+
         ast_node = node.lib_ast.query(self.path)
         method = ast_node.object_ref
+
+        # storable object raw from object store
         resolved_self = node.store[self._self.id_at_location]
         result_read_permissions = resolved_self.read_permissions
 
@@ -105,6 +109,8 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             if self.action == PropertyActions.SET:
                 setattr(data, ast_node.name, *upcasted_args)
                 result = None
+                # since we may have changed resolve_self.data we need to check it back in
+                node.store[self._self.id_at_location] = resolved_self
             elif self.action == PropertyActions.GET:
                 result = getattr(data, ast_node.name)
             elif self.action == PropertyActions.DEL:
@@ -112,10 +118,17 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         else:
             if self.action == PropertyActions.SET:
                 result = method.__set__(data, *upcasted_args, **upcasted_kwargs)
+
+                # since we may have changed resolve_self.data we need to check it back in
+                node.store[self._self.id_at_location] = resolved_self
+
             elif self.action == PropertyActions.GET:
                 result = method.__get__(data, *upcasted_args, **upcasted_kwargs)
             elif self.action == PropertyActions.DEL:
                 result = method.__del__(data, *upcasted_args, **upcasted_kwargs)
+
+                # since we may have changed resolve_self.data we need to check it back in
+                node.store[self._self.id_at_location] = resolved_self
             else:
                 raise ValueError(f"{self.action} not a valid action!")
 
@@ -162,7 +175,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
     def __repr__(self) -> str:
         attr_name = self.path.split(".")[-1]
-        self_name = self._self.class_name
+        self_name = str(self._self.__class__.__name__)
 
         if self.action == PropertyActions.SET:
             val = self.args[0]
@@ -180,18 +193,18 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         :return: returns a protobuf object
         :rtype: GetOrSetPropertyAction_PB
         .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return GetOrSetPropertyAction_PB(
             path=self.path,
-            id_at_location=serialize(self.id_at_location),
-            args=list(map(lambda x: serialize(x), self.args)),
-            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
-            address=serialize(self.address),
-            _self=serialize(self._self),
-            msg_id=serialize(self.id),
+            id_at_location=sy.serialize(self.id_at_location),
+            args=list(map(lambda x: sy.serialize(x), self.args)),
+            kwargs={k: sy.serialize(v) for k, v in self.kwargs.items()},
+            address=sy.serialize(self.address),
+            _self=sy.serialize(self._self),
+            msg_id=sy.serialize(self.id),
             action=self.action.value,
             map_to_dyn=self.map_to_dyn,
         )
@@ -212,12 +225,12 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
 
         return GetOrSetPropertyAction(
             path=proto.path,
-            id_at_location=_deserialize(blob=proto.id_at_location),
-            address=_deserialize(blob=proto.address),
-            _self=_deserialize(blob=proto._self),
-            msg_id=_deserialize(blob=proto.msg_id),
-            args=tuple(_deserialize(blob=x) for x in proto.args),
-            kwargs={k: _deserialize(blob=v) for k, v in proto.kwargs.items()},
+            id_at_location=sy.deserialize(blob=proto.id_at_location),
+            address=sy.deserialize(blob=proto.address),
+            _self=sy.deserialize(blob=proto._self),
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            args=tuple(sy.deserialize(blob=x) for x in proto.args),
+            kwargs={k: sy.deserialize(blob=v) for k, v in proto.kwargs.items()},
             action=PropertyActions(proto.action),
             map_to_dyn=proto.map_to_dyn,
         )

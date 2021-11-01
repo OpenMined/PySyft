@@ -9,7 +9,7 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-# syft relative
+# relative
 from .. import ast
 from .. import lib
 from ..core.common.pointer import AbstractPointer

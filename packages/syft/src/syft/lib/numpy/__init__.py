@@ -7,7 +7,7 @@ from typing import Tuple as TypeTuple
 # third party
 import numpy as np
 
-# syft relative
+# relative
 from . import array  # noqa: 401
 from ...ast import add_classes
 from ...ast import add_methods
@@ -52,6 +52,8 @@ def create_ast(client: TypeAny = None) -> Globals:
         ("numpy.ndarray.byteswap", "numpy.ndarray"),
         ("numpy.ndarray.copy", "numpy.ndarray"),
         ("numpy.ndarray.view", "numpy.ndarray"),
+        ("numpy.ndarray.__add__", "numpy.ndarray"),
+        ("numpy.ndarray.sum", "numpy.ndarray"),
     ]
 
     add_modules(ast, modules)

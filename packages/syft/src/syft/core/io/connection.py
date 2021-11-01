@@ -1,14 +1,11 @@
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
-# syft relative
-from ...core.common.message import SignedEventualSyftMessageWithoutReply
-from ...core.common.message import SignedImmediateSyftMessageWithReply
-from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+# relative
 from ...logger import traceback_and_raise
+from ..common.message import SignedEventualSyftMessageWithoutReply
+from ..common.message import SignedImmediateSyftMessageWithReply
+from ..common.message import SignedImmediateSyftMessageWithoutReply
 
 
-class BidirectionalConnection(object):
+class BidirectionalConnection:
     def recv_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
@@ -39,19 +36,8 @@ class BidirectionalConnection(object):
     ) -> None:
         traceback_and_raise(NotImplementedError)
 
-    def _object2proto(self) -> None:
-        traceback_and_raise(NotImplementedError)
 
-    @staticmethod
-    def _proto2object(proto: GeneratedProtocolMessageType) -> "BidirectionalConnection":
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        traceback_and_raise(NotImplementedError)
-
-
-class ServerConnection(object):
+class ServerConnection:
     def __init__(self) -> None:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
@@ -70,19 +56,8 @@ class ServerConnection(object):
     ) -> None:
         traceback_and_raise(NotImplementedError)
 
-    def _object2proto(self) -> None:
-        traceback_and_raise(NotImplementedError)
 
-    @staticmethod
-    def _proto2object(proto: GeneratedProtocolMessageType) -> "ServerConnection":
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        traceback_and_raise(NotImplementedError)
-
-
-class ClientConnection(object):
+class ClientConnection:
     def __init__(self) -> None:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
@@ -99,15 +74,4 @@ class ClientConnection(object):
     def send_eventual_msg_without_reply(
         self, msg: SignedEventualSyftMessageWithoutReply
     ) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    def _object2proto(self) -> None:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def _proto2object(proto: GeneratedProtocolMessageType) -> object:
-        traceback_and_raise(NotImplementedError)
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
         traceback_and_raise(NotImplementedError)

@@ -8,7 +8,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-# syft relative
+# relative
 from .. import ast
 from ..logger import traceback_and_raise
 

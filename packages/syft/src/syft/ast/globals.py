@@ -10,7 +10,7 @@ from typing import List
 from typing import Optional
 from typing import Union
 
-# syft relative
+# relative
 from ..core.common.uid import UID
 from ..logger import traceback_and_raise
 from .attribute import Attribute

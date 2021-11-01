@@ -15,7 +15,7 @@ from nacl.signing import VerifyKey
 # syft absolute
 import syft
 
-# syft relative
+# relative
 from .logger import critical
 from .logger import debug
 from .logger import error
@@ -103,6 +103,11 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
         a reference to the actual object at that string path
 
     """
+
+    # @Tudor this needs fixing during the serde refactor
+    # we should probably just support the native type names as lookups for serde
+    if fully_qualified_name == "builtins.NoneType":
+        fully_qualified_name = "syft.lib.python._SyNone"
     attr_list = fully_qualified_name.split(".")
 
     # we deal with VerifyAll differently, because we don't it be imported and used by users
@@ -117,6 +122,7 @@ def index_syft_by_module_name(fully_qualified_name: str) -> object:
         and attr_list[1] != "lib"
         and attr_list[1] != "grid"
         and attr_list[1] != "wrappers"
+        and attr_list[1] != "proxy"
     ):
         raise ReferenceError(f"Reference don't match: {attr_list[1]}")
 
@@ -138,7 +144,8 @@ def get_fully_qualified_name(obj: object) -> str:
         the full path and name of the object
 
     """
-    fqn = obj.__module__
+
+    fqn = obj.__class__.__module__
     try:
         fqn += "." + obj.__class__.__name__
     except Exception as e:
@@ -169,10 +176,11 @@ def obj2pointer_type(obj: object) -> type:
         # sometimes the object doesn't have a __module__ so you need to use the type
         # like: collections.OrderedDict
         debug(f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}")
-        if obj is None:
-            fqn = "syft.lib.python._SyNone"
-        else:
-            fqn = get_fully_qualified_name(obj=type(obj))
+        fqn = get_fully_qualified_name(obj=type(obj))
+
+    # TODO: fix for other types
+    if obj is None:
+        fqn = "syft.lib.python._SyNone"
 
     try:
         ref = syft.lib_ast.query(fqn, obj_type=type(obj))
@@ -181,7 +189,7 @@ def obj2pointer_type(obj: object) -> type:
         critical(log)
         raise Exception(log)
 
-    return ref.pointer_type
+    return ref.pointer_type  # type: ignore
 
 
 def key_emoji(key: object) -> str:
@@ -317,247 +325,64 @@ left_name = [
 ]
 
 right_name = [
-    "albattani",
-    "allen",
-    "almeida",
-    "antonelli",
-    "agnesi",
-    "archimedes",
-    "ardinghelli",
-    "aryabhata",
-    "austin",
-    "babbage",
-    "banach",
-    "banzai",
-    "bardeen",
-    "bartik",
-    "bassi",
-    "beaver",
-    "bell",
-    "benz",
-    "bhabha",
-    "bhaskara",
-    "black",
-    "blackburn",
-    "blackwell",
-    "bohr",
-    "booth",
-    "borg",
-    "bose",
-    "bouman",
-    "boyd",
-    "brahmagupta",
-    "brattain",
-    "brown",
-    "buck",
-    "burnell",
-    "cannon",
-    "carson",
-    "cartwright",
-    "carver",
-    "cerf",
-    "chandrasekhar",
-    "chaplygin",
-    "chatelet",
-    "chatterjee",
-    "chebyshev",
-    "cohen",
-    "chaum",
-    "clarke",
-    "colden",
-    "cori",
-    "cray",
-    "curran",
-    "curie",
-    "darwin",
-    "davinci",
-    "dewdney",
-    "dhawan",
-    "diffie",
-    "dijkstra",
-    "dirac",
-    "driscoll",
-    "dubinsky",
-    "easley",
-    "edison",
-    "einstein",
-    "elbakyan",
-    "elgamal",
-    "elion",
-    "ellis",
-    "engelbart",
-    "euclid",
-    "euler",
-    "faraday",
-    "feistel",
-    "fermat",
-    "fermi",
-    "feynman",
-    "franklin",
-    "gagarin",
-    "galileo",
-    "galois",
-    "ganguly",
-    "gates",
-    "gauss",
-    "germain",
-    "goldberg",
-    "goldstine",
-    "goldwasser",
-    "golick",
-    "goodall",
-    "gould",
-    "greider",
-    "grothendieck",
-    "haibt",
-    "hamilton",
-    "haslett",
-    "hawking",
-    "hellman",
-    "heisenberg",
-    "hermann",
-    "herschel",
-    "hertz",
-    "heyrovsky",
-    "hodgkin",
-    "hofstadter",
-    "hoover",
-    "hopper",
-    "hugle",
-    "hypatia",
-    "ishizaka",
-    "jackson",
-    "jang",
-    "jemison",
-    "jennings",
-    "jepsen",
-    "johnson",
-    "joliot",
-    "jones",
-    "kalam",
-    "kapitsa",
-    "kare",
-    "keldysh",
-    "keller",
-    "kepler",
-    "khayyam",
-    "khorana",
-    "kilby",
-    "kirch",
+    "altman",
+    "bach",
+    "bengio",
+    "bostrom",
+    "botvinick",
+    "brockman",
+    "chintala",
+    "chollet",
+    "chomsky",
+    "dean",
+    "fridman",
+    "gardner",
+    "goertzel",
+    "goodfellow",
+    "hassabis",
+    "he",
+    "hinton",
+    "hochreiter",
+    "hotz",
+    "howard",
+    "hutter",
+    "kaliouby",
+    "karp",
+    "karpathy",
+    "kearns",
+    "kellis",
     "knuth",
-    "kowalevski",
-    "lalande",
-    "lamarr",
-    "lamport",
-    "leakey",
-    "leavitt",
-    "lederberg",
-    "lehmann",
-    "lewin",
-    "lichterman",
-    "liskov",
-    "lovelace",
-    "lumiere",
-    "mahavira",
-    "margulis",
-    "matsumoto",
-    "maxwell",
-    "mayer",
-    "mccarthy",
-    "mcclintock",
-    "mclaren",
-    "mclean",
-    "mcnulty",
-    "mendel",
-    "mendeleev",
-    "meitner",
-    "meninsky",
-    "merkle",
-    "mestorf",
-    "mirzakhani",
-    "moore",
-    "morse",
-    "murdock",
-    "moser",
-    "napier",
-    "nash",
-    "neumann",
-    "newton",
-    "nightingale",
-    "nobel",
-    "noether",
-    "northcutt",
-    "noyce",
-    "panini",
-    "pare",
-    "pascal",
-    "pasteur",
-    "payne",
-    "perlman",
-    "pike",
-    "poincare",
-    "poitras",
-    "proskuriakova",
-    "ptolemy",
-    "raman",
-    "ramanujan",
-    "ride",
-    "montalcini",
-    "ritchie",
-    "rhodes",
-    "robinson",
-    "roentgen",
-    "rosalind",
-    "rubin",
-    "saha",
-    "sammet",
-    "sanderson",
-    "satoshi",
-    "shamir",
-    "shannon",
-    "shaw",
-    "shirley",
-    "shockley",
-    "shtern",
-    "sinoussi",
-    "snyder",
-    "solomon",
-    "spence",
-    "stonebraker",
-    "sutherland",
-    "swanson",
-    "swartz",
-    "swirles",
-    "taussig",
-    "tereshkova",
-    "tesla",
-    "tharp",
-    "thompson",
-    "torvalds",
-    "tu",
-    "turing",
-    "varahamihira",
-    "vaughan",
-    "visvesvaraya",
-    "volhard",
-    "villani",
-    "wescoff",
-    "wilbur",
-    "wiles",
-    "williams",
-    "williamson",
-    "wilson",
-    "wing",
-    "wozniak",
-    "wright",
-    "wu",
-    "yalow",
-    "yonath",
-    "zhukovsky",
+    "koller",
+    "krizhevsky",
+    "larochelle",
+    "lecun",
+    "li",
+    "lim",
+    "malik",
+    "mironov",
+    "ng",
+    "norvig",
+    "olah",
+    "pearl",
+    "pesenti",
+    "russell",
+    "salakhutdinov",
+    "schmidhuber",
+    "silver",
+    "smola",
+    "song",
+    "sophia",
+    "sutskever",
+    "thomas",
+    "thrun",
+    "trask",
+    "vapnik",
+    "vaswani",
+    "vinyals",
+    "winston",
+    "wolf",
+    "wolfram",
 ]
-
-
-# we could replace these with some favorite AI / Privacy researches and engineers?
 
 
 def random_name() -> str:

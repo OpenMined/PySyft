@@ -1,8 +1,8 @@
 # third party
 import torch
 
-# syft relative
-from ...generate_wrapper import GenerateWrapper
+# relative
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.torch.size_pb2 import Size as TorchSize_PB
 
 
@@ -16,7 +16,7 @@ def protobuf_torch_size_deserializer(proto_size: TorchSize_PB) -> torch.Size:
     return torch_size
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=torch.Size,
     import_path="torch.Size",
     protobuf_scheme=TorchSize_PB,

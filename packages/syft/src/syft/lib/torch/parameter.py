@@ -4,11 +4,11 @@
 import torch as th
 from torch.nn import Parameter
 
-# syft relative
-from ...generate_wrapper import GenerateWrapper
-from ...lib.torch.tensor_util import tensor_deserializer
-from ...lib.torch.tensor_util import tensor_serializer
+# relative
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.torch.parameter_pb2 import ParameterProto as Parameter_PB
+from .tensor_util import tensor_deserializer
+from .tensor_util import tensor_serializer
 
 torch_tensor = th.tensor([1.0, 2.0, 3.0])
 torch_parameter_type = type(th.nn.parameter.Parameter(torch_tensor))
@@ -44,7 +44,7 @@ def proto2object(proto: Parameter_PB) -> Parameter:
     return param
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=torch_parameter_type,
     import_path="torch.nn.parameter.Parameter",
     protobuf_scheme=Parameter_PB,

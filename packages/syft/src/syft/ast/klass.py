@@ -4,6 +4,7 @@
 from enum import Enum
 from enum import EnumMeta
 import inspect
+import sys
 from types import ModuleType
 from typing import Any
 from typing import Callable as CallableT
@@ -15,26 +16,29 @@ from typing import Tuple
 from typing import Union
 import warnings
 
-# syft relative
+# relative
 from .. import ast
 from .. import lib
-from ..ast.callable import Callable
 from ..core.common.group import VERIFYALL
 from ..core.common.uid import UID
+from ..core.node.common.action.action_sequence import ActionSequence
 from ..core.node.common.action.get_or_set_property_action import GetOrSetPropertyAction
 from ..core.node.common.action.get_or_set_property_action import PropertyActions
 from ..core.node.common.action.run_class_method_action import RunClassMethodAction
+from ..core.node.common.action.run_class_method_smpc_action import (
+    RunClassMethodSMPCAction,
+)
 from ..core.node.common.action.save_object_action import SaveObjectAction
-from ..core.node.common.service.resolve_pointer_type_service import (
+from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_messages import (
     ResolvePointerTypeMessage,
 )
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
-from ..logger import critical
 from ..logger import traceback_and_raise
 from ..logger import warning
 from ..util import aggressive_set_attr
 from ..util import inherit_tags
+from .callable import Callable
 
 
 def _resolve_pointer_type(self: Pointer) -> Pointer:
@@ -79,7 +83,7 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
     return new_pointer
 
 
-def get_run_class_method(attr_path_and_name: str) -> CallableT:
+def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> CallableT:
     """Create a function for class method in `attr_path_and_name` for remote execution.
 
     Args:
@@ -103,6 +107,81 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         internal `attr_path_and_name` variable.
     """
 
+    def run_class_smpc_method(
+        __self: Any,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> object:
+        """Run remote class method on a SharePointer and get pointer to returned object.
+
+        Args:
+            *args: Args list of class method.
+            **kwargs: Keyword args of class method.
+
+        Returns:
+            Pointer to object returned by class method.
+        """
+        # relative
+        from ..core.node.common.action.smpc_action_message import SMPCActionMessage
+
+        seed_id_locations = kwargs.get("seed_id_locations", None)
+        if seed_id_locations is None:
+            raise ValueError(
+                "There should be a `seed_id_locations` kwargs when doing an operation for MPCTensor"
+            )
+
+        kwargs["seed_id_locations"] = str(seed_id_locations)
+        kwargs["client"] = __self.client
+        op = attr_path_and_name.split(".")[-1]
+        id_at_location = SMPCActionMessage.get_id_at_location_from_op(
+            seed_id_locations, op
+        )
+
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+        return_type_name = __self.client.lib_ast.query(
+            attr_path_and_name
+        ).return_type_name
+        resolved_pointer_type = __self.client.lib_ast.query(return_type_name)
+        result = resolved_pointer_type.pointer_type(client=__self.client)
+        result.id_at_location = id_at_location
+
+        # first downcast anything primitive which is not already PyPrimitive
+        (
+            downcast_args,
+            downcast_kwargs,
+        ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+        # then we convert anything which isnt a pointer into a pointer
+        pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+            args=downcast_args,
+            kwargs=downcast_kwargs,
+            client=__self.client,
+            gc_enabled=False,
+        )
+
+        cmd = RunClassMethodSMPCAction(
+            path=attr_path_and_name,
+            _self=__self,
+            args=pointer_args,
+            kwargs=pointer_kwargs,
+            id_at_location=result.id_at_location,
+            address=__self.client.address,
+        )
+        __self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=__self,
+            args=args,
+            kwargs=kwargs,
+        )
+
+        return result
+
     def run_class_method(
         __self: Any,
         *args: Tuple[Any, ...],
@@ -117,6 +196,7 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         Returns:
             Pointer to object returned by class method.
         """
+
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
@@ -138,7 +218,10 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args, kwargs=downcast_kwargs, client=__self.client
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=__self.client,
+                gc_enabled=False,
             )
 
             cmd = RunClassMethodAction(
@@ -160,6 +243,15 @@ def get_run_class_method(attr_path_and_name: str) -> CallableT:
         )
 
         return result
+
+    # relative
+    from ..core.node.common.action.smpc_action_message import MAP_FUNC_TO_ACTION
+
+    method_name = attr_path_and_name.rsplit(".", 1)[-1]
+    if SMPC or (
+        "ShareTensor" in attr_path_and_name and method_name in MAP_FUNC_TO_ACTION
+    ):
+        return run_class_smpc_method
 
     return run_class_method
 
@@ -293,8 +385,8 @@ def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
             Returns:
                 Iterable: syft Iterator.
             """
-            # syft absolute
-            from syft.lib.python.iterator import Iterator
+            # relative
+            from ..lib.python.iterator import Iterator
 
             if not hasattr(self, "__len__"):
                 traceback_and_raise(
@@ -363,6 +455,7 @@ def wrap_len(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
             """
             data_len_ptr = len_func(self)
             try:
+                print(self.get_request_config())
                 data_len = data_len_ptr.get(**self.get_request_config())
 
                 if data_len is None:
@@ -527,9 +620,40 @@ class Class(Callable):
         attrs["__name__"] = name
         attrs["__module__"] = ".".join(parts)
 
-        klass_pointer = type(self.pointer_name, (Pointer,), attrs)
+        # if the object already has a pointer class specified, use that instead of creating
+        # an empty subclass of Pointer
+        if hasattr(self.object_ref, "PointerClassOverride"):
+
+            klass_pointer = getattr(self.object_ref, "PointerClassOverride")
+            for key, val in attrs.items():
+
+                # only override functioanlity of AST attributes if they
+                # don't already exist on the PointerClassOverride class
+                # (the opposite of inheritance)
+                if not hasattr(klass_pointer, key):
+                    setattr(klass_pointer, key, val)
+                else:
+                    # TODO: cache attribute in backup_ location so that we can use them if we want
+                    pass
+
+        # no specific pointer class found, let's make an empty subclass of Pointer instead
+        else:
+            klass_pointer = type(self.pointer_name, (Pointer,), attrs)
+
         setattr(klass_pointer, "path_and_name", self.path_and_name)
         setattr(self, self.pointer_name, klass_pointer)
+
+        module_type = type(sys)
+
+        # syft absolute
+        import syft
+
+        parent = syft
+        for part in parts[1:]:
+            if part not in parent.__dict__:
+                parent.__dict__[part] = module_type(name=part)
+            parent = parent.__dict__[part]
+        parent.__dict__[name] = klass_pointer
 
     def store_init_args(outer_self: Any) -> None:
         """
@@ -557,7 +681,10 @@ class Class(Callable):
             description: str = "",
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
-        ) -> Pointer:
+            id_at_location_override: Optional[UID] = None,
+            **kwargs: Dict[str, Any],
+        ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
+
             """Send obj to client and return pointer to the object.
 
             Args:
@@ -604,10 +731,18 @@ class Class(Callable):
                 attach_tags(self, tags)
                 attach_description(self, description)
 
-            id_at_location = UID()
+            if id_at_location_override is not None:
+                id_at_location = id_at_location_override
+            else:
+                id_at_location = UID()
+
+            if hasattr(self, "init_pointer"):
+                constructor = self.init_pointer
+            else:
+                constructor = getattr(outer_self, outer_self.pointer_name)
 
             # Step 1: create pointer which will point to result
-            ptr = getattr(outer_self, outer_self.pointer_name)(
+            ptr = constructor(
                 client=client,
                 id_at_location=id_at_location,
                 tags=tags,
@@ -631,11 +766,16 @@ class Class(Callable):
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
-            # Step 3: send message
-            client.send_immediate_msg_without_reply(msg=obj_msg)
+            immediate = kwargs.get("immediate", True)
 
-            # Step 4: return pointer
-            return ptr
+            if immediate:
+                # Step 3: send message
+                client.send_immediate_msg_without_reply(msg=obj_msg)
+
+                # Step 4: return pointer
+                return ptr
+            else:
+                return ptr, obj_msg
 
         aggressive_set_attr(obj=outer_self.object_ref, name="send", attr=send)
 
@@ -764,11 +904,13 @@ class Class(Callable):
 
             return target_object
         except Exception as e:
-            critical(
-                "__getattribute__ failed. If you are trying to access an EnumAttribute or a "
-                "StaticAttribute, be sure they have been added to the AST. Falling back on"
-                "__getattr__ to search in self.attrs for the requested field."
-            )
+            # TODO: this gets really chatty when doing SMPC mulitplication. Figure out why.
+            # critical(
+            #     f"{self.path_and_name}__getattribute__[{item}] failed. If you
+            #     are trying to access an EnumAttribute or a "
+            #     "StaticAttribute, be sure they have been added to the AST. Falling back on"
+            #     "__getattr__ to search in self.attrs for the requested field."
+            # )
             traceback_and_raise(e)
 
     def __getattr__(self, item: str) -> Any:
@@ -815,8 +957,12 @@ class Class(Callable):
         return super().__setattr__(key, value)
 
 
+# TODO: this should move out of AST into a util somewhere? or osmething related to Pointer
 def pointerize_args_and_kwargs(
-    args: Union[List[Any], Tuple[Any, ...]], kwargs: Dict[Any, Any], client: Any
+    args: Union[List[Any], Tuple[Any, ...]],
+    kwargs: Dict[Any, Any],
+    client: Any,
+    gc_enabled: bool = True,
 ) -> Tuple[List[Any], Dict[Any, Any]]:
     """Get pointers to args and kwargs.
 
@@ -833,22 +979,31 @@ def pointerize_args_and_kwargs(
     # this ensures that any args which are passed in from the user side are first
     # converted to pointers and sent then the pointer values are used for the
     # method invocation
+    obj_lst = []
     pointer_args = []
     pointer_kwargs = {}
     for arg in args:
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
+            arg_ptr, obj = arg.send(client, pointable=not gc_enabled, immediate=False)
+            obj_lst.append(obj)
             pointer_args.append(arg_ptr)
         else:
             pointer_args.append(arg)
+            arg.gc_enabled = gc_enabled
 
     for k, arg in kwargs.items():
         # check if its already a pointer
         if not isinstance(arg, Pointer):
-            arg_ptr = arg.send(client, pointable=False)
+            arg_ptr, obj = arg.send(client, pointable=not gc_enabled, immediate=False)
+            obj_lst.append(obj)
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg
+
+    msg = ActionSequence(obj_lst=obj_lst, address=client.address)
+
+    # send message to client
+    client.send_immediate_msg_without_reply(msg=msg)
 
     return pointer_args, pointer_kwargs

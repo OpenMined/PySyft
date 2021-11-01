@@ -4,18 +4,18 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
+# relative
 from ....proto.core.io.location_pb2 import SpecificLocation as SpecificLocation_PB
 from ....util import validate_type
 from ...common.object import ObjectWithID
 from ...common.serde.deserialize import _deserialize
-from ...common.serde.serializable import bind_protobuf
+from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from .location import Location
 
 
-@bind_protobuf
+@serializable()
 class SpecificLocation(ObjectWithID, Location):
     """This represents the location of a single Node object
     represented by a single UID. It may not have any functionality
@@ -31,7 +31,7 @@ class SpecificLocation(ObjectWithID, Location):
 
     @property
     def pprint(self) -> str:
-        output = f"{self.icon} {self.name} ({self.class_name})@{self.id.emoji()}"
+        output = f"{self.icon} {self.name} ({str(self.__class__.__name__)})@{self.id.emoji()}"
         return output
 
     def _object2proto(self) -> SpecificLocation_PB:

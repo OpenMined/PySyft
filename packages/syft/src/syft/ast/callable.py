@@ -10,7 +10,7 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 
-# syft relative
+# relative
 from .. import ast
 from .. import lib
 from ..core.node.abstract.node import AbstractNodeClient
@@ -90,7 +90,10 @@ class Callable(ast.attribute.Attribute):
 
             # then we convert anything which isn't a pointer into a pointer
             pointer_args, pointer_kwargs = ast.klass.pointerize_args_and_kwargs(
-                args=downcast_args, kwargs=downcast_kwargs, client=self.client
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
             )
 
             if self.path_and_name is not None:

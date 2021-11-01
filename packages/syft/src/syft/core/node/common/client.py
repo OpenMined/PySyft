@@ -2,6 +2,7 @@
 import sys
 from typing import Any
 from typing import Dict
+from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -13,12 +14,14 @@ from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import pandas as pd
 
-# syft relative
-from .... import serialize
-from ....lib import create_lib_ast
+# syft absolute
+import syft as sy
+
+# relative
 from ....logger import critical
 from ....logger import debug
 from ....logger import error
+from ....logger import info
 from ....logger import traceback_and_raise
 from ....proto.core.node.common.client_pb2 import Client as Client_PB
 from ....proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
@@ -30,22 +33,20 @@ from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
 from ...common.message import SyftMessage
-from ...common.serde.deserialize import _deserialize
+from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
-from ...io.route import SoloRoute
-from ...io.virtual import VirtualClientConnection
-from ...node.common.service.obj_search_service import ObjectSearchMessage
 from ...pointer.garbage_collection import GarbageCollection
 from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
 from .action.exception_action import ExceptionMessage
-from .service.child_node_lifecycle_service import RegisterChildNodeMessage
+from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
 
+@serializable()
 class Client(AbstractNodeClient):
     """Client is an incredibly powerful abstraction in Syft. We assume that,
     no matter where a client is, it can figure out how to communicate with
@@ -65,7 +66,7 @@ class Client(AbstractNodeClient):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
     ):
-        name = f"{name} Client" if name is not None else None
+        name = f"{name}" if name is not None else None
         super().__init__(
             name=name, network=network, domain=domain, device=device, vm=vm
         )
@@ -92,6 +93,9 @@ class Client(AbstractNodeClient):
 
         self.store = StoreClient(client=self)
 
+    def obj_exists(self, obj_id: UID) -> bool:
+        raise NotImplementedError
+
     @property
     def icon(self) -> str:
         icon = "📡"
@@ -117,11 +121,11 @@ class Client(AbstractNodeClient):
         metadata: Metadata_PB,
     ) -> Tuple[SpecificLocation, str, UID]:
         # string of bytes
-        meta = _deserialize(blob=metadata)
+        meta = sy.deserialize(blob=metadata)
         return meta.node, meta.name, meta.id
 
     def install_supported_frameworks(self) -> None:
-        self.lib_ast = create_lib_ast(client=self)
+        self.lib_ast = sy.lib.create_lib_ast(client=self)
 
         # first time we want to register for future updates
         self.lib_ast.register_updates(self)
@@ -138,70 +142,57 @@ class Client(AbstractNodeClient):
                 if lib_attr is not None:
                     python_attr = getattr(lib_attr, "python", None)
                     setattr(self, "python", python_attr)
+                    python_attr = getattr(lib_attr, "adp", None)
+                    setattr(self, "adp", python_attr)
 
             except Exception as e:
                 critical(f"Failed to set python attribute on client. {e}")
 
-    def add_me_to_my_address(self) -> None:
-        traceback_and_raise(NotImplementedError)
+    def configure(self, **kwargs: Any) -> Any:
+        # relative
+        from .node_service.node_setup.node_setup_messages import UpdateSetupMessage
 
-    def register_in_memory_client(self, client: AbstractNodeClient) -> None:
-        # WARNING: Gross hack
-        route_index = self.default_route_index
-        # this ID should be unique but persistent so that lookups are universal
-        route = self.routes[route_index]
-        if isinstance(route, SoloRoute):
-            connection = route.connection
-            if isinstance(connection, VirtualClientConnection):
-                connection.server.node.in_memory_client_registry[
-                    client.address.target_id.id
-                ] = client
-            else:
-                traceback_and_raise(
-                    Exception(
-                        "Unable to save client reference without VirtualClientConnection"
-                    )
-                )
+        if "daa_document" in kwargs.keys():
+            kwargs["daa_document"] = open(kwargs["daa_document"], "rb").read()
         else:
-            traceback_and_raise(
-                Exception("Unable to save client reference without SoloRoute")
-            )
+            kwargs["daa_document"] = b""
+        response = self._perform_grid_request(  # type: ignore
+            grid_msg=UpdateSetupMessage, content=kwargs
+        ).content
+        info(response)
 
-    def register(self, client: AbstractNodeClient) -> None:
-        debug(f"> Registering {client.pprint} with {self.pprint}")
-        self.register_in_memory_client(client=client)
-        msg = RegisterChildNodeMessage(
-            lookup_id=client.id,
-            child_node_client_address=client.address,
-            address=self.address,
-        )
+    @property
+    def settings(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
+        # relative
+        from .node_service.node_setup.node_setup_messages import GetSetUpMessage
 
-        if self.network is not None:
-            client.network = (
-                self.network if self.network is not None else client.network
-            )
+        return self._perform_grid_request(  # type: ignore
+            grid_msg=GetSetUpMessage, content=kwargs
+        ).content  # type : ignore
 
-        # QUESTION
-        # if the client is a network and the domain is not none this will set it
-        # on the network causing an exception
-        # but we can't check if the client is a NetworkClient here because
-        # this is a superclass of NetworkClient
-        # Remove: if self.domain is not None:
-        # then see the test line node_test.py:
-        # bob_network_client.register(client=bob_domain_client)
-        if self.domain is not None:
-            client.domain = self.domain if self.domain is not None else client.domain
-
-        if self.device is not None:
-            client.device = self.device if self.device is not None else client.device
-
-            if self.device != client.device:
-                raise AttributeError("Devices don't match")
-
-        if self.vm is not None:
-            client.vm = self.vm
-
-        self.send_immediate_msg_without_reply(msg=msg)
+    def join_network(
+        self,
+        client: Optional[AbstractNodeClient] = None,
+        host_or_ip: Optional[str] = None,
+    ) -> None:
+        # this asks for a VPN key so it must be on a public interface hence the
+        # client or a public host_or_ip
+        try:
+            if client is None and host_or_ip is None:
+                raise ValueError(
+                    "join_network requires a Client object or host_or_ip string"
+                )
+            if client is not None:
+                # connection.host has a http protocol
+                connection_host = client.routes[0].connection.host  # type: ignore
+                parts = connection_host.split("://")
+                host_or_ip = parts[1]
+                # if we are using localhost to connect we need to change to docker-host
+                # so that the domain container can connect to the host not itself
+                host_or_ip = str(host_or_ip).replace("localhost", "docker-host")
+            return self.vpn.join_network(host_or_ip=str(host_or_ip))  # type: ignore
+        except Exception as e:
+            print(f"Failed to join network with {host_or_ip}. {e}")
 
     @property
     def id(self) -> UID:
@@ -212,9 +203,21 @@ class Client(AbstractNodeClient):
 
     def send_immediate_msg_with_reply(
         self,
-        msg: Union[SignedImmediateSyftMessageWithReply, ImmediateSyftMessageWithReply],
+        msg: Union[
+            SignedImmediateSyftMessageWithReply,
+            ImmediateSyftMessageWithReply,
+            Any,  # TEMPORARY until we switch everything to NodeRunnableMessage types.
+        ],
         route_index: int = 0,
     ) -> SyftMessage:
+
+        # relative
+        from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
+
+        # TEMPORARY: if message is instance of NodeRunnableMessageWithReply then we need to wrap it in a SimpleMessage
+        if isinstance(msg, NodeRunnableMessageWithReply):
+            msg = msg.prepare(address=self.address, reply_to=self.address)
+
         route_index = route_index or self.default_route_index
 
         if isinstance(msg, ImmediateSyftMessageWithReply):
@@ -287,33 +290,16 @@ class Client(AbstractNodeClient):
         self.default_route = route_index
 
     def _object2proto(self) -> Client_PB:
-        obj_type = get_fully_qualified_name(obj=self)
-
-        routes = [serialize(route) for route in self.routes]
-
-        network = self.network._object2proto() if self.network is not None else None
-
-        domain = self.domain._object2proto() if self.domain is not None else None
-
-        device = self.device._object2proto() if self.device is not None else None
-
-        vm = self.vm._object2proto() if self.vm is not None else None
-
         client_pb = Client_PB(
-            obj_type=obj_type,
-            id=serialize(self.id),
+            obj_type=get_fully_qualified_name(obj=self),
+            id=sy.serialize(self.id),
             name=self.name,
-            routes=routes,
-            has_network=self.network is not None,
-            network=network,
-            has_domain=self.domain is not None,
-            domain=domain,
-            has_device=self.device is not None,
-            device=device,
-            has_vm=self.vm is not None,
-            vm=vm,
+            routes=[sy.serialize(route) for route in self.routes],
+            network=self.network._object2proto() if self.network else None,
+            domain=self.domain._object2proto() if self.domain else None,
+            device=self.device._object2proto() if self.device else None,
+            vm=self.vm._object2proto() if self.vm else None,
         )
-
         return client_pb
 
     @staticmethod
@@ -322,25 +308,15 @@ class Client(AbstractNodeClient):
         klass = module_parts.pop()
         obj_type = getattr(sys.modules[".".join(module_parts)], klass)
 
-        network = (
-            SpecificLocation._proto2object(proto.network) if proto.has_network else None
-        )
-        domain = (
-            SpecificLocation._proto2object(proto.domain) if proto.has_domain else None
-        )
-        device = (
-            SpecificLocation._proto2object(proto.device) if proto.has_device else None
-        )
-        vm = SpecificLocation._proto2object(proto.vm) if proto.has_vm else None
-        routes = [SoloRoute._proto2object(route) for route in proto.routes]
-
         obj = obj_type(
             name=proto.name,
-            routes=routes,
-            network=network,
-            domain=domain,
-            device=device,
-            vm=vm,
+            routes=[sy.deserialize(route) for route in proto.routes],
+            network=sy.deserialize(proto.network)
+            if proto.HasField("network")
+            else None,
+            domain=sy.deserialize(proto.domain) if proto.HasField("domain") else None,
+            device=sy.deserialize(proto.device) if proto.HasField("device") else None,
+            vm=sy.deserialize(proto.vm) if proto.HasField("vm") else None,
         )
 
         if type(obj) != obj_type:
@@ -397,8 +373,10 @@ class StoreClient:
 
     def __len__(self) -> int:
         """Return the number of items in the object store we're allowed to know about"""
-
         return len(self.store)
+
+    def __iter__(self) -> Iterator[Any]:
+        return self.store.__iter__()
 
     def __getitem__(self, key: Union[str, int]) -> Pointer:
         if isinstance(key, str):
@@ -452,3 +430,6 @@ class StoreClient:
                 }
             )
         return pd.DataFrame(obj_lines)
+
+    def _repr_html_(self) -> str:
+        return self.pandas._repr_html_()

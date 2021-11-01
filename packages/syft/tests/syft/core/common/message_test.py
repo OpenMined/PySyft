@@ -20,24 +20,24 @@ def get_signed_message_bytes() -> bytes:
     # return a signed message fixture containing the uid from get_uid
     blob = (
         b"\n?syft.core.common.message.SignedImmediateSyftMessageWithoutReply"
-        + b"\x12\xad\x02\n\x12\n\x10\x8c3\x19,\xcd\xd3\xf3N\xe2\xb0\xc6\tU\xdf\x02u\x12"
-        + b"6syft.core.node.common.service.repr_service.ReprMessage"
-        + b"\x1a@@\x82\x13\xfaC\xfb=\x01H\x853\x1e\xceE+\xc6\xb5\rX\x16Z\xb8l\x02\x10"
-        + b"\x8algj\xd6U\x11]\xe9R\x0ei\xd8\xca\xb9\x00=\xa1\xeeoEa\xe2C\xa0\x960\xf7A"
-        + b'\xfad<(9\xe1\x8c\x93\xf1\x0b" \x81\xff\xcc\xfc7\xc4U.\x8a*\x1f"=0\x10\xc4'
-        + b"\xef\x88\xc80\x01\xf0}3\x0b\xd4\x97\xad/P\x8f\x0f*{\n6"
-        + b"syft.core.node.common.service.repr_service.ReprMessage\x12A\n\x12\n\x10"
-        + b"\x8c3\x19,\xcd\xd3\xf3N\xe2\xb0\xc6\tU\xdf\x02u\x12+\n\x0bGoofy KirchH\x01R"
-        + b"\x1a\n\x12\n\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
+        + b"\x12\xd5\x02\n\x12\n\x10o\xdeI!\x8eH@\xf7\x89xQ7\x8dWN\x8b\x12"
+        + b"Lsyft.core.node.common.node_service.testing_services.repr_service.ReprMessage"
+        + b"\x1a@\xfe\xc3\xc9\xe4\xb7a\xc1n\xa8t\xb9\xe6n\x0c\x89\xd4Om~c\xb4\xfe\xb5\x9e\xa5"
+        + b"\x19\xdeD\x18\xa8\x82zd\x11\xd9bZ<\xa6\xf4\xcb\xf6v\xc9P\xeb\x91`N\x8b\x13%\xd1\xc41"
+        + b'\xbe\x18\xa22\x81B\x8f\xc2\x04" \x81\xff\xcc\xfc7\xc4U.\x8a*\x1f"=0\x10\xc4\xef\x88\xc80'
+        + b"\x01\xf0}3\x0b\xd4\x97\xad/P\x8f\x0f*\x8c\x01"
+        + b"\nLsyft.core.node.common.node_service.testing_services.repr_service.ReprMessage"
+        + b"\x12<\n\x12\n\x10o\xdeI!\x8eH@\xf7\x89xQ7\x8dWN\x8b\x12&\n\x05alice(\x012\x1b\n\x12\n\x10"
+        + b'\x8b\x8cU\x94\xad@E\x95\x8f\x9a\x8c\x10#"\x12\xb7\x12\x05alice'
     )
     return blob
 
 
 def get_repr_message_bytes() -> bytes:
     blob = (
-        b"\n6syft.core.node.common.service.repr_service.ReprMessage\x12A\n\x12\n\x10"
-        + b"\x8c3\x19,\xcd\xd3\xf3N\xe2\xb0\xc6\tU\xdf\x02u\x12+\n\x0bGoofy KirchH\x01R"
-        + b"\x1a\n\x12\n\x10\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
+        b"\nLsyft.core.node.common.node_service.testing_services.repr_service.ReprMessage\x12<\n"
+        + b"\x12\n\x10o\xdeI!\x8eH@\xf7\x89xQ7\x8dWN\x8b\x12&\n\x05alice(\x012\x1b\n\x12\n\x10\x8b"
+        + b'\x8cU\x94\xad@E\x95\x8f\x9a\x8c\x10#"\x12\xb7\x12\x05alice'
     )
     return blob
 
@@ -64,7 +64,7 @@ def test_create_signed_message() -> None:
     assert sig_msg.obj_type == get_fully_qualified_name(obj=msg)
     assert (
         str(sig_msg.obj_type)
-        == "syft.core.node.common.service.repr_service.ReprMessage"
+        == "syft.core.node.common.node_service.testing_services.repr_service.ReprMessage"
     )
     assert type(sig_msg.signature) == bytes
 
@@ -88,7 +88,7 @@ def test_deserialize_signed_message() -> None:
     assert sig_msg.obj_type == sig_msg_comp.obj_type
     assert (
         str(sig_msg.obj_type)
-        == "syft.core.node.common.service.repr_service.ReprMessage"
+        == "syft.core.node.common.node_service.testing_services.repr_service.ReprMessage"
     )
 
     assert type(sig_msg.signature) == bytes

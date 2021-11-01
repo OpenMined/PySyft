@@ -1,0 +1,942 @@
+# stdlib
+import json
+import os
+import re
+import stat
+import subprocess
+import time
+from typing import Any
+from typing import Dict as TypeDict
+from typing import List as TypeList
+from typing import Optional
+from typing import Tuple as TypeTuple
+from typing import cast
+
+# third party
+import click
+
+# relative
+from .art import hagrid
+from .auth import AuthCredentials
+from .cache import arg_cache
+from .deps import DEPENDENCIES
+from .deps import MissingDependency
+from .deps import allowed_hosts
+from .grammar import BadGrammar
+from .grammar import GrammarVerb
+from .grammar import parse_grammar
+from .land import get_land_verb
+from .launch import get_launch_verb
+from .lib import GRID_SRC_PATH
+from .lib import check_docker_version
+from .lib import name_tag
+from .lib import use_branch
+from .style import RichGroup
+
+
+@click.group(cls=RichGroup)
+def cli() -> None:
+    pass
+
+
+@click.command(
+    help="Restore some part of the hagrid installation or deployment to its initial/starting state."
+)
+@click.argument("location", type=str, nargs=1)
+def clean(location: str) -> None:
+
+    if location == "library" or location == "volumes":
+        print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
+        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
+
+    if location == "containers" or location == "pantry":
+        print("Deleting all Docker containers in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
+        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
+
+    if location == "images":
+        print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
+        subprocess.call("docker rmi $(docker images -q)", shell=True)
+
+
+@click.command(help="Start a new PyGrid domain/network node!")
+@click.argument("args", type=str, nargs=-1)
+@click.option(
+    "--username",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: the username for provisioning the remote host",
+)
+@click.option(
+    "--key_path",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: the path to the key file for provisioning the remote host",
+)
+@click.option(
+    "--password",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: the password for provisioning the remote host",
+)
+@click.option(
+    "--repo",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: repo to fetch source from",
+)
+@click.option(
+    "--branch",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: branch to monitor for updates",
+)
+@click.option(
+    "--tail",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: don't tail logs on launch",
+)
+@click.option(
+    "--cmd",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: print the cmd without running it",
+)
+@click.option(
+    "--build",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: enable or disable forcing re-build",
+)
+@click.option(
+    "--auth_type",
+    default=None,
+    type=click.Choice(["key", "password"], case_sensitive=False),
+)
+@click.option(
+    "--ansible_extras",
+    default="",
+    type=str,
+)
+def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+    verb = get_launch_verb()
+    try:
+        grammar = parse_grammar(args=args, verb=verb)
+        verb.load_grammar(grammar=grammar)
+    except BadGrammar as e:
+        print(e)
+        return
+
+    try:
+        cmd = create_launch_cmd(verb=verb, kwargs=kwargs)
+    except Exception as e:
+        print(f"{e}")
+        return
+    print("Running: \n", hide_password(cmd=cmd))
+    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+        subprocess.call(cmd, shell=True)
+
+
+def hide_password(cmd: str) -> str:
+    matcher = r"ansible_ssh_pass='(.+?)'"
+    passwords = re.findall(matcher, cmd)
+    if len(passwords) > 0:
+        password = passwords[0]
+        stars = "*" * 4
+        cmd = cmd.replace(
+            f"ansible_ssh_pass='{password}'", f"ansible_ssh_pass='{stars}'"
+        )
+    return cmd
+
+
+class QuestionInputError(Exception):
+    pass
+
+
+class QuestionInputPathError(Exception):
+    pass
+
+
+class Question:
+    def __init__(
+        self,
+        var_name: str,
+        question: str,
+        kind: str,
+        default: Optional[str] = None,
+        cache: bool = False,
+        options: TypeList[str] = [],
+    ) -> None:
+        self.var_name = var_name
+        self.question = question
+        self.default = default
+        self.kind = kind
+        self.cache = cache
+        self.options = options
+
+    def validate(self, value: str) -> str:
+        value = value.strip()
+        if self.default is not None and value == "":
+            return self.default
+
+        if self.kind == "path":
+            value = os.path.expanduser(value)
+            if not os.path.exists(value):
+                error = f"{value} is not a valid path."
+                if self.default is not None:
+                    error += f" Try {self.default}"
+                raise QuestionInputPathError(f"{error}")
+
+        if self.kind == "yesno":
+            if value.lower().startswith("y"):
+                return "y"
+            elif value.lower().startswith("n"):
+                return "n"
+            else:
+                raise QuestionInputError(f"{value} is not an yes or no answer")
+
+        if self.kind == "options":
+            if value in self.options:
+                return value
+            first_letter = value.lower()[0]
+            for option in self.options:
+                if option.startswith(first_letter):
+                    return option
+
+            raise QuestionInputError(
+                f"{value} is not one of the options: {self.options}"
+            )
+
+        return value
+
+
+def ask(question: Question, kwargs: TypeDict[str, str]) -> str:
+    if question.var_name in kwargs and kwargs[question.var_name] is not None:
+        value = kwargs[question.var_name]
+    else:
+        if question.default is not None:
+            value = click.prompt(question.question, type=str, default=question.default)
+        elif question.var_name == "password":
+            value = click.prompt(
+                question.question, type=str, hide_input=True, confirmation_prompt=True
+            )
+        else:
+            value = click.prompt(question.question, type=str)
+
+    value = question.validate(value=value)
+    if question.cache:
+        setattr(arg_cache, question.var_name, value)
+
+    return value
+
+
+def fix_key_permission(private_key_path: str) -> None:
+    key_permission = oct(stat.S_IMODE(os.stat(private_key_path).st_mode))
+    chmod_permission = "400"
+    octal_permission = f"0o{chmod_permission}"
+    if key_permission != octal_permission:
+        print(
+            f"Fixing key permission: {private_key_path}, setting to {chmod_permission}"
+        )
+        try:
+            os.chmod(private_key_path, int(octal_permission, 8))
+        except Exception as e:
+            print("Failed to fix key permission", e)
+            raise e
+
+
+def private_to_public_key(private_key_path: str, username: str) -> str:
+    # check key permission
+    fix_key_permission(private_key_path=private_key_path)
+    output_path = f"/tmp/hagrid_{username}_key.pub"
+    cmd = f"ssh-keygen -f {private_key_path} -y > {output_path}"
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except Exception as e:
+        print("failed to make ssh key", e)
+        raise e
+    return output_path
+
+
+def check_azure_authed() -> bool:
+    cmd = "az account show"
+    try:
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        return True
+    except Exception:
+        pass
+    return False
+
+
+def login_azure() -> bool:
+    cmd = "az login"
+    try:
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        return True
+    except Exception:
+        pass
+    return False
+
+
+def str_to_bool(bool_str: Optional[str]) -> bool:
+    result = False
+    bool_str = str(bool_str).lower()
+    if bool_str == "true" or bool_str == "1":
+        result = True
+    return result
+
+
+ART = str_to_bool(os.environ.get("HAGRID_ART", "True"))
+
+
+def generate_key_at_path(key_path: str) -> str:
+    key_path = os.path.expanduser(key_path)
+    if os.path.exists(key_path):
+        raise Exception(f"Can't generate key since path already exists. {key_path}")
+    else:
+        cmd = f"ssh-keygen -N '' -f {key_path}"
+        try:
+            subprocess.check_call(cmd, shell=True)
+            if not os.path.exists(key_path):
+                raise Exception(f"Failed to generate ssh-key at: {key_path}")
+        except Exception as e:
+            raise e
+
+    return key_path
+
+
+def create_launch_cmd(
+    verb: GrammarVerb,
+    kwargs: TypeDict[str, Any],
+    ignore_docker_version_check: Optional[bool] = False,
+) -> str:
+    parsed_kwargs: TypeDict[str, Any] = {}
+    host_term = verb.get_named_term_hostgrammar(name="host")
+    host = host_term.host
+    auth: Optional[AuthCredentials] = None
+
+    tail = True
+    if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
+        tail = False
+
+    if host in ["docker"]:
+
+        if not ignore_docker_version_check:
+            version = check_docker_version()
+        else:
+            version = "n/a"
+
+        if version:
+            parsed_kwargs = {}
+            build = True
+            if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
+                build = False
+            parsed_kwargs["build"] = build
+            return create_launch_docker_cmd(
+                verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
+            )
+    elif host in ["vm"]:
+        if (
+            DEPENDENCIES["vagrant"]
+            and DEPENDENCIES["virtualbox"]
+            and DEPENDENCIES["ansible-playbook"]
+        ):
+            return create_launch_vagrant_cmd(verb=verb)
+        else:
+            errors = []
+            if not DEPENDENCIES["vagrant"]:
+                errors.append("vagrant")
+            if not DEPENDENCIES["virtualbox"]:
+                errors.append("virtualbox")
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            raise MissingDependency(
+                f"Launching a VM locally requires: {' '.join(errors)}"
+            )
+    elif host in ["azure"]:
+
+        while not check_azure_authed():
+            print("You need to log into Azure")
+            login_azure()
+
+        if DEPENDENCIES["ansible-playbook"]:
+
+            resource_group = ask(
+                question=Question(
+                    var_name="azure_resource_group",
+                    question="What resource group name do you want to use (or create)?",
+                    default=arg_cache.azure_resource_group,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            location = ask(
+                question=Question(
+                    var_name="azure_location",
+                    question="If this is a new resource group what location?",
+                    default=arg_cache.azure_location,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            size = ask(
+                question=Question(
+                    var_name="azure_size",
+                    question="What size machine?",
+                    default=arg_cache.azure_size,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            username = ask(
+                question=Question(
+                    var_name="azure_username",
+                    question="What do you want the username for the VM to be?",
+                    default=arg_cache.azure_username,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            key_path_question = Question(
+                var_name="azure_key_path",
+                question=f"Private key to access {username}@{host}?",
+                default=arg_cache.azure_key_path,
+                kind="path",
+                cache=True,
+            )
+            try:
+                key_path = ask(
+                    key_path_question,
+                    kwargs=kwargs,
+                )
+            except QuestionInputPathError as e:
+                print(e)
+                key_path = str(e).split("is not a valid path")[0].strip()
+
+                create_key_question = Question(
+                    var_name="azure_key_path",
+                    question=f"Key {key_path} does not exist. Do you want to create it? (y/n)",
+                    default="y",
+                    kind="yesno",
+                )
+                create_key = ask(
+                    create_key_question,
+                    kwargs=kwargs,
+                )
+                if create_key == "y":
+                    key_path = generate_key_at_path(key_path=key_path)
+                else:
+                    raise QuestionInputError(
+                        "Unable to create VM without a private key"
+                    )
+
+            repo = ask(
+                Question(
+                    var_name="azure_repo",
+                    question="Repo to fetch source from?",
+                    default=arg_cache.azure_repo,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+            branch = ask(
+                Question(
+                    var_name="azure_branch",
+                    question="Branch to monitor for updates?",
+                    default=arg_cache.azure_branch,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            use_branch(branch=branch)
+
+            auth = AuthCredentials(username=username, key_path=key_path)
+
+            return create_launch_azure_cmd(
+                verb=verb,
+                resource_group=resource_group,
+                location=location,
+                size=size,
+                username=username,
+                key_path=key_path,
+                repo=repo,
+                branch=branch,
+                auth=auth,
+                ansible_extras=kwargs["ansible_extras"],
+            )
+        else:
+            errors = []
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            raise MissingDependency(
+                f"Launching a Cloud VM requires: {' '.join(errors)}"
+            )
+    elif host in ["aws", "gcp"]:
+        print("Coming soon.")
+        return ""
+    else:
+        if DEPENDENCIES["ansible-playbook"]:
+            parsed_kwargs = {}
+            if host != "localhost":
+                parsed_kwargs["username"] = ask(
+                    question=Question(
+                        var_name="username",
+                        question=f"Username for {host} with sudo privledges?",
+                        default=arg_cache.username,
+                        kind="string",
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                parsed_kwargs["auth_type"] = ask(
+                    question=Question(
+                        var_name="auth_type",
+                        question="Do you want to login with a key or password",
+                        default=arg_cache.auth_type,
+                        kind="option",
+                        options=["key", "password"],
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                if parsed_kwargs["auth_type"] == "key":
+                    parsed_kwargs["key_path"] = ask(
+                        question=Question(
+                            var_name="key_path",
+                            question=f"Private key to access {parsed_kwargs['username']}@{host}?",
+                            default=arg_cache.key_path,
+                            kind="path",
+                            cache=True,
+                        ),
+                        kwargs=kwargs,
+                    )
+                elif parsed_kwargs["auth_type"] == "password":
+                    parsed_kwargs["password"] = ask(
+                        question=Question(
+                            var_name="password",
+                            question=f"Password for {parsed_kwargs['username']}@{host}?",
+                            kind="password",
+                        ),
+                        kwargs=kwargs,
+                    )
+
+            parsed_kwargs["repo"] = ask(
+                question=Question(
+                    var_name="repo",
+                    question="Repo to fetch source from?",
+                    default=arg_cache.repo,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            parsed_kwargs["branch"] = ask(
+                Question(
+                    var_name="branch",
+                    question="Branch to monitor for updates?",
+                    default=arg_cache.branch,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            auth = None
+            if host != "localhost":
+                if parsed_kwargs["auth_type"] == "key":
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["key_path"],
+                    )
+                else:
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["password"],
+                    )
+                if not auth.valid:
+                    raise Exception(f"Login Credentials are not valid. {auth}")
+            parsed_kwargs["ansible_extras"] = kwargs["ansible_extras"]
+            return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=parsed_kwargs)
+        else:
+            errors = []
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            raise MissingDependency(
+                f"Launching a Custom VM requires: {' '.join(errors)}"
+            )
+
+    host_options = ", ".join(allowed_hosts)
+    raise MissingDependency(
+        f"Launch requires a correct host option, try: {host_options}"
+    )
+
+
+def create_launch_docker_cmd(
+    verb: GrammarVerb,
+    docker_version: str,
+    kwargs: TypeDict[str, Any],
+    tail: bool = True,
+) -> str:
+    host_term = verb.get_named_term_hostgrammar(name="host")
+    node_name = verb.get_named_term_type(name="node_name")
+    node_type = verb.get_named_term_type(name="node_type")
+
+    snake_name = str(node_name.snake_input)
+    tag = name_tag(name=str(node_name.input))
+
+    if ART:
+        hagrid()
+
+    print(
+        "Launching a "
+        + str(node_type.input)
+        + " PyGrid node on port "
+        + str(host_term.free_port)
+        + "!\n"
+    )
+
+    print("  - TYPE: " + str(node_type.input))
+    print("  - NAME: " + str(snake_name))
+    print("  - TAG: " + str(tag))
+    print("  - PORT: " + str(host_term.free_port))
+    print("  - DOCKER: " + docker_version)
+    print("  - TAIL: " + str(tail))
+    print("\n")
+
+    cmd = ""
+    cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
+    cmd += " DOMAIN_PORT=" + str(host_term.free_port)
+    cmd += " TRAEFIK_TAG=" + str(tag)
+    cmd += ' DOMAIN_NAME="' + snake_name + '"'
+    cmd += " NODE_TYPE=" + str(node_type.input)
+    cmd += " VERSION=`python VERSION`"
+    cmd += " VERSION_HASH=`python VERSION hash`"
+    cmd += " TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false"
+
+    if kwargs["build"] is True:
+        build_cmd = str(cmd)
+        build_cmd += " docker compose build --parallel"
+
+    cmd += " docker compose -p " + snake_name
+    if str(node_type.input) == "network":
+        cmd += " --profile network"
+    cmd += " up"
+
+    if not tail:
+        cmd += " -d"
+
+    if kwargs["build"] is True:
+        cmd += " --build"  # force rebuild
+        cmd = build_cmd + " && " + cmd
+    cmd = "cd " + GRID_SRC_PATH + "; " + cmd
+    return cmd
+
+
+def create_launch_vagrant_cmd(verb: GrammarVerb) -> str:
+    host_term = verb.get_named_term_hostgrammar(name="host")
+    node_name = verb.get_named_term_type(name="node_name")
+    node_type = verb.get_named_term_type(name="node_type")
+
+    snake_name = str(node_name.snake_input)
+
+    if ART:
+        hagrid()
+
+    print(
+        "Launching a "
+        + str(node_type.input)
+        + " PyGrid node on port "
+        + str(host_term.port)
+        + "!\n"
+    )
+
+    print("  - TYPE: " + str(node_type.input))
+    print("  - NAME: " + str(snake_name))
+    print("  - PORT: " + str(host_term.port))
+    # print("  - VAGRANT: " + "1")
+    # print("  - VIRTUALBOX: " + "1")
+    print("\n")
+
+    cmd = ""
+    cmd += 'ANSIBLE_ARGS="'
+    cmd += f"-e 'node_name={snake_name}'"
+    cmd += f"-e 'node_type={node_type.input}'"
+    cmd += '" '
+    cmd += "vagrant up --provision"
+    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+    return cmd
+
+
+def get_or_make_resource_group(resource_group: str, location: str = "westus") -> None:
+    cmd = f"az group show --resource-group {resource_group}"
+    exists = True
+    try:
+        subprocess.check_call(cmd, shell=True)
+    except Exception:
+        # group doesnt exist so lets create it
+        exists = False
+
+    if not exists:
+        cmd = f"az group create -l {location} -n {resource_group}"
+        try:
+            print(f"Creating resource group.\nRunning: {cmd}")
+            subprocess.check_call(cmd, shell=True)
+        except Exception as e:
+            raise Exception(
+                f"Unable to create resource group {resource_group} @ {location}. {e}"
+            )
+
+
+def extract_host_ip(stdout: bytes) -> Optional[str]:
+    output = stdout.decode("utf-8")
+
+    try:
+        j = json.loads(output)
+        if "publicIpAddress" in j:
+            return str(j["publicIpAddress"])
+    except Exception:
+        matcher = r'publicIpAddress":\s+"(.+)"'
+        ips = re.findall(matcher, output)
+        if len(ips) > 0:
+            return ips[0]
+
+    return None
+
+
+def make_vm_azure(
+    node_name: str, resource_group: str, username: str, key_path: str, size: str
+) -> Optional[str]:
+    public_key_path = private_to_public_key(
+        private_key_path=key_path, username=username
+    )
+
+    cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
+    cmd += "--image Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest "
+    cmd += "--public-ip-sku Standard --authentication-type ssh "
+    cmd += f"--ssh-key-values {public_key_path} --admin-username {username}"
+    host_ip: Optional[str] = None
+    try:
+        print(f"Creating vm.\nRunning: {cmd}")
+        output = subprocess.check_output(cmd, shell=True)
+        host_ip = extract_host_ip(stdout=output)
+    except Exception as e:
+        print("failed", e)
+
+    if host_ip is None:
+        raise Exception("Failed to create vm or get VM public ip")
+
+    try:
+        # clean up temp public key
+        os.unlink(public_key_path)
+    except Exception:
+        pass
+
+    return host_ip
+
+
+def open_port_vm_azure(resource_group: str, node_name: str, port: int) -> None:
+    cmd = f"az network nsg rule create --resource-group {resource_group} "
+    cmd += f"--nsg-name {node_name}NSG --name HTTP --destination-port-ranges {port} --priority 500"
+    try:
+        print(f"Creating ngs rule.\nRunning: {cmd}")
+        output = subprocess.check_call(cmd, shell=True)
+        print("output", output)
+        pass
+    except Exception as e:
+        print("failed", e)
+
+
+def create_launch_azure_cmd(
+    verb: GrammarVerb,
+    resource_group: str,
+    location: str,
+    size: str,
+    username: str,
+    key_path: str,
+    repo: str,
+    branch: str,
+    auth: AuthCredentials,
+    ansible_extras: str,
+) -> str:
+    # resource group
+    get_or_make_resource_group(resource_group=resource_group, location=location)
+
+    # vm
+    node_name = verb.get_named_term_type(name="node_name")
+    snake_name = str(node_name.snake_input)
+    host_ip = make_vm_azure(snake_name, resource_group, username, key_path, size)
+
+    # open port 80
+    open_port_vm_azure(resource_group=resource_group, node_name=snake_name, port=80)
+
+    # get old host
+    host_term = verb.get_named_term_hostgrammar(name="host")
+
+    # replace
+    host_term.parse_input(host_ip)
+    verb.set_named_term_type(name="host", new_term=host_term)
+
+    kwargs = {
+        "repo": repo,
+        "branch": branch,
+        "auth_type": "key",
+        "ansible_extras": ansible_extras,
+    }
+
+    # provision
+    return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+
+
+def create_launch_custom_cmd(
+    verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
+) -> str:
+    host_term = verb.get_named_term_hostgrammar(name="host")
+    node_name = verb.get_named_term_type(name="node_name")
+    node_type = verb.get_named_term_type(name="node_type")
+    # source_term = verb.get_named_term_type(name="source")
+
+    snake_name = str(node_name.snake_input)
+
+    if ART:
+        hagrid()
+
+    print(
+        "Launching a "
+        + str(node_type.input)
+        + " PyGrid node on port "
+        + str(host_term.port)
+        + "!\n"
+    )
+
+    print("  - TYPE: " + str(node_type.input))
+    print("  - NAME: " + str(snake_name))
+    print("  - PORT: " + str(host_term.port))
+    print("\n")
+
+    playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
+    ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+    auth = cast(AuthCredentials, auth)
+
+    if not os.path.exists(playbook_path):
+        print(f"Can't find playbook site.yml at: {playbook_path}")
+    cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook "
+    if host_term.host == "localhost":
+        cmd += "--connection=local "
+    cmd += f"-i {host_term.host}, {playbook_path}"
+    if host_term.host != "localhost" and kwargs["auth_type"] == "key":
+        cmd += f" --private-key {auth.key_path} --user {auth.username}"
+    elif host_term.host != "localhost" and kwargs["auth_type"] == "password":
+        cmd += f" -c paramiko --user {auth.username}"
+
+    ANSIBLE_ARGS = {
+        "node_type": node_type.input,
+        "node_name": snake_name,
+        "github_repo": kwargs["repo"],
+        "repo_branch": kwargs["branch"],
+    }
+
+    if host_term.host != "localhost" and kwargs["auth_type"] == "password":
+        ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]
+
+    if host_term.host == "localhost":
+        ANSIBLE_ARGS["local"] = "true"
+
+    if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
+        options = kwargs["ansible_extras"].split(",")
+        for option in options:
+            parts = option.strip().split("=")
+            if len(parts) == 2:
+                ANSIBLE_ARGS[parts[0]] = parts[1]
+
+    # if mode == "deploy":
+    #     ANSIBLE_ARGS["deploy"] = "true"
+
+    for k, v in ANSIBLE_ARGS.items():
+        cmd += f" -e \"{k}='{v}'\""
+
+    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+    return cmd
+
+
+def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
+    host_term = verb.get_named_term_hostgrammar(name="host")
+    host = host_term.host
+
+    if verb.get_named_term_grammar("node_name").input == "all":
+        # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+        return "docker rm `docker ps -aq` --force"
+
+    if host in ["docker"]:
+        version = check_docker_version()
+        if version:
+            return create_land_docker_cmd(verb=verb)
+
+    host_options = ", ".join(allowed_hosts)
+    raise MissingDependency(
+        f"Launch requires a correct host option, try: {host_options}"
+    )
+
+
+def create_land_docker_cmd(verb: GrammarVerb) -> str:
+    node_name = verb.get_named_term_type(name="node_name")
+    snake_name = str(node_name.snake_input)
+
+    cmd = ""
+    cmd += "docker compose"
+    cmd += ' --file "docker-compose.override.yml"'
+    cmd += ' --project-name "' + snake_name + '"'
+    cmd += " down"
+
+    cmd = "cd " + GRID_SRC_PATH + ";export $(cat .env | sed 's/#.*//g' | xargs);" + cmd
+    return cmd
+
+
+@click.command(help="Stop a running PyGrid domain/network node.")
+@click.argument("args", type=str, nargs=-1)
+def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+    verb = get_land_verb()
+    try:
+        grammar = parse_grammar(args=args, verb=verb)
+        verb.load_grammar(grammar=grammar)
+    except BadGrammar as e:
+        print(e)
+        return
+
+    # if len(args) == 0:
+    #     print("use interactive menu to select node?")
+
+    try:
+        cmd = create_land_cmd(verb=verb, kwargs=kwargs)
+    except Exception as e:
+        print(f"{e}")
+        return
+    print("Running: \n", cmd)
+    subprocess.call(cmd, shell=True)
+
+
+cli.add_command(launch)
+cli.add_command(land)
+cli.add_command(clean)

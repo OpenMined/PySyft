@@ -9,7 +9,6 @@ tests/syft/notebooks/checkpoints
 tests/syft/notebooks/data
 tests/syft/notebooks/dataset
 data
-**/lightning_logs
 src/target/**
 src/syft/*.so
 docs/_modules
@@ -27,3 +26,4 @@ output.jpg
 fake_samples_local.png
 duet_mnist.pt
 12084.jpg
+.tox/*

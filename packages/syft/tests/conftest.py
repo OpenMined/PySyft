@@ -1,9 +1,7 @@
 # stdlib
 import logging
-from multiprocessing import Process
-import socket
-from time import time
 from typing import Any as TypeAny
+from typing import Callable as TypeCallable
 from typing import Dict as TypeDict
 from typing import Generator
 from typing import List as TypeList
@@ -15,35 +13,11 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import logger
-from syft.grid.example_nodes.network import signaling_server as start_signaling_server
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
 
-# syft relative
-from .syft.notebooks import free_port
-
 logger.remove()
-
-
-@pytest.fixture(scope="session")
-def signaling_server() -> Generator:
-    port = free_port()
-    proc = Process(target=start_signaling_server, args=(port, "127.0.0.1"))
-
-    proc.start()
-    start = time()
-
-    while time() - start < 15:
-        with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as s:
-            if s.connect_ex(("127.0.0.1", port)) == 0:
-                break
-    else:
-        raise TimeoutError("Can't connect to the signaling server")
-
-    yield port
-
-    proc.terminate()
 
 
 @pytest.fixture
@@ -72,7 +46,6 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "libs: runs valid vendor tests")
     config.addinivalue_line("markers", "benchmark: runs benchmark tests")
     config.addinivalue_line("markers", "torch: runs torch tests")
-    config.addinivalue_line("markers", "duet: runs duet notebook integration tests")
     config.addinivalue_line("markers", "grid: runs grid tests")
 
 
@@ -86,7 +59,6 @@ def pytest_collection_modifyitems(
 
     slow_tests = pytest.mark.slow
     fast_tests = pytest.mark.fast
-    duet_tests = pytest.mark.duet
     grid_tests = pytest.mark.grid
     all_tests = pytest.mark.all
 
@@ -130,10 +102,7 @@ def pytest_collection_modifyitems(
                 if vendor_requirements_available(
                     vendor_requirements=vendor_requirements
                 ):
-                    if item.location[0].startswith("tests/syft/notebooks"):
-                        item.add_marker(duet_tests)
-                    else:
-                        item.add_marker(vendor_tests)
+                    item.add_marker(vendor_tests)
                     item.add_marker(all_tests)
 
             except VendorLibraryImportException as e:
@@ -153,9 +122,6 @@ def pytest_collection_modifyitems(
         if "slow" in item.keywords:
             item.add_marker(slow_tests)
         else:
-            if item.location[0].startswith("tests/syft/notebooks"):
-                item.add_marker(duet_tests)
-                continue
             # fast is the default catch all
             item.add_marker(fast_tests)
 
@@ -178,3 +144,17 @@ def client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
 @pytest.fixture(scope="session")
 def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
     return node.get_root_client()
+
+
+# The unit tests require separate VM's as we have a common crypto store cache.
+# TODO: The  dependency should be modified to use common VM's
+@pytest.fixture
+def get_clients() -> TypeCallable[[int], TypeList[TypeAny]]:
+    def _helper_get_clients(nr_clients: int) -> TypeList[TypeAny]:
+        clients = [
+            sy.VirtualMachine(name=f"P_{i}").get_root_client()
+            for i in range(nr_clients)
+        ]
+        return clients
+
+    return _helper_get_clients

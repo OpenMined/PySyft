@@ -8,11 +8,12 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
-# syft relative
-from ... import deserialize
-from ... import serialize
+# syft absolute
+import syft as sy
+
+# relative
 from ...core.common import UID
-from ...core.common.serde.serializable import bind_protobuf
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.python.list_pb2 import List as List_PB
 from .iterator import Iterator
 from .primitive_factory import PrimitiveFactory
@@ -28,15 +29,21 @@ class ListIterator(Iterator):
     pass
 
 
-@bind_protobuf
+@serializable()
 class List(UserList, PyPrimitive):
     __slots__ = ["_id", "_index"]
 
-    def __init__(self, value: Optional[Any] = None, id: Optional[UID] = None):
+    def __init__(
+        self,
+        value: Optional[Any] = None,
+        id: Optional[UID] = None,
+        temporary_box: bool = False,
+    ):
         if value is None:
             value = []
 
         UserList.__init__(self, value)
+        PyPrimitive.__init__(self, temporary_box=temporary_box)
 
         self._id: UID = id if id else UID()
         self._index = 0
@@ -148,20 +155,27 @@ class List(UserList, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=res)
 
     def _object2proto(self) -> List_PB:
-        id_ = serialize(obj=self.id)
+        id_ = sy.serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self.data]
-        data = [serialize(obj=element, to_bytes=True) for element in downcasted]
-        return List_PB(id=id_, data=data)
+        data = [sy.serialize(obj=element, to_bytes=True) for element in downcasted]
+        return List_PB(
+            id=id_,
+            data=data,
+            temporary_box=self.temporary_box,
+        )
 
     @staticmethod
     def _proto2object(proto: List_PB) -> "List":
-        id_: UID = deserialize(blob=proto.id)
+        id_: UID = sy.deserialize(blob=proto.id)
         value = []
         # list comprehension doesn't work since it results in a
         # [generator()] which is not equal to an empty list
         for element in proto.data:
-            value.append(upcast(deserialize(blob=element, from_bytes=True)))
-        new_list = List(value=value)
+            value.append(upcast(sy.deserialize(blob=element, from_bytes=True)))
+        new_list = List(
+            value=value,
+            temporary_box=proto.temporary_box,
+        )
         new_list._id = id_
         return new_list
 

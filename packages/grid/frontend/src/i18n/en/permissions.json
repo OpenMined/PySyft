@@ -1,0 +1,58 @@
+{
+  "can_make_data_requests": {
+    "name": "can make data requests",
+    "description": "Allows users to make data requests"
+  },
+  "can_triage_data_requests": {
+    "name": "can triage data requests",
+    "description": "Allows users to accept or deny data requests"
+  },
+  "can_manage_privacy_budgets": {
+    "name": "can manage privacy budget",
+    "description": "Allows users to adjust privacy budgets and accept or deny upgrade request"
+  },
+  "can_manage_users": {
+    "name": "can manage users",
+    "description": "Allows users to accept or deny account requests and reassign roles for users of this domain"
+  },
+  "can_create_users": {
+    "name": "can create users",
+    "description": "Allows users to create or edit users"
+  },
+  "can_edit_roles": {
+    "name": "can edit roles",
+    "description": "Allows users to edit permissions applied to roles"
+  },
+  "can_upload_data": {
+    "name": "can upload data",
+    "description": "Allows user to upload datasets to the domain"
+  },
+  "can_upload_legal_documents": {
+    "name": "can upload legal documents",
+    "description": "Allows users to upload legal documents in the domain configuration settings"
+  },
+  "can_edit_domain_settings": {
+    "name": "can edit domain settings",
+    "description": "Allows users to edit domain profile & configuration settings"
+  },
+  "can_manage_infrastructure": {
+    "name": "can manage infrastructure",
+    "description": "Allows users to delete the node, manage node workers, and adjust auto scaling controls outside of the pygridui environment"
+  },
+  "owner": {
+    "name": "Owner",
+    "description": "There is only one Owner account assigned to any one domain node. The owner account is the highest level permission and is a requirement for deploying a domain node. If you should ever want to transfer ownership of your domain node to someone else you can do so by following these steps."
+  },
+  "compliance officer": {
+    "name": "Compliance Officer",
+    "description": "This role is for users who will help you manage requests made on your node. They should be users you trust. They are not able to change domain settings or edit roles but they are by default able to accept or deny user requests on behalf of the domain node."
+  },
+  "data scientist": {
+    "name": "Data Scientist",
+    "description": "This role is for users who will be performing computations on your datasets. They may be users you know directly or those who found your domain through search and discovery. By default this user can see a list of your datasets and can request to get results. This user will also be required to sign a Data Access Agreement if you have required one in the Domain Settings Configurations."
+  },
+  "administrator": {
+    "name": "Admin",
+    "description": "This role is for users who will help you manage your node. This should be users you trust. The main difference between this user and a Compliance Officer is that this user by default not only can manage requests but can also edit <0>Domain Settings</0>. This is the highest level permission outside of an Owner."
+  }
+}

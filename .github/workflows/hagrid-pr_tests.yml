@@ -1,0 +1,155 @@
+name: HAGrid PR Tests
+
+on:
+  pull_request:
+    branches:
+      - dev
+      - main
+      - "0.6.0"
+defaults:
+  run:
+    working-directory: ./packages/hagrid
+
+jobs:
+  hagrid-pip:
+    strategy:
+      max-parallel: 2
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.9]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: steps.changes.outputs.hagrid == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.hagrid == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('packages/hagrid/setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          pip install --upgrade bandit safety setuptools wheel twine tox
+          pip install -e .
+
+      - name: Scan for security issues
+        continue-on-error: true
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          bandit -r .
+          safety check
+
+      - name: Build Wheel
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          python setup.py bdist_wheel
+
+      - name: Twine Check
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          twine check `find -L ./ -name "*.whl"`
+
+  hagrid-docker:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Build the Docker image
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          ./build_docker.sh
+
+  hagrid-tests-latest-versions:
+    strategy:
+      max-parallel: 2
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+        python-version: [3.9]
+        torch-version: [1.8.1]
+
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: steps.changes.outputs.hagrid == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Get pip cache dir
+        id: pip-cache
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.hagrid == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
+
+      - name: Install Dependencies
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          pip install packaging wheel --default-timeout=60
+          python scripts/parse_setup.py setup.cfg | xargs pip install --no-deps || true
+          pip install -e .
+          pip install pytest
+
+      - name: Run normal tests
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          pytest --durations=50
