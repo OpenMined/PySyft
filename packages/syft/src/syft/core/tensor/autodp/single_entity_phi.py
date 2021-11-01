@@ -41,6 +41,7 @@ from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
+from ..smpc.share_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
@@ -291,6 +292,22 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
             Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "mul")
+
+    def __gt__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "gt" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "gt")
 
     def to_local_object_without_private_data_child(self) -> SingleEntityPhiTensor:
         """Convert this pointer into a partial version of the SingleEntityPhiTensor but without
@@ -727,8 +744,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         if isinstance(other, SingleEntityPhiTensor):
-
+            print(f"SELF ENTITY:{self.entity.name}")
+            print(f"OTHER ENTITY:{other.entity.name}")
             if self.entity != other.entity:
+                print("Entities are not the same?!?!?!")
                 return convert_to_gamma_tensor(self) * convert_to_gamma_tensor(other)
 
             data = self.child * other.child
@@ -1734,6 +1753,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         elif isinstance(self.child, torch.Tensor):
             data = self.child.numpy().copy()
+
+        elif isinstance(self.child, ShareTensor):
+            data = self.child.copy()
 
         if isinstance(self.min_vals, np.ndarray):
             min_vals = np.array(self.min_vals, order=order, subok=subok, copy=True)

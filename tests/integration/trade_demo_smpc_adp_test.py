@@ -148,6 +148,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     """
     # the pledge 🦜
     result = ca_data + it_data
+    result.block_with_timeout(40)
 
     """
     Cutter: The second act is called "The Turn". The mathemagician takes the ordinary
@@ -163,7 +164,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     part, the part we call "The Prestige".
     """
     # the prestige 🎩
-    time.sleep(40)  # TODO: should modify after implementing polling .get()
+    # time.sleep(40)  # TODO: should modify after implementing polling .get()
+    public_result.block_with_timeout(40)
     sycure_result = public_result.get()
     print("sycure_result", sycure_result)
     print("after ca", ca.privacy_budget)

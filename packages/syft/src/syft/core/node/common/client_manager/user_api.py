@@ -1,11 +1,13 @@
 # stdlib
 from typing import Any
+from typing import Dict
 
 # relative
 from .....logger import logger
 from ...abstract.node import AbstractNodeClient
 from ...domain.enums import ResponseObjectEnum
 from ..exceptions import AuthorizationError
+from ..node_service.user_auth.user_auth_messages import UserLoginMessageWithReply
 from ..node_service.user_manager.user_messages import CreateUserMessage
 from ..node_service.user_manager.user_messages import DeleteUserMessage
 from ..node_service.user_manager.user_messages import GetUserMessage
@@ -62,3 +64,11 @@ class UserRequestAPI(RequestAPI):
                 print("No permission to check users", exc)
 
             raise e
+
+    def login(self, email: str, password: str) -> Dict[str, Any]:
+        response = self.perform_api_request_generic(
+            syft_msg=UserLoginMessageWithReply,
+            content={"email": email, "password": password},
+        )
+
+        return response.payload.kwargs.upcast()  # type: ignore

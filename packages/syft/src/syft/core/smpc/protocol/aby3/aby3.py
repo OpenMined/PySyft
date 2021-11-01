@@ -8,13 +8,18 @@ from functools import reduce
 import secrets
 from typing import Any
 from typing import List
+from uuid import UUID
 
 # third party
 import numpy as np
 
 # relative
+from .....ast.klass import get_run_class_method
+from ....common import UID
 from ....tensor.smpc.mpc_tensor import MPCTensor
+from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.utils import get_nr_bits
+from ...store.crypto_primitive_provider import CryptoPrimitiveProvider
 
 
 class ABY3:
@@ -49,22 +54,36 @@ class ABY3:
             ValueError: If input tensor is not binary shared.
             ValueError: If the exactly three parties are not involved in the computation.
         """
+        # relative
+        # relative
+        from ....tensor import TensorPointer
+
         shape = x.shape
         parties = x.parties
-        nr_parties = len(parties)
+        seed_id_locations = secrets.randbits(64)
+        kwargs = {"seed_id_locations": seed_id_locations}
+        path_and_name = x.child[0].path_and_name
+        attr_path_and_name = f"{x.child[0].path_and_name}.bit_decomposition"
 
-        kwargs = {"seed_id_locations": secrets.randbits(64)}
-        decomposed_shares = [
-            share.bit_decomposition(share, ring_size, False, **kwargs)
-            for share in x.child
-        ]
+        if not isinstance(x.child[0], TensorPointer):
+            decomposed_shares = [
+                share.bit_decomposition(share, ring_size, False, **kwargs)
+                for share in x.child
+            ]
+        else:
+            decomposed_shares = []
+            op = get_run_class_method(attr_path_and_name, SMPC=True)
+            for share in x.child:
+                decomposed_shares.append(op(share, share, ring_size, False, **kwargs))
+
+        decomposed_shares = ABY3.pregenerate_pointers(
+            parties, 1, path_and_name, seed_id_locations
+        )
+
         # List which contains the share of a single bit
         res_shares: List[MPCTensor] = []
 
-        bit_shares = [share.get_tensor_list(0) for share in decomposed_shares]
-        bit_shares = [
-            [share_lst[i] for i in range(nr_parties)] for share_lst in bit_shares
-        ]
+        bit_shares = [share[0] for share in decomposed_shares]
         bit_shares = zip(*bit_shares)  # type: ignore
         for bit_sh in bit_shares:
             mpc = MPCTensor(
@@ -90,13 +109,34 @@ class ABY3:
 
         TODO: Should modify ripple carry adder to parallel prefix adder.
         """
+        parties = a[0].parties
+        parties_info = a[0].parties_info
+
+        shape_x = tuple(a[0].shape)  # type: ignore
+        shape_y = tuple(b[0].shape)  # type: ignore
         ring_size = 2 ** 32
+
+        # For ring_size 2 we generate those before hand
+        CryptoPrimitiveProvider.generate_primitives(
+            "beaver_mul",
+            nr_instances=64,
+            parties=parties,
+            g_kwargs={
+                "a_shape": shape_x,
+                "b_shape": shape_y,
+                "parties_info": parties_info,
+            },
+            p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+            ring_size=2,
+        )
+
         ring_bits = get_nr_bits(ring_size)
         c = np.array([0], dtype=np.bool)  # carry bits of addition.
         result: List[MPCTensor] = []
         for idx in range(ring_bits):
-            s = a[idx] + b[idx] + c
-            c = a[idx] * b[idx] + c * (a[idx] + b[idx])
+            s_tmp = a[idx] + b[idx]
+            s = s_tmp + c
+            c = a[idx] * b[idx] + c * s_tmp
             result.append(s)
         return result
 
@@ -113,26 +153,40 @@ class ABY3:
         TODO : Should be modified to use parallel prefix adder when multiprocessing
         functionality is integrated
         """
+        # relative
+        from ....tensor import TensorPointer
+
         nr_parties = len(x.parties)
         ring_size = 2 ** 32  # Should extract this info better
         ring_bits = get_nr_bits(ring_size)
         shape = x.shape
         parties = x.parties
 
+        seed_id_locations = secrets.randbits(64)
+        kwargs = {"seed_id_locations": seed_id_locations}
+        path_and_name = x.child[0].path_and_name
+        attr_path_and_name = f"{x.child[0].path_and_name}.bit_decomposition"
+
+        if not isinstance(x.child[0], TensorPointer):
+            decomposed_shares = [
+                share.bit_decomposition(share, 2, True, **kwargs) for share in x.child
+            ]
+        else:
+            decomposed_shares = []
+            op = get_run_class_method(attr_path_and_name, SMPC=True)
+            for share in x.child:
+                decomposed_shares.append(op(share, share, 2, True, **kwargs))
+
+        decomposed_shares = ABY3.pregenerate_pointers(
+            parties, ring_bits, path_and_name, seed_id_locations
+        )
+
         # List which contains the share of each share.
         # TODO: Shouldn't this be an empty list? and we append to it?
         res_shares: List[List[MPCTensor]] = [[] for _ in range(nr_parties)]
 
-        kwargs = {"seed_id_locations": secrets.randbits(64)}
-        decomposed_shares = [
-            share.bit_decomposition(share, 2, True, **kwargs) for share in x.child
-        ]
-
         for idx in range(ring_bits):
-            bit_shares = [share.get_tensor_list(idx) for share in decomposed_shares]
-            bit_shares = [
-                [share_lst[i] for i in range(nr_parties)] for share_lst in bit_shares
-            ]
+            bit_shares = [share[idx] for share in decomposed_shares]
             bit_shares = zip(*bit_shares)  # type: ignore
             for i, bit_sh in enumerate(bit_shares):
                 mpc = MPCTensor(
@@ -143,3 +197,67 @@ class ABY3:
         bin_share = reduce(ABY3.full_adder, res_shares)
 
         return bin_share
+
+    @staticmethod
+    def pregenerate_pointers(
+        parties: List[Any], ring_bits: int, path_and_name: str, seed_id_locations: int
+    ) -> List[List[List[ShareTensor]]]:
+        generator = np.random.default_rng(seed_id_locations)
+        # Skip the first ID ,as it is used for None return type in run class method.
+        _ = UID(UUID(bytes=generator.bytes(16)))
+
+        nr_parties = len(parties)
+        resolved_pointer_type = [
+            party.lib_ast.query(path_and_name) for party in parties
+        ]
+
+        """
+        Consider bit decomposition.
+        We create a share of share such that.
+        Assume we are operating in ring_size 2**32(32 bits)
+        Since we operate in n-out-of-n secret sharing, each party has a single share.
+        Consider two parties such that a secret x is split as
+        x = x1+x2
+        To create share of shares,we use the intuition that the shares not held by party are made zero
+
+                    Party1        Party2
+
+        x1           x1             0
+
+        x2           0               x2
+
+        x_i_j denotes the shares held by jth party of ith share
+
+        x_1_1 = x1
+        x_1_2 = 0
+        x_2_1 = 0
+        x_2_2 = x2
+
+        Party 1 = [x_1_1,x_2_1]
+        Party 2  =[x_1_2,x_2_2]
+
+        Now each party party has share of shares
+        In bit decomposition, we split each bit and create share of shares
+
+        Party 1 = [ [share of shares of first bit] ,[...second bit] ...[ nth bit]]
+
+        Note: Count (share of shares for a particular bit) = number of parties
+        """
+        share_pointers: List[List[List[Any]]] = [[] for _ in range(nr_parties)]
+
+        for _ in range(ring_bits * nr_parties):
+            id_at_location = UID(UUID(bytes=generator.bytes(16)))
+            for idx, party in enumerate(parties):
+                result = resolved_pointer_type[idx].pointer_type(client=party)
+                result.id_at_location = id_at_location
+                share_pointers[idx].append(result)
+
+        share_pointers = [
+            [
+                share_lst[i : i + nr_parties]  # noqa
+                for i in range(0, len(share_lst), nr_parties)
+            ]
+            for share_lst in share_pointers
+        ]
+
+        return share_pointers

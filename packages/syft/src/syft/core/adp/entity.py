@@ -49,11 +49,11 @@ class Entity:
 
     # returns a hash value for the entity
     def __hash__(self) -> int:
-        return hash(self.id)
+        return hash(self.name)
 
     # checks if the two entities are equal
     def __eq__(self, other: Any) -> bool:
-        return hash(self.name) == hash(other.name)
+        return self.name == other.name
 
     # checks if the two entities are not equal
     def __ne__(self, other: Any) -> bool:

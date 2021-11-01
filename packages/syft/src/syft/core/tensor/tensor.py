@@ -175,12 +175,10 @@ class TensorPointer(Pointer):
         if isinstance(other, TensorPointer) and self.client != other.client:
 
             parties = [self.client, other.client]
-
             self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
             other_mpc = MPCTensor(
                 secret=other, shape=other.public_shape, parties=parties
             )
-
             return op(self_mpc, other_mpc)
 
         elif isinstance(other, MPCTensor):
@@ -358,3 +356,6 @@ class Tensor(
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
+
+    def bit_decomposition(self) -> Tensor:
+        raise ValueError("Should not reach this point")

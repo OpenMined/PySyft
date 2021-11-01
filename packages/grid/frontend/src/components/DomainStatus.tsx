@@ -1,31 +1,69 @@
+import cn from 'classnames'
+import {Text} from '@/omui'
 import {useQuery} from 'react-query'
-import {cacheKeys} from '@/utils'
+import api from '@/utils/api'
+import {useEffect, useState} from 'react'
 
-export function DomainConnectionStatus() {
-  const {isLoading, isError} = useQuery(cacheKeys.status)
+const statusColor = {
+  online: 'bg-lime-500',
+  offline: 'bg-red-500',
+  loading: 'bg-gray-600'
+}
 
-  if (isError) {
-    return (
-      <div className="flex">
-        <div className="rounded-full w-2 h-2 bg-red-500" />
-        <p>Domain offline</p>
-      </div>
-    )
-  }
+const states = {
+  online: 'domain online',
+  offline: 'domain offline',
+  loading: 'checking connection'
+}
 
-  if (isLoading) {
-    return (
-      <div className="flex">
-        <div className="animate-pulse rounded-full w-2 h-2 bg-gray-100" />
-        <p>Checking connection...</p>
-      </div>
-    )
-  }
-
+const ComponentStatus = ({
+  noBox,
+  status,
+  size = 'sm'
+}: {
+  noBox: boolean
+  status: keyof typeof states
+  size?: string
+}) => {
   return (
-    <div className="flex">
-      <div className="rounded-full w-2 h-2 bg-green-500" />
-      <p>Domain reachable</p>
-    </div>
+    <span className="items-center inline-flex capitalize space-x-2">
+      {noBox ? (
+        <CircleStatus status={status} />
+      ) : (
+        <div className="w-10 h-10 inline-flex justify-center items-center">
+          <CircleStatus status={status} />
+        </div>
+      )}
+      <Text size={size}>{states[status]}</Text>
+    </span>
   )
 }
+
+const DomainStatus = ({noBox, textSize}: {noBox?: boolean; textSize?: string}) => {
+  const [status, setStatus] = useState<keyof typeof states>('loading')
+  const {isLoading, isError} = useQuery('domain-connection-status', () => api.get('status').json())
+
+  useEffect(() => {
+    if (isLoading) setStatus('loading')
+    else if (isError) setStatus('offline')
+    else setStatus('online')
+  }, [isLoading, isError])
+
+  return <ComponentStatus noBox={noBox} status={status} size={textSize} />
+}
+
+const CircleStatus = ({status = 'loading', ...props}) => {
+  return (
+    <span
+      aria-label={`Connection status: ${status}`}
+      className={cn(
+        'inline-block rounded-full w-1.5 h-1.5',
+        statusColor[status],
+        status === 'loading' && 'animate-pulse'
+      )}
+      {...props}
+    />
+  )
+}
+
+export {DomainStatus, CircleStatus}

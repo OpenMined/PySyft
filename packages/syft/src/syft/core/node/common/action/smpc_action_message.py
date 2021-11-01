@@ -27,9 +27,9 @@ from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
+from ....store.storeable_object import StorableObject
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
-from ....tensor.smpc.tensor_list import TensorList
 from .exceptions import ObjectNotInStore
 
 
@@ -190,6 +190,9 @@ def smpc_basic_op(
     node: Any,
     client: Any,
 ) -> List[SMPCActionMessage]:
+    # relative
+    from ..... import Tensor
+
     """Generator for SMPC public/private operations add/sub"""
 
     generator = np.random.default_rng(seed_id_locations)
@@ -197,7 +200,7 @@ def smpc_basic_op(
     other = node.store[other_id].data
 
     actions = []
-    if isinstance(other, ShareTensor):
+    if isinstance(other, (ShareTensor, Tensor)):
         # All parties should add the other share if empty list
         actions.append(
             SMPCActionMessage(
@@ -250,6 +253,17 @@ def spdz_multiply(
     c_share: ShareTensor,
     node: Optional[Any] = None,
 ) -> ShareTensor:
+    # relative
+    from ..... import Tensor
+
+    TENSOR_FLAG = False
+    if isinstance(x, Tensor) and isinstance(y, Tensor):
+        TENSOR_FLAG = True
+        t1 = x
+        t2 = y
+        x = x.child.child
+        y = y.child.child
+
     print(")))))))))))))))))))))))))")
     print("SPDZ multiply")
     nr_parties = x.nr_parties
@@ -295,7 +309,12 @@ def spdz_multiply(
     print("Final Tensor", tensor)
     print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
-    return share
+    if TENSOR_FLAG:
+        t = t1 * t2
+        t.child.child = share
+        return t
+    else:
+        return share
 
 
 # TODO : Should move to spdz directly in syft/core/smpc
@@ -308,6 +327,13 @@ def spdz_mask(
     b_share: ShareTensor,
     c_share: ShareTensor,
 ) -> None:
+    # relative
+    from ..... import Tensor
+
+    if isinstance(x, Tensor) and isinstance(y, Tensor):
+        x = x.child.child
+        y = y.child.child
+
     print(")))))))))))))))))))))))))")
     print("SPDZ Mask")
     clients = ShareTensor.login_clients(x.parties_info)
@@ -349,6 +375,9 @@ def smpc_mul(
     client: Optional[Any] = None,
 ) -> List[SMPCActionMessage]:
     """Generator for the smpc_mul with a public value"""
+    # relative
+    from ..... import Tensor
+
     if seed_id_locations is None or node is None or client is None:
         raise ValueError(
             f"The values seed_id_locations{seed_id_locations}, Node:{node} , client:{client} should not be None"
@@ -358,10 +387,14 @@ def smpc_mul(
     other = node.store[other_id].data
 
     actions = []
-    if isinstance(other, ShareTensor):
+    if isinstance(other, (ShareTensor, Tensor)):
         # crypto_store = ShareTensor.crypto_store
         # _self = node.store[self_id].data
         # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
+        if isinstance(other, ShareTensor):
+            ring_size = other.ring_size
+        else:
+            ring_size = other.child.child.ring_size
 
         mask_result = UID(UUID(bytes=generator.bytes(16)))
         eps_id = UID(UUID(bytes=generator.bytes(16)))
@@ -370,7 +403,7 @@ def smpc_mul(
         b_shape = node.store[b_shape_id].data
         crypto_store = ShareTensor.crypto_store
         a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-            "beaver_mul", a_shape=a_shape, b_shape=b_shape, ring_size=other.ring_size, remove=True  # type: ignore
+            "beaver_mul", a_shape=a_shape, b_shape=b_shape, ring_size=ring_size, remove=True  # type: ignore
         )
 
         actions.append(
@@ -428,7 +461,9 @@ def smpc_mul(
     return actions
 
 
-def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> TensorList:
+def local_decomposition(
+    x: ShareTensor, ring_size: int, bitwise: bool, seed_id_locations: str, node: Any
+) -> None:
     """Performs local decomposition to generate shares of shares.
 
     Args:
@@ -439,10 +474,20 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
     Returns:
         List[List[ShareTensor]]: Decomposed shares in the given ring size.
     """
-    # TODO: George or Rasswanth check if we can use directly the generator from shareTensor
-    # Having this value here is not ok
-    # seed_przs = 42
-    # generator = np.random.default_rng(seed_przs)
+    # Currently we cannot serialize integers exceeding signed positive integer
+    # TODO: can be modified to google.protobuf.any
+    seed_id_locations = int(seed_id_locations)  # type: ignore
+    generator = np.random.default_rng(seed_id_locations)
+    # Skip the first ID ,as it is used for None return type in run class method.
+    _ = UID(UUID(bytes=generator.bytes(16)))
+    # relative
+    from ..... import Tensor
+
+    TENSOR_FLAG = False
+    if isinstance(x, Tensor):
+        TENSOR_FLAG = True
+        t = x
+        x = x.child.child
 
     rank = x.rank
     nr_parties = x.nr_parties
@@ -450,7 +495,7 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
     shape = x.shape
     zero = np.zeros(shape, numpy_type)
 
-    share_lst = TensorList()
+    # share_lst = TensorList()
 
     input_shares = []
 
@@ -461,18 +506,29 @@ def local_decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> Tensor
         input_shares.append(x)
 
     for share in input_shares:
-        share_sh = TensorList()
+
         for i in range(nr_parties):
+            id_at_location = UID(UUID(bytes=generator.bytes(16)))
             sh = x.copy_tensor()
             sh.ring_size = ring_size
             if rank != i:
                 sh.child = deepcopy(zero)
             else:
                 sh.child = deepcopy(share.child.astype(numpy_type))
-            share_sh.append(sh)
-        share_lst.append(share_sh)
+            if TENSOR_FLAG:
+                t_sh = t.copy()
+                t_sh.child.child = sh
+                data = t_sh
+            else:
+                data = sh
+            store_obj = StorableObject(
+                id=id_at_location,
+                data=data,
+                read_permissions={},
+            )
+            node.store[id_at_location] = store_obj
 
-    return share_lst
+    return None
 
 
 def bit_decomposition(
@@ -495,6 +551,7 @@ def bit_decomposition(
             self_id=self_id,
             args_id=[ring_size, bitwise],
             kwargs_id={},
+            kwargs={"seed_id_locations": str(seed_id_locations)},
             ranks_to_run_action=list(range(nr_parties)),
             result_id=result_id,
             address=client.address,

@@ -1,9 +1,0 @@
-syntax = "proto3";
-
-package syft.lib.petlib;
-import "proto/lib/petlib/ecpt_group.proto";
-
-message EcPt {
-  EcPtGroup group = 1;
-  bytes data = 2;
-}

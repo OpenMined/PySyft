@@ -15,6 +15,7 @@ import syft
 
 # relative
 from ....common.uid import UID
+from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
 from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj import BinObject
@@ -114,8 +115,16 @@ class BinObjectManager(ObjectStore):
         local_session.close()
         return obj
 
-    def __setitem__(self, key: UID, value: StorableObject) -> None:
+    def is_dataset(self, key: UID) -> None:
+        local_session = sessionmaker(bind=self.db)()
+        is_dataset_obj = (
+            local_session.query(BinObjDataset).filter_by(obj=str(key.value)).exists()
+        )
+        is_dataset_obj = local_session.query(is_dataset_obj).scalar()
+        local_session.close()
+        return is_dataset_obj
 
+    def __setitem__(self, key: UID, value: StorableObject) -> None:
         bin_obj = BinObject(id=str(key.value), obj=value.data)
         # metadata_dict = storable_to_dict(value)
         metadata_obj = ObjectMetadata(

@@ -11,7 +11,6 @@ from ..node.abstract.node import AbstractNodeClient
 from .autodp.single_entity_phi import SingleEntityPhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .smpc.share_tensor import ShareTensor
-from .smpc.tensor_list import TensorList
 from .tensor import Tensor
 from .tensor import TensorPointer  # noqa: 401
 
@@ -26,7 +25,6 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor.tensor",
         "syft.core.tensor.smpc",
         "syft.core.tensor.smpc.share_tensor",
-        "syft.core.tensor.smpc.tensor_list",
         "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
         "syft.core.tensor.autodp.single_entity_phi",
@@ -47,11 +45,6 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
             "syft.core.tensor.fixed_precision_tensor.FixedPrecisionTensor",
             FixedPrecisionTensor,
-        ),
-        (
-            "syft.core.tensor.smpc.tensor_list.TensorList",
-            "syft.core.tensor.smpc.tensor_list.TensorList",
-            TensorList,
         ),
     ]
 
@@ -158,6 +151,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.transpose", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__pos__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.put", "syft.core.tensor.tensor.Tensor"),
+        (
+            "syft.core.tensor.tensor.Tensor.bit_decomposition",
+            "syft.lib.python._SyNone",
+        ),
         # # SMPC
         # (
         #     "syft.core.tensor.tensor.Tensor.fix_precision",
@@ -263,15 +260,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.bit_decomposition",
-            "syft.core.tensor.smpc.tensor_list.TensorList",
-        ),
-        (
-            "syft.core.tensor.smpc.tensor_list.TensorList.__getitem__",
-            "syft.core.tensor.smpc.share_tensor.ShareTensor",
-        ),
-        (
-            "syft.core.tensor.smpc.tensor_list.TensorList.get_tensor_list",
-            "syft.core.tensor.smpc.tensor_list.TensorList",
+            "syft.lib.python._SyNone",
         ),
     ]
 

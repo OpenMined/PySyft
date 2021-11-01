@@ -113,6 +113,8 @@ def get_setup(
 
     _setup = model_to_json(node.setup.first(domain_name=node.name))
     _setup["tags"] = loads(_setup["tags"])
+    if node.network:
+        _setup["domains"] = len(node.node.all())
     return GetSetUpResponse(
         address=msg.reply_to,
         content=_setup,

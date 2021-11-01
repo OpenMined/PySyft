@@ -83,7 +83,7 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
-    verbose: bool = True,
+    verbose: Optional[bool] = True,
 ) -> Client:
 
     # if email is None and password is None:
@@ -121,9 +121,6 @@ def login(
         logging.info(
             "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
         )
-        print(
-            "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
-        )
     else:
         credentials = {"email": email, "password": password}
 
@@ -134,6 +131,8 @@ def login(
         # bit of fanciness
         sys.stdout.write(" done! \t Logging into")
         sys.stdout.write(" " + str(node.name) + "... ")
+        if email is None or password is None:
+            sys.stdout.write("as GUEST...")
         time.sleep(1)  # ok maybe too fancy... but c'mon don't you want to be fancy?
         print("done!")
 
@@ -146,6 +145,7 @@ def register(
     password: Optional[str] = None,
     url: Optional[str] = None,
     port: Optional[int] = None,
+    verbose: Optional[bool] = True,
 ) -> Client:
     if name is None:
         name = input("Please enter your name:")
@@ -168,7 +168,10 @@ def register(
     x = requests.post(register_url, data=json.dumps(myobj))
 
     if "error" not in json.loads(x.text):
-        print("Successfully registered! Logging in...")
-        return login(url=url, port=port, email=email, password=password)
+        if verbose:
+            print("Successfully registered! Logging in...")
+        return login(
+            url=url, port=port, email=email, password=password, verbose=verbose
+        )
 
     raise Exception(x.text)

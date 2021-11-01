@@ -1,0 +1,41 @@
+name: Continuous Delivery
+
+on:
+  schedule:
+    - cron: "0 0 * * 2" # Tuesday UTC Midnight
+
+jobs:
+  deploy-syft-alpha:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools wheel twine tox bump2version
+      - name: Bump the Version
+        run: |
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          bump2version prenum --allow-dirty --no-commit
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          author_name: Madhava Jay
+          author_email: madhava@openmined.org
+          message: "bump version"
+          add: "['VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION']"
+
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          tox -e syft.publish
+          twine upload packages/syft/dist/*
