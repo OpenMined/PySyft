@@ -115,7 +115,7 @@ class BinObjectManager(ObjectStore):
         local_session.close()
         return obj
 
-    def is_dataset(self, key: UID) -> None:
+    def is_dataset(self, key: UID) -> bool:
         local_session = sessionmaker(bind=self.db)()
         is_dataset_obj = (
             local_session.query(BinObjDataset).filter_by(obj=str(key.value)).exists()
@@ -123,6 +123,14 @@ class BinObjectManager(ObjectStore):
         is_dataset_obj = local_session.query(is_dataset_obj).scalar()
         local_session.close()
         return is_dataset_obj
+
+    def _get_obj_dataset_relation(self, key: UID) -> Optional[BinObjDataset]:
+        local_session = sessionmaker(bind=self.db)()
+        obj_dataset_relation = (
+            local_session.query(BinObjDataset).filter_by(obj=str(key.value)).first()
+        )
+        local_session.close()
+        return obj_dataset_relation
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
         bin_obj = BinObject(id=str(key.value), obj=value.data)
@@ -146,12 +154,25 @@ class BinObjectManager(ObjectStore):
             # name=metadata_dict["name"],
         )
 
+        obj_dataset_relation = self._get_obj_dataset_relation(key)
+        if obj_dataset_relation:
+            # Create a object dataset relationship for the new object
+            obj_dataset_relation = BinObjDataset(
+                id=obj_dataset_relation.id,
+                name=obj_dataset_relation.name,
+                obj=bin_obj.id,
+                dataset=obj_dataset_relation.dataset,
+                dtype=obj_dataset_relation.dtype,
+                shape=obj_dataset_relation.shape,
+            )
+
         if self.__contains__(key):
             self.delete(key)
 
         local_session = sessionmaker(bind=self.db)()
         local_session.add(bin_obj)
         local_session.add(metadata_obj)
+        local_session.add(obj_dataset_relation) if obj_dataset_relation else None
         local_session.commit()
         local_session.close()
 
