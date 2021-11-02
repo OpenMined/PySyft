@@ -17,7 +17,7 @@ cffi==1.14.6
 chardet==4.0.0; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0"
 charset-normalizer==2.0.4; python_full_version >= "3.6.0" and python_version >= "3"
 checksumdir==1.2.0; python_version >= "3.6" and python_version < "4.0"
-click==8.0.1; python_version >= "3.6"
+click==7.1.2; python_version >= "3.6"
 colorama==0.4.4; python_version >= "3.6" and python_full_version < "3.0.0" and sys_platform == "win32" and platform_system == "Windows" and (python_version >= "3.5" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.5") or sys_platform == "win32" and python_version >= "3.6" and python_full_version >= "3.5.0" and platform_system == "Windows" and (python_version >= "3.5" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version >= "3.5")
 coverage==5.5; python_version >= "2.7" and python_full_version < "3.0.0" or python_full_version >= "3.5.0" and python_version < "4"
 cryptography==3.4.7; python_version >= "3.6"
