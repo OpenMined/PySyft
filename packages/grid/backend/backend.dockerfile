@@ -2,20 +2,24 @@ FROM python:3.9.6-slim as build
 
 RUN --mount=type=cache,target=/var/cache/apt \
   apt-get update && \
-  apt-get install -y --no-install-recommends curl wget
+  apt-get install -y --no-install-recommends curl wget libsodium-dev
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
 
 # Allow installing dev dependencies to run tests
 RUN --mount=type=cache,target=/root/.cache \
-  pip install --user "uvicorn[standard]" gunicorn
+  pip install --user uvicorn
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user \
-  torch==1.8.1+cpu torchvision==0.9.1+cpu torchcsprng==0.2.1+cpu \
+  torch==1.8.1 \
   -f https://download.pytorch.org/whl/torch_stable.html
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
+
+# Download PyNacl for arm64
+RUN wget https://opencomputinglab.github.io/vce-wheelhouse/wheelhouse/PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl
+RUN pip install --user ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl
 
 # allow container to wait for other services
 ENV WAITFORIT_VERSION="v2.4.1"
@@ -56,7 +60,7 @@ COPY syft/src /app/syft/src
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
-  pip install --user -e /app/syft
+ pip install --user -e /app/syft
 
 # change to worker-start.sh or start-reload.sh as needed
 CMD ["bash", "start.sh"]
