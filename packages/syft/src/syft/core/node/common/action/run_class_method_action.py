@@ -14,7 +14,6 @@ import syft as sy
 
 # relative
 from ..... import lib
-from .....logger import critical
 from .....logger import traceback_and_raise
 from .....logger import warning
 from .....proto.core.node.common.action.run_class_method_pb2 import (
@@ -27,7 +26,7 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-from .exceptions import ObjectNotInStore
+from .greenlets_switch import retrieve_object
 
 
 @serializable()
@@ -109,14 +108,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         resolved_self = None
         if not self.is_static:
-            resolved_self = node.store.get_object(key=self._self.id_at_location)
-
-            if resolved_self is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {self._self.id_at_location}"
-                )
-                raise ObjectNotInStore
+            resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
             result_read_permissions = resolved_self.read_permissions  # type: ignore
         else:
             result_read_permissions = {}
@@ -124,13 +116,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         resolved_args = list()
         tag_args = []
         for arg in self.args:
-            r_arg = node.store.get_object(key=arg.id_at_location)
-            if r_arg is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {arg.id_at_location}"
-                )
-                raise ObjectNotInStore
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
             )
@@ -140,13 +126,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store.get_object(key=arg.id_at_location)
-            if r_arg is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {arg.id_at_location}"
-                )
-                raise ObjectNotInStore
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
             )
