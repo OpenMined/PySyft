@@ -13,7 +13,6 @@ from typing import Optional
 from uuid import UUID
 
 # third party
-import gevent
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
@@ -31,6 +30,9 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
+from ...abstract.node import AbstractNode
+from .beaver_action import BeaverAction
+from .greenlets_switch import beaver_retrieve_object
 
 
 @serializable()
@@ -273,22 +275,12 @@ def spdz_multiply(
 
     ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
-    while True:
-        eps = node.store.get_object(key=eps_id)  # type: ignore
-        delta = node.store.get_object(key=delta_id)  # type: ignore
-        print("RING SIZE", ring_size)
-        print("EPS Store", eps)
-        print("Delta Store", delta)
-        print("NR parties", nr_parties)
-        if (
-            eps is None
-            or len(eps.data) != nr_parties
-            or delta is None
-            or len(delta.data) != nr_parties
-        ):
-            gevent.sleep(0)
-        else:
-            break
+    eps = beaver_retrieve_object(node, eps_id, nr_parties)  # type: ignore
+    delta = beaver_retrieve_object(node, delta_id, nr_parties)  # type: ignore
+    print("RING SIZE", ring_size)
+    print("EPS Store", eps)
+    print("Delta Store", delta)
+    print("NR parties", nr_parties)
 
     print("Beaver Error surpassed*******************************")
 
@@ -311,7 +303,7 @@ def spdz_multiply(
     print("C addedTensor", tensor, "\n")
     if x.rank == 0:
         mul_op = ShareTensor.get_op(ring_size, "mul")
-        eps_delta = mul_op(eps.child, delta.child)
+        eps_delta = mul_op(eps.child, delta.child)  # type: ignore
         print("EPS_DELTA", eps_delta, "\n")
         tensor = tensor + eps_delta
 
@@ -337,6 +329,7 @@ def spdz_mask(
     a_share: ShareTensor,
     b_share: ShareTensor,
     c_share: ShareTensor,
+    node: Optional[AbstractNode] = None,
 ) -> None:
     # relative
     from ..... import Tensor
@@ -344,6 +337,9 @@ def spdz_mask(
     if isinstance(x, Tensor) and isinstance(y, Tensor):
         x = x.child.child
         y = y.child.child
+
+    if node is None:
+        raise ValueError("Node context should be passed to spdz mask")
 
     print(")))))))))))))))))))))))))")
     print("SPDZ Mask")
@@ -357,22 +353,27 @@ def spdz_mask(
     print("b ShareTensor", b_share, "\n")
     print("EPS::::::::::::", eps, "\n")
     print("Delta::::::::::::", delta, "\n")
-    # TODO : Should modify , no need to send for the current client
-    # As the curent client is local.
-    # TODO: clients is empty
-    for rank, client in enumerate(clients):
-        # if x.rank == rank:
-        #    continue
-        # George, commenting for now as we need to have node context when storing locally
 
-        print("Client here", client)
-        client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(eps, eps_id)  # type: ignore
-        client.syft.core.smpc.protocol.spdz.spdz.beaver_populate(delta, delta_id)  # type: ignore
-        print("++++++++++++++++++++++++++++++++++++++++++++++")
-        print("Values sent")
-        print("EPS_ID", eps_id)
-        print("DELTA_ID", delta_id)
-    # As they are asynchronous , include them in a single action
+    client_id_map = {client.id: client for client in clients}
+    curr_client = client_id_map[node.id]  # type: ignore
+    beaver_action = BeaverAction(
+        eps=eps,
+        eps_id=eps_id,
+        delta=delta,
+        delta_id=delta_id,
+        address=curr_client.address,
+    )
+    beaver_action.execute_action(node, None)
+    for rank, client in enumerate(clients):
+
+        if client != curr_client:
+            beaver_action.address = client.address
+            client.send_immediate_msg_without_reply(msg=beaver_action)
+            print("Client here", client)
+            print("++++++++++++++++++++++++++++++++++++++++++++++")
+            print("Values sent")
+            print("EPS_ID", eps_id)
+            print("DELTA_ID", delta_id)
 
 
 def smpc_mul(
