@@ -100,7 +100,7 @@ def login(
             )
 
     # TRASK: please keep this so that people will stop putting their passwords in notebooks.
-    if password is None:
+    if password == "secret":
         print("Welcome " + str(email) + "!")
         password = getpass(prompt="Please enter you password:")
 
