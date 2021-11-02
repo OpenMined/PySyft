@@ -17,6 +17,7 @@ _sym_db = _symbol_database.Default()
 from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
+from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
 from syft.proto.core.tensor import (
     share_tensor_pb2 as proto_dot_core_dot_tensor_dot_share__tensor__pb2,
 )
@@ -27,10 +28,11 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b"\n1proto/core/node/common/action/beaver_action.proto\x12\x1csyft.core.node.common.action\x1a$proto/core/tensor/share_tensor.proto\x1a%proto/core/common/common_object.proto\"\xb8\x01\n\x0c\x42\x65\x61verAction\x12*\n\x03\x65ps\x18\x01 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensor\x12%\n\x06\x65ps_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12,\n\x05\x64\x65lta\x18\x03 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensor\x12'\n\x08\x64\x65lta_id\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3",
+    serialized_pb=b"\n1proto/core/node/common/action/beaver_action.proto\x12\x1csyft.core.node.common.action\x1a$proto/core/tensor/share_tensor.proto\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\"\xe0\x01\n\x0c\x42\x65\x61verAction\x12*\n\x03\x65ps\x18\x01 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensor\x12%\n\x06\x65ps_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12,\n\x05\x64\x65lta\x18\x03 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensor\x12'\n\x08\x64\x65lta_id\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3",
     dependencies=[
         proto_dot_core_dot_tensor_dot_share__tensor__pb2.DESCRIPTOR,
         proto_dot_core_dot_common_dot_common__object__pb2.DESCRIPTOR,
+        proto_dot_core_dot_io_dot_address__pb2.DESCRIPTOR,
     ],
 )
 
@@ -119,6 +121,25 @@ _BEAVERACTION = _descriptor.Descriptor(
             file=DESCRIPTOR,
             create_key=_descriptor._internal_create_key,
         ),
+        _descriptor.FieldDescriptor(
+            name="address",
+            full_name="syft.core.node.common.action.BeaverAction.address",
+            index=4,
+            number=5,
+            type=11,
+            cpp_type=10,
+            label=1,
+            has_default_value=False,
+            default_value=None,
+            message_type=None,
+            enum_type=None,
+            containing_type=None,
+            is_extension=False,
+            extension_scope=None,
+            serialized_options=None,
+            file=DESCRIPTOR,
+            create_key=_descriptor._internal_create_key,
+        ),
     ],
     extensions=[],
     nested_types=[],
@@ -128,8 +149,8 @@ _BEAVERACTION = _descriptor.Descriptor(
     syntax="proto3",
     extension_ranges=[],
     oneofs=[],
-    serialized_start=161,
-    serialized_end=345,
+    serialized_start=190,
+    serialized_end=414,
 )
 
 _BEAVERACTION.fields_by_name[
@@ -144,6 +165,9 @@ _BEAVERACTION.fields_by_name[
 _BEAVERACTION.fields_by_name[
     "delta_id"
 ].message_type = proto_dot_core_dot_common_dot_common__object__pb2._UID
+_BEAVERACTION.fields_by_name[
+    "address"
+].message_type = proto_dot_core_dot_io_dot_address__pb2._ADDRESS
 DESCRIPTOR.message_types_by_name["BeaverAction"] = _BEAVERACTION
 _sym_db.RegisterFileDescriptor(DESCRIPTOR)
 
