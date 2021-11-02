@@ -108,7 +108,7 @@ services:
       - ../../notebooks:/notebooks
       - ./data/package-cache:/root/.cache
     environment:
-      - RUN=celery worker -A grid.worker -l info -Q main-queue -c 1
+      - RUN=celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 10
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}

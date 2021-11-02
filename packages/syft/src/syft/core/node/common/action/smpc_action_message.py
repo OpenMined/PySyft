@@ -13,6 +13,7 @@ from typing import Optional
 from uuid import UUID
 
 # third party
+import gevent
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
@@ -30,7 +31,6 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
-from .exceptions import ObjectNotInStore
 
 
 @serializable()
@@ -270,18 +270,26 @@ def spdz_multiply(
     print(")))))))))))))))))))))))))")
     print("SPDZ multiply")
     nr_parties = x.nr_parties
-    eps = node.store.get_object(key=eps_id)  # type: ignore
-    delta = node.store.get_object(key=delta_id)  # type: ignore
+
     ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
-    print("RING SIZE", ring_size)
-    print("EPS Store", eps)
-    print("Delta Store", delta)
-    print("NR parties", nr_parties)
-    if eps is None or len(eps.data) != nr_parties:
-        raise ObjectNotInStore
-    if delta is None or len(delta.data) != nr_parties:
-        raise ObjectNotInStore
+    while True:
+        eps = node.store.get_object(key=eps_id)  # type: ignore
+        delta = node.store.get_object(key=delta_id)  # type: ignore
+        print("RING SIZE", ring_size)
+        print("EPS Store", eps)
+        print("Delta Store", delta)
+        print("NR parties", nr_parties)
+        if (
+            eps is None
+            or len(eps.data) != nr_parties
+            or delta is None
+            or len(delta.data) != nr_parties
+        ):
+            gevent.sleep(0)
+        else:
+            break
+
     print("Beaver Error surpassed*******************************")
 
     # TODO : Should refactor fixed precision tensor later

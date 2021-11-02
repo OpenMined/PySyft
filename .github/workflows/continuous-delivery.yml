@@ -2,13 +2,15 @@ name: Continuous Delivery
 
 on:
   schedule:
-    - cron: "0 0 * * 2" # Tuesday UTC Midnight
+    - cron: "25 4 * * 2" # Tuesday UTC Midnight
 
 jobs:
   deploy-syft-alpha:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN }}
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
