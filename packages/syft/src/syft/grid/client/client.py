@@ -86,7 +86,7 @@ def login(
     verbose: Optional[bool] = True,
 ) -> Client:
 
-    if password == "changethis": # nosec
+    if password == "changethis":  # nosec
 
         if email == "info@openmined.org":
             print(
