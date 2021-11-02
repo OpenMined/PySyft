@@ -59,7 +59,7 @@ class SMPCExecutorService(ImmediateNodeServiceWithoutReply):
         logger.warning(func)
 
         if (
-            "spdz_multiply" not in msg.name_action
+            "spdz" not in msg.name_action
             and "local_decomposition" not in msg.name_action
         ):
             result = func(_self, *upcasted_args, **upcasted_kwargs)
