@@ -15,6 +15,7 @@ import syft
 
 # relative
 from ....common.uid import UID
+from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
 from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj import BinObject
@@ -39,7 +40,6 @@ class BinObjectManager(ObjectStore):
         try:
             return self.__getitem__(key)
         except KeyError as e:  # noqa: F841
-            print(e)
             return None
 
     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
@@ -93,7 +93,7 @@ class BinObjectManager(ObjectStore):
         )
 
         if not bin_obj or not obj_metadata:
-            raise Exception("Object not found!")
+            raise KeyError(f"Object not found! for UID: {key}")
 
         obj = StorableObject(
             id=UID.from_string(bin_obj.id),
@@ -115,8 +115,24 @@ class BinObjectManager(ObjectStore):
         local_session.close()
         return obj
 
-    def __setitem__(self, key: UID, value: StorableObject) -> None:
+    def is_dataset(self, key: UID) -> bool:
+        local_session = sessionmaker(bind=self.db)()
+        is_dataset_obj = (
+            local_session.query(BinObjDataset).filter_by(obj=str(key.value)).exists()
+        )
+        is_dataset_obj = local_session.query(is_dataset_obj).scalar()
+        local_session.close()
+        return is_dataset_obj
 
+    def _get_obj_dataset_relation(self, key: UID) -> Optional[BinObjDataset]:
+        local_session = sessionmaker(bind=self.db)()
+        obj_dataset_relation = (
+            local_session.query(BinObjDataset).filter_by(obj=str(key.value)).first()
+        )
+        local_session.close()
+        return obj_dataset_relation
+
+    def __setitem__(self, key: UID, value: StorableObject) -> None:
         bin_obj = BinObject(id=str(key.value), obj=value.data)
         # metadata_dict = storable_to_dict(value)
         metadata_obj = ObjectMetadata(
@@ -138,12 +154,25 @@ class BinObjectManager(ObjectStore):
             # name=metadata_dict["name"],
         )
 
+        obj_dataset_relation = self._get_obj_dataset_relation(key)
+        if obj_dataset_relation:
+            # Create a object dataset relationship for the new object
+            obj_dataset_relation = BinObjDataset(
+                id=obj_dataset_relation.id,
+                name=obj_dataset_relation.name,
+                obj=bin_obj.id,
+                dataset=obj_dataset_relation.dataset,
+                dtype=obj_dataset_relation.dtype,
+                shape=obj_dataset_relation.shape,
+            )
+
         if self.__contains__(key):
             self.delete(key)
 
         local_session = sessionmaker(bind=self.db)()
         local_session.add(bin_obj)
         local_session.add(metadata_obj)
+        local_session.add(obj_dataset_relation) if obj_dataset_relation else None
         local_session.commit()
         local_session.close()
 
@@ -159,7 +188,6 @@ class BinObjectManager(ObjectStore):
                 .filter_by(obj=str(key.value))
                 .first()
             )
-
             local_session.delete(metadata_to_delete)
             local_session.delete(object_to_delete)
             local_session.commit()

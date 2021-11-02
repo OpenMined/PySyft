@@ -1,94 +1,90 @@
-import {useState, useRef} from 'react'
 import {useRouter} from 'next/router'
+import Link from 'next/link'
 import {useForm} from 'react-hook-form'
-import {DomainConnectionStatus} from '@/components'
-import {useDomainStatus} from '@/lib/data'
-import {useAuth} from '@/context/auth-context'
-import {Input, NormalButton} from '@/components'
-
-interface UserLogin {
-  email: string
-  password: string
-}
+import {Button, Input, Text} from '@/omui'
+import {DomainStatus} from '@/components/DomainStatus'
+import {Footer} from '@/components/lib'
+import {FormControl} from '@/omui/components/FormControl/FormControl'
+import {login} from '@/lib/auth'
+import {useSettings} from '@/lib/data'
+import {t} from '@/i18n'
 
 export default function Login() {
   const router = useRouter()
-  const {login} = useAuth()
-  const {register, handleSubmit, formState} = useForm({mode: 'onChange'})
-  const [error, setError] = useState<boolean>(false)
-  const [loading, setLoading] = useState<boolean>(false)
-  const [spin, setSpin] = useState<boolean>(false)
-  const rotateStyle = useRef({})
-  const {isValid} = formState
-  const {data: status} = useDomainStatus()
+  const {data: settings} = useSettings().all()
 
-  if (spin) {
-    rotateStyle.current = {transform: `rotate(${Math.ceil(365 * Math.random())}deg)`}
-    setSpin(false)
-    if (error) {
-      setError(false)
-    }
-  }
+  const {
+    handleSubmit,
+    register,
+    setError,
+    formState: {isValid, isDirty, errors}
+  } = useForm<{email: string; password: string}>({mode: 'onChange'})
 
-  const onSubmit = async (values: UserLogin) => {
+  const handleLogin = async ({email, password}) => {
     try {
-      setLoading(true)
-      await login(values)
+      await login({email, password})
       router.push('/users')
-    } catch ({message}) {
-      setError(message)
-    } finally {
-      setLoading(false)
+    } catch (err) {
+      setError('email', {type: 'manual', message: 'Invalid credentials'}, {shouldFocus: true})
     }
   }
 
   return (
-    <main className="container mx-auto">
-      <div className="flex flex-col items-center max-w-md mx-auto space-y-4 text-center">
-        <div className="transition transform" style={rotateStyle.current}>
-          <img alt="PyGrid logo" src="/assets/logo.png" width={200} height={200} />
-        </div>
-        <h1>PyGrid UI</h1>
-        {status && (
-          <p className="text-gray-600">
-            Login to <b>{status.nodeName}</b> Domain
-          </p>
-        )}
-        <form className="w-4/5" onSubmit={handleSubmit(onSubmit)}>
-          <div className="flex flex-col space-y-6 text-left">
-            <div className="flex flex-col">
-              <Input
-                name="email"
-                id="email"
-                label="Email"
-                ref={register({required: "Don't forget your email"})}
-                placeholder="owner@openmined.org"
-                error={formState.errors.email?.message}
-                onChange={() => setSpin(true)}
-              />
-              {error && <span className="px-4 py-1 mt-0.5 text-sm text-gray-800 bg-red-200">{error}</span>}
-            </div>
-            <div className="flex flex-col">
-              <Input
-                type="password"
-                id="password"
-                name="password"
-                label="Password"
-                ref={register({required: 'This needs a password...'})}
-                placeholder="••••••••••"
-                onChange={() => setSpin(true)}
-              />
-            </div>
-            <NormalButton
-              className="bg-sky-500 hover:bg-sky-300 active:bg-sky-800 text-white"
-              disabled={!isValid || error}
-              isLoading={loading}>
-              Login
-            </NormalButton>
-          </div>
-        </form>
-        <DomainConnectionStatus />
+    <article
+      className="grid px-7 grid-cols-12 grid-rows-3 min-h-screen w-full"
+      style={{
+        gridTemplateAreas: `
+          "header"
+          "content"
+          "footer"
+        `,
+        gridTemplateRows: 'minmax(min-content, 200px) auto 80px'
+      }}>
+      <div className="col-span-full self-end justify-self-center">
+        <img src="/assets/small-grid-symbol-logo.png" width={80} height={80} />
       </div>
-    </main>
+      <div className="col-span-4 col-start-5 mt-8">
+        <section className="flex flex-col items-center space-y-4">
+          <Text size="2xl">{settings?.domain_name}</Text>
+          <Text className="text-gray-600">
+            {t('running-version')} {settings?.version ?? '0.6.0-alpha'}
+          </Text>
+        </section>
+        <section className="mt-10 space-y-4">
+          <fieldset className="w-full">
+            <form onSubmit={handleSubmit(handleLogin)}>
+              <FormControl
+                id="email"
+                label={t('email')}
+                error={Boolean(errors.email)}
+                hint={errors.email?.message}
+                required>
+                <Input placeholder="abc@university.edu" {...register('email', {required: true})} />
+              </FormControl>
+              <FormControl className="mt-4" id="password" label={t('password')} error={Boolean(errors.email)} required>
+                <Input type="password" placeholder="···········" {...register('password', {required: true})} />
+              </FormControl>
+              <Button size="sm" className="mt-6 w-full justify-center" disabled={!isValid || !isDirty}>
+                {t('buttons.login')}
+              </Button>
+            </form>
+          </fieldset>
+        </section>
+        <section className="block space-y-6 text-center mt-6">
+          <DomainStatus noBox />
+          <div>
+            <Text size="sm">{t('no-account', 'login')} </Text>
+            <Link href="/signup">
+              <a className="text-link">
+                <Text size="sm" underline>
+                  {t('apply-account', 'login')}
+                </Text>
+              </a>
+            </Link>
+          </div>
+        </section>
+      </div>
+      <Footer className="col-span-full justify-end" />
+    </article>
   )
 }

@@ -17,6 +17,12 @@ from ......proto.grid.messages.user_messages_pb2 import (
     DeleteUserMessage as DeleteUserMessage_PB,
 )
 from ......proto.grid.messages.user_messages_pb2 import (
+    GetCandidatesMessage as GetCandidatesMessage_PB,
+)
+from ......proto.grid.messages.user_messages_pb2 import (
+    GetCandidatesResponse as GetCandidatesResponse_PB,
+)
+from ......proto.grid.messages.user_messages_pb2 import (
     GetUserMessage as GetUserMessage_PB,
 )
 from ......proto.grid.messages.user_messages_pb2 import (
@@ -27,6 +33,9 @@ from ......proto.grid.messages.user_messages_pb2 import (
 )
 from ......proto.grid.messages.user_messages_pb2 import (
     GetUsersResponse as GetUsersResponse_PB,
+)
+from ......proto.grid.messages.user_messages_pb2 import (
+    ProcessUserCandidateMessage as ProcessUserCandidateMessage_PB,
 )
 from ......proto.grid.messages.user_messages_pb2 import (
     SearchUsersMessage as SearchUsersMessage_PB,
@@ -54,16 +63,22 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         name: str,
         email: str,
         password: str,
-        budget: float,
         reply_to: Address,
         role: Optional[str] = "",
+        website: str = "",
+        institution: str = "",
+        daa_pdf: Optional[bytes] = b"",
         msg_id: Optional[UID] = None,
+        budget: Optional[float] = 0.0,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.email = email
         self.password = password
         self.role = role
         self.name = name
+        self.daa_pdf = daa_pdf
+        self.website = website
+        self.institution = institution
         self.budget = budget
 
     def _object2proto(self) -> CreateUserMessage_PB:
@@ -85,8 +100,11 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             password=self.password,
             role=self.role,
             name=self.name,
-            budget=self.budget,
+            institution=self.institution,
+            website=self.website,
+            daa_pdf=self.daa_pdf,
             reply_to=serialize(self.reply_to),
+            budget=self.budget,
         )
 
     @staticmethod
@@ -109,9 +127,12 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
             email=proto.email,
             password=proto.password,
             name=proto.name,
-            budget=proto.budget,
             role=proto.role,
+            website=proto.website,
+            institution=proto.institution,
+            daa_pdf=proto.daa_pdf,
             reply_to=_deserialize(blob=proto.reply_to),
+            budget=proto.budget,
         )
 
     @staticmethod
@@ -201,6 +222,81 @@ class GetUserMessage(ImmediateSyftMessageWithReply):
         """
 
         return GetUserMessage_PB
+
+
+@serializable()
+@final
+class ProcessUserCandidateMessage(ImmediateSyftMessageWithReply):
+    def __init__(
+        self,
+        address: Address,
+        candidate_id: int,
+        status: str,
+        reply_to: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        self.candidate_id = candidate_id
+        self.status = status
+
+    def _object2proto(self) -> ProcessUserCandidateMessage_PB:
+        """Returns a protobuf serialization of self.
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+        :return: returns a protobuf object
+        :rtype: GetUserMessage_PB
+        .. note::
+            This method is purely an internal method. Please use serialize(object) or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return ProcessUserCandidateMessage_PB(
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            candidate_id=self.candidate_id,
+            status=self.status,
+            reply_to=serialize(self.reply_to),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: ProcessUserCandidateMessage_PB,
+    ) -> "ProcessUserCandidateMessage":
+        """Creates a GetUserMessage from a protobuf
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: GetUserMessage
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return ProcessUserCandidateMessage(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            candidate_id=proto.candidate_id,
+            status=proto.status,
+            reply_to=_deserialize(blob=proto.reply_to),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+        """
+
+        return ProcessUserCandidateMessage_PB
 
 
 @serializable()
@@ -340,6 +436,141 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
 
 @serializable()
 @final
+class GetCandidatesMessage(ImmediateSyftMessageWithReply):
+    def __init__(
+        self,
+        address: Address,
+        reply_to: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+
+    def _object2proto(self) -> GetCandidatesMessage_PB:
+        """Returns a protobuf serialization of self.
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+        :return: returns a protobuf object
+        :rtype: GetUsersMessage_PB
+        .. note::
+            This method is purely an internal method. Please use serialize(object) or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        return GetCandidatesMessage_PB(
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+            reply_to=serialize(self.reply_to),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: GetCandidatesMessage_PB,
+    ) -> "GetCandidatesMessage":
+        """Creates a GetUsersMessage from a protobuf
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: GetUsersMessage
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+
+        return GetCandidatesMessage(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            reply_to=_deserialize(blob=proto.reply_to),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+        """
+
+        return GetCandidatesMessage_PB
+
+
+@serializable()
+@final
+class GetCandidatesResponse(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        address: Address,
+        content: List[Dict],
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.content = content
+
+    def _object2proto(self) -> GetCandidatesResponse_PB:
+        """Returns a protobuf serialization of self.
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms the current object into the corresponding
+        Protobuf object so that it can be further serialized.
+        :return: returns a protobuf object
+        :rtype: SignalingOfferMessage_PB
+        .. note::
+            This method is purely an internal method. Please use serialize(object) or one of
+            the other public serialization methods if you wish to serialize an
+            object.
+        """
+        msg = GetCandidatesResponse_PB(
+            msg_id=serialize(self.id),
+            address=serialize(self.address),
+        )
+        _ = [msg.content.append(serialize(content)) for content in self.content]
+        return msg
+
+    @staticmethod
+    def _proto2object(
+        proto: GetCandidatesResponse_PB,
+    ) -> "GetCandidatesResponse":
+        """Creates a SignalingOfferMessage from a protobuf
+        As a requirement of all objects which inherit from Serializable,
+        this method transforms a protobuf object into an instance of this class.
+        :return: returns an instance of SignalingOfferMessage
+        :rtype: SignalingOfferMessage
+        .. note::
+            This method is purely an internal method. Please use syft.deserialize()
+            if you wish to deserialize an object.
+        """
+        return GetCandidatesResponse(
+            msg_id=_deserialize(blob=proto.msg_id),
+            address=_deserialize(blob=proto.address),
+            content=[_deserialize(content) for content in proto.content],
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        """Return the type of protobuf object which stores a class of this type
+        As a part of serialization and deserialization, we need the ability to
+        lookup the protobuf object type directly from the object type. This
+        static method allows us to do this.
+        Importantly, this method is also used to create the reverse lookup ability within
+        the metaclass of Serializable. In the metaclass, it calls this method and then
+        it takes whatever type is returned from this method and adds an attribute to it
+        with the type of this class attached to it. See the MetaSerializable class for
+        details.
+        :return: the type of protobuf object which corresponds to this class.
+        :rtype: GeneratedProtocolMessageType
+        """
+
+        return GetCandidatesResponse_PB
+
+
+@serializable()
+@final
 class GetUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
@@ -412,8 +643,8 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
     def __init__(  # nosec
         self,
         address: Address,
-        user_id: int,
         reply_to: Address,
+        user_id: Optional[int] = 0,
         msg_id: Optional[UID] = None,
         email: Optional[str] = "",
         password: Optional[str] = "",

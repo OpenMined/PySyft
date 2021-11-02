@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import os
 from typing import Any
@@ -10,10 +13,12 @@ from typing import Union
 import ascii_magic
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pydantic import BaseSettings
 
 # relative
 from ....lib.python import String
 from ....logger import error
+from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -22,17 +27,33 @@ from ...io.location import SpecificLocation
 from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
 from ..common.node_manager.group_manager import GroupManager
+from ..common.node_manager.node_manager import NodeManager
+from ..common.node_manager.node_route_manager import NodeRouteManager
 from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
 from ..common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
+from ..common.node_service.network_search.network_search_service import (
+    NetworkSearchService,
+)
+from ..common.node_service.node_setup.node_setup_messages import (
+    CreateInitialSetUpMessage,
+)
 from ..common.node_service.node_setup.node_setup_service import NodeSetupService
+from ..common.node_service.peer_discovery.peer_discovery_service import (
+    PeerDiscoveryService,
+)
+from ..common.node_service.ping.ping_service import PingService
 from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
+from ..common.node_service.vpn.vpn_service import VPNConnectService
+from ..common.node_service.vpn.vpn_service import VPNJoinService
+from ..common.node_service.vpn.vpn_service import VPNRegisterService
+from ..common.node_service.vpn.vpn_service import VPNStatusService
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
 from .client import NetworkClient
@@ -57,7 +78,7 @@ class Network(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
-        db: Any = None,
+        settings: BaseSettings = BaseSettings(),
     ):
         super().__init__(
             name=name,
@@ -68,8 +89,10 @@ class Network(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_engine=db_engine,
-            db=db,
         )
+
+        # share settings with the FastAPI application level
+        self.settings = settings
 
         # specific location with name
         self.network = SpecificLocation(name=self.name)
@@ -79,6 +102,8 @@ class Network(Node):
         self.users = UserManager(db_engine)
         self.roles = RoleManager(db_engine)
         self.groups = GroupManager(db_engine)
+        self.node = NodeManager(db_engine)
+        self.node_route = NodeRouteManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
 
         # Grid Network Services
@@ -86,6 +111,13 @@ class Network(Node):
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
+        self.immediate_services_with_reply.append(VPNConnectService)
+        self.immediate_services_with_reply.append(VPNJoinService)
+        self.immediate_services_with_reply.append(VPNRegisterService)
+        self.immediate_services_with_reply.append(VPNStatusService)
+        self.immediate_services_with_reply.append(PingService)
+        self.immediate_services_with_reply.append(NetworkSearchService)
+        self.immediate_services_with_reply.append(PeerDiscoveryService)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
@@ -99,6 +131,31 @@ class Network(Node):
         self.handled_requests: Dict[Any, float] = {}
 
         self.post_init()
+
+    def initial_setup(  # nosec
+        self,
+        first_superuser_name: str = "Jane Doe",
+        first_superuser_email: str = "info@openmined.org",
+        first_superuser_password: str = "changethis",
+        first_superuser_budget: float = 5.55,
+        domain_name: str = "BigHospital",
+    ) -> Network:
+
+        # Build Syft Message
+        msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
+            address=self.address,
+            name=first_superuser_name,
+            email=first_superuser_email,
+            password=first_superuser_password,
+            domain_name=domain_name,
+            budget=first_superuser_budget,
+            reply_to=self.address,
+        ).sign(signing_key=self.signing_key)
+
+        # Process syft message
+        _ = self.recv_immediate_msg_with_reply(msg=msg).message
+
+        return self
 
     def post_init(self) -> None:
         super().post_init()

@@ -1,1 +1,0 @@
-# Deep Convolution Generative Adversarial Networks

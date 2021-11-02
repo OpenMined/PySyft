@@ -1,1 +1,0 @@
-# Natural Language Inference (SNLI) with GloVe vectors, LSTMs, and torchtext

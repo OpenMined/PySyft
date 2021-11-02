@@ -24,8 +24,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor",
         "syft.core.tensor.tensor",
         "syft.core.tensor.smpc",
-        "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.smpc.share_tensor",
+        "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
         "syft.core.tensor.autodp.single_entity_phi",
     ]
@@ -151,6 +151,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.transpose", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__pos__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.put", "syft.core.tensor.tensor.Tensor"),
+        (
+            "syft.core.tensor.tensor.Tensor.bit_decomposition",
+            "syft.lib.python._SyNone",
+        ),
         # # SMPC
         # (
         #     "syft.core.tensor.tensor.Tensor.fix_precision",
@@ -176,6 +180,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.__mul__",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.__gt__",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
         (
@@ -241,6 +249,18 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.put",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.crypto_store",
+            "syft.core.smpc.store.CryptoStore",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.populate_store",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.bit_decomposition",
+            "syft.lib.python._SyNone",
         ),
     ]
 

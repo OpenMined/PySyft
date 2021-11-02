@@ -10,6 +10,7 @@ message SMPCActionMessage {
   syft.core.common.UID self_id = 2;
   repeated syft.core.common.UID args_id = 3;
   map<string, syft.core.common.UID> kwargs_id = 4;
+  map<string, bytes> kwargs = 5;
   syft.core.common.UID id_at_location = 6;
   syft.core.io.Address address = 7;
   syft.core.common.UID msg_id = 8;

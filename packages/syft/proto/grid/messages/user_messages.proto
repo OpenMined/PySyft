@@ -15,8 +15,11 @@ message CreateUserMessage {
   string password = 4;
   string role = 5;
   string name = 6;
-  double budget = 7;
-  syft.core.io.Address reply_to = 8;
+  string website = 9;
+  string institution = 10;
+  bytes daa_pdf = 11;
+  syft.core.io.Address reply_to = 12;
+  double budget = 13;
 }
 
 // GET User
@@ -27,9 +30,30 @@ message GetUserMessage {
   syft.core.io.Address reply_to = 4;
 }
 
+message ProcessUserCandidateMessage {
+  syft.core.common.UID msg_id = 1;
+  int32 candidate_id = 2;
+  string status = 3;
+  syft.core.io.Address address = 4;
+  syft.core.io.Address reply_to = 5;
+}
+
 message GetUserResponse {
   syft.core.common.UID msg_id = 1;
   syft.lib.python.Dict content = 2;
+  syft.core.io.Address address = 3;
+}
+
+// GET USER Requests
+message GetCandidatesMessage {
+  syft.core.common.UID msg_id = 1;
+  syft.core.io.Address address = 2;
+  syft.core.io.Address reply_to = 4;
+}
+
+message GetCandidatesResponse {
+  syft.core.common.UID msg_id = 1;
+  repeated syft.lib.python.Dict content = 2;
   syft.core.io.Address address = 3;
 }
 

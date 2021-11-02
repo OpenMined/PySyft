@@ -1,8 +1,8 @@
 #!/bin/sh
 
-if [ ! -f private.key ]
+if [ ! -f data/private.key ]
 then
-    wg genkey > private.key
+    wg genkey > data/private.key
 fi
 
 export PATH="/root/.local/bin:${PATH}"

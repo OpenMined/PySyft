@@ -1,17 +1,24 @@
 # stdlib
+import json
 from typing import List
 from typing import NoReturn
+from typing import Optional
 
 # third party
 from fastapi import APIRouter
 from fastapi import Depends
+from fastapi import File
+from fastapi import Form
+from fastapi import UploadFile
 from loguru import logger
 from starlette import status
 from starlette.exceptions import HTTPException
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
+from grid.api.users.models import ApplicantStatus
 from grid.api.users.models import User
+from grid.api.users.models import UserCandidate
 from grid.api.users.models import UserCreate
 from grid.api.users.models import UserPrivate
 from grid.api.users.models import UserUpdate
@@ -38,11 +45,52 @@ def get_self(current_user: UserPrivate = Depends(get_current_user)) -> User:
 # TODO: Syft should return the newly created user and the response model should be User.
 @router.post("", name="users:create", status_code=status.HTTP_201_CREATED)
 async def create_user_grid(
-    new_user: UserCreate,
+    current_user: UserPrivate = Depends(get_current_user),
+    file: Optional[UploadFile] = File(...),
+    new_user: str = Form(...),
+) -> str:
+    if file:
+        pdf_file = file.file.read()  # type: ignore
+    else:
+        pdf_file = b""
+
+    dict_user = json.loads(new_user)
+    dict_user["daa_pdf"] = pdf_file
+    user_schema = UserCreate(**dict_user)
+    try:
+        return syft_user_messages.create_user(user_schema, current_user)
+    except Exception as err:
+        logger.error(err)
+        raise_generic_private_error()
+
+
+@router.get("/applicants", name="users:applicants", status_code=status.HTTP_201_CREATED)
+async def get_all_candidates(
+    current_user: UserPrivate = Depends(get_current_user),
+) -> List[UserCandidate]:
+    try:
+        return syft_user_messages.get_user_requests(current_user)
+    except Exception as err:
+        logger.error(err)
+        raise_generic_private_error()
+
+
+@router.patch(
+    "/applicants/{candidate_id}",
+    name="users:applicants:process",
+    status_code=status.HTTP_201_CREATED,
+)
+async def process_applicant_request(
+    candidate_id: int,
+    request_status: ApplicantStatus,
     current_user: UserPrivate = Depends(get_current_user),
 ) -> str:
     try:
-        return syft_user_messages.create_user(new_user, current_user)
+        return syft_user_messages.process_applicant_request(
+            current_user=current_user,
+            candidate_id=candidate_id,
+            status=request_status.status,
+        )
     except Exception as err:
         logger.error(err)
         raise_generic_private_error()
