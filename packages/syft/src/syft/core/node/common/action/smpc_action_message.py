@@ -13,7 +13,6 @@ from typing import Optional
 from uuid import UUID
 
 # third party
-import gevent
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 
@@ -33,6 +32,7 @@ from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 from .beaver_action import BeaverAction
+from .greenlets_switch import beaver_retrieve_object
 
 
 @serializable()
@@ -275,22 +275,12 @@ def spdz_multiply(
 
     ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
-    while True:
-        eps = node.store.get_object(key=eps_id)  # type: ignore
-        delta = node.store.get_object(key=delta_id)  # type: ignore
-        print("RING SIZE", ring_size)
-        print("EPS Store", eps)
-        print("Delta Store", delta)
-        print("NR parties", nr_parties)
-        if (
-            eps is None
-            or len(eps.data) != nr_parties
-            or delta is None
-            or len(delta.data) != nr_parties
-        ):
-            gevent.sleep(0)
-        else:
-            break
+    eps = beaver_retrieve_object(node, eps_id, nr_parties)  # type: ignore
+    delta = beaver_retrieve_object(node, delta_id, nr_parties)  # type: ignore
+    print("RING SIZE", ring_size)
+    print("EPS Store", eps)
+    print("Delta Store", delta)
+    print("NR parties", nr_parties)
 
     print("Beaver Error surpassed*******************************")
 
@@ -313,7 +303,7 @@ def spdz_multiply(
     print("C addedTensor", tensor, "\n")
     if x.rank == 0:
         mul_op = ShareTensor.get_op(ring_size, "mul")
-        eps_delta = mul_op(eps.child, delta.child)
+        eps_delta = mul_op(eps.child, delta.child)  # type: ignore
         print("EPS_DELTA", eps_delta, "\n")
         tensor = tensor + eps_delta
 
