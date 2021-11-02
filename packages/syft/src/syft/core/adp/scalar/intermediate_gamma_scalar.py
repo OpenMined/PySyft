@@ -54,9 +54,10 @@ class IntermediateGammaScalar(IntermediateScalar):
                 max_val=self.max_val + other.max_val,
             )
         return IntermediateGammaScalar(
+            # TRASK: for intermediate scalars we infer min/max not calculate it
             poly=self.poly + other,
-            min_val=self.min_val + other,
-            max_val=self.max_val + other,
+            min_val=None,# self.min_val + other,
+            max_val=None # self.max_val + other,
         )
 
     def __sub__(self, other: Any) -> IntermediateScalar:
@@ -78,6 +79,7 @@ class IntermediateGammaScalar(IntermediateScalar):
         )
 
     def __mul__(self, other: Any) -> IntermediateScalar:
+
         if isinstance(other, Scalar):
             # relative
             from .intermediate_phi_scalar import IntermediatePhiScalar
@@ -98,23 +100,29 @@ class IntermediateGammaScalar(IntermediateScalar):
                 self.max_val * other.min_val,
             )
 
-            return IntermediateGammaScalar(
+            result = IntermediateGammaScalar(
                 poly=self.poly * other.poly, max_val=max_val, min_val=min_val
             )
 
-        max_val = max(
-            self.min_val * other,
-            self.max_val * other,
+            return result
+
+        # TRASK: for intermediate gamma scalars we infer min/max not calculate it
+        # For phi scalars or initial gamma scalars we store/infer it explicitly
+        # max_val = max(
+        #     self.min_val * other,
+        #     self.max_val * other,
+        # )
+        #
+        # min_val = min(
+        #     self.min_val * other,
+        #     self.max_val * other,
+        # )
+
+        result = IntermediateGammaScalar(
+            poly=self.poly * other, min_val=None, max_val=None
         )
 
-        min_val = min(
-            self.min_val * other,
-            self.max_val * other,
-        )
-
-        return IntermediateGammaScalar(
-            poly=self.poly * other, min_val=min_val, max_val=max_val
-        )
+        return result
 
     def max_lipschitz_via_explicit_search(
         self, force_all_searches: bool = False

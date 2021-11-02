@@ -483,7 +483,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     ) -> InitialGammaTensor:
 
         """Return a new Gamma tensor based on this phi tensor"""
-
         if scalar_manager is None:
             scalar_manager = self.scalar_manager
 
@@ -492,7 +491,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             self.shape
         )
 
-        return InitialGammaTensor(
+        out = InitialGammaTensor(
             values=self.child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
@@ -500,11 +499,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=scalar_manager,
         )
 
+        return out
+
     def publish(
         self, acc: Any, sigma: float, user_key: VerifyKey
     ) -> AcceptableSimpleType:
-        print("PUBLISHING TO GAMMA:")
-        print(self.child)
         return self.gamma.publish(acc=acc, sigma=sigma, user_key=user_key)
 
     @property

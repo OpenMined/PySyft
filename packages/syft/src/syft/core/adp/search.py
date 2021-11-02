@@ -186,6 +186,7 @@ def minimize_function(
     # if not shgo_results.success:
     #     raise Exception("Search algorithm wasn't solvable... abort")
     print("Search algorithm wasn't solvable... abort")
+    print(asdfsadf)
 
     return results
 

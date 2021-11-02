@@ -48,11 +48,11 @@ class Scalar:
             "<"
             + str(type(self).__name__)
             + ": ("
-            + str(self.min_val)
+            # + str(self.min_val)
             + " < "
             + str(self.value)
             + " < "
-            + str(self.max_val)
+            # + str(self.max_val)
             + ")>"
         )
 

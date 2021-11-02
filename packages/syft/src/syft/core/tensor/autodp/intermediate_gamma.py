@@ -92,6 +92,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         self.n_entities = 0
 
         for entity in set(self._entities_list()):
+
             if isinstance(entity, Entity):
                 if entity not in self.unique_entities:
                     self.unique_entities.add(entity)
@@ -106,6 +107,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
     @property
     def flat_scalars(self) -> List[Any]:
+
         flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
         flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
         flattened_bias = self.bias_tensor.reshape(-1)
@@ -115,22 +117,27 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         scalars = list()
 
         for i in range(len(flattened_terms)):
+
             single_poly_terms = flattened_terms[i]
             single_poly_coeffs = flattened_coeffs[i]
             single_poly_bias = flattened_bias[i]
+
             # single_poly_min_val = flattened_min_vals[i]
             # single_poly_max_val = flattened_max_vals[i]
 
             scalar = single_poly_bias
 
             for j in range(len(single_poly_terms)):
+
                 term = single_poly_terms[j]
                 coeff = single_poly_coeffs[j]
 
                 for prime, n_times in factorint(term).items():
+
                     input_scalar = self.scalar_manager.prime2symbol[prime]
-                    right = input_scalar * n_times * coeff
-                    scalar = scalar + right
+                    right = input_scalar * n_times
+                    coeff_right = right * coeff
+                    scalar = scalar + coeff_right
 
             scalars.append(scalar)
 
@@ -165,8 +172,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
 
+        fs = self.flat_scalars
         output_entities = []
-        for flat_scalar in self.flat_scalars:
+        for flat_scalar in fs:
             # TODO: This will fail if the nested entity is any deeper than 2 levels- i.e. [A, [A, [A, B]]]. Recursive?
             combined_entities = DataSubjectGroup()
             for row in flat_scalar.input_entities:
@@ -181,6 +189,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 else:
                     raise Exception(f"No plans for row type:{type(row)}")
             output_entities.append(combined_entities)
+
         return output_entities
 
     def _entities(self) -> np.array:
