@@ -90,13 +90,13 @@ def login(
 
         if email == "info@openmined.org":
             print(
-                "WARNING: CHANGE YOUR USERNAME AND PASSWORD!!! Anyone can login as an admin to your node"
-                + " right now because your password is still the default PySyft username and password!!!"
+                "WARNING: CHANGE YOUR USERNAME AND PASSWORD!!! \n\nAnyone can login as an admin to your node"
+                + " right now because your password is still the default PySyft username and password!!!\n"
             )
         else:
             print(
-                "WARNING: CHANGE YOUR PASSWORD!!! Anyone can login as an admin to your node"
-                + " right now because your password is still the default PySyft password!!!"
+                "WARNING: CHANGE YOUR PASSWORD!!! \n\nAnyone can login as an admin to your node"
+                + " right now because your password is still the default PySyft password!!!\n"
             )
 
     # TRASK: please keep this so that people will stop putting their passwords in notebooks.
