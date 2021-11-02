@@ -86,17 +86,23 @@ def login(
     verbose: Optional[bool] = True,
 ) -> Client:
 
-    # if email is None and password is None:
+    if password == "changethis":
 
-    #     email = "info@openmined.org"
-    #     password = "changethis"  # nosec
+        if email == "info@openmined.org":
+            print(
+                "WARNING: CHANGE YOUR USERNAME AND PASSWORD!!! Anyone can login as an admin to your node"
+                + " right now because your password is still the default PySyft username and password!!!"
+            )
+        else:
+            print(
+                "WARNING: CHANGE YOUR PASSWORD!!! Anyone can login as an admin to your node"
+                + " right now because your password is still the default PySyft password!!!"
+            )
 
-    #     print("No email/password specified. Logging in with default...")
-    #     print("Don't forget to re-configure your admin email and password!!!")
-
-    # if password is None:
-    #     print("Welcome " + str(email) + "!")
-    #     password = getpass(prompt="Please enter you password:")
+    # TRASK: please keep this so that people will stop putting their passwords in notebooks.
+    if password is None:
+        print("Welcome " + str(email) + "!")
+        password = getpass(prompt="Please enter you password:")
 
     if port is None and not url:  # if url is used, we can ignore port
         port = int(input("Please specify the port of the domain you're logging into:"))
