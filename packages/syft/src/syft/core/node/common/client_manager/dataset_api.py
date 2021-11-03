@@ -245,9 +245,7 @@ class DatasetRequestAPI(RequestAPI):
                 }
                 </style>
 
-                <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for datasets..">
-
-                <table id="myTable">
+                <table id="myTable" style="width:1000px">
                   <tr class="header">
                     <th style="width:30px">Idx</th>
                     <th style="width:20%;">Name</th>
@@ -259,9 +257,19 @@ class DatasetRequestAPI(RequestAPI):
 
         rows = ""
         for row_i, d in enumerate(dataset_iterable):
+
+            data = d.data
+            truncated_assets = False
+            if len(data) > 3:
+                truncated_assets = True
+                data = data[:3]
+
             assets = ""
-            for i, a in enumerate(d.data):
+            for i, a in enumerate(data):
                 assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
+
+            if truncated_assets:
+                assets += "...<br /><br />"
 
             rows += (
                 """
@@ -313,6 +321,10 @@ class Dataset:
     def pandas(self) -> pd.DataFrame:
         return pd.DataFrame(self.raw)
 
+    @property
+    def assets(self) -> Any:
+        return self.data
+
     def __getitem__(self, key: str) -> Any:
         keys = list()
         for d in self.data:
@@ -332,8 +344,19 @@ class Dataset:
 
         rows = ""
 
+        data = self.data
+
+        if len(data) > 15:
+            print(
+                "WARNING: Too many assets to print... truncating... You "
+                "may run \n\n assets = my_dataset.assets \n\nto view receive a "
+                "dictionary you can parse through using Python\n(as opposed to blowing up your notebook"
+                " with a massive printed table).\n"
+            )
+            data = data[0:15]
+
         assets = ""
-        for i, a in enumerate(self.data):
+        for i, a in enumerate(data):
             assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
 
             rows += (
