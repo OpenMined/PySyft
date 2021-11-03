@@ -2,10 +2,9 @@
 from raven import Client
 
 # syft absolute
-from syft import deserialize  # type: ignore
+from syft import deserialize
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.node.common.action.exceptions import RetriableError
-from syft.core.node.common.action.unfinished_task import proceed_unfinished_tasks
 from syft.core.node.common.action.unfinished_task import register_unfinished_task
 
 # grid absolute
@@ -20,7 +19,7 @@ client_sentry = Client(settings.SENTRY_DSN)
 # We have set max retries =(1200) 120 seconds
 
 
-@celery_app.task(bind=True, time_limit=60, max_retries=1200, acks_late=True)
+@celery_app.task(bind=True, acks_late=True)
 def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
     # use latin-1 instead of utf-8 because our bytes might not be an even number
     msg_bytes = bytes(msg_bytes_str, "latin-1")
@@ -28,7 +27,6 @@ def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
     if isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
         try:
             node.recv_immediate_msg_without_reply(msg=obj_msg)
-            proceed_unfinished_tasks(node)
         except Exception as e:
             if isinstance(e, RetriableError):
                 register_unfinished_task(obj_msg, node)

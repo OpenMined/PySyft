@@ -218,6 +218,8 @@ class UserManager(DatabaseManager):
         password: str = "",
         role: int = 0,
         name: str = "",
+        website: str = "",
+        institution: str = "",
         budget: float = 0.0,
     ) -> None:
         if not self.contain(id=user_id):
@@ -242,6 +244,12 @@ class UserManager(DatabaseManager):
         elif budget:
             key = "budget"
             value = budget
+        elif website:
+            key = "website"
+            value = website
+        elif institution:
+            key = "institution"
+            value = institution
         else:
             raise Exception
 

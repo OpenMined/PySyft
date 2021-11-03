@@ -36,6 +36,8 @@ class ApplicantStatus(BaseModel):
 class UserUpdate(BaseUser):
     password: Optional[str]
     budget: Optional[float]
+    institution: Optional[str]
+    website: Optional[str]
 
 
 class UserCandidate(BaseUser):
