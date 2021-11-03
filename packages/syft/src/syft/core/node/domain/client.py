@@ -563,26 +563,28 @@ class DomainClient(Client):
         sys.stdout.write("\rLoading dataset... checking dataset name for uniqueness...")
         datasets = self.datasets
 
-        if not skip_checks:
-            for i in range(len(datasets)):
-                d = datasets[i]
-                sys.stdout.write(".")
-                if name == d.name:
-                    print(
-                        "\n\nWARNING - Dataset Name Conflict: A dataset named '"
-                        + name
-                        + "' already exists.\n"
-                    )
-                    pref = input("Do you want to upload this dataset anyway? (y/n)")
-                    while pref != "y" and pref != "n":
-                        pref = input(
-                            "Invalid input '" + pref + "', please specify 'y' or 'n'."
-                        )
-                    if pref == "n":
-                        raise Exception("Dataset loading cancelled.")
-                    else:
-                        print()  # just for the newline
-                        break
+        # Disabling this for now until we have a more efficient means of querying dataset metadata.
+        # TODO: enforce name uniqueness through more efficient means.
+        # if not skip_checks:
+        #     for i in range(len(datasets)):
+        #         d = datasets[i]
+        #         sys.stdout.write(".")
+        #         if name == d.name:
+        #             print(
+        #                 "\n\nWARNING - Dataset Name Conflict: A dataset named '"
+        #                 + name
+        #                 + "' already exists.\n"
+        #             )
+        #             pref = input("Do you want to upload this dataset anyway? (y/n)")
+        #             while pref != "y" and pref != "n":
+        #                 pref = input(
+        #                     "Invalid input '" + pref + "', please specify 'y' or 'n'."
+        #                 )
+        #             if pref == "n":
+        #                 raise Exception("Dataset loading cancelled.")
+        #             else:
+        #                 print()  # just for the newline
+        #                 break
 
         sys.stdout.write(
             "\rLoading dataset... checking dataset name for uniqueness..."
