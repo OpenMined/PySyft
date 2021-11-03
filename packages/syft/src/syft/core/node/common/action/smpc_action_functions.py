@@ -41,6 +41,9 @@ def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
     return UID(UUID(bytes=generator.bytes(16)))
 
 
+# TODO: node.address is not really ,should be removed later.
+
+
 def smpc_basic_op(
     op_str: str,
     nr_parties: int,
@@ -48,7 +51,6 @@ def smpc_basic_op(
     other_id: UID,
     seed_id_locations: int,
     node: Any,
-    client: Any,
 ) -> List[SMPCActionMessage]:
     # relative
     from ..... import Tensor
@@ -70,7 +72,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
     else:
@@ -82,7 +84,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=list(range(1, nr_parties)),
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -95,7 +97,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=[0],
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -239,15 +241,14 @@ def smpc_mul(
     b_shape_id: Optional[UID] = None,
     seed_id_locations: Optional[int] = None,
     node: Optional[Any] = None,
-    client: Optional[Any] = None,
 ) -> SMPCActionSeqBatchMessage:
     """Generator for the smpc_mul with a public value"""
     # relative
     from ..... import Tensor
 
-    if seed_id_locations is None or node is None or client is None:
+    if seed_id_locations is None or node is None:
         raise ValueError(
-            f"The values seed_id_locations{seed_id_locations}, Node:{node} , client:{client} should not be None"
+            f"The values seed_id_locations{seed_id_locations}, Node:{node} should not be None"
         )
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
@@ -288,7 +289,7 @@ def smpc_mul(
                 },
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -307,7 +308,7 @@ def smpc_mul(
                 },
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -321,10 +322,10 @@ def smpc_mul(
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
-    batch = SMPCActionSeqBatchMessage(smpc_actions=actions, address=client.address)
+    batch = SMPCActionSeqBatchMessage(smpc_actions=actions, address=node.address)
     return batch
 
 
@@ -403,7 +404,6 @@ def bit_decomposition(
     bitwise: UID,
     seed_id_locations: int,
     node: Any,
-    client: Any,
 ) -> List[SMPCActionMessage]:
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
@@ -419,7 +419,7 @@ def bit_decomposition(
             kwargs={"seed_id_locations": str(seed_id_locations)},
             ranks_to_run_action=list(range(nr_parties)),
             result_id=result_id,
-            address=client.address,
+            address=node.address,
         )
     )
 
