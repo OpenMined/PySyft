@@ -561,10 +561,10 @@ class DomainClient(Client):
                 'Retry with a string name. I.e., .load_dataset(name="<your name here>)"'
             )
         sys.stdout.write("\rLoading dataset... checking dataset name for uniqueness...")
-        datasets = self.datasets
 
         # Disabling this for now until we have a more efficient means of querying dataset metadata.
         # TODO: enforce name uniqueness through more efficient means.
+        # datasets = self.datasets
         # if not skip_checks:
         #     for i in range(len(datasets)):
         #         d = datasets[i]
