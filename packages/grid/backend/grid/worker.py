@@ -1,17 +1,24 @@
+from gevent import monkey  # isort:skip
+
+monkey.patch_all()  # noqa
+
 # third party
-from raven import Client
+from raven import Client  # noqa: E402
 
 # syft absolute
-from syft import deserialize  # type: ignore
-from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.node.common.action.exceptions import RetriableError
-from syft.core.node.common.action.unfinished_task import proceed_unfinished_tasks
-from syft.core.node.common.action.unfinished_task import register_unfinished_task
+from syft import deserialize  # noqa: E402
+from syft.core.common.message import (  # noqa: E402
+    SignedImmediateSyftMessageWithoutReply,
+)
+from syft.core.node.common.action.exceptions import RetriableError  # noqa: E402
+from syft.core.node.common.action.unfinished_task import (  # noqa: E402
+    register_unfinished_task,
+)
 
 # grid absolute
-from grid.core.celery_app import celery_app
-from grid.core.config import settings
-from grid.core.node import node
+from grid.core.celery_app import celery_app  # noqa: E402
+from grid.core.config import settings  # noqa: E402
+from grid.core.node import node  # noqa: E402
 
 client_sentry = Client(settings.SENTRY_DSN)
 
@@ -20,7 +27,7 @@ client_sentry = Client(settings.SENTRY_DSN)
 # We have set max retries =(1200) 120 seconds
 
 
-@celery_app.task(bind=True, time_limit=60, max_retries=1200, acks_late=True)
+@celery_app.task(bind=True, acks_late=True)
 def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
     # use latin-1 instead of utf-8 because our bytes might not be an even number
     msg_bytes = bytes(msg_bytes_str, "latin-1")
@@ -28,7 +35,6 @@ def msg_without_reply(self, msg_bytes_str: str) -> None:  # type: ignore
     if isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
         try:
             node.recv_immediate_msg_without_reply(msg=obj_msg)
-            proceed_unfinished_tasks(node)
         except Exception as e:
             if isinstance(e, RetriableError):
                 register_unfinished_task(obj_msg, node)

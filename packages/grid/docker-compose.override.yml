@@ -112,7 +112,7 @@ services:
       - ../../notebooks:/notebooks
       - ./data/package-cache:/root/.cache
     environment:
-      - RUN=celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 10
+      - RUN=celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}

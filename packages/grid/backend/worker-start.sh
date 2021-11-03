@@ -11,4 +11,4 @@ pip install --user -e /app/syft
 
 python /app/grid/backend_prestart.py
 
-watchmedo auto-restart --directory=/app --pattern=*.py --recursive -- celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 10
+watchmedo auto-restart --directory=/app --pattern=*.py --recursive -- celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
