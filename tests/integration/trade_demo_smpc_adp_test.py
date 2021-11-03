@@ -36,6 +36,7 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
 
 @pytest.mark.integration
 def test_end_to_end_smpc_adp_trade_demo() -> None:
+    print("running test_end_to_end_smpc_adp_trade_demo")
     # make a unique email so we can run the test isolated
     unique_email = f"{uuid.uuid4()}@caltech.edu"
 
@@ -147,6 +148,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     inspect it to see if it is indeed normal. But of course... it probably isn't.
     """
     # the pledge 🦜
+    print("running the pledge 🦜")
     result = ca_data + it_data
     result.block_with_timeout(40)
 
@@ -156,6 +158,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     complexity... but you won't find it, because of course it's abstracted away.
     """
     # the turn 🕳
+    print("running the turn 🕳")
     public_result = result.publish(sigma=2)
 
     """
@@ -164,6 +167,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     part, the part we call "The Prestige".
     """
     # the prestige 🎩
+    print("running the prestige 🎩")
     # time.sleep(40)  # TODO: should modify after implementing polling .get()
     public_result.block_with_timeout(40)
     sycure_result = public_result.get()
