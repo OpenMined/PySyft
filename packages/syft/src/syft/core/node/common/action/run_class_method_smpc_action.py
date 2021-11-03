@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -85,8 +86,10 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # relative
+        from . import smpc_action_functions
         from ..... import Tensor
         from .smpc_action_message import SMPCActionMessage
+        from .smpc_action_seq_batch_message import SMPCActionSeqBatchMessage
 
         resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
 
@@ -146,7 +149,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             )
 
         resolved_kwargs.pop("client")
-        actions_generator = SMPCActionMessage.get_action_generator_from_op(
+        actions_generator = smpc_action_functions.get_action_generator_from_op(
             operation_str=method_name, nr_parties=nr_parties
         )
         args_id = [arg.id_at_location for arg in self.args]
@@ -159,14 +162,21 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         }
 
         # Get the list of actions to be run
+        actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
         actions = actions_generator(*args_id, **kwargs)  # type: ignore
-        actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
         base_url = client.routes[0].connection.base_url
         client.routes[0].connection.base_url = base_url.replace(
             "localhost", "docker-host"
         )
-        for action in actions:
-            client.send_immediate_msg_without_reply(msg=action)
+
+        if isinstance(actions, (list, tuple)) and isinstance(
+            actions[0], SMPCActionMessage
+        ):
+            actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
+            for action in actions:
+                client.send_immediate_msg_without_reply(msg=action)
+        elif isinstance(actions, SMPCActionSeqBatchMessage):
+            client.send_immediate_msg_without_reply(actions)
 
     def _object2proto(self) -> RunClassMethodSMPCAction_PB:
         """Returns a protobuf serialization of self.

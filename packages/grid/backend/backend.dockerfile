@@ -4,16 +4,34 @@ RUN --mount=type=cache,target=/var/cache/apt \
   apt-get update && \
   apt-get install -y --no-install-recommends curl wget
 
+# apple m1
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  apt-get update && apt-get install -y --no-install-recommends libsodium-dev; \
+  fi
+
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
 
+# apple m1
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  pip install --user uvicorn gunicorn; \
+  fi
+
 # Allow installing dev dependencies to run tests
+RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
+  pip install --user "uvicorn[standard]" gunicorn; \
+  fi
+
+# apple m1
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  pip install --user torch==1.8.1; \
+  fi
+
 RUN --mount=type=cache,target=/root/.cache \
-  pip install --user "uvicorn[standard]" gunicorn
-RUN --mount=type=cache,target=/root/.cache \
-  pip install --user \
-  torch==1.8.1+cpu torchvision==0.9.1+cpu torchcsprng==0.2.1+cpu \
-  -f https://download.pytorch.org/whl/torch_stable.html
+  if [ $(uname -m) = "x86_64" ]; then pip install --user \
+  torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
+  fi
+
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
 
@@ -44,6 +62,14 @@ RUN --mount=type=cache,target=/root/.cache \
   pip install --user watchdog pyyaml argh
 
 WORKDIR /app
+
+# apple m1
+# Download PyNacl for arm64
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  wget https://opencomputinglab.github.io/vce-wheelhouse/wheelhouse/PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl && \
+  pip install --user ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl && \
+  rm ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl; \
+  fi
 
 # copy grid
 COPY grid/backend /app/

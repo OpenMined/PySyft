@@ -1,0 +1,35 @@
+List of potential questions for L5 (Data Science on Deployed Node):
+
+Passive Learning/Long Answer:
+
+- What does a data scientist's privacy budget represent?
+- Can a data scientist access data on a node directly?
+- Does a data scientist have the same access to a node that a domain owner does? If not, how does their access differ?
+- Is it possible to do machine learning with data that has been passed through Privacy Enhancing Technologies? Why or why not?
+- Does a data scientist see the same errors that a domain owner does?
+
+Active Learning/Multiple Choice:
+
+- A data scientist working on your domain is attempting to access data via `publish` calls, and is receiving an error. Should you:
+(a) Check the server log to see what errors are being raised
+(b) Tell the data scientist to check their privacy budget
+(c) Ensure that the data scientist has an account on your domain
+(d) All of the above
+
+- The same data scientist manages to access some data, and sends you an email saying that the data appears corrupted or incorrect. What shouldn't you do?
+
+(a) Point the data scientist to an explanation of PETs and privacy budgets
+(b) Tell them to increase the sigma parameter on their `publish` calls
+(c) Delete the data and recreate it
+
+
+- As the domain owner, you want to see what data scientists see, and decide to access the node from your own account. Check any actions below that you can perform that a normal data scientist cannot:
+
+[ ] Deleting the data
+[ ] Seeing the data without noise
+[ ] Performing machine learning and statistical operations on the data
+[ ] Adding new users to the node
+
+- True or False: each dataset on a node has a unique ID.
+
+- True or False: data scientists who do NOT own the domain have access to each dataset's metadata (unique ID, asset listing, etc.).

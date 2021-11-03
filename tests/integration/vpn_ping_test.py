@@ -25,6 +25,7 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
 
 @pytest.mark.integration
 def test_domain1_ping_network() -> None:
+    print("running test_domain1_ping_network")
     unique_email = f"{uuid.uuid4()}@caltech.edu"
 
     root_client = sy.login(
@@ -51,6 +52,7 @@ def test_domain1_ping_network() -> None:
 
 @pytest.mark.integration
 def test_domain2_ping_network() -> None:
+    print("running test_domain2_ping_network")
     unique_email = f"{uuid.uuid4()}@caltech.edu"
 
     root_client = sy.login(
@@ -77,6 +79,7 @@ def test_domain2_ping_network() -> None:
 
 @pytest.mark.integration
 def test_domain1_ping_domain2() -> None:
+    print("running test_domain1_ping_domain2")
     unique_email = f"{uuid.uuid4()}@caltech.edu"
 
     root_client = sy.login(

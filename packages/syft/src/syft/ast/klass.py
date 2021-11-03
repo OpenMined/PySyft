@@ -106,6 +106,9 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         multiple times it returns genuinely different methods each time with a different
         internal `attr_path_and_name` variable.
     """
+    # relative
+    from ..core.node.common.action import smpc_action_functions
+    from ..core.node.common.action.smpc_action_functions import MAP_FUNC_TO_ACTION
 
     def run_class_smpc_method(
         __self: Any,
@@ -121,9 +124,6 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         Returns:
             Pointer to object returned by class method.
         """
-        # relative
-        from ..core.node.common.action.smpc_action_message import SMPCActionMessage
-
         seed_id_locations = kwargs.get("seed_id_locations", None)
         if seed_id_locations is None:
             raise ValueError(
@@ -133,7 +133,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         kwargs["seed_id_locations"] = str(seed_id_locations)
         kwargs["client"] = __self.client
         op = attr_path_and_name.split(".")[-1]
-        id_at_location = SMPCActionMessage.get_id_at_location_from_op(
+        id_at_location = smpc_action_functions.get_id_at_location_from_op(
             seed_id_locations, op
         )
 
@@ -243,9 +243,6 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         )
 
         return result
-
-    # relative
-    from ..core.node.common.action.smpc_action_message import MAP_FUNC_TO_ACTION
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]
     if SMPC or (
