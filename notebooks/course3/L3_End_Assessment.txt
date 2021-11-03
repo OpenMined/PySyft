@@ -20,9 +20,8 @@ b. Data having different metadata
 c. Data having different owners to request permissions from
 d. Any of the above.
 
-Q4. What are the 4 V's of Data? 
+Q4. What are the 4 V's of Data?
 a. Ventriloquism, Vanity, Vacation, Vague
 b. Velocity, Veracity, Vacancy, Volume
 c. Volume, Value, Velocity, Variety
 d. Vacation, Vaccination, Value, Vlad
-
