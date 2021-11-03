@@ -1,24 +1,16 @@
-from gevent import monkey  # isort:skip
-
-monkey.patch_all()  # noqa
-
 # third party
-from raven import Client  # noqa: E402
+from raven import Client
 
 # syft absolute
-from syft import deserialize  # noqa: E402
-from syft.core.common.message import (  # noqa: E402
-    SignedImmediateSyftMessageWithoutReply,
-)
-from syft.core.node.common.action.exceptions import RetriableError  # noqa: E402
-from syft.core.node.common.action.unfinished_task import (  # noqa: E402
-    register_unfinished_task,
-)
+from syft import deserialize
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.node.common.action.exceptions import RetriableError
+from syft.core.node.common.action.unfinished_task import register_unfinished_task
 
 # grid absolute
-from grid.core.celery_app import celery_app  # noqa: E402
-from grid.core.config import settings  # noqa: E402
-from grid.core.node import node  # noqa: E402
+from grid.core.celery_app import celery_app
+from grid.core.config import settings
+from grid.core.node import node
 
 client_sentry = Client(settings.SENTRY_DSN)
 

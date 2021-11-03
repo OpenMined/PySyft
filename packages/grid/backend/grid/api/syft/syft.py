@@ -1,32 +1,26 @@
-from gevent import monkey  # isort:skip
-
-monkey.patch_all()  # noqa
-
 # stdlib
-import json  # noqa: E402
-from typing import Any  # noqa: E402
+import json
+from typing import Any
 
 # third party
-from fastapi import APIRouter  # noqa: E402
-from fastapi import Depends  # noqa: E402
-from fastapi import Request  # noqa: E402
-from fastapi import Response  # noqa: E402
+from fastapi import APIRouter
+from fastapi import Depends
+from fastapi import Request
+from fastapi import Response
 
 # syft absolute
-from syft import deserialize  # noqa: E402
-from syft import serialize  # noqa: E402
-from syft.core.common.message import (  # noqa: E402
-    SignedImmediateSyftMessageWithoutReply,
-)
-from syft.core.common.message import SignedImmediateSyftMessageWithReply  # noqa: E402
-from syft.core.node.domain.enums import RequestAPIFields  # noqa: E402
+from syft import deserialize
+from syft import serialize
+from syft.core.common.message import SignedImmediateSyftMessageWithReply
+from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.node.domain.enums import RequestAPIFields
 
 # grid absolute
-from grid.api.dependencies.current_user import get_current_user  # noqa: E402
-from grid.api.users.models import UserPrivate  # noqa: E402
-from grid.core.celery_app import celery_app  # noqa: E402
-from grid.core.config import settings  # noqa: E402
-from grid.core.node import node  # noqa: E402
+from grid.api.dependencies.current_user import get_current_user
+from grid.api.users.models import UserPrivate
+from grid.core.celery_app import celery_app
+from grid.core.config import settings
+from grid.core.node import node
 
 router = APIRouter()
 
