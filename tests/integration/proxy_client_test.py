@@ -1,4 +1,5 @@
 # stdlib
+import time
 import uuid
 
 # third party
@@ -27,6 +28,10 @@ def test_domain1_via_network_proxy_client() -> None:
     x = torch.Tensor([1, 2, 3])
     x_ptr = x.send(domain_client, tags=[unique_tag])
 
+    time.sleep(1)
+
+    _ = domain_client.store[x_ptr.id_at_location.no_dash]
+
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
 
@@ -35,6 +40,8 @@ def test_domain1_via_network_proxy_client() -> None:
     assert proxy_client.address == domain_client.address
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
+
+    time.sleep(1)
 
     y_ptr = proxy_client.store[x_ptr.id_at_location.no_dash]
     assert x_ptr.id_at_location == y_ptr.id_at_location
