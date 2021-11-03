@@ -19,9 +19,6 @@ import numpy as np
 import numpy.typing as npt
 import torch
 
-# syft absolute
-import syft as sy
-
 # relative
 from . import utils
 from .... import logger
@@ -173,14 +170,16 @@ class MPCTensor(PassthroughTensor):
                 party_info = Party(url, port)
                 PARTIES_REGISTER_CACHE[party] = party_info
                 try:
-                    sy.register(  # nosec
-                        name="Howard Wolowtiz",
-                        email="howard@mit.edu",
-                        password="astronaut",
-                        url=url,
-                        port=port,
-                        verbose=False,
-                    )
+                    pass
+                    # We do not use sy.register, should reenable after fixing.
+                    # sy.register(  # nosec
+                    #     name="Howard Wolowtiz",
+                    #     email="howard@mit.edu",
+                    #     password="astronaut",
+                    #     url=url,
+                    #     port=port,
+                    #     verbose=False,
+                    # )
                 except Exception:
                     """ """
                     # TODO : should modify to return same client if registered.
