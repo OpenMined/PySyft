@@ -245,9 +245,7 @@ class DatasetRequestAPI(RequestAPI):
                 }
                 </style>
 
-                <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for datasets..">
-
-                <table id="myTable">
+                <table id="myTable" style="width:1000px">
                   <tr class="header">
                     <th style="width:30px">Idx</th>
                     <th style="width:20%;">Name</th>
@@ -344,7 +342,7 @@ class Dataset:
 
         data = self.data
 
-        if data > 10:
+        if len(data) > 10:
             print(
                 "Too many assets to print... truncating... print(my_dataset.data) to view all."
             )
