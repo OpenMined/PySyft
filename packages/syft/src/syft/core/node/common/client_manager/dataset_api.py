@@ -373,26 +373,33 @@ class Dataset:
             if not isinstance(value, Tensor) or not isinstance(
                 getattr(value, "child", None), ADPTensor
             ):
-                print(
-                    "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
-                    + name
-                    + "' which cannot be tracked with differential privacy because it is a "
-                    + str(type(value))
-                    + " object.\n\n"
-                    + "This means you'll need to manually approve any requests which "
-                    + "leverage this data. If this is ok with you, proceed. If you'd like to use "
-                    + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
-                    + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                raise Exception(
+                    "ERROR: all private assets must be NumPy ndarray.int32 assets "
+                    + "with proper Differential Privacy metadata applied.\n"
+                    + "\n"
+                    + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).private()\n\n"
+                    + "and then follow the wizard. 🧙"
                 )
-
-                pref = input("Are you sure you want to proceed? (y/n)")
-
-                while pref != "y" and pref != "n":
-                    pref = input(
-                        "Invalid input '" + pref + "', please specify 'y' or 'n'."
-                    )
-                if pref == "n":
-                    raise Exception("Dataset loading cancelled.")
+                # print(
+                #     "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
+                #     + name
+                #     + "' which cannot be tracked with differential privacy because it is a "
+                #     + str(type(value))
+                #     + " object.\n\n"
+                #     + "This means you'll need to manually approve any requests which "
+                #     + "leverage this data. If this is ok with you, proceed. If you'd like to use "
+                #     + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
+                #     + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                # )
+                #
+                # pref = input("Are you sure you want to proceed? (y/n)")
+                #
+                # while pref != "y" and pref != "n":
+                #     pref = input(
+                #         "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                #     )
+                # if pref == "n":
+                #     raise Exception("Dataset loading cancelled.")
 
             existing_asset_names = [d.get("name") for d in self.data]
             if name in existing_asset_names:
