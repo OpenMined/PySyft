@@ -330,7 +330,12 @@ def smpc_mul(
 
 
 def local_decomposition(
-    x: ShareTensor, ring_size: int, bitwise: bool, seed_id_locations: str, node: Any
+    x: ShareTensor,
+    ring_size: int,
+    bitwise: bool,
+    seed_id_locations: str,
+    node: Any,
+    read_permissions: Dict[Any, Any],
 ) -> None:
     """Performs local decomposition to generate shares of shares.
 
@@ -390,7 +395,7 @@ def local_decomposition(
             store_obj = StorableObject(
                 id=id_at_location,
                 data=data,
-                read_permissions={},
+                read_permissions=read_permissions,
             )
             node.store[id_at_location] = store_obj
 
