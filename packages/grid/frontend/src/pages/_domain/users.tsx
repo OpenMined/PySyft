@@ -18,12 +18,15 @@ import {UserModal} from '@/components/Users/UserModal'
 
 import commonStrings from '@/i18n/en/common.json'
 import usersStrings from '@/i18n/en/users.json'
+import {ChangeRoleModal} from '@/components/Users/ChangeRoleModal'
 
 function Active() {
   const {data: roles} = useRoles().all()
   const {data: users} = useUsers().all()
   const [isCreatingUser, showCreateUser] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [selectedModal, setModal] = useState(null)
+
   return (
     <>
       <div className="col-span-11 mt-10">
@@ -46,12 +49,33 @@ function Active() {
       </div>
       <Divider color="light" className="col-span-full mt-8" />
       <div className="col-span-full mt-4">
-        <ActiveUsersTable users={users} setSelectedUser={setSelectedUser} />
+        <ActiveUsersTable
+          users={users}
+          setSelectedUser={user => {
+            setSelectedUser(user)
+            setModal('user')
+          }}
+        />
       </div>
       <Modal show={isCreatingUser} onClose={() => showCreateUser(false)}>
         <CreateUser onClose={() => showCreateUser(false)} />
       </Modal>
-      <UserModal show={Boolean(selectedUser)} onClose={() => setSelectedUser(null)} user={selectedUser} />
+      {selectedUser && (
+        <UserModal
+          show={selectedModal === 'user'}
+          user={selectedUser}
+          onClose={() => setModal('')}
+          onEditRole={() => setModal('change-role')}
+        />
+      )}
+      {selectedUser && (
+        <ChangeRoleModal
+          show={selectedModal === 'change-role'}
+          onClose={() => setModal('user')}
+          role={selectedUser?.role}
+          user={selectedUser}
+        />
+      )}
     </>
   )
 }

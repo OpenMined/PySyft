@@ -7,7 +7,7 @@ import {t} from '@/i18n'
 import {formatBudget, formatDate} from '@/utils'
 import {BorderedBox} from '@/components/Boxes'
 
-function UserModal({show, onClose, user}) {
+function UserModal({show, onClose, user, onEditRole}) {
   if (!user) return null
   return (
     <Modal show={show} onClose={onClose} withExpand={`/active/${user.id}`}>
@@ -23,8 +23,8 @@ function UserModal({show, onClose, user}) {
             </Text>
           </Button>
         </div>
-        <button>
-          <Text size="sm" as="p" className="text-primary-600 mt-3">
+        <button onClick={onEditRole}>
+          <Text size="sm" as="p" className="text-primary-600 mt-3" underline>
             {t('change-role')}
           </Text>
         </button>
