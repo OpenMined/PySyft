@@ -216,8 +216,11 @@
               "storageAccountType": "[parameters('osDiskType')]"
             }
           },
-          "imageReference": {
-            "id": "/subscriptions/767334bd-95eb-473a-a74c-d5b75b5b5198/resourceGroups/openmined-images/providers/Microsoft.Compute/galleries/openmined.images/images/openmined-domain/versions/0.6.0"
+          "imageReference":{
+            "publisher":"OpenMined",
+            "offer":"Domain",
+            "sku":"ubuntu2004-1",
+            "version":"0.6.0"
           }
         },
         "networkProfile": {
