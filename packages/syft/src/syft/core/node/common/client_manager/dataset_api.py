@@ -259,9 +259,19 @@ class DatasetRequestAPI(RequestAPI):
 
         rows = ""
         for row_i, d in enumerate(dataset_iterable):
+
+            data = d.data
+            truncated_assets = False
+            if len(data) > 3:
+                truncated_assets = True
+                data = data[:3]
+
             assets = ""
-            for i, a in enumerate(d.data):
+            for i, a in enumerate(data):
                 assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
+
+            if truncated_assets:
+                assets += "...<br /><br />"
 
             rows += (
                 """
@@ -332,8 +342,16 @@ class Dataset:
 
         rows = ""
 
+        data = self.data
+
+        if data > 10:
+            print(
+                "Too many assets to print... truncating... print(my_dataset.data) to view all."
+            )
+            data = data[0:10]
+
         assets = ""
-        for i, a in enumerate(self.data):
+        for i, a in enumerate(data):
             assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
 
             rows += (
