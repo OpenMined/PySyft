@@ -5,20 +5,33 @@ RUN --mount=type=cache,target=/var/cache/apt \
   apt-get install -y --no-install-recommends curl wget
 
 # apple m1
-RUN if [ `uname -m` != "x86_64" ]; then \
-  apt-get update && apt-get install -y --no-install-recommends libsodium-dev \
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  apt-get update && apt-get install -y --no-install-recommends libsodium-dev; \
   fi
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
 
+# apple m1
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  pip install --user uvicorn gunicorn; \
+  fi
+
 # Allow installing dev dependencies to run tests
+RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
+  pip install --user "uvicorn[standard]" gunicorn; \
+  fi
+
+# apple m1
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  pip install --user torch==1.8.1; \
+  fi
+
 RUN --mount=type=cache,target=/root/.cache \
-  pip install --user uvicorn
-RUN --mount=type=cache,target=/root/.cache \
-  pip install --user \
-  torch==1.8.1 \
-  -f https://download.pytorch.org/whl/torch_stable.html
+  if [ $(uname -m) = "x86_64" ]; then pip install --user \
+  torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
+  fi
+
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
 
@@ -52,15 +65,11 @@ WORKDIR /app
 
 # apple m1
 # Download PyNacl for arm64
-RUN if [ `uname -m` != "x86_64" ]; then \
+RUN if [ $(uname -m) != "x86_64" ]; then \
   wget https://opencomputinglab.github.io/vce-wheelhouse/wheelhouse/PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl && \
   pip install --user ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl && \
-  rm ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl \
+  rm ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl; \
   fi
-
-# install syft
-RUN --mount=type=cache,target=/root/.cache \
-  pip install --user -e /app/syft
 
 # copy grid
 COPY grid/backend /app/
@@ -70,6 +79,10 @@ COPY grid/backend /app/
 COPY syft/setup.py /app/syft/setup.py
 COPY syft/setup.cfg /app/syft/setup.cfg
 COPY syft/src /app/syft/src
+
+# install syft
+RUN --mount=type=cache,target=/root/.cache \
+  pip install --user -e /app/syft
 
 # change to worker-start.sh or start-reload.sh as needed
 CMD ["bash", "start.sh"]
