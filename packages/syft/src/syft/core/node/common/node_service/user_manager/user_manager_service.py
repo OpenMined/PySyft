@@ -135,6 +135,12 @@ def update_user_msg(
     if not _valid_user:
         raise UserNotFoundError
 
+    if msg.institution:
+        node.users.set(user_id=str(msg.user_id), institution=msg.institution)
+
+    if msg.website:
+        node.users.set(user_id=str(msg.user_id), website=msg.website)
+
     # Change Email Request
     elif msg.email:
         node.users.set(user_id=str(msg.user_id), email=msg.email)
