@@ -49,11 +49,11 @@ def docker_desktop_memory() -> int:
         f = open(path, "r")
         out = f.read()
         f.close()
-    except FileNotFoundError:
+        return json.loads(out)["memoryMiB"]
+
+    except Exception:
         # docker desktop not found - probably running linux
         return -1
-
-    return json.loads(out)["memoryMiB"]
 
 
 def hagrid_root() -> str:
