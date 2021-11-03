@@ -348,7 +348,8 @@ class Dataset:
 
         if len(data) > 15:
             print(
-                "WARNING: Too many assets to print... truncating... You may run \n\n assets = my_dataset.assets \n\nto view receive a "
+                "WARNING: Too many assets to print... truncating... You "
+                "may run \n\n assets = my_dataset.assets \n\nto view receive a "
                 "dictionary you can parse through using Python\n(as opposed to blowing up your notebook"
                 " with a massive printed table).\n"
             )
