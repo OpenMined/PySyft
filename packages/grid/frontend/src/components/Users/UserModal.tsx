@@ -6,8 +6,10 @@ import Modal from '../Modal'
 import {t} from '@/i18n'
 import {formatBudget, formatDate} from '@/utils'
 import {BorderedBox} from '@/components/Boxes'
+import {useUsers} from '@/lib/data'
 
-function UserModal({show, onClose, user, onEditRole}) {
+function UserModal({show, onClose, user, onDelete, onEditRole}) {
+  const removeUser = useUsers().remove(user.id, {onSuccess: onClose}).mutate
   if (!user) return null
   return (
     <Modal show={show} onClose={onClose} withExpand={`/active/${user.id}`}>
@@ -17,7 +19,7 @@ function UserModal({show, onClose, user, onEditRole}) {
             <H2 className="items-center">{user.name}</H2>
             <RoleBadge role={user.role} />
           </div>
-          <Button variant="ghost" size="sm" className="flex-shrink-0">
+          <Button variant="ghost" size="sm" className="flex-shrink-0" onClick={removeUser}>
             <Text size="sm" className="text-gray-400">
               <FontAwesomeIcon icon={faTrash} className="mr-2" /> {t('delete-user')}
             </Text>
