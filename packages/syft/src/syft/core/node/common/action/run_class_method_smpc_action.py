@@ -1,8 +1,12 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Union
 
 # third party
@@ -14,15 +18,22 @@ import syft as sy
 
 # relative
 from ..... import lib
+from ..... import logger
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
 )
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
+from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
+
+if TYPE_CHECKING:
+    # relative
+    from .smpc_action_message import SMPCActionMessage
 
 
 @serializable()
@@ -162,6 +173,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         }
 
         # Get the list of actions to be run
+        # TODO : Remove client as we do not use it now.
         actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
         actions = actions_generator(*args_id, **kwargs)  # type: ignore
         base_url = client.routes[0].connection.base_url
@@ -174,9 +186,77 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         ):
             actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
             for action in actions:
-                client.send_immediate_msg_without_reply(msg=action)
+                RunClassMethodSMPCAction.execute_smpc_action(node, action, verify_key)
         elif isinstance(actions, SMPCActionSeqBatchMessage):
-            client.send_immediate_msg_without_reply(actions)
+            msg = actions
+            while msg.smpc_actions:
+                action = msg.smpc_actions[0]
+                RunClassMethodSMPCAction.execute_smpc_action(node, action, verify_key)
+                del msg.smpc_actions[0]
+
+    @staticmethod
+    def execute_smpc_action(
+        node: AbstractNode, msg: "SMPCActionMessage", verify_key: VerifyKey
+    ) -> None:
+        # relative
+        from .smpc_action_functions import _MAP_ACTION_TO_FUNCTION
+
+        func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
+        store_object_self = node.store.get_object(key=msg.self_id)
+        if store_object_self is None:
+            raise KeyError("Object not already in store")
+
+        _self = store_object_self.data
+        args = [node.store[arg_id].data for arg_id in msg.args_id]
+
+        kwargs = {}  # type: ignore
+        for key, kwarg_id in msg.kwargs_id.items():
+            data = node.store[kwarg_id].data
+            if data is None:
+                raise KeyError(f"Key {key} is not available")
+
+            kwargs[key] = data
+        kwargs = {**kwargs, **msg.kwargs}
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+        logger.warning(func)
+
+        if msg.name_action in {"spdz_multiply", "spdz_mask", "local_decomposition"}:
+            result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
+        else:
+            result = func(_self, *upcasted_args, **upcasted_kwargs)
+
+        if lib.python.primitive_factory.isprimitive(value=result):
+            # Wrap in a SyPrimitive
+            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
+                value=result, id=msg.id_at_location
+            )
+        else:
+            # TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                try:
+                    if hasattr(result, "_id"):
+                        # set the underlying id
+                        result._id = msg.id_at_location
+                    else:
+                        result.id = msg.id_at_location
+
+                    if result.id != msg.id_at_location:
+                        raise AttributeError("IDs don't match")
+                except AttributeError as e:
+                    err = f"Unable to set id on result {type(result)}. {e}"
+                    traceback_and_raise(Exception(err))
+
+        if not isinstance(result, StorableObject):
+            result = StorableObject(
+                id=msg.id_at_location,
+                data=result,
+                read_permissions=store_object_self.read_permissions,
+            )
+
+        node.store[msg.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodSMPCAction_PB:
         """Returns a protobuf serialization of self.
