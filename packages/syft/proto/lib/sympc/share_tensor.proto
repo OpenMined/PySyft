@@ -2,12 +2,16 @@ syntax = "proto3";
 
 package syft.lib.sympc;
 
+import "proto/lib/numpy/array.proto";
 import "proto/lib/torch/tensor.proto";
 import "proto/lib/python/dict.proto";
 
 message ShareTensor {
-  syft.lib.torch.TensorProto tensor = 1;
-  syft.lib.python.Dict config = 2;
-  string session_uuid = 3;
-  bytes ring_size = 4;
+  oneof data {
+    syft.lib.torch.TensorProto tensor = 1;
+    syft.lib.numpy.NumpyProto array = 2;
+  };
+  syft.lib.python.Dict config = 3;
+  string session_uuid = 4;
+  bytes ring_size = 5;
 }
