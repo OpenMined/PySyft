@@ -153,13 +153,6 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         resolved_kwargs.pop("seed_id_locations")
 
-        client = resolved_kwargs.get("client", None)
-        if client is None:
-            raise ValueError(
-                "Expected client to be in the kwargs to generate SMPCActionMessage"
-            )
-
-        resolved_kwargs.pop("client")
         actions_generator = smpc_action_functions.get_action_generator_from_op(
             operation_str=method_name, nr_parties=nr_parties
         )
@@ -169,17 +162,12 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         kwargs = {
             "seed_id_locations": int(seed_id_locations),
             "node": node,
-            "client": client,
         }
 
         # Get the list of actions to be run
         # TODO : Remove client as we do not use it now.
         actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
         actions = actions_generator(*args_id, **kwargs)  # type: ignore
-        base_url = client.routes[0].connection.base_url
-        client.routes[0].connection.base_url = base_url.replace(
-            "localhost", "docker-host"
-        )
 
         if isinstance(actions, (list, tuple)) and isinstance(
             actions[0], SMPCActionMessage

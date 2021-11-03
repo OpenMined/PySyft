@@ -131,7 +131,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             )
 
         kwargs["seed_id_locations"] = str(seed_id_locations)
-        kwargs["client"] = __self.client
+
         op = attr_path_and_name.split(".")[-1]
         id_at_location = smpc_action_functions.get_id_at_location_from_op(
             seed_id_locations, op
