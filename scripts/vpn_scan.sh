@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/bash
 
 # use with:
 # $ cat scripts/vpn_scan.sh | docker exec -i test_network_1-tailscale-1 ash
@@ -20,6 +20,10 @@ apk add lsof
 # docker network connect test_domain_1_default test_network_1-tailscale-1
 tailscale status | grep -v "$(hostname)" | awk '{print $1}' | while read line; do
     echo "Scanning $line"
-    nc -z -v "$line" 1-65535 2>&1 | grep succeeded
+    if [[ $line =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        nc -z -v "$line" 1-65535 2>&1 | grep succeeded
+        # just run one for now
+        break
+    fi
     # nc -z -v "$line" 21 80 4000 8001 8011 8080 5050 5432 5555 5672 15672 2>&1 | grep succeeded
 done
