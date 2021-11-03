@@ -7,6 +7,7 @@ do
 done
 
 pip install --user -e /app/syft
+python3 -c "from gevent import monkey;monkey.patch_all()"
 
 # Let the DB start
 python /app/grid/backend_prestart.py
