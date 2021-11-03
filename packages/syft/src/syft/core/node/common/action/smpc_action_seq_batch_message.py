@@ -2,19 +2,11 @@
 from __future__ import annotations
 
 # stdlib
-from copy import deepcopy
-import functools
-import operator
-from typing import Any
-from typing import Callable
-from typing import Dict
 from typing import List
 from typing import Optional
-from uuid import UUID
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-import numpy as np
 
 # syft absolute
 import syft as sy
@@ -27,40 +19,23 @@ from ....common.message import ImmediateSyftMessageWithoutReply
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
-from .exceptions import ObjectNotInStore
+from .smpc_action_message import SMPCActionMessage
 
 
 @serializable()
 class SMPCActionSeqBatchMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
-        smpc_actions: List[SMPCaction],
+        smpc_actions: List[SMPCActionMessage],
         address: Address,
         msg_id: Optional[UID] = None,
     ) -> None:
         self.smpc_actions = smpc_actions
         super().__init__(address=address, msg_id=msg_id)
 
-    @staticmethod
-    def get_action_generator_from_op(
-        operation_str: str, nr_parties: int
-    ) -> Callable[[UID, UID, int, Any], Any]:
-        """ "
-        Get the generator for the operation provided by the argument
-        Arguments:
-            operation_str (str): the name of the operation
-
-        """
-        return functools.partial(MAP_FUNC_TO_ACTION[operation_str], nr_parties)
-
-    @staticmethod
-    def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
-        generator = np.random.default_rng(seed)
-        return UID(UUID(bytes=generator.bytes(16)))
-
     def __str__(self) -> str:
-        res = f"SMPCActionSeqBatch:\n"
-        res = f"{self.smpc_actions}"
+        res = "SMPCActionSeqBatch:\n"
+        res = f"{res} {self.smpc_actions}"
         return res
 
     __repr__ = __str__

@@ -7,7 +7,6 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 from uuid import UUID
 
 # third party
@@ -15,16 +14,14 @@ import numpy as np
 
 # relative
 from ....common.uid import UID
-from ....tensor.smpc import utils
 from ....store.storeable_object import StorableObject
-from .smpc_action_message import SMPCActionMessage
-from .smpc_action_seq_batch_message import SMPCActionSeqBatchMessage
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 from .beaver_action import BeaverAction
 from .greenlets_switch import beaver_retrieve_object
-
+from .smpc_action_message import SMPCActionMessage
+from .smpc_action_seq_batch_message import SMPCActionSeqBatchMessage
 
 
 def get_action_generator_from_op(
@@ -42,7 +39,6 @@ def get_action_generator_from_op(
 def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
     generator = np.random.default_rng(seed)
     return UID(UUID(bytes=generator.bytes(16)))
-
 
 
 def smpc_basic_op(
@@ -244,7 +240,7 @@ def smpc_mul(
     seed_id_locations: Optional[int] = None,
     node: Optional[Any] = None,
     client: Optional[Any] = None,
-) -> List[SMPCActionMessage]:
+) -> SMPCActionSeqBatchMessage:
     """Generator for the smpc_mul with a public value"""
     # relative
     from ..... import Tensor
@@ -328,8 +324,8 @@ def smpc_mul(
                 address=client.address,
             )
         )
-
-    return actions
+    batch = SMPCActionSeqBatchMessage(smpc_actions=actions, address=client.address)
+    return batch
 
 
 def local_decomposition(

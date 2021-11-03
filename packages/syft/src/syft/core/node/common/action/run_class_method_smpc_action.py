@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -161,13 +162,16 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         }
 
         # Get the list of actions to be run
+        actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
         actions = actions_generator(*args_id, **kwargs)  # type: ignore
         base_url = client.routes[0].connection.base_url
         client.routes[0].connection.base_url = base_url.replace(
             "localhost", "docker-host"
         )
 
-        if isinstance(actions, SMPCActionMessage):
+        if isinstance(actions, (list, tuple)) and isinstance(
+            actions[0], SMPCActionMessage
+        ):
             actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
             for action in actions:
                 client.send_immediate_msg_without_reply(msg=action)
