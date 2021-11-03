@@ -321,6 +321,10 @@ class Dataset:
     def pandas(self) -> pd.DataFrame:
         return pd.DataFrame(self.raw)
 
+    @property
+    def assets(self) -> Any:
+        return self.data
+
     def __getitem__(self, key: str) -> Any:
         keys = list()
         for d in self.data:
@@ -342,11 +346,13 @@ class Dataset:
 
         data = self.data
 
-        if len(data) > 10:
+        if len(data) > 15:
             print(
-                "Too many assets to print... truncating... print(my_dataset.data) to view all."
+                "WARNING: Too many assets to print... truncating... You may run \n\n assets = my_dataset.assets \n\nto view receive a "
+                "dictionary you can parse through using Python\n(as opposed to blowing up your notebook"
+                " with a massive printed table).\n"
             )
-            data = data[0:10]
+            data = data[0:15]
 
         assets = ""
         for i, a in enumerate(data):
