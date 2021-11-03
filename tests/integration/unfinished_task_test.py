@@ -8,6 +8,7 @@ from syft.core.store.storeable_object import StorableObject
 
 
 def test_unfinished_task(get_clients) -> None:
+    print("running test_unfinished_task")
     client = get_clients(1)[0]
 
     list_pointer = sy.lib.python.List().send(client)

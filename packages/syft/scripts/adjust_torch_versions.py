@@ -24,7 +24,6 @@ system = platform.system()
 
 
 def main(path_req: str, torch_version: str, gpu: str = "cpu") -> None:
-    print("got args", path_req, torch_version, gpu)
     with open(path_req, "r") as fp:
         req = fp.read()
 
