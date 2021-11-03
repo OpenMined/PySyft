@@ -1,6 +1,6 @@
 #! /usr/bin/env sh
 set -e
-python3 -c "print("Monkey Patching: Gevent\n");from gevent import monkey;monkey.patch_all()"
+python3 -c "print('---Monkey Patching: Gevent---\n');from gevent import monkey;monkey.patch_all()"
 
 if [ -f /app/grid/main.py ]; then
     DEFAULT_MODULE_NAME=grid.main
