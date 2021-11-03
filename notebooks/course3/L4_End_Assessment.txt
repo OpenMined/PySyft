@@ -19,8 +19,8 @@ Active Learning/Multiple Choice:
 - You follow the Notebook and successfully install HAgrid, and are able to run commands successfully. Satisfied, you close everything. The next day, you open a Notebook and try to connect to your domain node, but are getting errors saying: `Error: ____ command not found`. What could be the source of the error?
 
 (a) You forgot to activate your Virtual environment
-(b) ...
-(c)
+(b) You forgot to import syft
+(c) Any of the above
 
 
 - You're working with a domain node that you deployed locally as a Data Owner. Suddenly, there's a power cut and your Internet Connection becomes unstable. How does your domain node get affected?
