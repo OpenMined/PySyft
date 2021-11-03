@@ -1,0 +1,27 @@
+Lesson 3 Assessment:
+
+Multiple Choice:
+
+Q1. You create a Syft Tensor, but are unable to upload it to the domain node. What could be the problem?
+a. You forgot to specify the data independent minimum value metadata
+b. You forgot to specify the maximum value metadata
+c. You forgot to label which entity the Tensor belongs to
+d. Any of the above.
+
+Q2. You pass your dataset to a Syft Tensor, but are unable to make it a private tensor. What could be the problem?
+a. Your data wasn't a compatible NumPy array type
+b. There was a problem with one of the Docker containers, and you could check the logs.
+c. You forgot to add DP metadata.
+d. Any of the above.
+
+Q3. What are some things to be wary of when combining the same data, from multiple sources?
+a. Data being pre-processed differently.
+b. Data having different metadata
+c. Data having different owners to request permissions from
+d. Any of the above.
+
+Q4. What are the 4 V's of Data?
+a. Ventriloquism, Vanity, Vacation, Vague
+b. Velocity, Veracity, Vacancy, Volume
+c. Volume, Value, Velocity, Variety
+d. Vacation, Vaccination, Value, Vlad

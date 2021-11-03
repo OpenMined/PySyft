@@ -3,6 +3,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -13,7 +14,6 @@ import syft as sy
 
 # relative
 from ..... import lib
-from .....logger import critical
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
 )
@@ -22,7 +22,7 @@ from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
-from .exceptions import ObjectNotInStore
+from .greenlets_switch import retrieve_object
 
 
 @serializable()
@@ -86,29 +86,19 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # relative
+        from . import smpc_action_functions
         from ..... import Tensor
         from .smpc_action_message import SMPCActionMessage
+        from .smpc_action_seq_batch_message import SMPCActionSeqBatchMessage
 
-        resolved_self = node.store.get_object(key=self._self.id_at_location)
+        resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
 
-        if resolved_self is None:
-            critical(
-                f"execute_action on {self.path} failed due to missing object"
-                + f" at: {self._self.id_at_location}"
-            )
-            raise ObjectNotInStore
         result_read_permissions = resolved_self.read_permissions
 
         resolved_args = list()
         tag_args = []
         for arg in self.args:
-            r_arg = node.store.get_object(key=arg.id_at_location)
-            if r_arg is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {arg.id_at_location}"
-                )
-                raise ObjectNotInStore
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
 
             # TODO: Think of a way to free the memory
             # del node.store[arg.id_at_location]
@@ -121,13 +111,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store.get_object(arg.id_at_location)
-            if r_arg is None:
-                critical(
-                    f"execute_action on {self.path} failed due to missing object"
-                    + f" at: {arg.id_at_location}"
-                )
-                raise ObjectNotInStore
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             # TODO: Think of a way to free the memory
             # del node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
@@ -165,7 +149,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             )
 
         resolved_kwargs.pop("client")
-        actions_generator = SMPCActionMessage.get_action_generator_from_op(
+        actions_generator = smpc_action_functions.get_action_generator_from_op(
             operation_str=method_name, nr_parties=nr_parties
         )
         args_id = [arg.id_at_location for arg in self.args]
@@ -178,14 +162,21 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         }
 
         # Get the list of actions to be run
+        actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
         actions = actions_generator(*args_id, **kwargs)  # type: ignore
-        actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
         base_url = client.routes[0].connection.base_url
         client.routes[0].connection.base_url = base_url.replace(
             "localhost", "docker-host"
         )
-        for action in actions:
-            client.send_immediate_msg_without_reply(msg=action)
+
+        if isinstance(actions, (list, tuple)) and isinstance(
+            actions[0], SMPCActionMessage
+        ):
+            actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
+            for action in actions:
+                client.send_immediate_msg_without_reply(msg=action)
+        elif isinstance(actions, SMPCActionSeqBatchMessage):
+            client.send_immediate_msg_without_reply(actions)
 
     def _object2proto(self) -> RunClassMethodSMPCAction_PB:
         """Returns a protobuf serialization of self.
