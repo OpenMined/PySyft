@@ -723,13 +723,53 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def lt(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = spdz.lt_master(self, y, "mul")
+
+        return mpc_res
+
     def gt(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         self, y = MPCTensor.sanity_checks(self, y)
-        mpc_res = spdz.gt_master(self, y, "mul")
+        mpc_res = MPCTensor.lt(y, self)
 
         return mpc_res
+
+    def ge(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = 1 - MPCTensor.lt(self, y)
+
+        return mpc_res  # type: ignore
+
+    def le(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = 1 - MPCTensor.lt(y, self)
+
+        return mpc_res  # type: ignore
+
+    def eq(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = MPCTensor.le(self, y) - MPCTensor.lt(self, y)
+
+        return mpc_res
+
+    def ne(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = 1 - MPCTensor.eq(self, y)
+
+        return mpc_res  # type: ignore
 
     def matmul(
         self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
@@ -793,7 +833,12 @@ class MPCTensor(PassthroughTensor):
     __mul__ = mul
     __rmul__ = mul
     __matmul__ = matmul
+    __lt__ = lt
     __gt__ = gt
+    __ge__ = ge
+    __le__ = le
+    __eq__ = eq
+    __ne__ = ne
 
 
 @implements(MPCTensor, np.add)
