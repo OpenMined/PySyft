@@ -6,8 +6,10 @@ https://eprint.iacr.org/2018/403.pdf
 # stdlib
 from functools import reduce
 import secrets
+import time
 from typing import Any
 from typing import List
+from typing import Union
 from uuid import UUID
 
 # third party
@@ -92,7 +94,7 @@ class ABY3:
             res_shares.append(mpc)
 
         # TODO: Should modify to xor at mpc tensor level
-        arith_share = reduce(lambda a, b: a + b - (a * b * 2), res_shares)
+        arith_share = reduce(lambda a, b: a + b - (2 * a * b), res_shares)
 
         return arith_share
 
@@ -134,9 +136,80 @@ class ABY3:
         c = np.array([0], dtype=np.bool)  # carry bits of addition.
         result: List[MPCTensor] = []
         for idx in range(ring_bits):
+            print("Bit Number :", idx)
             s_tmp = a[idx] + b[idx]
             s = s_tmp + c
             c = a[idx] * b[idx] + c * s_tmp
+            result.append(s)
+            time.sleep(3)
+        return result
+
+    @staticmethod
+    def full_adder_spdz_compiler(
+        a: List[MPCTensor], b: List[MPCTensor], c: List[MPCTensor]
+    ) -> List[MPCTensor]:
+        # Specialized for 3 parties
+        """Perform bit addition on MPCTensors using a full adder.
+
+        Args:
+            a (List[MPCTensor]): MPCTensor with shares of bit.
+            b (List[MPCTensor]): MPCTensor with shares of bit.
+            c (List[MPCTensor]): MPCTensor with shares of bit.
+
+        Returns:
+            result (List[MPCTensor]): Result of the operation.
+
+        TODO: Should modify ripple carry adder to parallel prefix adder.
+        """
+        parties = a[0].parties
+        parties_info = a[0].parties_info
+
+        shape_x = tuple(a[0].shape)  # type: ignore
+        shape_y = tuple(b[0].shape)  # type: ignore
+        ring_size = 2 ** 32
+
+        # For ring_size 2 we generate those before hand
+        CryptoPrimitiveProvider.generate_primitives(
+            "beaver_mul",
+            nr_instances=128,
+            parties=parties,
+            g_kwargs={
+                "a_shape": shape_x,
+                "b_shape": shape_y,
+                "parties_info": parties_info,
+            },
+            p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
+            ring_size=2,
+        )
+
+        ring_bits = get_nr_bits(ring_size)
+
+        # carry = np.zeros(a[0].mpc_shape, dtype=np.bool)  # carry bits of addition.
+        beta_1 = np.zeros(a[0].mpc_shape, dtype=np.bool)
+        gamma_1 = np.zeros(a[0].mpc_shape, dtype=np.bool)
+        one = np.ones(a[0].mpc_shape, dtype=np.bool)
+
+        result: List[MPCTensor] = []
+
+        def majority(
+            a: Union[MPCTensor, np.ndarray],
+            b: Union[MPCTensor, np.ndarray],
+            c: Union[MPCTensor, np.ndarray],
+        ) -> MPCTensor:
+            return (a + c + one) * (b + c) + b
+
+        for idx in range(ring_bits):
+            alfa = a[idx] + b[idx] + c[idx]
+            beta = majority(a[idx], b[idx], c[idx])
+
+            gamma = majority(alfa, beta_1, gamma_1)
+
+            s = alfa + gamma_1 + beta_1
+
+            beta_1 = beta
+            gamma_1 = gamma
+
+            time.sleep(1)
             result.append(s)
         return result
 
@@ -195,6 +268,9 @@ class ABY3:
                 res_shares[i].append(mpc)
 
         bin_share = reduce(ABY3.full_adder, res_shares)
+        # bin_share = ABY3.full_adder_spdz_compiler(
+        #     res_shares[0], res_shares[1], res_shares[2]
+        # )
 
         return bin_share
 
