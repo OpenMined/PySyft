@@ -293,6 +293,22 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         """
         return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "mul")
 
+    def __lt__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "lt" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "lt")
+
     def __gt__(
         self,
         other: Union[
@@ -308,6 +324,70 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
             Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "gt")
+
+    def __ge__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "ge" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "ge")
+
+    def __le__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "le" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "le")
+
+    def __eq__(  # type: ignore
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "eq" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "eq")
+
+    def __ne__(  # type: ignore
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "ne" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "ne")
 
     def to_local_object_without_private_data_child(self) -> SingleEntityPhiTensor:
         """Convert this pointer into a partial version of the SingleEntityPhiTensor but without

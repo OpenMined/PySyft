@@ -162,7 +162,7 @@ class Pointer(AbstractPointer):
     @property
     def block(self) -> AbstractPointer:
         while not self.exists:
-            time.sleep(0.2)
+            time.sleep(0.1)
         return self
 
     def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
