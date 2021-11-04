@@ -146,7 +146,7 @@ class ABY3:
 
     @staticmethod
     def full_adder_spdz_compiler(
-        a: List[MPCTensor], b: List[MPCTensor], c: [MPCTensor]
+        a: List[MPCTensor], b: List[MPCTensor], c: List[MPCTensor]
     ) -> List[MPCTensor]:
         # Specialized for 3 parties
         """Perform bit addition on MPCTensors using a full adder.
@@ -184,7 +184,7 @@ class ABY3:
 
         ring_bits = get_nr_bits(ring_size)
 
-        carry = np.zeros(a[0].mpc_shape, dtype=np.bool)  # carry bits of addition.
+        # carry = np.zeros(a[0].mpc_shape, dtype=np.bool)  # carry bits of addition.
         beta_1 = np.zeros(a[0].mpc_shape, dtype=np.bool)
         gamma_1 = np.zeros(a[0].mpc_shape, dtype=np.bool)
         one = np.ones(a[0].mpc_shape, dtype=np.bool)
@@ -208,7 +208,7 @@ class ABY3:
 
             beta_1 = beta
             gamma_1 = gamma
-            import time
+
             time.sleep(1)
             result.append(s)
         return result
@@ -267,10 +267,10 @@ class ABY3:
                 )
                 res_shares[i].append(mpc)
 
-        #bin_share = reduce(ABY3.full_adder, res_shares)
-        bin_share = ABY3.full_adder_spdz_compiler(
-            res_shares[0], res_shares[1], res_shares[2]
-        )
+        bin_share = reduce(ABY3.full_adder, res_shares)
+        # bin_share = ABY3.full_adder_spdz_compiler(
+        #     res_shares[0], res_shares[1], res_shares[2]
+        # )
 
         return bin_share
 
