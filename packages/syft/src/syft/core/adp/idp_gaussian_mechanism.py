@@ -88,7 +88,7 @@ class iDPGaussianMechanism(Mechanism):
         sigma: float,
         squared_l2_norm: float,
         squared_l2_norm_upper_bound: float,
-        L: np.float,
+        L: float,
         entity_name: str,
         name: str = "Gaussian",
         RDP_off: bool = False,
