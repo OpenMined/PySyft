@@ -11,7 +11,7 @@ import syft as sy
 DOMAIN1_PORT = 9082
 
 
-@pytest.mark.integration
+@pytest.mark.network
 def test_large_message_size() -> None:
     domain_client = sy.login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
@@ -36,8 +36,6 @@ def test_large_message_size() -> None:
         print(f"Took {total_time}")
         data_rate = mb_size / total_time
         print(f"Send transfer rate: {data_rate}")
-        # MB per second
-        assert data_rate > 4.0
     except Exception as e:
         total_time = time.time() - start_time
         print(f"Failed to send {size} in {total_time}. {e}")
@@ -50,8 +48,6 @@ def test_large_message_size() -> None:
         total_time = time.time() - start_time
         data_rate = mb_size / total_time
         print(f"Return transfer rate: {data_rate}")
-        # this will be faster than sending
-        assert data_rate > 4.0
     except Exception as e:
         print(f"Failed to get data back. {e}")
         raise e

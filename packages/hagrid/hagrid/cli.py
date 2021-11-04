@@ -107,6 +107,13 @@ def clean(location: str) -> None:
     help="Optional: don't tail logs on launch",
 )
 @click.option(
+    "--headless",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: don't start the frontend container",
+)
+@click.option(
     "--cmd",
     default="false",
     required=False,
@@ -344,6 +351,11 @@ def create_launch_cmd(
             if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
                 build = False
             parsed_kwargs["build"] = build
+
+            headless = False
+            if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
+                headless = True
+            parsed_kwargs["headless"] = headless
 
             # If the user is using docker desktop (OSX/Windows), check to make sure there's enough RAM.
             # If the user is using Linux this isn't an issue because Docker scales to the avaialble RAM,
@@ -663,6 +675,10 @@ def create_launch_docker_cmd(
     cmd += " docker compose -p " + snake_name
     if str(node_type.input) == "network":
         cmd += " --profile network"
+
+    if kwargs["headless"] is False:
+        cmd += " --profile frontend"
+
     cmd += " up"
 
     if not tail:
