@@ -29,6 +29,7 @@ from .land import get_land_verb
 from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
 from .lib import check_docker_version
+from .lib import docker_desktop_memory
 from .lib import name_tag
 from .lib import use_branch
 from .style import RichGroup
@@ -343,9 +344,28 @@ def create_launch_cmd(
             if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
                 build = False
             parsed_kwargs["build"] = build
-            return create_launch_docker_cmd(
-                verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
-            )
+
+            # If the user is using docker desktop (OSX/Windows), check to make sure there's enough RAM.
+            # If the user is using Linux this isn't an issue because Docker scales to the avaialble RAM,
+            # but on Docker Desktop it defaults to 2GB which isn't enough.
+            dd_memory = docker_desktop_memory()
+            if dd_memory == -1 or dd_memory >= 8192:
+                return create_launch_docker_cmd(
+                    verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
+                )
+            else:
+                raise Exception(
+                    "You appear to be using Docker Desktop but don't have "
+                    "enough memory allocated. It appears you've configured "
+                    f"Memory:{dd_memory} MB when 8192MB (8GB) is required. "
+                    f"Please open Docker Desktop Preferences panel and set Memory"
+                    f" to 8GB or higher. \n\n"
+                    f"\tOSX Help: https://docs.docker.com/desktop/mac/\n"
+                    f"\tWindows Help: https://docs.docker.com/desktop/windows/\n\n"
+                    f"Then re-run your hagrid command.\n\n"
+                    f"If you see this warning on Linux then something isn't right. "
+                    f"Please file a Github Issue on PySyft's Github"
+                )
     elif host in ["vm"]:
         if (
             DEPENDENCIES["vagrant"]

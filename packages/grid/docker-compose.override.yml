@@ -58,6 +58,8 @@ services:
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - PORT=8001
+      - STACK_API_KEY=$STACK_API_KEY
+
     build:
       context: ../
       dockerfile: ./grid/backend/backend.dockerfile
@@ -87,6 +89,8 @@ services:
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - STREAM_QUEUE=1
       - PORT=8011
+      - STACK_API_KEY=$STACK_API_KEY
+
     build:
       context: ../
       dockerfile: ./grid/backend/backend.dockerfile
@@ -110,11 +114,13 @@ services:
       - ../../notebooks:/notebooks
       - ./data/package-cache:/root/.cache
     environment:
-      - RUN=celery worker -A grid.worker -l info -Q main-queue -c 1
+      - RUN=celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
       - SERVER_HOST=http://${DOMAIN?Variable not set}
       - SYFT_USE_UVLOOP=0
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - C_FORCE_ROOT=1
+      - STACK_API_KEY=$STACK_API_KEY
+
     build:
       context: ../
       dockerfile: ./grid/backend/backend.dockerfile
@@ -145,9 +151,12 @@ services:
       dockerfile: tailscale.dockerfile
     environment:
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - STACK_API_KEY=$STACK_API_KEY
+
     volumes:
       - tailscale-data:/var/lib/tailscale
       - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
+      # - ./grid/vpn:/tailscale
     cap_add: # Required for tailscale to work
       - net_admin
       - sys_module
@@ -168,8 +177,10 @@ services:
       dockerfile: headscale.dockerfile
     volumes:
       - headscale-data:/headscale/data
+      # - ./grid/vpn:/headscale
     environment:
       - NETWORK_NAME=omnet
+      - STACK_API_KEY=$STACK_API_KEY
     ports:
       - "4000"
     labels:

@@ -48,10 +48,6 @@ def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.smpc.store.CryptoStore.populate_store",
             "syft.lib.python._SyNone",
         ),
-        (
-            "syft.core.smpc.protocol.spdz.spdz.beaver_populate",
-            "syft.lib.python._SyNone",
-        ),
     ]
 
     add_modules(ast, modules)
