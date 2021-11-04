@@ -91,8 +91,7 @@ jobs:
           DOCKER_COMPOSE_VERSION=v2.0.1
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T fQtHIkg5G9ggExBUbz3v97 OwvndycMImvDha18Qgxmk2 au.relay.tunshell.com
-          # tox -e stack.test.integration
+          tox -e stack.test.integration
 
       - name: Save docker images
         if: steps.changes.outputs.stack == 'true'
