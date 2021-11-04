@@ -124,8 +124,8 @@ class ShareTensor(PassthroughTensor):
     def login_clients(parties_info: List[Party]) -> Any:
         clients = []
         for party_info in parties_info:
-            client = CACHE_CLIENTS.get(party_info, None)
             party_info.url = party_info.url.replace("localhost", "docker-host")
+            client = CACHE_CLIENTS.get(party_info, None)
             if client is None:
                 # TODO: refactor to use a guest account
                 client = sy.login(  # nosec
