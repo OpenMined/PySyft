@@ -145,9 +145,7 @@ class Node(AbstractNode):
         # If not provided a session connecting us to the database, let's just
         # initialize a database in memory
         if db_engine is None:
-            db_engine = create_engine(
-                "sqlite://", echo=False, pool_size=150, max_overflow=50
-            )
+            db_engine = create_engine("sqlite://", echo=False)
             Base.metadata.create_all(db_engine)  # type: ignore
 
         # cache these variables on self
