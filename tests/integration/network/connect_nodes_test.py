@@ -67,21 +67,21 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
     assert response["status"] == "ok"
 
 
-@pytest.mark.integration
+@pytest.mark.network
 def test_connect_network_to_network() -> None:
     run_network_tests(
         port=NETWORK_PORT, hostname="test_network_1", vpn_ip=NETWORK_VPN_IP
     )
 
 
-@pytest.mark.integration
+@pytest.mark.network
 def test_connect_domain1_to_network() -> None:
     run_network_tests(
         port=DOMAIN1_PORT, hostname="test_domain_1", vpn_ip=DOMAIN1_VPN_IP
     )
 
 
-@pytest.mark.integration
+@pytest.mark.network
 def test_connect_domain2_to_network() -> None:
     run_network_tests(
         port=DOMAIN2_PORT, hostname="test_domain_2", vpn_ip=DOMAIN2_VPN_IP

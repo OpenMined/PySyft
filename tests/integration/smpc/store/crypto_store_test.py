@@ -17,6 +17,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # @register_primitive_store_get("test_crypto_store")
 # def provider_test_get(
 #     store: Dict[str, List[Any]], nr_instances: int

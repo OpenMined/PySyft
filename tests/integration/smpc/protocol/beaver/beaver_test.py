@@ -8,6 +8,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_beaver_mul(get_clients) -> None:
 #     parties = get_clients(3)
 #     a_shape = (2, 2)
