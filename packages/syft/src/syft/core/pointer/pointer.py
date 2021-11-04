@@ -288,6 +288,8 @@ class Pointer(AbstractPointer):
             PublishScalarsAction,
         )
 
+        # TODO: make publish genuinely asynchronous (not sure why it isn't already but
+        # if you call publish on an object before it exists it complains.
         self.block
 
         id_at_location = UID()

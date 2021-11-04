@@ -190,6 +190,10 @@ class MPCTensor(PassthroughTensor):
 
     def publish(self, sigma: float) -> MPCTensor:
         new_shares = []
+        
+        for share in self.child:
+            share.block
+
         for share in self.child:
             new_share = share.publish(sigma=sigma)
             new_shares.append(new_share)
