@@ -78,12 +78,12 @@ async def syft_stream(
 
     if settings.STREAM_QUEUE:
         print("Queuing streaming message for processing on worker node")
-        # use latin-1 instead of utf-8 because our bytes might not be an even number
-        msg_bytes_str = data.decode("latin-1")
         try:
-            celery_app.send_task("grid.worker.msg_without_reply", args=[msg_bytes_str])
-        except Exception:
-            print(f"Failed to queue work on streaming endpoint. {msg_bytes_str}")
+            # we pass in the bytes and they get handled by the custom serde code
+            # inside celery_app.py
+            celery_app.send_task("grid.worker.msg_without_reply", args=[data])
+        except Exception as e:
+            print(f"Failed to queue work on streaming endpoint. {type(data)}. {e}")
     else:
         print("Processing streaming message on web node")
         obj_msg = deserialize(blob=data, from_bytes=True)

@@ -41,6 +41,8 @@ services:
     ports:
       - "5672"
       - "15672"
+    volumes:
+      - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
 
   backend:
     volumes:
