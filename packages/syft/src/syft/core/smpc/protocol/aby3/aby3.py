@@ -6,7 +6,6 @@ https://eprint.iacr.org/2018/403.pdf
 # stdlib
 from functools import reduce
 import secrets
-import time
 from typing import Any
 from typing import List
 from typing import Union
@@ -141,7 +140,7 @@ class ABY3:
             s = s_tmp + c
             c = a[idx] * b[idx] + c * s_tmp
             result.append(s)
-            time.sleep(3)
+            c.block
         return result
 
     @staticmethod
@@ -209,7 +208,8 @@ class ABY3:
             beta_1 = beta
             gamma_1 = gamma
 
-            time.sleep(1)
+            # time.sleep(1)
+            s.block
             result.append(s)
         return result
 

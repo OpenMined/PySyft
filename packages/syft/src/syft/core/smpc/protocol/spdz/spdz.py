@@ -88,7 +88,7 @@ def mul_master(
     return res_shares  # type: ignore
 
 
-def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
+def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     """Function that is executed by the orchestrator to multiply two secret values.
 
     Args:
