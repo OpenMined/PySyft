@@ -31,7 +31,7 @@ def test_large_message_size() -> None:
         start_time = time.time()
         print(f"Sending {mb} sized message")
         x_ptr = x.send(domain_client, tags=[size, mb])
-        x_ptr.block_with_timeout(500)
+        x_ptr.block_with_timeout(120)
         total_time = time.time() - start_time
         print(f"Took {total_time}")
         data_rate = mb_size / total_time
