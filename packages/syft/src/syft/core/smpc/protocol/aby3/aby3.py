@@ -141,7 +141,7 @@ class ABY3:
             s = s_tmp + c
             c = a[idx] * b[idx] + c * s_tmp
             result.append(s)
-            time.sleep(3)
+            c.block
         return result
 
     @staticmethod
