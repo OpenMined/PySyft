@@ -288,6 +288,8 @@ class Pointer(AbstractPointer):
             PublishScalarsAction,
         )
 
+        self.block
+
         id_at_location = UID()
 
         obj_msg = PublishScalarsAction(
