@@ -211,8 +211,16 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
         logger.warning(func)
 
-        if msg.name_action in {"spdz_multiply", "spdz_mask", "local_decomposition"}:
+        if msg.name_action in {"spdz_multiply", "spdz_mask"}:
             result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
+        elif msg.name_action == "local_decomposition":
+            result = func(
+                _self,
+                *upcasted_args,
+                **upcasted_kwargs,
+                node=node,
+                read_permissions=store_object_self.read_permissions,
+            )
         else:
             result = func(_self, *upcasted_args, **upcasted_kwargs)
 

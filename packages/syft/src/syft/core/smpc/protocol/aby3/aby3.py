@@ -6,6 +6,7 @@ https://eprint.iacr.org/2018/403.pdf
 # stdlib
 from functools import reduce
 import secrets
+import time
 from typing import Any
 from typing import List
 from uuid import UUID
@@ -134,10 +135,12 @@ class ABY3:
         c = np.array([0], dtype=np.bool)  # carry bits of addition.
         result: List[MPCTensor] = []
         for idx in range(ring_bits):
+            print("Bit Number :", idx)
             s_tmp = a[idx] + b[idx]
             s = s_tmp + c
             c = a[idx] * b[idx] + c * s_tmp
             result.append(s)
+            time.sleep(3)
         return result
 
     @staticmethod

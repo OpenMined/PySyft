@@ -1,6 +1,6 @@
 worker_send_task_event = False
 task_ignore_result = True
-task_time_limit = 60
+task_time_limit = 1000
 task_acks_late = True
 broker_pool_limit = 500
 worker_prefetch_multiplier = 1
