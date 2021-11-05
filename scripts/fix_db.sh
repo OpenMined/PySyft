@@ -1,7 +1,7 @@
 #!/bin/bash
 
 # detect bad database version and reset db
-BAD_DB_EXISTS=$(docker ps --format '{{.Names}}' | grep db | xargs -I {} docker exec {} bash -c 'PGPASSWORD=$1 psql -U postgres app -c "select version_num from alembic_version;"' | grep $2)
+BAD_DB_EXISTS=$(docker ps --format '{{.Names}}' | grep db | xargs -I {} docker exec {} bash -c "PGPASSWORD=$1 psql -U postgres app -c 'select version_num from alembic_version;'" | grep $2)
 STATUS=$?
 echo $STATUS
 echo $BAD_DB_EXISTS
@@ -13,10 +13,10 @@ then
     OUTPUT=$(docker ps --format '{{.Names}}' | grep -v db | xargs -I {} docker stop {})
     echo $OUTPUT
     # delete the db
-    OUTPUT=$(docker ps --format '{{.Names}}' | grep db | xargs -I {} docker exec {} bash -c 'PGPASSWORD=changethis psql -U postgres app -c "DROP DATABASE IF EXISTS app;"')
+    OUTPUT=$(docker ps --format '{{.Names}}' | grep db | xargs -I {} docker exec {} bash -c "PGPASSWORD=$1 psql -U postgres -c 'DROP DATABASE IF EXISTS app;'")
     echo $OUTPUT
     # create the db
-    OUTPUT=$(docker ps --format '{{.Names}}' | grep db | xargs -I {} docker exec {} bash -c 'PGPASSWORD=changethis psql -U postgres app -c "CREATE DATABASE app;"')
+    OUTPUT=$(docker ps --format '{{.Names}}' | grep db | xargs -I {} docker exec {} bash -c "PGPASSWORD=$1 psql -U postgres -c 'CREATE DATABASE app;'")
     echo $OUTPUT
 else
     echo "DB hash is fine, doing nothing.";
