@@ -378,13 +378,99 @@ class StoreClient:
     def __iter__(self) -> Iterator[Any]:
         return self.store.__iter__()
 
-    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
+    #
+    # def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
+    #
+    #     if isinstance(key, int):
+    #         return self.store[key]
+    #     elif isinstance(key, str):
+    #         # PART 1: try using the key as an ID
+    #         try:
+    #             key = UID.from_string(key)
+    #             return self[key]
+    #         except ValueError:
+    #
+    #             # If there's no id of this key, then try matching on a tag
+    #             matches = 0
+    #             match_obj: Optional[Pointer] = None
+    #
+    #             for obj in self.store:
+    #                 if key in obj.tags:
+    #                     matches += 1
+    #                     match_obj = obj
+    #             if matches == 1 and match_obj is not None:
+    #                 return match_obj
+    #             else:  # matches > 1
+    #                 traceback_and_raise(
+    #                     KeyError("More than one item with tag:" + str(key))
+    #                 )
+    #                 raise KeyError("More than one item with tag:" + str(key))
+    #
+    #     elif isinstance(key, UID):
+    #         msg = ObjectSearchMessage(
+    #             address=self.client.address, reply_to=self.client.address, obj_id=key
+    #         )
+    #
+    #         results = getattr(
+    #             self.client.send_immediate_msg_with_reply(msg=msg), "results", None
+    #         )
+    #         if results is None:
+    #             traceback_and_raise(ValueError("TODO"))
+    #
+    #         # This is because of a current limitation in Pointer where we cannot
+    #         # serialize a client object. TODO: Fix limitation in Pointer so that we don't need this.
+    #         for result in results:
+    #             result.gc_enabled = False
+    #             result.client = self.client
+    #         if len(results) == 1:
+    #             return results[0]
+    #         return results
+    #     else:
+    #         traceback_and_raise(KeyError("Please pass in a string or int key"))
 
+    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
+        if isinstance(key, str):
+
+            try:
+                return self[UID.from_string(key)]
+            except IndexError:
+
+                matches = 0
+                match_obj: Optional[Pointer] = None
+
+                for obj in self.store:
+                    if key in obj.tags:
+                        matches += 1
+                        match_obj = obj
+                if matches == 1 and match_obj is not None:
+                    return match_obj
+                elif matches > 1:
+                    traceback_and_raise(
+                        KeyError("More than one item with tag:" + str(key))
+                    )
+                else:
+                    # If key does not math with any tags, we then try to match it with id string.
+                    # But we only do this if len(key)>=5, because if key is too short, for example
+                    # if key="a", there are chances of mismatch it with id string, and I don't
+                    # think the user pass a key such short as part of id string.
+                    str_key = str(key)
+                    if len(str_key) >= 5:
+                        for obj in self.store:
+                            if str_key in str(obj.id_at_location.value).replace(
+                                "-", ""
+                            ):
+                                return obj
+                    else:
+                        traceback_and_raise(
+                            KeyError(
+                                f"No such item found for tag: {key}, and we "
+                                + "don't consider it as part of id string because its too short."
+                            )
+                        )
+
+                traceback_and_raise(KeyError("No such item found for id:" + str(key)))
         if isinstance(key, int):
             return self.store[key]
-        elif isinstance(key, str):
-            key = UID.from_string(key)
-            return self[key]
         elif isinstance(key, UID):
             msg = ObjectSearchMessage(
                 address=self.client.address, reply_to=self.client.address, obj_id=key
@@ -401,9 +487,8 @@ class StoreClient:
             for result in results:
                 result.gc_enabled = False
                 result.client = self.client
-            if len(results) == 1:
-                return results[0]
-            return results
+
+            return results[0]
         else:
             traceback_and_raise(KeyError("Please pass in a string or int key"))
 

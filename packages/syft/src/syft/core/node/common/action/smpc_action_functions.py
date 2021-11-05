@@ -126,48 +126,31 @@ def spdz_multiply(
         x = x.child.child
         y = y.child.child
 
-    # print(")))))))))))))))))))))))))")
-    # print("SPDZ multiply")
     nr_parties = x.nr_parties
 
     ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
     eps = beaver_retrieve_object(node, eps_id, nr_parties)  # type: ignore
     delta = beaver_retrieve_object(node, delta_id, nr_parties)  # type: ignore
-    # print("RING SIZE", ring_size)
-    # print("EPS Store", eps)
-    # print("Delta Store", delta)
-    # print("NR parties", nr_parties)
-
-    # print("Beaver Error surpassed*******************************")
 
     # TODO : Should refactor fixed precision tensor later
 
     eps = sum(eps.data)  # type: ignore
     delta = sum(delta.data)  # type:ignore
-    # print(" Final EPS", eps)
-    # print("Final Delta", delta)
-    # print("A_share", a_share.child, "\n")
-    # print("B_share", b_share.child, "\n")
-    # print("C_share", c_share.child, "\n")
+
 
     eps_b = eps * b_share.child
-    # print("EPS_B", eps_b, "\n")
     delta_a = delta * a_share.child  # Symmetric only for mul
-    # print("DELTA_A", delta_a, "\n")
 
     tensor = c_share + eps_b + delta_a
-    # print("C addedTensor", tensor, "\n")
     if x.rank == 0:
         mul_op = ShareTensor.get_op(ring_size, "mul")
         eps_delta = mul_op(eps.child, delta.child)  # type: ignore
-        # print("EPS_DELTA", eps_delta, "\n")
+
         tensor = tensor + eps_delta
 
     share = x.copy_tensor()
     share.child = tensor.child  # As we do not use fixed point we neglect truncation.
-    # print("Final Tensor", tensor)
-    print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
     if TENSOR_FLAG:
         t = t1 * t2
@@ -198,18 +181,11 @@ def spdz_mask(
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
-    # print(")))))))))))))))))))))))))")
-    # print("SPDZ Mask")
     clients = ShareTensor.login_clients(x.parties_info)
 
     eps = x - a_share  # beaver intermediate values.
     delta = y - b_share
-    # print("x ShareTensor:", x, "\n")
-    # print("y ShareTensor", y, "\n")
-    # print("a ShareTensor:", a_share, "\n")
-    # print("b ShareTensor", b_share, "\n")
-    # print("EPS::::::::::::", eps, "\n")
-    # print("Delta::::::::::::", delta, "\n")
+
 
     client_id_map = {client.id: client for client in clients}
     curr_client = client_id_map[node.id]  # type: ignore
@@ -226,11 +202,7 @@ def spdz_mask(
         if client != curr_client:
             beaver_action.address = client.address
             client.send_immediate_msg_without_reply(msg=beaver_action)
-            # print("Client here", client)
-            # print("++++++++++++++++++++++++++++++++++++++++++++++")
-            # print("Values sent")
-            # print("EPS_ID", eps_id)
-            # print("DELTA_ID", delta_id)
+
 
 
 def smpc_mul(
