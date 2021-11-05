@@ -50,7 +50,7 @@ class User(BaseUser):
     id: int
     role: Union[int, str]  # TODO: This should be int. Perhaps add role_name instead?
     budget_spent: Optional[float]
-    allocated_budget: Optional[float]
+    budget: Optional[float]
     institution: Optional[str]
     website: Optional[str]
     added_by: Optional[str]

@@ -247,6 +247,9 @@ class UserManager(DatabaseManager):
         elif website:
             key = "website"
             value = website
+        elif budget:
+            key = "budget"
+            value = budget
         elif institution:
             key = "institution"
             value = institution
