@@ -1,4 +1,12 @@
 ---
+- name: Fix Bad DB
+  shell: "source ../packages/grid/.env && ./fix_db.sh $POSTGRES_PASSWORD d4867f3a4c0a"
+  args:
+    chdir: "{{ build_dir }}/scripts"
+  become_user: "{{ om_user }}"
+  ignore_errors: yes
+  when: docker_volume_destroy is not defined
+
 - name: Kill Docker Containers
   shell: "docker rm $(docker ps -qa) --force || true"
   become_user: "{{ om_user }}"
@@ -28,14 +36,6 @@
   become_user: "{{ om_user }}"
   ignore_errors: yes
   when: docker_volume_destroy is defined
-
-- name: Fix Bad DB
-  shell: "source ../packages/grid/.env && ./fix_db.sh $POSTGRES_PASSWORD d4867f3a4c0a"
-  args:
-    chdir: "{{ build_dir }}/scripts"
-  become_user: "{{ om_user }}"
-  ignore_errors: yes
-  when: docker_volume_destroy is not defined
 
 - name: Start Docker Containers
   shell:

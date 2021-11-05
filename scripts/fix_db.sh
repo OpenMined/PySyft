@@ -9,8 +9,13 @@ echo $BAD_DB_EXISTS
 if [ $STATUS -eq 0 ]
 then
     echo "Bad DB hash found, dropping and creating db app";
-    OUTPUT=$(docker ps --format '{{.Names}}' | grep db | xargs -I {} docker exec {} bash -c 'PGPASSWORD=changethis psql -U postgres app -c "DROP DATABASE IF EXISTS app WITH (FORCE);"')
+    # stop all the other containers
+    OUTPUT=$(docker ps --format '{{.Names}}' | grep -v db | xargs -I {} docker stop {})
     echo $OUTPUT
+    # delete the db
+    OUTPUT=$(docker ps --format '{{.Names}}' | grep db | xargs -I {} docker exec {} bash -c 'PGPASSWORD=changethis psql -U postgres app -c "DROP DATABASE IF EXISTS app;"')
+    echo $OUTPUT
+    # create the db
     OUTPUT=$(docker ps --format '{{.Names}}' | grep db | xargs -I {} docker exec {} bash -c 'PGPASSWORD=changethis psql -U postgres app -c "CREATE DATABASE app;"')
     echo $OUTPUT
 else
