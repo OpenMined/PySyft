@@ -196,7 +196,8 @@ class ABY3:
             return (a + c + one) * (b + c) + b
 
         for idx in range(ring_bits):
-            print("Bit ", idx)
+            if idx % 3 == 0:
+                print("Computing Bit ", idx)
             s = a[idx] + b[idx] + carry
             if idx != ring_bits - 1:
                 carry = majority(a[idx], b[idx], carry)
