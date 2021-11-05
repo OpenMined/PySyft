@@ -10,7 +10,6 @@ SPDZ mechanism used for multiplication Contains functions that are run at:
 from __future__ import annotations
 
 # stdlib
-import time
 from typing import Any
 from typing import Dict
 from typing import TYPE_CHECKING
@@ -107,7 +106,8 @@ def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     # sum carry adder
     # res = sign(diff)
     res_shares = x - y
-    time.sleep(2)
+    res_shares.block
+    # time.sleep(2)
     return MSB(res_shares)
 
 
@@ -125,7 +125,10 @@ def MSB(x: MPCTensor) -> MPCTensor:
     """
     ring_size = 2 ** 32  # TODO : Should extract ring_size elsewhere for generality.
     decomposed_shares = ABY3.bit_decomposition(x)
-    time.sleep(3)
+
+    for share in decomposed_shares:
+        share.block
+
     msb_share = decomposed_shares[-1]
     msb = ABY3.bit_injection(msb_share, ring_size)
 
