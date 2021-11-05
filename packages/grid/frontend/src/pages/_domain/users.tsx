@@ -19,6 +19,7 @@ import {UserModal} from '@/components/Users/UserModal'
 import commonStrings from '@/i18n/en/common.json'
 import usersStrings from '@/i18n/en/users.json'
 import {ChangeRoleModal} from '@/components/Users/ChangeRoleModal'
+import {PrivacyBudgetModal} from '@/components/Users/PrivacyBudgetModal'
 
 function Active() {
   const {data: roles} = useRoles().all()
@@ -66,6 +67,7 @@ function Active() {
           user={selectedUser}
           onClose={() => setModal('')}
           onEditRole={() => setModal('change-role')}
+          onAdjustBudget={() => console.log('c') || setModal('adjust-budget')}
         />
       )}
       {selectedUser && (
@@ -73,6 +75,13 @@ function Active() {
           show={selectedModal === 'change-role'}
           onClose={() => setModal('user')}
           role={selectedUser?.role}
+          user={selectedUser}
+        />
+      )}
+      {selectedUser && (
+        <PrivacyBudgetModal
+          show={selectedModal === 'adjust-budget'}
+          onClose={() => setModal('user')}
           user={selectedUser}
         />
       )}

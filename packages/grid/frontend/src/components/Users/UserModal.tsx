@@ -8,7 +8,7 @@ import {formatBudget, formatDate} from '@/utils'
 import {BorderedBox} from '@/components/Boxes'
 import {useUsers} from '@/lib/data'
 
-function UserModal({show, onClose, user, onDelete, onEditRole}) {
+function UserModal({show, onClose, user, onEditRole, onAdjustBudget}) {
   const removeUser = useUsers().remove(user.id, {onSuccess: onClose}).mutate
   if (!user) return null
   return (
@@ -32,7 +32,7 @@ function UserModal({show, onClose, user, onDelete, onEditRole}) {
         </button>
       </div>
       <div className="grid grid-cols-10 col-span-10 col-start-2 gap-8 mt-8 mb-10">
-        <PrivacyBudgetAdjustCard {...user} />
+        <PrivacyBudgetAdjustCard {...user} onAdjustBudget={onAdjustBudget} />
         <Background {...user} />
         <System {...user} />
       </div>
@@ -40,7 +40,7 @@ function UserModal({show, onClose, user, onDelete, onEditRole}) {
   )
 }
 
-function PrivacyBudgetAdjustCard({current_balance, allocated_budget}) {
+function PrivacyBudgetAdjustCard({current_balance, allocated_budget, onAdjustBudget}) {
   return (
     <div className="col-span-7 space-y-3">
       <H6 bold>
@@ -66,7 +66,7 @@ function PrivacyBudgetAdjustCard({current_balance, allocated_budget}) {
             </Text>
           </div>
         </div>
-        <Button size="sm" variant="outline">
+        <Button size="sm" variant="outline" onClick={onAdjustBudget}>
           {t('buttons.adjust-budget')}
         </Button>
       </div>
@@ -85,7 +85,7 @@ function Background({email, institution, website}) {
       <H6 bold>{t('background')}</H6>
       <BorderedBox className="space-y-4">
         {info.map(uinfo => (
-          <Text as="p" size="sm" bold>
+          <Text key={uinfo.text} as="p" size="sm" bold>
             {uinfo.text}:
             <Text size="sm" underline={uinfo.link} className="ml-2">
               {uinfo.value || '--'}
@@ -110,7 +110,7 @@ function System({created_at, added_by, daa_pdf, daa_pdf_uploaded_on}) {
       <H6 bold>{t('system')}</H6>
       <BorderedBox className="space-y-4">
         {info.map(uinfo => (
-          <Text as="p" size="sm" bold>
+          <Text key={uinfo.text} as="p" size="sm" bold>
             {uinfo.text}
             <Text size="sm" className="ml-2">
               {uinfo.value ?? '--'}

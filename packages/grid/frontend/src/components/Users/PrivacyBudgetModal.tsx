@@ -7,7 +7,7 @@ import {t} from '@/i18n'
 import Modal from '../Modal'
 import {useUsers} from '@/lib/data'
 
-export function PrivacyBudgetModal({show, onClose, user, role}) {
+export function PrivacyBudgetModal({show, onClose, user}) {
   const update = useUsers().update(user.id).mutate
 
   const [value, setValue] = useState(user?.allocated_budget)
