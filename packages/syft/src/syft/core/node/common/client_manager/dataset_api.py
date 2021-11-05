@@ -329,7 +329,7 @@ class Dataset:
         keys = list()
         for d in self.data:
             if d["name"] == key:
-                return self.client.store[d["id"].replace("-", "")]  # type: ignore
+                return self.client.store[d["id"]]  # type: ignore
             keys.append(d["name"])
 
         raise KeyError(
