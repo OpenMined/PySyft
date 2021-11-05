@@ -384,11 +384,10 @@ class StoreClient:
             return self.store[key]
         elif isinstance(key, str):
             # PART 1: try using the key as an ID
-            key = UID.from_string(key)
-            key_is_id = self[key]
-            if len(key_is_id) > 0:
-                return key_is_id
-            else:
+            try:
+                key = UID.from_string(key)
+                return self[key]
+            except ValueError:
 
                 # If there's no id of this key, then try matching on a tag
                 matches = 0
@@ -400,8 +399,11 @@ class StoreClient:
                         match_obj = obj
                 if matches == 1 and match_obj is not None:
                     return match_obj
-                elif matches > 1:
-                    traceback_and_raise(KeyError("More than one item with tag:" + str(key)))
+                else:  # matches > 1
+                    traceback_and_raise(
+                        KeyError("More than one item with tag:" + str(key))
+                    )
+                    raise KeyError("More than one item with tag:" + str(key))
 
         elif isinstance(key, UID):
             msg = ObjectSearchMessage(
