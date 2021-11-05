@@ -155,6 +155,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.tensor.Tensor.bit_decomposition",
             "syft.lib.python._SyNone",
         ),
+        ("syft.core.tensor.tensor.Tensor.mpc_swap", "syft.core.tensor.tensor.Tensor"),
         # # SMPC
         # (
         #     "syft.core.tensor.tensor.Tensor.fix_precision",

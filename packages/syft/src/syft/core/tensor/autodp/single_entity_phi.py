@@ -885,8 +885,13 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 return convert_to_gamma_tensor(self) - convert_to_gamma_tensor(other)
 
             data = self.child - other.child
-            min_vals = self.min_vals - other.min_vals
-            max_vals = self.max_vals - other.max_vals
+            min_min = self.min_vals - other.min_vals
+            min_max = self.min_vals - other.max_vals
+            max_min = self.max_vals - other.min_vals
+            max_max = self.max_vals - other.max_vals
+            min_vals = np.minimum.reduce([min_min, min_max, max_min, max_max])
+            max_vals = np.maximum.reduce([min_min, min_max, max_min, max_max])
+
             entity = self.entity
 
         elif is_acceptable_simple_type(other):
