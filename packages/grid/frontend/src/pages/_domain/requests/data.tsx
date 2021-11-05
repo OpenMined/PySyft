@@ -98,16 +98,19 @@ function DataRequestsPendingTable() {
       {
         Header: 'Action',
         accessor: d => d?.req?.id,
-        Cell: ({cell: {value}}) => (
-          <div className="flex space-x-5">
-            <button onClick={() => openDetails(value)}>
-              <Text underline className="text-primary-600 hover:text-primary-500">
-                See Details
-              </Text>
-            </button>
-            <AcceptDeny onAccept={() => console.log('accept', value)} onDeny={() => console.log('deny', value)} />
-          </div>
-        )
+        Cell: ({cell: {value}}) => {
+          const update = useRequests().update(value).mutate
+          return (
+            <div className="flex space-x-5">
+              <button onClick={() => openDetails(value)}>
+                <Text underline className="text-primary-600 hover:text-primary-500">
+                  See Details
+                </Text>
+              </button>
+              <AcceptDeny onAccept={() => update({status: 'accepted'})} onDeny={() => update({status: 'denied'})} />
+            </div>
+          )
+        }
       }
     ],
     []
@@ -123,40 +126,40 @@ function DataRequestsPendingTable() {
 
   return (
     <>
-      <div className="col-span-3 mt-10">
-        <SearchInput />
-      </div>
-      <div className="col-span-full mt-8">
-        <Divider color="light" />
-      </div>
+      {/* <div className="col-span-3 mt-10"> */}
+      {/*   <SearchInput /> */}
+      {/* </div> */}
+      {/* <div className="col-span-full mt-8"> */}
+      {/*   <Divider color="light" /> */}
+      {/* </div> */}
       <section className="col-span-full space-y-6 mt-4">
-        <div className="flex items-center space-x-2">
-          <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}>
-            <Text size="xs" bold>
-              Accept ({selected.length}) Requests
-            </Text>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!selected.length}
-            onClick={open}
-            className="border-error-500 text-error-500">
-            <Text size="xs" bold>
-              Reject ({selected.length}) Requests
-            </Text>
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={!selected.length}
-            onClick={() => table.instance.toggleAllRowsSelected(false)}>
-            <Text size="sm" bold className="text-gray-600">
-              Cancel
-            </Text>
-          </Button>
-        </div>
+        {/* <div className="flex items-center space-x-2"> */}
+        {/*   <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}> */}
+        {/*     <Text size="xs" bold> */}
+        {/*       Accept ({selected.length}) Requests */}
+        {/*     </Text> */}
+        {/*   </Button> */}
+        {/*   <Button */}
+        {/*     variant="outline" */}
+        {/*     size="sm" */}
+        {/*     disabled={!selected.length} */}
+        {/*     onClick={open} */}
+        {/*     className="border-error-500 text-error-500"> */}
+        {/*     <Text size="xs" bold> */}
+        {/*       Reject ({selected.length}) Requests */}
+        {/*     </Text> */}
+        {/*   </Button> */}
+        {/*   <Button */}
+        {/*     type="button" */}
+        {/*     variant="ghost" */}
+        {/*     size="xs" */}
+        {/*     disabled={!selected.length} */}
+        {/*     onClick={() => table.instance.toggleAllRowsSelected(false)}> */}
+        {/*     <Text size="sm" bold className="text-gray-600"> */}
+        {/*       Cancel */}
+        {/*     </Text> */}
+        {/*   </Button> */}
+        {/* </div> */}
         {table.Component}
         {/* TODO: support pagination */}
         <Text as="p" size="sm">
