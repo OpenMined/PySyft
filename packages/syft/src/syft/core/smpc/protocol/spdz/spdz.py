@@ -120,6 +120,7 @@ def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
             tensor_shares.append(t1.__lt__(t2))
 
         for p1, p2 in zip(tensor_shares, msb.child):
+            p2.block
             final_shares.append(p1.mpc_swap(p2))
 
         msb.child = final_shares
