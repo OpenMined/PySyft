@@ -1,6 +1,6 @@
 ---
 - name: Fix Bad DB
-  shell: "source ../packages/grid/.env && ./fix_db.sh $POSTGRES_PASSWORD d4867f3a4c0a"
+  shell: ". ../packages/grid/.env && ./fix_db.sh $POSTGRES_PASSWORD d4867f3a4c0a"
   args:
     chdir: "{{ build_dir }}/scripts"
   become_user: "{{ om_user }}"
