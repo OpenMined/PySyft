@@ -121,8 +121,6 @@ function DataRequestsPendingTable() {
 
   const selected = table.instance.selectedFlatRows
 
-  console.log({pending: picked})
-
   return (
     <>
       <div className="col-span-3 mt-10">
@@ -343,32 +341,6 @@ function History() {
 
 function RequestModal({show, onClose, data}) {
   const update = useRequests().update(data?.req?.id).mutate
-  console.log(show, data, 'aqui')
-  // const req = {
-  //   user: {
-  //     name: 'Jane Doe',
-  //     email: 'jane.doe@abc.com',
-  //     role: 'Data Scientist',
-  //     budget: 10,
-  //     used_budget: 10,
-  //     company: 'Oxford University',
-  //     website: 'www.university.edu/researcher'
-  //   },
-  //   request: {
-  //     id: '12931e4cfdasdf9213nesdf9012#asdASD1',
-  //     size: 168.22,
-  //     subjects: 50,
-  //     datasets: ['Name of dataset', 'Name of dataset #2'],
-  //     status: 'pending',
-  //     date: dayjs('2021-07-15 08:03:00').format('YYYY-MMM-DD HH:MM'),
-  //     tags: ['#diabetes', '#pima-indians-database', '#data_09.csv'],
-  //     result_id: '#141f2b03-82ed-4cee-be4d-9eaf6b2b3555',
-  //     actions: ['__len__', 'np.unique', '.get'],
-  //     values: 50,
-  //     reason: 'I am currently doing a study on ABC and would like to study XYC from your datasets.'
-  //   }
-  // }
-
   const userInformation = [
     {
       text: 'Role',
@@ -472,7 +444,8 @@ function RequestModal({show, onClose, data}) {
                     <Text size="lg">ɛ</Text>
                   </div>
                   <Text as="p">
-                    request size <Tooltip position="top">HELT OK</Tooltip>
+                    request size
+                    {/* request size <Tooltip position="top">HELT OK</Tooltip> */}
                   </Text>
                 </div>
                 <div className="pl-6">
@@ -480,10 +453,9 @@ function RequestModal({show, onClose, data}) {
                     {data?.req?.subjects}
                   </Text>
                   <div className="flex items-start space-x-2">
-                    <Text as="p">data subjects</Text>{' '}
-                    <div>
-                      <Tooltip position="top">NOT OK</Tooltip>
-                    </div>
+                    <Text as="p">data subjects</Text> {/* <div> */}
+                    {/* <Tooltip position="top">NOT OK</Tooltip> */}
+                    {/* </div> */}
                   </div>
                 </div>
               </div>
@@ -491,7 +463,8 @@ function RequestModal({show, onClose, data}) {
               <Divider color="light" />
               <div>
                 <Text bold size="sm">
-                  Linked Datasets <Tooltip position="top">OK</Tooltip>
+                  Linked Datasets
+                  {/* Linked Datasets <Tooltip position="top">OK</Tooltip> */}
                 </Text>
                 <div className="flex flex-wrap w-full">
                   {data?.req?.datasets?.map(datasetName => (
@@ -552,22 +525,22 @@ function RequestModal({show, onClose, data}) {
                     {data?.req?.reason}
                   </Text>
                 </div>
-                <Divider color="light" />
-                <div>
-                  <Button className="w-auto">
-                    <Text size="sm" bold>
-                      <FontAwesomeIcon icon={faDownload} /> Preview Result
-                    </Text>
-                  </Button>
-                </div>
-                <Text size="sm" as="p">
-                  By{' '}
-                  <Text mono className="text-primary-600" size="sm">
-                    Previewing Results
-                  </Text>{' '}
-                  you are downloading the results this Data Scientist is requesting. Currently results are in
-                  [name_here] format. For help viewing the downloaded results you can go here for further instructions.
-                </Text>
+                {/* <Divider color="light" /> */}
+                {/* <div> */}
+                {/*   <Button className="w-auto"> */}
+                {/*     <Text size="sm" bold> */}
+                {/*       <FontAwesomeIcon icon={faDownload} /> Preview Result */}
+                {/*     </Text> */}
+                {/*   </Button> */}
+                {/* </div> */}
+                {/* <Text size="sm" as="p"> */}
+                {/*   By{' '} */}
+                {/*   <Text mono className="text-primary-600" size="sm"> */}
+                {/*     Previewing Results */}
+                {/*   </Text>{' '} */}
+                {/*   you are downloading the results this Data Scientist is requesting. Currently results are in */}
+                {/*   [name_here] format. For help viewing the downloaded results you can go here for further instructions. */}
+                {/* </Text> */}
               </div>
             </div>
           </div>
