@@ -798,7 +798,7 @@ class MPCTensor(PassthroughTensor):
         return res
 
     @property
-    def synthetic(self):
+    def synthetic(self) -> np.ndarray:
         # TODO finish. max_vals and min_vals not available at present.
         return (
             np.random.rand(*list(self.shape)) * (self.max_vals - self.min_vals)

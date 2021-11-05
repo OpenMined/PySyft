@@ -109,13 +109,13 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         self.public_dtype = public_dtype
 
     @property
-    def synthetic(self):
+    def synthetic(self) -> np.ndarray:
         return (
             np.random.rand(*list(self.public_shape)) * (self.max_vals - self.min_vals)
             + self.min_vals
         ).astype(self.public_dtype)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return (
             self.synthetic.__repr__()
             + "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
