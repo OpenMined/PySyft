@@ -432,8 +432,7 @@ class StoreClient:
         if isinstance(key, str):
 
             try:
-                key = UID.from_string(key)
-                return self[key]
+                return self[UID.from_string(key)]
             except IndexError:
 
                 matches = 0
