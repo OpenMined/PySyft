@@ -21,6 +21,7 @@ from ....common import UID
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.utils import get_nr_bits
+from ....tensor.tensor import Tensor
 from ...store.crypto_primitive_provider import CryptoPrimitiveProvider
 
 
@@ -185,7 +186,11 @@ class ABY3:
         ring_bits = get_nr_bits(ring_size)
 
         carry = np.zeros(a[0].mpc_shape, dtype=np.bool)
-        one = np.ones(a[0].mpc_shape, dtype=np.bool)
+        one = MPCTensor(
+            parties=parties,
+            secret=Tensor(np.ones(a[0].mpc_shape, dtype=np.bool)),
+            shape=a[0].mpc_shape,
+        )
 
         result: List[MPCTensor] = []
 
