@@ -259,8 +259,11 @@ class ABY3:
                 )
                 res_shares[i].append(mpc)
 
-        # bin_share = reduce(ABY3.full_adder, res_shares)
-        bin_share = ABY3.full_adder_spdz_compiler(res_shares[0], res_shares[1])
+        if nr_parties == 2:
+            # Specialized for two parties
+            bin_share = ABY3.full_adder_spdz_compiler(res_shares[0], res_shares[1])
+        else:
+            bin_share = reduce(ABY3.full_adder, res_shares)
 
         return bin_share
 
