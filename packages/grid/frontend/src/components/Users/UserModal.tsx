@@ -40,7 +40,7 @@ function UserModal({show, onClose, user, onEditRole, onAdjustBudget}) {
   )
 }
 
-function PrivacyBudgetAdjustCard({current_balance, allocated_budget, onAdjustBudget}) {
+function PrivacyBudgetAdjustCard({budget_spent, budget, onAdjustBudget}) {
   return (
     <div className="col-span-7 space-y-3">
       <H6 bold>
@@ -50,7 +50,7 @@ function PrivacyBudgetAdjustCard({current_balance, allocated_budget, onAdjustBud
         <div className="flex pb-3 space-x-4">
           <div>
             <Text as="p" size="lg" bold className="text-error-600">
-              {formatBudget(current_balance)} ɛ
+              {formatBudget(budget_spent)} ɛ
             </Text>
             <Text as="p" className="capitalize">
               {t('current-balance')}
@@ -59,7 +59,7 @@ function PrivacyBudgetAdjustCard({current_balance, allocated_budget, onAdjustBud
           <Divider orientation="vertical" color="light" className="self-stretch py-4" />
           <div>
             <Text as="p" bold size="lg">
-              {formatBudget(allocated_budget)} ɛ
+              {formatBudget(budget)} ɛ
             </Text>
             <Text as="p" className="capitalize">
               {t('allocated-budget')}

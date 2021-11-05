@@ -377,7 +377,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
         Header: 'ε Balance',
         accessor: 'budget_spent',
         Cell: ({cell: {value, row}}) => {
-          const isBudgetRunningOut = value >= row.values.allocated_budget * 0.9
+          const isBudgetRunningOut = value >= row.values.budget * 0.9
           return (
             <TableItem center>
               <Badge type={isBudgetRunningOut ? 'solid' : 'subtle'} variant={isBudgetRunningOut ? 'danger' : 'gray'}>
@@ -389,7 +389,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
       },
       {
         Header: 'ε Allocated Budget',
-        accessor: 'allocated_budget',
+        accessor: 'budget',
         Cell: ({cell: {value}}) => (
           <TableItem center>
             <Badge type="subtle" variant="gray">

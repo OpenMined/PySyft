@@ -10,7 +10,7 @@ import {useUsers} from '@/lib/data'
 export function PrivacyBudgetModal({show, onClose, user}) {
   const update = useUsers().update(user.id).mutate
 
-  const [value, setValue] = useState(user?.allocated_budget)
+  const [value, setValue] = useState(user?.budget)
   const add = () => setValue(v => v + 1)
   const subtract = () => setValue(v => v - 1)
   const upgrade = () => update({budget: Number(value)})
