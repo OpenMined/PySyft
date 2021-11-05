@@ -65,9 +65,9 @@ WORKDIR /app
 
 # apple m1
 # Download PyNacl for arm64
-RUN if [ $(uname -m) != "x86_64" ]; then \ 
+RUN if [ $(uname -m) != "x86_64" ]; then \
   apt-get update && \
-  apt-get install -y wget && \ 
+  apt-get install -y wget && \
   wget https://opencomputinglab.github.io/vce-wheelhouse/wheelhouse/PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl && \
   pip install --user ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl && \
   rm ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl; \
