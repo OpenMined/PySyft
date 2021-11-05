@@ -532,7 +532,7 @@ function parseEpsilon(valueWithEpsilon: string | number) {
 }
 
 function CreateUser({onClose}) {
-  const create = useUsers().create(undefined, {multipart: true}).mutate
+  const create = useUsers().create({onSuccess: onClose}, {multipart: true}).mutate
 
   const {register, control, handleSubmit} = useForm({
     defaultValues: {name: '', email: '', password: '', confirm_password: '', role: 4, budget: 10.0}
@@ -542,7 +542,6 @@ function CreateUser({onClose}) {
     const formData = new FormData()
     formData.append('new_user', JSON.stringify(data))
     formData.append('file', new Blob())
-    // Object.keys(data).map(key => formData.append(key, data[key]))
     create(formData)
   }
 
@@ -595,7 +594,7 @@ function CreateUser({onClose}) {
                       containerProps={{className: 'max-w-42'}}
                       {...rest}
                       onChange={e => rest.onChange(parseEpsilon(e.target.value).toFixed(2))}
-                      value={`${console.log(value, typeof value) || Number(value).toFixed(2)} ε`}
+                      value={`${Number(value).toFixed(2)} ε`}
                     />
                   )}
                   name="budget"
@@ -665,9 +664,6 @@ export default function Users() {
       {currentTab === 1 && <Active />}
       {currentTab === 2 && <Pending />}
       {currentTab === 3 && <Denied />}
-      {/* <div className="col-span-full"> */}
-      {/*   <RequestModal /> */}
-      {/* </div> */}
     </Base>
   )
 }
