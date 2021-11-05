@@ -583,8 +583,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     def publish(
         self, acc: Any, sigma: float, user_key: VerifyKey
     ) -> AcceptableSimpleType:
-        print("PUBLISHING TO GAMMA:")
-        print(self.child)
         return self.gamma.publish(acc=acc, sigma=sigma, user_key=user_key)
 
     @property
@@ -824,10 +822,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         if isinstance(other, SingleEntityPhiTensor):
-            print(f"SELF ENTITY:{self.entity.name}")
-            print(f"OTHER ENTITY:{other.entity.name}")
+
             if self.entity != other.entity:
-                print("Entities are not the same?!?!?!")
                 return convert_to_gamma_tensor(self) * convert_to_gamma_tensor(other)
 
             data = self.child * other.child

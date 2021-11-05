@@ -78,8 +78,6 @@ CACHE_CLIENTS: Dict[Party, Any] = {}
 
 
 def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
-    print("Args########################################")
-    print(args)
     ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
 
 
@@ -413,9 +411,9 @@ class ShareTensor(PassthroughTensor):
         if numpy_type is None:
             raise ValueError(f"Do not know numpy type for ring size {self.ring_size}")
 
-        print("=====================================================")
-        print("OP", op, numpy_type, self.ring_size)
-        print("====================================================")
+        # print("=====================================================")
+        # print("OP", op, numpy_type, self.ring_size)
+        # print("====================================================")
 
         if isinstance(y, ShareTensor):
             utils.get_ring_size(self.ring_size, y.ring_size)

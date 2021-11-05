@@ -366,11 +366,17 @@ class MPCTensor(PassthroughTensor):
 
         return self
 
-    def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> "MPCTensor":
+    def block_with_timeout(
+        self, secs: int, secs_per_poll: int = 1, error_on_timeout: bool = True
+    ) -> "MPCTensor":
         """Block until all shares have been created or until timeout expires."""
 
         for share in self.child:
-            share.block_with_timeout(secs=secs, secs_per_poll=secs_per_poll)
+            share.block_with_timeout(
+                secs=secs,
+                secs_per_poll=secs_per_poll,
+                error_on_timeout=error_on_timeout,
+            )
 
         return self
 
@@ -398,6 +404,7 @@ class MPCTensor(PassthroughTensor):
             raise ValueError(f"Type for ring size {self.ring_size} was not found!")
 
         for share in self.child:
+            share.block_with_timeout(secs=30, error_on_timeout=False)
             if not share.exists:
                 raise Exception(
                     "One of the shares doesn't exist. This probably means the SMPC "

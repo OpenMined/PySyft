@@ -165,7 +165,9 @@ class Pointer(AbstractPointer):
             time.sleep(0.1)
         return self
 
-    def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
+    def block_with_timeout(
+        self, secs: int, secs_per_poll: int = 1, error_on_timeout: bool = True
+    ) -> AbstractPointer:
 
         total_secs = secs
 
@@ -173,7 +175,7 @@ class Pointer(AbstractPointer):
             time.sleep(secs_per_poll)
             secs -= secs_per_poll
 
-        if not self.exists:
+        if not self.exists and error_on_timeout:
             raise Exception(
                 f"Object with id {self.id_at_location} still doesn't exist after {total_secs} second timeout."
             )
@@ -329,6 +331,9 @@ class Pointer(AbstractPointer):
         :return: returns the downloaded data
         :rtype: Optional[StorableObject]
         """
+
+        if hasattr(self, "block"):
+            self.block
 
         # relative
         from ..node.common.node_service.request_receiver.request_receiver_messages import (
