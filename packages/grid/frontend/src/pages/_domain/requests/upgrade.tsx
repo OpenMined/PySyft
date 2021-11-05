@@ -265,28 +265,25 @@ function UpgradeRequestsHistoryTable() {
       {
         Header: 'New budget',
         accessor: '',
-        Cell: ({cell: {value, row}}) =>
-          console.log({value, row}) || (
-            <TableItem className="h-full flex">
-              <div className="flex items-center border-r pr-3">
-                <Badge variant="gray" type="subtle">
-                  {row.original.req.status === 'denied'
-                    ? row.original.req.requested_budget
-                    : row.original.user.current_budget}{' '}
-                  ε
-                </Badge>
-              </div>
-              <div className="flex items-center ml-3">
-                <Text
-                  size="sm"
-                  className={row.original.req.status === 'denied' ? 'text-error-600' : 'text-success-600'}>
-                  {row.original.req.status === 'denied'
-                    ? '--'
-                    : row.original.req.requested_budget - row.original.requested_pb}
-                </Text>
-              </div>
-            </TableItem>
-          )
+        Cell: ({cell: {value, row}}) => (
+          <TableItem className="h-full flex">
+            <div className="flex items-center border-r pr-3">
+              <Badge variant="gray" type="subtle">
+                {row.original.req.status === 'denied'
+                  ? row.original.user.current_budget
+                  : row.original.req.requested_budget}{' '}
+                ε
+              </Badge>
+            </div>
+            <div className="flex items-center ml-3">
+              <Text size="sm" className={row.original.req.status === 'denied' ? 'text-error-600' : 'text-success-600'}>
+                {row.original.req.status === 'denied'
+                  ? '--'
+                  : `+${row.original.req.requested_budget - row.original.user.current_budget}`}
+              </Text>
+            </div>
+          </TableItem>
+        )
       }
     ],
     []
