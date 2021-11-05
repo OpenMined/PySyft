@@ -15,6 +15,7 @@ class BaseUser(BaseModel):
     name: Optional[str]
     role: Union[Optional[int], Optional[str]]  # TODO: Should be int in SyftUser
     daa_pdf: Optional[bytes] = b""
+    budget: Optional[float]
 
     class Config:
         orm_mode = True
@@ -27,6 +28,7 @@ class UserCreate(BaseUser):
     password: str
     institution: Optional[str]
     website: Optional[str]
+    budget: float
 
 
 class ApplicantStatus(BaseModel):
