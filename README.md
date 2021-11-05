@@ -152,7 +152,7 @@ To develop against this locally you will want the following:
 You can install HAGrid with pip:
 
 ```
-$ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4#subdirectory=packages/hagrid"
+$ pip install hagrid
 ```
 
 ### MacOS Instructions
