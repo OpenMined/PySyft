@@ -7,7 +7,6 @@ https://eprint.iacr.org/2018/403.pdf
 from functools import reduce
 import secrets
 from typing import Any
-from typing import Optional
 from typing import List
 from typing import Union
 from uuid import UUID
