@@ -1,6 +1,6 @@
 ---
 - name: Install HAGrid
-  shell: "runuser -l {{ om_user }} -c 'pip install -e {{ syft_dir }}/packages/hagrid'"
+  shell: "runuser -l {{ om_user }} -c 'pip install -e {{ build_dir }}/packages/hagrid'"
   become: yes
   when: vagrant is not defined
 
