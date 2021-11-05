@@ -2,17 +2,17 @@ import {useState} from 'react'
 import Link from 'next/link'
 import {faCheck} from '@fortawesome/free-solid-svg-icons'
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {Button, Input, Divider, FormControl, Text} from '@/omui'
-import {t} from '@/i18n'
+import {Button, Input, FormControl, Text} from '@/omui'
 import Modal from '../Modal'
 import {useUsers} from '@/lib/data'
 
 export function PrivacyBudgetModal({show, onClose, user}) {
-  const update = useUsers().update(user.id).mutate
+  const update = useUsers().update(user?.id, {onSuccess: onClose}).mutate
 
   const [value, setValue] = useState(user?.budget)
-  const add = () => setValue(v => v + 1)
-  const subtract = () => setValue(v => v - 1)
+  // TODO: mitigated for demo
+  const add = () => setValue(v => (Number(v) + 0.1).toFixed(2))
+  const subtract = () => setValue(v => (Number(v) - 0.1).toFixed(2))
   const upgrade = () => update({budget: Number(value)})
 
   return (
@@ -33,6 +33,9 @@ export function PrivacyBudgetModal({show, onClose, user}) {
       <div className="col-span-4 mt-2.5">
         <FormControl label="Adjust Privacy Budget" id="role" className="mt-6">
           <Input
+            type="number"
+            min={user?.budget_spent}
+            step={0.1}
             addonRight="+"
             addonLeft="-"
             addonLeftProps={{onClick: subtract}}
