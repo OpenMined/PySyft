@@ -797,8 +797,20 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    @property
+    def synthetic(self):
+        # TODO finish. max_vals and min_vals not available at present.
+        return (
+            np.random.rand(*list(self.shape)) * (self.max_vals - self.min_vals)
+            + self.min_vals
+        ).astype(self.public_dtype)
+
     def __repr__(self) -> str:
-        out = "MPCTensor"
+
+        # out = self.synthetic.__repr__()
+        # out += "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
+        out = ""
+        out += "\n\nMPCTensor"
         out += ".shape=" + str(self.shape) + "\n"
         for i, child in enumerate(self.child):
             out += f"\t .child[{i}] = " + child.__repr__() + "\n"

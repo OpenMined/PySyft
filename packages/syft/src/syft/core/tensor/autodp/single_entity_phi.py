@@ -108,6 +108,19 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
+    @property
+    def synthetic(self):
+        return (
+            np.random.rand(*list(self.public_shape)) * (self.max_vals - self.min_vals)
+            + self.min_vals
+        ).astype(self.public_dtype)
+
+    def __repr__(self):
+        return (
+            self.synthetic.__repr__()
+            + "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
+        )
+
     def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
         ring_size = TYPE_TO_RING_SIZE.get(self.public_dtype, None)
