@@ -138,7 +138,6 @@ def spdz_multiply(
     eps = sum(eps.data)  # type: ignore
     delta = sum(delta.data)  # type:ignore
 
-
     eps_b = eps * b_share.child
     delta_a = delta * a_share.child  # Symmetric only for mul
 
@@ -186,7 +185,6 @@ def spdz_mask(
     eps = x - a_share  # beaver intermediate values.
     delta = y - b_share
 
-
     client_id_map = {client.id: client for client in clients}
     curr_client = client_id_map[node.id]  # type: ignore
     beaver_action = BeaverAction(
@@ -202,7 +200,6 @@ def spdz_mask(
         if client != curr_client:
             beaver_action.address = client.address
             client.send_immediate_msg_without_reply(msg=beaver_action)
-
 
 
 def smpc_mul(
