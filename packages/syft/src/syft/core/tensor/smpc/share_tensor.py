@@ -78,8 +78,6 @@ CACHE_CLIENTS: Dict[Party, Any] = {}
 
 
 def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
-    print("Args########################################")
-    print(args)
     ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
 
 

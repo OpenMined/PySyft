@@ -13,6 +13,7 @@ from uuid import UUID
 
 # third party
 import numpy as np
+from tqdm import tqdm
 
 # relative
 from .....ast.klass import get_run_class_method
@@ -195,8 +196,7 @@ class ABY3:
         ) -> MPCTensor:
             return (a + c + one) * (b + c) + b
 
-        for idx in range(ring_bits):
-            print("Bit ", idx)
+        for idx in tqdm(range(ring_bits), desc="Computing..."):
             s = a[idx] + b[idx] + carry
             if idx != ring_bits - 1:
                 carry = majority(a[idx], b[idx], carry)
