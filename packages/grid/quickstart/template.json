@@ -244,6 +244,11 @@
           }
         }
       },
+      "plan": {
+        "name": "domain_1",
+        "publisher": "madhavajay1632269232059",
+        "product": "openmined_mj_grid_domain_ubuntu_1"
+      },
       "tags": {
         "node_type": "domain",
         "os_version": "ubuntu2004",

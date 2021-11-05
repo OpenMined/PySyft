@@ -74,7 +74,8 @@ class RequestManager(DatabaseManager):
                 "review": {
                     "name": request.reviewer_name,
                     "role": request.reviewer_role,
-                    "updated_on": str(request.updated_on),
+                    # TODO: fix datetime
+                    # "updated_on": str(request.updated_on),
                     "comment": request.reviewer_comment,
                 },
             }

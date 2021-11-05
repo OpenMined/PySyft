@@ -141,6 +141,9 @@ def update_user_msg(
     if msg.website:
         node.users.set(user_id=str(msg.user_id), website=msg.website)
 
+    if msg.budget:
+        node.users.set(user_id=str(msg.user_id), budget=msg.budget)
+
     # Change Email Request
     elif msg.email:
         node.users.set(user_id=str(msg.user_id), email=msg.email)

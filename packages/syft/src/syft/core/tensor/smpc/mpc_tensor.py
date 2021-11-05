@@ -165,8 +165,14 @@ class MPCTensor(PassthroughTensor):
 
             if party_info is None:
                 base_url = connection.base_url
-                url = base_url.rsplit(":", 1)[0]
-                port = int(base_url.rsplit(":", 1)[1].split("/")[0])
+                if base_url.count(":") == 2:
+                    url = base_url.rsplit(":", 1)[0]
+                    port = int(base_url.rsplit(":", 1)[1].split("/")[0])
+                elif base_url.count(":") == 1:
+                    url = base_url.rsplit("/", 2)[0]
+                    port = 80
+                else:
+                    raise ValueError(f"Invalid base url  {base_url}")
                 party_info = Party(url, port)
                 PARTIES_REGISTER_CACHE[party] = party_info
                 try:
@@ -190,6 +196,10 @@ class MPCTensor(PassthroughTensor):
 
     def publish(self, sigma: float) -> MPCTensor:
         new_shares = []
+
+        for share in self.child:
+            share.block
+
         for share in self.child:
             new_share = share.publish(sigma=sigma)
             new_shares.append(new_share)
@@ -793,8 +803,20 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    @property
+    def synthetic(self) -> np.ndarray:
+        # TODO finish. max_vals and min_vals not available at present.
+        return (
+            np.random.rand(*list(self.shape)) * (self.max_vals - self.min_vals)  # type: ignore
+            + self.min_vals
+        ).astype(self.public_dtype)
+
     def __repr__(self) -> str:
-        out = "MPCTensor"
+
+        # out = self.synthetic.__repr__()
+        # out += "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
+        out = ""
+        out += "\n\nMPCTensor"
         out += ".shape=" + str(self.shape) + "\n"
         for i, child in enumerate(self.child):
             out += f"\t .child[{i}] = " + child.__repr__() + "\n"

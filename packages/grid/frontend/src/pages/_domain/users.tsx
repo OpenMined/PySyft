@@ -18,12 +18,16 @@ import {UserModal} from '@/components/Users/UserModal'
 
 import commonStrings from '@/i18n/en/common.json'
 import usersStrings from '@/i18n/en/users.json'
+import {ChangeRoleModal} from '@/components/Users/ChangeRoleModal'
+import {PrivacyBudgetModal} from '@/components/Users/PrivacyBudgetModal'
 
 function Active() {
   const {data: roles} = useRoles().all()
   const {data: users} = useUsers().all()
   const [isCreatingUser, showCreateUser] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
+  const [selectedModal, setModal] = useState(null)
+
   return (
     <>
       <div className="col-span-11 mt-10">
@@ -46,12 +50,41 @@ function Active() {
       </div>
       <Divider color="light" className="col-span-full mt-8" />
       <div className="col-span-full mt-4">
-        <ActiveUsersTable users={users} setSelectedUser={setSelectedUser} />
+        <ActiveUsersTable
+          users={users}
+          setSelectedUser={user => {
+            setSelectedUser(user)
+            setModal('user')
+          }}
+        />
       </div>
       <Modal show={isCreatingUser} onClose={() => showCreateUser(false)}>
         <CreateUser onClose={() => showCreateUser(false)} />
       </Modal>
-      <UserModal show={Boolean(selectedUser)} onClose={() => setSelectedUser(null)} user={selectedUser} />
+      {selectedUser && (
+        <UserModal
+          show={selectedModal === 'user'}
+          user={selectedUser}
+          onClose={() => setModal('')}
+          onEditRole={() => setModal('change-role')}
+          onAdjustBudget={() => console.log('c') || setModal('adjust-budget')}
+        />
+      )}
+      {selectedUser && (
+        <ChangeRoleModal
+          show={selectedModal === 'change-role'}
+          onClose={() => setModal('user')}
+          role={selectedUser?.role}
+          user={selectedUser}
+        />
+      )}
+      {selectedUser && (
+        <PrivacyBudgetModal
+          show={selectedModal === 'adjust-budget'}
+          onClose={() => setModal('user')}
+          user={selectedUser}
+        />
+      )}
     </>
   )
 }
@@ -344,7 +377,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
         Header: 'ε Balance',
         accessor: 'budget_spent',
         Cell: ({cell: {value, row}}) => {
-          const isBudgetRunningOut = value >= row.values.allocated_budget * 0.9
+          const isBudgetRunningOut = value >= row.values.budget * 0.9
           return (
             <TableItem center>
               <Badge type={isBudgetRunningOut ? 'solid' : 'subtle'} variant={isBudgetRunningOut ? 'danger' : 'gray'}>
@@ -356,7 +389,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
       },
       {
         Header: 'ε Allocated Budget',
-        accessor: 'allocated_budget',
+        accessor: 'budget',
         Cell: ({cell: {value}}) => (
           <TableItem center>
             <Badge type="subtle" variant="gray">
