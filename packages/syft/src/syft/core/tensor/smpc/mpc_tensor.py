@@ -165,8 +165,14 @@ class MPCTensor(PassthroughTensor):
 
             if party_info is None:
                 base_url = connection.base_url
-                url = base_url.rsplit(":", 1)[0]
-                port = int(base_url.rsplit(":", 1)[1].split("/")[0])
+                if base_url.count(":") == 2:
+                    url = base_url.rsplit(":", 1)[0]
+                    port = int(base_url.rsplit(":", 1)[1].split("/")[0])
+                elif base_url.count(":") == 1:
+                    url = base_url.rsplit("/", 2)[0]
+                    port = 80
+                else:
+                    raise ValueError(f"Invalid base url  {base_url}")
                 party_info = Party(url, port)
                 PARTIES_REGISTER_CACHE[party] = party_info
                 try:
