@@ -19,9 +19,6 @@ import numpy as np
 import numpy.typing as npt
 import torch
 
-# syft absolute
-import syft as sy
-
 # relative
 from . import utils
 from .... import logger
@@ -173,14 +170,16 @@ class MPCTensor(PassthroughTensor):
                 party_info = Party(url, port)
                 PARTIES_REGISTER_CACHE[party] = party_info
                 try:
-                    sy.register(  # nosec
-                        name="Howard Wolowtiz",
-                        email="howard@mit.edu",
-                        password="astronaut",
-                        url=url,
-                        port=port,
-                        verbose=False,
-                    )
+                    pass
+                    # We do not use sy.register, should reenable after fixing.
+                    # sy.register(  # nosec
+                    #     name="Howard Wolowtiz",
+                    #     email="howard@mit.edu",
+                    #     password="astronaut",
+                    #     url=url,
+                    #     port=port,
+                    #     verbose=False,
+                    # )
                 except Exception:
                     """ """
                     # TODO : should modify to return same client if registered.
@@ -191,6 +190,10 @@ class MPCTensor(PassthroughTensor):
 
     def publish(self, sigma: float) -> MPCTensor:
         new_shares = []
+
+        for share in self.child:
+            share.block
+
         for share in self.child:
             new_share = share.publish(sigma=sigma)
             new_shares.append(new_share)
@@ -724,13 +727,53 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def lt(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = spdz.lt_master(self, y, "mul")
+
+        return mpc_res
+
     def gt(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
         self, y = MPCTensor.sanity_checks(self, y)
-        mpc_res = spdz.gt_master(self, y, "mul")
+        mpc_res = MPCTensor.lt(y, self)
 
         return mpc_res
+
+    def ge(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = 1 - MPCTensor.lt(self, y)
+
+        return mpc_res  # type: ignore
+
+    def le(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = 1 - MPCTensor.lt(y, self)
+
+        return mpc_res  # type: ignore
+
+    def eq(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = MPCTensor.le(self, y) - MPCTensor.lt(self, y)
+
+        return mpc_res
+
+    def ne(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        self, y = MPCTensor.sanity_checks(self, y)
+        mpc_res = 1 - MPCTensor.eq(self, y)
+
+        return mpc_res  # type: ignore
 
     def matmul(
         self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
@@ -794,7 +837,12 @@ class MPCTensor(PassthroughTensor):
     __mul__ = mul
     __rmul__ = mul
     __matmul__ = matmul
+    __lt__ = lt
     __gt__ = gt
+    __ge__ = ge
+    __le__ = le
+    __eq__ = eq
+    __ne__ = ne
 
 
 @implements(MPCTensor, np.add)

@@ -162,7 +162,7 @@ class Pointer(AbstractPointer):
     @property
     def block(self) -> AbstractPointer:
         while not self.exists:
-            time.sleep(0.2)
+            time.sleep(0.1)
         return self
 
     def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
@@ -287,6 +287,10 @@ class Pointer(AbstractPointer):
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,
         )
+
+        # TODO: make publish genuinely asynchronous (not sure why it isn't already but
+        # if you call publish on an object before it exists it complains.
+        self.block
 
         id_at_location = UID()
 

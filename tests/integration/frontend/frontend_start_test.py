@@ -11,7 +11,7 @@ NETWORK_PORT = 9081
 DOMAIN_PORT = 9082
 
 
-@pytest.mark.integration
+@pytest.mark.frontend
 def test_serves_domain_frontend() -> None:
     title_str = "<title>domain</title>"
     url = f"http://localhost:{DOMAIN_PORT}/status"
@@ -19,7 +19,7 @@ def test_serves_domain_frontend() -> None:
     assert title_str in result.text
 
 
-@pytest.mark.integration
+@pytest.mark.frontend
 def test_serves_network_frontend() -> None:
     title_str = "<title>network</title>"
     url = f"http://localhost:{NETWORK_PORT}/status"

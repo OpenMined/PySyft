@@ -85,7 +85,6 @@ from .node_service.resolve_pointer_type.resolve_pointer_type_service import (
     ResolvePointerTypeService,
 )
 from .node_service.testing_services.repr_service import ReprService
-from .node_service.testing_services.smpc_executor_service import SMPCExecutorService
 from .node_service.vpn.vpn_messages import VPNRegisterMessage
 from .node_table import Base
 from .node_table.node import Node as NodeRow
@@ -234,8 +233,6 @@ class Node(AbstractNode):
         self.immediate_services_without_reply.append(
             ImmediateObjectSearchPermissionUpdateService
         )
-
-        self.immediate_services_without_reply.append(SMPCExecutorService)
 
         # TODO: Support ImmediateNodeServiceWithReply Parent Class
         # for services which run immediately and return a reply

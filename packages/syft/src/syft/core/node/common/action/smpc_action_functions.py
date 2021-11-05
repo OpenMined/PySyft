@@ -41,6 +41,9 @@ def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
     return UID(UUID(bytes=generator.bytes(16)))
 
 
+# TODO: node.address is not really ,should be removed later.
+
+
 def smpc_basic_op(
     op_str: str,
     nr_parties: int,
@@ -48,7 +51,6 @@ def smpc_basic_op(
     other_id: UID,
     seed_id_locations: int,
     node: Any,
-    client: Any,
 ) -> List[SMPCActionMessage]:
     # relative
     from ..... import Tensor
@@ -70,7 +72,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
     else:
@@ -82,7 +84,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=list(range(1, nr_parties)),
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -95,7 +97,7 @@ def smpc_basic_op(
                 kwargs_id={},
                 ranks_to_run_action=[0],
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -124,48 +126,29 @@ def spdz_multiply(
         x = x.child.child
         y = y.child.child
 
-    print(")))))))))))))))))))))))))")
-    print("SPDZ multiply")
     nr_parties = x.nr_parties
 
     ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
     eps = beaver_retrieve_object(node, eps_id, nr_parties)  # type: ignore
     delta = beaver_retrieve_object(node, delta_id, nr_parties)  # type: ignore
-    print("RING SIZE", ring_size)
-    print("EPS Store", eps)
-    print("Delta Store", delta)
-    print("NR parties", nr_parties)
-
-    print("Beaver Error surpassed*******************************")
 
     # TODO : Should refactor fixed precision tensor later
 
     eps = sum(eps.data)  # type: ignore
     delta = sum(delta.data)  # type:ignore
-    print(" Final EPS", eps)
-    print("Final Delta", delta)
-    print("A_share", a_share.child, "\n")
-    print("B_share", b_share.child, "\n")
-    print("C_share", c_share.child, "\n")
 
     eps_b = eps * b_share.child
-    print("EPS_B", eps_b, "\n")
     delta_a = delta * a_share.child  # Symmetric only for mul
-    print("DELTA_A", delta_a, "\n")
 
     tensor = c_share + eps_b + delta_a
-    print("C addedTensor", tensor, "\n")
     if x.rank == 0:
         mul_op = ShareTensor.get_op(ring_size, "mul")
         eps_delta = mul_op(eps.child, delta.child)  # type: ignore
-        print("EPS_DELTA", eps_delta, "\n")
         tensor = tensor + eps_delta
 
     share = x.copy_tensor()
     share.child = tensor.child  # As we do not use fixed point we neglect truncation.
-    print("Final Tensor", tensor)
-    print("Finish SPDZ Multiply @@@@@@@@@@@@@@@@@@@@@@@@@@@@")
 
     if TENSOR_FLAG:
         t = t1 * t2
@@ -196,18 +179,10 @@ def spdz_mask(
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
-    print(")))))))))))))))))))))))))")
-    print("SPDZ Mask")
     clients = ShareTensor.login_clients(x.parties_info)
 
     eps = x - a_share  # beaver intermediate values.
     delta = y - b_share
-    print("x ShareTensor:", x, "\n")
-    print("y ShareTensor", y, "\n")
-    print("a ShareTensor:", a_share, "\n")
-    print("b ShareTensor", b_share, "\n")
-    print("EPS::::::::::::", eps, "\n")
-    print("Delta::::::::::::", delta, "\n")
 
     client_id_map = {client.id: client for client in clients}
     curr_client = client_id_map[node.id]  # type: ignore
@@ -224,11 +199,6 @@ def spdz_mask(
         if client != curr_client:
             beaver_action.address = client.address
             client.send_immediate_msg_without_reply(msg=beaver_action)
-            print("Client here", client)
-            print("++++++++++++++++++++++++++++++++++++++++++++++")
-            print("Values sent")
-            print("EPS_ID", eps_id)
-            print("DELTA_ID", delta_id)
 
 
 def smpc_mul(
@@ -239,15 +209,14 @@ def smpc_mul(
     b_shape_id: Optional[UID] = None,
     seed_id_locations: Optional[int] = None,
     node: Optional[Any] = None,
-    client: Optional[Any] = None,
 ) -> SMPCActionSeqBatchMessage:
     """Generator for the smpc_mul with a public value"""
     # relative
     from ..... import Tensor
 
-    if seed_id_locations is None or node is None or client is None:
+    if seed_id_locations is None or node is None:
         raise ValueError(
-            f"The values seed_id_locations{seed_id_locations}, Node:{node} , client:{client} should not be None"
+            f"The values seed_id_locations{seed_id_locations}, Node:{node} should not be None"
         )
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
@@ -288,7 +257,7 @@ def smpc_mul(
                 },
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=mask_result,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -307,7 +276,7 @@ def smpc_mul(
                 },
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
 
@@ -321,15 +290,20 @@ def smpc_mul(
                 kwargs_id={},
                 ranks_to_run_action=list(range(nr_parties)),
                 result_id=result_id,
-                address=client.address,
+                address=node.address,
             )
         )
-    batch = SMPCActionSeqBatchMessage(smpc_actions=actions, address=client.address)
+    batch = SMPCActionSeqBatchMessage(smpc_actions=actions, address=node.address)
     return batch
 
 
 def local_decomposition(
-    x: ShareTensor, ring_size: int, bitwise: bool, seed_id_locations: str, node: Any
+    x: ShareTensor,
+    ring_size: int,
+    bitwise: bool,
+    seed_id_locations: str,
+    node: Any,
+    read_permissions: Dict[Any, Any],
 ) -> None:
     """Performs local decomposition to generate shares of shares.
 
@@ -389,7 +363,7 @@ def local_decomposition(
             store_obj = StorableObject(
                 id=id_at_location,
                 data=data,
-                read_permissions={},
+                read_permissions=read_permissions,
             )
             node.store[id_at_location] = store_obj
 
@@ -403,7 +377,6 @@ def bit_decomposition(
     bitwise: UID,
     seed_id_locations: int,
     node: Any,
-    client: Any,
 ) -> List[SMPCActionMessage]:
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
@@ -419,7 +392,7 @@ def bit_decomposition(
             kwargs={"seed_id_locations": str(seed_id_locations)},
             ranks_to_run_action=list(range(nr_parties)),
             result_id=result_id,
-            address=client.address,
+            address=node.address,
         )
     )
 
