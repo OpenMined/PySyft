@@ -9,6 +9,7 @@ message ObjectSearchMessage {
   syft.core.common.UID msg_id = 1;
   syft.core.io.Address address = 2;
   syft.core.io.Address reply_to = 3;
+  syft.core.common.UID obj_id = 4;
 }
 
 message ObjectSearchReplyMessage {
