@@ -5,8 +5,8 @@ export interface User {
   name: string
   role: Role
   email: string
-  current_balance: number
-  allocated_budget: number
+  budget_spent: number
+  budget: number
   created_on: Date | string
   added_by: {
     id: string
