@@ -245,8 +245,6 @@ class DatasetRequestAPI(RequestAPI):
                 }
                 </style>
 
-                <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for datasets..">
-
                 <table id="myTable">
                   <tr class="header">
                     <th style="width:30px">Idx</th>
