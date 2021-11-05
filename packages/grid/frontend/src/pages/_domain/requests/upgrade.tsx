@@ -102,7 +102,7 @@ function RequestsAccordion({budgets}) {
                           <Text size="xl">{item.user.current_budget.toFixed(2)}</Text>
                           <Text size="lg">ε</Text>
                         </div>
-                        <Text size="sm">Current Budget</Text>
+                        <Text size="sm">Current Balance</Text>
                       </div>
                     </div>
                     <Divider color="light" className="mt-8" />
@@ -122,7 +122,7 @@ function RequestsAccordion({budgets}) {
                             </Badge>
                           </div>
                         </div>
-                        <Text size="sm">Current Budget</Text>
+                        <Text size="sm">Current Balance</Text>
                       </div>
                       <div className="text-gray-400 w-10 h-10">
                         <FontAwesomeIcon icon={faAngleDoubleRight} className="flex-shrink-0" />
