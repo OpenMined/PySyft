@@ -10,7 +10,6 @@ SPDZ mechanism used for multiplication Contains functions that are run at:
 from __future__ import annotations
 
 # stdlib
-import time
 from typing import Any
 from typing import Dict
 from typing import TYPE_CHECKING
