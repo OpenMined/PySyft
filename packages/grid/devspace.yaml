@@ -4,7 +4,7 @@ vars:
   - name: CONTAINER_REGISTRY
     value: ""
   - name: DOCKER_IMAGE_DB
-    value: postgres:12
+    value: postgres:14
   - name: DOCKER_IMAGE_QUEUE
     value: rabbitmq:3-management
   - name: SERVICE_NAME_DB
@@ -279,7 +279,7 @@ deployments:
               - name: CELERY_WORKER
                 value: "true"
               - name: RUN
-                value: "celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 10"
+                value: "celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500"
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
               - name: C_FORCE_ROOT
