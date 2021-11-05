@@ -383,8 +383,26 @@ class StoreClient:
         if isinstance(key, int):
             return self.store[key]
         elif isinstance(key, str):
+            # PART 1: try using the key as an ID
             key = UID.from_string(key)
-            return self[key]
+            key_is_id = self[key]
+            if len(key_is_id) > 0:
+                return key_is_id
+            else:
+
+                # If there's no id of this key, then try matching on a tag
+                matches = 0
+                match_obj: Optional[Pointer] = None
+
+                for obj in self.store:
+                    if key in obj.tags:
+                        matches += 1
+                        match_obj = obj
+                if matches == 1 and match_obj is not None:
+                    return match_obj
+                elif matches > 1:
+                    traceback_and_raise(KeyError("More than one item with tag:" + str(key)))
+
         elif isinstance(key, UID):
             msg = ObjectSearchMessage(
                 address=self.client.address, reply_to=self.client.address, obj_id=key
