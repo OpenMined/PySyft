@@ -111,7 +111,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
     @property
     def synthetic(self) -> np.ndarray:
         return (
-            np.random.rand(*list(self.public_shape)) * (self.max_vals - self.min_vals)
+            np.random.rand(*list(self.public_shape)) * (self.max_vals - self.min_vals)  # type: ignore
             + self.min_vals
         ).astype(self.public_dtype)
 
