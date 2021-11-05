@@ -7,6 +7,7 @@ https://eprint.iacr.org/2018/403.pdf
 from functools import reduce
 import secrets
 from typing import Any
+from typing import Optional
 from typing import List
 from typing import Union
 from uuid import UUID
@@ -138,14 +139,15 @@ class ABY3:
             print("Bit Number :", idx)
             s_tmp = a[idx] + b[idx]
             s = s_tmp + c
-            c = a[idx] * b[idx] + c * s_tmp
+            if idx != ring_bits - 1:
+                c = a[idx] * b[idx] + c * s_tmp
+                c.block
             result.append(s)
-            c.block
         return result
 
     @staticmethod
     def full_adder_spdz_compiler(
-        a: List[MPCTensor], b: List[MPCTensor], c: List[MPCTensor]
+        a: List[MPCTensor], b: List[MPCTensor]
     ) -> List[MPCTensor]:
         # Specialized for 3 parties
         """Perform bit addition on MPCTensors using a full adder.
@@ -153,7 +155,6 @@ class ABY3:
         Args:
             a (List[MPCTensor]): MPCTensor with shares of bit.
             b (List[MPCTensor]): MPCTensor with shares of bit.
-            c (List[MPCTensor]): MPCTensor with shares of bit.
 
         Returns:
             result (List[MPCTensor]): Result of the operation.
@@ -170,7 +171,7 @@ class ABY3:
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
             "beaver_mul",
-            nr_instances=128,
+            nr_instances=32,
             parties=parties,
             g_kwargs={
                 "a_shape": shape_x,
@@ -183,9 +184,7 @@ class ABY3:
 
         ring_bits = get_nr_bits(ring_size)
 
-        # carry = np.zeros(a[0].mpc_shape, dtype=np.bool)  # carry bits of addition.
-        beta_1 = np.zeros(a[0].mpc_shape, dtype=np.bool)
-        gamma_1 = np.zeros(a[0].mpc_shape, dtype=np.bool)
+        carry = np.zeros(a[0].mpc_shape, dtype=np.bool)
         one = np.ones(a[0].mpc_shape, dtype=np.bool)
 
         result: List[MPCTensor] = []
@@ -198,18 +197,12 @@ class ABY3:
             return (a + c + one) * (b + c) + b
 
         for idx in range(ring_bits):
-            alfa = a[idx] + b[idx] + c[idx]
-            beta = majority(a[idx], b[idx], c[idx])
-
-            gamma = majority(alfa, beta_1, gamma_1)
-
-            s = alfa + gamma_1 + beta_1
-
-            beta_1 = beta
-            gamma_1 = gamma
-
-            # time.sleep(1)
-            s.block
+            print("Bit ", idx)
+            s = a[idx] + b[idx] + carry
+            if idx != ring_bits - 1:
+                carry = majority(a[idx], b[idx], carry)
+                # time.sleep(1)
+                carry.block
             result.append(s)
         return result
 
@@ -267,10 +260,8 @@ class ABY3:
                 )
                 res_shares[i].append(mpc)
 
-        bin_share = reduce(ABY3.full_adder, res_shares)
-        # bin_share = ABY3.full_adder_spdz_compiler(
-        #     res_shares[0], res_shares[1], res_shares[2]
-        # )
+        # bin_share = reduce(ABY3.full_adder, res_shares)
+        bin_share = ABY3.full_adder_spdz_compiler(res_shares[0], res_shares[1])
 
         return bin_share
 
