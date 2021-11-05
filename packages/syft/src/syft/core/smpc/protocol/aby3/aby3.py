@@ -184,7 +184,12 @@ class ABY3:
         ring_bits = get_nr_bits(ring_size)
 
         carry = np.zeros(a[0].mpc_shape, dtype=np.bool)
-        one = np.ones(a[0].mpc_shape, dtype=np.bool)
+        one = MPCTensor(
+            parties=parties,
+            secret=Tensor(np.ones(a[0].mpc_shape, dtype=np.bool)),
+            shape=a[0].mpc_shape,
+        )
+
 
         result: List[MPCTensor] = []
 
