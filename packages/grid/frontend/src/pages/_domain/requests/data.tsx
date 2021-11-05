@@ -1,10 +1,10 @@
 import {createContext, useContext, useMemo, useState} from 'react'
 import Link from 'next/link'
 import {Badge, Button, Divider, H2, H4, H5, Tabs, Tag, Text} from '@/omui'
-import {SearchInput, TopContent, Tooltip} from '@/components/lib'
+import {SearchInput, TopContent} from '@/components/lib'
 import {Alert} from '@/components/Alert'
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faCalendar, faCheck, faDownload, faLink, faTimes} from '@fortawesome/free-solid-svg-icons'
+import {faCalendar, faCheck, faLink, faTimes} from '@fortawesome/free-solid-svg-icons'
 import cloneDeep from 'lodash.clonedeep'
 import {TableItem, useOMUITable} from '@/components/Table'
 import Modal from '@/components/Modal'
@@ -13,12 +13,13 @@ import {AcceptDeny} from '@/components/AcceptDenyButtons'
 import {useDisclosure} from 'react-use-disclosure'
 import {formatDate} from '@/utils'
 import {useDataRequests, useBudgetRequests, useRequests} from '@/lib/data'
+import {RequestStatusBadge} from '@/components/RequestStatusBadge'
 
 const RequestsContext = createContext({data: [], budget: [], highlighted: null, selected: []})
 
 function Pending() {
   const {data} = useContext(RequestsContext)
-  if (data?.length === 0) return <EmptyDataRequests />
+  if (!data) return <EmptyDataRequests />
   return <DataRequestsPendingTable />
 }
 
@@ -171,32 +172,6 @@ function DataRequestsPendingTable() {
   )
 }
 
-function RequestStatusBadge({status}) {
-  if (status === 'pending')
-    return (
-      <Badge variant="primary" type="solid">
-        Pending
-      </Badge>
-    )
-  if (status === 'accepted')
-    return (
-      <Badge variant="success" type="solid">
-        Accepted
-      </Badge>
-    )
-  if (status === 'denied')
-    return (
-      <Badge variant="danger" type="solid">
-        Rejected
-      </Badge>
-    )
-  return (
-    <Badge variant="gray" type="subtle" className="capitalize">
-      {status}
-    </Badge>
-  )
-}
-
 function DataRequestsHistoryTable() {
   const {open, isOpen, close} = useDisclosure()
   const [picked, setPicked] = useState(null)
@@ -298,33 +273,6 @@ function DataRequestsHistoryTable() {
         <Divider color="light" className="col-span-full" />
       </div>
       <section className="col-span-full space-y-6 mt-6">
-        <div className="flex items-center space-x-2">
-          <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}>
-            <Text size="xs" bold>
-              Accept ({selected.length}) Requests
-            </Text>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!selected.length}
-            onClick={open}
-            className="border-error-500 text-error-500 hover:bg-error-500 hover:text-white">
-            <Text size="xs" bold>
-              Reject ({selected.length}) Requests
-            </Text>
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={!selected.length}
-            onClick={() => table.instance.toggleAllRowsSelected(false)}>
-            <Text size="sm" bold className="text-gray-600">
-              Cancel
-            </Text>
-          </Button>
-        </div>
         {table.Component}
         {/* TODO: support pagination */}
         <Text as="p" size="sm">
@@ -570,7 +518,6 @@ export default function DataRequests() {
     {id: 1, title: 'Pending'},
     {id: 2, title: 'History'}
   ]
-  console.log({dataReq, budgetReq})
 
   return (
     <Base>
