@@ -652,6 +652,8 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         groups: Optional[str] = "",
         budget: Optional[float] = None,
         name: Optional[str] = "",
+        institution: Optional[str] = "",
+        website: Optional[str] = "",
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         self.user_id = user_id
@@ -661,6 +663,8 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         self.groups = groups
         self.name = name
         self.budget = budget
+        self.institution = institution
+        self.website = website
 
     def _object2proto(self) -> UpdateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -683,6 +687,8 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
             role=self.role,
             groups=self.groups,
             budget=self.budget,
+            institution=self.institution,
+            website=self.website,
             name=self.name,
             reply_to=serialize(self.reply_to),
         )
@@ -711,6 +717,8 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
             budget=proto.budget,
             groups=proto.groups,
             name=proto.name,
+            institution=proto.institution,
+            website=proto.website,
             reply_to=_deserialize(blob=proto.reply_to),
         )
 

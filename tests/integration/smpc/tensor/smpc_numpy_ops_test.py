@@ -7,6 +7,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_repeat(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[1, 2], [3, 4]], dtype=np.int32)
@@ -24,6 +25,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_copy(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[1, 2], [3, 4]], dtype=np.int32)
@@ -42,6 +44,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_diagonal(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[0, 1], [2, 3]], dtype=np.int32)
@@ -59,6 +62,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_flatten(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=np.int32)
@@ -76,6 +80,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_transpose(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=np.int32)
@@ -93,6 +98,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_resize(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[89, 12], [412, 89], [87, 32]], dtype=np.int32)
@@ -111,6 +117,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_ravel(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[8, 1, 5], [4, 8, 4], [7, 2, 27]], dtype=np.int32)
@@ -128,6 +135,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_compress(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.int32)
@@ -145,6 +153,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_reshape(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[1, 2], [3, 4], [5, 6]], dtype=np.int32)
@@ -162,6 +171,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_squeeze(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[7], [6], [72]], dtype=np.int32)
@@ -179,6 +189,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_swapaxes(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[613, 645, 738], [531, 412, 658]], dtype=np.int32)
@@ -196,6 +207,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_pos(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[5, 2], [3, 7]], dtype=np.int32)
@@ -213,6 +225,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # def test_put(get_clients) -> None:
 #     clients = get_clients(2)
 #     value = np.array([[5, 2], [3, 7]], dtype=np.int32)

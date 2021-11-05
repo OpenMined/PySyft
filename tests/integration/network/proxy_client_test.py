@@ -1,4 +1,5 @@
 # stdlib
+import time
 import uuid
 
 # third party
@@ -14,12 +15,13 @@ DOMAIN1_PORT = 9082
 DOMAIN1_VPN_IP = "100.64.0.2"
 
 
-@pytest.mark.integration
+@pytest.mark.network
 def test_domain1_via_network_proxy_client() -> None:
     unique_tag = str(uuid.uuid4())
     network_client = sy.login(
         email="info@openmined.org", password="changethis", port=NETWORK_PORT
     )
+
     domain_client = sy.login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
@@ -27,21 +29,26 @@ def test_domain1_via_network_proxy_client() -> None:
     x = torch.Tensor([1, 2, 3])
     x_ptr = x.send(domain_client, tags=[unique_tag])
 
+    time.sleep(1)
+
+    _ = domain_client.store[x_ptr.id_at_location.no_dash]
+
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
-
     proxy_client = network_client.domains[domain_client.address.target_id.id]
 
     assert proxy_client.address == domain_client.address
     assert proxy_client.name == domain_client.name
     assert proxy_client.routes[0] != domain_client.routes[0]
 
+    time.sleep(1)
+
     y_ptr = proxy_client.store[x_ptr.id_at_location.no_dash]
     assert x_ptr.id_at_location == y_ptr.id_at_location
     assert type(x_ptr).__name__ == type(y_ptr).__name__
 
 
-@pytest.mark.integration
+@pytest.mark.network
 def test_search_network() -> None:
     unique_tag = str(uuid.uuid4())
     domain_client = sy.login(
@@ -61,9 +68,10 @@ def test_search_network() -> None:
     assert result[0]["host_or_ip"] == DOMAIN1_VPN_IP
 
 
-@pytest.mark.integration
+@pytest.mark.network
 def test_proxy_login_logout_network() -> None:
     unique_tag = str(uuid.uuid4())
+
     domain_client = sy.login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
@@ -72,7 +80,6 @@ def test_proxy_login_logout_network() -> None:
     x.send(domain_client, tags=[unique_tag])
 
     network_client = sy.login(port=NETWORK_PORT)
-
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
 
@@ -83,11 +90,11 @@ def test_proxy_login_logout_network() -> None:
         proxy_client.store[unique_tag].get(delete_obj=False)
 
     proxy_client.login(email="info@openmined.org", password="changethis")
-
     res = proxy_client.store[unique_tag].get(delete_obj=False)
     assert (res == torch.Tensor([1, 2, 3])).all()
 
     proxy_client.logout()
+
     # cant get it as a guest
     with pytest.raises(UnknownPrivateException):
         proxy_client.store[unique_tag].get(delete_obj=False)

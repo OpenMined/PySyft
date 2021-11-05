@@ -89,7 +89,9 @@ message UpdateUserMessage {
   string groups = 7;
   string name = 8;
   double budget = 9;
-  syft.core.io.Address reply_to = 10;
+  string institution = 10;
+  string website = 11;
+  syft.core.io.Address reply_to = 12;
 }
 
 // Search Users

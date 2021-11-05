@@ -153,8 +153,8 @@ function Profile() {
 
   const onSubmit = ({thisTag, ...values}) => {
     const formData = new FormData()
-    console.log({values})
-    formData.append('updated_settings', JSON.stringify({...values}))
+    formData.append('settings', JSON.stringify({...values}))
+    formData.append('file', new Blob())
     update(formData)
   }
 
