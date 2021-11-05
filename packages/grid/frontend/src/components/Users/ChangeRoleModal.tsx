@@ -11,7 +11,7 @@ import Select from '@/components/post/Select'
 
 export function ChangeRoleModal({show, onClose, user, role}) {
   const {data: roles} = useRoles().all()
-  const {mutate} = useUsers().update(user?.id)
+  const {mutate} = useUsers().update(user?.id, {onSuccess: onClose})
   const [currentRole, setRole] = useState(role)
   const matchingRole = roles?.find(defRole => defRole.name === currentRole)
   const permissionsList = allPermissions
@@ -33,7 +33,9 @@ export function ChangeRoleModal({show, onClose, user, role}) {
     <Modal show={show} onClose={onClose} className="max-w-3xl">
       <div className="col-span-full">
         <FontAwesomeIcon icon={faCheck} className="font-bold text-3xl" />
-        <Text as="h1" className="mt-3" size="3xl">Change Roles</Text>
+        <Text as="h1" className="mt-3" size="3xl">
+          Change Roles
+        </Text>
         <Text className="mt-4" as="p">
           Permissions for a user are set by their assigned role. These permissions are used for managing the domain. To
           review and customize the default set of roles visit the{' '}
@@ -51,9 +53,7 @@ export function ChangeRoleModal({show, onClose, user, role}) {
         </FormControl>
       </div>
       <div className="col-span-full border border-gray-100 bg-gray-50 p-6 pb-8 space-y-4 mt-2.5 rounded">
-        <Text>
-        {t(`${currentRole}.description`, 'permissions')}
-        </Text>
+        <Text>{t(`${currentRole}.description`, 'permissions')}</Text>
         <div className="py-4">
           <Divider color="light" />
         </div>

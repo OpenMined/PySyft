@@ -9,8 +9,10 @@ import {BorderedBox} from '@/components/Boxes'
 import {useUsers} from '@/lib/data'
 
 function UserModal({show, onClose, user, onEditRole, onAdjustBudget}) {
-  const removeUser = useUsers().remove(user.id, {onSuccess: onClose}).mutate
+  const removeUser = useUsers().remove(user?.id, {onSuccess: onClose}).mutate
+
   if (!user) return null
+
   return (
     <Modal show={show} onClose={onClose} withExpand={`/active/${user.id}`}>
       <div className="col-span-10 col-start-2 mt-10">

@@ -64,10 +64,10 @@ function Active() {
       {selectedUser && (
         <UserModal
           show={selectedModal === 'user'}
-          user={selectedUser}
+          user={users.find(user => user.id === selectedUser.id)}
           onClose={() => setModal('')}
           onEditRole={() => setModal('change-role')}
-          onAdjustBudget={() => console.log('c') || setModal('adjust-budget')}
+          onAdjustBudget={() => setModal('adjust-budget')}
         />
       )}
       {selectedUser && (
@@ -135,19 +135,19 @@ function DeniedUsersTable({users}) {
         accessor: 'added_by',
         Cell: ({cell: {value}}) => <Text size="sm">{value}</Text>
       },
-      {
-        Header: 'DAA',
-        accessor: 'daa_document',
-        Cell: ({cell: {value}}) => (
-          <TableItem center>
-            <a href={value}>
-              <Badge type="subtle" variant="gray">
-                data_access_agreement.pdf
-              </Badge>
-            </a>
-          </TableItem>
-        )
-      },
+      // {
+      //   Header: 'DAA',
+      //   accessor: 'daa_document',
+      //   Cell: ({cell: {value}}) => (
+      //     <TableItem center>
+      //       <a href={value}>
+      //         <Badge type="subtle" variant="gray">
+      //           data_access_agreement.pdf
+      //         </Badge>
+      //       </a>
+      //     </TableItem>
+      //   )
+      // },
       {
         Header: 'Institution',
         accessor: 'company',
@@ -188,23 +188,23 @@ function DeniedUsersTable({users}) {
 
   return (
     <section className="space-y-6">
-      <div className="flex items-center space-x-2">
-        <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}>
-          <Text size="xs" bold>
-            Accept ({selected.length}) Users
-          </Text>
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          disabled={!selected.length}
-          onClick={() => table.instance.toggleAllRowsSelected(false)}>
-          <Text size="sm" bold className="text-gray-600">
-            Cancel
-          </Text>
-        </Button>
-      </div>
+      {/* <div className="flex items-center space-x-2"> */}
+      {/*   <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}> */}
+      {/*     <Text size="xs" bold> */}
+      {/*       Accept ({selected.length}) Users */}
+      {/*     </Text> */}
+      {/*   </Button> */}
+      {/*   <Button */}
+      {/*     type="button" */}
+      {/*     variant="ghost" */}
+      {/*     size="xs" */}
+      {/*     disabled={!selected.length} */}
+      {/*     onClick={() => table.instance.toggleAllRowsSelected(false)}> */}
+      {/*     <Text size="sm" bold className="text-gray-600"> */}
+      {/*       Cancel */}
+      {/*     </Text> */}
+      {/*   </Button> */}
+      {/* </div> */}
       {table.Component}
       {/* TODO: support pagination */}
       <Text as="p" size="sm">
@@ -257,19 +257,19 @@ function PendingUsersTable({users}) {
           </TableItem>
         )
       },
-      {
-        Header: 'DAA',
-        accessor: 'daa_document',
-        Cell: ({cell: {value}}) => (
-          <TableItem center>
-            <a href={value}>
-              <Badge type="subtle" variant="gray" truncate>
-                data_access_agreement.pdf
-              </Badge>
-            </a>
-          </TableItem>
-        )
-      },
+      // {
+      //   Header: 'DAA',
+      //   accessor: 'daa_document',
+      //   Cell: ({cell: {value}}) => (
+      //     <TableItem center>
+      //       <a href={value}>
+      //         <Badge type="subtle" variant="gray" truncate>
+      //           data_access_agreement.pdf
+      //         </Badge>
+      //       </a>
+      //     </TableItem>
+      //   )
+      // },
       {
         Header: 'Institution',
         accessor: 'company',
@@ -315,33 +315,33 @@ function PendingUsersTable({users}) {
 
   return (
     <section className="space-y-6">
-      <div className="flex items-center space-x-2">
-        <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}>
-          <Text size="xs" bold>
-            Accept ({selected.length}) Users
-          </Text>
-        </Button>
-        <Button
-          variant="outline"
-          className="border-error-500 text-error-500 hover:bg-error-500 hover:text-white"
-          size="sm"
-          disabled={!selected.length}
-          onClick={open}>
-          <Text size="xs" bold>
-            Deny ({selected.length}) Users
-          </Text>
-        </Button>
-        <Button
-          type="button"
-          variant="ghost"
-          size="xs"
-          disabled={!selected.length}
-          onClick={() => table.instance.toggleAllRowsSelected(false)}>
-          <Text size="sm" bold className="text-gray-600">
-            Cancel
-          </Text>
-        </Button>
-      </div>
+      {/* <div className="flex items-center space-x-2"> */}
+      {/*   <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}> */}
+      {/*     <Text size="xs" bold> */}
+      {/*       Accept ({selected.length}) Users */}
+      {/*     </Text> */}
+      {/*   </Button> */}
+      {/*   <Button */}
+      {/*     variant="outline" */}
+      {/*     className="border-error-500 text-error-500 hover:bg-error-500 hover:text-white" */}
+      {/*     size="sm" */}
+      {/*     disabled={!selected.length} */}
+      {/*     onClick={open}> */}
+      {/*     <Text size="xs" bold> */}
+      {/*       Deny ({selected.length}) Users */}
+      {/*     </Text> */}
+      {/*   </Button> */}
+      {/*   <Button */}
+      {/*     type="button" */}
+      {/*     variant="ghost" */}
+      {/*     size="xs" */}
+      {/*     disabled={!selected.length} */}
+      {/*     onClick={() => table.instance.toggleAllRowsSelected(false)}> */}
+      {/*     <Text size="sm" bold className="text-gray-600"> */}
+      {/*       Cancel */}
+      {/*     </Text> */}
+      {/*   </Button> */}
+      {/* </div> */}
       {table.Component}
       {/* TODO: support pagination */}
       <Text as="p" size="sm">
@@ -381,7 +381,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
           return (
             <TableItem center>
               <Badge type={isBudgetRunningOut ? 'solid' : 'subtle'} variant={isBudgetRunningOut ? 'danger' : 'gray'}>
-                {value} ε
+                {value?.toFixed(2)} ε
               </Badge>
             </TableItem>
           )
@@ -393,7 +393,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
         Cell: ({cell: {value}}) => (
           <TableItem center>
             <Badge type="subtle" variant="gray">
-              {value} ε
+              {value?.toFixed(2)} ε
             </Badge>
           </TableItem>
         )
@@ -532,7 +532,7 @@ function parseEpsilon(valueWithEpsilon: string | number) {
 }
 
 function CreateUser({onClose}) {
-  const create = useUsers().create(undefined, {multipart: true}).mutate
+  const create = useUsers().create({onSuccess: onClose}, {multipart: true}).mutate
 
   const {register, control, handleSubmit} = useForm({
     defaultValues: {name: '', email: '', password: '', confirm_password: '', role: 4, budget: 10.0}
@@ -542,7 +542,6 @@ function CreateUser({onClose}) {
     const formData = new FormData()
     formData.append('new_user', JSON.stringify(data))
     formData.append('file', new Blob())
-    // Object.keys(data).map(key => formData.append(key, data[key]))
     create(formData)
   }
 
@@ -595,7 +594,7 @@ function CreateUser({onClose}) {
                       containerProps={{className: 'max-w-42'}}
                       {...rest}
                       onChange={e => rest.onChange(parseEpsilon(e.target.value).toFixed(2))}
-                      value={`${console.log(value, typeof value) || Number(value).toFixed(2)} ε`}
+                      value={`${Number(value).toFixed(2)} ε`}
                     />
                   )}
                   name="budget"
@@ -665,9 +664,6 @@ export default function Users() {
       {currentTab === 1 && <Active />}
       {currentTab === 2 && <Pending />}
       {currentTab === 3 && <Denied />}
-      {/* <div className="col-span-full"> */}
-      {/*   <RequestModal /> */}
-      {/* </div> */}
     </Base>
   )
 }

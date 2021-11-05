@@ -7,6 +7,7 @@ import {faUsers, faCheck, faLemon, faHandsHelping, faChevronDown, faUserCircle} 
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
 import {useMe, useSettings} from '@/lib/data'
 import {t} from '@/i18n'
+import {logout} from '@/lib/auth'
 
 const navItems = [
   {name: 'Users', link: '/users', icon: faUsers},
@@ -117,13 +118,11 @@ function DomainInfo() {
             <Badge variant="gray" type="solid" className="w-20" truncate>
               ID#{domainData?.node_id}
             </Badge>
-            <Link href="/logout">
-              <a>
-                <Text size="sm" underline className="lowercase bg-transparent hover:text-white">
-                  {t('logout')}
-                </Text>
-              </a>
-            </Link>
+            <button className="text-left" onClick={logout}>
+              <Text size="sm" underline className="lowercase bg-transparent hover:text-white">
+                {t('logout')}
+              </Text>
+            </button>
           </div>
           <div className="text-gray-400 cursor-pointer flex-shrink-0">
             <FontAwesomeIcon icon={faChevronDown} title="Open the domain configuration menu" />
