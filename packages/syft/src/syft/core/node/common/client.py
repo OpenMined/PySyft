@@ -434,7 +434,7 @@ class StoreClient:
             try:
                 key = UID.from_string(key)
                 return self[key]
-            except ValueError:
+            except IndexError:
 
                 matches = 0
                 match_obj: Optional[Pointer] = None
