@@ -436,7 +436,6 @@ class StoreClient:
                 return self[key]
             except ValueError:
 
-                
                 matches = 0
                 match_obj: Optional[Pointer] = None
 
@@ -447,15 +446,20 @@ class StoreClient:
                 if matches == 1 and match_obj is not None:
                     return match_obj
                 elif matches > 1:
-                    traceback_and_raise(KeyError("More than one item with tag:" + str(key)))
+                    traceback_and_raise(
+                        KeyError("More than one item with tag:" + str(key))
+                    )
                 else:
                     # If key does not math with any tags, we then try to match it with id string.
                     # But we only do this if len(key)>=5, because if key is too short, for example
                     # if key="a", there are chances of mismatch it with id string, and I don't
                     # think the user pass a key such short as part of id string.
-                    if len(key) >= 5:
+                    str_key = str(key)
+                    if len(str_key) >= 5:
                         for obj in self.store:
-                            if key in str(obj.id_at_location.value).replace("-", ""):
+                            if str_key in str(obj.id_at_location.value).replace(
+                                "-", ""
+                            ):
                                 return obj
                     else:
                         traceback_and_raise(
