@@ -1,5 +1,5 @@
-Deployment: Introduction to HaGrid
-**********************************
+Deployment: Introduction & Installation of HaGrid
+***************************************************
 
 .. toctree::
    :maxdepth: 3
@@ -28,15 +28,11 @@ Working with Hagrid & Syft API versions:
       and bootstrap a local Jupyter Notebook where you can use the Syft
       & Grid API to communicate with a prod/local dev system\ *.*
 
--  **Production mode:** 
+-  **Production mode:**
       You can specify the branch and repository you want to fork (including your own fork) and Hagrid will monitor those branches in a cron job, pull new changes and restart the services to apply them, therefore your deployed system will always stay up to date.
 
-
-Installation
-============
-
 Prerequisites
--------------
+===============
 
 1. Ensure using **Python3.7+**; If you are having trouble navigating python dependencies, use conda:
 
@@ -97,8 +93,8 @@ Prerequisites
 4. Make sure you are using the **0.6.0** branch of the PySyft repository (branch can be found `here <https://github.com/OpenMined/PySyft/tree/0.6.0>`__)
 
 
-Explore locally with the PySyft API (no containers involved):
--------------------------------------------------------------
+Explore locally with the PySyft API
+====================================
 
 1. Make sure you use last version of **pip** (pip>=21.2.1) (pip -V)
 
@@ -128,7 +124,7 @@ Explore locally with the PySyft API (no containers involved):
 
 
 Local deployment using Docker
------------------------------
+====================================
 
 1. Install Hagrid:
 
@@ -203,7 +199,7 @@ Local deployment using Docker
 
 
 Local deployment using Vagrant and VirtualBox
----------------------------------------------
+===============================================
 
 This is particularly useful to experiment with the Ansible scripts to test new changes.
 
@@ -258,18 +254,18 @@ This is particularly useful to experiment with the Ansible scripts to test new c
 9. To shut down the machine currently managed by Vagrant, you can run the following after exiting this node shell:
 
    .. code-block:: bash
-   
+
       $ vagrant halt
 
 10. Or alternatively to destroy it using:
 
    .. code-block:: bash
-   
+
       $ vagrant destroy
 
 
 Deploying on Kubernetes
---------------------------
+====================================
 
 We provide an option to deploy the stack using kubernetes. To test and run this locally we use ``minikube`` and ``devspace``.
 
@@ -283,7 +279,7 @@ These are the prerequisites needed further, which are explained step-by-step bel
 * kubectx
 
 MacOS
-'''''''''''''''
+---------
 
 * **Hyperkit**
 
@@ -292,7 +288,7 @@ Ingress is not working on Mac and Docker and the issue is `being tracked here <h
 #. Install hyperkit by running:
 
 .. code-block:: bash
-	
+
     $ brew install hyperkit
 
 
@@ -315,21 +311,21 @@ Ingress is not working on Mac and Docker and the issue is `being tracked here <h
 1. ``minikube`` is a mini master k8s node that you can run on your local machine in a similar manner to Docker. To use minikube you need it to be running:
 
 .. code-block:: bash
-	
+
     $ minikube config set driver hyperkit
     $ minikube start --disk-size=40g
     $ minikube addons enable ingress
 
 2. If you ever need to reset ``minikube`` you can do:
-	
+
 .. code-block:: bash
-	
+
     $ minikube delete --all --purge
 
 3. Once ``minikube`` is running, you should see the container in Docker by running:
 
 .. code-block:: bash
-    
+
     $ docker ps
     CONTAINER ID   IMAGE                                 COMMAND                  CREATED        STATUS              PORTS                                                                                                                                  NAMES
     57f73851bf08   gcr.io/k8s-minikube/kicbase:v0.0.25   "/usr/local/bin/entr…"   46 hours ago   Up About a minute   127.0.0.1:57954->22/tcp, 127.0.0.1:57955->2376/tcp, 127.0.0.1:57957->5000/tcp, 127.0.0.1:57958->8443/tcp, 127.0.0.1:57956->32443/tcp minikube
@@ -367,7 +363,7 @@ All k8s have a default namespace and the other ones here are from kubernetes and
 We will use the namespace ``openmined`` to make it clear what belongs to the Grid stack and what is something else. To create it, we can run:
 
 .. code-block:: bash
-   
+
    $ kubectl create namespace openmined
 
 .. code-block:: bash
@@ -381,7 +377,7 @@ We will use the namespace ``openmined`` to make it clear what belongs to the Gri
 ``kubectx`` is a package of helpful utilities which can help you do things like set a default namespace.
 
 .. code-block:: bash
-   
+
    $ brew install kubectx
 
 Now we can use a tool like ``kubens`` to change the default namespace to openmined.
@@ -415,12 +411,12 @@ Additionally ``devspace`` allows us to deploy using helm by auto-generating the 
 
 
 Deploy to local dev
-''''''''''''''''''''
+----------------------
 
 1. Check that you have the right namespace:
 
 .. code-block:: bash
-	
+
     $ devspace list namespaces
     Name                   Default   Exists
     default                false     true
@@ -451,14 +447,14 @@ Deploy to local dev
 You can run the connect VPN settings using all the opened ports with:
 
 .. code-block:: bash
-    
+
    $ cd packages/grid
    $ python3 vpn/connect_vpn.py http://localhost:8088 http://localhost:8087 http://headscale:8080
 
 4. Destroy the local deployment
 
 .. code-block:: bash
-	
+
    $ devspace purge
 
 5. Delete persistent volumes
@@ -483,7 +479,7 @@ This will show all the unique images and their tags currently deployed which is 
 when debugging which version is actually running in the cluster.
 
 .. code-block:: bash
-	
+
    $ kubectl get pods --all-namespaces -o jsonpath="{.items[*].spec.containers[*].image}" | tr -s '[[:space:]]' '\n' | sort | uniq -c
 
 
@@ -492,7 +488,7 @@ when debugging which version is actually running in the cluster.
 * To get all the deployments:
 
 .. code-block:: bash
-		
+
    $ kubectl get deployments
    NAME             READY   UP-TO-DATE   AVAILABLE   AGE
    backend          1/1     1            1           18m
@@ -504,12 +500,12 @@ when debugging which version is actually running in the cluster.
 * Restart the backend-worker
 
 .. code-block:: bash
-    
+
    $ kubectl rollout restart deployment backend-worker
 
 
 Deploy to Google Kubernetes Engine (GKE)
-'''''''''''''''''''''''''''''''''''''''''
+------------------------------------------
 
 1.Configure kubectl context with GKE:
 
@@ -538,7 +534,7 @@ Deploy to Google Kubernetes Engine (GKE)
 5. You should see that you are creating a domain and that the container registry variable changes the image name to:
 
 .. code-block:: bash
-	
+
    images:
    	backend:
     	image: gcr.io/reflected-space-315806/openmined/grid-backend
@@ -583,7 +579,7 @@ Deploy to Google Kubernetes Engine (GKE)
 
 
 Deploying to Azure
-------------------
+====================================
 
 1. Get your virtual machine on Azure ready
 
@@ -623,4 +619,3 @@ Deploying to Azure
 
 .. |image2| image:: ../_static/deployment/image3.png
    :width: 95%
-
