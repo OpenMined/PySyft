@@ -1,5 +1,5 @@
-Deployment: Introduction to HaGrid
-**********************************
+Deployment: Introduction & Installation of HaGrid
+***************************************************
 
 .. toctree::
    :maxdepth: 3
@@ -31,12 +31,8 @@ Working with Hagrid & Syft API versions:
 -  **Production mode:**
       You can specify the branch and repository you want to fork (including your own fork) and Hagrid will monitor those branches in a cron job, pull new changes and restart the services to apply them, therefore your deployed system will always stay up to date.
 
-
-Installation
-============
-
 Prerequisites
--------------
+===============
 
 1. Ensure using **Python3.7+**; If you are having trouble navigating python dependencies, use conda:
 
@@ -97,8 +93,8 @@ Prerequisites
 4. Make sure you are using the **0.6.0** branch of the PySyft repository (branch can be found `here <https://github.com/OpenMined/PySyft/tree/0.6.0>`__)
 
 
-Explore locally with the PySyft API (no containers involved):
--------------------------------------------------------------
+Explore locally with the PySyft API
+====================================
 
 1. Make sure you use last version of **pip** (pip>=21.2.1) (pip -V)
 
@@ -128,7 +124,7 @@ Explore locally with the PySyft API (no containers involved):
 
 
 Local deployment using Docker
------------------------------
+====================================
 
 1. Install Hagrid:
 
@@ -203,7 +199,7 @@ Local deployment using Docker
 
 
 Local deployment using Vagrant and VirtualBox
----------------------------------------------
+===============================================
 
 This is particularly useful to experiment with the Ansible scripts to test new changes.
 
@@ -269,7 +265,7 @@ This is particularly useful to experiment with the Ansible scripts to test new c
 
 
 Deploying on Kubernetes
---------------------------
+====================================
 
 We provide an option to deploy the stack using kubernetes. To test and run this locally we use ``minikube`` and ``devspace``.
 
@@ -283,7 +279,7 @@ These are the prerequisites needed further, which are explained step-by-step bel
 * kubectx
 
 MacOS
-'''''''''''''''
+---------
 
 * **Hyperkit**
 
@@ -415,7 +411,7 @@ Additionally ``devspace`` allows us to deploy using helm by auto-generating the 
 
 
 Deploy to local dev
-''''''''''''''''''''
+----------------------
 
 1. Check that you have the right namespace:
 
@@ -509,7 +505,7 @@ when debugging which version is actually running in the cluster.
 
 
 Deploy to Google Kubernetes Engine (GKE)
-'''''''''''''''''''''''''''''''''''''''''
+------------------------------------------
 
 1.Configure kubectl context with GKE:
 
@@ -583,7 +579,7 @@ Deploy to Google Kubernetes Engine (GKE)
 
 
 Deploying to Azure
-------------------
+====================================
 
 1. Get your virtual machine on Azure ready
 
@@ -623,4 +619,3 @@ Deploying to Azure
 
 .. |image2| image:: ../_static/deployment/image3.png
    :width: 95%
-
