@@ -12,18 +12,11 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import Dict
-from typing import Optional
 from typing import TYPE_CHECKING
-
-# syft absolute
-import syft as sy
 
 # relative
 from .....ast.klass import get_run_class_method
-from ....common.uid import UID
-from ....node.abstract.node import AbstractNode
 from ....node.common.client import Client
-from ....store.storeable_object import StorableObject
 from ....tensor.smpc import utils
 from ...store import CryptoPrimitiveProvider
 
@@ -94,7 +87,7 @@ def mul_master(
     return res_shares  # type: ignore
 
 
-def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
+def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     """Function that is executed by the orchestrator to multiply two secret values.
 
     Args:
@@ -108,13 +101,31 @@ def gt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     Returns:
         MPCTensor: Result of the multiplication.
     """
+    # relative
+    from ....tensor.tensor import TensorPointer
+
     # diff = a - b
     # bit decomposition
     # sum carry adder
     # res = sign(diff)
-    res_shares = x - y
 
-    return MSB(res_shares)
+    res_shares = x - y
+    res_shares.block
+    # time.sleep(2)
+    msb = MSB(res_shares)
+    tensor_shares = []
+    final_shares = []
+    if isinstance(x.child[0], TensorPointer):
+        for t1, t2 in zip(x.child, y.child):
+            tensor_shares.append(t1.__lt__(t2))
+
+        for p1, p2 in zip(tensor_shares, msb.child):
+            p2.block
+            final_shares.append(p1.mpc_swap(p2))
+
+        msb.child = final_shares
+
+    return msb
 
 
 def MSB(x: MPCTensor) -> MPCTensor:
@@ -131,39 +142,11 @@ def MSB(x: MPCTensor) -> MPCTensor:
     """
     ring_size = 2 ** 32  # TODO : Should extract ring_size elsewhere for generality.
     decomposed_shares = ABY3.bit_decomposition(x)
+
+    for share in decomposed_shares:
+        share.block
+
     msb_share = decomposed_shares[-1]
     msb = ABY3.bit_injection(msb_share, ring_size)
 
     return msb
-
-
-def beaver_populate(
-    data: Any, id_at_location: UID, node: Optional[AbstractNode] = None
-) -> None:
-    """Populate the given input Tensor in the location specified.
-
-    Args:
-        data (Tensor): input Tensor to store in the node.
-        id_at_location (UID): the location to store the data in.
-        node Optional[AbstractNode] : The node on which the data is stored.
-    """
-    obj = node.store.get_object(key=id_at_location)  # type: ignore
-    if obj is None:
-        list_data = sy.lib.python.List([data])
-        result = StorableObject(
-            id=id_at_location,
-            data=list_data,
-            read_permissions={},
-        )
-        node.store[id_at_location] = result  # type: ignore
-    elif isinstance(obj.data, sy.lib.python.List):
-        obj = obj.data
-        obj.append(data)
-        result = StorableObject(
-            id=id_at_location,
-            data=obj,
-            read_permissions={},
-        )
-        node.store[id_at_location] = result  # type: ignore
-    else:
-        raise Exception(f"Object at {id_at_location} should be a List or None")

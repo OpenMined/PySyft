@@ -34,6 +34,7 @@ primitives = [
     UserList,
     UserString,
     OrderedDict,
+    bytes,
 ]
 
 PrimitiveType = Union[
@@ -54,6 +55,7 @@ PrimitiveType = Union[
     UserList,
     UserString,
     OrderedDict,
+    bytes,
 ]
 
 
@@ -82,6 +84,9 @@ class PrimitiveFactory(ABC):
 
         if isinstance(value, int):
             return python.Int(value=value, id=id)
+
+        if isinstance(value, bytes):
+            return python.Bytes(value=value)
 
         if isinstance(value, float):
             return python.Float(value=value, id=id)

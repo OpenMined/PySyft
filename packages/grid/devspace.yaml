@@ -36,7 +36,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.6.0-alpha.0"
+      - "0.6.0-alpha.1"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -47,7 +47,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.6.0-alpha.0"
+      - "0.6.0-alpha.1"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -65,7 +65,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.6.0-alpha.0"
+      - "0.6.0-alpha.1"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -76,7 +76,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.6.0-alpha.0"
+      - "0.6.0-alpha.1"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -279,7 +279,7 @@ deployments:
               - name: CELERY_WORKER
                 value: "true"
               - name: RUN
-                value: "celery worker -A grid.worker -l info -Q main-queue -c 1"
+                value: "celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500"
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
               - name: C_FORCE_ROOT

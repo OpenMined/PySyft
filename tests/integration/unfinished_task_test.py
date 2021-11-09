@@ -1,13 +1,18 @@
 # stdlib
 import time
 
+# third party
+import pytest
+
 # syft absolute
 import syft as sy
 from syft.core.node.common.action.save_object_action import SaveObjectAction
 from syft.core.store.storeable_object import StorableObject
 
 
+@pytest.mark.general
 def test_unfinished_task(get_clients) -> None:
+    print("running test_unfinished_task")
     client = get_clients(1)[0]
 
     list_pointer = sy.lib.python.List().send(client)

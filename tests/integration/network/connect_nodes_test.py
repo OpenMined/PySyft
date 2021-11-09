@@ -1,0 +1,88 @@
+# third party
+import pytest
+import requests
+
+# syft absolute
+import syft as sy
+
+NETWORK_PORT = 9081
+NETWORK_PUBLIC_HOST = f"docker-host:{NETWORK_PORT}"
+DOMAIN1_PORT = 9082
+DOMAIN2_PORT = 9083
+NETWORK_VPN_IP = "100.64.0.1"
+DOMAIN1_VPN_IP = "100.64.0.2"
+DOMAIN2_VPN_IP = "100.64.0.3"
+TEST_ROOT_EMAIL = "info@openmined.org"
+TEST_ROOT_PASS = "changethis"
+
+
+def join_to_network_python(
+    email: str, password: str, port: int, network_host: str
+) -> None:
+    root_client = sy.login(email=email, password=password, port=port)
+
+    # test Syft API
+    root_client.join_network(host_or_ip=network_host)
+
+    response = root_client.vpn_status()
+    return response
+
+
+def join_to_network_rest(
+    email: str, password: str, port: int, network_host: str
+) -> None:
+    url = f"http://localhost:{port}/api/v1/login"
+    auth_response = requests.post(url, json={"email": email, "password": password})
+    auth = auth_response.json()
+
+    # test HTTP API
+    url = f"http://localhost:{port}/api/v1/vpn/join/{network_host}"
+    headers = {"Authorization": f"Bearer {auth['access_token']}"}
+    response = requests.post(url, headers=headers)
+
+    result = response.json()
+    return result
+
+
+def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
+    response = join_to_network_python(
+        email=TEST_ROOT_EMAIL,
+        password=TEST_ROOT_PASS,
+        port=port,
+        network_host=NETWORK_PUBLIC_HOST,
+    )
+
+    assert response["status"] == "ok"
+    host = response["host"]
+    assert host["ip"] == vpn_ip
+    assert host["hostname"] == hostname
+    assert host["os"] == "linux"
+
+    response = join_to_network_rest(
+        email=TEST_ROOT_EMAIL,
+        password=TEST_ROOT_PASS,
+        port=port,
+        network_host=NETWORK_PUBLIC_HOST,
+    )
+    assert response["status"] == "ok"
+
+
+@pytest.mark.network
+def test_connect_network_to_network() -> None:
+    run_network_tests(
+        port=NETWORK_PORT, hostname="test_network_1", vpn_ip=NETWORK_VPN_IP
+    )
+
+
+@pytest.mark.network
+def test_connect_domain1_to_network() -> None:
+    run_network_tests(
+        port=DOMAIN1_PORT, hostname="test_domain_1", vpn_ip=DOMAIN1_VPN_IP
+    )
+
+
+@pytest.mark.network
+def test_connect_domain2_to_network() -> None:
+    run_network_tests(
+        port=DOMAIN2_PORT, hostname="test_domain_2", vpn_ip=DOMAIN2_VPN_IP
+    )

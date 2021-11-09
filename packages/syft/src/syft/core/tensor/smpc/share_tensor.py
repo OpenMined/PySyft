@@ -53,14 +53,24 @@ RING_SIZE_TO_OP = {
         "add": operator.xor,
         "sub": operator.xor,
         "mul": operator.and_,
+        "lt": operator.lt,
         "gt": operator.gt,
+        "ge": operator.ge,
+        "le": operator.le,
+        "eq": operator.eq,
+        "ne": operator.ne,
     },
     2
     ** 32: {
         "add": operator.add,
         "sub": operator.sub,
         "mul": operator.mul,
+        "lt": operator.lt,
         "gt": operator.gt,
+        "ge": operator.ge,
+        "le": operator.le,
+        "eq": operator.eq,
+        "ne": operator.ne,
     },
 }
 
@@ -68,8 +78,6 @@ CACHE_CLIENTS: Dict[Party, Any] = {}
 
 
 def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
-    print("Args########################################")
-    print(args)
     ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
 
 
@@ -124,8 +132,8 @@ class ShareTensor(PassthroughTensor):
     def login_clients(parties_info: List[Party]) -> Any:
         clients = []
         for party_info in parties_info:
-            client = CACHE_CLIENTS.get(party_info, None)
             party_info.url = party_info.url.replace("localhost", "docker-host")
+            client = CACHE_CLIENTS.get(party_info, None)
             if client is None:
                 # TODO: refactor to use a guest account
                 client = sy.login(  # nosec
@@ -523,11 +531,27 @@ class ShareTensor(PassthroughTensor):
         new_share = y.apply_function(self, "matmul")
         return new_share
 
-    def gt(self, y: torch.Tensor) -> "ShareTensor":
+    def lt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
+        """Apply the "lt" operation between "y" and "self".
+
+        Args:
+            y (Union[ShareTensor,np.ndarray]): self < y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "lt")
+        return new_share
+
+    def gt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
         """Apply the "gt" operation between "y" and "self".
 
         Args:
-            y (torch.Tensor): self > y
+            y (Union[ShareTensor,np.ndarray]): self > y
 
         Returns:
             ShareTensor. Result of the operation.
@@ -537,6 +561,54 @@ class ShareTensor(PassthroughTensor):
         # )
         ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "gt")
+        return new_share
+
+    def ge(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
+        """Apply the "ge" operation between "y" and "self".
+
+        Args:
+            y (Union[ShareTensor,np.ndarray]): self >= y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "ge")
+        return new_share
+
+    def le(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
+        """Apply the "le" operation between "y" and "self".
+
+        Args:
+            y (Union[ShareTensor,np.ndarray]): self <= y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "le")
+        return new_share
+
+    def ne(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
+        """Apply the "ne" operation between "y" and "self".
+
+        Args:
+            y (Union[ShareTensor,np.ndarray]): self != y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "ne")
         return new_share
 
     def bit_decomposition(self) -> "ShareTensor":
@@ -552,7 +624,7 @@ class ShareTensor(PassthroughTensor):
             "It should not reach this point since we generate SMPCAction for this"
         )
 
-    def __eq__(self, other: Any) -> bool:
+    def eq(self, other: Any) -> bool:
         """Equal operator.
         Check if "self" is equal with another object given a set of
             attributes to compare.
@@ -561,33 +633,36 @@ class ShareTensor(PassthroughTensor):
         Returns:
             bool: True if equal False if not.
         """
+        # TODO: Rasswanth: Fix later after the comparison operation
         # relative
-        from .... import Tensor
+        # from .... import Tensor
 
-        if (
-            isinstance(self.child, Tensor)
-            and isinstance(other.child, Tensor)
-            and (self.child != other.child).child.any()  # type: ignore
-        ):
-            return False
+        # if (
+        #     isinstance(self.child, Tensor)
+        #     and isinstance(other.child, Tensor)
+        #     and (self.child != other.child).child.any()  # type: ignore
+        # ):
+        #     return False
 
-        if (
-            isinstance(self.child, np.ndarray)
-            and isinstance(other.child, np.ndarray)
-            and (self.child != other.child).any()
-        ):
-            return False
+        # if (
+        #     isinstance(self.child, np.ndarray)
+        #     and isinstance(other.child, np.ndarray)
+        #     and (self.child != other.child).any()
+        # ):
+        #     return False
 
-        if self.rank != other.rank:
-            return False
+        # if self.rank != other.rank:
+        #     return False
 
-        if self.ring_size != other.ring_size:
-            return False
+        # if self.ring_size != other.ring_size:
+        #     return False
 
-        if self.nr_parties != other.nr_parties:
-            return False
+        # if self.nr_parties != other.nr_parties:
+        #     return False
 
-        return True
+        # return True
+
+        return self.child == other.child
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
     # def div(
@@ -729,4 +804,9 @@ class ShareTensor(PassthroughTensor):
     __rmul__ = mul
     __matmul__ = matmul
     __rmatmul__ = rmatmul
+    __lt__ = lt
     __gt__ = gt
+    __ge__ = ge
+    __le__ = le
+    __eq__ = eq
+    __ne__ = ne

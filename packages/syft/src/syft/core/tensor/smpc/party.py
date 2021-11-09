@@ -38,10 +38,14 @@ class Party:
         return Party_PB
 
     def __hash__(self) -> int:
+        # TODO: Rasswanth, George, Trask this takes into consideration a hashing based on url and port
+        # that we login only once
+        # Is that sufficient?
         # res_str = f"{self.url}:{self.port}"
-        return hash((Party.url, self.port))
+        return hash((self.url, self.port))
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, Party):
             return False
-        return self.port == other.port
+
+        return self.port == other.port and self.url == other.url

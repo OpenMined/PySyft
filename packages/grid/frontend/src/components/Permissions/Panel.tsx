@@ -7,7 +7,7 @@ import type {SyftPermissions} from '@/types/permissions'
 // TODO: evaluate creating API endpoints for serving each permission type (!== roles)
 // TODO: should be created via a shared object between backend and frontend
 // prettier-ignore
-const allPermissions: Array<SyftPermissions> = [
+export const allPermissions: Array<SyftPermissions> = [
   'can_make_data_requests', 'can_edit_roles',
   'can_triage_data_requests', 'can_upload_data',
   'can_manage_privacy_budgets', 'can_upload_legal_documents',
@@ -58,7 +58,7 @@ function PermissionsAccordionPanel() {
           </div>
         ))}
       </div>
-      <Button variant="primary" type="button" onClick={() => save()}>
+      <Button variant="primary" type="button" onClick={save}>
         {t('buttons.save-changes')}
       </Button>
     </div>
