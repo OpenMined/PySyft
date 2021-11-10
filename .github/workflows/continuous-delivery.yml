@@ -2,7 +2,7 @@ name: Continuous Delivery
 
 on:
   schedule:
-    - cron: "0 0 * * 3" # Wednesday UTC Midnight
+    - cron: "10 14 * * 3" # Wednesday 
 
 jobs:
   deploy-syft-alpha:
