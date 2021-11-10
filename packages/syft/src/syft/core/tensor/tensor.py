@@ -226,10 +226,89 @@ class TensorPointer(Pointer):
         """
         return TensorPointer._apply_op(self, other, "mul")
 
+    def __lt__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "lt" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+
+        return TensorPointer._apply_op(self, other, "lt")
+
     def __gt__(
         self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
     ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "gt" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+
         return TensorPointer._apply_op(self, other, "gt")
+
+    def __ge__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "ge" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+
+        return TensorPointer._apply_op(self, other, "ge")
+
+    def __le__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "le" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+
+        return TensorPointer._apply_op(self, other, "le")
+
+    def __eq__(  # type: ignore
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "eq" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+
+        return TensorPointer._apply_op(self, other, "eq")
+
+    def __ne__(  # type: ignore
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "ne" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+
+        return TensorPointer._apply_op(self, other, "ne")
 
 
 def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
@@ -359,3 +438,7 @@ class Tensor(
 
     def bit_decomposition(self) -> Tensor:
         raise ValueError("Should not reach this point")
+
+    def mpc_swap(self, other: Tensor) -> Tensor:
+        self.child.child = other.child.child
+        return self

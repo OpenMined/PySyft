@@ -2,8 +2,11 @@
 import re
 import subprocess
 
+# third party
+import pytest
 
-def docker_network_connect(cmd: str = "connect") -> None:
+
+def docker_network_connect(direction: str = "connect") -> None:
     # this connects all the tailscale containers to the other docker compose project
     # networks thus allowing tailscale to find a direct route between them
     projects = [
@@ -18,24 +21,25 @@ def docker_network_connect(cmd: str = "connect") -> None:
                     continue
                 container_name = f"test_{project}-tailscale-1"
                 network_name = f"test_{network}_default"
-                cmd = f"docker network {cmd} {network_name} {container_name}"
+                cmd = f"docker network {direction} {network_name} {container_name}"
                 print(f"Connecting {container_name} to {network_name}")
                 subprocess.call(cmd, shell=True)
             except Exception as e:
                 print(f"Exception running: {cmd}. {e}")
 
 
+@pytest.mark.security
 def test_create_overlay_networks_docker() -> None:
-    docker_network_connect(cmd="connect")
+    docker_network_connect(direction="connect")
 
 
+@pytest.mark.security
 def test_vpn_scan() -> None:
-    # we need to scan two containers so that the first container itself gets scanned
-    # externally by another container to make sure all of the containers on the VPN
-    # are externally scanned and their firewall rules verified
+    # the tailscale container is currently the same so we can get away with a
+    # single external scan
     containers = [
         "test_network_1-tailscale-1",
-        "test_domain_1-tailscale-1",
+        # "test_domain_1-tailscale-1",
     ]
 
     allowed_ports = [80]
@@ -62,5 +66,6 @@ def test_vpn_scan() -> None:
             assert len(lines) == 0
 
 
+@pytest.mark.security
 def test_remove_overlay_networks_docker() -> None:
-    docker_network_connect(cmd="disconnect")
+    docker_network_connect(direction="disconnect")

@@ -1,12 +1,11 @@
 import {createContext, useContext, useMemo, useState} from 'react'
 import Link from 'next/link'
 import {Badge, Button, Divider, H2, H4, H5, Tabs, Tag, Text} from '@/omui'
-import {SearchInput, TopContent, Tooltip, Accordion} from '@/components/lib'
+import {SearchInput, TopContent} from '@/components/lib'
 import {Alert} from '@/components/Alert'
 import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faCalendar, faCheck, faDownload, faExpandAlt, faLink, faTimes} from '@fortawesome/free-solid-svg-icons'
+import {faCalendar, faCheck, faLink, faTimes} from '@fortawesome/free-solid-svg-icons'
 import cloneDeep from 'lodash.clonedeep'
-import dayjs from 'dayjs'
 import {TableItem, useOMUITable} from '@/components/Table'
 import Modal from '@/components/Modal'
 import {Base} from '@/components/Layouts'
@@ -14,12 +13,13 @@ import {AcceptDeny} from '@/components/AcceptDenyButtons'
 import {useDisclosure} from 'react-use-disclosure'
 import {formatDate} from '@/utils'
 import {useDataRequests, useBudgetRequests, useRequests} from '@/lib/data'
+import {RequestStatusBadge} from '@/components/RequestStatusBadge'
 
 const RequestsContext = createContext({data: [], budget: [], highlighted: null, selected: []})
 
 function Pending() {
   const {data} = useContext(RequestsContext)
-  if (data?.length === 0) return <EmptyDataRequests />
+  if (!data) return <EmptyDataRequests />
   return <DataRequestsPendingTable />
 }
 
@@ -99,16 +99,19 @@ function DataRequestsPendingTable() {
       {
         Header: 'Action',
         accessor: d => d?.req?.id,
-        Cell: ({cell: {value}}) => (
-          <div className="flex space-x-5">
-            <button onClick={() => openDetails(value)}>
-              <Text underline className="text-primary-600 hover:text-primary-500">
-                See Details
-              </Text>
-            </button>
-            <AcceptDeny onAccept={() => console.log('accept', value)} onDeny={() => console.log('deny', value)} />
-          </div>
-        )
+        Cell: ({cell: {value}}) => {
+          const update = useRequests().update(value).mutate
+          return (
+            <div className="flex space-x-5">
+              <button onClick={() => openDetails(value)}>
+                <Text underline className="text-primary-600 hover:text-primary-500">
+                  See Details
+                </Text>
+              </button>
+              <AcceptDeny onAccept={() => update({status: 'accepted'})} onDeny={() => update({status: 'denied'})} />
+            </div>
+          )
+        }
       }
     ],
     []
@@ -122,44 +125,42 @@ function DataRequestsPendingTable() {
 
   const selected = table.instance.selectedFlatRows
 
-  console.log({pending: picked})
-
   return (
     <>
-      <div className="col-span-3 mt-10">
-        <SearchInput />
-      </div>
-      <div className="col-span-full mt-8">
-        <Divider color="light" />
-      </div>
+      {/* <div className="col-span-3 mt-10"> */}
+      {/*   <SearchInput /> */}
+      {/* </div> */}
+      {/* <div className="col-span-full mt-8"> */}
+      {/*   <Divider color="light" /> */}
+      {/* </div> */}
       <section className="col-span-full space-y-6 mt-4">
-        <div className="flex items-center space-x-2">
-          <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}>
-            <Text size="xs" bold>
-              Accept ({selected.length}) Requests
-            </Text>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!selected.length}
-            onClick={open}
-            className="border-error-500 text-error-500">
-            <Text size="xs" bold>
-              Reject ({selected.length}) Requests
-            </Text>
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={!selected.length}
-            onClick={() => table.instance.toggleAllRowsSelected(false)}>
-            <Text size="sm" bold className="text-gray-600">
-              Cancel
-            </Text>
-          </Button>
-        </div>
+        {/* <div className="flex items-center space-x-2"> */}
+        {/*   <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}> */}
+        {/*     <Text size="xs" bold> */}
+        {/*       Accept ({selected.length}) Requests */}
+        {/*     </Text> */}
+        {/*   </Button> */}
+        {/*   <Button */}
+        {/*     variant="outline" */}
+        {/*     size="sm" */}
+        {/*     disabled={!selected.length} */}
+        {/*     onClick={open} */}
+        {/*     className="border-error-500 text-error-500"> */}
+        {/*     <Text size="xs" bold> */}
+        {/*       Reject ({selected.length}) Requests */}
+        {/*     </Text> */}
+        {/*   </Button> */}
+        {/*   <Button */}
+        {/*     type="button" */}
+        {/*     variant="ghost" */}
+        {/*     size="xs" */}
+        {/*     disabled={!selected.length} */}
+        {/*     onClick={() => table.instance.toggleAllRowsSelected(false)}> */}
+        {/*     <Text size="sm" bold className="text-gray-600"> */}
+        {/*       Cancel */}
+        {/*     </Text> */}
+        {/*   </Button> */}
+        {/* </div> */}
         {table.Component}
         {/* TODO: support pagination */}
         <Text as="p" size="sm">
@@ -168,32 +169,6 @@ function DataRequestsPendingTable() {
         {picked && <RequestModal onClose={onClose} show={isOpen} data={picked} />}
       </section>
     </>
-  )
-}
-
-function RequestStatusBadge({status}) {
-  if (status === 'pending')
-    return (
-      <Badge variant="primary" type="solid">
-        Pending
-      </Badge>
-    )
-  if (status === 'accepted')
-    return (
-      <Badge variant="success" type="solid">
-        Accepted
-      </Badge>
-    )
-  if (status === 'denied')
-    return (
-      <Badge variant="danger" type="solid">
-        Rejected
-      </Badge>
-    )
-  return (
-    <Badge variant="gray" type="subtle" className="capitalize">
-      {status}
-    </Badge>
   )
 }
 
@@ -298,33 +273,6 @@ function DataRequestsHistoryTable() {
         <Divider color="light" className="col-span-full" />
       </div>
       <section className="col-span-full space-y-6 mt-6">
-        <div className="flex items-center space-x-2">
-          <Button variant="primary" size="sm" disabled={!selected.length} onClick={open}>
-            <Text size="xs" bold>
-              Accept ({selected.length}) Requests
-            </Text>
-          </Button>
-          <Button
-            variant="outline"
-            size="sm"
-            disabled={!selected.length}
-            onClick={open}
-            className="border-error-500 text-error-500 hover:bg-error-500 hover:text-white">
-            <Text size="xs" bold>
-              Reject ({selected.length}) Requests
-            </Text>
-          </Button>
-          <Button
-            type="button"
-            variant="ghost"
-            size="xs"
-            disabled={!selected.length}
-            onClick={() => table.instance.toggleAllRowsSelected(false)}>
-            <Text size="sm" bold className="text-gray-600">
-              Cancel
-            </Text>
-          </Button>
-        </div>
         {table.Component}
         {/* TODO: support pagination */}
         <Text as="p" size="sm">
@@ -344,32 +292,6 @@ function History() {
 
 function RequestModal({show, onClose, data}) {
   const update = useRequests().update(data?.req?.id).mutate
-  console.log(show, data, 'aqui')
-  // const req = {
-  //   user: {
-  //     name: 'Jane Doe',
-  //     email: 'jane.doe@abc.com',
-  //     role: 'Data Scientist',
-  //     budget: 10,
-  //     used_budget: 10,
-  //     company: 'Oxford University',
-  //     website: 'www.university.edu/researcher'
-  //   },
-  //   request: {
-  //     id: '12931e4cfdasdf9213nesdf9012#asdASD1',
-  //     size: 168.22,
-  //     subjects: 50,
-  //     datasets: ['Name of dataset', 'Name of dataset #2'],
-  //     status: 'pending',
-  //     date: dayjs('2021-07-15 08:03:00').format('YYYY-MMM-DD HH:MM'),
-  //     tags: ['#diabetes', '#pima-indians-database', '#data_09.csv'],
-  //     result_id: '#141f2b03-82ed-4cee-be4d-9eaf6b2b3555',
-  //     actions: ['__len__', 'np.unique', '.get'],
-  //     values: 50,
-  //     reason: 'I am currently doing a study on ABC and would like to study XYC from your datasets.'
-  //   }
-  // }
-
   const userInformation = [
     {
       text: 'Role',
@@ -473,7 +395,8 @@ function RequestModal({show, onClose, data}) {
                     <Text size="lg">ɛ</Text>
                   </div>
                   <Text as="p">
-                    request size <Tooltip position="top">HELT OK</Tooltip>
+                    request size
+                    {/* request size <Tooltip position="top">HELT OK</Tooltip> */}
                   </Text>
                 </div>
                 <div className="pl-6">
@@ -481,10 +404,9 @@ function RequestModal({show, onClose, data}) {
                     {data?.req?.subjects}
                   </Text>
                   <div className="flex items-start space-x-2">
-                    <Text as="p">data subjects</Text>{' '}
-                    <div>
-                      <Tooltip position="top">NOT OK</Tooltip>
-                    </div>
+                    <Text as="p">data subjects</Text> {/* <div> */}
+                    {/* <Tooltip position="top">NOT OK</Tooltip> */}
+                    {/* </div> */}
                   </div>
                 </div>
               </div>
@@ -492,7 +414,8 @@ function RequestModal({show, onClose, data}) {
               <Divider color="light" />
               <div>
                 <Text bold size="sm">
-                  Linked Datasets <Tooltip position="top">OK</Tooltip>
+                  Linked Datasets
+                  {/* Linked Datasets <Tooltip position="top">OK</Tooltip> */}
                 </Text>
                 <div className="flex flex-wrap w-full">
                   {data?.req?.datasets?.map(datasetName => (
@@ -553,22 +476,22 @@ function RequestModal({show, onClose, data}) {
                     {data?.req?.reason}
                   </Text>
                 </div>
-                <Divider color="light" />
-                <div>
-                  <Button className="w-auto">
-                    <Text size="sm" bold>
-                      <FontAwesomeIcon icon={faDownload} /> Preview Result
-                    </Text>
-                  </Button>
-                </div>
-                <Text size="sm" as="p">
-                  By{' '}
-                  <Text mono className="text-primary-600" size="sm">
-                    Previewing Results
-                  </Text>{' '}
-                  you are downloading the results this Data Scientist is requesting. Currently results are in
-                  [name_here] format. For help viewing the downloaded results you can go here for further instructions.
-                </Text>
+                {/* <Divider color="light" /> */}
+                {/* <div> */}
+                {/*   <Button className="w-auto"> */}
+                {/*     <Text size="sm" bold> */}
+                {/*       <FontAwesomeIcon icon={faDownload} /> Preview Result */}
+                {/*     </Text> */}
+                {/*   </Button> */}
+                {/* </div> */}
+                {/* <Text size="sm" as="p"> */}
+                {/*   By{' '} */}
+                {/*   <Text mono className="text-primary-600" size="sm"> */}
+                {/*     Previewing Results */}
+                {/*   </Text>{' '} */}
+                {/*   you are downloading the results this Data Scientist is requesting. Currently results are in */}
+                {/*   [name_here] format. For help viewing the downloaded results you can go here for further instructions. */}
+                {/* </Text> */}
               </div>
             </div>
           </div>
@@ -595,7 +518,6 @@ export default function DataRequests() {
     {id: 1, title: 'Pending'},
     {id: 2, title: 'History'}
   ]
-  console.log({dataReq, budgetReq})
 
   return (
     <Base>

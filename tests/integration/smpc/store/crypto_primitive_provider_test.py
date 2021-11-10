@@ -25,6 +25,7 @@
 
 
 # @pytest.mark.skip
+# @pytest.mark.smpc
 # @register_primitive_generator("test")
 # def provider_test(nr_parties: int, nr_instances: int) -> List[Tuple[int]]:
 #     """This function will generate the values:

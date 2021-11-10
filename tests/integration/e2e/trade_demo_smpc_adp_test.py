@@ -17,7 +17,7 @@ from syft.core.adp.entity import Entity
 sy.logger.remove()
 
 
-ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../"))
+ROOT_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../../../"))
 print("ROOT_DIR", ROOT_DIR)
 
 
@@ -34,7 +34,7 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
     }
 
 
-@pytest.mark.integration
+@pytest.mark.e2e
 def test_end_to_end_smpc_adp_trade_demo() -> None:
     # make a unique email so we can run the test isolated
     unique_email = f"{uuid.uuid4()}@caltech.edu"
@@ -112,14 +112,17 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     # Data Scientist
     ca = sy.login(email=unique_email, password="bazinga", port=9082)
+
     ca.request_budget(eps=200, reason="increase budget!")
     it = sy.login(email=unique_email, password="bazinga", port=9083)
+
     it.request_budget(eps=200, reason="increase budget!")
 
     time.sleep(10)
 
     # until we fix the code this just accepts all requests in case it gets the
     # wrong one
+
     for req in ca_root.requests:
         req.accept()
 
@@ -147,7 +150,10 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     inspect it to see if it is indeed normal. But of course... it probably isn't.
     """
     # the pledge 🦜
+    print("running the pledge 🦜")
+
     result = ca_data + it_data
+
     result.block_with_timeout(40)
 
     """
@@ -156,6 +162,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     complexity... but you won't find it, because of course it's abstracted away.
     """
     # the turn 🕳
+    print("running the turn 🕳")
+
     public_result = result.publish(sigma=2)
 
     """
@@ -164,9 +172,13 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     part, the part we call "The Prestige".
     """
     # the prestige 🎩
+    print("running the prestige 🎩")
     # time.sleep(40)  # TODO: should modify after implementing polling .get()
+
     public_result.block_with_timeout(40)
+
     sycure_result = public_result.get()
+
     print("sycure_result", sycure_result)
     print("after ca", ca.privacy_budget)
     print("after it", it.privacy_budget)

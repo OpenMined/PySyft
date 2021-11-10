@@ -12,7 +12,7 @@ TEST_DOMAIN_IP = str(os.environ.get("TEST_DOMAIN_IP", "localhost")).lower()
 TEST_DOMAIN_PORT = int(os.environ.get("TEST_DOMAIN_PORT", 80))
 
 
-@pytest.mark.integration
+@pytest.mark.k8s
 def test_serves_domain_frontend() -> None:
     title_str = "<title>domain</title>"
     url = f"http://{TEST_DOMAIN_IP}:{TEST_DOMAIN_PORT}/status"

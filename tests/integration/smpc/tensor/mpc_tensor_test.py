@@ -16,7 +16,7 @@ from syft.core.tensor.smpc.mpc_tensor import ShareTensor
 sy.logger.remove()
 
 
-@pytest.mark.integration
+@pytest.mark.smpc
 def test_secret_sharing(get_clients) -> None:
     clients = get_clients(2)
 
@@ -37,7 +37,7 @@ def test_secret_sharing(get_clients) -> None:
     assert (res == data.child).all()
 
 
-@pytest.mark.integration
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -63,7 +63,7 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     assert (res == expected.child).all()
 
 
-@pytest.mark.integration
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_public_private_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -88,7 +88,8 @@ def test_mpc_public_private_op(get_clients, op_str: str) -> None:
 
 
 # TODO: Rasswanth to fix later after Tensor matmul refactor
-@pytest.mark.xfail
+@pytest.mark.skip
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["matmul"])
 def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -112,6 +113,7 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     assert (res == expected).all()
 
 
+@pytest.mark.smpc
 @pytest.mark.parametrize(
     "method_str, kwargs", [("sum", {"axis": 0}), ("sum", {"axis": 1})]
 )

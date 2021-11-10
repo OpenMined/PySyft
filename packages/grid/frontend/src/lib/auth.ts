@@ -11,7 +11,9 @@ export function getToken() {
 }
 
 export function logout() {
-  destroyCookie(null, GRID_KEY)
+  destroyCookie(null, GRID_KEY, {path: '/'})
+  // TODO: Add private routes
+  if (typeof window !== 'undefined') window.location = '/login'
 }
 
 export function decodeToken() {

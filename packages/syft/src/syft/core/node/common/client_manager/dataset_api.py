@@ -245,9 +245,7 @@ class DatasetRequestAPI(RequestAPI):
                 }
                 </style>
 
-                <input type="text" id="myInput" onkeyup="myFunction()" placeholder="Search for datasets..">
-
-                <table id="myTable">
+                <table id="myTable" style="width:1000px">
                   <tr class="header">
                     <th style="width:30px">Idx</th>
                     <th style="width:20%;">Name</th>
@@ -259,9 +257,19 @@ class DatasetRequestAPI(RequestAPI):
 
         rows = ""
         for row_i, d in enumerate(dataset_iterable):
+
+            data = d.data
+            truncated_assets = False
+            if len(data) > 3:
+                truncated_assets = True
+                data = data[:3]
+
             assets = ""
-            for i, a in enumerate(d.data):
+            for i, a in enumerate(data):
                 assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
+
+            if truncated_assets:
+                assets += "...<br /><br />"
 
             rows += (
                 """
@@ -313,11 +321,15 @@ class Dataset:
     def pandas(self) -> pd.DataFrame:
         return pd.DataFrame(self.raw)
 
+    @property
+    def assets(self) -> Any:
+        return self.data
+
     def __getitem__(self, key: str) -> Any:
         keys = list()
         for d in self.data:
             if d["name"] == key:
-                return self.client.store[d["id"].replace("-", "")]  # type: ignore
+                return self.client.store[d["id"]]  # type: ignore
             keys.append(d["name"])
 
         raise KeyError(
@@ -332,8 +344,19 @@ class Dataset:
 
         rows = ""
 
+        data = self.data
+
+        if len(data) > 15:
+            print(
+                "WARNING: Too many assets to print... truncating... You "
+                "may run \n\n assets = my_dataset.assets \n\nto view receive a "
+                "dictionary you can parse through using Python\n(as opposed to blowing up your notebook"
+                " with a massive printed table).\n"
+            )
+            data = data[0:15]
+
         assets = ""
-        for i, a in enumerate(self.data):
+        for i, a in enumerate(data):
             assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
 
             rows += (
@@ -373,26 +396,33 @@ class Dataset:
             if not isinstance(value, Tensor) or not isinstance(
                 getattr(value, "child", None), ADPTensor
             ):
-                print(
-                    "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
-                    + name
-                    + "' which cannot be tracked with differential privacy because it is a "
-                    + str(type(value))
-                    + " object.\n\n"
-                    + "This means you'll need to manually approve any requests which "
-                    + "leverage this data. If this is ok with you, proceed. If you'd like to use "
-                    + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
-                    + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                raise Exception(
+                    "ERROR: all private assets must be NumPy ndarray.int32 assets "
+                    + "with proper Differential Privacy metadata applied.\n"
+                    + "\n"
+                    + "Example: syft.Tensor(np.ndarray([1,2,3,4]).astype(np.int32)).private()\n\n"
+                    + "and then follow the wizard. 🧙"
                 )
-
-                pref = input("Are you sure you want to proceed? (y/n)")
-
-                while pref != "y" and pref != "n":
-                    pref = input(
-                        "Invalid input '" + pref + "', please specify 'y' or 'n'."
-                    )
-                if pref == "n":
-                    raise Exception("Dataset loading cancelled.")
+                # print(
+                #     "\n\nWARNING - Non-DP Asset: You just passed in a asset '"
+                #     + name
+                #     + "' which cannot be tracked with differential privacy because it is a "
+                #     + str(type(value))
+                #     + " object.\n\n"
+                #     + "This means you'll need to manually approve any requests which "
+                #     + "leverage this data. If this is ok with you, proceed. If you'd like to use "
+                #     + "automatic differential privacy budgeting, please pass in a DP-compatible tensor type "
+                #     + "such as by calling .private() on a sy.Tensor with a np.int32 or np.float32 inside."
+                # )
+                #
+                # pref = input("Are you sure you want to proceed? (y/n)")
+                #
+                # while pref != "y" and pref != "n":
+                #     pref = input(
+                #         "Invalid input '" + pref + "', please specify 'y' or 'n'."
+                #     )
+                # if pref == "n":
+                #     raise Exception("Dataset loading cancelled.")
 
             existing_asset_names = [d.get("name") for d in self.data]
             if name in existing_asset_names:
