@@ -39,7 +39,6 @@ class SyftUser(Base):
     email = Column(String(255))
     name = Column(String(255), default="")
     budget = Column(Float(), default=0.0)
-    allocated_budget = Column(Float(), default=0.0)
     hashed_password = Column(String(512))
     salt = Column(String(255))
     private_key = Column(String(2048))

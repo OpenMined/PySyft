@@ -9,7 +9,7 @@ DOMAIN1_PORT = 9082
 DOMAIN2_PORT = 9083
 
 
-@pytest.mark.integration
+@pytest.mark.network
 def test_domain1_association_network1() -> None:
     network_guest = sy.login(port=NETWORK_PORT)
 
@@ -31,7 +31,7 @@ def test_domain1_association_network1() -> None:
     assert domain.association.all()[0]["status"] == "ACCEPTED"
 
 
-@pytest.mark.integration
+@pytest.mark.network
 def test_domain2_association_network1() -> None:
     network_guest = sy.login(port=NETWORK_PORT)
 

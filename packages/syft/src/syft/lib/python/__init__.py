@@ -11,6 +11,7 @@ from ...ast.globals import Globals
 from ...core.node.abstract.node import AbstractNodeClient
 from ..misc.union import UnionGenerator
 from .bool import Bool
+from .bytes import Bytes
 from .complex import Complex
 from .dict import Dict
 from .float import Float
@@ -40,6 +41,7 @@ for syft_type in [
     Slice,
     String,
     Tuple,
+    Bytes,
 ]:
     syft_type.__module__ = __name__
 
@@ -49,6 +51,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
 
     modules = ["syft", "syft.lib", "syft.lib.python", "syft.lib.python.collections"]
     classes = [
+        ("syft.lib.python.Bytes", "syft.lib.python.Bytes", Bytes),
         ("syft.lib.python.Bool", "syft.lib.python.Bool", Bool),
         ("syft.lib.python.Complex", "syft.lib.python.Complex", Complex),
         ("syft.lib.python.Dict", "syft.lib.python.Dict", Dict),

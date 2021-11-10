@@ -11,6 +11,7 @@ import pytest
 from syft import Tensor
 
 
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
     clients = get_clients(3)
@@ -44,6 +45,7 @@ def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
     assert (mpc_1_2_3.reconstruct() == exp_res.child).all()
 
 
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_tensor_abstraction_subsets(get_clients, op_str) -> None:
     clients = get_clients(3)
