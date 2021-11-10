@@ -83,18 +83,24 @@ def login(
     email: Optional[str] = None,
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
-    verbose: bool = True,
+    verbose: Optional[bool] = True,
 ) -> Client:
 
-    if email is None and password is None:
+    if password == "changethis":  # nosec
 
-        email = "info@openmined.org"
-        password = "changethis"  # nosec
+        if email == "info@openmined.org":
+            print(
+                "WARNING: CHANGE YOUR USERNAME AND PASSWORD!!! \n\nAnyone can login as an admin to your node"
+                + " right now because your password is still the default PySyft username and password!!!\n"
+            )
+        else:
+            print(
+                "WARNING: CHANGE YOUR PASSWORD!!! \n\nAnyone can login as an admin to your node"
+                + " right now because your password is still the default PySyft password!!!\n"
+            )
 
-        print("No email/password specified. Logging in with default...")
-        print("Don't forget to re-configure your admin email and password!!!")
-
-    if password is None:
+    # TRASK: please keep this so that people will stop putting their passwords in notebooks.
+    if password == "secret":  # nosec
         print("Welcome " + str(email) + "!")
         password = getpass(prompt="Please enter you password:")
 
@@ -121,9 +127,6 @@ def login(
         logging.info(
             "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
         )
-        print(
-            "\n\nNo email and password defined in login() - connecting as anonymous user!!!\n"
-        )
     else:
         credentials = {"email": email, "password": password}
 
@@ -134,8 +137,12 @@ def login(
         # bit of fanciness
         sys.stdout.write(" done! \t Logging into")
         sys.stdout.write(" " + str(node.name) + "... ")
+        if email is None or password is None:
+            sys.stdout.write("as GUEST...")
         time.sleep(1)  # ok maybe too fancy... but c'mon don't you want to be fancy?
         print("done!")
+    else:
+        print("Logging into: ...", str(node.name), " Done...")
 
     return node
 
@@ -146,6 +153,7 @@ def register(
     password: Optional[str] = None,
     url: Optional[str] = None,
     port: Optional[int] = None,
+    verbose: Optional[bool] = True,
 ) -> Client:
     if name is None:
         name = input("Please enter your name:")
@@ -168,7 +176,10 @@ def register(
     x = requests.post(register_url, data=json.dumps(myobj))
 
     if "error" not in json.loads(x.text):
-        print("Successfully registered! Logging in...")
-        return login(url=url, port=port, email=email, password=password)
+        if verbose:
+            print("Successfully registered! Logging in...")
+        return login(
+            url=url, port=port, email=email, password=password, verbose=verbose
+        )
 
     raise Exception(x.text)

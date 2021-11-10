@@ -59,9 +59,9 @@ This repo contains multiple sub-projects which work together.
 ```
 OpenMined/PySyft
 ├── README.md     <-- You are here 📌
+├── notebooks     <-- Notebook Examples and Tutorials
 └── packages
     ├── grid      <-- Grid - A network aware, persistent & containerized node running Syft
-    ├── notebooks <-- Notebook Examples and Tutorials
     └── syft      <-- Syft - A package for doing remote data science on private data
 ```
 
@@ -152,7 +152,7 @@ To develop against this locally you will want the following:
 You can install HAGrid with pip:
 
 ```
-$ pip install "git+https://github.com/OpenMined/PySyft@demo_strike_team_branch_4#subdirectory=packages/hagrid"
+$ pip install hagrid
 ```
 
 ### MacOS Instructions

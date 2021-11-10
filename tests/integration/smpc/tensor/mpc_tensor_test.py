@@ -1,6 +1,5 @@
 # stdlib
 import operator
-import time
 from typing import Any
 from typing import Dict as TypeDict
 
@@ -17,7 +16,7 @@ from syft.core.tensor.smpc.mpc_tensor import ShareTensor
 sy.logger.remove()
 
 
-@pytest.mark.integration
+@pytest.mark.smpc
 def test_secret_sharing(get_clients) -> None:
     clients = get_clients(2)
 
@@ -26,7 +25,8 @@ def test_secret_sharing(get_clients) -> None:
 
     mpc_tensor = MPCTensor(secret=value_secret, shape=(2, 5), parties=clients)
 
-    time.sleep(10)  # TODO: should remove after polling get.
+    # time.sleep(10)  # TODO: should remove after polling get.
+    mpc_tensor.block_with_timeout(secs=20)
 
     assert len(mpc_tensor.child) == len(clients)
 
@@ -37,7 +37,7 @@ def test_secret_sharing(get_clients) -> None:
     assert (res == data.child).all()
 
 
-@pytest.mark.integration
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -54,7 +54,8 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
-    time.sleep(40)  # TODO: should remove after polling get.
+    # time.sleep(40)  # TODO: should remove after polling get.
+    res_ptr.block_with_timeout(secs=40)
 
     res = res_ptr.reconstruct()
     expected = op(value_1, value_2)
@@ -62,7 +63,7 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     assert (res == expected.child).all()
 
 
-@pytest.mark.integration
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_mpc_public_private_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -77,8 +78,8 @@ def test_mpc_public_private_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
 
     res = op(mpc_tensor_1, public_value)
-
-    time.sleep(20)  # TODO: should remove after polling get.
+    res.block_with_timeout(secs=20)
+    # time.sleep(20)  # TODO: should remove after polling get.
 
     res = res.reconstruct()
     expected = op(value_1, public_value)
@@ -87,7 +88,8 @@ def test_mpc_public_private_op(get_clients, op_str: str) -> None:
 
 
 # TODO: Rasswanth to fix later after Tensor matmul refactor
-@pytest.mark.xfail
+@pytest.mark.skip
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["matmul"])
 def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     clients = get_clients(2)
@@ -101,8 +103,9 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
 
     op = getattr(operator, op_str)
     res = op(mpc_tensor_1, value_2)
+    res.block_with_timeout(secs=40)
+    # time.sleep(40)  # TODO: should remove after polling get.
 
-    time.sleep(40)  # TODO: should remove after polling get.
     res = res.reconstruct()
 
     expected = op(value_1, value_2)
@@ -110,6 +113,7 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     assert (res == expected).all()
 
 
+@pytest.mark.smpc
 @pytest.mark.parametrize(
     "method_str, kwargs", [("sum", {"axis": 0}), ("sum", {"axis": 1})]
 )
@@ -127,7 +131,8 @@ def test_mpc_forward_methods(
     op = getattr(value, method_str)
 
     res = op_mpc(**kwargs)
-    time.sleep(20)  # TODO: should remove after polling get.
+    res.block_with_timeout(secs=20)
+    # time.sleep(20)  # TODO: should remove after polling get.
     res = res.reconstruct()
 
     expected = op(**kwargs)

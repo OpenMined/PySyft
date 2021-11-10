@@ -219,7 +219,7 @@ class GridHTTPConnection(HTTPConnection):
 
     @property
     def host(self) -> str:
-        return self.base_url.strip("/api/v1")
+        return self.base_url.replace("/api/v1", "")
 
     @staticmethod
     def _proto2object(proto: GridHTTPConnection_PB) -> "GridHTTPConnection":

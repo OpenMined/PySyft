@@ -1,5 +1,4 @@
 # stdlib
-import inspect
 import logging
 import os
 from typing import Any
@@ -81,6 +80,7 @@ def create_log_and_print_function(level: str) -> Callable:
             msg = f"failed to log exception. {e}"
             try:
                 logger.debug(msg)
+
             except Exception as e:
                 print(f"{msg}. {e}")
 
@@ -88,20 +88,20 @@ def create_log_and_print_function(level: str) -> Callable:
 
 
 def traceback(*args: Any, **kwargs: Any) -> None:
-    caller = inspect.getframeinfo(inspect.stack()[1][0])
-    print(f"{caller.filename}:{caller.function}:{caller.lineno}")
+    # caller = inspect.getframeinfo(inspect.stack()[1][0])
+    # print(f"traceback:{caller.filename}:{caller.function}:{caller.lineno}")
     return create_log_and_print_function(level="exception")(*args, **kwargs)
 
 
 def critical(*args: Any, **kwargs: Any) -> None:
-    caller = inspect.getframeinfo(inspect.stack()[1][0])
-    print(f"{caller.filename}:{caller.function}:{caller.lineno}")
+    # caller = inspect.getframeinfo(inspect.stack()[1][0])
+    # print(f"critical:{caller.filename}:{caller.function}:{caller.lineno}:{args}")
     return create_log_and_print_function(level="critical")(*args, **kwargs)
 
 
 def error(*args: Any, **kwargs: Any) -> None:
-    caller = inspect.getframeinfo(inspect.stack()[1][0])
-    print(f"{caller.filename}:{caller.function}:{caller.lineno}")
+    # caller = inspect.getframeinfo(inspect.stack()[1][0])
+    # print(f"error:{caller.filename}:{caller.function}:{caller.lineno}")
     return create_log_and_print_function(level="error")(*args, **kwargs)
 
 

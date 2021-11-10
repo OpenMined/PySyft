@@ -2,7 +2,6 @@
 
 # stdlib
 import operator
-import time
 
 # third party
 import numpy as np
@@ -12,6 +11,7 @@ import pytest
 from syft import Tensor
 
 
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
     clients = get_clients(3)
@@ -28,13 +28,13 @@ def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
 
     # creates an MPCTensor between party 1 and party 2
     mpc_1_2 = op(tensor_pointer_1, tensor_pointer_2)
-
-    time.sleep(40)  # TODO: should remove after polling get.
+    mpc_1_2.block_with_timeout(secs=40)
+    # time.sleep(40)  # TODO: should remove after polling get.
 
     # creates and MPCTensor between party 1,2,3
     mpc_1_2_3 = op(mpc_1_2, tensor_pointer_3)
-
-    time.sleep(40)  # TODO: should remove after polling get.
+    mpc_1_2_3.block_with_timeout(secs=40)
+    # time.sleep(40)  # TODO: should remove after polling get.
 
     exp_res = op(data_1, data_2)
 
@@ -45,6 +45,7 @@ def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
     assert (mpc_1_2_3.reconstruct() == exp_res.child).all()
 
 
+@pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
 def test_tensor_abstraction_subsets(get_clients, op_str) -> None:
     clients = get_clients(3)
@@ -64,16 +65,18 @@ def test_tensor_abstraction_subsets(get_clients, op_str) -> None:
     # creates an MPCTensor between party 1 and party 2
     mpc_1_2 = op(tensor_pointer_1, tensor_pointer_2)
 
-    time.sleep(40)  # TODO: should remove after polling get.
+    # time.sleep(40)  # TODO: should remove after polling get.
+    mpc_1_2.block_with_timeout(40)
 
     # creates and MPCTensor between party 2,3
     mpc_2_3 = op(tensor_pointer_2, tensor_pointer_3)
-
-    time.sleep(40)  # TODO: should remove after polling get.
+    mpc_2_3.block_with_timeout(40)
+    # time.sleep(40)  # TODO: should remove after polling get.
 
     # creates and MPCTensor between party 1,2,3
     mpc_1_2_3 = op(mpc_1_2, mpc_2_3)
-    time.sleep(40)  # TODO: should remove after polling get.
+    mpc_1_2_3.block_with_timeout(secs=40)
+    # time.sleep(40)  # TODO: should remove after polling get.
 
     exp_res_1 = op(data_1, data_2)
     assert (mpc_1_2.reconstruct() == exp_res_1.child).all()

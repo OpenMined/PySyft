@@ -14,7 +14,6 @@ _sym_db = _symbol_database.Default()
 
 
 # syft absolute
-from syft.proto.core.plan import plan_pb2 as proto_dot_core_dot_plan_dot_plan__pb2
 from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 from syft.proto.lib.python import list_pb2 as proto_dot_lib_dot_python_dot_list__pb2
 from syft.proto.lib.python.collections import (
@@ -27,10 +26,9 @@ DESCRIPTOR = _descriptor.FileDescriptor(
     syntax="proto3",
     serialized_options=None,
     create_key=_descriptor._internal_create_key,
-    serialized_pb=b'\n\x1cproto/lib/torch/module.proto\x12\x0esyft.lib.torch\x1a/proto/lib/python/collections/ordered_dict.proto\x1a\x1aproto/core/plan/plan.proto\x1a\x1bproto/lib/python/dict.proto\x1a\x1bproto/lib/python/list.proto"\xa7\x04\n\x06Module\x12\x13\n\x0bmodule_type\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x18\n\x0bmodule_repr\x18\x03 \x01(\tH\x00\x88\x01\x01\x12\x15\n\rpython_module\x18\x04 \x01(\t\x12(\n\x08\x63hildren\x18\x05 \x03(\x0b\x32\x16.syft.lib.torch.Module\x12/\n\x0bmodule_args\x18\x06 \x01(\x0b\x32\x15.syft.lib.python.ListH\x01\x88\x01\x01\x12\x31\n\rmodule_kwargs\x18\x07 \x01(\x0b\x32\x15.syft.lib.python.DictH\x02\x88\x01\x01\x12<\n\nstate_dict\x18\x08 \x01(\x0b\x32(.syft.lib.python.collections.OrderedDict\x12<\n\nparameters\x18\t \x01(\x0b\x32(.syft.lib.python.collections.OrderedDict\x12*\n\x07\x66orward\x18\n \x01(\x0b\x32\x14.syft.core.plan.PlanH\x03\x88\x01\x01\x12@\n\t_uid2attr\x18\x0b \x01(\x0b\x32(.syft.lib.python.collections.OrderedDictH\x04\x88\x01\x01\x42\x0e\n\x0c_module_reprB\x0e\n\x0c_module_argsB\x10\n\x0e_module_kwargsB\n\n\x08_forwardB\x0c\n\nX_uid2attrb\x06proto3',
+    serialized_pb=b'\n\x1cproto/lib/torch/module.proto\x12\x0esyft.lib.torch\x1a/proto/lib/python/collections/ordered_dict.proto\x1a\x1bproto/lib/python/dict.proto\x1a\x1bproto/lib/python/list.proto"\xef\x03\n\x06Module\x12\x13\n\x0bmodule_type\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x18\n\x0bmodule_repr\x18\x03 \x01(\tH\x00\x88\x01\x01\x12\x15\n\rpython_module\x18\x04 \x01(\t\x12(\n\x08\x63hildren\x18\x05 \x03(\x0b\x32\x16.syft.lib.torch.Module\x12/\n\x0bmodule_args\x18\x06 \x01(\x0b\x32\x15.syft.lib.python.ListH\x01\x88\x01\x01\x12\x31\n\rmodule_kwargs\x18\x07 \x01(\x0b\x32\x15.syft.lib.python.DictH\x02\x88\x01\x01\x12<\n\nstate_dict\x18\x08 \x01(\x0b\x32(.syft.lib.python.collections.OrderedDict\x12<\n\nparameters\x18\t \x01(\x0b\x32(.syft.lib.python.collections.OrderedDict\x12@\n\t_uid2attr\x18\x0b \x01(\x0b\x32(.syft.lib.python.collections.OrderedDictH\x03\x88\x01\x01\x42\x0e\n\x0c_module_reprB\x0e\n\x0c_module_argsB\x10\n\x0e_module_kwargsB\x0c\n\nX_uid2attrb\x06proto3',
     dependencies=[
         proto_dot_lib_dot_python_dot_collections_dot_ordered__dict__pb2.DESCRIPTOR,
-        proto_dot_core_dot_plan_dot_plan__pb2.DESCRIPTOR,
         proto_dot_lib_dot_python_dot_dict__pb2.DESCRIPTOR,
         proto_dot_lib_dot_python_dot_list__pb2.DESCRIPTOR,
     ],
@@ -217,28 +215,9 @@ _MODULE = _descriptor.Descriptor(
             create_key=_descriptor._internal_create_key,
         ),
         _descriptor.FieldDescriptor(
-            name="forward",
-            full_name="syft.lib.torch.Module.forward",
-            index=9,
-            number=10,
-            type=11,
-            cpp_type=10,
-            label=1,
-            has_default_value=False,
-            default_value=None,
-            message_type=None,
-            enum_type=None,
-            containing_type=None,
-            is_extension=False,
-            extension_scope=None,
-            serialized_options=None,
-            file=DESCRIPTOR,
-            create_key=_descriptor._internal_create_key,
-        ),
-        _descriptor.FieldDescriptor(
             name="_uid2attr",
             full_name="syft.lib.torch.Module._uid2attr",
-            index=10,
+            index=9,
             number=11,
             type=11,
             cpp_type=10,
@@ -288,24 +267,16 @@ _MODULE = _descriptor.Descriptor(
             fields=[],
         ),
         _descriptor.OneofDescriptor(
-            name="_forward",
-            full_name="syft.lib.torch.Module._forward",
+            name="X_uid2attr",
+            full_name="syft.lib.torch.Module.X_uid2attr",
             index=3,
             containing_type=None,
             create_key=_descriptor._internal_create_key,
             fields=[],
         ),
-        _descriptor.OneofDescriptor(
-            name="X_uid2attr",
-            full_name="syft.lib.torch.Module.X_uid2attr",
-            index=4,
-            containing_type=None,
-            create_key=_descriptor._internal_create_key,
-            fields=[],
-        ),
     ],
-    serialized_start=184,
-    serialized_end=735,
+    serialized_start=156,
+    serialized_end=651,
 )
 
 _MODULE.fields_by_name["children"].message_type = _MODULE
@@ -325,9 +296,6 @@ _MODULE.fields_by_name[
 ].message_type = (
     proto_dot_lib_dot_python_dot_collections_dot_ordered__dict__pb2._ORDEREDDICT
 )
-_MODULE.fields_by_name[
-    "forward"
-].message_type = proto_dot_core_dot_plan_dot_plan__pb2._PLAN
 _MODULE.fields_by_name[
     "_uid2attr"
 ].message_type = (
@@ -351,8 +319,6 @@ _MODULE.oneofs_by_name["_module_kwargs"].fields.append(
 _MODULE.fields_by_name["module_kwargs"].containing_oneof = _MODULE.oneofs_by_name[
     "_module_kwargs"
 ]
-_MODULE.oneofs_by_name["_forward"].fields.append(_MODULE.fields_by_name["forward"])
-_MODULE.fields_by_name["forward"].containing_oneof = _MODULE.oneofs_by_name["_forward"]
 _MODULE.oneofs_by_name["X_uid2attr"].fields.append(_MODULE.fields_by_name["_uid2attr"])
 _MODULE.fields_by_name["_uid2attr"].containing_oneof = _MODULE.oneofs_by_name[
     "X_uid2attr"

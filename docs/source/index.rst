@@ -11,7 +11,7 @@ Welcome to PySyft's documentation!
    :caption: Contents:
 
    deployment/index
-
+   deployment/glossary
 
 
 Indices and tables

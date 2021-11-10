@@ -1,44 +1,46 @@
 import {useQuery} from 'react-query'
 import {cacheKeys} from '@/utils'
 import {useCrudify} from '@/lib/data/useCrudify'
-import type {User, UserMe, Dataset, Request, Tensor, Model, Role, Settings, DomainStatus} from '@/types/grid-types'
+import api from '@/utils/api'
+import type {User, UserMe, Dataset, Request, Settings} from '@/types/grid-types'
+import type {Role} from '@/types/permissions'
 
 export function useMe() {
-  return useQuery<UserMe>(cacheKeys.me)
+  return useQuery<UserMe>(cacheKeys.me, () => api.get(cacheKeys.me).json() as UserMe)
+}
+
+export function useAssociationRequest() {
+  return useCrudify([cacheKeys.association_request])
 }
 
 export function useUsers() {
-  return useCrudify<User>([cacheKeys.users])
+  return useCrudify<User>([cacheKeys.users], [cacheKeys.me])
+}
+
+export function useApplicantUsers() {
+  return useCrudify<User>([cacheKeys.applicant_users], [cacheKeys.me])
 }
 
 export function useDatasets() {
   return useCrudify<Dataset>([cacheKeys.datasets])
 }
 
-export function useModels() {
-  return useCrudify<Model>([cacheKeys.models])
-}
-
 export function useRequests() {
   return useCrudify<Request>([cacheKeys.requests])
 }
 
-export function useTensors() {
-  return useCrudify<Tensor>([cacheKeys.tensors])
+export function useDataRequests() {
+  return useCrudify<Request>([cacheKeys.data])
+}
+
+export function useBudgetRequests() {
+  return useCrudify<Request>([cacheKeys.budget])
 }
 
 export function useRoles() {
-  return useCrudify<Role>([cacheKeys.roles])
+  return useCrudify<Role>([cacheKeys.roles], [cacheKeys.users, cacheKeys.me])
 }
 
 export function useSettings() {
-  return useQuery<Settings>(cacheKeys.settings)
-}
-
-export function useDomainStatus() {
-  return useQuery<DomainStatus>(cacheKeys.status)
-}
-
-export function useInitialSetup() {
-  return useCrudify<Settings>([cacheKeys.settings]).create
+  return useCrudify<Settings>([cacheKeys.settings])
 }

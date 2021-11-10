@@ -24,6 +24,8 @@ class CryptoPrimitiveProvider:
         parties: List[Any],
         g_kwargs: Dict[str, Any] = {},
         p_kwargs: Dict[str, Any] = {},
+        nr_instances: int = 1,
+        ring_size: int = 2 ** 32,
     ) -> List[Any]:
         """Generate "op_str" primitives.
 
@@ -46,7 +48,12 @@ class CryptoPrimitiveProvider:
         nr_parties = len(parties)
 
         generator = CryptoPrimitiveProvider._func_providers[op_str]
-        primitives = generator(**g_kwargs, nr_parties=nr_parties)
+        primitives = generator(
+            **g_kwargs,
+            nr_instances=nr_instances,
+            nr_parties=nr_parties,
+            ring_size=ring_size,
+        )
 
         if p_kwargs is not None:
             """Do not transfer the primitives if there is not specified a
@@ -56,10 +63,11 @@ class CryptoPrimitiveProvider:
                 primitives=primitives,
                 parties=parties,
                 p_kwargs=p_kwargs,
+                ring_size=ring_size,
             )
 
         # Since we do not have (YET!) the possiblity to return typed tuples from a remote
-        # execute function we are using this
+        # execute function we are using this.
         return primitives
 
     @staticmethod
@@ -68,6 +76,7 @@ class CryptoPrimitiveProvider:
         primitives: List[Any],
         parties: List[Any],
         p_kwargs: Dict[str, Any],
+        ring_size: int,
     ) -> None:
         if not isinstance(primitives, list):
             raise ValueError("Primitives should be a List")
@@ -79,7 +88,7 @@ class CryptoPrimitiveProvider:
 
         for primitives_party, party in zip(primitives, parties):
             party.syft.core.tensor.smpc.share_tensor.populate_store(
-                op_str, primitives_party, **p_kwargs
+                op_str, primitives_party, **p_kwargs, ring_size=ring_size
             )
 
     @staticmethod

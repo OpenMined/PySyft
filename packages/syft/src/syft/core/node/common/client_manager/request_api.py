@@ -14,6 +14,7 @@ from ....common.message import SyftMessage
 from ...abstract.node import AbstractNodeClient
 from ...domain.enums import RequestAPIFields
 from ..action.exception_action import ExceptionMessage
+from ..node_service.generic_payload.messages import GenericPayloadMessageWithReply
 
 
 class RequestAPI:
@@ -42,22 +43,16 @@ class RequestAPI:
         logging.info(response.resp_msg)
 
     def get(self, **kwargs: Any) -> Any:
-        association_table = self.perform_api_request(
-            syft_msg=self._get_message, content=kwargs
+        return self.to_obj(
+            self.perform_api_request(syft_msg=self._get_message, content=kwargs)
         )
-        obj_data = dict(association_table.metadata)
-        obj_data[RequestAPIFields.SOURCE] = association_table.source
-        obj_data[RequestAPIFields.TARGET] = association_table.target
-
-        return self.to_obj(obj_data)
 
     def all(self) -> List[Any]:
-        result = [
-            content
-            for content in self.perform_api_request(
-                syft_msg=self._get_all_message
-            ).content
-        ]
+        result = []
+        for content in self.perform_api_request(syft_msg=self._get_all_message).content:
+            if hasattr(content, "upcast"):
+                content = content.upcast()
+            result.append(content)
 
         return result
 
@@ -102,6 +97,31 @@ class RequestAPI:
 
         signed_msg = syft_msg_constructor(**content).sign(
             signing_key=self.client.signing_key
+        )  # type: ignore
+        response = self.client.send_immediate_msg_with_reply(msg=signed_msg)
+        if isinstance(response, ExceptionMessage):
+            raise response.exception_type
+        else:
+            return response
+
+    def perform_api_request_generic(
+        self,
+        syft_msg: Optional[Type[GenericPayloadMessageWithReply]],
+        content: Optional[Dict[Any, Any]] = None,
+    ) -> Any:
+        if syft_msg is None:
+            raise ValueError(
+                "Can't perform this type of api request, the message is None."
+            )
+        else:
+            syft_msg_constructor = syft_msg
+
+        if content is None:
+            content = {}
+        signed_msg = (
+            syft_msg_constructor(kwargs=content)
+            .to(address=self.client.address, reply_to=self.client.address)
+            .sign(signing_key=self.client.signing_key)
         )  # type: ignore
         response = self.client.send_immediate_msg_with_reply(msg=signed_msg)
         if isinstance(response, ExceptionMessage):

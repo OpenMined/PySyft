@@ -151,6 +151,11 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.transpose", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.__pos__", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.put", "syft.core.tensor.tensor.Tensor"),
+        (
+            "syft.core.tensor.tensor.Tensor.bit_decomposition",
+            "syft.lib.python._SyNone",
+        ),
+        ("syft.core.tensor.tensor.Tensor.mpc_swap", "syft.core.tensor.tensor.Tensor"),
         # # SMPC
         # (
         #     "syft.core.tensor.tensor.Tensor.fix_precision",
@@ -176,6 +181,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.__mul__",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.__gt__",
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
         (
@@ -248,6 +257,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         (
             "syft.core.tensor.smpc.share_tensor.populate_store",
+            "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.bit_decomposition",
             "syft.lib.python._SyNone",
         ),
     ]

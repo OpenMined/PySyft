@@ -39,7 +39,10 @@ from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
+from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
+from ..smpc.share_tensor import ShareTensor
+from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..tensor import Tensor
 from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
@@ -87,6 +90,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         tags: Optional[List[str]] = None,
         description: str = "",
         public_shape: Optional[TypeTuple[int, ...]] = None,
+        public_dtype: Optional[np.dtype] = None,
     ):
 
         super().__init__(
@@ -102,10 +106,30 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         self.entity = entity
         self.scalar_manager = scalar_manager
         self.public_shape = public_shape
+        self.public_dtype = public_dtype
+
+    @property
+    def synthetic(self) -> np.ndarray:
+        return (
+            np.random.rand(*list(self.public_shape)) * (self.max_vals - self.min_vals)  # type: ignore
+            + self.min_vals
+        ).astype(self.public_dtype)
+
+    def __repr__(self) -> str:
+        return (
+            self.synthetic.__repr__()
+            + "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
+        )
 
     def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
-        self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=all_parties)
+        ring_size = TYPE_TO_RING_SIZE.get(self.public_dtype, None)
+        self_mpc = MPCTensor(
+            secret=self,
+            shape=self.public_shape,
+            ring_size=ring_size,
+            parties=all_parties,
+        )
         return self_mpc
 
     def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
@@ -162,25 +186,37 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
 
         result_public_shape = None
 
-        op = getattr(operator, op_str)
-
         if isinstance(other, TensorWrappedSingleEntityPhiTensorPointer):
             other_shape = other.public_shape
+            other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
+            other_dtype = np.int32
+        elif isinstance(other, bool):
+            other_shape = (1,)
+            other_dtype = np.dtype("bool")
         elif isinstance(other, np.ndarray):
             other_shape = other.shape
+            other_dtype = other.dtype
         else:
             raise ValueError(
                 f"Invalid Type for TensorWrappedSingleEntityPhiTensorPointer:{type(other)}"
             )
 
         if self.public_shape is not None and other_shape is not None:
-            result_public_shape = (
-                op(np.empty(self.public_shape), np.empty(other_shape))
-            ).shape
+            result_public_shape = utils.get_shape(
+                op_str, self.public_shape, other_shape
+            )
+
+        if self.public_dtype is not None and other_dtype is not None:
+            if self.public_dtype != other_dtype:
+                raise ValueError(
+                    f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
+                )
+            result_public_dtype = self.public_dtype
 
         result.public_shape = result_public_shape
+        result.public_dtype = result_public_dtype
 
         return result
 
@@ -270,11 +306,108 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         """
         return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "mul")
 
+    def __lt__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "lt" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "lt")
+
+    def __gt__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "gt" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "gt")
+
+    def __ge__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "ge" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "ge")
+
+    def __le__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "le" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "le")
+
+    def __eq__(  # type: ignore
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "eq" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "eq")
+
+    def __ne__(  # type: ignore
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "ne" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "ne")
+
     def to_local_object_without_private_data_child(self) -> SingleEntityPhiTensor:
         """Convert this pointer into a partial version of the SingleEntityPhiTensor but without
         any of the private data therein."""
 
         public_shape = getattr(self, "public_shape", None)
+        public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=SingleEntityPhiTensor(
                 child=None,
@@ -284,6 +417,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
                 scalar_manager=self.scalar_manager,
             ),
             public_shape=public_shape,
+            public_dtype=public_dtype,
         )
 
     def _object2proto(self) -> "TensorWrappedSingleEntityPhiTensorPointer_PB":
@@ -298,6 +432,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         _tags = self.tags
         _description = self.description
         _public_shape = serialize(getattr(self, "public_shape", None), to_bytes=True)
+        _public_dtype = serialize(getattr(self, "public_dtype", None), to_bytes=True)
 
         return TensorWrappedSingleEntityPhiTensorPointer_PB(
             entity=_entity,
@@ -310,6 +445,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
             tags=_tags,
             description=_description,
             public_shape=_public_shape,
+            public_dtype=_public_dtype,
         )
 
     @staticmethod
@@ -326,6 +462,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         object_type = proto.object_type
         tags = proto.tags
         public_shape = deserialize(blob=proto.public_shape, from_bytes=True)
+        public_dtype = deserialize(blob=proto.public_dtype, from_bytes=True)
         description = proto.description
 
         return TensorWrappedSingleEntityPhiTensorPointer(
@@ -337,8 +474,9 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
             id_at_location=id_at_location,
             object_type=object_type,
             tags=tags,
-            public_shape=public_shape,
             description=description,
+            public_shape=public_shape,
+            public_dtype=public_dtype,
         )
 
     @staticmethod
@@ -699,8 +837,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
 
         if isinstance(other, SingleEntityPhiTensor):
-
+            print(f"SELF ENTITY:{self.entity.name}")
+            print(f"OTHER ENTITY:{other.entity.name}")
             if self.entity != other.entity:
+                print("Entities are not the same?!?!?!")
                 return convert_to_gamma_tensor(self) * convert_to_gamma_tensor(other)
 
             data = self.child * other.child
@@ -758,8 +898,13 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 return convert_to_gamma_tensor(self) - convert_to_gamma_tensor(other)
 
             data = self.child - other.child
-            min_vals = self.min_vals - other.min_vals
-            max_vals = self.max_vals - other.max_vals
+            min_min = self.min_vals - other.min_vals
+            min_max = self.min_vals - other.max_vals
+            max_min = self.max_vals - other.min_vals
+            max_max = self.max_vals - other.max_vals
+            min_vals = np.minimum.reduce([min_min, min_max, max_min, max_max])
+            max_vals = np.maximum.reduce([min_min, min_max, max_min, max_max])
+
             entity = self.entity
 
         elif is_acceptable_simple_type(other):
@@ -1706,6 +1851,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         elif isinstance(self.child, torch.Tensor):
             data = self.child.numpy().copy()
+
+        elif isinstance(self.child, ShareTensor):
+            data = self.child.copy()
 
         if isinstance(self.min_vals, np.ndarray):
             min_vals = np.array(self.min_vals, order=order, subok=subok, copy=True)

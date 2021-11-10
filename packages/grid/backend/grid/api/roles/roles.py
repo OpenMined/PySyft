@@ -160,7 +160,7 @@ def get_specific_role_route(
         return reply.content.upcast()
 
 
-@router.put("/{role_id}", status_code=200, response_class=JSONResponse)
+@router.patch("/{role_id}", status_code=200, response_class=JSONResponse)
 def update_use_route(
     role_id: int,
     current_user: Any = Depends(get_current_user),

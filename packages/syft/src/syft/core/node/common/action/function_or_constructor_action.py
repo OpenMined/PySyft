@@ -28,6 +28,7 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from ..util import listify
 from .common import ImmediateActionWithoutReply
+from .greenlets_switch import retrieve_object
 
 
 @serializable()
@@ -91,7 +92,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                         f"Got {arg} of type {type(arg)}"
                     )
                 )
-            r_arg = node.store[arg.id_at_location]
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -108,7 +109,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                         f"Got {arg} of type {type(arg)}"
                     )
                 )
-            r_arg = node.store[arg.id_at_location]
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -122,10 +123,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         # execute the method with the newly upcasted args and kwargs
-        if "beaver_populate" not in self.path:
-            result = method(*upcasted_args, **upcasted_kwargs)
-        else:
-            result = method(*upcasted_args, **upcasted_kwargs, node=node)
+        result = method(*upcasted_args, **upcasted_kwargs)
 
         # to avoid circular imports
         if lib.python.primitive_factory.isprimitive(value=result):

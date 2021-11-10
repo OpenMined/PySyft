@@ -84,7 +84,7 @@ def update_user(
         signing_key=current_user.get_signing_key(),
         message_type=UpdateUserMessage,
         user_id=user_id,
-        **dict(updated_user)
+        **updated_user.dict(exclude_unset=True)
     )
     return reply.resp_msg
 

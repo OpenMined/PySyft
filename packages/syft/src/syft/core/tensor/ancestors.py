@@ -468,6 +468,8 @@ class PhiTensorAncestor(TensorChainManager):
             for e in entities:
                 if isinstance(e, str):
                     _entities.append(Entity(e))
+                elif isinstance(e, int):
+                    _entities.append(Entity(str(e)))
                 elif isinstance(e, Entity):
                     _entities.append(e)
                 elif isinstance(e, (list, np.ndarray)):
@@ -513,7 +515,7 @@ class PhiTensorAncestor(TensorChainManager):
                 max_vals = (self.child * 0) + max_val
             else:
                 raise Exception(
-                    "min_val should be a float, got " + str(type(min_val)) + " instead."
+                    "max_val should be a float, got " + str(type(min_val)) + " instead."
                 )
 
             self.push_abstraction_top(
@@ -545,7 +547,7 @@ class PhiTensorAncestor(TensorChainManager):
                     max_vals = (self.child[i : i + 1] * 0) + max_val  # noqa: E203
                 else:
                     raise Exception(
-                        "min_val should be a float, got "
+                        "max_val should be a float, got "
                         + str(type(min_val))
                         + " instead."
                     )
