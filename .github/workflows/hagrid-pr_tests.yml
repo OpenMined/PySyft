@@ -76,7 +76,7 @@ jobs:
       - name: Twine Check
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          twine check `find -L ./ -name "*.whl"`
+          twine check dist/*.whl
 
   hagrid-docker:
     runs-on: ubuntu-latest
