@@ -1,9 +1,11 @@
 # stdlib
+from datetime import datetime
 import json
 import os
 import re
 import stat
 import subprocess
+import sys
 import time
 from typing import Any
 from typing import Dict as TypeDict
@@ -16,12 +18,18 @@ from typing import cast
 import click
 
 # relative
+from . import __version__
 from .art import hagrid
 from .auth import AuthCredentials
 from .cache import arg_cache
 from .deps import DEPENDENCIES
+from .deps import ENVIRONMENT
 from .deps import MissingDependency
 from .deps import allowed_hosts
+from .deps import docker_info
+from .deps import is_windows
+from .deps import wsl_info
+from .deps import wsl_linux_info
 from .grammar import BadGrammar
 from .grammar import GrammarVerb
 from .grammar import parse_grammar
@@ -29,7 +37,10 @@ from .land import get_land_verb
 from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
 from .lib import check_docker_version
+from .lib import commit_hash
 from .lib import docker_desktop_memory
+from .lib import hagrid_root
+from .lib import is_editable_mode
 from .lib import name_tag
 from .lib import use_branch
 from .style import RichGroup
@@ -361,11 +372,7 @@ def create_launch_cmd(
             # If the user is using Linux this isn't an issue because Docker scales to the avaialble RAM,
             # but on Docker Desktop it defaults to 2GB which isn't enough.
             dd_memory = docker_desktop_memory()
-            if dd_memory == -1 or dd_memory >= 8192:
-                return create_launch_docker_cmd(
-                    verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
-                )
-            else:
+            if dd_memory < 8192 and dd_memory != -1:
                 raise Exception(
                     "You appear to be using Docker Desktop but don't have "
                     "enough memory allocated. It appears you've configured "
@@ -378,6 +385,18 @@ def create_launch_cmd(
                     f"If you see this warning on Linux then something isn't right. "
                     f"Please file a Github Issue on PySyft's Github"
                 )
+            print("DEPENDENCIES", DEPENDENCIES)
+            if is_windows() and not DEPENDENCIES["wsl"]:
+                raise Exception(
+                    "You must install wsl2 for Windows to use HAGrid.\n"
+                    "In PowerShell or Command Prompt type:\n> wsl --install\n\n"
+                    "Read more here: https://docs.microsoft.com/en-us/windows/wsl/install"
+                )
+
+            return create_launch_docker_cmd(
+                verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
+            )
+
     elif host in ["vm"]:
         if (
             DEPENDENCIES["vagrant"]
@@ -659,13 +678,14 @@ def create_launch_docker_cmd(
     print("\n")
 
     cmd = ""
-    cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
+    if not is_windows():
+        cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
     cmd += " DOMAIN_PORT=" + str(host_term.free_port)
     cmd += " TRAEFIK_TAG=" + str(tag)
-    cmd += ' DOMAIN_NAME="' + snake_name + '"'
+    cmd += " DOMAIN_NAME='" + snake_name + "'"
     cmd += " NODE_TYPE=" + str(node_type.input)
-    cmd += " VERSION=`python VERSION`"
-    cmd += " VERSION_HASH=`python VERSION hash`"
+    cmd += " VERSION=$(python3 VERSION)"
+    cmd += " VERSION_HASH=$(python3 VERSION hash)"
     cmd += " TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false"
 
     if kwargs["build"] is True:
@@ -687,7 +707,14 @@ def create_launch_docker_cmd(
     if kwargs["build"] is True:
         cmd += " --build"  # force rebuild
         cmd = build_cmd + " && " + cmd
-    cmd = "cd " + GRID_SRC_PATH + "; " + cmd
+
+    # here we pass everything through to bash on windows
+    if is_windows():
+        cmd = f'bash -c "{cmd}"'
+
+    # on windows we are calling cmd.exe not powershell so the cd && part is critical
+    # so that the bash shell will also be running in the correct path inside wsl
+    cmd = "cd " + GRID_SRC_PATH + " && " + cmd
     return cmd
 
 
@@ -976,3 +1003,30 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 cli.add_command(launch)
 cli.add_command(land)
 cli.add_command(clean)
+
+
+@click.command(help="Show HAGrid debug information")
+@click.argument("args", type=str, nargs=-1)
+def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+    now = datetime.now().astimezone()
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S %Z")
+    debug_info: TypeDict[str, Any] = {}
+    debug_info["datetime"] = dt_string
+    debug_info["python_binary"] = sys.executable
+    debug_info["dependencies"] = DEPENDENCIES
+    debug_info["environment"] = ENVIRONMENT
+    debug_info["hagrid"] = __version__
+    debug_info["hagrid_dev"] = is_editable_mode()
+    debug_info["hagrid_path"] = hagrid_root()
+    debug_info["hagrid_repo_sha"] = commit_hash()
+    debug_info["docker"] = docker_info()
+    if is_windows():
+        debug_info["wsl"] = wsl_info()
+        debug_info["wsl_linux"] = wsl_linux_info()
+    print("\n\nWhen reporting bugs, please copy everything between the lines.")
+    print("==================================================================\n")
+    print(json.dumps(debug_info))
+    print("\n=================================================================\n\n")
+
+
+cli.add_command(debug)
