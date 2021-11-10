@@ -135,6 +135,16 @@ def update_repo(repo: git.Repo, branch: str) -> None:
             print(f"Error checking out branch {branch}.", e)
 
 
+def commit_hash() -> str:
+    try:
+        repo = get_git_repo()
+        sha = repo.head.commit.hexsha
+        return sha
+    except Exception as e:
+        print("failed to get repo sha", e)
+        return "unknown"
+
+
 def use_branch(branch: str) -> None:
     if not EDITABLE_MODE:
         print(f"Using HAGrid from branch: {branch}")
