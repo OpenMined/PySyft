@@ -108,6 +108,19 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
+    @property
+    def synthetic(self) -> np.ndarray:
+        return (
+            np.random.rand(*list(self.public_shape)) * (self.max_vals - self.min_vals)  # type: ignore
+            + self.min_vals
+        ).astype(self.public_dtype)
+
+    def __repr__(self) -> str:
+        return (
+            self.synthetic.__repr__()
+            + "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
+        )
+
     def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
         all_parties = list(parties) + [self.client]
         ring_size = TYPE_TO_RING_SIZE.get(self.public_dtype, None)
@@ -885,8 +898,13 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 return convert_to_gamma_tensor(self) - convert_to_gamma_tensor(other)
 
             data = self.child - other.child
-            min_vals = self.min_vals - other.min_vals
-            max_vals = self.max_vals - other.max_vals
+            min_min = self.min_vals - other.min_vals
+            min_max = self.min_vals - other.max_vals
+            max_min = self.max_vals - other.min_vals
+            max_max = self.max_vals - other.max_vals
+            min_vals = np.minimum.reduce([min_min, min_max, max_min, max_max])
+            max_vals = np.maximum.reduce([min_min, min_max, max_min, max_max])
+
             entity = self.entity
 
         elif is_acceptable_simple_type(other):

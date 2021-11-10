@@ -15,6 +15,7 @@ class BaseUser(BaseModel):
     name: Optional[str]
     role: Union[Optional[int], Optional[str]]  # TODO: Should be int in SyftUser
     daa_pdf: Optional[bytes] = b""
+    budget: Optional[float]
 
     class Config:
         orm_mode = True
@@ -27,6 +28,7 @@ class UserCreate(BaseUser):
     password: str
     institution: Optional[str]
     website: Optional[str]
+    budget: float
 
 
 class ApplicantStatus(BaseModel):
@@ -50,7 +52,7 @@ class User(BaseUser):
     id: int
     role: Union[int, str]  # TODO: This should be int. Perhaps add role_name instead?
     budget_spent: Optional[float]
-    allocated_budget: Optional[float]
+    budget: Optional[float]
     institution: Optional[str]
     website: Optional[str]
     added_by: Optional[str]

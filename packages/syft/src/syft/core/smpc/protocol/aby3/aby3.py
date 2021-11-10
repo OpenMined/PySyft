@@ -13,6 +13,7 @@ from uuid import UUID
 
 # third party
 import numpy as np
+from tqdm import tqdm
 
 # relative
 from .....ast.klass import get_run_class_method
@@ -20,6 +21,7 @@ from ....common import UID
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.utils import get_nr_bits
+from ....tensor.tensor import Tensor
 from ...store.crypto_primitive_provider import CryptoPrimitiveProvider
 
 
@@ -184,7 +186,11 @@ class ABY3:
         ring_bits = get_nr_bits(ring_size)
 
         carry = np.zeros(a[0].mpc_shape, dtype=np.bool)
-        one = np.ones(a[0].mpc_shape, dtype=np.bool)
+        one = MPCTensor(
+            parties=parties,
+            secret=Tensor(np.ones(a[0].mpc_shape, dtype=np.bool)),
+            shape=a[0].mpc_shape,
+        )
 
         result: List[MPCTensor] = []
 
@@ -195,8 +201,7 @@ class ABY3:
         ) -> MPCTensor:
             return (a + c + one) * (b + c) + b
 
-        for idx in range(ring_bits):
-            print("Bit ", idx)
+        for idx in tqdm(range(ring_bits), desc="Computing..."):
             s = a[idx] + b[idx] + carry
             if idx != ring_bits - 1:
                 carry = majority(a[idx], b[idx], carry)

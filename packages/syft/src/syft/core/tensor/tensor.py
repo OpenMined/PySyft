@@ -438,3 +438,7 @@ class Tensor(
 
     def bit_decomposition(self) -> Tensor:
         raise ValueError("Should not reach this point")
+
+    def mpc_swap(self, other: Tensor) -> Tensor:
+        self.child.child = other.child.child
+        return self

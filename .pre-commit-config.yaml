@@ -31,6 +31,9 @@ repos:
         exclude: ^(packages/grid/backend/grid/tests/utils/)
       - id: requirements-txt-fixer
         always_run: true
+      - id: mixed-line-ending
+        args: ["--fix=lf"]
+        exclude: '\.bat|\.csv|\.ps1$'
   - repo: https://github.com/MarcoGorelli/absolufy-imports
     rev: v0.3.0
     hooks:

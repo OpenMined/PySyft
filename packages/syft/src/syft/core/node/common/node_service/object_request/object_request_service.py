@@ -259,10 +259,9 @@ def get_all_budget_requests(
     users = node.users
 
     allowed = users.can_triage_requests(verify_key=verify_key)
-
+    response = list()
     if allowed:
         requests = node.data_requests.query(request_type="budget")
-        response = list()
         for request in requests:
             # Get current state user
             if node.data_requests.status(request.id) == RequestStatus.Pending:

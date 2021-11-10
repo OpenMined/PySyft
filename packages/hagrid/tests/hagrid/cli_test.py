@@ -98,7 +98,7 @@ def test_launch_with_multiword_domain_name() -> None:
     assert "NODE_TYPE=domain" in cmd
 
     # check that the node has a name
-    assert 'DOMAIN_NAME="united_nations"' in cmd
+    assert "DOMAIN_NAME='united_nations'" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd
@@ -122,7 +122,7 @@ def test_launch_with_longer_multiword_domain_name() -> None:
     assert "NODE_TYPE=domain" in cmd
 
     # check that the node has a name
-    assert 'DOMAIN_NAME="united_states_of_america"' in cmd
+    assert "DOMAIN_NAME='united_states_of_america'" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd
@@ -146,7 +146,7 @@ def test_launch_with_longer_multiword_domain_name_with_preposition() -> None:
     assert "NODE_TYPE=domain" in cmd
 
     # check that the node has a name
-    assert 'DOMAIN_NAME="united_nations"' in cmd
+    assert "DOMAIN_NAME='united_nations'" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd
