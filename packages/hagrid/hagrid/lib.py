@@ -138,7 +138,6 @@ def update_repo(repo: git.Repo, branch: str) -> None:
 def commit_hash() -> str:
     try:
         repo = get_git_repo()
-        print("repo", repo, dir(repo))
         sha = repo.head.commit.hexsha
         return sha
     except Exception as e:

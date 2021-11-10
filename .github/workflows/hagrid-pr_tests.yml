@@ -152,3 +152,8 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           pytest --durations=50
+
+      - name: Run hagrid debug
+        if: steps.changes.outputs.hagrid == 'true'
+        run: |
+          hagrid debug

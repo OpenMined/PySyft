@@ -1010,7 +1010,7 @@ cli.add_command(clean)
 def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     now = datetime.now().astimezone()
     dt_string = now.strftime("%d/%m/%Y %H:%M:%S %Z")
-    debug_info = {}
+    debug_info: TypeDict[str, Any] = {}
     debug_info["datetime"] = dt_string
     debug_info["python_binary"] = sys.executable
     debug_info["dependencies"] = DEPENDENCIES
@@ -1021,12 +1021,12 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     debug_info["hagrid_repo_sha"] = commit_hash()
     debug_info["docker"] = docker_info()
     if is_windows():
-        debug_info["wsl"] = wsl_linux_info()
+        debug_info["wsl"] = wsl_info()
         debug_info["wsl_linux"] = wsl_linux_info()
-    print("\n\nPlease copy and paste this and send when reporting bugs.")
-    print("========================================================\n")
+    print("\n\nWhen reporting bugs, please copy everything between the lines.")
+    print("==================================================================\n")
     print(json.dumps(debug_info))
-    print("\n========================================================\n\n")
+    print("\n=================================================================\n\n")
 
 
 cli.add_command(debug)
