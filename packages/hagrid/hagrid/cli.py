@@ -20,7 +20,6 @@ from .art import hagrid
 from .auth import AuthCredentials
 from .cache import arg_cache
 from .deps import DEPENDENCIES
-from .deps import ENVIRONMENT
 from .deps import MissingDependency
 from .deps import allowed_hosts
 from .deps import is_windows
