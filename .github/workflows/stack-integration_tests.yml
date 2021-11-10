@@ -66,6 +66,24 @@ jobs:
         run: |
           pip install tox --upgrade
 
+      - name: Install Docker Compose
+        if: runner.os == 'Windows'
+        run: |
+          curl -L https://github.com/docker/compose/releases/download/v2.1.1/docker-compose-windows-x86_64.exe -o "C:\Program Files\Docker\cli-plugins\docker-compose.exe"
+
+      - name: Install Docker Compose
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.1.1
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+
+      - name: Setup WSL
+        if: runner.os == 'Windows'
+        uses: Vampire/setup-wsl@v1
+
       # - name: docker cache
       #   uses: actions/cache@v2
       #   if: steps.changes.outputs.stack == 'true'
@@ -85,15 +103,6 @@ jobs:
       - name: Windows
         if: runner.os == 'Windows'
         uses: mxschmitt/action-tmate@v3
-
-      - name: Install Docker Compose
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.1.1
-          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'

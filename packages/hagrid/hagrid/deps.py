@@ -17,7 +17,7 @@ class MissingDependency(Exception):
 
 
 allowed_hosts = ["docker", "vm", "azure", "aws", "gcp"]
-commands = ["docker", "git", "vagrant", "virtualbox", "ansible-playbook"]
+commands = ["docker", "git", "ansible-playbook"]
 
 
 def check_deps() -> Dict[str, Optional[str]]:
