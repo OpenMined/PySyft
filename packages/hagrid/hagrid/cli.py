@@ -666,8 +666,8 @@ def create_launch_docker_cmd(
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += " DOMAIN_NAME='" + snake_name + "'"
     cmd += " NODE_TYPE=" + str(node_type.input)
-    cmd += " VERSION=$(python VERSION)"
-    cmd += " VERSION_HASH=$(python VERSION hash)"
+    cmd += " VERSION=$(python3 VERSION)"
+    cmd += " VERSION_HASH=$(python3 VERSION hash)"
     cmd += " TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false"
 
     if kwargs["build"] is True:
@@ -690,10 +690,13 @@ def create_launch_docker_cmd(
         cmd += " --build"  # force rebuild
         cmd = build_cmd + " && " + cmd
 
+    # here we pass everything through to bash on windows
     if is_windows():
         cmd = f'bash -c "{cmd}"'
 
-    cmd = "cd " + GRID_SRC_PATH + "; " + cmd
+    # on windows we are calling cmd.exe not powershell so the cd && part is critical
+    # so that the bash shell will also be running in the correct path inside wsl
+    cmd = "cd " + GRID_SRC_PATH + " && " + cmd
     return cmd
 
 
