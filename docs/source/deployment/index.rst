@@ -34,37 +34,79 @@ Working with Hagrid & Syft API versions:
 Prerequisites
 ===============
 
-1. Ensure using **Python3.7+**; If you are having trouble navigating python dependencies, use conda:
+The following operating systems are currently supported: Linux, Windows, MacOS. Please ensure you have at least 8GB of ram if you intend to run Hagrid locally.
 
-   a. Install conda `following these instructions <https://docs.conda.io/projects/conda/en/latest/user-guide/install/linux.html>`__.
+Setting up virtual environment using Python 3.9
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-   b. Create a new env specifying the Python version (we recommend Python 3.8/3.9):
+1. Ensure using **Python3.7+**, which should be first installed in your system. To easily handle further dependencies, we suggest using conda:
+
+   a. Install conda `following these instructions <https://docs.anaconda.com/anaconda/install/index.html/>`_  depending on your OS.
+
+   b. Create a new env specifying the Python version (we recommend Python 3.8/3.9) in the terminal:
 
       .. code-block:: bash
 
-         $ conda create -n myenv python=3.8
+         $ conda create -n myenv python=3.9
          $ conda activate myenv
          (to exit): conda deactivate
 
-2. Ensure having an up-to-date **docker** in your system by running:
+Using latest pip
+~~~~~~~~~~~~~~~~~
+
+**Pip** is required to install dependencies, so make sure you have it installed and up-to-date by running the following these `instructions <https://pip.pypa.io/en/stable/installation/#supported-methods/>`__.
+
+If you have it installed, please check it is the latest version:
+
+.. code-block:: bash
+
+    $ pip install --upgrade pip && pip -V (Linux)
+    $ python -m pip install --upgrade pip (for Windows)
+
+
+Install Jupyter Notebook
+~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. A very convenient way to interact with a deployed node is via Python, using a Jupyter Notebook. You can install it by running:
 
    .. code-block:: bash
 
-      $ sudo apt-get upgrade docker & docker run hello-world
+      $ pip install jupyter-notebook
 
-3. Install **Docker Composite V2,** which is needed to orchestrate docker, as explained below:
+2. If you encounter issues, you can also install it using Conda:
+
+   .. code-block:: bash
+
+      $ conda install -c conda-forge notebook
+
+3. To launch the Jupyter Notebook, you can run the following in your terminal:
+
+   .. code-block:: bash
+
+      $ jupyter notebook
+
+Installing and configuring Docker
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+1. Install **Docker** and **Docker Composite V2,** which is needed to orchestrate docker, as explained below:
 
    For **Linux**:
 
-   a. Install as described `here <https://docs.docker.com/compose/cli-command/#installing-compose-v2>`__.
+   a. Install **Docker**:
 
-   b. You should see ‘Docker Compose version v2’ when running:
+      .. code-block:: bash
+
+         $ sudo apt-get upgrade docker & docker run hello-world
+
+   b. Install **Docker Composite V2** as described `here <https://docs.docker.com/compose/cli-command/#installing-compose-v2>`__.
+
+   c. You should see ‘Docker Compose version v2’ when running:
 
       .. code-block:: bash
 
          $ docker compose version
 
-   c. If not, go through the `instructions here <https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/>`__ or if you are using Linux, you can try to do:
+   d. If not, go through the `instructions here <https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/>`__ or if you are using Linux, you can try to do:
 
       .. code-block:: bash
 
@@ -72,7 +114,7 @@ Prerequisites
          $ curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
          $ chmod +x ~/.docker/cli-plugins/docker-compose
 
-   d. Also, make sure you can run without sudo:
+   e. Also, make sure you can run without sudo:
 
       .. code-block:: bash
 
@@ -90,33 +132,39 @@ Prerequisites
 
       -  Make sure the Use ``Docker Compose V2`` box is checked.
 
-4. Make sure you are using the **0.6.0** branch of the PySyft repository (branch can be found `here <https://github.com/OpenMined/PySyft/tree/0.6.0>`__)
+   c. Ensure at least 8GB of RAM are allocated in the Desktop Docker app:
+
+      -  Go to 'Preferences' -> 'Resources'
+
+      -  Drag the 'Memory' dot until it says at least 8.00GB
+
+      -  Click 'Apply & Restart'
+
+2. Make sure you are using the **dev** branch of the PySyft repository (branch can be found `here <https://github.com/OpenMined/PySyft/tree/0.6.0>`__)
 
 
 Explore locally with the PySyft API
 ====================================
 
-1. Make sure you use last version of **pip** (pip>=21.2.1) (pip -V)
-
-2. Install **tox**:
+1. Install **tox**:
 
    .. code-block:: bash
 
       $ pip install tox
 
-3. Move to the correct branch in the PySyft repository:
+2. Move to the correct branch in the PySyft repository:
 
    .. code-block:: bash
 
-      $ git checkout 0.6.0
+      $ git checkout dev
 
-4. Check current tasks that can be run by tox:
+3. Check current tasks that can be run by tox:
 
    .. code-block:: bash
 
       $ tox -l
 
-5. Open an editable Jupyter Notebook which doesn't require to run in a container:
+4. Open an editable Jupyter Notebook which doesn't require to run in a container:
 
    .. code-block:: bash
 
@@ -130,7 +178,7 @@ Local deployment using Docker
 
    .. code-block:: bash
 
-      $ pip install hagrid==0.1.6
+      $ pip install hagrid==0.1.7
 
 2. Launch a Domain Node:
 
@@ -163,11 +211,12 @@ Local deployment using Docker
 
    a. Log in using the following credentials:
 
-   ..
+       .. code-block:: python
 
-      info@openmined.org
+          info@openmined.org
 
-      changethis
+          changethis
+
 
    b. Explore the interface or you can even do requests via `Postman <https://www.postman.com/downloads/>`__. You can check all the available endpoints at http://localhost:8081/api/v1/openapi.json/ and have all the following environment variables set (a more detailed explanationcan be found in `this video section <https://youtu.be/GCw7cN7xXJU?t=442>`__):
 
@@ -259,13 +308,13 @@ This is particularly useful to experiment with the Ansible scripts to test new c
 
 10. Or alternatively to destroy it using:
 
-   .. code-block:: bash
+    .. code-block:: bash
 
-      $ vagrant destroy
+       $ vagrant destroy
 
 
 Deploying on Kubernetes
-====================================
+========================
 
 We provide an option to deploy the stack using kubernetes. To test and run this locally we use ``minikube`` and ``devspace``.
 
@@ -279,7 +328,7 @@ These are the prerequisites needed further, which are explained step-by-step bel
 * kubectx
 
 MacOS
----------
+~~~~~
 
 * **Hyperkit**
 
@@ -411,7 +460,7 @@ Additionally ``devspace`` allows us to deploy using helm by auto-generating the 
 
 
 Deploy to local dev
-----------------------
+~~~~~~~~~~~~~~~~~~~
 
 1. Check that you have the right namespace:
 
@@ -505,7 +554,7 @@ when debugging which version is actually running in the cluster.
 
 
 Deploy to Google Kubernetes Engine (GKE)
-------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 1.Configure kubectl context with GKE:
 
