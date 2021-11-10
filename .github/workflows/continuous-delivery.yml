@@ -75,7 +75,7 @@ jobs:
           docker push $DOCKER_URI_LATEST
 
       - name: Build and push `grid-headscale` image to DockerHub
-        working-directory: ./packages
+        working-directory: ./packages/grid/vpn
         env:
           IMAGE_URI: openmined/grid-vpn-headscale
         run: |
@@ -90,7 +90,7 @@ jobs:
           docker push $DOCKER_URI_LATEST
 
       - name: Build and push `grid-tailscale` image to DockerHub
-        working-directory: ./packages
+        working-directory: ./packages/grid/vpn
         env:
           IMAGE_URI: openmined/grid-vpn-tailscale
         run: |
