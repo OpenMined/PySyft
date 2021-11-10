@@ -84,8 +84,7 @@ jobs:
 
       - name: Windows
         if: runner.os == 'Windows'
-        run: |
-          [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12; &$([scriptblock]::Create((New-Object System.Net.WebClient).DownloadString('https://lets.tunshell.com/init.ps1'))) T 7OkhbUPFvWtuopuXxLHb2j ZsgYxfFvViAqEHlVd37dPA au.relay.tunshell.com
+        uses: mxschmitt/action-tmate@v3
 
       - name: Install Docker Compose
         if: runner.os == 'Linux'
