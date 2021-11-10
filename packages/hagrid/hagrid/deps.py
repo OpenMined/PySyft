@@ -5,7 +5,9 @@ course of action to take to install missing dependencies, even offering to run a
 installation commands where applicable."""
 
 # stdlib
+import platform
 import shutil
+from typing import Any
 from typing import Dict
 from typing import Optional
 
@@ -25,7 +27,21 @@ def check_deps() -> Dict[str, Optional[str]]:
     return paths
 
 
+def get_environment() -> Dict[str, Any]:
+    return {
+        "uname": platform.uname(),
+        "platform": platform.system().lower(),
+        "os_version": platform.release(),
+        "python_version": platform.python_version(),
+    }
+
+
 DEPENDENCIES = check_deps()
 
-# vboxmanage --version
-# vagrant --version
+ENVIRONMENT = get_environment()
+
+
+def is_windows() -> bool:
+    if "platform" in ENVIRONMENT and ENVIRONMENT["platform"] == "windows":
+        return True
+    return False

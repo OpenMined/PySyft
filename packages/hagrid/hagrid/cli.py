@@ -20,8 +20,10 @@ from .art import hagrid
 from .auth import AuthCredentials
 from .cache import arg_cache
 from .deps import DEPENDENCIES
+from .deps import ENVIRONMENT
 from .deps import MissingDependency
 from .deps import allowed_hosts
+from .deps import is_windows
 from .grammar import BadGrammar
 from .grammar import GrammarVerb
 from .grammar import parse_grammar
@@ -662,10 +664,10 @@ def create_launch_docker_cmd(
     cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
     cmd += " DOMAIN_PORT=" + str(host_term.free_port)
     cmd += " TRAEFIK_TAG=" + str(tag)
-    cmd += ' DOMAIN_NAME="' + snake_name + '"'
+    cmd += " DOMAIN_NAME='" + snake_name + "'"
     cmd += " NODE_TYPE=" + str(node_type.input)
-    cmd += " VERSION=`python VERSION`"
-    cmd += " VERSION_HASH=`python VERSION hash`"
+    cmd += " VERSION=$(python VERSION)"
+    cmd += " VERSION_HASH=$(python VERSION hash)"
     cmd += " TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false"
 
     if kwargs["build"] is True:
@@ -687,6 +689,10 @@ def create_launch_docker_cmd(
     if kwargs["build"] is True:
         cmd += " --build"  # force rebuild
         cmd = build_cmd + " && " + cmd
+
+    if is_windows():
+        cmd = f'bash -c "{cmd}"'
+
     cmd = "cd " + GRID_SRC_PATH + "; " + cmd
     return cmd
 
