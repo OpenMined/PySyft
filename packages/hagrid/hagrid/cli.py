@@ -660,7 +660,8 @@ def create_launch_docker_cmd(
     print("\n")
 
     cmd = ""
-    cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
+    if not is_windows():
+        cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
     cmd += " DOMAIN_PORT=" + str(host_term.free_port)
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += " DOMAIN_NAME='" + snake_name + "'"
