@@ -83,6 +83,8 @@ jobs:
       - name: Setup WSL
         if: runner.os == 'Windows'
         uses: Vampire/setup-wsl@v1
+        with:
+          distribution: Ubuntu-20.04
 
       # - name: docker cache
       #   uses: actions/cache@v2
