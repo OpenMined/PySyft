@@ -8,10 +8,19 @@ Welcome to PySyft's documentation!
 
 .. toctree::
    :maxdepth: 2
-   :caption: Contents:
+   :caption: Installation
+
+   install_tutorials/linux
+   install_tutorials/windows
+   install_tutorials/osx
+
+   :caption: Advanced tutorials:
 
    deployment/index
+
+   :caption: Glossary:
    deployment/glossary
+
 
 
 Indices and tables
