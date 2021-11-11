@@ -1,6 +1,10 @@
 # stdlib
 import subprocess
 
+# one liner to use bootstrap script:
+# PS: $r = Invoke-WebRequest "https://raw.githubusercontent.com/madhavajay/PySyft/madhava/win_bootstrap/packages/hagrid/hagrid/win_bootstrap.py" -UseBasicParsing; echo $r.Content | python
+
+
 install_choco_pwsh = """
 Start-Process PowerShell -Verb RunAs -ArgumentList "Set-ExecutionPolicy Bypass -Scope Process -Force;
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;
