@@ -98,9 +98,9 @@ Trust me, your life is about to become a LOT easier.
 
 - Let's now tap into your newfound powers with Anaconda and create a new virtual environment called "playground" by running the following in your WSL shell::
 
-    conda create -n playground python=3.9
+    conda create -n playground python=3.9 --y
 
-- Type "y" and press enter when prompted, and then let's verify that we created our "playground" successfully with the following command (Deja Vu, anyone?)::
+- Let's verify that we created our "playground" successfully with the following command (Deja Vu, anyone?)::
 
     conda env list
 
@@ -108,16 +108,18 @@ Trust me, your life is about to become a LOT easier.
 
     conda activate playground
 
-Step 5: Install Hagrid and PySyft
-====================
+- Now let's use it to conveniently install a few packages::
 
-- With the power of WSL and Anaconda, installing our software is as easy as::
+    sudo apt install python3-pip
+    pip3 install pandas matplotlib numpy
+    pip3 install jupyterlab
 
-    pip install --pre syft
-    pip install hagrid
+- If the last command fails, try the following instead::
+
+    conda install -c conda-forge jupyterlab
 
 
-Step 6: Become the Docker Doctor
+Step 5: Become the Docker Doctor
 ====================
 
 The last tool needed to complete your arsenal is called Docker.
@@ -131,16 +133,26 @@ Congratulations, you have reached the end of your journey. Now it is time for yo
 
 Note that your ultimate test is **optional**- you can do this part later.
 
+
+Step 6: Install Hagrid and PySyft
+====================
+
+- With the power of WSL and Anaconda, installing our software is as easy as::
+
+    pip3 install --pre syft
+    pip3 install hagrid
+
+
 Optional: Deploy a Domain Node!
 ====================
 
 Everything we've done so far has been to make this next part as easy as possible. This is the moment we've all been waiting for.
 
-To launch a domain node called "my_domain", ensure your Virtual Environment ("playground" in the steps above) is active, and run the command below on your WSL terminal::
+To launch a domain node called "my_domain", ensure your Virtual Environment ("playground" in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal::
 
     hagrid launch my_domain
 
-You should see the containers begin to apper on Docker!
+You should see the containers begin to appear on Docker!
 
 **CONGRATULATIONS!!!**
 

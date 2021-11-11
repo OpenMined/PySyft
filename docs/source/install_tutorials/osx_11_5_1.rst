@@ -1,12 +1,13 @@
-OSX Tutorial (Big Sur - 11.5.1)
+macOS Tutorial (Big Sur - 11.5.1)
 *******************************
 
-Welcome to the beginner installation tutorial for domain deployment on your personal OSX machine!
+Welcome to the beginner installation tutorial for domain deployment on your personal macOS machine!
 
-Step 1: Double check OSX version (optional)
+
+Step 1: Double check macOS version (optional)
 ===========================================
-Before you complete this tutorial, let's make sure you're running the right version of
-OSX. Click the Apple logo at the top left corner, then click "About this Mac" and you'll
+Before you start this tutorial, let's make sure you're running the right version of
+macOS. Click the Apple logo at the top left corner, then click "About this Mac" and you'll
 see something like:
 
 |find_osx_version|
@@ -18,7 +19,7 @@ ready to begin!
 Step 2: Open Terminal
 =====================
 
-Almost every step of this tutorial will be ocurring within the Terminal app of OSX. Start by
+Almost every step of this tutorial will be conducted within the Terminal app of macOS. Start by
 opening up the Terminal application by typing <Command-Space> and typing "Terminal". Then hit <Enter>.
 When Terminal opens, it should look something like this (colors may differ).
 
@@ -33,7 +34,7 @@ Step 3: Install Conda
 for your convenience and clarity. If any part of your installation doesn't work, please fall
 back on the official documentation page.).
 
-* Step 3.1: Open Anaconda Installer download page by clicking `here <https://www.anaconda.com/products/individual#macos#>`__.
+* Step 3.1: Open the Anaconda Installer download page by clicking `here <https://www.anaconda.com/products/individual#macos#>`__.
 * Step 3.2: Find the big green "Download" button and click it. It looks like this:
 
     |conda_button|
@@ -184,14 +185,14 @@ Step 5: Install Necessary Python Packages
 * Step 5.3: Confirm you have git installed
 
     For the python package in step 5,4, you'll need to have git installed.
-    Most modern OSX machines come with git already installed, but if the following
+    Most modern macOS machines come with git already installed, but if the following
     command doesn't work for you...
 
     .. code-block:: bash
 
         $ git --version
 
-    ...then follow git's installation instructions for OSX here: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+    ...then follow git's installation instructions for macOS here: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
 
 * Step 5.4: Install Hagrid
 
@@ -208,11 +209,11 @@ Step 5: Install Necessary Python Packages
 Step 6: Install Docker
 ======================
 
-* Step 6.1: Open the OSX Docker Install Page: https://docs.docker.com/desktop/mac/install/
+* Step 6.1: Open the macOS Docker Install Page: https://docs.docker.com/desktop/mac/install/
 
     |docker_install_1|
 
-* Step 6.2: Click whichever button corresponds to the chip in your OSX ('Mac with Intel chip' if you're not sure). When you do so you'll see something that looks like this:
+* Step 6.2: Click whichever button corresponds to the chip in your macOS ('Mac with Intel chip' if you're not sure). When you do so you'll see something that looks like this:
 
     |docker_install_2|
 

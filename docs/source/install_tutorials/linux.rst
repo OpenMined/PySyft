@@ -4,8 +4,7 @@ Installation on Linux (>=20.04.03)
 .. toctree::
    :maxdepth: 3
 
-This section of our documentation is designed to help you get started
-deploying a PyGrid Domain to Linux with a version higher or equal to ``20.04.03`` in the simplest way possible.
+This documentation is to help you install and be able to deploy a Domain Node on Ubuntu Linux, with a version of ``20.04.03`` or newer, in the simplest way possible.
 
 .. seealso::
 
@@ -17,15 +16,14 @@ We will use the Linux Terminal to install all the prerequisites and launch the d
 
 1. **Installing Python 3.9**
 
-For the rest of the tutorial, you need to have installed at least Python 3.9.
-If you think you might have it already installed, you can run the following to check:
+We'll be working with Python 3.9 or newer. To check if you have it installed, you may run:
 
 .. code-block:: bash
 
    $ python3 --version
    Python 3.9.0
 
-If it doesn't show the correct version, we can install it by running the following:
+If you don't have the correct version of Python, installing it is as easy as running the following::
 
 .. code-block:: bash
 
@@ -36,14 +34,14 @@ If it doesn't show the correct version, we can install it by running the followi
 
 2. **Installing and using Pip**
 
-`Pip <https://pip.pypa.io/en/stable/>`__ is the most used package installer for Python and will help us to install dependencies required much easier.
+`Pip <https://pip.pypa.io/en/stable/>`__ is the most widely used package installer for Python and will help us to install the required dependencies MUCH easier.
 You can install it by running the following:
 
 .. code-block:: bash
 
    $ python -m ensurepip --upgrade
 
-If you have it already installed, ensure it is the latest version by running:
+If you already have it installed, you can check to make sure it's the latest version by running:
 
 .. code-block:: bash
 
@@ -55,9 +53,9 @@ If you have it already installed, ensure it is the latest version by running:
 Conda is a package manager that helps you to easily install a lot of data science and machine learning packages, but also to create a separated environment when a certain set of dependencies need to be installed.
 To install Conda, you can:
 
-    a. Download the `Anaconda installer <https://www.anaconda.com/products/individual#linux>`__.
+    a. Download the `Anaconda installer <https://www.anaconda.com/products/individual#Downloads>`__.
 
-    b. Run the following depending where you downloaded the installer (e.g. `~/Downloads/`):
+    b. Run the following code, modifying it depending on where you downloaded the installer (e.g. `~/Downloads/`):
 
         .. code-block:: bash
 
@@ -97,8 +95,8 @@ To launch the Jupyter Notebook, you can run the following in your terminal:
 
 5. **Installing and configuring Docker**
 
-`Docker <https://docs.docker.com/get-started/overview/>`__ is a framework which allows us to separate the infrastructure needed to run PySyft in an isolated environment called ``container`` which you can use off the shelf, without many concerns.
-If it sounds complicated, please mind with us and we will quickly do the required steps!
+`Docker <https://docs.docker.com/get-started/overview/>`__ is a framework which allows us to separate the infrastructure needed to run PySyft in an isolated environment called a ``container`` which you can use off the shelf, without many concerns.
+If it sounds complicated, please don't worry- we will walk you through all steps, and you'll be done in no time!
 Additionally, we will also use `Docker Composite V2 <https://docs.docker.com/compose/>`_, which allows us to run multi-container applications.
 
 
@@ -141,14 +139,14 @@ The hardest part is done! To install the OpenMined stack that you need in order 
    $ pip install --pre syft
    $ pip install hagrid=0.1.8
 
-Syft is the library which contains the tools to run privacy preserving machine learning.
+PySyft is a library which contains the tools to run privacy preserving machine learning.
 Hagrid is a commandline tool that speeds up the deployment of PyGrid, the provider of a peer-to-peer network of
 data owners and data scientists who can collectively train AI model using Syft.
 
 7. **Launch the Doman Node**
 
-Congrats for making it that far! One last step to unleash the power of Hagrid!
-To launch the domain node, you can run:
+Congrats for making it this far! You only have one final step remaining, before you unleash the power of Hagrid!
+The final step is to launch a domain node, which is as easy as:
 
 .. code-block:: bash
 
@@ -160,7 +158,7 @@ To stop the running node, you can run:
 
    $ hagrid land
 
-But before stopping it, you can go to ```localhost:8081`` in your `broswer <localhost:8081>`_ to actually interact with the PyGrid Admin UI, where you can manage as a Data Owner your datasets, as well as incoming requests from data scientist.
+But before stopping it, you can go to ```localhost:8081`` in your `browser <localhost:8081>`_ to actually interact with the PyGrid Admin UI, where you can manage as a Data Owner your datasets, as well as incoming requests from data scientist.
 You can log in using the following credentials:
 
 .. code-block:: python
