@@ -65,7 +65,7 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
 
 @pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["add", "sub", "mul"])
-def test_mpc_public_private_op(get_clients, op_str: str) -> None:
+def test_mpc_private_public_op(get_clients, op_str: str) -> None:
     clients = get_clients(2)
 
     value_1 = Tensor(child=np.array([[1, 2, 3, 4, -5]], dtype=np.int32))
@@ -161,5 +161,28 @@ def test_comp_mpc_private_private_op(get_clients, op_str: str) -> None:
 
     res = res_ptr.reconstruct()
     expected = op(value_1, value_2)
+
+    assert (res == expected.child).all()
+
+
+@pytest.mark.smpc
+@pytest.mark.parametrize("op_str", ["lt", "gt", "ge", "le", "eq", "ne"])
+def test_comp_mpc_private_public_op(get_clients, op_str: str) -> None:
+    clients = get_clients(2)
+
+    value_1 = Tensor(child=np.array([[32, -27, 108, 1, 32]], dtype=np.int32))
+
+    remote_value_1 = value_1.send(clients[0])
+    public_value = 27
+
+    mpc_tensor_1 = MPCTensor(parties=clients, secret=remote_value_1, shape=(1, 5))
+
+    op = getattr(operator, op_str)
+    res_ptr = op(mpc_tensor_1, public_value)
+
+    res_ptr.block_with_timeout(secs=120)
+
+    res = res_ptr.reconstruct()
+    expected = op(value_1, public_value)
 
     assert (res == expected.child).all()
