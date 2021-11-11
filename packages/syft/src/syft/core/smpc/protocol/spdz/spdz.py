@@ -102,6 +102,7 @@ def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         MPCTensor: Result of the multiplication.
     """
     # relative
+    from ....tensor.smpc.mpc_tensor import MPCTensor
     from ....tensor.tensor import TensorPointer
 
     # diff = a - b
