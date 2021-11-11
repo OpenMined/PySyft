@@ -13,7 +13,7 @@ Welcome to PySyft's documentation!
    install_tutorials/overview
    install_tutorials/linux
    install_tutorials/windows
-   install_tutorials/osx
+   install_tutorials/osx_11_5_1
 
 .. toctree::
    :maxdepth: 2
