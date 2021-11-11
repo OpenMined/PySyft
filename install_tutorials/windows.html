@@ -4,7 +4,8 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
+
     <title>Windows Tutorials &#8212; PySyft  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
@@ -36,7 +37,7 @@
     <script src="../_static/copybutton.js"></script>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="macOS Tutorial (Big Sur - 11.5.1)" href="osx_11_5_1.html" />
+    <link rel="next" title="Advanced Deployment: Introduction to HaGrid" href="../deployment/index.html" />
     <link rel="prev" title="Installation on Linux (&gt;=20.04.03)" href="linux.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
@@ -90,11 +91,11 @@
  </a>
 </li>
 
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="osx_11_5_1.html">
-  macOS Tutorial (Big Sur - 11.5.1)
- </a>
-</li>
+            <li class="toctree-l1 nav-item">
+                <a class="reference internal nav-link" href="osx_11_5_1.html">
+                    OS X Installation (>=11.5.1)
+                </a>
+            </li>
 
 <li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../deployment/index.html">
@@ -217,13 +218,13 @@
               
               <div>
                 
-  <div class="section" id="windows-tutorials">
+  <section id="windows-tutorials">
 <h1>Windows Tutorials<a class="headerlink" href="#windows-tutorials" title="Permalink to this headline">¶</a></h1>
 <p>The following instructions are for Windows 10 version 2004 or higher.</p>
 <p>Now, traditionally, getting things as big and imposing as PySyft to work on Windows is… really, really challenging.
 Luckily for us, we’ve got a few tricks up our sleeves to make the process super easy.</p>
 <p>So sit back, relax, grab a few cookies, and <em>enjoy!</em></p>
-<div class="section" id="step-1-enabling-wsl2">
+<section id="step-1-enabling-wsl2">
 <h2>Step 1: Enabling WSL2<a class="headerlink" href="#step-1-enabling-wsl2" title="Permalink to this headline">¶</a></h2>
 <p>Our first and most important step is going to be to enable the Windows Subsystem for Linux (WSL).
 This lets you run a Linux-based environment (including most command line tools and applications!) directly on Windows,
@@ -234,8 +235,8 @@ unmodified, and without any of the drawbacks of more traditional solutions like 
 </div>
 <p>And that’s it! It’ll start installing all the dependencies and getting things in order.
 If you run into any issues here, please refer to <a class="reference external" href="https://docs.microsoft.com/en-us/windows/wsl/troubleshooting#installation-issues">this link</a>, which covers common WSL installation issues.</p>
-</div>
-<div class="section" id="step-2-setting-up-linux-user-info">
+</section>
+<section id="step-2-setting-up-linux-user-info">
 <h2>Step 2: Setting up Linux User Info<a class="headerlink" href="#step-2-setting-up-linux-user-info" title="Permalink to this headline">¶</a></h2>
 <p>Well done! You’ve <em>almost</em> got an entire Linux kernel and distribution on your machine, and you did this with <strong>barely one line of code!</strong>
 There’s just one last step needed. And luckily for us, it’s an easy one…</p>
@@ -244,8 +245,8 @@ Please note- this account, this password- doesn’t have any relation with your 
 distro that you just installed.</p>
 <p>Once you provide a username and password, <strong>congratulations!</strong> You have a fully fledged Linux distro. You may not have realized it, but you’ve just unlocked
 a whole new universe of possibilities and interesting tools.</p>
-</div>
-<div class="section" id="step-3-updating-upgrading">
+</section>
+<section id="step-3-updating-upgrading">
 <h2>Step 3: Updating &amp; Upgrading<a class="headerlink" href="#step-3-updating-upgrading" title="Permalink to this headline">¶</a></h2>
 <p>Now that you have a shiny new copy of Linux, your next step will be to update and upgrade it.
 This is pretty easy to do in Linux, and it’s something we can do with <em>just one command!</em></p>
@@ -256,15 +257,15 @@ This is pretty easy to do in Linux, and it’s something we can do with <em>just
 <p>You might need to enter the password of the account you created in Step 2. You might also need to press Y and hit enter to allow the updates.
 But you’re on a roll- nothing will stop you from getting the most up-to-date, and secure version of your Linux distro!</p>
 <p>Note: We’d actually recommend doing this reasonably often (once every few days) to maintain a safe and up-to-date distro.</p>
-</div>
-<div class="section" id="optional-installing-windows-terminal">
+</section>
+<section id="optional-installing-windows-terminal">
 <h2>Optional: Installing Windows Terminal<a class="headerlink" href="#optional-installing-windows-terminal" title="Permalink to this headline">¶</a></h2>
 <p>We’d recommend installing the Windows Terminal, and using that to launch your Linux Distribution instead of PowerShell, Command Prompt, or the default
 Ubuntu shell that comes bundled in.</p>
 <p>This isn’t strictly necessary, but it doesn’t take too long, improves the command line experience, and will probably make you happier.</p>
 <p>Please go <a class="reference external" href="https://docs.microsoft.com/en-us/windows/terminal/install">here</a> if you’re interested.</p>
-</div>
-<div class="section" id="step-4-installing-conda">
+</section>
+<section id="step-4-installing-conda">
 <h2>Step 4: Installing Conda<a class="headerlink" href="#step-4-installing-conda" title="Permalink to this headline">¶</a></h2>
 <p>Wow! We’ve made it pretty far together in a pretty short amount of time.</p>
 <p>We’ve already installed a Linux distribution, (and if you followed the Optional step, have a <em>swanky</em> new terminal!) and we’re getting <em>really</em> close to installing our software.
@@ -288,7 +289,7 @@ Our next step is an important one. It’ll help us make sure our software can in
 </li>
 <li><p>The output should be something similar to the image below:</p></li>
 </ul>
-<p><a class="reference internal" href="../_images/conda_env.png"><img alt="conda_env" src="../_images/conda_env.png" style="width: 50%;" /></a></p>
+<p><a class="reference internal" href="../_static/install_tutorials/conda_env.png"><img alt="conda_env" src="../_images/conda_env.png" style="width: 50%;" /></a></p>
 <p>Wait wait wait wait just a second.
 Do you realize what just happened?</p>
 <p>You’ve just successfully installed Anaconda!! Hooray!
@@ -322,8 +323,8 @@ Trust me, your life is about to become a LOT easier.</p>
 </div>
 </li>
 </ul>
-</div>
-<div class="section" id="step-5-become-the-docker-doctor">
+</section>
+<section id="step-5-become-the-docker-doctor">
 <h2>Step 5: Become the Docker Doctor<a class="headerlink" href="#step-5-become-the-docker-doctor" title="Permalink to this headline">¶</a></h2>
 <p>The last tool needed to complete your arsenal is called Docker.
 You can install it by following the instructions <a class="reference external" href="https://docs.docker.com/desktop/windows/install/">here</a>.</p>
@@ -332,8 +333,8 @@ You can install it by following the instructions <a class="reference external" h
 - You’re using the WSL2 backend</p>
 <p>Congratulations, you have reached the end of your journey. Now it is time for your <strong>ultimate test!</strong> Deploying a domain node.</p>
 <p>Note that your ultimate test is <strong>optional</strong>- you can do this part later.</p>
-</div>
-<div class="section" id="step-6-install-hagrid-and-pysyft">
+</section>
+<section id="step-6-install-hagrid-and-pysyft">
 <h2>Step 6: Install Hagrid and PySyft<a class="headerlink" href="#step-6-install-hagrid-and-pysyft" title="Permalink to this headline">¶</a></h2>
 <ul>
 <li><p>With the power of WSL and Anaconda, installing our software is as easy as:</p>
@@ -343,8 +344,8 @@ You can install it by following the instructions <a class="reference external" h
 </div>
 </li>
 </ul>
-</div>
-<div class="section" id="optional-deploy-a-domain-node">
+</section>
+<section id="optional-deploy-a-domain-node">
 <h2>Optional: Deploy a Domain Node!<a class="headerlink" href="#optional-deploy-a-domain-node" title="Permalink to this headline">¶</a></h2>
 <p>Everything we’ve done so far has been to make this next part as easy as possible. This is the moment we’ve all been waiting for.</p>
 <p>To launch a domain node called “my_domain”, ensure your Virtual Environment (“playground” in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal:</p>
@@ -355,8 +356,8 @@ You can install it by following the instructions <a class="reference external" h
 <p><strong>CONGRATULATIONS!!!</strong></p>
 <p>You have reached the promise land. You’re ready to begin remote data science.
 It was a pleasure walking you through the installation process. Now be sure to use your newfound powers and abilities for good!</p>
-</div>
-</div>
+</section>
+</section>
 
 
               </div>
@@ -371,10 +372,10 @@ It was a pleasure walking you through the installation process. Now be sure to u
             <p class="prev-next-title">Installation on Linux (&gt;=20.04.03)</p>
         </div>
     </a>
-    <a class='right-next' id="next-link" href="osx_11_5_1.html" title="next page">
+    <a class='right-next' id="next-link" href="../deployment/index.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">macOS Tutorial (Big Sur - 11.5.1)</p>
+        <p class="prev-next-title">Advanced Deployment: Introduction to HaGrid</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
@@ -398,7 +399,7 @@ It was a pleasure walking you through the installation process. Now be sure to u
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
 </p>
     </div>
     
