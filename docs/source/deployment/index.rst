@@ -1,4 +1,4 @@
-Deployment: Introduction & Installation of HaGrid
+Advanced Deployment: Introduction & Installation of HaGrid
 ***************************************************
 
 .. toctree::
