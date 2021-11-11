@@ -4,8 +4,7 @@
 <html>
   <head>
     <meta charset="utf-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
-
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Advanced Deployment: Introduction to HaGrid &#8212; PySyft  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
@@ -38,7 +37,7 @@
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
     <link rel="next" title="Glossary" href="glossary.html" />
-    <link rel="prev" title="Windows Tutorials" href="../install_tutorials/windows.html" />
+    <link rel="prev" title="macOS Tutorial (Big Sur - 11.5.1)" href="../install_tutorials/osx_11_5_1.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -88,6 +87,12 @@
 <li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../install_tutorials/windows.html">
   Windows Tutorials
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../install_tutorials/osx_11_5_1.html">
+  macOS Tutorial (Big Sur - 11.5.1)
  </a>
 </li>
 
@@ -241,7 +246,7 @@
               
               <div>
                 
-  <section id="advanced-deployment-introduction-to-hagrid">
+  <div class="section" id="advanced-deployment-introduction-to-hagrid">
 <h1>Advanced Deployment: Introduction to HaGrid<a class="headerlink" href="#advanced-deployment-introduction-to-hagrid" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
@@ -273,10 +278,10 @@ and bootstrap a local Jupyter Notebook where you can use the Syft
 </dl>
 </li>
 </ul>
-<section id="prerequisites">
+<div class="section" id="prerequisites">
 <h2>Prerequisites<a class="headerlink" href="#prerequisites" title="Permalink to this headline">¶</a></h2>
 <p>The following operating systems are currently supported: Linux, Windows, MacOS. Please ensure you have at least 8GB of ram if you intend to run Hagrid locally.</p>
-<section id="setting-up-virtual-environment-using-python-3-9">
+<div class="section" id="setting-up-virtual-environment-using-python-3-9">
 <h3>Setting up virtual environment using Python 3.9<a class="headerlink" href="#setting-up-virtual-environment-using-python-3-9" title="Permalink to this headline">¶</a></h3>
 <ol class="arabic">
 <li><p>Ensure using <strong>Python3.7+</strong>, which should be first installed in your system. To easily handle further dependencies, we suggest using conda:</p>
@@ -292,8 +297,8 @@ $ conda activate myenv
 </ol>
 </li>
 </ol>
-</section>
-<section id="using-latest-pip">
+</div>
+<div class="section" id="using-latest-pip">
 <h3>Using latest pip<a class="headerlink" href="#using-latest-pip" title="Permalink to this headline">¶</a></h3>
 <p><strong>Pip</strong> is required to install dependencies, so make sure you have it installed and up-to-date by running the following these <a class="reference external" href="https://pip.pypa.io/en/stable/installation/#supported-methods/">instructions</a>.</p>
 <p>If you have it installed, please check it is the latest version:</p>
@@ -301,8 +306,8 @@ $ conda activate myenv
 $ python -m pip install --upgrade pip <span class="o">(</span><span class="k">for</span> Windows<span class="o">)</span>
 </pre></div>
 </div>
-</section>
-<section id="install-jupyter-notebook">
+</div>
+<div class="section" id="install-jupyter-notebook">
 <h3>Install Jupyter Notebook<a class="headerlink" href="#install-jupyter-notebook" title="Permalink to this headline">¶</a></h3>
 <ol class="arabic">
 <li><p>A very convenient way to interact with a deployed node is via Python, using a Jupyter Notebook. You can install it by running:</p>
@@ -321,8 +326,8 @@ $ python -m pip install --upgrade pip <span class="o">(</span><span class="k">fo
 </div>
 </li>
 </ol>
-</section>
-<section id="installing-and-configuring-docker">
+</div>
+<div class="section" id="installing-and-configuring-docker">
 <h3>Installing and configuring Docker<a class="headerlink" href="#installing-and-configuring-docker" title="Permalink to this headline">¶</a></h3>
 <ol class="arabic">
 <li><p>Install <strong>Docker</strong> and <strong>Docker Composite V2,</strong> which is needed to orchestrate docker, as explained below:</p>
@@ -373,9 +378,9 @@ $ sudo usermod -aG docker <span class="nv">$USER</span>
 </li>
 <li><p>Make sure you are using the <strong>dev</strong> branch of the PySyft repository (branch can be found <a class="reference external" href="https://github.com/OpenMined/PySyft/tree/0.6.0">here</a>)</p></li>
 </ol>
-</section>
-</section>
-<section id="explore-locally-with-the-pysyft-api">
+</div>
+</div>
+<div class="section" id="explore-locally-with-the-pysyft-api">
 <h2>Explore locally with the PySyft API<a class="headerlink" href="#explore-locally-with-the-pysyft-api" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic">
 <li><p>Install <strong>tox</strong>:</p>
@@ -399,8 +404,8 @@ $ sudo usermod -aG docker <span class="nv">$USER</span>
 </div>
 </li>
 </ol>
-</section>
-<section id="local-deployment-using-docker">
+</div>
+<div class="section" id="local-deployment-using-docker">
 <h2>Local deployment using Docker<a class="headerlink" href="#local-deployment-using-docker" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic">
 <li><p>Install Hagrid:</p>
@@ -467,8 +472,8 @@ $ sudo usermod -aG docker <span class="nv">$USER</span>
 </div>
 </li>
 </ol>
-</section>
-<section id="local-deployment-using-vagrant-and-virtualbox">
+</div>
+<div class="section" id="local-deployment-using-vagrant-and-virtualbox">
 <h2>Local deployment using Vagrant and VirtualBox<a class="headerlink" href="#local-deployment-using-vagrant-and-virtualbox" title="Permalink to this headline">¶</a></h2>
 <p>This is particularly useful to experiment with the Ansible scripts to test new changes.</p>
 <ol class="arabic">
@@ -528,8 +533,8 @@ $ whoami <span class="c1"># should return &#39;om&#39;</span>
 </div>
 </li>
 </ol>
-</section>
-<section id="deploying-on-kubernetes">
+</div>
+<div class="section" id="deploying-on-kubernetes">
 <h2>Deploying on Kubernetes<a class="headerlink" href="#deploying-on-kubernetes" title="Permalink to this headline">¶</a></h2>
 <p>We provide an option to deploy the stack using kubernetes. To test and run this locally we use <code class="docutils literal notranslate"><span class="pre">minikube</span></code> and <code class="docutils literal notranslate"><span class="pre">devspace</span></code>.</p>
 <p>These are the prerequisites needed further, which are explained step-by-step below:</p>
@@ -541,7 +546,7 @@ $ whoami <span class="c1"># should return &#39;om&#39;</span>
 <li><p>kubectl</p></li>
 <li><p>kubectx</p></li>
 </ul>
-<section id="macos">
+<div class="section" id="macos">
 <h3>MacOS<a class="headerlink" href="#macos" title="Permalink to this headline">¶</a></h3>
 <ul class="simple">
 <li><p><strong>Hyperkit</strong></p></li>
@@ -651,8 +656,8 @@ No resources found <span class="k">in</span> openmined namespace.
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ brew install devspace
 </pre></div>
 </div>
-</section>
-<section id="deploy-to-local-dev">
+</div>
+<div class="section" id="deploy-to-local-dev">
 <h3>Deploy to local dev<a class="headerlink" href="#deploy-to-local-dev" title="Permalink to this headline">¶</a></h3>
 <ol class="arabic simple">
 <li><p>Check that you have the right namespace:</p></li>
@@ -743,8 +748,8 @@ queue            <span class="m">1</span>/1     <span class="m">1</span>        
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ kubectl rollout restart deployment backend-worker
 </pre></div>
 </div>
-</section>
-<section id="deploy-to-google-kubernetes-engine-gke">
+</div>
+<div class="section" id="deploy-to-google-kubernetes-engine-gke">
 <h3>Deploy to Google Kubernetes Engine (GKE)<a class="headerlink" href="#deploy-to-google-kubernetes-engine-gke" title="Permalink to this headline">¶</a></h3>
 <p>1.Configure kubectl context with GKE:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ gcloud container clusters get-credentials --region us-central1-c staging-cluster-1
@@ -816,9 +821,9 @@ queue            <span class="m">1</span>/1     <span class="m">1</span>        
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ kubectl port-forward deployment/tailscale :4000
 </pre></div>
 </div>
-</section>
-</section>
-<section id="deploying-to-azure">
+</div>
+</div>
+<div class="section" id="deploying-to-azure">
 <h2>Deploying to Azure<a class="headerlink" href="#deploying-to-azure" title="Permalink to this headline">¶</a></h2>
 <ol class="arabic">
 <li><p>Get your virtual machine on Azure ready</p>
@@ -848,8 +853,8 @@ queue            <span class="m">1</span>/1     <span class="m">1</span>        
 </li>
 <li><p>If successful, you can now access the deployed node at the specified IP address and interact with it via the PyGrid Admin UI at <a class="reference external" href="http://51.124.153.133/login">http://51.124.153.133/login</a> (change IP with yours) or use Postman to do API requests.</p></li>
 </ol>
-</section>
-</section>
+</div>
+</div>
 
 
               </div>
@@ -857,11 +862,11 @@ queue            <span class="m">1</span>/1     <span class="m">1</span>        
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="../install_tutorials/windows.html" title="previous page">
+    <a class='left-prev' id="prev-link" href="../install_tutorials/osx_11_5_1.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Windows Tutorials</p>
+            <p class="prev-next-title">macOS Tutorial (Big Sur - 11.5.1)</p>
         </div>
     </a>
     <a class='right-next' id="next-link" href="glossary.html" title="next page">
@@ -891,7 +896,7 @@ queue            <span class="m">1</span>/1     <span class="m">1</span>        
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.2.0.<br>
 </p>
     </div>
     
