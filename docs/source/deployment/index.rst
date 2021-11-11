@@ -1,5 +1,5 @@
-Advanced Deployment: Introduction & Installation of HaGrid
-***************************************************
+Advanced Deployment: Introduction to HaGrid
+*******************************************
 
 .. toctree::
    :maxdepth: 3
