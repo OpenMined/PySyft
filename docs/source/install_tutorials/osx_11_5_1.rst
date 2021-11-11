@@ -208,12 +208,145 @@ Step 5: Install Necessary Python Packages
 Step 6: Install Docker
 ======================
 
-* Step 6.1: Install the latest version of PySyft (latest pre-release)
+* Step 6.1: Open the OSX Docker Install Page: https://docs.docker.com/desktop/mac/install/
 
-Step 7: Test Hagrid
-===================
+    |docker_install_1|
+
+* Step 6.2: Click whichever button corresponds to the chip in your OSX ('Mac with Intel chip' if you're not sure). When you do so you'll see something that looks like this:
+
+    |docker_install_2|
+
+* Step 6.3: Once you hit Save, Docker.dmg will save onto your hard disk (likely in Desktop or Downloads). Find it and double click it.
+
+    |docker_install_3|
+
+* Step 6.4: Once you double clicked Docker.dmg, a window should come up that looks like:
+
+    |docker_install_4|
+
+* Step 6.5: In the window that appeared, drag the Docker logo into the Applications folder. A dialog might appear which takes a few minutes to disappear as files are transferred.
+
+* Step 6.6: Once the dialog closes, find the 'Docker' application in your Applications folder:
+
+    |docker_install_5|
+
+* Step 6.7: When you double-click it, you'll see a dialog like the following:
+
+    |docker_install_6|
+
+* Step 6.8: Click "Open" and after a few moments the following screen will appear:
+
+    |docker_install_7|
+
+Step 6.9: The yellow color in the bottom right means Docker is still booting. Wait until it's green to proceed. It will look like:
+
+    |docker_install_12|
+
+    Do not close docker. Proceed to the next step.
+
+Step 7: Increase the RAM Docker uses to 8GB
+===========================================
+
+* Step 7.0: If the Docker window has been closed, look at teh top bar of your screen on the right for a small whale logo that looks like this:
+
+    |docker_logo|
+
+    Click the logo and then click "Dashboard" to bring up the Docker window you may recognize from Step 6.
+
+    |docker_install_7|
+
+* Step 7.1: Click the Gear icon in the top right corner of the Docker window and you'll see a screen like so:
+
+    |docker_install_8|
+
+* Step 7.2: Click "Resources" and the window will change to:
+
+    |docker_install_9|
+
+* Step 7.3: Drag the small blue circle next to "Memory" until 8GB of memory have been allocated. Your window will look like this.
+
+    |docker_install_10|
+
+* Step 7.4: Click "Apply & Restart" and then wait until the bottom left tab returns from Yellow to Green.
+
+    |docker_install_11|
+
+* Step 7.5: You are done! You may now proceed back to the main Docker dashboard by clicking the "X" in the top right corner of the docker window, taking you to a dashboard that looks like:
+
+    |docker_install_12|
+
+Congratulations! You're now fully installed and ready to go!!! You may now close your Terminal!
+
+Step 8: Test Hagrid (optional)
+==============================
+
+* Step 8.1: Launch Hagrid
+
+    Just to make sure our installation is correct and working. Open a new terminal and run the following:
+
+    .. code-block:: bash
+
+        $ conda activate syft
+        $ hagrid launch test
+
+    Wait several minutes. You should see LOTS of logging. The logging will occasionally hang during downloads. If your
+    internet is slow you'll need to be patient. The logging should eventually stop with the message "Application startup complete."
+
+    |hagrid_startup_complete|
+
+    You can then load "http://localhost:8081" to see a UI deployed which looks like:
+
+    |pygrid_ui|
+
+    Congratulations! Looks like everything was installed properly!
+
+* Step 8.2: Launch Juptyer Lab
+
+    With hagrid still running, open a new terminal (Command-N if you have Terminal selected) and run the following:
+
+    .. code-block:: bash
+
+        $ conda activate syft
+        $ jupyter lab
+
+    A new browser window should open up.
+
+    |syft_1|
+
+*Step 8.3: Open a new Jupyter Notebook by clicking the "Python 3" square icon (with the python logo). The window will change to:
+
+    |syft_2|
+
+*Step 8.4: Enter the following code into the top cell and then hit "Shift Enter".
 
 
+    .. code-block:: python
+
+        import syft as sy
+        domain = sy.login(email="info@openmined.org", password="changethis", port=8081)
+
+
+    After typing <Shift-Enter>, you should see the following output (or something similar):
+
+    |syft_3|
+
+    And if so, Congratulations!!! You're 100% setup and we've tested to make sure!
+
+* Step 8.5: Close Jupyter Lab
+
+    Close the jupyter lab browser tab. Then find the terminal window where we ran 'jupyter lab' and close the terminal window. If
+    a dialog box pops up saying "Do you want to terminate running processes in this window?", click "Terminate"
+
+* Step 8.6: Land Hagrid
+
+    Open a new terminal window and run:
+
+    .. code-block:: bash
+        $ conda activate syft
+        $ hagrid land test
+        $ conda deactivate syft
+
+    Well done!
 
 .. |osx_terminal| image:: ../_static/install_tutorials/osx_11_5_1_empty_terminal.png
    :width: 50%
@@ -261,4 +394,58 @@ Step 7: Test Hagrid
    :width: 50%
 
 .. |conda_install_8| image:: ../_static/install_tutorials/osx_11_5_1_conda_install_8.png
+   :width: 50%
+
+.. |docker_install_1| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_1.png
+   :width: 50%
+
+.. |docker_install_2| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_2.png
+   :width: 50%
+
+.. |docker_install_3| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_3.png
+   :width: 50%
+
+.. |docker_install_4| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_4.png
+   :width: 50%
+
+.. |docker_install_5| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_5.png
+   :width: 50%
+
+.. |docker_install_6| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_6.png
+   :width: 50%
+
+.. |docker_install_7| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_7.png
+   :width: 50%
+
+.. |docker_install_8| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_8.png
+   :width: 50%
+
+.. |docker_install_9| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_9.png
+   :width: 50%
+
+.. |docker_install_10| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_10.png
+   :width: 50%
+
+.. |docker_install_11| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_11.png
+   :width: 50%
+
+.. |docker_install_12| image:: ../_static/install_tutorials/osx_11_5_1_docker_install_12.png
+   :width: 50%
+
+.. |docker_logo| image:: ../_static/install_tutorials/osx_11_5_1_docker_logo.png
+   :width: 50%
+
+.. |hagrid_startup_complete| image:: ../_static/install_tutorials/osx_11_5_1_hagrid_startup_complete.png
+   :width: 50%
+
+.. |pygrid_ui| image:: ../_static/install_tutorials/osx_11_5_1_pygrid_ui.png
+   :width: 50%
+
+.. |syft_1| image:: ../_static/install_tutorials/osx_11_5_1_syft_1.png
+   :width: 50%
+
+.. |syft_2| image:: ../_static/install_tutorials/osx_11_5_1_syft_2.png
+   :width: 50%
+
+.. |syft_3| image:: ../_static/install_tutorials/osx_11_5_1_syft_3.png
    :width: 50%
