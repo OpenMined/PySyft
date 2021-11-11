@@ -114,7 +114,94 @@ Step 4: Activate Conda Environment
 technique you used in Step 2 to open the application. (This is to ensure that Terminal is
 aware of your new conda installation.)
 
-* Step 4.2: 
+* Step 4.2: Check to make sure conda is properly installed
+
+    In your freshly opened Terminal window, type the following:
+
+    .. code-block:: bash
+
+        $ conda --v
+
+    This should print something like "conda 4.10.1". If instead says "conda not found",
+    return to Step 3 and re-install conda.
+
+* Step 4.3: Update Conda
+
+    .. code-block:: bash
+
+        $ conda update conda --y
+
+* Step 4.4: Create conda virtual environment with Python 3.9
+
+    .. code-block:: bash
+
+        $ conda create -n syft python=3.9 --y
+
+* Step 4.5: Activate conda environment
+
+    .. code-block:: bash
+
+        $ conda activate syft
+
+    When you run this command, you'll see the word 'syft' in your terminal to indicate that you're
+    now in the syft virtual environment. For the rest of this tutorial, enter all of your commands
+    into this particular terminal. If ever you close this window, when you re-open a new Terminal
+    window, just re-run this step (4.5) and you'll be ready to start again!
+
+Step 5: Install Necessary Python Packages
+=========================================
+
+* Step 5.0: If you closed your Terminal window since Step 4, open a new Terminal application window and run the following.
+
+    .. code-block:: bash
+
+        $ conda activate syft
+
+    If your Terminal window is still open from Step 4, you can skip this step and proceed directly to step 5.1.
+
+* Step 5.1: Update Pip
+
+    Within our virtual environment, we're going to use the 'pip' package manager to install all of our
+    necessary python libraries. But before we do, we need to make sure we're running the latest version of pip.
+    You can do so by running the following command.
+
+    .. code-block:: bash
+
+        $ pip install --upgrade pip
+
+* Step 5.2: Install Jupyter Lab
+
+    .. code-block:: bash
+
+        $ pip install jupyterlab
+
+    If you encounter an error when running this command, try the following instead:
+
+    .. code-block:: bash
+
+        $ conda install -c conda-forge jupyterlab
+
+* Step 5.3: Confirm you have git installed
+
+    For the python package in step 5,4, you'll need to have git installed.
+    Most modern OSX machines come with git already installed, but if the following
+    command doesn't work for you...
+
+    .. code-block:: bash
+
+        $ git --version
+
+    ...then follow git's installation instructions for OSX here: https://git-scm.com/book/en/v2/Getting-Started-Installing-Git
+
+* Step 5.4: Install Hagrid
+
+    .. code-block:: bash
+
+        $ pip install hagrid==0.1.8
+
+Step 6: Install Necessary Python Packages
+=========================================
+
 
 .. |osx_terminal| image:: ../_static/install_tutorials/osx_11_5_1_empty_terminal.png
    :width: 50%
