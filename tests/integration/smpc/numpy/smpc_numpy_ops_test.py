@@ -37,6 +37,7 @@ def test_copy(get_clients) -> None:
     res = mpc_tensor.copy()
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = mpc_tensor.reconstruct()
 
     # we cannot check id for copy as the values are in different locations
@@ -55,6 +56,7 @@ def test_diagonal(get_clients) -> None:
     res = mpc_tensor.diagonal()
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = value.diagonal()
 
     assert (res == exp_res.child).all()
@@ -74,6 +76,7 @@ def test_flatten(get_clients) -> None:
     res = mpc_tensor.flatten()
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = value.flatten()
 
     assert (res == exp_res.child).all()
@@ -93,6 +96,7 @@ def test_transpose(get_clients) -> None:
     res = mpc_tensor.transpose()
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = value.transpose()
 
     assert (res == exp_res.child).all()
@@ -110,6 +114,7 @@ def test_resize(get_clients) -> None:
     res = mpc_tensor.resize(2, 3)
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     value.resize(2, 3)
     exp_res = value  # inplace op
 
@@ -128,6 +133,7 @@ def test_ravel(get_clients) -> None:
     res = mpc_tensor.ravel()
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = value.ravel()
 
     assert (res == exp_res.child).all()
@@ -145,6 +151,7 @@ def test_compress(get_clients) -> None:
     res = mpc_tensor.compress([0, 1], axis=0)
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = value.compress([0, 1], axis=0)
 
     assert (res == exp_res.child).all()
@@ -163,6 +170,7 @@ def test_reshape(get_clients) -> None:
     res = mpc_tensor.reshape((2, 3))
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = value.reshape((2, 3))
 
     assert (res == exp_res.child).all()
@@ -180,6 +188,7 @@ def test_squeeze(get_clients) -> None:
     res = mpc_tensor.squeeze()
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = value.squeeze()
 
     assert (res == exp_res.child).all()
@@ -197,6 +206,7 @@ def test_swapaxes(get_clients) -> None:
     res = mpc_tensor.swapaxes(0, 1)
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = value.swapaxes(0, 1)
 
     assert (res == exp_res.child).all()
@@ -214,6 +224,7 @@ def test_pos(get_clients) -> None:
     res = mpc_tensor.__pos__()
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     exp_res = value.__pos__()
 
     assert (res == exp_res.child).all()
@@ -231,6 +242,7 @@ def test_put(get_clients) -> None:
     res = mpc_tensor.put([0, 1], 7)
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
+
     value.put([0, 1], 7)
     exp_res = value  # inplace ops
 
