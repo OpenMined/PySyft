@@ -1,9 +1,10 @@
-# stdlib
+﻿# stdlib
 import subprocess
 from typing import Callable
 from typing import List
 
 # one liner to use bootstrap script:
+# CMD: curl https://raw.githubusercontent.com/madhavajay/PySyft/madhava/win_bootstrap/packages/hagrid/hagrid/win_bootstrap.py | python # noqa
 # PS: $r = Invoke-WebRequest "https://raw.githubusercontent.com/madhavajay/PySyft/madhava/win_bootstrap/packages/hagrid/hagrid/win_bootstrap.py" -UseBasicParsing; echo $r.Content | python # noqa
 
 
@@ -41,14 +42,14 @@ def make_admin_cmd(admin_cmd: str) -> str:
 
 
 def where_is(binary: str, req: Requirement) -> bool:
-    print(f"{req.full_name} - {binary}", end="")
+    print(f"{req.full_name} - {binary}", end="", flush=True)
     found = path_where_is(binary)
     if not found:
         found = full_where_is(binary)
     if found:
-        print("√")
+        print(" √")
     else:
-        print("×")
+        print(" ×")
     return found
 
 
@@ -96,12 +97,12 @@ def detect_wsl2(req: Requirement) -> bool:
         if "Default Distribution: Ubuntu" in out:
             pass
         if "Default Version: 2" in out:
-            print("√")
+            print(" √")
             return True
     except Exception as e:
         print("error", e)
         pass
-    print("×")
+    print(" ×")
     return False
 
 
