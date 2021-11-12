@@ -1,5 +1,5 @@
-Beginner-level Domain Deployment Installation Tutorials
-***************************************************
+Beginner-level PySyft and PyGrid Installation Tutorials
+*******************************************************
 
 .. toctree::
    :maxdepth: 3
@@ -7,7 +7,8 @@ Beginner-level Domain Deployment Installation Tutorials
 Welcome to the domain deployment installation tutorials!
 This section of our documentation is designed to be the
 simplest way to get you started deploying a PyGrid Domain
-to an OSX, Linux, or Windows machine. If you're looking
+to an OSX, Linux, or Windows machine and interacting with it
+as a data scientist using PySyft. If you're looking
 for cloud deployment, or more advanced tutorials such as
 ansible, vagrant, kubernetes, or virtualbox deployment, please see the
 `advanced deployment documentation <https://openmined.github.io/PySyft/deployment/index.html#>`__.
