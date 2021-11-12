@@ -1,5 +1,5 @@
-Beginner-level Domain Deployment Installation Tutorials
-***************************************************
+Beginner-level PySyft and PyGrid Installation Tutorials
+*******************************************************
 
 .. toctree::
    :maxdepth: 3
@@ -7,7 +7,8 @@ Beginner-level Domain Deployment Installation Tutorials
 Welcome to the domain deployment installation tutorials!
 This section of our documentation is designed to be the
 simplest way to get you started deploying a PyGrid Domain
-to an OSX, Linux, or Windows machine. If you're looking
+to an OSX, Linux, or Windows machine and interacting with it
+as a data scientist using PySyft. If you're looking
 for cloud deployment, or more advanced tutorials such as
 ansible, vagrant, kubernetes, or virtualbox deployment, please see the
 `advanced deployment documentation <https://openmined.github.io/PySyft/deployment/index.html#>`__.
@@ -49,8 +50,7 @@ and use that number to determine which of these installation tutorials you shoul
 follow to complete your installation. If you don't see your number, choose the
 closest that you can.
 
-#. Big Sur (11.5.1)
-#. Older versions
+#. `Big Sur (11.5.1)<https://openmined.github.io/PySyft/install_tutorials/osx_11_5_1.html#>`__
 
 Linux Tutorials
 ~~~~~~~~~~~~~~~
@@ -68,8 +68,7 @@ Which should print something like the following:
 
 See where this image says "20.04.3"? Figure out what number yours says in that place
 
-#. Ubuntu (20.04.3 - Focal Fossa)
-#. Older versions
+#. `Ubuntu (20.04.3 - Focal Fossa)<https://openmined.github.io/PySyft/install_tutorials/linux.html##>`__
 
 Windows Tutorials
 ~~~~~~~~~~~~~~~~~
@@ -90,8 +89,7 @@ and use those number to determine which of these installation tutorials you shou
 follow to complete your installation. If you don't see one of your numbers, choose the
 closest that you can.
 
-#. Windows 10 (20H2)
-#. Older versions
+#. `Windows 10 (20H2)<https://openmined.github.io/PySyft/install_tutorials/windows.html>`__
 
 Best of luck on your journey!
 

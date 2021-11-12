@@ -343,6 +343,7 @@ Step 8: Test Hagrid (optional)
     Open a new terminal window and run:
 
     .. code-block:: bash
+
         $ conda activate syft
         $ hagrid land test
         $ conda deactivate syft
