@@ -461,15 +461,13 @@ class MPCTensor(PassthroughTensor):
                 shares.append(new_share)
 
                 # TODO: generalize type after fixed precision
-                dummy_res = np.empty(_self.mpc_shape, dtype=np.int32)
+                dummy_res = np.random.randint(
+                    _self.mpc_shape[0], size=_self.mpc_shape, dtype=np.int32  # type: ignore
+                )
                 if method_name not in INPLACE_OPS:
-                    dummy_res = getattr(
-                        np.empty(_self.mpc_shape, dtype=np.int32), method_name
-                    )(*args, **kwargs)
+                    dummy_res = getattr(dummy_res, method_name)(*args, **kwargs)
                 else:
-                    getattr(np.empty(_self.mpc_shape, dtype=np.int32), method_name)(
-                        *args, **kwargs
-                    )
+                    getattr(dummy_res, method_name)(*args, **kwargs)
 
                 new_shape = dummy_res.shape
             res = MPCTensor(parties=_self.parties, shares=shares, shape=new_shape)
