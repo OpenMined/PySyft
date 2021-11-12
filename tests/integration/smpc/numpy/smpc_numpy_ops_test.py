@@ -111,11 +111,11 @@ def test_resize(get_clients) -> None:
 
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 2))
 
-    res = mpc_tensor.resize(2, 3)
+    res = mpc_tensor.resize((2, 3))
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
 
-    value.resize(2, 3)
+    value.resize((2, 3))
     exp_res = value  # inplace op
 
     assert (res == exp_res.child).all()
@@ -157,7 +157,6 @@ def test_compress(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.skip
 @pytest.mark.smpc
 def test_reshape(get_clients) -> None:
     clients = get_clients(2)
