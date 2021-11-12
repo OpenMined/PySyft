@@ -385,7 +385,7 @@ def create_launch_cmd(
                     f"If you see this warning on Linux then something isn't right. "
                     f"Please file a Github Issue on PySyft's Github"
                 )
-            print("DEPENDENCIES", DEPENDENCIES)
+
             if is_windows() and not DEPENDENCIES["wsl"]:
                 raise Exception(
                     "You must install wsl2 for Windows to use HAGrid.\n"
