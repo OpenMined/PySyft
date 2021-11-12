@@ -115,8 +115,7 @@ def test_resize(get_clients) -> None:
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
 
-    value.resize((2, 3))
-    exp_res = value  # inplace op
+    exp_res = value.resize((2, 3))
 
     assert (res == exp_res.child).all()
 
