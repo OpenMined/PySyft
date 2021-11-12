@@ -135,6 +135,10 @@ class ShareTensor(PassthroughTensor):
             party_info.url = party_info.url.replace("localhost", "docker-host")
             client = CACHE_CLIENTS.get(party_info, None)
             if client is None:
+                # default cache to true, here to prevent multiple logins
+                # due to gevent monkey patching, context switch is done during
+                # during socket connection initialization.
+                CACHE_CLIENTS[party_info] = True
                 # TODO: refactor to use a guest account
                 client = sy.login(  # nosec
                     url=party_info.url,
