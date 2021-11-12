@@ -447,7 +447,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     # ndarray.swapaxes(axis1, axis2)
     def swapaxes(self, axis1: int, axis2: int) -> PassthroughTensor:
-        return self.__class__(self.child.swapaxes(axis1=axis1, axis2=axis2))
+        return self.__class__(self.child.swapaxes(axis1, axis2))
 
     # ndarray.put(indices, values, mode='raise')
     def put(

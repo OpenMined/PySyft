@@ -41,7 +41,7 @@ def test_copy(get_clients) -> None:
     exp_res = mpc_tensor.reconstruct()
 
     # we cannot check id for copy as the values are in different locations
-    assert (res == exp_res.child).all()
+    assert (res == exp_res).all()
 
 
 @pytest.mark.smpc

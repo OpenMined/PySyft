@@ -44,6 +44,7 @@ METHODS_FORWARD_ALL_SHARES = {
     "squeeze",
     "swapaxes",
     "sum",
+    "__pos__",
 }
 INPLACE_OPS = {
     "resize",
