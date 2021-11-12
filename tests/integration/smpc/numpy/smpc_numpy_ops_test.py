@@ -290,7 +290,7 @@ def test_choose(get_clients) -> None:
     choices = [[12, -27, -32], [78, 98, 24], [25, 37, 27]]
     remote_value = value.send(clients[0])
 
-    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(7,))
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3,))
 
     res = mpc_tensor.choose(choices)
     res.block_with_timeout(secs=20)
