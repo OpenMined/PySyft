@@ -45,6 +45,9 @@ METHODS_FORWARD_ALL_SHARES = {
     "swapaxes",
     "sum",
     "__pos__",
+    "__neg__",
+    "take",
+    "choose",
 }
 INPLACE_OPS = {
     "resize",

@@ -8,6 +8,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple as TypeTuple
 from typing import Type
 from typing import Union
@@ -518,9 +519,35 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     # numpy.take(a, indices, axis=None, out=None, mode='raise')
     def take(
-        self, indices: Optional[Union[int, TypeTuple[int, ...]]] = None
+        self,
+        indices: Union[int, TypeTuple[int, ...], np.ndarray],
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        mode: Optional[str] = "raise",
     ) -> PassthroughTensor:
-        return self.__class__(self.child.take(indices=indices))
+        return self.__class__(
+            self.child.take(
+                indices,
+                axis=axis,
+                out=out,
+                mode=mode,
+            )
+        )
+
+    # numpy.choose(a, choices, out=None, mode='raise')
+    def choose(
+        self,
+        choices: Sequence[Union[PassthroughTensor, np.ndarray]],
+        out: Optional[np.ndarray] = None,
+        mode: Optional[str] = "raise",
+    ) -> PassthroughTensor:
+        return self.__class__(
+            self.child.choose(
+                choices,
+                out=out,
+                mode=mode,
+            )
+        )
 
     def astype(self, np_type) -> PassthroughTensor:
         return self.__class__(self.child.astype(np_type))

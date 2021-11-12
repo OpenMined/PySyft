@@ -245,3 +245,57 @@ def test_put(get_clients) -> None:
     exp_res = value  # inplace ops
 
     assert (res == exp_res.child).all()
+
+
+@pytest.mark.smpc
+def test_neg(get_clients) -> None:
+    clients = get_clients(2)
+    value = Tensor(np.array([[-5, 2], [-3, 7]], dtype=np.int32))
+
+    remote_value = value.send(clients[0])
+
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 2))
+
+    res = -mpc_tensor
+    res.block_with_timeout(secs=20)
+    res = res.reconstruct()
+
+    exp_res = -value
+
+    assert (res == exp_res.child).all()
+
+
+@pytest.mark.smpc
+def test_take(get_clients) -> None:
+    clients = get_clients(2)
+    value = Tensor(np.array([-5, 2, -3, 7, 132, 54, 27], dtype=np.int32))
+
+    remote_value = value.send(clients[0])
+
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(7,))
+
+    res = mpc_tensor.take([5, 1, 6])
+    res.block_with_timeout(secs=20)
+    res = res.reconstruct()
+
+    exp_res = value.take([5, 1, 6])
+
+    assert (res == exp_res.child).all()
+
+
+@pytest.mark.smpc
+def test_choose(get_clients) -> None:
+    clients = get_clients(2)
+    value = Tensor(np.array([2, 0, 1], dtype=np.int32))
+    choices = [[12, -27, -32], [78, 98, 24], [25, 37, 27]]
+    remote_value = value.send(clients[0])
+
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(7,))
+
+    res = mpc_tensor.choose(choices)
+    res.block_with_timeout(secs=20)
+    res = res.reconstruct()
+
+    exp_res = value.choose(choices)
+
+    assert (res == exp_res.child).all()
