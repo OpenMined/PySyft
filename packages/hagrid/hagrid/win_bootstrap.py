@@ -5,8 +5,10 @@ from typing import Callable
 from typing import List
 
 # one liner to use bootstrap script:
-# CMD: curl https://raw.githubusercontent.com/madhavajay/PySyft/madhava/win_bootstrap/packages/hagrid/hagrid/win_bootstrap.py | python # noqa
-# PS: $r = Invoke-WebRequest "https://raw.githubusercontent.com/madhavajay/PySyft/madhava/win_bootstrap/packages/hagrid/hagrid/win_bootstrap.py" -UseBasicParsing; echo $r.Content | python # noqa
+# CMD: curl https://raw.githubusercontent.com/madhavajay/PySyft/madhava/win_bootstrap/packages/hagrid/hagrid/win_bootstrap.py > win_bootstrap.py && python win_bootstrap.py # noqa
+# Powershell is complaining about a utf-8 issue we need to fix, could be related to a
+# bug with long lines in utf-8
+# PS: $r = Invoke-WebRequest "https://raw.githubusercontent.com/madhavajay/PySyft/madhava/win_bootstrap/packages/hagrid/hagrid/win_bootstrap.py" -UseBasicParsing; echo $r.Content > win_bootstrap.py; python win_bootstrap.py # noqa
 
 
 class Requirement:
@@ -23,9 +25,12 @@ class Requirement:
 
 
 install_choco_pwsh = """
-Start-Process PowerShell -Wait -Verb RunAs -ArgumentList "Set-ExecutionPolicy Bypass -Scope Process -Force;
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.ServicePointManager]::SecurityProtocol -bor 3072;
-Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'));"
+Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://community.chocolatey.org/install.ps1'));
+"""
+
+install_wsl2_pwsh = """
+wsl --update; wsl --shutdown; wsl --set-default-version 2; wsl --install -d Ubuntu;
 """
 
 # add this to block powershell from existing for debugging
@@ -138,13 +143,6 @@ requirements.append(
 )
 requirements.append(
     Requirement(
-        full_name="Ubuntu 20.04 WSL2",
-        choco_name="wsl-ubuntu-2004",
-        detect=exe("ubuntu2004.exe"),
-    )
-)
-requirements.append(
-    Requirement(
         full_name="Docker Desktop",
         choco_name="docker-desktop",
         detect=exe("docker.exe"),
@@ -152,20 +150,32 @@ requirements.append(
 )
 
 
-def install_choco() -> None:
+def install_elevated_powershell(full_name: str, powershell_cmd: str) -> None:
     try:
         input(
-            "\nInstalling Chocolatey requires Administrator.\n"
+            f"\nInstalling {full_name} requires Administrator.\n"
             "When the UAC dialogue appears click Yes on the left.\n\n"
             "Press enter to start..."
         )
-        powershell_cmds = ["-command", install_choco_pwsh]
+        powershell_cmds = ["-command", powershell_cmd]
         output = subprocess.run(
             ["powershell.exe"] + powershell_cmds, capture_output=True
         )
         _ = output.stdout.decode("utf-8")
     except Exception as e:
         print("failed", e)
+
+
+def install_choco() -> None:
+    return install_elevated_powershell(
+        full_name="Chocolatey", powershell_cmd=make_admin_cmd(install_choco_pwsh)
+    )
+
+
+def install_wsl2() -> None:
+    return install_elevated_powershell(
+        full_name="WSL2", powershell_cmd=make_admin_cmd(install_wsl2_pwsh)
+    )
 
 
 def install_deps(requirements: List[Requirement]) -> None:
@@ -219,10 +229,13 @@ def main() -> None:
     print("")
     desired = []
     choco_required = False
+    wsl2_required = False
     for dep in missing_deps:
         if ask_install(dep):
             if dep.choco_name == "choco":
                 choco_required = True
+            elif dep.choco_name == "wsl2":
+                wsl2_required = True
             else:
                 desired.append(dep)
         elif dep.choco_name == "choco":
@@ -232,6 +245,9 @@ def main() -> None:
     if choco_required:
         install_choco()
 
+    if wsl2_required:
+        install_wsl2()
+
     if len(desired) > 0:
         install_deps(desired)
 
@@ -240,7 +256,7 @@ def main() -> None:
     if len(still_missing) > 0:
         print("We were still unable to find the following dependencies:")
         print("-----------------------------------")
-        for dep in missing_deps:
+        for dep in still_missing:
             print(f"{dep.full_name}")
         print("Please try again.")
     else:
