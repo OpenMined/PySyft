@@ -5,10 +5,10 @@ from typing import Callable
 from typing import List
 
 # one liner to use bootstrap script:
-# CMD: curl https://raw.githubusercontent.com/madhavajay/PySyft/madhava/win_bootstrap/packages/hagrid/hagrid/win_bootstrap.py > win_bootstrap.py && python win_bootstrap.py # noqa
+# CMD: curl https://raw.githubusercontent.com/OpenMined/PySyft/dev/packages/hagrid/hagrid/win_bootstrap.py > win_bootstrap.py && python win_bootstrap.py # noqa
 # Powershell is complaining about a utf-8 issue we need to fix, could be related to a
 # bug with long lines in utf-8
-# PS: $r = Invoke-WebRequest "https://raw.githubusercontent.com/madhavajay/PySyft/madhava/win_bootstrap/packages/hagrid/hagrid/win_bootstrap.py" -UseBasicParsing; echo $r.Content > win_bootstrap.py; python win_bootstrap.py # noqa
+# PS: $r = Invoke-WebRequest "https://raw.githubusercontent.com/OpenMined/PySyft/dev/packages/hagrid/hagrid/win_bootstrap.py" -UseBasicParsing; echo $r.Content > win_bootstrap.py; python win_bootstrap.py # noqa
 
 
 class Requirement:
