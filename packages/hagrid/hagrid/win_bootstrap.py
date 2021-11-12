@@ -1,4 +1,4 @@
-﻿# stdlib
+# stdlib
 import subprocess
 from typing import Callable
 from typing import List
