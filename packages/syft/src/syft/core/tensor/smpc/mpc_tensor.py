@@ -44,6 +44,10 @@ METHODS_FORWARD_ALL_SHARES = {
     "squeeze",
     "swapaxes",
     "sum",
+    "__pos__",
+    "__neg__",
+    "take",
+    "choose",
 }
 INPLACE_OPS = {
     "resize",
@@ -456,13 +460,14 @@ class MPCTensor(PassthroughTensor):
                 new_share = method(*args, **kwargs)
                 shares.append(new_share)
 
-                dummy_res = np.empty(_self.mpc_shape)
+                # TODO: generalize type after fixed precision
+                dummy_res = np.random.randint(
+                    _self.mpc_shape[0], size=_self.mpc_shape, dtype=np.int32  # type: ignore
+                )
                 if method_name not in INPLACE_OPS:
-                    dummy_res = getattr(np.empty(_self.mpc_shape), method_name)(
-                        *args, **kwargs
-                    )
+                    dummy_res = getattr(dummy_res, method_name)(*args, **kwargs)
                 else:
-                    getattr(np.empty(_self.mpc_shape), method_name)(*args, **kwargs)
+                    getattr(dummy_res, method_name)(*args, **kwargs)
 
                 new_shape = dummy_res.shape
             res = MPCTensor(parties=_self.parties, shares=shares, shape=new_shape)
@@ -736,23 +741,21 @@ class MPCTensor(PassthroughTensor):
     def lt(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.sanity_checks(self, y)
-        mpc_res = spdz.lt_master(self, y, "mul")
+        mpc_res = spdz.lt_master(self, y, "mul")  # type: ignore
 
         return mpc_res
 
     def gt(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.sanity_checks(self, y)
-        mpc_res = MPCTensor.lt(y, self)
+        mpc_res = MPCTensor.lt(y, self)  # type: ignore
 
         return mpc_res
 
     def ge(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.sanity_checks(self, y)
+
         mpc_res = 1 - MPCTensor.lt(self, y)
 
         return mpc_res  # type: ignore
@@ -760,15 +763,14 @@ class MPCTensor(PassthroughTensor):
     def le(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.sanity_checks(self, y)
-        mpc_res = 1 - MPCTensor.lt(y, self)
+        mpc_res = 1 - MPCTensor.lt(y, self)  # type: ignore
 
         return mpc_res  # type: ignore
 
     def eq(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.sanity_checks(self, y)
+        # TODO: Should make two comparisons parallel
         mpc_res = MPCTensor.le(self, y) - MPCTensor.lt(self, y)
 
         return mpc_res
@@ -776,7 +778,6 @@ class MPCTensor(PassthroughTensor):
     def ne(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        self, y = MPCTensor.sanity_checks(self, y)
         mpc_res = 1 - MPCTensor.eq(self, y)
 
         return mpc_res  # type: ignore
