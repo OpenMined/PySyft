@@ -4,8 +4,6 @@ services:
     # ports:
     #   - "${DOMAIN_PORT?80}:80"
     #   - "8080"
-    volumes:
-      - ./traefik:/etc/traefik
     command:
       # Enable Docker in Traefik, so that it reads labels from Docker services
       - --providers.docker
@@ -25,11 +23,6 @@ services:
       # Enable the Dashboard and API in insecure mode for local development
       - --api.insecure=true
       - --api.dashboard=true
-      #
-      - --providers.file.directory=/etc/traefik/dynamic-configurations
-      - --providers.file.watch=true
-      - --entryPoints.web.address=:80
-      - --entryPoints.websecure.address=:443
     labels:
       - traefik.enable=true
       - traefik.http.routers.${STACK_NAME?Variable not set}-traefik-public-http.rule=Host(`${DOMAIN?Variable not set}`)
@@ -77,9 +70,6 @@ services:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this wont match /api/v1/syft/stream because of length
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this wont match /api/v1/syft/stream because of length
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.entrypoints=websecure
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-https.tls=true
       - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8001
     network_mode: service:proxy
 
@@ -111,9 +101,6 @@ services:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
       - traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream-http.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this only matches /api/v1/syft/stream because of length
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream-https.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this only matches /api/v1/syft/stream because of length
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream-https.entrypoints=websecure
-      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream-https.tls=true
       - traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=8011
     network_mode: service:proxy
 
@@ -156,9 +143,6 @@ services:
       - traefik.enable=true
       - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
       - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=PathPrefix(`/`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.rule=PathPrefix(`/`)
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.entrypoints=websecure
-      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-https.tls=true
       - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
 
   tailscale:
@@ -180,7 +164,6 @@ services:
       - sys_module
     ports:
       - "${DOMAIN_PORT?80}:80"
-      - "443:443"
       - "41641/udp"
       - "4000"
     depends_on:
