@@ -30,7 +30,7 @@ Invoke-Expression ((New-Object System.Net.WebClient).DownloadString('https://com
 """
 
 install_wsl2_pwsh = """
-wsl --update; wsl --shutdown; wsl --set-default-version 2; wsl --install -d Ubuntu;
+wsl --update; wsl --shutdown; wsl --set-default-version 2; wsl --install -d Ubuntu; wsl --setdefault Ubuntu;
 """
 
 # add this to block powershell from existing for debugging
@@ -115,6 +115,13 @@ def detect_wsl2(req: Requirement) -> bool:
 requirements = []
 requirements.append(
     Requirement(
+        full_name="Windows Subsystem for Linux 2",
+        choco_name="wsl2",
+        detect=detect_wsl2,
+    )
+)
+requirements.append(
+    Requirement(
         full_name="Chocolatey Package Manager",
         choco_name="choco",
         detect=exe("choco.exe"),
@@ -132,13 +139,6 @@ requirements.append(
         full_name="Git Version Control",
         choco_name="git",
         detect=exe("git.exe"),
-    )
-)
-requirements.append(
-    Requirement(
-        full_name="Windows Subsystem for Linux 2",
-        choco_name="wsl2",
-        detect=detect_wsl2,
     )
 )
 requirements.append(
@@ -242,11 +242,11 @@ def main() -> None:
             print("You must install Chocolatey to install other dependencies")
             return
 
-    if choco_required:
-        install_choco()
-
     if wsl2_required:
         install_wsl2()
+
+    if choco_required:
+        install_choco()
 
     if len(desired) > 0:
         install_deps(desired)
