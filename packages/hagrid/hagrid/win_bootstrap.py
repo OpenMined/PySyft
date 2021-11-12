@@ -1,3 +1,4 @@
+# coding=utf-8
 # stdlib
 import subprocess
 from typing import Callable
