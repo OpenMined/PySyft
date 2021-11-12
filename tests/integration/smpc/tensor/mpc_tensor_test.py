@@ -25,7 +25,6 @@ def test_secret_sharing(get_clients) -> None:
 
     mpc_tensor = MPCTensor(secret=value_secret, shape=(2, 5), parties=clients)
 
-    # time.sleep(10)  # TODO: should remove after polling get.
     mpc_tensor.block_with_timeout(secs=20)
 
     assert len(mpc_tensor.child) == len(clients)
@@ -54,7 +53,6 @@ def test_mpc_private_private_op(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res_ptr = op(mpc_tensor_1, mpc_tensor_2)
 
-    # time.sleep(40)  # TODO: should remove after polling get.
     res_ptr.block_with_timeout(secs=40)
 
     res = res_ptr.reconstruct()
@@ -79,7 +77,6 @@ def test_mpc_private_public_op(get_clients, op_str: str) -> None:
 
     res = op(mpc_tensor_1, public_value)
     res.block_with_timeout(secs=20)
-    # time.sleep(20)  # TODO: should remove after polling get.
 
     res = res.reconstruct()
     expected = op(value_1, public_value)
@@ -104,7 +101,6 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
     op = getattr(operator, op_str)
     res = op(mpc_tensor_1, value_2)
     res.block_with_timeout(secs=40)
-    # time.sleep(40)  # TODO: should remove after polling get.
 
     res = res.reconstruct()
 
@@ -131,8 +127,8 @@ def test_mpc_forward_methods(
     op = getattr(value, method_str)
 
     res = op_mpc(**kwargs)
+
     res.block_with_timeout(secs=20)
-    # time.sleep(20)  # TODO: should remove after polling get.
     res = res.reconstruct()
 
     expected = op(**kwargs)

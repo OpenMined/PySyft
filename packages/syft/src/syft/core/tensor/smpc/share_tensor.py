@@ -46,6 +46,10 @@ METHODS_FORWARD_ALL_SHARES = {
     "reshape",
     "squeeze",
     "swapaxes",
+    "__pos__",
+    "__neg__",
+    "take",
+    "choose",
 }
 INPLACE_OPS = {"resize", "put"}
 RING_SIZE_TO_OP = {

@@ -252,6 +252,14 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
         ),
         (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.__neg__",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.take",
+            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+        ),
+        (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.crypto_store",
             "syft.core.smpc.store.CryptoStore",
         ),
