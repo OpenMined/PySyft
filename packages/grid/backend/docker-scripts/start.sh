@@ -1,5 +1,6 @@
 #! /usr/bin/env sh
 set -e
+python3 -c "print('---Monkey Patching: Gevent---\n');from gevent import monkey;monkey.patch_all()"
 
 if [ -f /app/grid/main.py ]; then
     DEFAULT_MODULE_NAME=grid.main
@@ -31,6 +32,8 @@ else
 fi
 
 # Start Gunicorn
+# TODO: gunicorn crashes when running in k8s with asyncio issues while uvicorn from
+# start-reload.sh seems okay
 exec gunicorn -k "$WORKER_CLASS" -c "$GUNICORN_CONF" "$APP_MODULE"
 
 ## fetched from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/start.sh

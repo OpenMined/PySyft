@@ -1,4 +1,5 @@
 # stdlib
+from datetime import datetime
 from typing import Optional
 from typing import Union
 
@@ -13,6 +14,7 @@ class BaseUser(BaseModel):
     email: Optional[EmailStr]
     name: Optional[str]
     role: Union[Optional[int], Optional[str]]  # TODO: Should be int in SyftUser
+    daa_pdf: Optional[bytes] = b""
     budget: Optional[float]
 
     class Config:
@@ -21,20 +23,40 @@ class BaseUser(BaseModel):
 
 class UserCreate(BaseUser):
     email: EmailStr
-    role: str
+    role: str = "Data Scientist"
     name: str
     password: str
+    institution: Optional[str]
+    website: Optional[str]
     budget: float
+
+
+class ApplicantStatus(BaseModel):
+    status: str
 
 
 class UserUpdate(BaseUser):
     password: Optional[str]
+    budget: Optional[float]
+    institution: Optional[str]
+    website: Optional[str]
+
+
+class UserCandidate(BaseUser):
+    email: EmailStr
+    status: str = "pending"
+    name: str
 
 
 class User(BaseUser):
     id: int
     role: Union[int, str]  # TODO: This should be int. Perhaps add role_name instead?
     budget_spent: Optional[float]
+    budget: Optional[float]
+    institution: Optional[str]
+    website: Optional[str]
+    added_by: Optional[str]
+    created_at: Union[Optional[str], Optional[datetime]]
 
 
 class UserPrivate(User):

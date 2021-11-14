@@ -68,20 +68,12 @@
     - net-tools
     - ifupdown
     - python3-venv
+    - cron
 
 - name: Upgrade pip and some packages
   pip:
     name: pip
     extra_args: --upgrade
-
-- name: Install pipx
-  pip:
-    name: pipx
-    extra_args: --upgrade
-
-- name: Add .local/bin to PATH
-  shell: "runuser -l {{ om_user }} -c 'pipx ensurepath'"
-  become: yes
 
 - name: Check ctop exists
   stat:

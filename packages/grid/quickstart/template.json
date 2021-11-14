@@ -217,7 +217,10 @@
             }
           },
           "imageReference": {
-            "id": "/subscriptions/767334bd-95eb-473a-a74c-d5b75b5b5198/resourceGroups/openmined-images/providers/Microsoft.Compute/galleries/openmined.images/images/openmined-domain/versions/0.6.0"
+            "publisher": "madhavajay1632269232059",
+            "offer": "openmined_mj_grid_domain_ubuntu_1",
+            "sku": "domain_1",
+            "version": "latest"
           }
         },
         "networkProfile": {
@@ -240,6 +243,11 @@
             "enabled": true
           }
         }
+      },
+      "plan": {
+        "name": "domain_1",
+        "publisher": "madhavajay1632269232059",
+        "product": "openmined_mj_grid_domain_ubuntu_1"
       },
       "tags": {
         "node_type": "domain",
