@@ -18,7 +18,7 @@ from nacl.signing import VerifyKey
 import numpy as np
 
 # relative
-from ..common.serde.recursive import RecursiveSerde
+from ..common.serde.serializable import serializable
 
 
 # methods serialize/deserialize np.int64 number
@@ -61,7 +61,8 @@ def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
 
 
 # Example of a specific mechanism that inherits the Mechanism class
-class iDPGaussianMechanism(Mechanism, RecursiveSerde):
+@serializable(recursive_serde=True)
+class iDPGaussianMechanism(Mechanism):
     __attr_allowlist__ = [
         "name",
         "params",
@@ -87,7 +88,7 @@ class iDPGaussianMechanism(Mechanism, RecursiveSerde):
         sigma: float,
         squared_l2_norm: float,
         squared_l2_norm_upper_bound: float,
-        L: np.float,
+        L: float,
         entity_name: str,
         name: str = "Gaussian",
         RDP_off: bool = False,

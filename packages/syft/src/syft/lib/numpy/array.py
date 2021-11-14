@@ -4,11 +4,11 @@ import pyarrow as pa
 import torch
 
 # relative
+from ...core.common.serde.serializable import serializable
 from ...experimental_flags import flags
-from ...generate_wrapper import GenerateWrapper
-from ...lib.torch.tensor_util import tensor_deserializer
-from ...lib.torch.tensor_util import tensor_serializer
 from ...proto.lib.numpy.array_pb2 import NumpyProto
+from ..torch.tensor_util import tensor_deserializer
+from ..torch.tensor_util import tensor_serializer
 
 SUPPORTED_BOOL_TYPES = [np.bool_]
 SUPPORTED_INT_TYPES = [
@@ -63,7 +63,11 @@ def protobuf_serialize(obj: np.ndarray) -> NumpyProto:
         # same original unsigned values on the other side
         obj = obj.astype(DTYPE_REFACTOR[original_dtype])
 
-    tensor = torch.from_numpy(obj).clone()
+    # Cloning seems to cause the worker to freeze if the array is larger than around
+    # 800k in data and since we are serializing it immediately afterwards I don't
+    # think its needed anyway
+    # tensor = torch.from_numpy(obj).clone()
+    tensor = torch.from_numpy(obj)
     tensor_bytes = tensor_serializer(tensor)
     dtype = original_dtype.name
     return NumpyProto(proto_data=tensor_bytes, dtype=dtype)
@@ -92,7 +96,7 @@ def deserialize_numpy_array(proto: NumpyProto) -> np.ndarray:
         return protobuf_deserialize(proto)
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=np.ndarray,
     import_path="numpy.ndarray",
     protobuf_scheme=NumpyProto,

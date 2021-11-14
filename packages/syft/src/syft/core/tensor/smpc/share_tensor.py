@@ -2,9 +2,13 @@
 from __future__ import annotations
 
 # stdlib
+import functools
 from functools import lru_cache
 import operator
 from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -15,66 +19,199 @@ import numpy as np
 import torch
 
 # syft absolute
-from syft.core.common.serde.deserialize import _deserialize as deserialize
-from syft.core.common.serde.serializable import Serializable
-from syft.core.common.serde.serializable import bind_protobuf
-from syft.core.common.serde.serialize import _serialize as serialize
-from syft.core.tensor.passthrough import PassthroughTensor
-from syft.proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+# absolute
+import syft as sy
+
+# relative
+from . import utils
+from .... import logger
+from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
+from ...smpc.store.crypto_store import CryptoStore
+from ..passthrough import PassthroughTensor  # type: ignore
+from .party import Party
+
+METHODS_FORWARD_ALL_SHARES = {
+    "repeat",
+    "copy",
+    "diagonal",
+    "flatten",
+    "transpose",
+    "partition",
+    "resize",
+    "ravel",
+    "compress",
+    "reshape",
+    "squeeze",
+    "swapaxes",
+    "__pos__",
+    "__neg__",
+    "take",
+    "choose",
+}
+INPLACE_OPS = {"resize", "put"}
+RING_SIZE_TO_OP = {
+    2: {
+        "add": operator.xor,
+        "sub": operator.xor,
+        "mul": operator.and_,
+        "lt": operator.lt,
+        "gt": operator.gt,
+        "ge": operator.ge,
+        "le": operator.le,
+        "eq": operator.eq,
+        "ne": operator.ne,
+    },
+    2
+    ** 32: {
+        "add": operator.add,
+        "sub": operator.sub,
+        "mul": operator.mul,
+        "lt": operator.lt,
+        "gt": operator.gt,
+        "ge": operator.ge,
+        "le": operator.le,
+        "eq": operator.eq,
+        "ne": operator.ne,
+    },
+}
+
+CACHE_CLIENTS: Dict[Party, Any] = {}
 
 
-@bind_protobuf
-class ShareTensor(PassthroughTensor, Serializable):
+def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
+    ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
+
+
+@serializable()
+class ShareTensor(PassthroughTensor):
+    crypto_store = CryptoStore()
+
+    __slots__ = (
+        "rank",
+        "ring_size",
+        "clients",  # clients connections
+        "min_value",
+        "max_value",
+        "generator_przs",
+        # Only ShareTensors with seed_przs could be sent over the wire
+        "seed_przs",
+        "parties_info",
+        "nr_parties",
+    )
+
     def __init__(
         self,
         rank: int,
-        nr_parties: int,
-        ring_size: int = 2 ** 64,
+        parties_info: List[Party],
+        ring_size: int,
+        seed_przs: int = 42,
+        clients: Optional[List[Any]] = None,
         value: Optional[Any] = None,
+        init_clients: bool = False,
     ) -> None:
+        # TODO: Ring size needs to be changed to 2^64 (or other specific sizes)
         self.rank = rank
         self.ring_size = ring_size
-        self.nr_parties = nr_parties
+        self.nr_parties = len(parties_info)
+        self.parties_info = parties_info
+        self.clients = []
+        if clients is not None:
+            self.clients = clients
+        elif init_clients:  # type: ignore
+            self.clients = ShareTensor.login_clients(parties_info)
+
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
         )
+
+        # This should be set only in the deserializer
+        self.generator_przs = None
+        self.seed_przs = seed_przs
         super().__init__(value)
 
-    def flatten(self) -> ShareTensor:
-        return ShareTensor(
-            rank=self.rank,
-            nr_parties=self.nr_parties,
-            ring_size=self.ring_size,
-            value=self.child.flatten(),
-        )
+    @staticmethod
+    def login_clients(parties_info: List[Party]) -> Any:
+        clients = []
+        for party_info in parties_info:
+            party_info.url = party_info.url.replace("localhost", "docker-host")
+            client = CACHE_CLIENTS.get(party_info, None)
+            if client is None:
+                # default cache to true, here to prevent multiple logins
+                # due to gevent monkey patching, context switch is done during
+                # during socket connection initialization.
+                CACHE_CLIENTS[party_info] = True
+                # TODO: refactor to use a guest account
+                client = sy.login(  # nosec
+                    url=party_info.url,
+                    email="info@openmined.org",
+                    password="changethis",
+                    port=party_info.port,
+                    verbose=False,
+                )
+                base_url = client.routes[0].connection.base_url
+                client.routes[0].connection.base_url = base_url.replace(  # type: ignore
+                    "localhost", "docker-host"
+                )
+                CACHE_CLIENTS[party_info] = client
+            clients.append(client)
+        return clients
 
     def __getitem__(self, item: Union[str, int, slice]) -> ShareTensor:
         return ShareTensor(
             rank=self.rank,
-            nr_parties=self.nr_parties,
+            parties_info=self.parties_info,
             ring_size=self.ring_size,
             value=self.child[item],
-        )
-
-    def reshape(self, *args: Tuple[Any, ...], **kwargs: Any) -> ShareTensor:
-        return ShareTensor(
-            rank=self.rank,
-            nr_parties=self.nr_parties,
-            ring_size=self.ring_size,
-            value=self.child.reshape(*args, **kwargs),
+            clients=self.clients,
         )
 
     def copy_tensor(self) -> ShareTensor:
         return ShareTensor(
-            rank=self.rank, nr_parties=self.nr_parties, ring_size=self.ring_size
+            value=self.child,
+            rank=self.rank,
+            parties_info=self.parties_info,
+            ring_size=self.ring_size,
+            seed_przs=self.seed_przs,
+            clients=self.clients,
         )
 
     @staticmethod
     @lru_cache(32)
-    def compute_min_max_from_ring(ring_size: int = 2 ** 64) -> Tuple[int, int]:
-        min_value = (-ring_size) // 2
-        max_value = (ring_size - 1) // 2
+    def compute_min_max_from_ring(ring_size: int = 2 ** 32) -> Tuple[int, int]:
+        if ring_size == 2:
+            min_value, max_value = 0, 1
+        else:
+            min_value = (-ring_size) // 2
+            max_value = (ring_size) // 2 - 1
         return min_value, max_value
+
+    @staticmethod
+    @lru_cache(maxsize=None)
+    def get_op(ring_size: int, op_str: str) -> Callable[..., Any]:
+        """Returns method attribute based on ring_size and op_str.
+        Args:
+            ring_size (int): Ring size
+            op_str (str): Operation string.
+        Returns:
+            op (Callable[...,Any]): The operation method for the op_str.
+        Raises:
+            ValueError : If invalid ring size or op_str is given as input.
+        """
+        ops = RING_SIZE_TO_OP.get(ring_size, None)
+
+        if ops is None:
+            raise ValueError(f"Do not have operations for ring size {ring_size}")
+
+        op = ops.get(op_str, None)
+        if op is None:
+            raise ValueError(
+                f"Operator {op_str} does not exist for ring size {ring_size}"
+            )
+
+        return op
 
     """ TODO: Remove this -- we would use generate_przs since the scenario we are testing is that
     the secret is remotly
@@ -120,37 +257,87 @@ class ShareTensor(PassthroughTensor, Serializable):
 
     @staticmethod
     def generate_przs(
-        value: Optional[Any],
-        shape: Tuple[int],
+        value: Any,
+        shape: Tuple[int, ...],
         rank: int,
-        nr_parties: int,
-        seed_shares: int,
+        parties_info: List[Party],
+        ring_size: int = 2 ** 32,
+        seed_przs: Optional[int] = None,
+        generator_przs: Optional[Any] = None,
+        init_clients: bool = True,
     ) -> "ShareTensor":
 
-        # syft absolute
-        from syft.core.tensor.tensor import Tensor
+        nr_parties = len(parties_info)
+
+        # Try:
+        # 1. First get numpy type if secret is numpy and obtain ring size from there
+        # 2. If not get the type from the ring size
+
+        numpy_type = None
+        ring_size_final = None
+
+        ring_size_from_type = utils.TYPE_TO_RING_SIZE.get(
+            getattr(value, "dtype", None), None
+        )
+        if ring_size_from_type is None:
+            logger.warning("Could not get ring size from {value}")
+        else:
+            ring_size_final = ring_size_from_type
+            numpy_type = value.dtype
+
+        if numpy_type is None:
+            numpy_type = utils.RING_SIZE_TO_TYPE.get(ring_size, None)
+            ring_size_final = ring_size
+
+        if numpy_type is None:
+            raise ValueError(f"Ring size {ring_size} not known how to be treated")
+
+        # relative
+        from ..tensor import Tensor
+
+        if (seed_przs is None) == (generator_przs is None):
+            raise ValueError("Only seed_przs or generator should be populated")
 
         if value is None:
-            value = Tensor(np.zeros(shape, dtype=np.int32))  # TODO: change to np.int64
+            value = Tensor(np.zeros(shape, dtype=numpy_type))
 
         # TODO: Sending the seed and having each party generate the shares is not safe
         # Since the parties would know some of the other parties shares (this might not impose a risk
         # when shares are not sent between parties -- like private addition/subtraction, but it might
         # impose for multiplication
         # The secret holder should generate the shares and send them to the other parties
-        generator_shares = np.random.default_rng(seed_shares)
+        if generator_przs:
+            generator_shares = generator_przs
+        else:
+            generator_shares = np.random.default_rng(seed_przs)
 
-        share = value.child
-        if not isinstance(share, ShareTensor):
-            share = ShareTensor(value=share, rank=rank, nr_parties=nr_parties)
+        if isinstance(value.child, ShareTensor):
+            value = value.child
 
+        share = ShareTensor(
+            value=value.child,
+            rank=rank,
+            parties_info=parties_info,
+            seed_przs=seed_przs,  # type: ignore #TODO:Inspect as we could pass none.
+            init_clients=init_clients,
+            ring_size=ring_size_final,  # type: ignore
+        )
+
+        share.generator_przs = generator_shares
         shares = [
             generator_shares.integers(
-                low=share.min_value, high=share.max_value, size=shape
+                low=share.min_value,
+                high=share.max_value,
+                size=shape,
+                endpoint=True,
+                dtype=numpy_type,
             )
             for _ in range(nr_parties)
         ]
-        share.child += shares[rank] - shares[(rank + 1) % nr_parties]
+
+        op = ShareTensor.get_op(ring_size_final, "sub")
+        przs_share = op(shares[rank], shares[(rank + 1) % nr_parties])
+        share.child = op(share.child, przs_share)
 
         return share
 
@@ -159,9 +346,10 @@ class ShareTensor(PassthroughTensor, Serializable):
         value: Optional[Any],
         shape: Tuple[int],
         rank: int,
-        nr_parties: int,
-        seed_shares: int,
+        parties_info: List[Party],
+        seed_przs: int,
         share_wrapper: Any,
+        ring_size: int = 2 ** 32,
     ) -> PassthroughTensor:
 
         if value is not None:
@@ -169,16 +357,18 @@ class ShareTensor(PassthroughTensor, Serializable):
                 value=value.child,
                 shape=shape,
                 rank=rank,
-                nr_parties=nr_parties,
-                seed_shares=seed_shares,
+                parties_info=parties_info,
+                seed_przs=seed_przs,
+                ring_size=ring_size,
             )
         else:
             share = ShareTensor.generate_przs(
                 value=value,
                 shape=shape,
                 rank=rank,
-                nr_parties=nr_parties,
-                seed_shares=seed_shares,
+                parties_info=parties_info,
+                seed_przs=seed_przs,
+                ring_size=ring_size,
             )
 
         share_wrapper.child.child = share
@@ -200,8 +390,13 @@ class ShareTensor(PassthroughTensor, Serializable):
         if isinstance(share, float):
             raise ValueError("Type float not supported yet!")
 
-        if isinstance(share, np.ndarray) and not np.issubdtype(share.dtype, np.integer):
-            raise ValueError(f"NPArray should have type int, but found {share.dtype}")
+        if isinstance(share, np.ndarray) and (
+            not np.issubdtype(share.dtype, np.integer)
+            and share.dtype != np.dtype("bool")
+        ):
+            raise ValueError(
+                f"NPArray should have type int or bool, but found {share.dtype}"
+            )
 
         if isinstance(share, torch.Tensor) and torch.is_floating_point(share):
             raise ValueError("Torch tensor should have type int, but found float")
@@ -219,12 +414,21 @@ class ShareTensor(PassthroughTensor, Serializable):
             ShareTensor: Result of the operation.
         """
 
-        op = getattr(operator, op_str)
+        op = ShareTensor.get_op(self.ring_size, op_str)
+        numpy_type = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
+        if numpy_type is None:
+            raise ValueError(f"Do not know numpy type for ring size {self.ring_size}")
+
+        print("=====================================================")
+        print("OP", op, numpy_type, self.ring_size)
+        print("====================================================")
+
         if isinstance(y, ShareTensor):
+            utils.get_ring_size(self.ring_size, y.ring_size)
             value = op(self.child, y.child)
         else:
             # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
-            value = op(self.child, np.array(y, np.int32))  # TODO: change to np.int64
+            value = op(self.child, np.array(y, numpy_type))  # TODO: change to np.int64
 
         res = self.copy_tensor()
         res.child = value
@@ -292,9 +496,10 @@ class ShareTensor(PassthroughTensor, Serializable):
         Returns:
             ShareTensor. Result of the operation.
         """
-
-        if isinstance(y, ShareTensor):
-            raise ValueError("Private mul not supported yet")
+        # if isinstance(y, ShareTensor):
+        #     raise ValueError(
+        #         "We should not reach this point for private multiplication. Only public one"
+        #     )
 
         ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "mul")
@@ -311,7 +516,10 @@ class ShareTensor(PassthroughTensor, Serializable):
         Returns:
             ShareTensor: Result of the operation.
         """
-        ShareTensor.sanity_checks(y)
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "matmul")
         return new_share
 
@@ -324,8 +532,145 @@ class ShareTensor(PassthroughTensor, Serializable):
         Returns:
             ShareTensor. Result of the operation.
         """
-        ShareTensor.sanity_checks(y)
-        return y.matmul(self)
+        if isinstance(y, ShareTensor):
+            raise ValueError("Private matmul not supported yet")
+
+        ShareTensor.sanity_check(y)
+        new_share = y.apply_function(self, "matmul")
+        return new_share
+
+    def lt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
+        """Apply the "lt" operation between "y" and "self".
+
+        Args:
+            y (Union[ShareTensor,np.ndarray]): self < y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "lt")
+        return new_share
+
+    def gt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
+        """Apply the "gt" operation between "y" and "self".
+
+        Args:
+            y (Union[ShareTensor,np.ndarray]): self > y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "gt")
+        return new_share
+
+    def ge(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
+        """Apply the "ge" operation between "y" and "self".
+
+        Args:
+            y (Union[ShareTensor,np.ndarray]): self >= y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "ge")
+        return new_share
+
+    def le(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
+        """Apply the "le" operation between "y" and "self".
+
+        Args:
+            y (Union[ShareTensor,np.ndarray]): self <= y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "le")
+        return new_share
+
+    def ne(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
+        """Apply the "ne" operation between "y" and "self".
+
+        Args:
+            y (Union[ShareTensor,np.ndarray]): self != y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
+        ShareTensor.sanity_check(y)
+        new_share = self.apply_function(y, "ne")
+        return new_share
+
+    def bit_decomposition(self) -> "ShareTensor":
+        """Apply the "decomposition" operation on self
+
+        Args:
+            None
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        raise ValueError(
+            "It should not reach this point since we generate SMPCAction for this"
+        )
+
+    def eq(self, other: Any) -> bool:
+        """Equal operator.
+        Check if "self" is equal with another object given a set of
+            attributes to compare.
+        Args:
+            other (Any): Value to compare.
+        Returns:
+            bool: True if equal False if not.
+        """
+        # TODO: Rasswanth: Fix later after the comparison operation
+        # relative
+        # from .... import Tensor
+
+        # if (
+        #     isinstance(self.child, Tensor)
+        #     and isinstance(other.child, Tensor)
+        #     and (self.child != other.child).child.any()  # type: ignore
+        # ):
+        #     return False
+
+        # if (
+        #     isinstance(self.child, np.ndarray)
+        #     and isinstance(other.child, np.ndarray)
+        #     and (self.child != other.child).any()
+        # ):
+        #     return False
+
+        # if self.rank != other.rank:
+        #     return False
+
+        # if self.ring_size != other.ring_size:
+        #     return False
+
+        # if self.nr_parties != other.nr_parties:
+        #     return False
+
+        # return True
+
+        return self.child == other.child
 
     # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
     # def div(
@@ -350,37 +695,109 @@ class ShareTensor(PassthroughTensor, Serializable):
     #     res.tensor = self.tensor // y
     #     return res
 
+    def bit_extraction(self, pos: int = 0) -> ShareTensor:
+        """Extracts the bit at the specified position.
+
+        Args:
+            pos (int): position to extract bit.
+
+        Returns:
+            ShareTensor : extracted bits at specific position.
+
+        Raises:
+            ValueError: If invalid position is provided.
+        """
+        ring_bits = utils.get_nr_bits(self.ring_size)
+        if pos < 0 or pos > ring_bits - 1:
+            raise ValueError(
+                f"Invalid position for bit_extraction: {pos}, must be in range:[0,{ring_bits-1}]"
+            )
+        shape = self.shape
+        numpy_type = utils.RING_SIZE_TO_TYPE[self.ring_size]
+        # logical shift
+        bit_mask = np.ones(shape, dtype=numpy_type) << pos
+        value = self.child & bit_mask
+        value = value.astype(np.bool_)
+        share = self.copy_tensor()
+        share.child = value
+        return share
+
+    @staticmethod
+    def hook_method(__self: ShareTensor, method_name: str) -> Callable[..., Any]:
+        """Hook a framework method.
+
+        Args:
+            method_name (str): method to hook
+
+        Returns:
+            A hooked method
+        """
+
+        def method_all_shares(
+            _self: ShareTensor, *args: List[Any], **kwargs: Dict[Any, Any]
+        ) -> Any:
+
+            share = _self.child
+            if method_name != "resize":
+                method = getattr(share, method_name)
+            else:
+                # Should be modified to remove copy
+                # https://stackoverflow.com/questions/23253144/numpy-the-array-doesnt-have-its-own-data
+                share = share.copy()
+                method = getattr(share, method_name)
+
+            if method_name not in INPLACE_OPS:
+                new_share = method(*args, **kwargs)
+            else:
+                method(*args, **kwargs)
+                new_share = share
+
+            res = _self.copy_tensor()
+            res.child = new_share
+
+            return res
+
+        return functools.partial(method_all_shares, __self)
+
+    def __getattribute__(self, attr_name: str) -> Any:
+        if attr_name in METHODS_FORWARD_ALL_SHARES or attr_name in INPLACE_OPS:
+            return ShareTensor.hook_method(self, attr_name)
+
+        return object.__getattribute__(self, attr_name)
+
     def _object2proto(self) -> ShareTensor_PB:
+        proto_init_kwargs = {
+            "rank": self.rank,
+            "parties_info": [serialize(party) for party in self.parties_info],
+            "seed_przs": self.seed_przs,
+            "ring_size": sy.serialize(self.ring_size, to_bytes=True),
+        }
         if isinstance(self.child, np.ndarray):
-            return ShareTensor_PB(
-                array=serialize(self.child), rank=self.rank, nr_parties=self.nr_parties
-            )
+            proto_init_kwargs["array"] = serialize(self.child)
         elif isinstance(self.child, torch.Tensor):
-            return ShareTensor_PB(
-                array=serialize(np.array(self.child)),
-                rank=self.rank,
-                nr_parties=self.nr_parties,
-            )
+            proto_init_kwargs["array"] = serialize(np.array(self.child))
         else:
-            return ShareTensor_PB(
-                tensor=serialize(self.child), rank=self.rank, nr_parties=self.nr_parties
-            )
+            proto_init_kwargs["tensor"] = serialize(self.child)
+
+        return ShareTensor_PB(**proto_init_kwargs)
 
     @staticmethod
     def _proto2object(proto: ShareTensor_PB) -> "ShareTensor":
+        init_kwargs = {
+            "rank": proto.rank,
+            "parties_info": [deserialize(party) for party in proto.parties_info],
+            "seed_przs": proto.seed_przs,
+            "ring_size": int(sy.deserialize(proto.ring_size, from_bytes=True)),
+        }
         if proto.HasField("tensor"):
-            res = ShareTensor(
-                rank=proto.rank,
-                nr_parties=proto.nr_parties,
-                value=deserialize(proto.tensor),
-            )
+            init_kwargs["value"] = deserialize(proto.tensor)
         else:
-            res = ShareTensor(
-                rank=proto.rank,
-                nr_parties=proto.nr_parties,
-                value=deserialize(proto.array),
-            )
+            init_kwargs["value"] = deserialize(proto.array)
 
+        # init_kwargs["init_clients"] = True
+        res = ShareTensor(**init_kwargs)
+        generator_przs = np.random.default_rng(proto.seed_przs)
+        res.generator_przs = generator_przs
         return res
 
     @staticmethod
@@ -395,3 +812,9 @@ class ShareTensor(PassthroughTensor, Serializable):
     __rmul__ = mul
     __matmul__ = matmul
     __rmatmul__ = rmatmul
+    __lt__ = lt
+    __gt__ = gt
+    __ge__ = ge
+    __le__ = le
+    __eq__ = eq
+    __ne__ = ne

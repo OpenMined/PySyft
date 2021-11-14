@@ -14,9 +14,10 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
+# syft absolute
+import syft as sy
+
 # relative
-from ...... import serialize
-from ......core.common.serde.serializable import bind_protobuf
 from ......logger import error
 from ......proto.core.node.common.service.object_search_message_pb2 import (
     ObjectSearchMessage as ObjectSearchMessage_PB,
@@ -29,7 +30,7 @@ from ......util import traceback_and_raise
 from .....common.group import VERIFYALL
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
-from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 from .....pointer.pointer import Pointer
@@ -37,16 +38,23 @@ from ....abstract.node import AbstractNode
 from ..node_service import ImmediateNodeServiceWithReply
 
 
-@bind_protobuf
+@serializable()
 @final
 class ObjectSearchMessage(ImmediateSyftMessageWithReply):
     def __init__(
-        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
+        self,
+        address: Address,
+        reply_to: Address,
+        obj_id: Optional[UID] = None,
+        msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
         """By default this message just returns pointers to all the objects
         the sender is allowed to see. In the future we'll add support so that
         we can query for subsets."""
+
+        # if you specify an object id then search will return a pointer to that
+        self.obj_id = obj_id
 
     def _object2proto(self) -> ObjectSearchMessage_PB:
         """Returns a protobuf serialization of self.
@@ -59,14 +67,15 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         :rtype: ObjectSearchMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            reply_to=serialize(self.reply_to),
+            msg_id=sy.serialize(self.id),
+            address=sy.serialize(self.address),
+            reply_to=sy.serialize(self.reply_to),
+            obj_id=sy.serialize(self.obj_id) if self.obj_id is not None else None,
         )
 
     @staticmethod
@@ -85,9 +94,12 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         """
 
         return ObjectSearchMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            address=sy.deserialize(blob=proto.address),
+            reply_to=sy.deserialize(blob=proto.reply_to),
+            obj_id=sy.deserialize(blob=proto.obj_id)
+            if proto.HasField("obj_id")
+            else None,
         )
 
     @staticmethod
@@ -111,7 +123,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
         return ObjectSearchMessage_PB
 
 
-@bind_protobuf
+@serializable()
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
@@ -137,14 +149,14 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         :rtype: ObjectSearchReplyMessage_PB
 
         .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
         return ObjectSearchReplyMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
-            results=list(map(lambda x: serialize(x, to_bytes=True), self.results)),
+            msg_id=sy.serialize(self.id),
+            address=sy.serialize(self.address),
+            results=list(map(lambda x: sy.serialize(x, to_bytes=True), self.results)),
         )
 
     @staticmethod
@@ -163,9 +175,9 @@ class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ObjectSearchReplyMessage(
-            msg_id=_deserialize(blob=proto.msg_id),
-            address=_deserialize(blob=proto.address),
-            results=[_deserialize(blob=x, from_bytes=True) for x in proto.results],
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            address=sy.deserialize(blob=proto.address),
+            results=[sy.deserialize(blob=x, from_bytes=True) for x in proto.results],
         )
 
     @staticmethod
@@ -205,7 +217,16 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
             )
 
         try:
-            for obj in node.store.get_objects_of_type(obj_type=object):
+
+            # if no object is specified, return all objects
+            if msg.obj_id is None:
+                objs = node.store.get_objects_of_type(obj_type=object)
+
+            # if object id is specified - return just that object
+            else:
+                objs = [node.store[msg.obj_id]]
+
+            for obj in objs:
                 # if this tensor allows anyone to search for it, then one of its keys
                 # has a VERIFYALL in it.
                 contains_all_in_permissions = any(
@@ -230,7 +251,6 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     )
 
                     results.append(ptr)
-
         except Exception as e:
             error(f"Error searching store. {e}")
 

@@ -1,31 +1,42 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 
 # syft absolute
-from syft import serialize
+import syft as sy
 
 # relative
-from ..... import deserialize
 from ..... import lib
-from .....logger import critical
+from ..... import logger
+from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
 )
-from ....common.serde.serializable import bind_protobuf
+from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
+from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from .greenlets_switch import retrieve_object
+
+if TYPE_CHECKING:
+    # relative
+    from .smpc_action_message import SMPCActionMessage
 
 
-@bind_protobuf
+@serializable()
 class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
     """
     When executing a RunClassMethodSMPCAction, a list of SMPCActionMessages is sent to the
@@ -77,29 +88,29 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
     def __repr__(self) -> str:
         method_name = self.path.split(".")[-1]
-        self_name = self._self.class_name
-        arg_names = ",".join([a.class_name for a in self.args])
-        kwargs_names = ",".join([f"{k}={v.class_name}" for k, v in self.kwargs.items()])
+        self_name = self._self.__class__.__name__
+        arg_names = ",".join([a.__class__.__name__ for a in self.args])
+        kwargs_names = ",".join(
+            [f"{k}={v.__class__.__name__}" for k, v in self.kwargs.items()]
+        )
         return f"RunClassMethodSMPCAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         # relative
+        from . import smpc_action_functions
+        from ..... import Tensor
         from .smpc_action_message import SMPCActionMessage
+        from .smpc_action_seq_batch_message import SMPCActionSeqBatchMessage
 
-        resolved_self = node.store.get_object(key=self._self.id_at_location)
+        resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
 
-        if resolved_self is None:
-            critical(
-                f"execute_action on {self.path} failed due to missing object"
-                + f" at: {self._self.id_at_location}"
-            )
-            return
         result_read_permissions = resolved_self.read_permissions
 
         resolved_args = list()
         tag_args = []
         for arg in self.args:
-            r_arg = node.store[arg.id_at_location]
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
+
             # TODO: Think of a way to free the memory
             # del node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
@@ -111,7 +122,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store[arg.id_at_location]
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             # TODO: Think of a way to free the memory
             # del node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
@@ -126,7 +137,13 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         method_name = self.path.split(".")[-1]
-        nr_parties = resolved_self.data.nr_parties
+        value = resolved_self.data
+        if isinstance(value, Tensor):
+            nr_parties = value.child.child.nr_parties
+            rank = value.child.child.rank
+        else:
+            nr_parties = value.nr_parties
+            rank = value.rank
 
         seed_id_locations = resolved_kwargs.get("seed_id_locations", None)
         if seed_id_locations is None:
@@ -135,7 +152,8 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             )
 
         resolved_kwargs.pop("seed_id_locations")
-        actions_generator = SMPCActionMessage.get_action_generator_from_op(
+
+        actions_generator = smpc_action_functions.get_action_generator_from_op(
             operation_str=method_name, nr_parties=nr_parties
         )
         args_id = [arg.id_at_location for arg in self.args]
@@ -147,14 +165,94 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         }
 
         # Get the list of actions to be run
-        actions = actions_generator(self._self.id_at_location, *args_id, **kwargs)  # type: ignore
-        actions = SMPCActionMessage.filter_actions_after_rank(
-            resolved_self.data.rank, actions
-        )
+        # TODO : Remove client as we do not use it now.
+        actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
+        actions = actions_generator(*args_id, **kwargs)  # type: ignore
 
-        client = node.get_client()  # type: ignore
-        for action in actions:
-            client.send_immediate_msg_without_reply(msg=action)
+        if isinstance(actions, (list, tuple)) and isinstance(
+            actions[0], SMPCActionMessage
+        ):
+            actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
+            for action in actions:
+                RunClassMethodSMPCAction.execute_smpc_action(node, action, verify_key)
+        elif isinstance(actions, SMPCActionSeqBatchMessage):
+            msg = actions
+            while msg.smpc_actions:
+                action = msg.smpc_actions[0]
+                RunClassMethodSMPCAction.execute_smpc_action(node, action, verify_key)
+                del msg.smpc_actions[0]
+
+    @staticmethod
+    def execute_smpc_action(
+        node: AbstractNode, msg: "SMPCActionMessage", verify_key: VerifyKey
+    ) -> None:
+        # relative
+        from .smpc_action_functions import _MAP_ACTION_TO_FUNCTION
+
+        func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
+        store_object_self = node.store.get_object(key=msg.self_id)
+        if store_object_self is None:
+            raise KeyError("Object not already in store")
+
+        _self = store_object_self.data
+        args = [node.store[arg_id].data for arg_id in msg.args_id]
+
+        kwargs = {}  # type: ignore
+        for key, kwarg_id in msg.kwargs_id.items():
+            data = node.store[kwarg_id].data
+            if data is None:
+                raise KeyError(f"Key {key} is not available")
+
+            kwargs[key] = data
+        kwargs = {**kwargs, **msg.kwargs}
+        (
+            upcasted_args,
+            upcasted_kwargs,
+        ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+        logger.warning(func)
+
+        if msg.name_action in {"spdz_multiply", "spdz_mask"}:
+            result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
+        elif msg.name_action == "local_decomposition":
+            result = func(
+                _self,
+                *upcasted_args,
+                **upcasted_kwargs,
+                node=node,
+                read_permissions=store_object_self.read_permissions,
+            )
+        else:
+            result = func(_self, *upcasted_args, **upcasted_kwargs)
+
+        if lib.python.primitive_factory.isprimitive(value=result):
+            # Wrap in a SyPrimitive
+            result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(
+                value=result, id=msg.id_at_location
+            )
+        else:
+            # TODO: overload all methods to incorporate this automatically
+            if hasattr(result, "id"):
+                try:
+                    if hasattr(result, "_id"):
+                        # set the underlying id
+                        result._id = msg.id_at_location
+                    else:
+                        result.id = msg.id_at_location
+
+                    if result.id != msg.id_at_location:
+                        raise AttributeError("IDs don't match")
+                except AttributeError as e:
+                    err = f"Unable to set id on result {type(result)}. {e}"
+                    traceback_and_raise(Exception(err))
+
+        if not isinstance(result, StorableObject):
+            result = StorableObject(
+                id=msg.id_at_location,
+                data=result,
+                read_permissions=store_object_self.read_permissions,
+            )
+
+        node.store[msg.id_at_location] = result
 
     def _object2proto(self) -> RunClassMethodSMPCAction_PB:
         """Returns a protobuf serialization of self.
@@ -167,19 +265,19 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         :rtype: RunClassMethodSMPCAction_PB
 
         .. note::
-            This method is purely an internal method. Please use serialize(object) or one of
+            This method is purely an internal method. Please use sy.serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
         """
 
         return RunClassMethodSMPCAction_PB(
             path=self.path,
-            _self=serialize(self._self),
-            args=list(map(lambda x: serialize(x), self.args)),
-            kwargs={k: serialize(v) for k, v in self.kwargs.items()},
-            id_at_location=serialize(self.id_at_location),
-            address=serialize(self.address),
-            msg_id=serialize(self.id),
+            _self=sy.serialize(self._self),
+            args=list(map(lambda x: sy.serialize(x), self.args)),
+            kwargs={k: sy.serialize(v) for k, v in self.kwargs.items()},
+            id_at_location=sy.serialize(self.id_at_location),
+            address=sy.serialize(self.address),
+            msg_id=sy.serialize(self.id),
         )
 
     @staticmethod
@@ -199,12 +297,12 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         return RunClassMethodSMPCAction(
             path=proto.path,
-            _self=deserialize(blob=proto._self),
-            args=list(map(lambda x: deserialize(blob=x), proto.args)),
-            kwargs={k: deserialize(blob=v) for k, v in proto.kwargs.items()},
-            id_at_location=deserialize(blob=proto.id_at_location),
-            address=deserialize(blob=proto.address),
-            msg_id=deserialize(blob=proto.msg_id),
+            _self=sy.deserialize(blob=proto._self),
+            args=list(map(lambda x: sy.deserialize(blob=x), proto.args)),
+            kwargs={k: sy.deserialize(blob=v) for k, v in proto.kwargs.items()},
+            id_at_location=sy.deserialize(blob=proto.id_at_location),
+            address=sy.deserialize(blob=proto.address),
+            msg_id=sy.deserialize(blob=proto.msg_id),
         )
 
     @staticmethod

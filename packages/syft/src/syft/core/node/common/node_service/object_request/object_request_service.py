@@ -1,9 +1,14 @@
+# future
+from __future__ import annotations
+
 # stdlib
+from datetime import datetime
 import time
 from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Type
 from typing import Union
 
@@ -11,33 +16,25 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 
-# syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
-from syft.core.common.message import ImmediateSyftMessageWithoutReply
-from syft.core.common.uid import UID
-from syft.core.node.abstract.node import AbstractNode
-from syft.core.node.common.node import DuplicateRequestException
-from syft.core.node.common.node_service.auth import service_auth
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithReply,
-)
-from syft.core.node.common.node_service.node_service import (
-    ImmediateNodeServiceWithoutReply,
-)
-from syft.lib.python import List as SyftList
-from syft.util import validate_type
-
 # relative
+from ......util import validate_type
+from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
+from .....common.uid import UID
 from ...exceptions import AuthorizationError
 from ...exceptions import InvalidParameterValueError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import RequestError
+from ...node import DuplicateRequestException
 from ...node_table.utils import model_to_json
 from ..accept_or_deny_request.accept_or_deny_request_messages import (
     AcceptOrDenyRequestMessage,
 )
+from ..auth import service_auth
 from ..get_all_requests.get_all_requests_messages import GetAllRequestsMessage
 from ..get_all_requests.get_all_requests_messages import GetAllRequestsResponseMessage
+from ..node_service import ImmediateNodeServiceWithReply
+from ..node_service import ImmediateNodeServiceWithoutReply
 from ..request_answer.request_answer_messages import RequestAnswerMessage
 from ..request_answer.request_answer_messages import RequestAnswerResponse
 from ..request_handler.request_handler_messages import (
@@ -46,10 +43,14 @@ from ..request_handler.request_handler_messages import (
 from ..request_handler.request_handler_messages import GetAllRequestHandlersMessage
 from ..request_handler.request_handler_messages import UpdateRequestHandlerMessage
 from ..request_receiver.request_receiver_messages import RequestMessage
+from ..request_receiver.request_receiver_messages import RequestStatus
+from .object_request_messages import CreateBudgetRequestMessage
 from .object_request_messages import CreateRequestMessage
 from .object_request_messages import CreateRequestResponse
 from .object_request_messages import DeleteRequestMessage
 from .object_request_messages import DeleteRequestResponse
+from .object_request_messages import GetBudgetRequestsMessage
+from .object_request_messages import GetBudgetRequestsResponse
 from .object_request_messages import GetRequestMessage
 from .object_request_messages import GetRequestResponse
 from .object_request_messages import GetRequestsMessage
@@ -57,10 +58,14 @@ from .object_request_messages import GetRequestsResponse
 from .object_request_messages import UpdateRequestMessage
 from .object_request_messages import UpdateRequestResponse
 
+if TYPE_CHECKING:
+    # relative
+    from ....domain.domain import Domain
+
 
 def create_request_msg(
     msg: CreateRequestMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> CreateRequestResponse:
     # Get Payload Content
@@ -98,11 +103,11 @@ def create_request_msg(
             message="Invalid request payload, empty fields (object_id/reason/request_type)!"
         )
 
-    valid_paramaters = request_type == "permissions" or request_type == "budget"
+    valid_paramaters = request_type == "data" or request_type == "budget"
 
     if not valid_paramaters:
         raise InvalidParameterValueError(
-            message='Request type should be either "permissions” or “budget”.'
+            message='Request type should be either "data” or “budget”.'
         )
 
     requests = node.data_requests
@@ -127,15 +132,61 @@ def create_request_msg(
     )
 
 
+def create_budget_request_msg(
+    msg: CreateBudgetRequestMessage,
+    node: Domain,
+    verify_key: VerifyKey,
+) -> None:
+    if verify_key is None:
+        raise ValueError(
+            "Can't process Request service without a given " "verification key"
+        )
+
+    # since we reject/accept requests based on the ID, we don't want there to be
+    # multiple requests with the same ID because this could cause security problems.
+    _duplicate_request = node.data_requests.contain(
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
+        status="pending",
+    )
+
+    if _duplicate_request:
+        raise DuplicateRequestException(
+            "You have already requested this item before!",
+            node.data_requests.all(),
+            "My Requests",
+        )
+
+    current_user = node.users.first(
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+    )
+
+    node.data_requests.create_request(
+        user_id=current_user.id,
+        user_name=current_user.name,
+        user_email=current_user.email,
+        user_role=node.roles.first(id=current_user.role).name,
+        user_budget=current_user.budget,
+        institution=current_user.institution,
+        website=current_user.website,
+        reason=msg.reason,
+        object_id=str(UID().value),
+        object_type="<Budget>",
+        requested_budget=msg.budget,
+        request_type="budget",
+        verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
+    )
+
+
 def get_request_msg(
     msg: GetRequestMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> GetRequestResponse:
 
     # Get Payload Content
-    request_id = msg.content.get("request_id", None)
-    current_user_id = msg.content.get("current_user", None)
+    request_id = msg.request_id
+    current_user = node.users.first(verify_key=verify_key)
+    current_user_id = current_user.id
 
     users = node.users
 
@@ -150,7 +201,7 @@ def get_request_msg(
     # A user can get a request if he's the owner of that request
     # or has the can_triage_requests permission
     allowed = request.user_id == current_user_id or users.can_triage_requests(
-        user_id=current_user_id
+        verify_key=verify_key
     )
 
     if allowed:
@@ -161,14 +212,13 @@ def get_request_msg(
     return GetRequestResponse(
         address=msg.reply_to,
         status_code=200,
-        # request_id=request_id
         request_id=request_json,
     )
 
 
 def get_all_request_msg(
     msg: GetRequestsMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> GetRequestsResponse:
     users = node.users
@@ -176,20 +226,66 @@ def get_all_request_msg(
     allowed = users.can_triage_requests(verify_key=verify_key)
 
     if allowed:
-        requests = node.data_requests.all()
-        requests_json = [model_to_json(request) for request in requests]
+        requests = node.data_requests.query(request_type="data")
+        response = list()
+        for request in requests:
+            # Get current state user
+            if node.data_requests.status(request.id) == RequestStatus.Pending:
+                _user = node.users.first(id=request.user_id)
+                user = model_to_json(_user)
+                user["role"] = node.roles.first(id=_user.role).name
+                user["current_budget"] = user["budget"]
+            # Get History state user
+            else:
+                user = node.data_requests.get_user_info(request_id=request.id)
+            request = model_to_json(request)
+            response.append({"user": user, "req": request})
+
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
+
     return GetRequestsResponse(
         status_code=200,
         address=msg.reply_to,
-        content=SyftList(requests_json),
+        content=response,
+    )
+
+
+def get_all_budget_requests(
+    msg: GetBudgetRequestsMessage,
+    node: Domain,
+    verify_key: VerifyKey,
+) -> GetBudgetRequestsResponse:
+    users = node.users
+
+    allowed = users.can_triage_requests(verify_key=verify_key)
+    response = list()
+    if allowed:
+        requests = node.data_requests.query(request_type="budget")
+        for request in requests:
+            # Get current state user
+            if node.data_requests.status(request.id) == RequestStatus.Pending:
+                _user = node.users.first(id=request.user_id)
+                user = model_to_json(_user)
+                user["role"] = node.roles.first(id=_user.role).name
+                user["current_budget"] = user["budget"]
+                request = model_to_json(request)
+            # Get History state user
+            else:
+                user = node.data_requests.get_user_info(request_id=request.id)
+                request = node.data_requests.get_req_info(request_id=request.id)
+            response.append({"user": user, "req": request})
+    else:
+        raise AuthorizationError("You're not allowed to get Request information!")
+    return GetBudgetRequestsResponse(
+        address=msg.reply_to,
+        content=response,
     )
 
 
 def update_request_msg(
     msg: UpdateRequestMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> UpdateRequestResponse:
 
@@ -223,11 +319,11 @@ def update_request_msg(
         # not really requesting an object per-say, we're requesting for a budget increase
         # TODO: clean up the RequestMessage API to explicitly have multiple request types, including
         # one for budget requests.
-        if "budget" in _req.object_type:
-            current_user = node.users.first(verify_key=_current_user_key)
+        if "<Budget>" in _req.object_type:
+            current_user = node.users.first(verify_key=_req.verify_key)
             node.users.set(
                 user_id=current_user.id,
-                budget=current_user.budget + float(_req.object_type.split(":")[1]),
+                budget=current_user.budget + _req.requested_budget,
             )
         else:
             tmp_obj = node.store[UID.from_string(_req.object_id)]
@@ -235,9 +331,11 @@ def update_request_msg(
                 VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
             ] = _req.id
             node.store[UID.from_string(_req.object_id)] = tmp_obj
-        node.data_requests.set(request_id=_req.id, status=status)
+        # this should be an enum not a string
+        node.data_requests.set(request_id=_req.id, status=status)  # type: ignore
     elif status == "denied" and (_can_triage_request or _req_owner):
-        node.data_requests.set(request_id=_req.id, status=status)
+        # this should be an enum not a string
+        node.data_requests.set(request_id=_req.id, status=status)  # type: ignore
     else:
         raise AuthorizationError("You're not allowed to update Request information!")
 
@@ -251,7 +349,7 @@ def update_request_msg(
 
 def del_request_msg(
     msg: DeleteRequestMessage,
-    node: AbstractNode,
+    node: Domain,
     verify_key: VerifyKey,
 ) -> DeleteRequestResponse:
 
@@ -279,14 +377,14 @@ def del_request_msg(
 
 
 def request_answer_msg(
-    msg: RequestAnswerMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: RequestAnswerMessage, node: Domain, verify_key: VerifyKey
 ) -> RequestAnswerResponse:
     if verify_key is None:
         raise ValueError(
             "Can't process Request service without a given " "verification key"
         )
 
-    status = node.data_requests.status(id=str(msg.request_id.value))
+    status = node.data_requests.status(request_id=str(msg.request_id.value))
     address = msg.reply_to
     return RequestAnswerResponse(
         request_id=msg.request_id, address=address, status=status
@@ -295,7 +393,7 @@ def request_answer_msg(
 
 # TODO: Check if this method/message should really be a service_without_reply message
 def get_all_requests(
-    msg: GetAllRequestsMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: GetAllRequestsMessage, node: Domain, verify_key: VerifyKey
 ) -> GetAllRequestsResponseMessage:
     if verify_key is None:
         raise ValueError(
@@ -334,7 +432,7 @@ def get_all_requests(
 
 
 def get_all_request_handlers(
-    msg: GetAllRequestHandlersMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: GetAllRequestHandlersMessage, node: Domain, verify_key: VerifyKey
 ) -> GetAllRequestHandlersResponseMessage:
 
     if verify_key is None:
@@ -356,6 +454,7 @@ class RequestService(ImmediateNodeServiceWithReply):
         Type[CreateRequestMessage],
         Type[GetRequestMessage],
         Type[GetRequestsMessage],
+        Type[GetBudgetRequestsMessage],
         Type[UpdateRequestMessage],
         Type[DeleteRequestMessage],
         Type[RequestAnswerMessage],
@@ -367,6 +466,7 @@ class RequestService(ImmediateNodeServiceWithReply):
         CreateRequestMessage,
         GetRequestMessage,
         GetRequestsMessage,
+        GetBudgetRequestsMessage,
         UpdateRequestMessage,
         DeleteRequestMessage,
         RequestAnswerMessage,
@@ -378,6 +478,7 @@ class RequestService(ImmediateNodeServiceWithReply):
         CreateRequestResponse,
         GetRequestResponse,
         GetRequestsResponse,
+        GetBudgetRequestsResponse,
         UpdateRequestResponse,
         DeleteRequestResponse,
         RequestAnswerResponse,
@@ -389,6 +490,7 @@ class RequestService(ImmediateNodeServiceWithReply):
         CreateRequestMessage: create_request_msg,
         GetRequestMessage: get_request_msg,
         GetRequestsMessage: get_all_request_msg,
+        GetBudgetRequestsMessage: get_all_budget_requests,
         UpdateRequestMessage: update_request_msg,
         DeleteRequestMessage: del_request_msg,
         RequestAnswerMessage: request_answer_msg,
@@ -399,7 +501,7 @@ class RequestService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: Domain,
         msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
     ) -> OUTPUT_MESSAGES:
@@ -414,6 +516,7 @@ class RequestService(ImmediateNodeServiceWithReply):
             GetRequestMessage,
             GetRequestsMessage,
             GetRequestsMessage,
+            GetBudgetRequestsMessage,
             UpdateRequestMessage,
             DeleteRequestMessage,
             RequestAnswerMessage,
@@ -423,13 +526,12 @@ class RequestService(ImmediateNodeServiceWithReply):
 
 
 def build_request_message(
-    msg: RequestMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: RequestMessage, node: Domain, verify_key: VerifyKey
 ) -> None:
     if verify_key is None:
         raise ValueError(
             "Can't process Request service without a given " "verification key"
         )
-
     if msg.requester_verify_key != verify_key:
         raise Exception(
             "You tried to request access for a key that is not yours!"
@@ -458,10 +560,15 @@ def build_request_message(
 
     node.data_requests.create_request(
         user_id=current_user.id,
-        user_name=current_user.email,
+        user_name=current_user.name,
+        user_email=current_user.email,
+        user_role=node.roles.first(id=current_user.role).name,
+        user_budget=current_user.budget,
+        institution=current_user.institution,
+        website=current_user.website,
         object_id=str(msg.object_id.value),
         reason=msg.request_description,
-        request_type="permissions",
+        request_type="data",
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         object_type=msg.object_type,
         tags=node.store[msg.object_id]._tags if "budget" not in msg.object_type else [],
@@ -469,7 +576,7 @@ def build_request_message(
 
 
 def accept_or_deny_request(
-    msg: AcceptOrDenyRequestMessage, node: AbstractNode, verify_key: VerifyKey
+    msg: AcceptOrDenyRequestMessage, node: Domain, verify_key: VerifyKey
 ) -> None:
     if verify_key is None:
         raise ValueError(
@@ -481,21 +588,29 @@ def accept_or_deny_request(
     current_user = node.users.first(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
     )
-
     _req = node.data_requests.first(id=str(_msg.request_id.value))
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
     if _msg.accept:
         if _req and _can_triage_request:
-            tmp_obj = node.store[UID.from_string(_req.object_id)]
-            tmp_obj.read_permissions[
-                VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
-            ] = _req.id
-            node.store[UID.from_string(_req.object_id)] = tmp_obj
+            if "<Budget>" in _req.object_type:
+                current_user = node.users.first(verify_key=_req.verify_key)
+                node.users.set(
+                    user_id=current_user.id,
+                    budget=current_user.budget + _req.requested_budget,
+                )
+            else:
+                tmp_obj = node.store[UID.from_string(_req.object_id)]
+                tmp_obj.read_permissions[
+                    VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
+                ] = _req.id
+                node.store[UID.from_string(_req.object_id)] = tmp_obj
+
             # TODO: In the future we'll probably need to keep a request history
             # So, instead of deleting a data access request, we would like to just change its
             # status.
             # node.data_requests.set(request_id=_req.id, status="accepted")
-            node.data_requests.delete(id=_req.id)
+            # node.data_requests.delete(id=_req.id)
+            status = "accepted"
     else:
         _req_owner = current_user.verify_key == _req.verify_key
         if _req and (_can_triage_request or _req_owner):
@@ -503,11 +618,23 @@ def accept_or_deny_request(
             # So, instead of deleting a data access request, we would like to just change its
             # status.
             # node.data_requests.set(request_id=_req.id, status="denied")
-            node.data_requests.delete(id=_req.id)
+            # node.data_requests.delete(id=_req.id)
+            status = "denied"
+
+    node.data_requests.modify(
+        {"id": _req.id},
+        {
+            "status": status,
+            "reviewer_name": current_user.name,
+            "reviewer_role": node.roles.first(id=current_user.role).name,
+            "reviewer_comment": "",
+            "updated_on": datetime.now(),
+        },
+    )  # type: ignore
 
 
 def update_req_handler(
-    node: AbstractNode,
+    node: Domain,
     msg: UpdateRequestHandlerMessage,
     verify_key: Optional[VerifyKey] = None,
 ) -> None:
@@ -566,6 +693,7 @@ def update_req_handler(
 class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
     INPUT_TYPE = Union[
         Type[RequestMessage],
+        Type[CreateBudgetRequestMessage],
         Type[AcceptOrDenyRequestMessage],
         Type[UpdateRequestHandlerMessage],
     ]
@@ -578,6 +706,7 @@ class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
 
     msg_handler_map: Dict[INPUT_TYPE, Callable[..., None]] = {
         RequestMessage: build_request_message,
+        CreateBudgetRequestMessage: create_budget_request_msg,
         AcceptOrDenyRequestMessage: accept_or_deny_request,
         UpdateRequestHandlerMessage: update_req_handler,
     }
@@ -585,7 +714,7 @@ class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
+        node: Domain,
         msg: Union[
             RequestMessage,
             AcceptOrDenyRequestMessage,
@@ -599,4 +728,9 @@ class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
-        return [RequestMessage, AcceptOrDenyRequestMessage, UpdateRequestHandlerMessage]
+        return [
+            RequestMessage,
+            AcceptOrDenyRequestMessage,
+            UpdateRequestHandlerMessage,
+            CreateBudgetRequestMessage,
+        ]

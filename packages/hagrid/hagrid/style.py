@@ -35,10 +35,6 @@ class RichGroup(click.Group):
                 dep_emoji = ":whale:"
             if dep == "git":
                 dep_emoji = ":file_folder:"
-            if dep == "virtualbox":
-                dep_emoji = ":ballot_box_with_ballot: "
-            if dep == "vagrant":
-                dep_emoji = ":person_mountain_biking:"
             if dep == "ansible-playbook":
                 dep_emoji = ":blue_book:"
             table.add_row(f"{dep_emoji} {dep}", installed_str)

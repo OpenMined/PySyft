@@ -8,6 +8,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Tuple as TypeTuple
 from typing import Type
 from typing import Union
@@ -22,6 +23,7 @@ from .util import implements
 from .util import query_implementation
 
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
+SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
 
 def is_acceptable_simple_type(obj):
@@ -31,7 +33,7 @@ def is_acceptable_simple_type(obj):
 class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     """A simple tensor class which passes method/function calls to self.child"""
 
-    def __init__(self, child) -> None:
+    def __init__(self, child: Any) -> None:
         self.child = child
 
     # TODO: Remove
@@ -43,11 +45,27 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return data
 
     def __len__(self) -> int:
+        if (
+            isinstance(self.child, float)
+            or isinstance(self.child, int)
+            or isinstance(self.child, bool)
+        ):
+            return 1
         return len(self.child)
 
     @property
     def shape(self) -> TypeTuple[Any, ...]:
+        if (
+            isinstance(self.child, float)
+            or isinstance(self.child, int)
+            or isinstance(self.child, bool)
+        ):
+            return (1,)
         return tuple(self.child.shape)
+
+    @property
+    def dtype(self) -> np.dtype:
+        return self.child.dtype
 
     # @property
     # def shape(self) -> Union[TypeTuple[Any, ...], List[Any]]:
@@ -335,8 +353,16 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return self.__class__(self.child.repeat(repeats, axis))
 
-    def resize(self, new_shape: Union[int, TypeTuple[int, ...]]) -> PassthroughTensor:
-        return self.__class__(self.child.resize(new_shape))
+    def resize(
+        self,
+        new_shape: Union[int, TypeTuple[int, ...]],
+        refcheck: Optional[bool] = True,
+    ) -> PassthroughTensor:
+        # Should be modified to  remove copy
+        # https://stackoverflow.com/questions/23253144/numpy-the-array-doesnt-have-its-own-data
+        res = self.child.copy()
+        res.resize(new_shape, refcheck=refcheck)
+        return self.__class__(res)
 
     @property
     def T(self) -> PassthroughTensor:
@@ -394,8 +420,51 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.tolist())
 
     # ndarray.flatten(order='C')
-    def flatten(self, order: str = "C") -> PassthroughTensor:
+    def flatten(self, order: Optional[str] = "C") -> PassthroughTensor:
         return self.__class__(self.child.flatten(order))
+
+    # ndarray.partition(kth, axis=- 1, kind='introselect', order=None)
+    def partition(
+        self,
+        kth: Union[int, TypeTuple[int, ...]],
+        axis: Optional[int] = -1,
+        kind: Optional[str] = "introselect",
+        order: Optional[Union[int, TypeTuple[int, ...]]] = None,
+    ) -> PassthroughTensor:
+        self.child.partition(kth=kth, axis=axis, kind=kind, order=order)  # inplace op
+        return self.__class__(self.child)
+
+    # ndarray.ravel([order])
+    def ravel(self, order: Optional[str] = "C") -> PassthroughTensor:
+        return self.__class__(self.child.ravel(order=order))
+
+    # ndarray.compress(condition, axis=None, out=None)
+    def compress(
+        self, condition: List[bool], axis: int = None, out: Optional[np.ndarray] = None
+    ) -> PassthroughTensor:
+        return self.__class__(
+            self.child.compress(condition=condition, axis=axis, out=out)
+        )
+
+    # ndarray.swapaxes(axis1, axis2)
+    def swapaxes(self, axis1: int, axis2: int) -> PassthroughTensor:
+        return self.__class__(self.child.swapaxes(axis1, axis2))
+
+    # ndarray.put(indices, values, mode='raise')
+    def put(
+        self,
+        indices: Union[int, TypeTuple[int, ...], np.ndarray],
+        values: Union[int, TypeTuple[int, ...], np.ndarray],
+        mode: Optional[str] = "raise",
+    ) -> None:
+        self.child.put(indices=indices, values=values, mode=mode)  # inplace op
+        print(self.__class__)
+        print(self.child)
+        return self.__class__(self.child)
+
+    # ndarray.__pos__(/)
+    def __pos__(self) -> PassthroughTensor:
+        return self.__class__(self.child.__pos__())
 
     # numpy.mean(a, axis=None, dtype=None, out=None, keepdims=<no value>, *, where=<no value>)
     def mean(
@@ -450,9 +519,35 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     # numpy.take(a, indices, axis=None, out=None, mode='raise')
     def take(
-        self, indices: Optional[Union[int, TypeTuple[int, ...]]] = None
+        self,
+        indices: Union[int, TypeTuple[int, ...], np.ndarray],
+        axis: Optional[int] = None,
+        out: Optional[np.ndarray] = None,
+        mode: Optional[str] = "raise",
     ) -> PassthroughTensor:
-        return self.__class__(self.child.take(indices=indices))
+        return self.__class__(
+            self.child.take(
+                indices,
+                axis=axis,
+                out=out,
+                mode=mode,
+            )
+        )
+
+    # numpy.choose(a, choices, out=None, mode='raise')
+    def choose(
+        self,
+        choices: Sequence[Union[PassthroughTensor, np.ndarray]],
+        out: Optional[np.ndarray] = None,
+        mode: Optional[str] = "raise",
+    ) -> PassthroughTensor:
+        return self.__class__(
+            self.child.choose(
+                choices,
+                out=out,
+                mode=mode,
+            )
+        )
 
     def astype(self, np_type) -> PassthroughTensor:
         return self.__class__(self.child.astype(np_type))
@@ -487,6 +582,3 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 @implements(PassthroughTensor, np.square)
 def square(x: Type[PassthroughTensor]) -> PassthroughTensor:
     return x * x
-
-
-SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]

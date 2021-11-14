@@ -6,7 +6,7 @@ from typing import Optional
 from torch import device
 
 # relative
-from ...generate_wrapper import GenerateWrapper
+from ...core.common.serde.serializable import serializable
 from ...proto.lib.torch.device_pb2 import Device as Device_PB
 
 # use -2 to represent index=None
@@ -27,7 +27,7 @@ def proto2object(proto: "Device_PB") -> Any:
     return obj
 
 
-GenerateWrapper(
+serializable(generate_wrapper=True)(
     wrapped_type=device,
     import_path="torch.device",
     protobuf_scheme=Device_PB,

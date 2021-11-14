@@ -1,23 +1,13 @@
 # stdlib
 from datetime import datetime
 from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
-import warnings
 
 # third party
 from sqlalchemy.engine import Engine
 
-# syft absolute
-from syft.core.node.abstract.node import AbstractNodeClient
-
 # relative
-from ..... import serialize
 from ...domain.enums import RequestAPIFields
 from ..exceptions import AssociationRequestError
-from ..node_table.association import Association
 from ..node_table.association_request import AssociationRequest
 from .database_manager import DatabaseManager
 
@@ -29,7 +19,7 @@ class AssociationRequestManager(DatabaseManager):
     def __init__(self, database: Engine) -> None:
         super().__init__(schema=AssociationRequestManager.schema, db=database)
 
-    def first(self, **kwargs: Any) -> Union[None, List]:
+    def first(self, **kwargs: Any) -> AssociationRequest:
         result = super().first(**kwargs)
         if not result:
             raise AssociationRequestError
@@ -38,35 +28,35 @@ class AssociationRequestManager(DatabaseManager):
 
     def create_association_request(
         self,
-        node: str,
-        source: AbstractNodeClient,
-        target: AbstractNodeClient,
-        metadata: Dict[str, str],
+        node_name: str,
+        node_address: str,
+        source: str,
+        target: str,
         status: str,
     ) -> None:
-        if super().first(node=node):
-            super().delete(node=node)
-            warnings.warn("Association request name already exists! Overwriting.")
+        table_fields = {}
+        table_fields["node_name"] = node_name
+        table_fields[RequestAPIFields.REQUESTED_DATE] = datetime.now().strftime(
+            "%m/%d/%Y"
+        )
 
-        metadata[RequestAPIFields.NODE] = node
-        metadata[RequestAPIFields.REQUESTED_DATE] = datetime.now().strftime("%m/%d/%Y")
+        table_fields[RequestAPIFields.SOURCE] = source
+        table_fields[RequestAPIFields.TARGET] = target
+        table_fields[RequestAPIFields.STATUS] = status
+        table_fields["node_address"] = node_address
 
-        source_blob = serialize(source, to_bytes=True)
-        target_blob = serialize(target, to_bytes=True)
+        try:
+            self.first(**{"source": source, "target": target})
+            self.modify(query={"source": source, "target": target}, values=table_fields)
+        except AssociationRequestError:
+            # no existing AssociationRequest so lets make one
+            self.register(**table_fields)  # type: ignore
 
-        metadata[RequestAPIFields.SOURCE] = source_blob
-        metadata[RequestAPIFields.TARGET] = target_blob
-        metadata[RequestAPIFields.STATUS] = status
-        self.register(**metadata)
-
-    def associations(self) -> List[Association]:
-        return list(self.db.session.query(Association).all())
-
-    def association(self, **kwargs: Dict[str, Any]) -> Optional[Association]:
-        return self.db.session.query(Association).filter_by(**kwargs).first()
-
-    def set(self, node_name: str, response: str) -> None:
+    def set(self, source: str, target: str, response: str) -> None:
         self.modify(
-            {"node": node_name},
-            {"status": response, "accepted_date": datetime.now().strftime("%m/%d/%Y")},
+            query={"source": source, "target": target},
+            values={
+                "status": response,
+                "accepted_date": datetime.now().strftime("%m/%d/%Y"),
+            },
         )

@@ -7,7 +7,6 @@ from typing_extensions import final
 
 # relative
 from ...... import serialize
-from ......core.common.serde.serializable import bind_protobuf
 from ......proto.core.node.domain.service.get_remaining_budget_service_pb2 import (
     GetRemainingBudgetMessage as GetRemainingBudgetMessage_PB,
 )
@@ -17,11 +16,12 @@ from ......proto.core.node.domain.service.get_remaining_budget_service_pb2 impor
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
+from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
     def __init__(
@@ -58,7 +58,7 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
         return GetRemainingBudgetMessage_PB
 
 
-@bind_protobuf
+@serializable()
 class GetRemainingBudgetReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,

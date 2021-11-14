@@ -1,27 +1,15 @@
 # stdlib
 from typing import Any
 
-# syft absolute
-from syft.core.node.abstract.node import AbstractNodeClient
-from syft.core.node.common.node_service.role_manager.role_manager_messages import (
-    CreateRoleMessage,
-)
-from syft.core.node.common.node_service.role_manager.role_manager_messages import (
-    DeleteRoleMessage,
-)
-from syft.core.node.common.node_service.role_manager.role_manager_messages import (
-    GetRoleMessage,
-)
-from syft.core.node.common.node_service.role_manager.role_manager_messages import (
-    GetRolesMessage,
-)
-from syft.core.node.common.node_service.role_manager.role_manager_messages import (
-    UpdateRoleMessage,
-)
-
 # relative
-from ....node.domain.enums import ResponseObjectEnum
-from ...common.client_manager.request_api import RequestAPI
+from ...abstract.node import AbstractNodeClient
+from ...domain.enums import ResponseObjectEnum
+from ..node_service.role_manager.role_manager_messages import CreateRoleMessage
+from ..node_service.role_manager.role_manager_messages import DeleteRoleMessage
+from ..node_service.role_manager.role_manager_messages import GetRoleMessage
+from ..node_service.role_manager.role_manager_messages import GetRolesMessage
+from ..node_service.role_manager.role_manager_messages import UpdateRoleMessage
+from .request_api import RequestAPI
 
 
 class RoleRequestAPI(RequestAPI):

@@ -106,7 +106,7 @@ from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
 from ...util import obj2pointer_type
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
-from ..common.serde.serializable import bind_protobuf
+from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
@@ -119,7 +119,7 @@ from ..store.storeable_object import StorableObject
 
 
 # TODO: Fix the Client, Address, Location confusion
-@bind_protobuf
+@serializable()
 class Pointer(AbstractPointer):
     """
     The pointer is the handler when interacting with remote data.
@@ -158,6 +158,35 @@ class Pointer(AbstractPointer):
         # when delete_obj is True and network call
         # has already been made
         self._exhausted = False
+
+    @property
+    def block(self) -> AbstractPointer:
+        while not self.exists:
+            time.sleep(0.1)
+        return self
+
+    def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
+
+        total_secs = secs
+
+        while not self.exists and secs > 0:
+            time.sleep(secs_per_poll)
+            secs -= secs_per_poll
+
+        if not self.exists:
+            raise Exception(
+                f"Object with id {self.id_at_location} still doesn't exist after {total_secs} second timeout."
+            )
+
+        return self
+
+    @property
+    def exists(self) -> bool:
+        """Sometimes pointers can point to objects which either have not yet
+        been created or were created but have now been destroyed. This method
+        asks a remote node whether the object this pointer is pointing to can be
+        found in the database."""
+        return self.client.obj_exists(obj_id=self.id_at_location)
 
     def __repr__(self) -> str:
         return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
@@ -254,11 +283,14 @@ class Pointer(AbstractPointer):
     def publish(self, sigma: float = 1.5) -> Any:
 
         # relative
-        # relative
         from ...lib.python import Float
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,
         )
+
+        # TODO: make publish genuinely asynchronous (not sure why it isn't already but
+        # if you call publish on an object before it exists it complains.
+        self.block
 
         id_at_location = UID()
 

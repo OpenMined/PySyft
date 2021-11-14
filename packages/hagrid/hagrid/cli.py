@@ -1,9 +1,11 @@
 # stdlib
+from datetime import datetime
 import json
 import os
 import re
 import stat
 import subprocess
+import sys
 import time
 from typing import Any
 from typing import Dict as TypeDict
@@ -16,12 +18,18 @@ from typing import cast
 import click
 
 # relative
+from . import __version__
 from .art import hagrid
 from .auth import AuthCredentials
 from .cache import arg_cache
 from .deps import DEPENDENCIES
+from .deps import ENVIRONMENT
 from .deps import MissingDependency
 from .deps import allowed_hosts
+from .deps import docker_info
+from .deps import is_windows
+from .deps import wsl_info
+from .deps import wsl_linux_info
 from .grammar import BadGrammar
 from .grammar import GrammarVerb
 from .grammar import parse_grammar
@@ -29,6 +37,10 @@ from .land import get_land_verb
 from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
 from .lib import check_docker_version
+from .lib import commit_hash
+from .lib import docker_desktop_memory
+from .lib import hagrid_root
+from .lib import is_editable_mode
 from .lib import name_tag
 from .lib import use_branch
 from .style import RichGroup
@@ -46,14 +58,19 @@ def cli() -> None:
 def clean(location: str) -> None:
 
     if location == "library" or location == "volumes":
-        print("Deleting all Docker volumes in 3 secs (Ctrl-C to stop)")
-        time.sleep(3)
+        print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
         subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
 
     if location == "containers" or location == "pantry":
-        print("Deleting all Docker containers in 5 secs (Ctrl-C to stop)")
-        time.sleep(5)
+        print("Deleting all Docker containers in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
         subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
+
+    if location == "images":
+        print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
+        time.sleep(2)
+        subprocess.call("docker rmi $(docker images -q)", shell=True)
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -101,11 +118,25 @@ def clean(location: str) -> None:
     help="Optional: don't tail logs on launch",
 )
 @click.option(
+    "--headless",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: don't start the frontend container",
+)
+@click.option(
     "--cmd",
     default="false",
     required=False,
     type=str,
     help="Optional: print the cmd without running it",
+)
+@click.option(
+    "--build",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: enable or disable forcing re-build",
 )
 @click.option(
     "--auth_type",
@@ -309,6 +340,7 @@ def create_launch_cmd(
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
 ) -> str:
+    parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
     auth: Optional[AuthCredentials] = None
@@ -325,9 +357,46 @@ def create_launch_cmd(
             version = "n/a"
 
         if version:
+            parsed_kwargs = {}
+            build = True
+            if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
+                build = False
+            parsed_kwargs["build"] = build
+
+            headless = False
+            if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
+                headless = True
+            parsed_kwargs["headless"] = headless
+
+            # If the user is using docker desktop (OSX/Windows), check to make sure there's enough RAM.
+            # If the user is using Linux this isn't an issue because Docker scales to the avaialble RAM,
+            # but on Docker Desktop it defaults to 2GB which isn't enough.
+            dd_memory = docker_desktop_memory()
+            if dd_memory < 8192 and dd_memory != -1:
+                raise Exception(
+                    "You appear to be using Docker Desktop but don't have "
+                    "enough memory allocated. It appears you've configured "
+                    f"Memory:{dd_memory} MB when 8192MB (8GB) is required. "
+                    f"Please open Docker Desktop Preferences panel and set Memory"
+                    f" to 8GB or higher. \n\n"
+                    f"\tOSX Help: https://docs.docker.com/desktop/mac/\n"
+                    f"\tWindows Help: https://docs.docker.com/desktop/windows/\n\n"
+                    f"Then re-run your hagrid command.\n\n"
+                    f"If you see this warning on Linux then something isn't right. "
+                    f"Please file a Github Issue on PySyft's Github"
+                )
+
+            if is_windows() and not DEPENDENCIES["wsl"]:
+                raise Exception(
+                    "You must install wsl2 for Windows to use HAGrid.\n"
+                    "In PowerShell or Command Prompt type:\n> wsl --install\n\n"
+                    "Read more here: https://docs.microsoft.com/en-us/windows/wsl/install"
+                )
+
             return create_launch_docker_cmd(
-                verb=verb, docker_version=version, tail=tail
+                verb=verb, docker_version=version, tail=tail, kwargs=parsed_kwargs
             )
+
     elif host in ["vm"]:
         if (
             DEPENDENCIES["vagrant"]
@@ -577,7 +646,10 @@ def create_launch_cmd(
 
 
 def create_launch_docker_cmd(
-    verb: GrammarVerb, docker_version: str, tail: bool = True
+    verb: GrammarVerb,
+    docker_version: str,
+    kwargs: TypeDict[str, Any],
+    tail: bool = True,
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
@@ -606,21 +678,43 @@ def create_launch_docker_cmd(
     print("\n")
 
     cmd = ""
-    cmd += "DOMAIN_PORT=" + str(host_term.free_port)
+    if not is_windows():
+        cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
+    cmd += " DOMAIN_PORT=" + str(host_term.free_port)
     cmd += " TRAEFIK_TAG=" + str(tag)
-    cmd += ' DOMAIN_NAME="' + snake_name + '"'
+    cmd += " DOMAIN_NAME='" + snake_name + "'"
     cmd += " NODE_TYPE=" + str(node_type.input)
-    cmd += " VERSION=`python VERSION`"
-    cmd += " VERSION_HASH=`python VERSION hash`"
+    cmd += " VERSION=$(python3 VERSION)"
+    cmd += " VERSION_HASH=$(python3 VERSION hash)"
+    cmd += " TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false"
+
+    if kwargs["build"] is True:
+        build_cmd = str(cmd)
+        build_cmd += " docker compose build --parallel"
+
     cmd += " docker compose -p " + snake_name
+    if str(node_type.input) == "network":
+        cmd += " --profile network"
+
+    if kwargs["headless"] is False:
+        cmd += " --profile frontend"
+
     cmd += " up"
 
     if not tail:
         cmd += " -d"
 
-    cmd += " --build"  # force rebuild
+    if kwargs["build"] is True:
+        cmd += " --build"  # force rebuild
+        cmd = build_cmd + " && " + cmd
 
-    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+    # here we pass everything through to bash on windows
+    if is_windows():
+        cmd = f'bash -c "{cmd}"'
+
+    # on windows we are calling cmd.exe not powershell so the cd && part is critical
+    # so that the bash shell will also be running in the correct path inside wsl
+    cmd = "cd " + GRID_SRC_PATH + " && " + cmd
     return cmd
 
 
@@ -909,3 +1003,30 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 cli.add_command(launch)
 cli.add_command(land)
 cli.add_command(clean)
+
+
+@click.command(help="Show HAGrid debug information")
+@click.argument("args", type=str, nargs=-1)
+def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
+    now = datetime.now().astimezone()
+    dt_string = now.strftime("%d/%m/%Y %H:%M:%S %Z")
+    debug_info: TypeDict[str, Any] = {}
+    debug_info["datetime"] = dt_string
+    debug_info["python_binary"] = sys.executable
+    debug_info["dependencies"] = DEPENDENCIES
+    debug_info["environment"] = ENVIRONMENT
+    debug_info["hagrid"] = __version__
+    debug_info["hagrid_dev"] = is_editable_mode()
+    debug_info["hagrid_path"] = hagrid_root()
+    debug_info["hagrid_repo_sha"] = commit_hash()
+    debug_info["docker"] = docker_info()
+    if is_windows():
+        debug_info["wsl"] = wsl_info()
+        debug_info["wsl_linux"] = wsl_linux_info()
+    print("\n\nWhen reporting bugs, please copy everything between the lines.")
+    print("==================================================================\n")
+    print(json.dumps(debug_info))
+    print("\n=================================================================\n\n")
+
+
+cli.add_command(debug)

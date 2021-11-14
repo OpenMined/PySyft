@@ -9,8 +9,8 @@ from typing import Type
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
-# syft absolute
-from syft.core.node.common.node_table import Base
+# relative
+from ..node_table import Base
 
 
 class DatabaseManager:
@@ -100,3 +100,9 @@ class DatabaseManager:
         result = session_local.query(self._schema).count()
         session_local.close()
         return result
+
+    def clear(self) -> None:
+        local_session = sessionmaker(bind=self.db)()
+        local_session.query(self._schema).delete()
+        local_session.commit()
+        local_session.close()

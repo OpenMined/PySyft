@@ -1,5 +1,6 @@
 # stdlib
 import hashlib
+import json
 import os
 from pathlib import Path
 import site
@@ -38,6 +39,21 @@ sudo usermod -aG docker $USER
 
 docker compose version
 """
+
+
+def docker_desktop_memory() -> int:
+
+    path = str(Path.home()) + "/Library/Group Containers/group.com.docker/settings.json"
+
+    try:
+        f = open(path, "r")
+        out = f.read()
+        f.close()
+        return json.loads(out)["memoryMiB"]
+
+    except Exception:
+        # docker desktop not found - probably running linux
+        return -1
 
 
 def hagrid_root() -> str:
@@ -94,7 +110,7 @@ def check_is_git(path: Path) -> bool:
 def get_git_repo() -> git.Repo:
     is_git = check_is_git(path=repo_src_path())
     if not EDITABLE_MODE and not is_git:
-        github_repo = "OpenMined/PySyft"
+        github_repo = "OpenMined/PySyft.git"
         git_url = f"https://github.com/{github_repo}"
         print(f"Fetching Syft + Grid Source from {git_url} to {repo_src_path()}")
         try:
@@ -117,6 +133,16 @@ def update_repo(repo: git.Repo, branch: str) -> None:
             repo.remotes.origin.pull()
         except Exception as e:
             print(f"Error checking out branch {branch}.", e)
+
+
+def commit_hash() -> str:
+    try:
+        repo = get_git_repo()
+        sha = repo.head.commit.hexsha
+        return sha
+    except Exception as e:
+        print("failed to get repo sha", e)
+        return "unknown"
 
 
 def use_branch(branch: str) -> None:

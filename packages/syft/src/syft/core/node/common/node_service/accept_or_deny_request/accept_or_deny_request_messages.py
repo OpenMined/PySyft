@@ -18,12 +18,12 @@ from ......proto.core.node.domain.service.accept_or_deny_request_message_pb2 imp
 )
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
-from .....common.serde.serializable import bind_protobuf
+from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 
 
-@bind_protobuf
+@serializable()
 @final
 class AcceptOrDenyRequestMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
