@@ -7,7 +7,8 @@ from typing import Dict
 from flask import Flask
 from flask_executor import Executor
 from flask_executor.futures import Future
-from secure.base_entrypoint import Shell2HTTP  # type: ignore
+from flask_shell2http import Shell2HTTP
+
 
 # Flask application instance
 app = Flask(__name__)
