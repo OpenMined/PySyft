@@ -1,0 +1,52 @@
+stack:
+  - .github/workflows/stack-integration_tests.yml
+  - "**.py"
+  - "**.cfg"
+  - "**.yml"
+  - "**.yaml"
+  - "**.dockerfile"
+  - "**.toml"
+  - "**.txt"
+  - "**.ini"
+  - "**.sh"
+  - "**.mako"
+  - "**.lock"
+  - "**.json"
+
+backend:
+  - .github/workflows/grid-backend_tests.yml
+  - packages/syft/**/*.py
+  - packages/syft/**/*.cfg
+  - packages/grid/backend/**/*.py
+  - packages/grid/backend/**/*.yml
+  - packages/grid/backend/**/*.cfg
+  - packages/grid/backend/**/*.dockerfile
+  - packages/grid/backend/**/*.toml
+  - packages/grid/backend/**/*.txt
+  - packages/grid/backend/**/*.ini
+  - packages/grid/backend/**/*.sh
+  - packages/grid/backend/**/*.mako
+
+hagrid:
+  - .github/workflows/hagrid-pr_tests.yml
+  - packages/hagrid/**/*.py
+  - packages/hagrid/**/*.cfg
+  - packages/hagrid/**/*.yml
+  - packages/hagrid/**/*.dockerfile
+  - packages/hagrid/**/*.toml
+  - packages/hagrid/**/*.txt
+  - packages/hagrid/**/*.ini
+  - packages/hagrid/**/*.sh
+
+syft:
+  - .github/workflows/syft**.yml
+  - packages/syft/**/*.py
+  - packages/syft/**/*.proto
+  - packages/syft/**/*.yml
+  - packages/syft/**/*.cfg
+  - packages/syft/**/*.dockerfile
+  - packages/syft/**/*.toml
+  - packages/syft/**/*.txt
+  - packages/syft/**/*.ini
+  - packages/syft/**/*.sh
+  - packages/syft/**/*.mako
