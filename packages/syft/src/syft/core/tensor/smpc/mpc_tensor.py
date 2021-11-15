@@ -838,7 +838,7 @@ class MPCTensor(PassthroughTensor):
         """
         return self * self.sign()
 
-    def pow(self, power: int) -> MPCTensor:
+    def __pow__(self, power: int) -> MPCTensor:
         """Compute integer power of a number iteratively using mul.
 
         - Divide power by 2 and multiply base to itself (if the power is even)
@@ -915,7 +915,6 @@ class MPCTensor(PassthroughTensor):
     __le__ = le
     __eq__ = eq
     __ne__ = ne
-    __pow__ = pow
 
 
 @implements(MPCTensor, np.add)
