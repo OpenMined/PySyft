@@ -290,7 +290,7 @@ def test_abs(get_clients) -> None:
 
     remote_value = value.send(clients[0])
 
-    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 3))
 
     res = mpc_tensor.__abs__()
     res.block_with_timeout(secs=120)
@@ -308,7 +308,7 @@ def test_sign(get_clients) -> None:
 
     remote_value = value.send(clients[0])
 
-    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(2, 3))
 
     res = mpc_tensor.sign()
     res.block_with_timeout(secs=120)
