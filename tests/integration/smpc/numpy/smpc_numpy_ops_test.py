@@ -319,7 +319,7 @@ def test_sign(get_clients) -> None:
     assert (res == exp_res).all()
 
 
-@pytest.mark.parametrize("power", [5, 7])
+@pytest.mark.parametrize("power", [4, 7])
 @pytest.mark.smpc
 def test_pow(get_clients, power) -> None:
     clients = get_clients(2)

@@ -866,11 +866,13 @@ class MPCTensor(PassthroughTensor):
             # If power is odd
             if power % 2 == 1:
                 result = base * result
+                result.block
 
             # Divide the power by 2
             power = power // 2
             # Multiply base to itself
             base = base * base
+            base.block
 
         return result
 
