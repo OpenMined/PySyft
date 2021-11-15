@@ -246,6 +246,7 @@ def test_put(get_clients) -> None:
 
     assert (res == exp_res.child).all()
 
+
 @pytest.mark.smpc
 def test_neg(get_clients) -> None:
     clients = get_clients(2)
