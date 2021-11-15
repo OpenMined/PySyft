@@ -29,7 +29,22 @@ services:
       - --log
       # Enable the Dashboard and API
       - --api
-
+    # Since we disable Docker Swarm mode, labels must be set on the containers
+    labels:
+      - traefik.enable=true
+      # Use the traefik-public network (declared below)
+      - traefik.docker.network=${TRAEFIK_PUBLIC_NETWORK?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-traefik-public-http.rule=Host(`${DOMAIN?Variable not set}`)
+      - traefik.http.routers.${STACK_NAME?Variable not set}-traefik-public-http.entrypoints=web
+      - traefik.http.services.${STACK_NAME?Variable not set}-traefik-public.loadbalancer.server.port=80
+      # Redirect all www to non-www on web (HTTP)
+      - "traefik.http.routers.www-catchall.entrypoints=web"
+      - "traefik.http.routers.www-catchall.rule=HostRegexp(`{host:(www\\.).+}`)"
+      - "traefik.http.routers.www-catchall.tls=true"
+      - "traefik.http.routers.www-catchall.middlewares=wwwtohttp"
+      - "traefik.http.middlewares.wwwtohttp.redirectregex.regex=^http?://(?:www\\.)?(.+)"
+      - "traefik.http.middlewares.wwwtohttp.redirectregex.replacement=http://$${1}"
+      - "traefik.http.middlewares.wwwtohttp.redirectregex.permanent=false"
     network_mode: service:tailscale
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
@@ -70,6 +85,9 @@ services:
     # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
     command: /start-reload.sh
     labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this wont match /api/v1/syft/stream because of length
       - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8001
     network_mode: service:proxy
 
@@ -98,6 +116,9 @@ services:
     # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
     labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream-http.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this only matches /api/v1/syft/stream because of length
       - traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=8011
     network_mode: service:proxy
 
@@ -136,6 +157,11 @@ services:
         TYPE: ${NODE_TYPE?Variable not set}
     volumes:
       - ./frontend/src:/app/src
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=PathPrefix(`/`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
 
   tailscale:
     hostname: ${DOMAIN_NAME?Variable not set}

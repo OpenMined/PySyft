@@ -51,6 +51,7 @@ services:
       # Enable the Dashboard and API
       - --api
     labels:
+      - traefik.http.routers.${STACK_NAME?Variable not set}-traefik-public-http.entrypoints=websecure
       # Redirect all www to non-www on websecure (HTTPS)
       - "traefik.http.routers.wwwsecure-catchall.entrypoints=websecure"
       - "traefik.http.routers.wwwsecure-catchall.rule=HostRegexp(`{host:(www\\.).+}`)"
