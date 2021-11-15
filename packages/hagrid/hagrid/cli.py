@@ -148,6 +148,11 @@ def clean(location: str) -> None:
     default="",
     type=str,
 )
+@click.option(
+    "--insecure",
+    is_flag=True,
+    help="Launch without TLS configuration"
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -367,6 +372,7 @@ def create_launch_cmd(
             if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
                 headless = True
             parsed_kwargs["headless"] = headless
+            parsed_kwargs["insecure"] = kwargs["insecure"]
 
             # If the user is using docker desktop (OSX/Windows), check to make sure there's enough RAM.
             # If the user is using Linux this isn't an issue because Docker scales to the avaialble RAM,
@@ -673,6 +679,8 @@ def create_launch_docker_cmd(
     print("  - NAME: " + str(snake_name))
     print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
+    if kwargs["insecure"] is False:
+        print("  - SECURE PORT: " + str(host_term.next_free_port))
     print("  - DOCKER: " + docker_version)
     print("  - TAIL: " + str(tail))
     print("\n")
@@ -680,7 +688,10 @@ def create_launch_docker_cmd(
     cmd = ""
     if not is_windows():
         cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
+
     cmd += " DOMAIN_PORT=" + str(host_term.free_port)
+    if kwargs["insecure"] is False:
+        cmd += " SECURE_DOMAIN_PORT=" + str(host_term.next_free_port)
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += " DOMAIN_NAME='" + snake_name + "'"
     cmd += " NODE_TYPE=" + str(node_type.input)
@@ -698,6 +709,11 @@ def create_launch_docker_cmd(
 
     if kwargs["headless"] is False:
         cmd += " --profile frontend"
+
+    cmd += " --file docker-compose.yml"
+    cmd += " --file docker-compose.override.yml"
+    if kwargs["insecure"] is False:
+        cmd += " --file docker-compose.websecure.yml"
 
     cmd += " up"
 
