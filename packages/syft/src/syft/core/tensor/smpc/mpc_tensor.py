@@ -797,6 +797,83 @@ class MPCTensor(PassthroughTensor):
         res = self.__apply_op(y, "matmul")
         return res
 
+    def put(
+        self,
+        indices: npt.ArrayLike,
+        values: npt.ArrayLike,
+        mode: Optional[str] = "raise",
+    ) -> MPCTensor:
+        """Performs Numpy put operation on the underlying ShareTensors.
+        Args:
+            indices (npt.ArrayLike): Target indices, interpreted as integers.
+            values (npt.ArrayLike): Values to place at target indices.
+            mode (Optional[str]): Specifies how out-of-bounds indices will behave.
+        Returns:
+            res (MPCTensor): Result of the operation.
+        """
+        shares = []
+        shares.append(self.child[0].put(indices, values, mode))
+        # since the value is public we assign directly to prevent overhead of random share creation.
+        zero = np.zeros_like(values)
+        for share in self.child[1::]:
+            shares.append(share.put(indices, zero.copy(), mode))
+
+        res = MPCTensor(shares=shares, parties=self.parties, shape=self.shape)
+        return res
+
+    def sign(self) -> MPCTensor:
+        """Calculate sign of given tensor.
+
+        Returns:
+            MPCTensor: with computed sign.
+        """
+        res: MPCTensor = 2 * (self > 0) - 1  # type: ignore
+        return res
+
+    def __abs__(self) -> MPCTensor:
+        """Calculates absolute value of MPCTensor.
+
+        Returns:
+            MPCTensor: computed absolute values of underlying tensor.
+        """
+        return self * self.sign()
+
+    def pow(self, power: int) -> MPCTensor:
+        """Compute integer power of a number iteratively using mul.
+
+        - Divide power by 2 and multiply base to itself (if the power is even)
+        - Decrement power by 1 to make it even and then follow the first step
+
+        Args:
+            power (int): integer value to apply the
+
+        Returns:
+             MPCTensor: Result of the pow operation
+
+        Raises:
+            RuntimeError: if negative power is given
+        """
+        # TODO: Implement after we have reciprocal function.
+        if power < 0:
+            raise RuntimeError("Negative integer powers not supported yet.")
+
+        base = self
+
+        # TODO: should modify for general ring sizes.
+        result = np.ones(shape=self.shape, dtype=np.int32)
+
+        while power > 0:
+            # If power is odd
+            if power % 2 == 1:
+                result = base * result
+
+            # Divide the power by 2
+            power = power // 2
+            # Multiply base to itself
+            base = base * base
+
+        return result
+
     def __str__(self) -> str:
         res = "MPCTensor"
         for share in self.child:
@@ -825,30 +902,6 @@ class MPCTensor(PassthroughTensor):
 
         return out
 
-    def put(
-        self,
-        indices: npt.ArrayLike,
-        values: npt.ArrayLike,
-        mode: Optional[str] = "raise",
-    ) -> MPCTensor:
-        """Performs Numpy put operation on the underlying ShareTensors.
-        Args:
-            indices (npt.ArrayLike): Target indices, interpreted as integers.
-            values (npt.ArrayLike): Values to place at target indices.
-            mode (Optional[str]): Specifies how out-of-bounds indices will behave.
-        Returns:
-            res (MPCTensor): Result of the operation.
-        """
-        shares = []
-        shares.append(self.child[0].put(indices, values, mode))
-        # since the value is public we assign directly to prevent overhead of random share creation.
-        zero = np.zeros_like(values)
-        for share in self.child[1::]:
-            shares.append(share.put(indices, zero.copy(), mode))
-
-        res = MPCTensor(shares=shares, parties=self.parties, shape=self.shape)
-        return res
-
     __add__ = add
     __radd__ = add
     __sub__ = sub
@@ -862,6 +915,7 @@ class MPCTensor(PassthroughTensor):
     __le__ = le
     __eq__ = eq
     __ne__ = ne
+    __pow__ = pow
 
 
 @implements(MPCTensor, np.add)

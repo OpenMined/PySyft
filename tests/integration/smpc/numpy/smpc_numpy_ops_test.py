@@ -246,6 +246,7 @@ def test_put(get_clients) -> None:
 
     assert (res == exp_res.child).all()
 
+
 @pytest.mark.smpc
 def test_neg(get_clients) -> None:
     clients = get_clients(2)
@@ -278,5 +279,60 @@ def test_take(get_clients) -> None:
     res = res.reconstruct()
 
     exp_res = value.take([5, 1, 6])
+
+    assert (res == exp_res.child).all()
+
+
+@pytest.mark.smpc
+def test_abs(get_clients) -> None:
+    clients = get_clients(2)
+    value = Tensor(np.array([[-32, -54, 98], [12, -108, 27]], dtype=np.int32))
+
+    remote_value = value.send(clients[0])
+
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
+
+    res = mpc_tensor.__abs__()
+    res.block_with_timeout(secs=120)
+    res = res.reconstruct()
+
+    exp_res = value.__abs__()
+
+    assert (res == exp_res.child).all()
+
+
+@pytest.mark.smpc
+def test_sign(get_clients) -> None:
+    clients = get_clients(2)
+    value = Tensor(np.array([[-32, -54, 98], [12, -108, 27]], dtype=np.int32))
+
+    remote_value = value.send(clients[0])
+
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
+
+    res = mpc_tensor.sign()
+    res.block_with_timeout(secs=120)
+    res = res.reconstruct()
+
+    exp_res = np.array([[-1, -1, 1], [1, -1, 1]], dtype=np.int32)
+
+    assert (res == exp_res).all()
+
+
+@pytest.mark.parametrize("power", [3, 5])
+@pytest.mark.smpc
+def test_pow(get_clients, power) -> None:
+    clients = get_clients(2)
+    value = Tensor(np.array([1, -2, 3], dtype=np.int32))
+
+    remote_value = value.send(clients[0])
+
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3,))
+
+    res = mpc_tensor ** power
+    res.block_with_timeout(secs=40)
+    res = res.reconstruct()
+
+    exp_res = value ** power
 
     assert (res == exp_res.child).all()
