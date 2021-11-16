@@ -4,10 +4,6 @@ on:
   release:
     types: [published]
 
-defaults:
-  run:
-    working-directory: ./packages/syft
-
 jobs:
   deploy:
     runs-on: ubuntu-latest
@@ -20,11 +16,11 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install --upgrade setuptools setuptools-scm wheel twine tox
+          pip install --upgrade setuptools wheel twine tox bump2version
       - name: Build and publish
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
-          tox -e build
-          twine upload dist/*
+          tox -e syft.publish
+          twine upload packages/syft/dist/*
