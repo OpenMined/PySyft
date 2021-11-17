@@ -24,12 +24,12 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
 
 # apple m1
 RUN if [ $(uname -m) != "x86_64" ]; then \
-  pip install --user torch==1.8.1; \
+  pip install --user torch==1.9.1; \
   fi
 
 RUN --mount=type=cache,target=/root/.cache \
   if [ $(uname -m) = "x86_64" ]; then pip install --user \
-  torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
+  torch==1.9.1+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
   fi
 
 RUN --mount=type=cache,target=/root/.cache \
