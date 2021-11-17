@@ -425,7 +425,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         out: Optional[np.ndarray] = None,
     ) -> PassthroughTensor:
         return self.__class__(
-            self.child.cumprod(
+            self.child.trace(
                 offset=offset, axis1=axis1, axis2=axis2, dtype=dtype, out=out
             )
         )
