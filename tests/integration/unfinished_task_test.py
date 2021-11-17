@@ -1,3 +1,6 @@
+# stdlib
+import time
+
 # third party
 import pytest
 
@@ -14,11 +17,11 @@ def test_unfinished_task(get_clients) -> None:
 
     list_pointer = sy.lib.python.List().send(client)
     int_pointer = sy.lib.python.Int(1).send(client)
-    int_pointer.block_with_timeout(secs=10)
+    time.sleep(5)
     int_obj = int_pointer.get()
     list_pointer.append(int_pointer)
     storeable_object = StorableObject(id=int_pointer.id_at_location, data=int_obj)
     save_object_action = SaveObjectAction(obj=storeable_object, address=client.address)
     client.send_immediate_msg_without_reply(msg=save_object_action)
-    list_pointer.block_with_timeout(secs=10)
+    time.sleep(5)
     assert list_pointer.get() == [1]
