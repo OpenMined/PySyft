@@ -407,8 +407,28 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         return self.__class__(self.child.cumprod(axis=axis))
 
     # numpy.cumsum(a, axis=None, dtype=None, out=None)
-    def cumsum(self, axis: Optional[int] = None) -> PassthroughTensor:
-        return self.__class__(self.child.cumsum(axis=axis))
+    def cumsum(
+        self,
+        axis: Optional[int] = None,
+        dtype: Optional[np.dtype] = None,
+        out: Optional[np.ndarray] = None,
+    ) -> PassthroughTensor:
+        return self.__class__(self.child.cumsum(axis=axis, dtype=dtype, out=out))
+
+    # numpy.trace(a, offset=0, axis1=0, axis2=1, dtype=None, out=None)
+    def trace(
+        self,
+        offset: Optional[int] = 0,
+        axis1: Optional[int] = 0,
+        axis2: Optional[int] = 1,
+        dtype: Optional[np.dtype] = None,
+        out: Optional[np.ndarray] = None,
+    ) -> PassthroughTensor:
+        return self.__class__(
+            self.child.cumprod(
+                offset=offset, axis1=axis1, axis2=axis2, dtype=dtype, out=out
+            )
+        )
 
     # numpy.diagonal(a, offset=0, axis1=0, axis2=1)
     def diagonal(
