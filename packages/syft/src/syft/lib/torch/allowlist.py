@@ -226,15 +226,15 @@ allowlist["torch.return_types.cummin"] = {
     "return_type": "torch.return_types.cummin",
     "min_version": "1.5.0",
 }
-allowlist["torch.return_types.eig"] = "torch.return_types.eig"
+# allowlist["torch.return_types.eig"] = "torch.return_types.eig" # deprecated in torch==1.10.0
 allowlist["torch.return_types.kthvalue"] = "torch.return_types.kthvalue"
-allowlist["torch.return_types.lstsq"] = "torch.return_types.lstsq"
+# allowlist["torch.return_types.lstsq"] = "torch.return_types.lstsq" # deprecated in torch==1.10.0
 allowlist["torch.return_types.slogdet"] = "torch.return_types.slogdet"
-allowlist["torch.return_types.qr"] = "torch.return_types.qr"
+# allowlist["torch.return_types.qr"] = "torch.return_types.qr" # deprecated in torch==1.10.0
 allowlist["torch.return_types.mode"] = "torch.return_types.mode"
-allowlist["torch.return_types.solve"] = "torch.return_types.solve"
+# allowlist["torch.return_types.solve"] = "torch.return_types.solve" # deprecated in torch==1.10.0
 allowlist["torch.return_types.sort"] = "torch.return_types.sort"
-allowlist["torch.return_types.symeig"] = "torch.return_types.symeig"
+# allowlist["torch.return_types.symeig"] = "torch.return_types.symeig" # deprecated in torch==1.10.0
 allowlist["torch.return_types.topk"] = "torch.return_types.topk"
 allowlist["torch.return_types.triangular_solve"] = "torch.return_types.triangular_solve"
 allowlist["torch.return_types.svd"] = "torch.return_types.svd"
@@ -268,7 +268,7 @@ allowlist["torch.Tensor.dim"] = "torch.Tensor"
 allowlist["torch.Tensor.dist"] = "torch.Tensor"
 allowlist["torch.Tensor.dot"] = "torch.Tensor"
 allowlist["torch.Tensor.double"] = "torch.Tensor"
-allowlist["torch.Tensor.eig"] = "torch.return_types.eig"
+# allowlist["torch.Tensor.eig"] = "torch.return_types.eig" # deprecated in torch==1.10.0
 allowlist["torch.Tensor.element_size"] = "syft.lib.python.Int"
 allowlist["torch.Tensor.eq_"] = "torch.Tensor"
 allowlist["torch.Tensor.eq"] = "torch.Tensor"
@@ -366,7 +366,7 @@ allowlist["torch.Tensor.logical_xor_"] = "torch.Tensor"
 allowlist["torch.Tensor.logical_xor"] = "torch.Tensor"
 allowlist["torch.Tensor.logsumexp"] = "torch.Tensor"
 allowlist["torch.Tensor.long"] = "torch.Tensor"
-allowlist["torch.Tensor.lstsq"] = "torch.return_types.lstsq"
+# allowlist["torch.Tensor.lstsq"] = "torch.return_types.lstsq" # deprecated in torch==1.10.0
 allowlist["torch.Tensor.lt_"] = "torch.Tensor"
 allowlist["torch.Tensor.lt"] = "torch.Tensor"
 allowlist["torch.Tensor.lu_solve"] = "torch.Tensor"
@@ -442,7 +442,7 @@ allowlist["torch.Tensor.q_per_channel_scales"] = "torch.Tensor"
 allowlist["torch.Tensor.q_per_channel_zero_points"] = "torch.Tensor"
 allowlist["torch.Tensor.q_scale"] = "syft.lib.python.Float"
 allowlist["torch.Tensor.q_zero_point"] = "syft.lib.python.Int"
-allowlist["torch.Tensor.qr"] = "torch.return_types.qr"
+# allowlist["torch.Tensor.qr"] = "torch.return_types.qr" # deprecated in torch==1.10.0
 allowlist["torch.Tensor.random_"] = "torch.Tensor"
 allowlist["torch.Tensor.reciprocal_"] = "torch.Tensor"
 allowlist["torch.Tensor.reciprocal"] = "torch.Tensor"
@@ -484,7 +484,7 @@ allowlist["torch.Tensor.sinh_"] = "torch.Tensor"
 allowlist["torch.Tensor.sinh"] = "torch.Tensor"
 allowlist["torch.Tensor.slogdet"] = "torch.return_types.slogdet"
 allowlist["torch.Tensor.softmax"] = "torch.Tensor"
-allowlist["torch.Tensor.solve"] = "torch.return_types.solve"
+# allowlist["torch.Tensor.solve"] = "torch.return_types.solve" # deprecated in torch==1.10.0
 allowlist["torch.Tensor.sort"] = "torch.return_types.sort"
 allowlist["torch.Tensor.split_with_sizes"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.Tensor.split"] = "syft.lib.python.List"  # Tuple not List
@@ -502,7 +502,7 @@ allowlist["torch.Tensor.sub"] = "torch.Tensor"
 allowlist["torch.Tensor.sum_to_size"] = "torch.Tensor"
 allowlist["torch.Tensor.sum"] = "torch.Tensor"
 allowlist["torch.Tensor.svd"] = "torch.return_types.svd"
-allowlist["torch.Tensor.symeig"] = "torch.return_types.symeig"
+# allowlist["torch.Tensor.symeig"] = "torch.return_types.symeig" # deprecated in torch==1.10.0
 allowlist["torch.Tensor.t_"] = "torch.Tensor"
 allowlist["torch.Tensor.t"] = "torch.Tensor"
 allowlist["torch.Tensor.t"] = "torch.Tensor"
@@ -1199,7 +1199,7 @@ allowlist["torch.digamma"] = "torch.Tensor"
 allowlist["torch.dist"] = "torch.Tensor"
 allowlist["torch.div"] = "torch.Tensor"
 allowlist["torch.dot"] = "torch.Tensor"
-allowlist["torch.eig"] = "torch.return_types.eig"
+# allowlist["torch.eig"] = "torch.return_types.eig" # deprecated in torch==1.10.0
 allowlist["torch.eq"] = "torch.Tensor"
 allowlist["torch.equal"] = "syft.lib.python.Bool"
 allowlist["torch.erf_"] = "torch.Tensor"
@@ -1273,7 +1273,7 @@ allowlist["torch.logical_or"] = {
 }
 allowlist["torch.logical_xor"] = "torch.Tensor"
 allowlist["torch.logsumexp"] = "torch.Tensor"
-allowlist["torch.lstsq"] = "torch.return_types.lstsq"
+# allowlist["torch.lstsq"] = "torch.return_types.lstsq" # deprecated in torch==1.10.0
 allowlist["torch.lt"] = "torch.Tensor"
 allowlist["torch.lu_solve"] = "torch.Tensor"
 allowlist["torch.lu"] = "syft.lib.python.List"  # Tuple not List
@@ -1306,7 +1306,7 @@ allowlist["torch.q_per_channel_scales"] = "torch.Tensor"
 allowlist["torch.q_per_channel_zero_points"] = "torch.Tensor"
 allowlist["torch.q_scale"] = "syft.lib.python.Float"
 allowlist["torch.q_zero_point"] = "syft.lib.python.Int"
-allowlist["torch.qr"] = "torch.return_types.qr"
+# allowlist["torch.qr"] = "torch.return_types.qr" # deprecated in torch==1.10.0
 allowlist["torch.reciprocal_"] = "torch.Tensor"
 allowlist["torch.reciprocal"] = "torch.Tensor"
 allowlist["torch.relu_"] = "torch.Tensor"
@@ -1334,7 +1334,7 @@ allowlist["torch.sinh_"] = "torch.Tensor"
 allowlist["torch.sinh"] = "torch.Tensor"
 allowlist["torch.slogdet"] = "torch.return_types.slogdet"
 allowlist["torch.softmax"] = "torch.Tensor"
-allowlist["torch.solve"] = "torch.return_types.solve"
+# allowlist["torch.solve"] = "torch.return_types.solve" # deprecated in torch==1.10.0
 allowlist["torch.sort"] = "torch.return_types.sort"
 allowlist["torch.split_with_sizes"] = "syft.lib.python.List"  # Tuple not List
 allowlist["torch.split"] = "syft.lib.python.List"  # Tuple not List
@@ -1355,7 +1355,7 @@ allowlist["torch.stft"] = "torch.Tensor"
 allowlist["torch.sub"] = "torch.Tensor"
 allowlist["torch.sum"] = "torch.Tensor"
 allowlist["torch.svd"] = "torch.return_types.svd"
-allowlist["torch.symeig"] = "torch.return_types.symeig"
+# allowlist["torch.symeig"] = "torch.return_types.symeig" # deprecated in torch==1.10.0
 allowlist["torch.t"] = "torch.Tensor"
 allowlist["torch.take"] = "torch.Tensor"
 allowlist["torch.tan_"] = "torch.Tensor"
