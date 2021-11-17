@@ -336,3 +336,57 @@ def test_pow(get_clients, power) -> None:
     exp_res = value ** power
 
     assert (res == exp_res.child).all()
+
+
+@pytest.mark.smpc
+def test_cumsum(get_clients) -> None:
+    clients = get_clients(2)
+    value = Tensor(np.array([-5, 2, -3, 7, 132, 54, 27], dtype=np.int32))
+
+    remote_value = value.send(clients[0])
+
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(7,))
+
+    res = mpc_tensor.cumsum()
+    res.block_with_timeout(secs=20)
+    res = res.reconstruct()
+
+    exp_res = value.cumsum()
+
+    assert (res == exp_res.child).all()
+
+
+@pytest.mark.smpc
+def test_trace(get_clients) -> None:
+    clients = get_clients(2)
+    value = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.int32))
+
+    remote_value = value.send(clients[0])
+
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
+
+    res = mpc_tensor.trace()
+    res.block_with_timeout(secs=20)
+    res = res.reconstruct()
+
+    exp_res = value.trace()
+
+    assert (res == exp_res.child).all()
+
+
+@pytest.mark.smpc
+def test_nonzero(get_clients) -> None:
+    clients = get_clients(2)
+    value = Tensor(np.array([-5, 0, -3, 0, 132, 54, 0], dtype=np.int32))
+
+    remote_value = value.send(clients[0])
+
+    mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(7,))
+
+    res = mpc_tensor.nonzero()
+    res.block_with_timeout(secs=20)
+    res = res.reconstruct()
+
+    exp_res = value.nonzero()
+
+    assert (res == exp_res.child).all()

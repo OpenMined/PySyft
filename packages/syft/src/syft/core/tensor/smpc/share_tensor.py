@@ -50,6 +50,8 @@ METHODS_FORWARD_ALL_SHARES = {
     "__neg__",
     "take",
     "choose",
+    "cumsum",
+    "trace",
 }
 INPLACE_OPS = {"resize", "put"}
 RING_SIZE_TO_OP = {

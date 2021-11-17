@@ -48,6 +48,8 @@ METHODS_FORWARD_ALL_SHARES = {
     "__neg__",
     "take",
     "choose",
+    "cumsum",
+    "trace",
 }
 INPLACE_OPS = {
     "resize",
@@ -875,6 +877,15 @@ class MPCTensor(PassthroughTensor):
             base.block
 
         return result
+
+    def nonzero(self) -> MPCTensor:
+        """Computes nonzero function on MPCTensor.
+
+        Returns:
+            MPCTensor: Result of nonzero operation.
+        """
+
+        return self.ne(0)
 
     def __str__(self) -> str:
         res = "MPCTensor"
