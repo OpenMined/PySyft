@@ -1,6 +1,3 @@
-# stdlib
-import time
-
 # third party
 import pytest
 
