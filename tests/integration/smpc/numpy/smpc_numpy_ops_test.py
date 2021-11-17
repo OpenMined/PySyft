@@ -347,11 +347,11 @@ def test_cumsum(get_clients) -> None:
 
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(7,))
 
-    res = mpc_tensor.cumsum(dtype=np.int32)
+    res = mpc_tensor.cumsum()
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
 
-    exp_res = value.cumsum(dtype=np.int32)
+    exp_res = value.cumsum()
 
     assert (res == exp_res.child).all()
 
@@ -365,11 +365,11 @@ def test_trace(get_clients) -> None:
 
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3, 3))
 
-    res = mpc_tensor.trace(dtype=np.int32)
+    res = mpc_tensor.trace()
     res.block_with_timeout(secs=20)
     res = res.reconstruct()
 
-    exp_res = value.trace(dtype=np.int32)
+    exp_res = value.trace()
 
     assert (res == exp_res.child).all()
 
