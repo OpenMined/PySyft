@@ -411,8 +411,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def cumsum(
         self,
         axis: Optional[int] = None,
-        dtype: Optional[np.dtype] = None,
-        out: Optional[np.ndarray] = np.int32,
+        dtype: Optional[np.dtype] = np.int32,
+        out: Optional[np.ndarray] = None,
     ) -> PassthroughTensor:
         return self.__class__(self.child.cumsum(axis=axis, dtype=dtype, out=out))
 
