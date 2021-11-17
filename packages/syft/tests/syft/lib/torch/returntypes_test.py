@@ -22,15 +22,15 @@ torch_version_ge_1d5d0 = version.parse(
 ) >= version.parse("1.5.0")
 
 parameters = [
-    ("eig", x, True),
+    # ("eig", x, True), # deprecated in torch==1.10.0
     ("kthvalue", x, 1),
-    ("lstsq", A, B),
+    # ("lstsq", A, B), # deprecated in torch==1.10.0
     ("slogdet", x, None),
-    ("qr", x, None),
+    # ("qr", x, None), # deprecated in torch==1.10.0
     ("mode", x, None),
-    ("solve", s, s),
+    # ("solve", s, s), # deprecated in torch==1.10.0
     ("sort", s, None),
-    ("symeig", s, None),
+    # ("symeig", s, None), # deprecated in torch==1.10.0
     ("topk", s, 1),
     ("triangular_solve", s, s),
     ("svd", s, None),

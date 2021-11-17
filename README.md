@@ -124,7 +124,6 @@ syft.jupyter
 syft.lint
 syft.test.fast
 syft.test.libs
-syft.test.duet
 syft.test.security
 ```
 

@@ -64,7 +64,9 @@ class Entity:
     def __lt__(self, other: Any) -> bool:
         return self.name < other.name
 
-    def __add__(self, other: Union[Entity, DataSubjectGroup]) -> DataSubjectGroup:
+    def __add__(
+        self, other: Union[Entity, DataSubjectGroup, int, float]
+    ) -> Union[DataSubjectGroup, Entity]:
         if isinstance(other, Entity):
             return DataSubjectGroup([self, other])
         elif isinstance(other, DataSubjectGroup):
@@ -72,10 +74,17 @@ class Entity:
             return other
         elif not other:  # type: ignore
             return DataSubjectGroup([self])
+        elif isinstance(other, (int, float)):
+            return self
         else:
             raise Exception(
                 f"Addition not implemented between {type(self)} and {type(other)}"
             )
+
+    def __mul__(
+        self, other: Union[Entity, DataSubjectGroup, int, float]
+    ) -> Union[DataSubjectGroup, Entity]:
+        return self.__add__(other)
 
     def to_string(self) -> str:
         return f"{self.name}+{self.id.to_string()}"
@@ -148,17 +157,26 @@ class DataSubjectGroup:
             entity_set.add(Entity.from_string(entity_blob))
         return DataSubjectGroup(list[entity_set])  # type: ignore
 
-    def __add__(self, other: Union[DataSubjectGroup, Entity]) -> DataSubjectGroup:
+    def __add__(
+        self, other: Union[DataSubjectGroup, Entity, int, float]
+    ) -> DataSubjectGroup:
         if isinstance(other, Entity):
             return DataSubjectGroup(self.entity_set.union({other}))
         elif isinstance(other, DataSubjectGroup):
             return DataSubjectGroup(self.entity_set.union(other.entity_set))
         elif not other:  # type: ignore
             return self
+        elif isinstance(other, (int, float)):
+            return self
         else:
             raise Exception(
                 f"Addition not implemented between {type(self)} and {type(other)}"
             )
+
+    def __mul__(
+        self, other: Union[DataSubjectGroup, Entity, int, float]
+    ) -> DataSubjectGroup:
+        return self.__add__(other)
 
     def __repr__(self) -> str:
         return f"DSG{[i.__repr__() for i in self.entity_set]}"
