@@ -878,15 +878,6 @@ class MPCTensor(PassthroughTensor):
 
         return result
 
-    def nonzero(self) -> MPCTensor:
-        """Computes nonzero function on MPCTensor.
-
-        Returns:
-            MPCTensor: Result of nonzero operation.
-        """
-
-        return self.ne(0)
-
     def __str__(self) -> str:
         res = "MPCTensor"
         for share in self.child:
