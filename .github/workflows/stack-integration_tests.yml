@@ -118,7 +118,102 @@ jobs:
       #   shell: bash
       #   run: |
       #     ./scripts/docker_save.sh
+  
+  stack-integration-tests-windows:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [Windows-10]
+        python-version: [3.9]
 
+    runs-on: [self-hosted,windows]
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
+
+      - name: Install Docker Compose
+        if: runner.os == 'Windows'
+        run: |
+          curl -L https://github.com/docker/compose/releases/download/v2.1.1/docker-compose-windows-x86_64.exe -o "C:\Program Files\Docker\cli-plugins\docker-compose.exe"
+
+      - name: Setup WSL
+        if: runner.os == 'Windows'
+        uses: Vampire/setup-wsl@v1
+        with:
+          distribution: Ubuntu-20.04
+
+      # - name: docker cache
+      #   uses: actions/cache@v2
+      #   if: steps.changes.outputs.stack == 'true'
+      #   continue-on-error: true
+      #   with:
+      #     path: .docker-cache
+      #     key: ${{ runner.os }}-docker
+      #     restore-keys: |
+      #       ${{ runner.os }}-docker
+      # - name: Load docker images
+      #   if: steps.changes.outputs.stack == 'true'
+      #   shell: bash
+      #   run: |
+      #     ./scripts/docker_load.sh
+      # - name: Windows
+      #   if: runner.os == 'Windows'
+      #   uses: mxschmitt/action-tmate@v3
+
+      #     stop-service docker
+      #     dockerd.exe --experimental
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        run: |
+          tox -e stack.test.integration
+
+      # - name: Save docker images
+      #   if: steps.changes.outputs.stack == 'true'
+      #   shell: bash
+      #   run: |
+      #     ./scripts/docker_save.sh
+  
+  
   stack-integration-tests-smpc:
     strategy:
       max-parallel: 3
