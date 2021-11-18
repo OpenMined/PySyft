@@ -351,7 +351,7 @@ class Tensor(
     ) -> None:
         """data must be a list of numpy array"""
 
-        if isinstance(child, list):
+        if isinstance(child, (list, np.int32)):
             child = to32bit(np.array(child), verbose=False)
 
         if isinstance(child, th.Tensor):
@@ -363,7 +363,10 @@ class Tensor(
         if not isinstance(child, PassthroughTensor) and not isinstance(
             child, np.ndarray
         ):
-            raise Exception("Data must be list or nd.array")
+
+            raise Exception(
+                f"Data: {child} ,type: {type(child)} must be list or nd.array "
+            )
 
         if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
             getattr(child, "dtype", None) not in [np.int32, np.bool_]
