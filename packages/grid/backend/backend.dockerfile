@@ -11,8 +11,15 @@ COPY grid/backend/requirements.txt /app
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user "uvicorn[standard]" gunicorn
 
-RUN --mount=type=cache,target=/root/.cache \
-  pip install torch==1.10.0 -f https://download.pytorch.org/whl/torch_stable.html
+RUN if [ $(uname -m) = "x86_64" ]; then \
+  pip install --user torch==1.10.0+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
+  fi
+
+# apple m1 build PyNaCl for aarch64
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  pip install --user PyNaCl; \
+  pip install --user torch==1.10.0 -f https://download.pytorch.org/whl/torch_stable.html; \
+  fi
 
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
@@ -21,11 +28,6 @@ RUN --mount=type=cache,target=/root/.cache \
 ENV WAITFORIT_VERSION="v2.4.1"
 RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
   chmod +x /usr/local/bin/waitforit
-
-# apple m1 build PyNaCl for aarch64
-RUN if [ $(uname -m) != "x86_64" ]; then \
-  pip install --user PyNaCl; \
-  fi
 
 # Backend
 FROM python:3.9.9-slim as backend
