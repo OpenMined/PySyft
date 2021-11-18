@@ -144,6 +144,12 @@ class HostGrammarTerm(GrammarTerm):
         return bool(self.parts()[2])
 
     @property
+    def port_tls(self) -> int:
+        if self.port == 80:
+            return 443
+        return 444
+
+    @property
     def free_port(self) -> int:
         if self.port is None:
             raise BadGrammar(
@@ -152,12 +158,14 @@ class HostGrammarTerm(GrammarTerm):
         return find_available_port(host="localhost", port=self.port, search=self.search)
 
     @property
-    def next_free_port(self) -> int:
-        if self.port is None:
+    def free_port_tls(self) -> int:
+        if self.port_tls is None:
             raise BadGrammar(
-                f"{type(self)} unable to check if port {self.port} is free"
+                f"{type(self)} unable to check if tls port {self.port_tls} is free"
             )
-        return find_available_port(host="localhost", port=self.port+1, search=self.search)
+        return find_available_port(
+            host="localhost", port=self.port_tls, search=self.search
+        )
 
     def parts(self) -> TypeTuple[Optional[str], Optional[int], bool]:
         host = None

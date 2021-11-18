@@ -148,11 +148,7 @@ def clean(location: str) -> None:
     default="",
     type=str,
 )
-@click.option(
-    "--insecure",
-    is_flag=True,
-    help="Launch without TLS configuration"
-)
+@click.option("--insecure", is_flag=True, help="Launch without TLS configuration")
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -679,8 +675,6 @@ def create_launch_docker_cmd(
     print("  - NAME: " + str(snake_name))
     print("  - TAG: " + str(tag))
     print("  - PORT: " + str(host_term.free_port))
-    if kwargs["insecure"] is False:
-        print("  - SECURE PORT: " + str(host_term.next_free_port))
     print("  - DOCKER: " + docker_version)
     print("  - TAIL: " + str(tail))
     print("\n")
@@ -689,9 +683,8 @@ def create_launch_docker_cmd(
     if not is_windows():
         cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
 
-    cmd += " DOMAIN_PORT=" + str(host_term.free_port)
-    if kwargs["insecure"] is False:
-        cmd += " SECURE_DOMAIN_PORT=" + str(host_term.next_free_port)
+    cmd += " HTTP_PORT=" + str(host_term.free_port)
+    cmd += " HTTPS_PORT=" + str(host_term.free_port_tls)
     cmd += " TRAEFIK_TAG=" + str(tag)
     cmd += " DOMAIN_NAME='" + snake_name + "'"
     cmd += " NODE_TYPE=" + str(node_type.input)
@@ -711,10 +704,6 @@ def create_launch_docker_cmd(
         cmd += " --profile frontend"
 
     cmd += " --file docker-compose.yml"
-    cmd += " --file docker-compose.override.yml"
-    if kwargs["insecure"] is False:
-        cmd += " --file docker-compose.websecure.yml"
-
     cmd += " up"
 
     if not tail:
