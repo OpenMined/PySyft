@@ -138,7 +138,17 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
         run: |
-          tox -e stack.test.integration.windows
+          pip install -e packages/hagrid
+          docker --version
+          docker compose version
+          docker volume rm test_domain_1_app-db-data --force || true
+          docker volume rm test_domain_2_app-db-data --force || true
+          docker volume rm test_network_1_app-db-data --force || true
+          docker volume rm test_domain_1_tailscale-data --force || true
+          docker volume rm test_domain_2_tailscale-data --force || true
+          docker volume rm test_network_1_tailscale-data --force || true
+          docker volume rm test_network_1_headscale-data --force || true
+        #tox -e stack.test.integration.windows
         shell: pwsh
 
   stack-integration-tests-smpc:
