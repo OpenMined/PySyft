@@ -111,7 +111,7 @@ jobs:
         id: pip-cache
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
-        shell: powershell
+        shell: pwsh
 
       - name: pip cache
         uses: actions/cache@v2
@@ -126,20 +126,20 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install --upgrade --user pip
-        shell: powershell
+        shell: pwsh
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
-        shell: powershell
+        shell: pwsh
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
         run: |
           tox -e stack.test.integration.windows
-        shell: powershell
+        shell: pwsh
 
   stack-integration-tests-smpc:
     strategy:
