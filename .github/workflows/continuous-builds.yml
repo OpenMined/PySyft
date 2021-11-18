@@ -1,0 +1,76 @@
+name: Continuous Builds
+
+on:
+  schedule:
+    - cron: "30 01 * * 4" # Thursday
+
+jobs:
+  deploy-syft-alpha:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+      - name: Set Grid package version
+        run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
+      - name: Build and push `grid-backend` image to DockerHub
+        working-directory: ./packages
+        env:
+          IMAGE_URI: openmined/grid-backend
+        run: |
+          export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
+          export DOCKER_URI_LATEST=$IMAGE_URI:latest
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+          DOCKER_BUILDKIT=1 docker build \
+              -t $DOCKER_URI \
+              -t $DOCKER_URI_LATEST \
+              -f grid/backend/backend.dockerfile .
+          docker push $DOCKER_URI
+          docker push $DOCKER_URI_LATEST
+
+      - name: Build and push `grid-frontend` image to DockerHub
+        working-directory: ./packages/grid/frontend
+        env:
+          IMAGE_URI: openmined/grid-frontend
+        run: |
+          export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
+          export DOCKER_URI_LATEST=$IMAGE_URI:latest
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+          DOCKER_BUILDKIT=1 docker build \
+              -t $DOCKER_URI \
+              -t $DOCKER_URI_LATEST \
+              -f grid/frontend/frontend.dockerfile .
+          docker push $DOCKER_URI
+          docker push $DOCKER_URI_LATEST
+
+      - name: Build and push `grid-headscale` image to DockerHub
+        working-directory: ./packages/grid/vpn
+        env:
+          IMAGE_URI: openmined/grid-vpn-headscale
+        run: |
+          export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
+          export DOCKER_URI_LATEST=$IMAGE_URI:latest
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+          DOCKER_BUILDKIT=1 docker build \
+              -t $DOCKER_URI \
+              -t $DOCKER_URI_LATEST \
+              -f grid/vpn/headscale.dockerfile .
+          docker push $DOCKER_URI
+          docker push $DOCKER_URI_LATEST
+
+      - name: Build and push `grid-tailscale` image to DockerHub
+        working-directory: ./packages/grid/vpn
+        env:
+          IMAGE_URI: openmined/grid-vpn-tailscale
+        run: |
+          export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
+          export DOCKER_URI_LATEST=$IMAGE_URI:latest
+          echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin
+          DOCKER_BUILDKIT=1 docker build \
+              -t $DOCKER_URI \
+              -t $DOCKER_URI_LATEST \
+              -f grid/vpn/tailscale.dockerfile .
+          docker push $DOCKER_URI
+          docker push $DOCKER_URI_LATEST
