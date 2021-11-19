@@ -163,9 +163,7 @@ class HostGrammarTerm(GrammarTerm):
             raise BadGrammar(
                 f"{type(self)} unable to check if tls port {self.port_tls} is free"
             )
-        return find_available_port(
-            host="localhost", port=self.port_tls, search=self.search
-        )
+        return find_available_port(host="localhost", port=self.port_tls, search=True)
 
     def parts(self) -> TypeTuple[Optional[str], Optional[int], bool]:
         host = None

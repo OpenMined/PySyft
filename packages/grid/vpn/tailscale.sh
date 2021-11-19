@@ -1,5 +1,8 @@
 #!/bin/sh
 
+# if we have a custom dev mode rootCA.pem it will get loaded
+update-ca-certificates
+
 # iptables --list
 # block all traffic but port 80 on the tailscale0 interface
 # iptables -A INPUT -i tailscale0 -p tcp --dport 80 -j ACCEPT
