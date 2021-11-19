@@ -1,0 +1,26 @@
+version: "3.8"
+services:
+  proxy:
+    ports:
+      - "${HTTPS_PORT}:${HTTPS_PORT}"
+    command:
+      - --providers.docker
+      - --providers.docker.exposedbydefault=false
+      - --providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)
+      # custom tls cert config
+      - --providers.file.directory=/etc/traefik/dynamic-configurations
+      - --providers.file.watch=true
+      # redirect http to https
+      - "--entrypoints.web.address=:${HTTP_PORT}"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.websecure.address=:${HTTPS_PORT}"
+      - "--entrypoints.websecure.http.tls=true"
+
+      # Enable the access log, with HTTP requests
+      - --accesslog
+      # Enable the Traefik log, for configurations and errors
+      - --log
+      # Enable the Dashboard and API
+      # - --api # admin panel
+      # - --api.insecure=true # admin panel no password

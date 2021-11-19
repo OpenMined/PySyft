@@ -23,9 +23,9 @@ services:
       - sys_module
     ports:
       - "${HTTP_PORT}:${HTTP_PORT}"
-      - "${HTTPS_PORT}:${HTTPS_PORT}"
       - "41641/udp"
       - "4000"
+      # - "8080:8080"
     depends_on:
       - "docker-host"
 
@@ -34,7 +34,6 @@ services:
     image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}
     # ports:
       # - "${HTTP_PORT}:${HTTP_PORT}"
-      # - "${HTTPS_PORT}:${HTTPS_PORT}"
       # - "8080:8080"
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
@@ -47,15 +46,7 @@ services:
       - --providers.docker
       - --providers.docker.exposedbydefault=false
       - --providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)
-      # custom tls cert config
-      - --providers.file.directory=/etc/traefik/dynamic-configurations
-      - --providers.file.watch=true
-      # redirect http to https
       - "--entrypoints.web.address=:${HTTP_PORT}"
-      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
-      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
-      - "--entrypoints.websecure.address=:${HTTPS_PORT}"
-      - "--entrypoints.websecure.http.tls=true"
 
       # Enable the access log, with HTTP requests
       - --accesslog
@@ -119,6 +110,7 @@ services:
     environment:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
       - STACK_API_KEY=${STACK_API_KEY}
       - PORT=8001
     build:
@@ -135,7 +127,7 @@ services:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
       - "traefik.http.routers.${STACK_NAME?Variable not set}-backend.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)" # WARNING: this wont match /api/v1/syft/stream because of length
-      - "traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8081"
+      - "traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=8001"
     network_mode: service:proxy
 
   backend_stream:
@@ -149,6 +141,7 @@ services:
     environment:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
       - STACK_API_KEY=${STACK_API_KEY}
       - PORT=8011
       - STREAM_QUEUE=1
@@ -180,6 +173,7 @@ services:
     environment:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
       - CELERY_WORKER=true
       - RUN=celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
       - C_FORCE_ROOT=1
@@ -206,7 +200,6 @@ services:
       dockerfile: headscale.dockerfile
     volumes:
       - headscale-data:/headscale/data
-      # - ./grid/vpn:/headscale
     environment:
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
@@ -216,18 +209,10 @@ services:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
       - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn.rule=PathPrefix(`/vpn`)"
+      - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn.middlewares=${STACK_NAME?Variable not set}-vpn"
       - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn.stripprefix.prefixes=/vpn"
+      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn.stripprefix.forceslash=true"
       - "traefik.http.services.${STACK_NAME?Variable not set}-vpn.loadbalancer.server.port=8080"
-      # - "traefik.enable=true"
-      # - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
-      # # - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn.entrypoint=websecure"
-      # - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn.rule=PathPrefix(`/vpn`)"
-      # # - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn.middlewares=${STACK_NAME?Variable not set}-vpn-stripprefix"
-      # - "traefik.http.services.${STACK_NAME?Variable not set}-vpn.loadbalancer.server.port=8080"
-      # # - "traefik.http.routers.${STACK_NAME?Variable not set}-vpn-http.middlewares=${STACK_NAME?Variable not set}-vpn-http-stripprefix"
-      # # - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn-http-stripprefix.stripprefix.prefixes=/vpn"
-      # # - "traefik.http.routers.frontend.rule=PathPrefix(`/`)"
-      # # - "traefik.http.services.frontend.loadbalancer.server.port=80"
 
 volumes:
   app-db-data:
