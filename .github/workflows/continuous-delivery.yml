@@ -24,6 +24,7 @@ jobs:
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
           bump2version prenum --allow-dirty --no-commit
+          tox -e lint || true
           ls **/VERSION | xargs -I {} python {}
           cat packages/grid/devspace.yaml | grep '0\.'
       - name: Commit changes

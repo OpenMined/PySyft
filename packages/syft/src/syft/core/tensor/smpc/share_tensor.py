@@ -50,6 +50,8 @@ METHODS_FORWARD_ALL_SHARES = {
     "__neg__",
     "take",
     "choose",
+    "cumsum",
+    "trace",
 }
 INPLACE_OPS = {"resize", "put"}
 RING_SIZE_TO_OP = {
@@ -753,6 +755,11 @@ class ShareTensor(PassthroughTensor):
                 new_share = share
 
             res = _self.copy_tensor()
+
+            # TODO : Some operations return np.int64 by default, should modify
+            # when we have support for np.int64 or do explicit casting.
+            if method_name == "trace":
+                new_share = np.array(new_share, dtype=np.int32)
             res.child = new_share
 
             return res
