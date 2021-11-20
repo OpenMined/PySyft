@@ -131,7 +131,7 @@ jobs:
     steps:
       - name: set permissions on work folder for self-runners
         run: |
-          sudo chown -R $USER:$USER ~/actions-runner/openmined/
+          sudo chown -R $USER:$USER ~/actions-runner/_work/
 
       - uses: actions/checkout@v2
 
