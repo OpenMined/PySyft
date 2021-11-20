@@ -126,7 +126,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.9]
 
-    runs-on: self-hosted
+    runs-on: [self-hosted, linux]
 
     steps:
       - name: set permissions on work folder for self-runners
