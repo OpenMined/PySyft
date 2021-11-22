@@ -52,4 +52,4 @@ def test_vpn_auth() -> None:
         for key in stack_keys:
             matcher = re.compile("stack_api_key")
             lines = re.findall(matcher, output)
-            assert len(lines) > 0
+            assert len(lines) == 0
