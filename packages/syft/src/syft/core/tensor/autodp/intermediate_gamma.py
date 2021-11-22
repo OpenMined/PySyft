@@ -629,6 +629,12 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 raise Exception(
                     "Cannot add two tensors with different symbol encodings"
                 )
+            # relative
+            from .dp_tensor_converter import convert_to_gamma_tensor
+            from .single_entity_phi import SingleEntityPhiTensor
+
+            if isinstance(other, SingleEntityPhiTensor):
+                other = convert_to_gamma_tensor(other)
 
             terms = list()
             for self_dim in range(self.term_tensor.shape[-1]):
@@ -684,6 +690,47 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
+    def __matmul__(self, other: Any) -> IntermediateGammaTensor:
+        # relative
+        from .initial_gamma import InitialGammaTensor
+
+        self_values = self._values()
+        self_entities = self._entities()
+        self_min = self._min_values()
+        self_max = self._max_values()
+
+        # Private-Public
+        if isinstance(other, np.ndarray):
+            return InitialGammaTensor(
+                values=self_values.__matmul__(other),
+                entities=self_entities.__matmul__(other),
+                min_vals=self_min.__matmul__(other),
+                max_vals=self_max.__matmul__(other),
+            )
+        else:  # Private-Private
+            # relative
+            from .single_entity_phi import SingleEntityPhiTensor
+
+            if isinstance(other, SingleEntityPhiTensor):
+                # relative
+                from .dp_tensor_converter import convert_to_gamma_tensor
+
+                other_gamma = convert_to_gamma_tensor(other)
+                return InitialGammaTensor(
+                    values=self_values.__matmul__(other_gamma._values()),
+                    entities=self_entities.__matmul__(other_gamma._entities()),
+                    min_vals=self_min.__matmul__(other_gamma._min_values()),
+                    max_vals=self_max.__matmul__(other_gamma._max_values()),
+                )
+            elif isinstance(other, IntermediateGammaTensor):
+                return InitialGammaTensor(
+                    values=self_values.__matmul__(other._values()),
+                    entities=self_entities.__matmul__(other._entities()),
+                    min_vals=self_min.__matmul__(other._min_values()),
+                    max_vals=self_max.__matmul__(other._max_values()),
+                )
+            raise NotImplementedError
+
     def __pos__(self) -> IntermediateGammaTensor:
         return self
 
@@ -733,11 +780,11 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def reshape(self, *dims: Sequence[int]) -> IntermediateGammaTensor:
+    def reshape(self, *shape: Sequence[int]) -> IntermediateGammaTensor:
         # relative
         from .initial_gamma import InitialGammaTensor
 
-        output_values = self._values().reshape(*dims)
+        output_values = self._values().reshape(*shape)
         target_shape = output_values.shape
 
         return InitialGammaTensor(
@@ -748,30 +795,32 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def resize(
-        self,
-        new_shape: Union[int, Tuple[int, ...]],
-        refcheck: Optional[bool] = True,
-    ) -> None:
-        # relative
-        from .initial_gamma import InitialGammaTensor
+    def resize(self, *new_shape: Sequence[int]) -> IntermediateGammaTensor:
 
-        output_values = self._values()
-        output_values.resize(new_shape, refcheck)
-        shape = output_values.shape
-        output_tensor = InitialGammaTensor(
-            values=output_values,
-            entities=self._entities().reshape(shape),
-            max_vals=self._max_values().reshape(shape),
-            min_vals=self._min_values().reshape(shape),
-            scalar_manager=self.scalar_manager,
-        )
+        """Currently, we are making all mutable operations (like resize) return a new tensor
+        instead of modifying in place.
+        This currently means resize == reshape."""
+        return self.reshape(*new_shape)
 
-        # Copy all members from the new object
-        self.__dict__ = output_tensor.__dict__
-        # self.term_tensor = output_tensor.term_tensor
-        # self.coeff_tensor = output_tensor.coeff_tensor
-        # self.bias_tensor = output_tensor.bias_tensor
+    #     # relative
+    #     from .initial_gamma import InitialGammaTensor
+    #
+    #     output_values = self._values()
+    #     output_values.resize(new_shape, refcheck)
+    #     shape = output_values.shape
+    #     output_tensor = InitialGammaTensor(
+    #         values=output_values,
+    #         entities=self._entities().reshape(shape),
+    #         max_vals=self._max_values().reshape(shape),
+    #         min_vals=self._min_values().reshape(shape),
+    #         scalar_manager=self.scalar_manager,
+    #     )
+    #
+    #     # Copy all members from the new object
+    #     self.__dict__ = output_tensor.__dict__
+    # self.term_tensor = output_tensor.term_tensor
+    # self.coeff_tensor = output_tensor.coeff_tensor
+    # self.bias_tensor = output_tensor.bias_tensor
 
     def ravel(self, order: Optional[str] = "C") -> IntermediateGammaTensor:
         # relative
@@ -1021,21 +1070,27 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    def __any__(self) -> bool:
-        return self._values().any()
+    def any(self) -> bool:
+        for i in self._values():
+            if i.any():
+                return True
+        return False
 
-    def __all__(self) -> bool:
-        return self._values().all()
+    def all(self) -> bool:
+        for i in self._values():
+            if not i.all():
+                return False
+        return True
 
     def __abs__(self) -> IntermediateGammaTensor:
         # relative
         from .initial_gamma import InitialGammaTensor
 
         return InitialGammaTensor(
-            values=self._values().__abs__(),
+            values=abs(self._values()),
             entities=self._entities(),
-            max_vals=self._max_values().__abs__(),
-            min_vals=self._min_values().__abs__(),
+            max_vals=abs(self._max_values()),
+            min_vals=abs(self._min_values()),
             scalar_manager=self.scalar_manager,
         )
 
@@ -1108,11 +1163,20 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         output_values = self._values().max(axis)
         indices = output_values.argmax(axis)
 
+        # If indices returns a single value, then take simply returns an Entity or DSG instead of an array object
+        # with an Entity/DSG inside. We will fix this by manually casting the results into arrays.
+
+        output_entities = np.asarray(self._entities().take(indices))
+        output_min = np.asarray(self._min_values().take(indices))
+        output_max = np.asarray(self._max_values().take(indices))
+
+        # TODO: Investigate if this can technically return a SEPT, if the max value only has 1 entity
         return InitialGammaTensor(
             values=output_values,
-            entities=self._entities().take(indices),
-            max_vals=self._max_values().take(indices),
-            min_vals=self._min_values().take(indices),
+            entities=output_entities,
+            max_vals=output_max,
+            min_vals=output_min,
+            scalar_manager=self.scalar_manager,
         )
 
     def min(
@@ -1124,10 +1188,11 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         output_values = self._values().min(axis)
         indices = output_values.argmin(axis)
 
+        # TODO: Investigate if this can technically return a SEPT, if the max value only has 1 entity
         return InitialGammaTensor(
             values=output_values,
-            entities=self._entities().take(indices),
-            max_vals=self._max_values().take(indices),
-            min_vals=self._min_values().take(indices),
+            entities=np.asarray(self._entities().take(indices)),
+            max_vals=np.asarray(self._max_values().take(indices)),
+            min_vals=np.asarray(self._min_values().take(indices)),
             scalar_manager=self.scalar_manager,
         )

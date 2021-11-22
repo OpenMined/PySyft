@@ -107,7 +107,7 @@ def get_result(json: Dict) -> str:
         while True:
             print("Polling API Result", tries)
             result = requests.get(result_url)
-            if "running" in result.text:
+            if '"status":"running"' in result.text:
                 time.sleep(1)
                 tries += 1
                 if tries > limit:
