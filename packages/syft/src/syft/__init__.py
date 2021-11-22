@@ -98,6 +98,7 @@ sys.path.append(str(Path(__file__)))
 
 logger.add(sink=sys.stderr, level="CRITICAL")
 
+
 def module_property(func: Any) -> None:
     """Decorator to turn module functions into properties.
     Function names must be prefixed with an underscore."""
