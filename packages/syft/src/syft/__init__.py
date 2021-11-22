@@ -98,10 +98,6 @@ sys.path.append(str(Path(__file__)))
 
 logger.add(sink=sys.stderr, level="CRITICAL")
 
-# TODO: https://github.com/OpenMined/PySyft/issues/5930
-flags._APACHE_ARROW_TENSOR_SERDE = False
-
-
 def module_property(func: Any) -> None:
     """Decorator to turn module functions into properties.
     Function names must be prefixed with an underscore."""
