@@ -2,14 +2,17 @@
 from __future__ import annotations
 
 # stdlib
+import operator
 from collections.abc import Sequence
 from typing import Any
 from typing import List
+from typing import Tuple as TypeTuple
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import numpy.typing as npt
 
@@ -19,16 +22,332 @@ from ....core.adp.entity import Entity
 from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
+from .... import lib
+from ...common.uid import UID
+from ....util import inherit_tags
+from ....ast.klass import pointerize_args_and_kwargs
 from ...common.serde.serializable import serializable
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serialize import _serialize as serialize
+from ...pointer.pointer import Pointer
+from ...node.abstract.node import AbstractNodeClient
+from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ..broadcastable import is_broadcastable
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..types import AcceptableSimpleType
 from .adp_tensor import ADPTensor
+from ..smpc.mpc_tensor import MPCTensor
+from ..smpc import utils
+from ..smpc.share_tensor import ShareTensor
+from ..smpc.utils import TYPE_TO_RING_SIZE
+from ..tensor import Tensor
 from .initial_gamma import InitialGammaTensor
 from .intermediate_gamma import IntermediateGammaTensor as IGT
-from .single_entity_phi import SingleEntityPhiTensor
+from .single_entity_phi import SingleEntityPhiTensor, TensorWrappedSingleEntityPhiTensorPointer
+
+
+@serializable()
+class TensorWrappedRowEntityPhiTensorPointer(Pointer):
+    """
+    This tensor represents a pointer to a very specific tensor chain. 
+
+    Thus, this class has two groups of attributes: one set are the attributes for RowEntityPhiTensor:
+        child: Sequence,
+        n_entities: int,
+        unique_entities: set[Entity],
+
+    And the others are for initializing a Pointer object:
+        client=self.client, 
+        id_at_location=self.id_at_location,
+        object_type=self.object_type,
+        tags=self.tags,
+        description=self.description,
+    """
+
+    __name__ = "TensorWrappedRowEntityPhiTensorPointer"
+    __module__ = "syft.core.tensor.autodp.row_entity_phi"
+
+    def __init__(
+        self,
+        unique_entities: set[Entity],
+        n_entities: int,
+        client: Any, # union of all clients?
+        id_at_location: Optional[UID] = None,
+        object_type: str = "",
+        tags: Optional[List[str]] = None,
+        description: str = "",
+        public_shape: Optional[TypeTuple[int, ...]] = None,
+        public_dtype: Optional[np.dtype] = None,
+    ):
+
+        super().__init__(
+            client=client,
+            id_at_location=id_at_location,
+            object_type=object_type,
+            tags=tags,
+            description=description,
+        )
+
+        self.unique_entities = unique_entities
+        self.n_entities = n_entities
+        self.public_shape = public_shape
+        self.public_dtype = public_dtype
+
+    # what to print in this case?
+    @property
+    def synthetic(self) -> np.ndarray:
+        return (
+            np.random.rand(*list(self.public_shape)) * 1  # type: ignore
+        ).astype(self.public_dtype)
+
+    def __repr__(self) -> str:
+        return (
+            self.synthetic.__repr__()
+            + "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
+        )
+
+    def share(self, *parties: TypeTuple[AbstractNodeClient, ...]) -> MPCTensor:
+        all_parties = list(parties) + [self.client]
+        ring_size = TYPE_TO_RING_SIZE.get(self.public_dtype, None)
+        self_mpc = MPCTensor(
+            secret=self,
+            shape=self.public_shape,
+            ring_size=ring_size,
+            parties=all_parties,
+        )
+        return self_mpc
+
+    def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
+        # we want to get the return type which matches the attr_path_and_name
+        # so we ask lib_ast for the return type name that matches out
+        # attr_path_and_name and then use that to get the actual pointer klass
+        # then set the result to that pointer klass
+
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
+
+        result = TensorWrappedRowEntityPhiTensorPointer(
+            unique_entities = self.unique_entities,
+            n_entities = self.n_entities,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[other],
+            kwargs={},
+        )
+
+        result_public_shape = None
+
+        if isinstance(other, TensorWrappedRowEntityPhiTensorPointer) or isinstance(other, TensorWrappedSingleEntityPhiTensorPointer):
+            other_shape = other.public_shape
+            other_dtype = other.public_dtype
+        elif isinstance(other, (int, float)):
+            other_shape = (1,)
+            other_dtype = np.int32
+        elif isinstance(other, bool):
+            other_shape = (1,)
+            other_dtype = np.dtype("bool")
+        elif isinstance(other, np.ndarray):
+            other_shape = other.shape
+            other_dtype = other.dtype
+        else:
+            raise ValueError(
+                f"Invalid Type for TensorWrappedRowEntityPhiTensorPointer:{type(other)}"
+            )
+
+        if self.public_shape is not None and other_shape is not None:
+            result_public_shape = utils.get_shape(
+                op_str, self.public_shape, other_shape
+            )
+
+        if self.public_dtype is not None and other_dtype is not None:
+            if self.public_dtype != other_dtype:
+                raise ValueError(
+                    f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
+                )
+            result_public_dtype = self.public_dtype
+
+        result.public_shape = result_public_shape
+        result.public_dtype = result_public_dtype
+
+        return result
+
+    @staticmethod
+    def _apply_op(
+        self: TensorWrappedRowEntityPhiTensorPointer,
+        other: Union[
+            TensorWrappedRowEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+        op_str: str,
+    ) -> Union[MPCTensor, TensorWrappedRowEntityPhiTensorPointer]:
+        """Performs the operation based on op_str
+
+        Args:
+            other (Union[TensorWrappedRowEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]): second operand.
+
+        Returns:
+            Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
+        """
+        op = getattr(operator, op_str)
+
+        if isinstance(other, TensorWrappedRowEntityPhiTensorPointer):
+
+            parties = [self.client, other.client]
+
+            self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
+            other_mpc = MPCTensor(
+                secret=other, shape=other.public_shape, parties=parties
+            )
+
+            return op(self_mpc, other_mpc)
+
+        elif isinstance(other, TensorWrappedSingleEntityPhiTensorPointer):
+            # should we check if other.client is present in self.client?
+            pass
+
+        elif isinstance(other, MPCTensor):
+
+            return op(other, self)
+
+        return self._apply_tensor_op(other=other, op_str=op_str)
+
+    def __add__(
+        self,
+        other: Union[
+            TensorWrappedRowEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedRowEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "add" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedRowEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedRowEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedRowEntityPhiTensorPointer._apply_op(self, other, "add")
+    
+    def to_local_object_without_private_data_child(self) -> RowEntityPhiTensor:
+        """Convert this pointer into a partial version of the RowEntityPhiTensor but without
+        any of the private data therein."""
+
+        public_shape = getattr(self, "public_shape", None)
+        public_dtype = getattr(self, "public_dtype", None)
+        return Tensor(
+            child=RowEntityPhiTensor(
+                rows=None,
+            ),
+            public_shape=public_shape,
+            public_dtype=public_dtype,
+        )
+
+    # def _object2proto(self) -> "TensorWrappedRowEntityPhiTensorPointer_PB":
+
+    #     _unique_entities = serialize(self.unique_entities)
+    #     _n_entities = serialize(self.n_entities)
+    #     _location = serialize(self.client.address)
+    #     _scalar_manager = serialize(self.scalar_manager, to_bytes=True)
+    #     _id_at_location = serialize(self.id_at_location)
+    #     _object_type = self.object_type
+    #     _tags = self.tags
+    #     _description = self.description
+    #     _public_shape = serialize(getattr(self, "public_shape", None), to_bytes=True)
+    #     _public_dtype = serialize(getattr(self, "public_dtype", None), to_bytes=True)
+
+    #     return TensorWrappedRowEntityPhiTensorPointer_PB(
+    #         unique_entities=_unique_entities,
+    #         n_entities=_n_entities,
+    #         location=_location,
+    #         scalar_manager=_scalar_manager,
+    #         id_at_location=_id_at_location,
+    #         object_type=_object_type,
+    #         tags=_tags,
+    #         description=_description,
+    #         public_shape=_public_shape,
+    #         public_dtype=_public_dtype,
+    #     )
+
+    # @staticmethod
+    # def _proto2object(
+    #     proto: TensorWrappedRowEntityPhiTensorPointer_PB,
+    # ) -> "TensorWrappedRowEntityPhiTensorPointer":
+
+    #     unique_entities = deserialize(blob=proto.unique_entities)
+    #     n_entities = deserialize(blob=proto.n_entities)
+    #     client = deserialize(blob=proto.location)
+    #     scalar_manager = deserialize(blob=proto.scalar_manager, from_bytes=True)
+    #     id_at_location = deserialize(blob=proto.id_at_location)
+    #     object_type = proto.object_type
+    #     tags = proto.tags
+    #     public_shape = deserialize(blob=proto.public_shape, from_bytes=True)
+    #     public_dtype = deserialize(blob=proto.public_dtype, from_bytes=True)
+    #     description = proto.description
+
+    #     return TensorWrappedRowEntityPhiTensorPointer(
+    #         unique_entities=unique_entities,
+    #         n_entities=n_entities,
+    #         client=client,
+    #         scalar_manager=scalar_manager,
+    #         id_at_location=id_at_location,
+    #         object_type=object_type,
+    #         tags=tags,
+    #         description=description,
+    #         public_shape=public_shape,
+    #         public_dtype=public_dtype,
+    #     )
+
+    # @staticmethod
+    # def get_protobuf_schema() -> GeneratedProtocolMessageType:
+    #     """Return the type of protobuf object which stores a class of this type
+
+    #     As a part of serialization and deserialization, we need the ability to
+    #     lookup the protobuf object type directly from the object type. This
+    #     static method allows us to do this.
+
+    #     Importantly, this method is also used to create the reverse lookup ability within
+    #     the metaclass of Serializable. In the metaclass, it calls this method and then
+    #     it takes whatever type is returned from this method and adds an attribute to it
+    #     with the type of this class attached to it. See the MetaSerializable class for details.
+
+    #     :return: the type of protobuf object which corresponds to this class.
+    #     :rtype: GeneratedProtocolMessageType
+
+    #     """
+
+    #     return TensorWrappedRowEntityPhiTensorPointer_PB
 
 
 @serializable(recursive_serde=True)
@@ -44,6 +363,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     significant performance benefits over other DP tracking tensors. Note that when
     we refer to the number of 'rows' we simply refer to the length of the first dimension. This
     tensor can have an arbitrary number of dimensions."""
+
+    PointerClassOverride = TensorWrappedRowEntityPhiTensorPointer
 
     # a list of attributes needed for serialization using RecursiveSerde
     __attr_allowlist__ = ["child", "n_entities", "unique_entities"]
@@ -93,6 +414,26 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                         continue
             else:
                 raise Exception(f"{type(entity)}")
+
+    def init_pointer(
+        self,
+        client: Any,
+        id_at_location: Optional[UID] = None,
+        object_type: str = "",
+        tags: Optional[List[str]] = None,
+        description: str = "",
+    ) -> TensorWrappedRowEntityPhiTensorPointer:
+        return TensorWrappedRowEntityPhiTensorPointer(
+            # Arguments specifically for REPhiTensor
+            unique_entities=self.unique_entities,
+            n_entities=self.n_entities,
+            # Arguments required for a Pointer to work
+            client=client,
+            id_at_location=id_at_location,
+            object_type=object_type,
+            tags=tags,
+            description=description,
+        )
 
     @property
     def scalar_manager(self) -> TypeScalarManager:
