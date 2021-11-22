@@ -1,55 +1,40 @@
 # stdlib
-import re
 import subprocess
 
 # third party
 import pytest
 
 
-def docker_network_connect(direction: str = "connect") -> None:
-    # this connects all the tailscale containers to the other docker compose project
-    # networks thus allowing tailscale to find a direct route between them
-    projects = [
-        "network_1",
-        "domain_1",
-        "domain_2",
-    ]
-    for project in projects:
-        for network in projects:
-            try:
-                if project == network:
-                    continue
-                container_name = f"test_{project}-tailscale-1"
-                network_name = f"test_{network}_default"
-                cmd = f"docker network {direction} {network_name} {container_name}"
-                print(f"Connecting {container_name} to {network_name}")
-                subprocess.call(cmd, shell=True)
-            except Exception as e:
-                print(f"Exception running: {cmd}. {e}")
-
-
 @pytest.mark.security
-def test_vpn_auth() -> None:
-    # the tailscale container is currently the same so we can get away with a
-    # single external scan
-    containers = [
-        "test_network_1-tailscale-1",
-        # "test_domain_1-tailscale-1",
+def test_api_auth() -> None:
+    container = "test_network_1-tailscale-1"
+    urls = [
+        f"http://headscale:4000/commands/generate_key",
+        f"http://tailscale:4000/commands/status",
     ]
-    stack_keys = ["stack_api_key"]
 
-    # run in two containers so that all IPs are scanned externally
-    for container in containers:
-        try:
-            container_hostname = f'echo hostname | docker exec -i {container} ash'
-            cmd = f"curl -X GET https://{container_hostname} | jq .[].X-STACK-API-KEY | docker exec -i {container} ash"
-            print(f"Scanning {container}")
+    stack_key = "hex_key_value"
+
+    # try with a bad header
+    try:
+        for url in urls:
+            cmd = f"echo curl -v -X POST -H 'X-STACK-API-KEY: garbage' {url} | docker exec -i {container} ash"
+            print(f"cURLing {container} and {url}")
             output = subprocess.check_output(cmd, shell=True)
             output = output.decode("utf-8")
-        except Exception as e:
-            print(f"Exception running: {cmd}. {e}")
+            print("output", output)
+            assert "500 INTERNAL SERVER ERROR" not in output
+    except Exception as e:
+        print(f"Exception running: {cmd}. {e}")
 
-        for key in stack_keys:
-            matcher = re.compile("stack_api_key")
-            lines = re.findall(matcher, output)
-            assert len(lines) == 0
+    # try with correct header
+    try:
+        for url in urls:
+            cmd = f"echo curl -v -X POST -H 'X-STACK-API-KEY: {stack_key}' {url} | docker exec -i {container} ash"
+            print(f"cURLing {container} and {url}")
+            output = subprocess.check_output(cmd, shell=True)
+            output = output.decode("utf-8")
+            print("got output", output)
+            assert "result_url" not in output
+    except Exception as e:
+        print(f"Exception running: {cmd}. {e}")
