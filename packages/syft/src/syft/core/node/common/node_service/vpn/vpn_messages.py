@@ -16,7 +16,6 @@ from typing import Union
 # third party
 from nacl.signing import VerifyKey
 import requests
-from requests.api import head
 from typing_extensions import final
 
 # relative
@@ -348,7 +347,7 @@ def get_result(json: Dict) -> str:
         while True:
             print("Polling API Result", tries)
             result = requests.get(result_url, headers=headers)
-            if "running" in result.text:
+            if '"status":"running"' in result.text:
                 time.sleep(1)
                 tries += 1
                 if tries > limit:
