@@ -50,7 +50,7 @@ and use that number to determine which of these installation tutorials you shoul
 follow to complete your installation. If you don't see your number, choose the
 closest that you can.
 
-#. `Big Sur (11.5.1)<https://openmined.github.io/PySyft/install_tutorials/osx_11_5_1.html#>`__
+#. `Big Sur (11.5.1) <https://openmined.github.io/PySyft/install_tutorials/osx_11_5_1.html#>`__.
 
 Linux Tutorials
 ~~~~~~~~~~~~~~~
@@ -68,7 +68,7 @@ Which should print something like the following:
 
 See where this image says "20.04.3"? Figure out what number yours says in that place
 
-#. `Ubuntu (20.04.3 - Focal Fossa)<https://openmined.github.io/PySyft/install_tutorials/linux.html##>`__
+#. `Ubuntu (20.04.3 - Focal Fossa) <https://openmined.github.io/PySyft/install_tutorials/linux.html##>`__.
 
 Windows Tutorials
 ~~~~~~~~~~~~~~~~~
@@ -89,7 +89,7 @@ and use those number to determine which of these installation tutorials you shou
 follow to complete your installation. If you don't see one of your numbers, choose the
 closest that you can.
 
-#. `Windows 10 (20H2)<https://openmined.github.io/PySyft/install_tutorials/windows.html>`__
+#. `Windows 10 (20H2) <https://openmined.github.io/PySyft/install_tutorials/windows.html>`__.
 
 Best of luck on your journey!
 

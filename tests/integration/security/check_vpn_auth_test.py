@@ -28,7 +28,6 @@ def docker_network_connect(direction: str = "connect") -> None:
                 print(f"Exception running: {cmd}. {e}")
 
 
-
 @pytest.mark.security
 def test_vpn_auth() -> None:
     # the tailscale container is currently the same so we can get away with a
@@ -38,11 +37,11 @@ def test_vpn_auth() -> None:
         # "test_domain_1-tailscale-1",
     ]
     stack_keys = ["stack_api_key"]
-    
+
     # run in two containers so that all IPs are scanned externally
     for container in containers:
         try:
-            hostname = f'echo hostname | docker exec -i {container} ash'
+            hostname = f"echo hostname | docker exec -i {container} ash"
             cmd = f"curl -X GET https://{hostname} | jq .[].X-STACK-API-KEY | docker exec -i {container} ash"
             print(f"Scanning {container}")
             output = subprocess.check_output(cmd, shell=True)
@@ -51,7 +50,6 @@ def test_vpn_auth() -> None:
             print(f"Exception running: {cmd}. {e}")
 
         for key in stack_keys:
-            matcher = re.compile(f"stack_api_key")
+            matcher = re.compile("stack_api_key")
             lines = re.findall(matcher, output)
             assert len(lines) > 0
-

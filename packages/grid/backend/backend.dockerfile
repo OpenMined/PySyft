@@ -1,35 +1,24 @@
-FROM python:3.9.6-slim as build
+FROM python:3.9.9-slim as build
 
 RUN --mount=type=cache,target=/var/cache/apt \
   apt-get update && \
-  apt-get install -y --no-install-recommends curl wget
-
-# apple m1
-RUN if [ $(uname -m) != "x86_64" ]; then \
-  apt-get update && apt-get install -y --no-install-recommends libsodium-dev; \
-  fi
+  apt-get install -y --no-install-recommends curl python3-dev gcc make
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
 
-# apple m1
-RUN if [ $(uname -m) != "x86_64" ]; then \
-  pip install --user uvicorn gunicorn; \
-  fi
-
 # Allow installing dev dependencies to run tests
-RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
-  pip install --user "uvicorn[standard]" gunicorn; \
-  fi
-
-# apple m1
-RUN if [ $(uname -m) != "x86_64" ]; then \
-  pip install --user torch==1.8.1; \
-  fi
-
 RUN --mount=type=cache,target=/root/.cache \
-  if [ $(uname -m) = "x86_64" ]; then pip install --user \
-  torch==1.8.1+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
+  pip install --user "uvicorn[standard]" gunicorn
+
+RUN if [ $(uname -m) = "x86_64" ]; then \
+  pip install --user torch==1.10.0+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
+  fi
+
+# apple m1 build PyNaCl for aarch64
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  pip install --user PyNaCl; \
+  pip install --user torch==1.10.0 -f https://download.pytorch.org/whl/torch_stable.html; \
   fi
 
 RUN --mount=type=cache,target=/root/.cache \
@@ -41,7 +30,7 @@ RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit
   chmod +x /usr/local/bin/waitforit
 
 # Backend
-FROM python:3.9.6-slim as backend
+FROM python:3.9.9-slim as backend
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
@@ -62,16 +51,6 @@ RUN --mount=type=cache,target=/root/.cache \
   pip install --user watchdog pyyaml argh
 
 WORKDIR /app
-
-# apple m1
-# Download PyNacl for arm64
-RUN if [ $(uname -m) != "x86_64" ]; then \
-  apt-get update && \
-  apt-get install -y wget && \
-  wget https://opencomputinglab.github.io/vce-wheelhouse/wheelhouse/PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl && \
-  pip install --user ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl && \
-  rm ./PyNaCl-1.4.0-cp39-cp39-linux_aarch64.whl; \
-  fi
 
 # copy grid
 COPY grid/backend /app/
