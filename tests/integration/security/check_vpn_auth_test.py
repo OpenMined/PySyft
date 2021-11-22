@@ -42,8 +42,8 @@ def test_vpn_auth() -> None:
     # run in two containers so that all IPs are scanned externally
     for container in containers:
         try:
-            hostname = f'echo hostname | docker exec -i {container} ash'
-            cmd = f"curl -X GET https://{hostname} | jq .[].X-STACK-API-KEY | docker exec -i {container} ash"
+            container_hostname = f'echo hostname | docker exec -i {container} ash'
+            cmd = f"curl -X GET https://{container_hostname} | jq .[].X-STACK-API-KEY | docker exec -i {container} ash"
             print(f"Scanning {container}")
             output = subprocess.check_output(cmd, shell=True)
             output = output.decode("utf-8")
