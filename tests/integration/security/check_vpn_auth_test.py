@@ -37,19 +37,21 @@ def test_vpn_auth() -> None:
         "test_network_1-tailscale-1",
         # "test_domain_1-tailscale-1",
     ]
-    keys = ["stack_api_key"]
+    stack_keys = ["stack_api_key"]
     
     # run in two containers so that all IPs are scanned externally
     for container in containers:
         try:
-            cmd = f"curl -X GET https://{container} | jq .[].X-STACK-API-KEY | docker exec -i {container} ash"
+            hostname = f'echo hostname | docker exec -i {container} ash'
+            cmd = f"curl -X GET https://{hostname} | jq .[].X-STACK-API-KEY | docker exec -i {container} ash"
             print(f"Scanning {container}")
             output = subprocess.check_output(cmd, shell=True)
             output = output.decode("utf-8")
         except Exception as e:
             print(f"Exception running: {cmd}. {e}")
 
-        for key in keys:
+        for key in stack_keys:
             matcher = re.compile(f"stack_api_key")
             lines = re.findall(matcher, output)
             assert len(lines) > 0
+
