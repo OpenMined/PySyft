@@ -9,6 +9,7 @@ from typing import Type
 
 # third party
 from flask import Flask
+from flask import request
 from flask_executor import Executor
 from flask_executor.futures import Future
 from flask_shell2http import Shell2HTTP
@@ -40,7 +41,7 @@ def check_stack_api_key(challenge_key: str) -> bool:
 def basic_auth_check(f: Any) -> Callable:
     @functools.wraps(f)
     def inner_decorator(*args: Any, **kwargs: Any) -> Type:
-        stack_api_key = Flask.request.headers.get("X-STACK-API-KEY", "")
+        stack_api_key = request.headers.get("X-STACK-API-KEY", "")
         if not check_stack_api_key(challenge_key=stack_api_key):
             raise Exception("STACK_API_KEY doesn't match.")
         return f(*args, **kwargs)
