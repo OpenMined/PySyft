@@ -113,14 +113,14 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
         shell: cmd
 
-      - name: pip cache
-        uses: actions/cache@v2
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+      # - name: pip cache
+      #   uses: actions/cache@v2
+      #   if: steps.changes.outputs.stack == 'true'
+      #   with:
+      #     path: ${{ steps.pip-cache.outputs.dir }}
+      #     key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
