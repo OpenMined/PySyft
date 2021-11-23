@@ -7,7 +7,7 @@ import pytest
 
 def make_curl_cmd(url: str, key: str, container: str) -> str:
     return (
-        f"echo \"curl -v -X POST -H 'X-STACK-API-KEY: {key}' {url}\" | "
+        f"echo \"apk add curl && curl -v -X POST -H 'X-STACK-API-KEY: {key}' {url}\" | "
         f"docker exec -i {container} ash 2>&1"
     )
 
@@ -31,7 +31,6 @@ def test_api_auth() -> None:
             assert "500 INTERNAL SERVER ERROR" in output
     except Exception as e:
         print(f"Exception running: {cmd}. {e}")
-        print(f"cmd output: {output}")
         raise e
 
     # try with correct header
@@ -43,5 +42,4 @@ def test_api_auth() -> None:
             assert "result_url" in output
     except Exception as e:
         print(f"Exception running: {cmd}. {e}")
-        print(f"cmd output: {output}")
         raise e
