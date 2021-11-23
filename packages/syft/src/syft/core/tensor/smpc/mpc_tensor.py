@@ -48,6 +48,8 @@ METHODS_FORWARD_ALL_SHARES = {
     "__neg__",
     "take",
     "choose",
+    "cumsum",
+    "trace",
 }
 INPLACE_OPS = {
     "resize",
