@@ -165,12 +165,7 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     print("Running: \n", hide_password(cmd=cmd))
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         try:
-            output = subprocess.run(cmd, capture_output=True, shell=True)
-            print("output", type(output))
-            out = str(output.stdout.decode("utf-8"))
-            print("std out", out)
-            out2 = str(output.stderr.decode("utf-8"))
-            print("std out2", out2)
+            subprocess.call(cmd, cwd=GRID_SRC_PATH)
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
@@ -720,9 +715,6 @@ def create_launch_docker_cmd(
     if is_windows():
         cmd = f'bash -c "{cmd}"'
 
-    # on windows we are calling cmd.exe not powershell so the cd && part is critical
-    # so that the bash shell will also be running in the correct path inside wsl
-    cmd = "cd " + GRID_SRC_PATH + " && " + cmd
     return cmd
 
 
