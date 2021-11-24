@@ -173,6 +173,7 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
             print("usiong path", Path(GRID_SRC_PATH))
             output = subprocess.check_output(
                 cmd,
+                shell=True,
                 cwd=Path(GRID_SRC_PATH),
             )
             print("output", output, type(output))
