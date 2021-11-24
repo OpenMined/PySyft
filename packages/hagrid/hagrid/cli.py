@@ -169,10 +169,10 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
             # stdlib
             import shlex
 
-            print("trying", shlex.split(cmd))
+            print("trying", cmd)
             print("usiong path", Path(GRID_SRC_PATH))
-            output = subprocess.run(
-                shlex.split(cmd),
+            output = subprocess.check_output(
+                cmd,
                 check=True,
                 capture_output=True,
                 cwd=Path(GRID_SRC_PATH),
@@ -728,7 +728,7 @@ def create_launch_docker_cmd(
 
     # here we pass everything through to bash on windows
     if is_windows():
-        cmd = f'wsl bash -c "{cmd}"'
+        cmd = f'bash -c "{cmd}"'
 
     return cmd
 
