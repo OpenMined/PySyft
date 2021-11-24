@@ -165,6 +165,15 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     print("Running: \n", hide_password(cmd=cmd))
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         try:
+            # stdlib
+            import shlex
+
+            output = subprocess.run(
+                shlex.split(cmd), check=True, capture_output=True, cwd=GRID_SRC_PATH
+            )
+            out = str(output.stdout.decode("utf-8")).split("\r\n")
+            print("out", out)
+            print("output.stderr", output.stderr)
             subprocess.call(cmd, cwd=GRID_SRC_PATH)
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
