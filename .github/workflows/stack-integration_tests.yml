@@ -147,7 +147,7 @@ jobs:
           powershell.exe -command "docker volume prune --force"
         shell: cmd
 
-      - name: Run integration tests
+      - name: Start stacks
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
         env:
@@ -161,6 +161,15 @@ jobs:
           bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_network_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
+          docker ps
+        shell: cmd
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+        run: |
           tox -e stack.test.integration.windows
         shell: cmd
 
