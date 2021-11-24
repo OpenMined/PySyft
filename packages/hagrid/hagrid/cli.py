@@ -722,7 +722,7 @@ def create_launch_docker_cmd(
 
     # here we pass everything through to bash on windows
     if is_windows():
-        cmd = f'bash -c "{cmd}"'
+        cmd = f'wsl bash -c "{cmd}"'
 
     return cmd
 
