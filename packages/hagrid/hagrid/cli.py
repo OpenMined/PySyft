@@ -173,13 +173,12 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
             print("usiong path", Path(GRID_SRC_PATH))
             output = subprocess.check_output(
                 cmd,
-                check=True,
-                capture_output=True,
                 cwd=Path(GRID_SRC_PATH),
             )
-            out = str(output.stdout.decode("utf-8"))
-            print("out", out)
-            print("output.stderr", output.stderr)
+            print("output", output, type(output))
+            # out = str(output.stdout.decode("utf-8"))
+            # print("out", out)
+            # print("output.stderr", output.stderr)
             # subprocess.call(cmd, cwd=GRID_SRC_PATH)
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
