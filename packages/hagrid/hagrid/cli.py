@@ -169,13 +169,20 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
             # stdlib
             import shlex
 
-            print("trying", cmd)
+            print("trying", cmd, shlex.split(cmd))
             print("usiong path", Path(GRID_SRC_PATH))
-            output = subprocess.check_output(
-                cmd,
-                shell=True,
+            output = subprocess.run(
+                shlex.split(cmd),
+                check=True,
+                capture_output=True,
                 cwd=Path(GRID_SRC_PATH),
             )
+
+            # output = subprocess.check_output(
+            #     cmd,
+            #     shell=True,
+            #     cwd=Path(GRID_SRC_PATH),
+            # )
             print("output", output, type(output))
             # out = str(output.stdout.decode("utf-8"))
             # print("out", out)
