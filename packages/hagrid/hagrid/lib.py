@@ -210,7 +210,7 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
 
 def check_docker_version() -> Optional[str]:
     if is_windows():
-        return "N/A" # todo fix to work with windows
+        return "N/A"  # todo fix to work with windows
     result = os.popen("docker compose version", "r").read()
     version = None
     if "version" in result:
