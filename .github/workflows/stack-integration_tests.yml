@@ -140,6 +140,13 @@ jobs:
           powershell.exe -command "docker rm $(docker ps -aq) --force"
         shell: cmd
 
+      - name: Prune all volumes
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker volume prune --force"
+        shell: cmd
+
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
