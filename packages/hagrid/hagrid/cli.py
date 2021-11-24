@@ -168,13 +168,14 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
             # stdlib
             import shlex
 
+            print("trying", shlex.split(cmd))
             output = subprocess.run(
                 shlex.split(cmd), check=True, capture_output=True, cwd=GRID_SRC_PATH
             )
             out = str(output.stdout.decode("utf-8")).split("\r\n")
             print("out", out)
             print("output.stderr", output.stderr)
-            subprocess.call(cmd, cwd=GRID_SRC_PATH)
+            # subprocess.call(cmd, cwd=GRID_SRC_PATH)
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
