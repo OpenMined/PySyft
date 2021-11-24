@@ -702,16 +702,29 @@ def create_launch_docker_cmd(
     print("  - TAIL: " + str(tail))
     print("\n")
 
+    # cmd += " export VERSION=$(python3 VERSION)"
+    # cmd += " export VERSION_HASH=$(python3 VERSION hash)"
+    envs = {
+        "COMPOSE_DOCKER_CLI_BUILD": "1",
+        "DOCKER_BUILDKIT": "1",
+        "DOMAIN_PORT": str(host_term.free_port),
+        "TRAEFIK_TAG": str(tag),
+        "DOMAIN_NAME": "'" + snake_name + "'",
+        "NODE_TYPE": str(node_type.input),
+        "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
+    }
     cmd = ""
-    if not is_windows():
-        cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
-    cmd += " DOMAIN_PORT=" + str(host_term.free_port)
-    cmd += " TRAEFIK_TAG=" + str(tag)
-    cmd += " DOMAIN_NAME='" + snake_name + "'"
-    cmd += " NODE_TYPE=" + str(node_type.input)
-    cmd += " VERSION=$(python3 VERSION)"
-    cmd += " VERSION_HASH=$(python3 VERSION hash)"
-    cmd += " TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false"
+    args = []
+    for k, v in envs.items():
+        if is_windows():
+            args.append(f"set {k}={v}")
+        else:
+            args.append(f"{k}={v}")
+    if is_windows():
+        cmd += " && ".join(args)
+        cmd += " && "
+    else:
+        cmd += " ".join(args)
 
     if kwargs["build"] is True:
         build_cmd = str(cmd)
@@ -732,10 +745,6 @@ def create_launch_docker_cmd(
     if kwargs["build"] is True:
         cmd += " --build"  # force rebuild
         cmd = build_cmd + " && " + cmd
-
-    # here we pass everything through to bash on windows
-    if is_windows():
-        cmd = f'bash -c "{cmd}"'
 
     return cmd
 

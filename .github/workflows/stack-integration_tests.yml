@@ -162,6 +162,7 @@ jobs:
           bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_network_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           docker ps
+        shell: cmd
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
