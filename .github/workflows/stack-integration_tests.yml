@@ -151,6 +151,10 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
         run: |
+          pip install -e packages/hagrid
+          hagrid launch test_network_1 network to docker:9081 --tail=false --build=false --headless=true
+          hagrid launch test_domain_1 domain to docker:9082 --tail=false --build=false --headless=true
+          hagrid launch test_domain_2 domain to docker:9083 --tail=false --build=false --headless=true
           tox -e stack.test.integration.windows
         shell: cmd
 
