@@ -165,7 +165,7 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     print("Running: \n", hide_password(cmd=cmd))
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         try:
-            output = subprocess.run(cmd, capture_output=True)
+            output = subprocess.run(cmd, capture_output=True, shell=True)
             print("output", type(output))
             out = str(output.stdout.decode("utf-8"))
             print("std out", out)
