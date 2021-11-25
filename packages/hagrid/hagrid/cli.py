@@ -36,6 +36,7 @@ from .grammar import parse_grammar
 from .land import get_land_verb
 from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
+from .lib import GRID_SRC_VERSION
 from .lib import check_docker_version
 from .lib import commit_hash
 from .lib import docker_desktop_memory
@@ -165,7 +166,21 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         return
     print("Running: \n", hide_password(cmd=cmd))
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        subprocess.call(cmd, shell=True)
+        try:
+            if is_windows():
+                cmds = ["powershell.exe", "-Command", cmd]
+                output = subprocess.run(cmds, capture_output=True, cwd=GRID_SRC_PATH)
+                out = str(output.stdout.decode("utf-8"))
+                if len(out) > 0:
+                    print(out)
+                # normal output seems to appear here
+                stderr = output.stderr.decode("utf-8")
+                if len(stderr) > 0:
+                    print(stderr)
+            else:
+                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
+        except Exception as e:
+            print(f"Failed to run cmd: {cmd}. {e}")
 
 
 def hide_password(cmd: str) -> str:
@@ -679,19 +694,32 @@ def create_launch_docker_cmd(
     print("  - TAIL: " + str(tail))
     print("\n")
 
+    envs = {
+        "COMPOSE_DOCKER_CLI_BUILD": 1,
+        "DOCKER_BUILDKIT": 1,
+        "HTTP_PORT": int(host_term.free_port),
+        "HTTPS_PORT": int(host_term.free_port_tls),
+        "TRAEFIK_TAG": str(tag),
+        "DOMAIN_NAME": str(snake_name),
+        "NODE_TYPE": str(node_type.input),
+        "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
+        "VERSION": GRID_SRC_VERSION[0],
+        "VERSION_HASH": GRID_SRC_VERSION[1],
+    }
     cmd = ""
-    if not is_windows():
-        cmd += "COMPOSE_DOCKER_CLI_BUILD=1 DOCKER_BUILDKIT=1"
-
-    cmd += " HTTP_PORT=" + str(host_term.free_port)
-    if kwargs["tls"] is True:
-        cmd += " HTTPS_PORT=" + str(host_term.free_port_tls)
-    cmd += " TRAEFIK_TAG=" + str(tag)
-    cmd += " DOMAIN_NAME='" + snake_name + "'"
-    cmd += " NODE_TYPE=" + str(node_type.input)
-    cmd += " VERSION=$(python3 VERSION)"
-    cmd += " VERSION_HASH=$(python3 VERSION hash)"
-    cmd += " TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL=false"
+    args = []
+    for k, v in envs.items():
+        if is_windows():
+            # powershell envs
+            quoted = f"'{v}'" if not isinstance(v, int) else v
+            args.append(f"$env:{k}={quoted}")
+        else:
+            args.append(f"{k}={v}")
+    if is_windows():
+        cmd += "; ".join(args)
+        cmd += "; "
+    else:
+        cmd += " ".join(args)
 
     if kwargs["build"] is True:
         build_cmd = str(cmd)
@@ -714,15 +742,11 @@ def create_launch_docker_cmd(
 
     if kwargs["build"] is True:
         cmd += " --build"  # force rebuild
-        cmd = build_cmd + " && " + cmd
+        if is_windows():
+            cmd = build_cmd + "; " + cmd
+        else:
+            cmd = build_cmd + " && " + cmd
 
-    # here we pass everything through to bash on windows
-    if is_windows():
-        cmd = f'bash -c "{cmd}"'
-
-    # on windows we are calling cmd.exe not powershell so the cd && part is critical
-    # so that the bash shell will also be running in the correct path inside wsl
-    cmd = "cd " + GRID_SRC_PATH + " && " + cmd
     return cmd
 
 
