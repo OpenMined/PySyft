@@ -91,6 +91,8 @@ jobs:
     runs-on: [self-hosted, windows]
 
     steps:
+      - uses: actions/checkout@v2
+
       - name: Stop all running containers
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
@@ -104,8 +106,6 @@ jobs:
         run: |
           powershell.exe -command "docker volume prune --force"
         shell: cmd
-
-      - uses: actions/checkout@v2
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -171,6 +171,20 @@ jobs:
           HAGRID_ART: false
         run: |
           tox -e stack.test.integration.windows
+        shell: cmd
+
+      - name: Stop all running containers
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker rm $(docker ps -aq) --force"
+        shell: cmd
+
+      - name: Prune all volumes
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker volume prune --force"
         shell: cmd
 
   stack-integration-tests-smpc:
