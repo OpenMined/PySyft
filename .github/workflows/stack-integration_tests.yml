@@ -91,6 +91,20 @@ jobs:
     runs-on: [self-hosted, windows]
 
     steps:
+      - name: Stop all running containers
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker rm $(docker ps -aq) --force"
+        shell: cmd
+
+      - name: Prune all volumes
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker volume prune --force"
+        shell: cmd
+
       - uses: actions/checkout@v2
 
       - name: Check for file changes
@@ -131,20 +145,6 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
-        shell: cmd
-
-      - name: Stop all running containers
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker rm $(docker ps -aq) --force"
-        shell: cmd
-
-      - name: Prune all volumes
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        run: |
-          powershell.exe -command "docker volume prune --force"
         shell: cmd
 
       - name: Start stacks
