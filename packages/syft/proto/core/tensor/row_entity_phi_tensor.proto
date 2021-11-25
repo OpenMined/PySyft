@@ -1,0 +1,20 @@
+syntax = "proto3";
+
+package syft.core.tensor;
+
+import "proto/core/adp/entity.proto";
+import "proto/lib/numpy/array.proto";
+import "proto/core/io/address.proto";
+import "proto/core/common/common_object.proto";
+
+message TensorWrappedRowEntityPhiTensorPointer {
+  repeated syft.core.adp.Entity unique_entities = 1;
+  int32 n_entities = 2;
+  syft.core.io.Address location = 3; // this is to pass the client information on
+  syft.core.common.UID id_at_location = 4;
+  string object_type = 5;
+  repeated string tags = 6;
+  string description = 7;
+  bytes public_shape = 8;
+  bytes public_dtype = 9;
+}
