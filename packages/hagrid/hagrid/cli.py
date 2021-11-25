@@ -2,7 +2,6 @@
 from datetime import datetime
 import json
 import os
-from pathlib import Path
 import re
 import stat
 import subprocess
@@ -37,6 +36,7 @@ from .grammar import parse_grammar
 from .land import get_land_verb
 from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
+from .lib import GRID_SRC_VERSION
 from .lib import check_docker_version
 from .lib import commit_hash
 from .lib import docker_desktop_memory
@@ -166,28 +166,15 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     print("Running: \n", hide_password(cmd=cmd))
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         try:
-            # stdlib
-            import shlex
-
-            print("trying", cmd, shlex.split(cmd))
-            print("usiong path", Path(GRID_SRC_PATH))
-            output = subprocess.run(
-                shlex.split(cmd),
-                check=True,
-                capture_output=True,
-                cwd=Path(GRID_SRC_PATH),
-            )
-
-            # output = subprocess.check_output(
-            #     cmd,
-            #     shell=True,
-            #     cwd=Path(GRID_SRC_PATH),
-            # )
-            print("output", output, type(output))
-            # out = str(output.stdout.decode("utf-8"))
-            # print("out", out)
-            # print("output.stderr", output.stderr)
-            # subprocess.call(cmd, cwd=GRID_SRC_PATH)
+            if is_windows():
+                cmds = ["powershell.exe", "-Command", cmd]
+                output = subprocess.run(cmds, capture_output=True, cwd=GRID_SRC_PATH)
+                out = str(output.stdout.decode("utf-8"))
+                print("out", out)
+                print(output.stdout)
+                print("err", output.stderr)
+            else:
+                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
@@ -705,24 +692,28 @@ def create_launch_docker_cmd(
     # cmd += " export VERSION=$(python3 VERSION)"
     # cmd += " export VERSION_HASH=$(python3 VERSION hash)"
     envs = {
-        "COMPOSE_DOCKER_CLI_BUILD": "1",
-        "DOCKER_BUILDKIT": "1",
-        "DOMAIN_PORT": str(host_term.free_port),
+        "COMPOSE_DOCKER_CLI_BUILD": 1,
+        "DOCKER_BUILDKIT": 1,
+        "DOMAIN_PORT": int(host_term.free_port),
         "TRAEFIK_TAG": str(tag),
-        "DOMAIN_NAME": "'" + snake_name + "'",
+        "DOMAIN_NAME": str(snake_name),
         "NODE_TYPE": str(node_type.input),
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
+        "VERSION": GRID_SRC_VERSION[0],
+        "VERSION_HASH": GRID_SRC_VERSION[1],
     }
     cmd = ""
     args = []
     for k, v in envs.items():
         if is_windows():
-            args.append(f"set {k}={v}")
+            # powershell envs
+            quoted = f"'{v}'" if not isinstance(v, int) else v
+            args.append(f"$env:{k}={quoted}")
         else:
             args.append(f"{k}={v}")
     if is_windows():
-        cmd += " && ".join(args)
-        cmd += " && "
+        cmd += "; ".join(args)
+        cmd += "; "
     else:
         cmd += " ".join(args)
 
@@ -744,7 +735,10 @@ def create_launch_docker_cmd(
 
     if kwargs["build"] is True:
         cmd += " --build"  # force rebuild
-        cmd = build_cmd + " && " + cmd
+        if is_windows():
+            cmd = build_cmd + "; " + cmd
+        else:
+            cmd = build_cmd + " && " + cmd
 
     return cmd
 

@@ -1,11 +1,15 @@
 # stdlib
 import hashlib
+import importlib
+import importlib.machinery
+import importlib.util
 import json
 import os
 from pathlib import Path
 import site
 import subprocess
 from typing import Optional
+from typing import Tuple
 
 # third party
 import git
@@ -223,3 +227,22 @@ def check_docker_version() -> Optional[str]:
             raise MissingDependency(DOCKER_ERROR)
 
     return version
+
+
+def get_version_module() -> Tuple[str, str]:
+    try:
+        version_file_path = f"{GRID_SRC_PATH}/VERSION"
+        loader = importlib.machinery.SourceFileLoader("VERSION", version_file_path)
+        spec = importlib.util.spec_from_loader(loader.name, loader)
+        if spec:
+            version_module = importlib.util.module_from_spec(spec)
+            loader.exec_module(version_module)
+            version = version_module.get_version()  # type: ignore
+            hash = version_module.get_hash()  # type: ignore
+            return (version, hash)
+    except Exception as e:
+        print(f"Failed to retrieve versions from: {version_file_path}. {e}")
+    return ("unknown", "unknown")
+
+
+GRID_SRC_VERSION = get_version_module()
