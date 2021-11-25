@@ -91,21 +91,19 @@ jobs:
     runs-on: [self-hosted, windows]
 
     steps:
-      - uses: actions/checkout@v2
-
       - name: Stop all running containers
-        if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         run: |
           powershell.exe -command "docker rm $(docker ps -aq) --force"
         shell: cmd
 
       - name: Prune all volumes
-        if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         run: |
           powershell.exe -command "docker volume prune --force"
         shell: cmd
+
+      - uses: actions/checkout@v2
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -126,6 +124,7 @@ jobs:
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
         shell: cmd
+
       # - name: pip cache
       #   uses: actions/cache@v2
       #   if: steps.changes.outputs.stack == 'true'
