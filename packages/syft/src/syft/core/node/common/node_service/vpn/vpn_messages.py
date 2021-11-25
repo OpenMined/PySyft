@@ -82,11 +82,12 @@ def connect_with_key(
             f"{vpn_auth_key}",
         ],
         "timeout": 60,
-        "STACK_API_KEY": os.environ.get("STACK_API_KEY", None),
     }
+
     command_url = f"{tailscale_host}/commands/up"
 
-    resp = requests.post(command_url, json=data)
+    headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+    resp = requests.post(command_url, json=data, headers=headers)
     report = get_result(json=resp.json())
     report_dict = json.loads(report)
 
@@ -203,12 +204,12 @@ def extract_nested_json(nested_json: str) -> Union[Dict, List]:
 def generate_key(headscale_host: str) -> Tuple[bool, str]:
     data = {
         "timeout": 5,
-        "STACK_API_KEY": os.environ.get("STACK_API_KEY", None),
     }
 
     command_url = f"{headscale_host}/commands/generate_key"
     try:
-        resp = requests.post(command_url, json=data)
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
         report = get_result(json=resp.json())
         result_dict = dict(extract_nested_json(report))
         result = result_dict["Key"]
@@ -321,14 +322,14 @@ def get_status(
 ) -> Tuple[bool, Dict[str, str], List[Dict[str, str]]]:
     data = {
         "timeout": 5,
-        "STACK_API_KEY": os.environ.get("STACK_API_KEY", None),
     }
     command_url = f"{tailscale_host}/commands/status"
     host: Dict[str, str] = {}
     peers: List[Dict[str, str]] = []
     connected = False
     try:
-        resp = requests.post(command_url, json=data)
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
         report = get_result(json=resp.json())
         cmd_output = json.loads(report)["report"]
         connected, host, peers = clean_status_output(input=cmd_output)
@@ -339,13 +340,13 @@ def get_status(
 
 def get_result(json: Dict) -> str:
     result_url = json.get("result_url", "")
-    result_url += f'&STACK_API_KEY={os.environ.get("STACK_API_KEY", None)}'
+    headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
     tries = 0
     limit = 5
     try:
         while True:
             print("Polling API Result", tries)
-            result = requests.get(result_url)
+            result = requests.get(result_url, headers=headers)
             if '"status":"running"' in result.text:
                 time.sleep(1)
                 tries += 1
