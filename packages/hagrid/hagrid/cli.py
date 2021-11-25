@@ -170,9 +170,12 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
                 cmds = ["powershell.exe", "-Command", cmd]
                 output = subprocess.run(cmds, capture_output=True, cwd=GRID_SRC_PATH)
                 out = str(output.stdout.decode("utf-8"))
-                print("out", out)
-                print(output.stdout)
-                print("err", output.stderr)
+                if len(out) > 0:
+                    print(out)
+                # normal output seems to appear here
+                stderr = output.stderr.decode("utf-8")
+                if len(stderr) > 0:
+                    print(stderr)
             else:
                 subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
         except Exception as e:
