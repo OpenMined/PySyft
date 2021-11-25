@@ -23,7 +23,7 @@ We'll be working with Python 3.9 or newer. To check if you have it installed, yo
    $ python3 --version
    Python 3.9.0
 
-If you don't have the correct version of Python, installing it is as easy as running the following::
+If you don't have the correct version of Python, installing it is as easy as running the following:
 
 .. code-block:: bash
 
