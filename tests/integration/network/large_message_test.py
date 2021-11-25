@@ -11,6 +11,8 @@ import syft as sy
 DOMAIN1_PORT = 9082
 
 
+# This fails on Windows CI even though the same code works in a Jupyter Notebook
+# on the same Windows CI machine.
 @pytest.mark.xfail
 @pytest.mark.network
 def test_large_message_size() -> None:
@@ -18,7 +20,7 @@ def test_large_message_size() -> None:
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
-    ndim = 10300  # 510.76 MB
+    ndim = 11300  # 510.76 MB
 
     # rabbitmq recommends max is 512 MB
     # rabbitmq.conf has max_message_size = 536870912
