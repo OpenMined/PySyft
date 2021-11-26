@@ -574,7 +574,6 @@ To use minikube you need it to be running:
 ```
 $ minikube config set driver hyperkit
 $ minikube start --disk-size=40g
-$ minikube addons enable ingress
 ```
 
 If you ever need to reset minikube you can do:
