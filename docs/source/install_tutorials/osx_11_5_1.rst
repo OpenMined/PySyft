@@ -137,15 +137,15 @@ re-open it using the same technique you used in Step 2 to open the application.
 
   .. code-block:: bash
 
-      conda create -n syft python=3.9 --y
+      conda create -n syft_env python=3.9 --y
 
 * Step 4.5: Activate conda environment
 
   .. code-block:: bash
 
-      conda activate syft
+      conda activate syft_env
 
-  When you run this command, you'll see the word 'syft' in your terminal to indicate that you're
+  When you run this command, you'll see the word 'syft_env' in your terminal to indicate that you're
   now in the syft virtual environment. For the rest of this tutorial, enter all of your commands
   into this particular terminal. If ever you close this window, when you re-open a new Terminal
   window, just re-run this step (4.5) and you'll be ready to start again!
@@ -158,7 +158,7 @@ Step 5: Install Necessary Python Packages
 
   .. code-block:: bash
 
-      conda activate syft
+      conda activate syft_env
 
   If your Terminal window is still open from Step 4, you can skip this step and proceed directly to step 5.1.
 
@@ -375,9 +375,9 @@ Step 8: Test Hagrid (optional)
 
   .. code-block:: bash
 
-      conda activate syft
+      conda activate syft_env
       hagrid land test
-      conda deactivate syft
+      conda deactivate syft_env
 
 Well done!
 

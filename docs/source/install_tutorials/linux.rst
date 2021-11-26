@@ -67,8 +67,8 @@ To install Conda, you can:
 
         .. code-block:: bash
 
-           conda create -n myenv python=3.9
-           conda activate myenv
+           conda create -n syft_env python=3.9
+           conda activate syft_env
 
 
     d. To exit, you might run:
