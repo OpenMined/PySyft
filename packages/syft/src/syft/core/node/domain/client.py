@@ -423,6 +423,16 @@ class DomainClient(Client):
     ) -> None:
         try:
             # joining the network might take some time and won't block
+
+            # Check if the version of the network client is same as the domain client
+            if client and hasattr(client, "version"):
+                if self.version != client.version:  # type: ignore
+                    print(
+                        "\n**Warning**: The syft version on your domain and the network are different."
+                    )
+                    print(
+                        f"Domain version: {self.version}\nNetwork Version: {client.version}"  # type: ignore
+                    )
             self.join_network(client=client)
 
             timeout = 30

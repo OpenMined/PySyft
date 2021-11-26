@@ -153,7 +153,9 @@ def login(
         print("Logging into: ...", str(node.name), " Done...")
 
     if sy.__version__ != node.version:
-        print("\nWarning: The syft version on your system and the node are different.")
+        print(
+            "\n**Warning**: The syft version on your system and the node are different."
+        )
         print(
             f"Version on your system: {sy.__version__}\nVersion on the node: {node.version}"
         )
