@@ -293,6 +293,7 @@ class DomainClient(Client):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
+        version: Optional[str] = None,
     ):
         super().__init__(
             name=name,
@@ -303,6 +304,7 @@ class DomainClient(Client):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
+            version=version,
         )
 
         self.requests = RequestQueueClient(client=self)

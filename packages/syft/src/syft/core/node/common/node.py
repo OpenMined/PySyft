@@ -361,6 +361,7 @@ class Node(AbstractNode):
             id=self.id,
             node=self.target_id,
             node_type=str(type(self).__name__),
+            version=str(sy.__version__),
         )
 
     def add_peer_routes(self, peer: NodeRow) -> None:

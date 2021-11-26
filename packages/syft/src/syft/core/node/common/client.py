@@ -65,6 +65,7 @@ class Client(AbstractNodeClient):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
+        version: Optional[str] = None,
     ):
         name = f"{name}" if name is not None else None
         super().__init__(
@@ -92,6 +93,7 @@ class Client(AbstractNodeClient):
         self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
+        self.version = version
 
     def obj_exists(self, obj_id: UID) -> bool:
         raise NotImplementedError
