@@ -84,6 +84,11 @@ images:
       buildKit: {}
 
 deployments:
+  - name: traefik
+    helm:
+      chart:
+        name: traefik
+        repo: https://helm.traefik.io/traefik
   - name: queue
     helm:
       componentChart: true
@@ -481,6 +486,12 @@ dev:
       containerPath: /app/src
       excludePaths: []
 profiles:
+  - name: no-frontend
+    patches:
+      - op: remove
+        path: images.frontend
+      - op: remove
+        path: deployments.name=frontend
   - name: domain
     patches:
       - op: replace
