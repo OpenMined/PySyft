@@ -287,26 +287,24 @@ Our next step is an important one. It’ll help us make sure our software can in
 </pre></div>
 </div>
 </li>
-<li><p>The output should be something similar to the image below:</p></li>
 </ul>
-<p><a class="reference internal" href="../_images/conda_env.png"><img alt="conda_env" src="../_images/conda_env.png" style="width: 50%;" /></a></p>
 <p>Wait wait wait wait just a second.
 Do you realize what just happened?</p>
 <p>You’ve just successfully installed Anaconda!! Hooray!
 Trust me, your life is about to become a LOT easier.</p>
 <ul>
 <li><p>Let’s now tap into your newfound powers with Anaconda and create a new virtual environment called “playground” by running the following in your WSL shell:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">playground</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span> <span class="o">--</span><span class="n">y</span>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">syft_env</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span> <span class="o">--</span><span class="n">y</span>
 </pre></div>
 </div>
 </li>
-<li><p>Let’s verify that we created our “playground” successfully with the following command (Deja Vu, anyone?):</p>
+<li><p>Let’s verify that we created our “syft_env” successfully with the following command (Deja Vu, anyone?):</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">env</span> <span class="nb">list</span>
 </pre></div>
 </div>
 </li>
-<li><p>You should see two environments in the output. Hooray! Now let’s activate your playground, and let the fun <em>really</em> begin:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">playground</span>
+<li><p>You should see two environments in the output. Hooray! Now let’s activate the syft virtual env, and let the fun <em>really</em> begin:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">activate</span> <span class="n">syft_env</span>
 </pre></div>
 </div>
 </li>

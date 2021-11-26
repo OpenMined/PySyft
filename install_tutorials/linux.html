@@ -188,15 +188,13 @@
 <li><p><strong>Installing Python 3.9</strong></p></li>
 </ol>
 <p>We’ll be working with Python 3.9 or newer. To check if you have it installed, you may run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python3 --version
-Python <span class="m">3</span>.9.0
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3 --version
 </pre></div>
 </div>
 <p>If you don’t have the correct version of Python, installing it is as easy as running the following:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo apt update
-$ sudo apt install python3.9
-$ python3 --version
-Python <span class="m">3</span>.9.0
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt update
+sudo apt install python3.9
+python3 --version
 </pre></div>
 </div>
 <ol class="arabic simple" start="2">
@@ -204,11 +202,11 @@ Python <span class="m">3</span>.9.0
 </ol>
 <p><a class="reference external" href="https://pip.pypa.io/en/stable/">Pip</a> is the most widely used package installer for Python and will help us to install the required dependencies MUCH easier.
 You can install it by running the following:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python -m ensurepip --upgrade
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m ensurepip --upgrade
 </pre></div>
 </div>
 <p>If you already have it installed, you can check to make sure it’s the latest version by running:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ python -m pip install --upgrade pip
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m pip install --upgrade pip
 </pre></div>
 </div>
 <ol class="arabic simple" start="3">
@@ -221,7 +219,7 @@ To install Conda, you can:</p>
 <li><p>Download the <a class="reference external" href="https://www.anaconda.com/products/individual#Downloads">Anaconda installer</a>.</p></li>
 <li><p>Run the following code, modifying it depending on where you downloaded the installer (e.g. <cite>~/Downloads/</cite>):</p>
 <blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ bash ~/Downloads/Anaconda3-2020.02-Linux-x86_64.sh
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>bash ~/Downloads/Anaconda3-2020.02-Linux-x86_64.sh
 </pre></div>
 </div>
 <div class="admonition note">
@@ -232,9 +230,15 @@ To install Conda, you can:</p>
 </li>
 <li><p>Create a new env specifying the Python version (we recommend Python 3.8/3.9) in the terminal:</p>
 <blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda create -n myenv <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.9
-$ conda activate myenv
-<span class="o">(</span>to <span class="nb">exit</span><span class="o">)</span>: conda deactivate
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda create -n syft_env <span class="nv">python</span><span class="o">=</span><span class="m">3</span>.9
+conda activate syft_env
+</pre></div>
+</div>
+</div></blockquote>
+</li>
+<li><p>To exit, you might run:</p>
+<blockquote>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda deactivate
 </pre></div>
 </div>
 </div></blockquote>
@@ -245,15 +249,15 @@ $ conda activate myenv
 <li><p><strong>Install Jupyter Notebook</strong></p></li>
 </ol>
 <p>A very convenient way to interact with a deployed node is via Python, using a Jupyter Notebook. You can install it by running:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install jupyter-notebook
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install jupyter-notebook
 </pre></div>
 </div>
 <p>If you encounter issues, you can also install it using Conda:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ conda install -c conda-forge notebook
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda install -c conda-forge notebook
 </pre></div>
 </div>
 <p>To launch the Jupyter Notebook, you can run the following in your terminal:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ jupyter notebook
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>jupyter notebook
 </pre></div>
 </div>
 <ol class="arabic simple" start="5">
@@ -265,7 +269,7 @@ Additionally, we will also use <a class="reference external" href="https://docs.
 <ol class="loweralpha">
 <li><p>Install <strong>Docker</strong>:</p>
 <blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ sudo apt-get upgrade docker <span class="p">&amp;</span> docker run hello-world
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt-get upgrade docker <span class="p">&amp;</span> docker run hello-world
 </pre></div>
 </div>
 </div></blockquote>
@@ -273,7 +277,7 @@ Additionally, we will also use <a class="reference external" href="https://docs.
 <li><p>Install <strong>Docker Composite V2</strong> as described <a class="reference external" href="https://docs.docker.com/compose/cli-command/#installing-compose-v2">here</a>.</p></li>
 <li><p>You should see ‘Docker Compose version v2’ when running:</p>
 <blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ docker compose version
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker compose version
 Docker Compose version v2
 </pre></div>
 </div>
@@ -281,17 +285,17 @@ Docker Compose version v2
 </li>
 <li><p>If not, go through the <a class="reference external" href="https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/">instructions here</a> or if you are using Linux, you can try to do:</p>
 <blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ mkdir -p ~/.docker/cli-plugins
-$ curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
-$ chmod +x ~/.docker/cli-plugins/docker-compose
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir -p ~/.docker/cli-plugins
+curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
+chmod +x ~/.docker/cli-plugins/docker-compose
 </pre></div>
 </div>
 </div></blockquote>
 </li>
 <li><p>Also, make sure you can run without sudo:</p>
 <blockquote>
-<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ <span class="nb">echo</span> <span class="nv">$USER</span> //<span class="o">(</span>should <span class="k">return</span> your username<span class="o">)</span>
-$ sudo usermod -aG docker <span class="nv">$USER</span>
+<div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span><span class="nb">echo</span> <span class="nv">$USER</span> //<span class="o">(</span>should <span class="k">return</span> your username<span class="o">)</span>
+sudo usermod -aG docker <span class="nv">$USER</span>
 </pre></div>
 </div>
 </div></blockquote>
@@ -301,8 +305,8 @@ $ sudo usermod -aG docker <span class="nv">$USER</span>
 <li><p><strong>Install PySyft and PyGrid</strong></p></li>
 </ol>
 <p>The hardest part is done! To install the OpenMined stack that you need in order to deploy a node, please run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install --pre syft
-$ pip install <span class="nv">hagrid</span><span class="o">==</span><span class="m">0</span>.1.8
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install --pre syft
+pip install <span class="nv">hagrid</span><span class="o">==</span><span class="m">0</span>.1.8
 </pre></div>
 </div>
 <p>PySyft is a library which contains the tools to run privacy preserving machine learning.
@@ -313,11 +317,11 @@ data owners and data scientists who can collectively train AI model using Syft.<
 </ol>
 <p>Congrats for making it this far! You only have one final step remaining, before you unleash the power of Hagrid!
 The final step is to launch a domain node, which is as easy as:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ hagrid launch domain to docker:8081
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hagrid launch domain to docker:8081
 </pre></div>
 </div>
 <p>To stop the running node, you can run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ hagrid land
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hagrid land
 </pre></div>
 </div>
 <p>But before stopping it, you can go to <code class="docutils literal notranslate"><span class="pre">`localhost:8081</span></code> in your <a class="reference external" href="localhost:8081">browser</a> to actually interact with the PyGrid Admin UI, where you can manage as a Data Owner your datasets, as well as incoming requests from data scientist.
