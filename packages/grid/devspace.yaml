@@ -89,6 +89,13 @@ deployments:
       chart:
         name: traefik
         repo: https://helm.traefik.io/traefik
+      values:
+        service:
+          # NodePort is easier to use for CI and local dev than LoadBalancer which needs `minikube tunnel` or similar.
+          # It can be enabled with the "node-port" profile that's defined below.
+          # Then the node address and port of this service can be found with this command:
+          #   echo "$(minikube ip):$(kubectl -n openmined get svc traefik -o jsonpath='{.spec.ports[0].nodePort}')"
+          type: LoadBalancer
   - name: queue
     helm:
       componentChart: true
@@ -486,6 +493,11 @@ dev:
       containerPath: /app/src
       excludePaths: []
 profiles:
+  - name: node-port
+    patches:
+      - op: replace
+        path: deployments.name=traefik.helm.values.service.type
+        value: NodePort
   - name: no-frontend
     patches:
       - op: remove
