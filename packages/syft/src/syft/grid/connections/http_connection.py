@@ -1,10 +1,12 @@
 # stdlib
 import json
+from typing import Union
 
 # third party
 import requests
 
 # relative
+from .. import GridURL
 from ...core.common.message import SignedEventualSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -18,8 +20,10 @@ from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 
 
 class HTTPConnection(ClientConnection):
-    def __init__(self, url: str) -> None:
-        self.base_url = url
+    def __init__(self, url: Union[str, GridURL]) -> None:
+        self.base_url = GridURL.from_url(url) if isinstance(url, str) else url
+        if self.base_url is None:
+            raise Exception(f"Invalid GridURL. {self.base_url}")
 
     def send_immediate_msg_with_reply(
         self, msg: SignedImmediateSyftMessageWithReply
@@ -91,7 +95,7 @@ class HTTPConnection(ClientConnection):
         # Perform HTTP request using base_url as a root address
         data_bytes: bytes = _serialize(msg, to_bytes=True)  # type: ignore
         r = requests.post(
-            url=self.base_url,
+            url=str(self.base_url),
             data=data_bytes,
             headers={"Content-Type": "application/octet-stream"},
         )
@@ -107,7 +111,7 @@ class HTTPConnection(ClientConnection):
         :return: returns node metadata
         :rtype: str of bytes
         """
-        data: bytes = requests.get(self.base_url + "/metadata").content
+        data: bytes = requests.get(str(self.base_url) + "/metadata").content
         metadata_pb = Metadata_PB()
         metadata_pb.ParseFromString(data)
         return metadata_pb

@@ -150,6 +150,7 @@ def clean(location: str) -> None:
     type=str,
 )
 @click.option("--tls", is_flag=True, help="Launch with TLS configuration")
+@click.option("--test", is_flag=True, help="Launch with Test configuration")
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -384,6 +385,7 @@ def create_launch_cmd(
                 headless = True
             parsed_kwargs["headless"] = headless
             parsed_kwargs["tls"] = kwargs["tls"]
+            parsed_kwargs["test"] = kwargs["test"]
 
             # If the user is using docker desktop (OSX/Windows), check to make sure there's enough RAM.
             # If the user is using Linux this isn't an issue because Docker scales to the avaialble RAM,
@@ -706,6 +708,10 @@ def create_launch_docker_cmd(
         "VERSION": GRID_SRC_VERSION[0],
         "VERSION_HASH": GRID_SRC_VERSION[1],
     }
+
+    if kwargs["test"] is True:
+        envs["IGNORE_TLS_ERRORS"] = "True"
+
     cmd = ""
     args = []
     for k, v in envs.items():
@@ -735,6 +741,8 @@ def create_launch_docker_cmd(
     cmd += " --file docker-compose.yml"
     if kwargs["tls"] is True:
         cmd += " --file docker-compose.tls.yml"
+    if kwargs["test"] is True:
+        cmd += " --file docker-compose.test.yml"
     cmd += " up"
 
     if not tail:

@@ -22,7 +22,7 @@ services:
       - net_admin
       - sys_module
     ports:
-      - "${HTTP_PORT}:${HTTP_PORT}"
+      - "${HTTP_PORT}:81"
       - "41641/udp"
       - "4000"
       # - "8080:8080"
@@ -43,15 +43,15 @@ services:
       - /var/run/docker.sock:/var/run/docker.sock
       - ./traefik:/etc/traefik
     command:
-      - --providers.docker
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)
-      - "--entrypoints.web.address=:${HTTP_PORT}"
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
+      - "--entrypoints.web.address=:81"
 
       # Enable the access log, with HTTP requests
-      - --accesslog
+      - "--accesslog"
       # Enable the Traefik log, for configurations and errors
-      - --log
+      - "--log"
       # Enable the Dashboard and API
       # - --api # admin panel
       # - --api.insecure=true # admin panel no password
@@ -67,8 +67,8 @@ services:
       target: "grid-ui-${FRONTEND_ENV-development}"
       args:
         FRONTEND_ENV: ${FRONTEND_ENV-development}
-        TYPE: ${NODE_TYPE?Variable not set}
     environment:
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
     labels:
@@ -111,8 +111,10 @@ services:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - STACK_API_KEY=${STACK_API_KEY}
       - PORT=8001
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
     build:
       context: ../
       dockerfile: ./grid/backend/backend.dockerfile
@@ -142,9 +144,11 @@ services:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - STACK_API_KEY=${STACK_API_KEY}
       - PORT=8011
       - STREAM_QUEUE=1
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
     build:
       context: ../
       dockerfile: ./grid/backend/backend.dockerfile
@@ -174,10 +178,12 @@ services:
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
       - CELERY_WORKER=true
       - RUN=celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
       - C_FORCE_ROOT=1
       - STACK_API_KEY=${STACK_API_KEY}
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
     volumes:
       - ./backend/grid:/app/grid
       - ./backend/alembic:/app/alembic

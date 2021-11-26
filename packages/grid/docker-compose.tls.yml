@@ -3,28 +3,25 @@ services:
   tailscale:
     ports:
       - "${HTTPS_PORT}:${HTTPS_PORT}"
-    volumes:
-      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
-
   proxy:
     command:
-      - --providers.docker
-      - --providers.docker.exposedbydefault=false
-      - --providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
       # custom tls cert config
-      - --providers.file.directory=/etc/traefik/dynamic-configurations
-      - --providers.file.watch=true
+      - "--providers.file.directory=/etc/traefik/dynamic-configurations"
+      - "--providers.file.watch=true"
       # redirect http to https
-      - "--entrypoints.web.address=:${HTTP_PORT}"
+      - "--entrypoints.web.address=:81"
       - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
       - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.vpn.address=:80"
       - "--entrypoints.websecure.address=:${HTTPS_PORT}"
       - "--entrypoints.websecure.http.tls=true"
-
       # Enable the access log, with HTTP requests
-      - --accesslog
+      - "--accesslog"
       # Enable the Traefik log, for configurations and errors
-      - --log
+      - "--log"
       # Enable the Dashboard and API
       # - --api # admin panel
       # - --api.insecure=true # admin panel no password
