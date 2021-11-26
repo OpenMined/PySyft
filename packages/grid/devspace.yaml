@@ -172,6 +172,8 @@ deployments:
                 value: debug
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -235,6 +237,8 @@ deployments:
                 value: "1"
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -284,6 +288,8 @@ deployments:
                 value: ${NODE_TYPE}
               - name: C_FORCE_ROOT
                 value: "1"
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
   - name: frontend
     helm:
       componentChart: true
@@ -295,7 +301,7 @@ deployments:
                 value: ${VERSION}
               - name: VERSION_HASH
                 value: ${VERSION_HASH}
-              - name: TYPE
+              - name: NODE_TYPE
                 value: ${NODE_TYPE}
         service:
           name: ${SERVICE_NAME_FRONTEND}
@@ -310,6 +316,8 @@ deployments:
             env:
               - name: NETWORK_NAME
                 value: ${NETWORK_NAME}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
             volumeMounts:
               - containerPath: /headscale/data
                 volume:
@@ -339,6 +347,8 @@ deployments:
             env:
               - name: HOSTNAME
                 value: ${DOMAIN_NAME}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
             volumeMounts:
               - containerPath: /var/lib/tailscale
                 volume:
