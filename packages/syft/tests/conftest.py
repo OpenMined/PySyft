@@ -1,6 +1,5 @@
 # stdlib
 import logging
-import os
 from typing import Any as TypeAny
 from typing import Callable as TypeCallable
 from typing import Dict as TypeDict

@@ -1,9 +1,6 @@
 # stdlib
 import logging
-import os
 from typing import Generator
-
-import pytest
 
 # third party
 from _pytest.logging import LogCaptureFixture
@@ -11,6 +8,7 @@ from asgi_lifespan import LifespanManager
 from fastapi import FastAPI
 from httpx import AsyncClient
 from loguru import logger
+import pytest
 
 # grid absolute
 from grid.core.config import settings
