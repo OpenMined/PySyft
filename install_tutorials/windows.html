@@ -293,7 +293,7 @@ Do you realize what just happened?</p>
 <p>You’ve just successfully installed Anaconda!! Hooray!
 Trust me, your life is about to become a LOT easier.</p>
 <ul>
-<li><p>Let’s now tap into your newfound powers with Anaconda and create a new virtual environment called “playground” by running the following in your WSL shell:</p>
+<li><p>Let’s now tap into your newfound powers with Anaconda and create a new virtual environment called “syft_env” by running the following in your WSL shell:</p>
 <div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">conda</span> <span class="n">create</span> <span class="o">-</span><span class="n">n</span> <span class="n">syft_env</span> <span class="n">python</span><span class="o">=</span><span class="mf">3.9</span> <span class="o">--</span><span class="n">y</span>
 </pre></div>
 </div>
@@ -346,8 +346,8 @@ You can install it by following the instructions <a class="reference external" h
 <section id="optional-deploy-a-domain-node">
 <h2>Optional: Deploy a Domain Node!<a class="headerlink" href="#optional-deploy-a-domain-node" title="Permalink to this headline">¶</a></h2>
 <p>Everything we’ve done so far has been to make this next part as easy as possible. This is the moment we’ve all been waiting for.</p>
-<p>To launch a domain node called “my_domain”, ensure your Virtual Environment (“playground” in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal:</p>
-<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hagrid</span> <span class="n">launch</span> <span class="n">my_domain</span>
+<p>To launch a domain node called “test_domain”, ensure your Virtual Environment (“syft_env” in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal:</p>
+<div class="highlight-default notranslate"><div class="highlight"><pre><span></span><span class="n">hagrid</span> <span class="n">launch</span> <span class="n">test_domain</span>
 </pre></div>
 </div>
 <p>You should see the containers begin to appear on Docker!</p>

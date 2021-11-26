@@ -92,7 +92,7 @@ You've just successfully installed Anaconda!! Hooray!
 Trust me, your life is about to become a LOT easier.
 
 
-- Let's now tap into your newfound powers with Anaconda and create a new virtual environment called "playground" by running the following in your WSL shell::
+- Let's now tap into your newfound powers with Anaconda and create a new virtual environment called "syft_env" by running the following in your WSL shell::
 
     conda create -n syft_env python=3.9 --y
 
@@ -144,9 +144,9 @@ Optional: Deploy a Domain Node!
 
 Everything we've done so far has been to make this next part as easy as possible. This is the moment we've all been waiting for.
 
-To launch a domain node called "my_domain", ensure your Virtual Environment ("playground" in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal::
+To launch a domain node called "test_domain", ensure your Virtual Environment ("syft_env" in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal::
 
-    hagrid launch my_domain
+    hagrid launch test_domain
 
 You should see the containers begin to appear on Docker!
 
