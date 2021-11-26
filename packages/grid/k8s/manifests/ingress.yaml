@@ -1,31 +1,21 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
 metadata:
-  name: grid-stack-ingress
-  annotations:
-    ingress.kubernetes.io/rewrite-target: /
+  name: grid-stack-ingressroute
 spec:
-  rules:
-    - http:
-        paths:
-          - path: /
-            pathType: Prefix
-            backend:
-              service:
-                name: frontend
-                port:
-                  number: 80
-          - path: /api
-            pathType: Prefix
-            backend:
-              service:
-                name: backend
-                port:
-                  number: 80
-          - path: /api/v1/syft/stream
-            pathType: Prefix
-            backend:
-              service:
-                name: backend-stream
-                port:
-                  number: 80
+  routes:
+    - match: PathPrefix(`/`)
+      kind: Rule
+      services:
+        - name: frontend
+          port: 80
+    - match: PathPrefix(`/api`)
+      kind: Rule
+      services:
+        - name: backend
+          port: 80
+    - match: PathPrefix(`/api/v1/syft/stream`)
+      kind: Rule
+      services:
+        - name: backend-stream
+          port: 80

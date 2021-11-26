@@ -1,17 +1,23 @@
-apiVersion: networking.k8s.io/v1
-kind: Ingress
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: IngressRoute
 metadata:
-  name: grid-vpn-ingress
-  annotations:
-    ingress.kubernetes.io/rewrite-target: /
+  name: grid-vpn-ingressroute
 spec:
-  rules:
-    - http:
-        paths:
-          - path: /vpn
-            pathType: Prefix
-            backend:
-              service:
-                name: headscale
-                port:
-                  number: 8080
+  routes:
+    - match: PathPrefix(`/vpn`)
+      kind: Rule
+      services:
+        - name: headscale
+          port: 8080
+      middlewares:
+        - name: grid-vpn-stripprefix
+---
+apiVersion: traefik.containo.us/v1alpha1
+kind: Middleware
+metadata:
+  name: grid-vpn-stripprefix
+spec:
+  stripPrefix:
+    prefixes:
+      - /vpn
