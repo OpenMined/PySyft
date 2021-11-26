@@ -384,8 +384,8 @@ def create_launch_cmd(
             if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
                 headless = True
             parsed_kwargs["headless"] = headless
-            parsed_kwargs["tls"] = kwargs["tls"]
-            parsed_kwargs["test"] = kwargs["test"]
+            parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
+            parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
 
             # If the user is using docker desktop (OSX/Windows), check to make sure there's enough RAM.
             # If the user is using Linux this isn't an issue because Docker scales to the avaialble RAM,
