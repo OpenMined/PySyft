@@ -47,6 +47,7 @@ services:
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
       - "--entrypoints.web.address=:81"
+      - "--entrypoints.vpn.address=:80"
 
       # Enable the access log, with HTTP requests
       - "--accesslog"
