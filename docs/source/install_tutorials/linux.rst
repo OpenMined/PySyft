@@ -10,7 +10,6 @@ This documentation is to help you install and be able to deploy a Domain Node on
 
    For more advanced tutorials, such as cloud deployment, ansible, vagrant, kubernetes, or virtualbox deployment, please check
    `advanced deployment documentation <https://openmined.github.io/PySyft/deployment/index.html#>`__.
-.. seealso::
 
 We will use the Linux Terminal to install all the prerequisites and launch the domain. A quick way to launch the terminal is by pressing ``Ctrl+Alt+T``. Let's go!
 
@@ -154,13 +153,13 @@ The final step is to launch a domain node, which is as easy as:
 
 .. code-block:: bash
 
-   hagrid launch domain to docker:8081
+   hagrid launch test_domain
 
 To stop the running node, you can run:
 
 .. code-block:: bash
 
-   hagrid land
+   hagrid land test_domain
 
 But before stopping it, you can go to ```localhost:8081`` in your `browser <localhost:8081>`_ to actually interact with the PyGrid Admin UI, where you can manage as a Data Owner your datasets, as well as incoming requests from data scientist.
 You can log in using the following credentials:
