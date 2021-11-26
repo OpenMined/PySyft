@@ -1,6 +1,7 @@
 """Configuration file to share fixtures across benchmarks."""
 
 # stdlib
+import os
 from typing import Any
 from typing import Callable
 from typing import List
@@ -47,3 +48,17 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "k8s: kubernetes integration tests")
     config.addinivalue_line("markers", "e2e: end-to-end integration tests")
     config.addinivalue_line("markers", "security: security integration tests")
+
+
+# patch windows to use uft-8 output
+if os.name == "nt":
+    try:
+        print("Patching Windows Default Locale to use UTF-8")
+        # third party
+        import _locale
+
+        _locale._gdl_bak = _locale._getdefaultlocale
+        _locale._getdefaultlocale = lambda *args: (_locale._gdl_bak()[0], "utf8")
+        print("Finished Patching Windows Default Locale to use UTF-8")
+    except Exception as e:
+        print(f"Failed to patch Windows Default Locale. {e}")
