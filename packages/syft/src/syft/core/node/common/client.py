@@ -210,7 +210,6 @@ class Client(AbstractNodeClient):
         ],
         route_index: int = 0,
     ) -> SyftMessage:
-
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
 
@@ -238,8 +237,11 @@ class Client(AbstractNodeClient):
                 error(str(exception))
                 traceback_and_raise(exception)
             else:
+                # response.message.budget is the privacy budget. We put a check here and raise a warning?
+                if response.message.budget == 0: 
+                    print("Privacy Budget may be 0")
                 return response.message
-
+                
         traceback_and_raise(
             Exception("Response was signed by a fake key or was corrupted in transit.")
         )
