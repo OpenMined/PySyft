@@ -239,11 +239,12 @@ class Client(AbstractNodeClient):
             else:
                 # response.message.budget is the privacy budget. We put a check here and raise a warning?
                 try:
-                    privacy_budget = response.message.budget
+                    from scipy.stats import shapiro
+                    shapiro_result = shapiro(response.message.data)
+                    if shapiro_result[1] > .05:
+                        print("You might have run out of privacy budget :(")
                 except:
-                    privacy_budget = True 
-                if not privacy_budget: 
-                    print("You might have run out of privacy budget :(")
+                    pass
                 return response.message
                 
         traceback_and_raise(
