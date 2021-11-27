@@ -135,7 +135,7 @@ def test_mpc_forward_methods(
 
     assert (res == expected).all()
 
-
+@pytest.mark.skip
 @pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["lt", "gt", "ge", "le", "eq", "ne"])
 def test_comp_mpc_private_private_op(get_clients, op_str: str) -> None:
@@ -160,7 +160,7 @@ def test_comp_mpc_private_private_op(get_clients, op_str: str) -> None:
 
     assert (res == expected.child).all()
 
-
+@pytest.mark.skip
 @pytest.mark.smpc
 @pytest.mark.parametrize("op_str", ["lt", "gt", "ge", "le", "eq", "ne"])
 def test_comp_mpc_private_public_op(get_clients, op_str: str) -> None:
