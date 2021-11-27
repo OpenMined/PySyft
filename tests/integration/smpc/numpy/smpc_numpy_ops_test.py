@@ -282,7 +282,7 @@ def test_take(get_clients) -> None:
 
     assert (res == exp_res.child).all()
 
-
+@pytest.mark.skip
 @pytest.mark.smpc
 def test_abs(get_clients) -> None:
     clients = get_clients(2)
@@ -300,7 +300,7 @@ def test_abs(get_clients) -> None:
 
     assert (res == exp_res.child).all()
 
-
+@pytest.mark.skip
 @pytest.mark.smpc
 def test_sign(get_clients) -> None:
     clients = get_clients(2)
