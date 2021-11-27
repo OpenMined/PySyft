@@ -238,7 +238,11 @@ class Client(AbstractNodeClient):
                 traceback_and_raise(exception)
             else:
                 # response.message.budget is the privacy budget. We put a check here and raise a warning?
-                if response.message.budget == 0: 
+                try:
+                    privacy_budget = response.message.budget
+                except:
+                    privacy_budget = True 
+                if not privacy_budget: 
                     print("Privacy Budget may be 0")
                 return response.message
                 
