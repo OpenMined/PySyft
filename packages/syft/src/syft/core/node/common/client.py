@@ -243,7 +243,7 @@ class Client(AbstractNodeClient):
                 except:
                     privacy_budget = True 
                 if not privacy_budget: 
-                    print("Privacy Budget may be 0")
+                    print("You might have run out of privacy budget :(")
                 return response.message
                 
         traceback_and_raise(

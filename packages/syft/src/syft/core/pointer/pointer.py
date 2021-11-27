@@ -215,6 +215,10 @@ class Pointer(AbstractPointer):
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)
 
+        from scipy.stats import shapiro
+        shapiro_result = shapiro(obj)
+        if shapiro_result[1] > .05:
+            print("You might have run out of privacy budget :(")
         return obj
 
     def get_copy(
@@ -300,7 +304,6 @@ class Pointer(AbstractPointer):
             publish_ids_at_location=[self.id_at_location],
             sigma=sigma,
         )
-
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
@@ -360,7 +363,6 @@ class Pointer(AbstractPointer):
         if result is not None and delete_obj:
             self.gc_enabled = False
             self._exhausted = True
-
         return result
 
     def _object2proto(self) -> Pointer_PB:
