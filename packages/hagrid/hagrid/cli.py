@@ -323,6 +323,19 @@ def login_azure() -> bool:
     return False
 
 
+def check_azure_cli_installed() -> bool:
+    try:
+        callProcess = subprocess.call(['az'])
+        print("Azure cli installed!")
+    except FileNotFoundError:
+        msg = "\nYou don't appear to have the Azure CLI installed!!! \n\n\
+Please install it and then retry your command.\
+\n\nInstallation Instructions: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli\n"
+        raise FileNotFoundError(msg)
+
+    return True
+
+
 def str_to_bool(bool_str: Optional[str]) -> bool:
     result = False
     bool_str = str(bool_str).lower()
@@ -431,6 +444,8 @@ def create_launch_cmd(
                 f"Launching a VM locally requires: {' '.join(errors)}"
             )
     elif host in ["azure"]:
+
+        check_azure_cli_installed()
 
         while not check_azure_authed():
             print("You need to log into Azure")
