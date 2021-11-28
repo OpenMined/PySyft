@@ -1,3 +1,6 @@
+# stdlib
+import os
+
 # third party
 import pytest
 import requests
@@ -5,8 +8,11 @@ import requests
 # syft absolute
 import syft as sy
 
-NETWORK_PORT = 9081
-NETWORK_PUBLIC_HOST = f"docker-host:{NETWORK_PORT}"
+NETWORK_HOSTNAME = os.environ.get("TEST_NETWORK_HOSTNAME", "test_network_1")
+NETWORK_PUBLIC_PORT = int(os.environ.get("TEST_NETWORK_PUBLIC_PORT", 9081))
+NETWORK_PUBLIC_HOST = os.environ.get("TEST_NETWORK_PUBLIC_HOST", "docker-host")
+NETWORK_INTERNAL_HOST = os.environ.get("TEST_NETWORK_INTERNAL_HOST", NETWORK_PUBLIC_HOST)
+NETWORK_INTERNAL_PORT = os.environ.get("TEST_NETWORK_INTERNAL_PORT", NETWORK_PUBLIC_PORT)
 DOMAIN1_PORT = 9082
 DOMAIN2_PORT = 9083
 NETWORK_VPN_IP = "100.64.0.1"
@@ -17,26 +23,26 @@ TEST_ROOT_PASS = "changethis"
 
 
 def join_to_network_python(
-    email: str, password: str, port: int, network_host: str
+    email: str, password: str, node_api_port: int, node_api_host: str, headscale_addr: str
 ) -> None:
-    root_client = sy.login(email=email, password=password, port=port)
+    root_client = sy.login(email=email, password=password, port=node_api_port, url=f"http://{node_api_host}")
 
     # test Syft API
-    root_client.join_network(host_or_ip=network_host)
+    root_client.join_network(host_or_ip=headscale_addr)
 
     response = root_client.vpn_status()
     return response
 
 
 def join_to_network_rest(
-    email: str, password: str, port: int, network_host: str
+    email: str, password: str, node_api_port: int, node_api_host: str, headscale_addr: str
 ) -> None:
-    url = f"http://localhost:{port}/api/v1/login"
+    url = f"http://{node_api_host}:{node_api_port}/api/v1/login"
     auth_response = requests.post(url, json={"email": email, "password": password})
     auth = auth_response.json()
 
     # test HTTP API
-    url = f"http://localhost:{port}/api/v1/vpn/join/{network_host}"
+    url = f"http://{node_api_host}:{node_api_port}/api/v1/vpn/join/{headscale_addr}"
     headers = {"Authorization": f"Bearer {auth['access_token']}"}
     response = requests.post(url, headers=headers)
 
@@ -44,12 +50,13 @@ def join_to_network_rest(
     return result
 
 
-def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
+def run_network_tests(node_api_port: int, hostname: str, vpn_ip: str, node_api_host: str, headscale_addr: str) -> None:
     response = join_to_network_python(
         email=TEST_ROOT_EMAIL,
         password=TEST_ROOT_PASS,
-        port=port,
-        network_host=NETWORK_PUBLIC_HOST,
+        node_api_port=node_api_port,
+        node_api_host=node_api_host,
+        headscale_addr=headscale_addr,
     )
 
     assert response["status"] == "ok"
@@ -61,28 +68,41 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
     response = join_to_network_rest(
         email=TEST_ROOT_EMAIL,
         password=TEST_ROOT_PASS,
-        port=port,
-        network_host=NETWORK_PUBLIC_HOST,
+        node_api_port=node_api_port,
+        node_api_host=node_api_host,
+        headscale_addr=headscale_addr,
     )
     assert response["status"] == "ok"
 
 
 @pytest.mark.network
+@pytest.mark.k8s
 def test_connect_network_to_network() -> None:
     run_network_tests(
-        port=NETWORK_PORT, hostname="test_network_1", vpn_ip=NETWORK_VPN_IP
+        node_api_port=NETWORK_PUBLIC_PORT,
+        hostname=NETWORK_HOSTNAME,
+        vpn_ip=NETWORK_VPN_IP,
+        node_api_host=NETWORK_PUBLIC_HOST,
+        headscale_addr=f"{NETWORK_INTERNAL_HOST}:{NETWORK_INTERNAL_PORT}",
     )
-
 
 @pytest.mark.network
+@pytest.mark.k8s
 def test_connect_domain1_to_network() -> None:
     run_network_tests(
-        port=DOMAIN1_PORT, hostname="test_domain_1", vpn_ip=DOMAIN1_VPN_IP
+        node_api_port=DOMAIN1_PORT,
+        hostname="test_domain_1",
+        vpn_ip=DOMAIN1_VPN_IP,
+        node_api_host="localhost",
+        headscale_addr=f"{NETWORK_PUBLIC_HOST}:{NETWORK_PUBLIC_PORT}",
     )
-
 
 @pytest.mark.network
 def test_connect_domain2_to_network() -> None:
     run_network_tests(
-        port=DOMAIN2_PORT, hostname="test_domain_2", vpn_ip=DOMAIN2_VPN_IP
+        node_api_port=DOMAIN2_PORT,
+        hostname="test_domain_2",
+        vpn_ip=DOMAIN2_VPN_IP,
+        node_api_host="localhost",
+        headscale_addr=f"{NETWORK_PUBLIC_HOST}:{NETWORK_PUBLIC_PORT}"
     )
