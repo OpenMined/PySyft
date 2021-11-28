@@ -575,7 +575,10 @@ def create_launch_cmd(
             msg += f"\n\nLaunching a Cloud VM requires: {' '.join(errors)}"
             msg += "\n\nPlease follow installation instructions: "
             msg += "https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#"
-
+            msg += "\n\nNote: we've found the 'conda' based installation instructions to work best"
+            msg += " (e.g. something lke 'conda install -c conda-forge ansible'). "
+            msg += "The pip based instructions seem to be a bit buggy if you're using a conda environment"
+            msg += "\n"
             raise MissingDependency(msg)
     elif host in ["aws", "gcp"]:
         print("Coming soon.")
