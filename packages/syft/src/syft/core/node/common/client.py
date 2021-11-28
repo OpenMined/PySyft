@@ -242,10 +242,10 @@ class Client(AbstractNodeClient):
                     # third party
                     from scipy.stats import shapiro
 
-                    shapiro_result = shapiro(response.message.data)
+                    shapiro_result = shapiro(response.message.data)  # type: ignore
                     if shapiro_result[1] > 0.05:
                         print("You might have run out of privacy budget :(")
-                except:
+                except:  
                     pass
                 return response.message
 
