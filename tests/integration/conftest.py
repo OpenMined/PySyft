@@ -47,6 +47,7 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "frontend: frontend integration tests")
     config.addinivalue_line("markers", "smpc: smpc integration tests")
     config.addinivalue_line("markers", "network: network integration tests")
+    config.addinivalue_line("markers", "domain: domain integration tests")
     config.addinivalue_line("markers", "k8s: kubernetes integration tests")
     config.addinivalue_line("markers", "e2e: end-to-end integration tests")
     config.addinivalue_line("markers", "security: security integration tests")
