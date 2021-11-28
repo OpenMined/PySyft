@@ -28,14 +28,34 @@ class NetworkRegistry:
         try:
             response = requests.get(NETWORK_REGISTRY_URL)
             network_json = response.json()
-            self.networks = network_json["networks"]
+            self.all_networks = network_json["networks"]
         except Exception as e:
             warning(
                 f"Failed to get Network Registry, go checkout: {NETWORK_REGISTRY_REPO}. {e}"
             )
 
+    @property
+    def online_networks(self):
+        online_networks = list()
+
+        for network in self.all_networks:
+            url = "http://" + network['host_or_ip'] + ":" + str(network['port']) + "/"
+            try:
+                res = requests.get(url, timeout=0.3)
+                online = "This is a PyGrid Network node." in res.text
+            except requests.exceptions.ConnectTimeout:
+                online = False
+
+            if online:
+                online_networks.append(network)
+
+        return online_networks
+
     def _repr_html_(self) -> str:
-        return pd.DataFrame(self.networks)._repr_html_()
+        on = self.online_networks
+        if len(on) == 0:
+            return "(no networks online - try syft.networks.all_networks to see offline networks)"
+        return pd.DataFrame(self.online_networks)._repr_html_()
 
     def create_client(self, network: Dict[str, Any]) -> Client:
         try:
@@ -49,9 +69,10 @@ class NetworkRegistry:
 
     def __getitem__(self, key: Union[str, int]) -> Client:
         if isinstance(key, int):
-            return self.create_client(network=self.networks[key])
+            return self.create_client(network=self.online_networks[key])
         else:
-            for network in self.networks:
+            on = self.online_networks
+            for network in on:
                 if network["name"] == key:
                     return self.create_client(network=network)
-        raise KeyError(f"Invalid key: {key} for {self.networks}")
+        raise KeyError(f"Invalid key: {key} for {on}")
