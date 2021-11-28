@@ -8,7 +8,7 @@ import pytest
 
 def docker_network_connect(direction: str = "connect") -> None:
     # this connects all the tailscale containers to the other docker compose project
-    # networks thus allowing tailscale to find a direct route between them
+    # networks thus allowing tailscale to find a direct route between them.
     projects = [
         "network_1",
         "domain_1",
