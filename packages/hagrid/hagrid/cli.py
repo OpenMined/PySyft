@@ -571,9 +571,12 @@ def create_launch_cmd(
             errors = []
             if not DEPENDENCIES["ansible-playbook"]:
                 errors.append("ansible-playbook")
-            raise MissingDependency(
-                f"Launching a Cloud VM requires: {' '.join(errors)}"
-            )
+            msg = "\nERROR!!! MISSING DEPENDENCY!!!"
+            msg += f"\n\nLaunching a Cloud VM requires: {' '.join(errors)}"
+            msg += "\n\nPlease follow installation instructions: "
+            msg += "https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#"
+
+            raise MissingDependency(msg)
     elif host in ["aws", "gcp"]:
         print("Coming soon.")
         return ""
