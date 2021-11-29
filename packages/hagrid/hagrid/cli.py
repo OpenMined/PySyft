@@ -149,6 +149,8 @@ def clean(location: str) -> None:
     default="",
     type=str,
 )
+@click.option("--tls", is_flag=True, help="Launch with TLS configuration")
+@click.option("--test", is_flag=True, help="Launch with Test configuration")
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -382,6 +384,8 @@ def create_launch_cmd(
             if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
                 headless = True
             parsed_kwargs["headless"] = headless
+            parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
+            parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
 
             # If the user is using docker desktop (OSX/Windows), check to make sure there's enough RAM.
             # If the user is using Linux this isn't an issue because Docker scales to the avaialble RAM,
@@ -692,12 +696,11 @@ def create_launch_docker_cmd(
     print("  - TAIL: " + str(tail))
     print("\n")
 
-    # cmd += " export VERSION=$(python3 VERSION)"
-    # cmd += " export VERSION_HASH=$(python3 VERSION hash)"
     envs = {
         "COMPOSE_DOCKER_CLI_BUILD": 1,
         "DOCKER_BUILDKIT": 1,
-        "DOMAIN_PORT": int(host_term.free_port),
+        "HTTP_PORT": int(host_term.free_port),
+        "HTTPS_PORT": int(host_term.free_port_tls),
         "TRAEFIK_TAG": str(tag),
         "DOMAIN_NAME": str(snake_name),
         "NODE_TYPE": str(node_type.input),
@@ -705,6 +708,10 @@ def create_launch_docker_cmd(
         "VERSION": GRID_SRC_VERSION[0],
         "VERSION_HASH": GRID_SRC_VERSION[1],
     }
+
+    if kwargs["test"] is True:
+        envs["IGNORE_TLS_ERRORS"] = "True"
+
     cmd = ""
     args = []
     for k, v in envs.items():
@@ -731,6 +738,11 @@ def create_launch_docker_cmd(
     if kwargs["headless"] is False:
         cmd += " --profile frontend"
 
+    cmd += " --file docker-compose.yml"
+    if kwargs["tls"] is True:
+        cmd += " --file docker-compose.tls.yml"
+    if kwargs["test"] is True:
+        cmd += " --file docker-compose.test.yml"
     cmd += " up"
 
     if not tail:
