@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import sys
 from typing import Any
 from typing import Dict
 from typing import List
@@ -40,24 +41,29 @@ class NetworkRegistry:
     def online_networks(self) -> List[Dict]:
         online_networks = list()
 
-        for network in self.all_networks:
+        an = self.all_networks
+
+        for i, network in enumerate(an):
+            sys.stdout.write(
+                "\rChecking network availability: " + str(i + 1) + " of " + str(len(an))
+            )
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=0.3)
                 online = "This is a PyGrid Network node." in res.text
-            except requests.exceptions.ConnectTimeout:
+            except Exception:
                 online = False
 
             if online:
                 online_networks.append(network)
-
+        sys.stdout.write("\r                                             \n")
         return online_networks
 
     def _repr_html_(self) -> str:
         on = self.online_networks
         if len(on) == 0:
             return "(no networks online - try syft.networks.all_networks to see offline networks)"
-        return pd.DataFrame(self.online_networks)._repr_html_()
+        return pd.DataFrame(on)._repr_html_()
 
     def create_client(self, network: Dict[str, Any]) -> Client:
         try:

@@ -1,4 +1,5 @@
 # stdlib
+import sys
 from typing import Any
 from typing import List
 from typing import Union
@@ -35,9 +36,19 @@ class DomainRequestAPI(RequestAPI):
             _data = result["data"]
             if online_only:
                 data = list()
-                for domain_metadata in _data:
-                    if self.get(domain_metadata["id"]).ping:
-                        data.append(domain_metadata)
+                for i, domain_metadata in enumerate(_data):
+                    sys.stdout.write(
+                        "\rChecking domain status: "
+                        + str(i + 1)
+                        + " of "
+                        + str(len(_data))
+                    )
+                    try:
+                        if self.get(domain_metadata["id"]).ping:
+                            data.append(domain_metadata)
+                    except Exception:
+                        """"""
+                sys.stdout.write("\r                                             \n")
             else:
                 data = _data
 

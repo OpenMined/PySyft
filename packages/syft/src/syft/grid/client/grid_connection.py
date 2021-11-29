@@ -3,6 +3,7 @@ import io
 import json
 from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -67,7 +68,9 @@ class GridHTTPConnection(HTTPConnection):
         _header["Content-Type"] = "application/octet-stream"
         return _header
 
-    def _send_msg(self, msg: SyftMessage) -> requests.Response:
+    def _send_msg(
+        self, msg: SyftMessage, timeout: Optional[float] = None
+    ) -> requests.Response:
         """
         Serializes Syft messages in json format and send it using HTTP protocol.
         NOTE: Auxiliary method to avoid code duplication and modularity.
@@ -97,6 +100,7 @@ class GridHTTPConnection(HTTPConnection):
             data=msg_bytes,
             headers=header,
             verify=verify_tls(),
+            timeout=timeout,
         )
         # else:
         #     r = self.send_streamed_messages(blob_message=msg_bytes)

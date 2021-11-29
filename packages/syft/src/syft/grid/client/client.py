@@ -33,6 +33,7 @@ def connect(
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     credentials: Dict = {},
     user_key: Optional[SigningKey] = None,
+    timeout: Optional[float] = None,
 ) -> Client:
     # Use Server metadata
     # to build client route
