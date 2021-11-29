@@ -35,48 +35,51 @@ def connect(
     user_key: Optional[SigningKey] = None,
     timeout: Optional[float] = None,
 ) -> Client:
+    print("a")
     # Use Server metadata
     # to build client route
     conn = conn_type(url=GridURL.from_url(url))  # type: ignore
-
+    print("b")
     if credentials:
+        print("b1")
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
     else:
+        print("b2")
         metadata = conn._get_metadata()  # type: ignore
         if not user_key:
             _user_key = SigningKey.generate()
         else:
             _user_key = user_key
-
+    print("c")
     # Check node client type based on metadata response
     client_type: Union[Type[DomainClient], Type[NetworkClient]]
     if metadata.node_type == "Domain":
         client_type = DomainClient
     else:
         client_type = NetworkClient
-
+    print("d")
     (
         spec_location,
         name,
         client_id,
     ) = client_type.deserialize_client_metadata_from_node(metadata=metadata)
-
+    print("e")
     # Create a new Solo Route using the selected connection type
     route = SoloRoute(destination=spec_location, connection=conn)
-
+    print("f")
     kwargs = {"name": name, "routes": [route], "signing_key": _user_key}
-
+    print("g")
     if client_type is NetworkClient:
         kwargs["network"] = spec_location
     elif client_type is DomainClient:
         kwargs["domain"] = spec_location
     else:
         raise NotImplementedError
-
+    print("h")
     # Create a new client using the selected client type
     node = client_type(**kwargs)
-
+    print("i")
     return node
 
 
