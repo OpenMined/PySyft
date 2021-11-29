@@ -44,7 +44,7 @@ class PingMessageWithReply(GenericPayloadMessageWithReply):
             host_or_ip = str(self.kwargs["host_or_ip"])
             if not host_or_ip.startswith("http"):
                 host_or_ip = f"http://{host_or_ip}"
-            res = requests.get(f"{host_or_ip}/status")
+            res = requests.get(f"{host_or_ip}/status", timeout=0.25)
             return {"host_or_ip": host_or_ip, "status_code": res.status_code}
         except Exception:
             print("Failed to run ping", self.kwargs)

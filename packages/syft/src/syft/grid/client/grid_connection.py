@@ -41,19 +41,13 @@ class GridHTTPConnection(HTTPConnection):
         self.session_token: str = ""
         self.token_type: str = "'"
 
-    def _send_msg(self, msg: SyftMessage) -> requests.Response:
-        """
-        Serializes Syft messages in json format and send it using HTTP protocol.
-        NOTE: Auxiliary method to avoid code duplication and modularity.
-        :return: returns requests.Response object containing a JSON serialized
-        SyftMessage
-        :rtype: requests.Response
-        """
+    @property
+    def header(self):
 
-        header = {}
+        _header = {}
 
         if self.session_token and self.token_type:
-            header = dict(
+            _header = dict(
                 Authorization="Bearer "
                 + json.loads(
                     '{"auth_token":"'
@@ -64,7 +58,19 @@ class GridHTTPConnection(HTTPConnection):
                 )["auth_token"]
             )
 
-        header["Content-Type"] = "application/octet-stream"
+        _header["Content-Type"] = "application/octet-stream"
+        return _header
+
+    def _send_msg(self, msg: SyftMessage) -> requests.Response:
+        """
+        Serializes Syft messages in json format and send it using HTTP protocol.
+        NOTE: Auxiliary method to avoid code duplication and modularity.
+        :return: returns requests.Response object containing a JSON serialized
+        SyftMessage
+        :rtype: requests.Response
+        """
+
+        header = self.header
 
         route = GridHTTPConnection.SYFT_ROUTE
         # if the message has no reply lets use the streaming endpoint

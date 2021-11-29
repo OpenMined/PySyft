@@ -48,7 +48,7 @@ class DomainRequestAPI(RequestAPI):
         return []
 
     def _repr_html_(self) -> str:
-        return self.all(online_only=False)._repr_html_()
+        return self.all(online_only=True)._repr_html_()
 
     def get(self, key: Union[str, int, UID, String]) -> ProxyClient:  # type: ignore
         # to make sure we target the remote Domain through the proxy we need to
