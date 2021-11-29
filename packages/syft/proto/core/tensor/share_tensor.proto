@@ -4,8 +4,6 @@ package syft.core.tensor;
 
 import "proto/lib/numpy/array.proto";
 import "proto/core/common/recursive_serde.proto";
-import "proto/core/tensor/party.proto";
-
 
 message ShareTensor {
   oneof data {
@@ -16,5 +14,5 @@ message ShareTensor {
   uint32 rank = 3;
   uint32 seed_przs = 4;
   bytes ring_size = 5;
-  repeated Party parties_info = 6;
+  repeated syft.core.common.RecursiveSerde parties_info = 6;
 }

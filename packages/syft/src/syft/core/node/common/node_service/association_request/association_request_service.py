@@ -15,6 +15,7 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # relative
+from ......grid import GridURL
 from ......logger import error
 from ......logger import info
 from .....common.message import ImmediateSyftMessageWithReply
@@ -99,7 +100,8 @@ def send_association_request_msg(
         metadata["node_name"] = (
             node.name if node.name else ""
         )  # tell the network what our name is
-        target_client = sy.connect(url=f"http://{msg.target}/api/v1")
+        grid_url = GridURL.from_url(msg.target).with_path("/api/v1")
+        target_client = sy.connect(url=str(grid_url))
 
         target_msg: SignedImmediateSyftMessageWithReply = (
             ReceiveAssociationRequestMessage(
@@ -231,7 +233,8 @@ def respond_association_request_msg(
             error(f"Failed to get vpn status. {e}")
 
         # create a client to the source
-        source_client = sy.connect(url=f"http://{msg.source}/api/v1")
+        grid_url = GridURL.from_url(msg.source).with_path("/api/v1")
+        source_client = sy.connect(url=str(grid_url))
 
         try:
             node_msg: SignedImmediateSyftMessageWithReply = (

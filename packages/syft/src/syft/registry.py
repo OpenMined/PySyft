@@ -13,6 +13,7 @@ import requests
 # relative
 from . import login
 from .core.node.common.client import Client
+from .grid import GridURL
 from .logger import error
 from .logger import warning
 
@@ -39,10 +40,11 @@ class NetworkRegistry:
 
     def create_client(self, network: Dict[str, Any]) -> Client:
         try:
-            host_or_ip = network["host_or_ip"]
             port = int(network["port"])
             protocol = network["protocol"]
-            return login(url=f"{protocol}://{host_or_ip}", port=port)
+            host_or_ip = network["host_or_ip"]
+            grid_url = GridURL(port=port, protocol=protocol, host_or_ip=host_or_ip)
+            return login(url=str(grid_url), port=port)
         except Exception as e:
             error(f"Failed to login with: {network}. {e}")
             raise e
