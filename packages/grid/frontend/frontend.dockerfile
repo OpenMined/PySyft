@@ -1,14 +1,12 @@
-ARG TYPE=domain
 ARG FRONTEND_DEV
 ARG DISABLE_TELEMETRY=1
 ARG PRODUCTION_DIR=/prod_app
 
 FROM node:16-alpine as init-stage
-ARG TYPE=domain
 ARG PRODUCTION_DIR
 ARG DISABLE_TELEMETRY
 
-ENV NODE_TYPE $TYPE
+ENV NODE_TYPE $NODE_TYPE
 ENV PROD_ROOT $PRODUCTION_DIR
 ENV NEXT_TELEMETRY_DISABLED $DISABLE_TELEMETRY
 ENV NEXT_PUBLIC_API_URL=/api/v1
@@ -19,10 +17,9 @@ RUN --mount=type=cache,target=/root/.yarn YARN_CACHE_FOLDER=/root/.yarn yarn --f
 COPY . .
 
 FROM node:16-alpine as grid-ui-development
-ARG TYPE=domain
 ARG DISABLE_TELEMETRY
 
-ENV NODE_TYPE $TYPE
+ENV NODE_TYPE $NODE_TYPE
 ENV NEXT_TELEMETRY_DISABLED $DISABLE_TELEMETRY
 ENV NEXT_PUBLIC_ENVIRONMENT=development
 ENV NEXT_PUBLIC_API_URL=/api/v1
@@ -46,10 +43,9 @@ ENV NEXT_TELEMETRY_DISABLED $DISABLE_TELEMETRY
 ENV PROD_ROOT $PRODUCTION_DIR
 ENV NEXT_PUBLIC_ENVIRONMENT=production
 ENV NEXT_PUBLIC_API_URL=/api/v1
+ENV NODE_TYPE $NODE_TYPE
 
 COPY --from=build-stage $PROD_ROOT/out /usr/share/nginx/html
 COPY --from=build-stage $PROD_ROOT/docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build-stage $PROD_ROOT/docker/nginx-backend-not-found.conf /etc/nginx/extra-conf.d/backend-not-found
 COPY --from=build-stage $PROD_ROOT /hauuuh
-
-
