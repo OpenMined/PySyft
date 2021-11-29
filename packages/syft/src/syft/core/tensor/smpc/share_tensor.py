@@ -80,7 +80,7 @@ RING_SIZE_TO_OP = {
     },
 }
 
-CACHE_CLIENTS: Dict[GridURL, Any] = {}
+CACHE_CLIENTS: Dict[str, Any] = {}
 
 
 def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
@@ -140,12 +140,13 @@ class ShareTensor(PassthroughTensor):
         for party_info in parties_info:
             # if its localhost make it docker-host otherwise no change
             external_host_info = party_info.as_docker_host()
-            client = CACHE_CLIENTS.get(external_host_info, None)
+            client = CACHE_CLIENTS.get(str(external_host_info), None)
+
             if client is None:
                 # default cache to true, here to prevent multiple logins
                 # due to gevent monkey patching, context switch is done during
                 # during socket connection initialization.
-                CACHE_CLIENTS[external_host_info] = True
+                CACHE_CLIENTS[str(external_host_info)] = True
                 # TODO: refactor to use a guest account
                 client = sy.login(  # nosec
                     url=external_host_info,
@@ -154,7 +155,7 @@ class ShareTensor(PassthroughTensor):
                     port=external_host_info.port,
                     verbose=False,
                 )
-                CACHE_CLIENTS[external_host_info] = client
+                CACHE_CLIENTS[str(external_host_info)] = client
             clients.append(client)
         return clients
 
