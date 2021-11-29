@@ -18,11 +18,13 @@ import requests
 import syft as sy
 
 # relative
+from .. import GridURL
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
 from ...core.node.domain.client import DomainClient
 from ...core.node.network.client import NetworkClient
+from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
 
 DEFAULT_PYGRID_PORT = 80
@@ -30,14 +32,14 @@ DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 
 
 def connect(
-    url: str = DEFAULT_PYGRID_ADDRESS,
+    url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     credentials: Dict = {},
     user_key: Optional[SigningKey] = None,
 ) -> Client:
     # Use Server metadata
     # to build client route
-    conn = conn_type(url=url)  # type: ignore
+    conn = conn_type(url=GridURL.from_url(url))  # type: ignore
 
     if credentials:
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
@@ -86,7 +88,7 @@ def connect(
 
 
 def login(
-    url: Optional[str] = None,
+    url: Optional[Union[str, GridURL]] = None,
     port: Optional[int] = None,
     email: Optional[str] = None,
     password: Optional[str] = None,
@@ -116,19 +118,21 @@ def login(
         port = int(input("Please specify the port of the domain you're logging into:"))
 
     # TODO: build multiple route objects and let the Client decide which one to use
-    if url is None:
+    if isinstance(url, GridURL):
+        grid_url = url
+    elif url is None:
+        grid_url = GridURL(host_or_ip="docker-host", port=port, path="/api/v1/status")
         try:
-            url = "http://docker-host:" + str(port)
-            requests.get(url)
+            requests.get(str(grid_url), verify=verify_tls())
         except Exception:
-            url = "http://localhost:" + str(port)
-    elif port != 80:
-        url = url + ":" + str(port)
+            grid_url.host_or_ip = "localhost"
+    else:
+        grid_url = GridURL(host_or_ip=url, port=port)
+
+    grid_url = grid_url.with_path("/api/v1")
 
     if verbose:
         sys.stdout.write("Connecting to " + str(url) + "...")
-
-    url += "/api/v1"
 
     if email is None or password is None:
         credentials = {}
@@ -139,7 +143,7 @@ def login(
         credentials = {"email": email, "password": password}
 
     # connecting to domain
-    node = connect(url=url, credentials=credentials, conn_type=conn_type)
+    node = connect(url=grid_url, credentials=credentials, conn_type=conn_type)
 
     if verbose:
         # bit of fanciness
