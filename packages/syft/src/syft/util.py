@@ -241,6 +241,7 @@ left_name = [
     "distracted",
     "dreamy",
     "eager",
+    "eagleman",
     "ecstatic",
     "elastic",
     "elated",
@@ -425,3 +426,19 @@ def get_root_data_path() -> Path:
 
     os.makedirs(data_dir, exist_ok=True)
     return data_dir
+
+
+def str_to_bool(bool_str: Optional[str]) -> bool:
+    result = False
+    bool_str = str(bool_str).lower()
+    if bool_str == "true" or bool_str == "1":
+        result = True
+    return result
+
+
+def verify_tls() -> bool:
+    return not str_to_bool(str(os.environ.get("IGNORE_TLS_ERRORS", "0")))
+
+
+def ssl_test() -> bool:
+    return len(os.environ.get("REQUESTS_CA_BUNDLE", "")) > 0
