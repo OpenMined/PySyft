@@ -8,6 +8,7 @@
 *.html eol=lf
 *.dockerfile eol=lf
 *.csv eol=lf
+*.sh eol=lf
 
 *.jpg binary
 *.jpeg binary
