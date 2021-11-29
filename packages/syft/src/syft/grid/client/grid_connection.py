@@ -147,7 +147,7 @@ class GridHTTPConnection(HTTPConnection):
         session.mount("https://", adapter)
 
         metadata_url = str(self.base_url) + "/syft/metadata"
-        response = session.get(metadata_url, verify=verify_tls())
+        response = session.get(metadata_url, verify=verify_tls(), timeout=1)
 
         # upgrade to tls if available
         try:
