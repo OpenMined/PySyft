@@ -64,7 +64,11 @@ def thread_function(*args, **kwargs) -> None:
                 port=80,
             )
 
-    network_root.join_network(host_or_ip=NETWORK_PUBLIC_HOST)
+    vpn_s = network_root.vpn_status()
+
+    # if the VPN is empty then it's ready for the network node to join it (first)
+    if len(vpn_s["host"]) == 0 and len(vpn_s["peers"]) == 0:
+        network_root.join_network(host_or_ip=NETWORK_PUBLIC_HOST)
 
 
 if settings.NODE_TYPE.lower() == "domain":
