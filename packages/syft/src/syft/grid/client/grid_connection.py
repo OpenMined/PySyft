@@ -10,7 +10,7 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import requests
-from requests.adapters import HTTPAdapter
+# from requests.adapters import TimeoutHTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
@@ -31,6 +31,23 @@ from ...proto.grid.connections.http_connection_pb2 import (
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
+from requests.adapters import HTTPAdapter
+
+DEFAULT_TIMEOUT = 5 # seconds
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args, **kwargs):
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request, **kwargs):
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
 
 @serializable()
 class GridHTTPConnection(HTTPConnection):
@@ -142,12 +159,12 @@ class GridHTTPConnection(HTTPConnection):
         # allow retry when connecting in CI
         session = requests.Session()
         retry = Retry(connect=3, backoff_factor=0.5)
-        adapter = HTTPAdapter(max_retries=retry)
+        adapter = TimeoutHTTPAdapter(max_retries=retry, timeout=1)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
         metadata_url = str(self.base_url) + "/syft/metadata"
-        response = session.get(metadata_url, verify=verify_tls(), timeout=1)
+        response = session.get(metadata_url, verify=verify_tls())
 
         # upgrade to tls if available
         try:
