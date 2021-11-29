@@ -1,4 +1,7 @@
 # stdlib
+import logging
+import threading
+import time
 from typing import Optional
 
 # third party
@@ -15,10 +18,38 @@ from grid.core.config import settings
 from grid.db.session import get_db_engine
 from grid.db.session import get_db_session
 
+
+def thread_function() -> None:
+    time.sleep(60)
+
+    NETWORK_PUBLIC_HOST = "http://localhost:80"
+    # syft absolute
+    import syft as sy
+
+    network_root = sy.login(
+        email="info@openmined.org",
+        password="changethis",
+        url="http://localhost",
+        port=80,
+    )
+    network_root.join_network(host_or_ip=NETWORK_PUBLIC_HOST)
+
+
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=get_db_engine(), settings=settings)
 elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", db_engine=get_db_engine(), settings=settings)
+    format = "%(asctime)s: %(message)s"
+    logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
+
+    logging.info("Main    : before creating thread")
+    x = threading.Thread(target=thread_function, args=(1,))
+    logging.info("Main    : before running thread")
+    x.start()
+    logging.info("Main    : wait for the thread to finish")
+    # x.join()
+    logging.info("Main    : all done")
+
 else:
     raise Exception(
         "Don't know NODE_TYPE "

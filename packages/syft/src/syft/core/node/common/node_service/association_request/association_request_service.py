@@ -167,7 +167,8 @@ def recv_association_request_msg(
         node.association_requests.create_association_request(
             node_name=msg.metadata["node_name"],
             node_address=msg.reply_to.target_id.id.no_dash,
-            status=AssociationRequestResponses.PENDING,
+            # status=AssociationRequestResponses.PENDING,
+            status=AssociationRequestResponses.ACCEPT,
             source=msg.source,
             target=msg.target,
         )

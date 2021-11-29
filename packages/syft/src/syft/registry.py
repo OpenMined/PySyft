@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Union
 
 # third party
@@ -24,7 +25,7 @@ NETWORK_REGISTRY_REPO = "https://github.com/OpenMined/NetworkRegistry"
 
 class NetworkRegistry:
     def __init__(self) -> None:
-        self.networks = []
+        self.networks: List[Dict] = []
         try:
             response = requests.get(NETWORK_REGISTRY_URL)
             network_json = response.json()
@@ -35,11 +36,11 @@ class NetworkRegistry:
             )
 
     @property
-    def online_networks(self):
+    def online_networks(self) -> List[Dict]:
         online_networks = list()
 
         for network in self.all_networks:
-            url = "http://" + network['host_or_ip'] + ":" + str(network['port']) + "/"
+            url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=0.3)
                 online = "This is a PyGrid Network node." in res.text

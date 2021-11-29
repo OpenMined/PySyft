@@ -325,7 +325,7 @@ def login_azure() -> bool:
 
 def check_azure_cli_installed() -> bool:
     try:
-        callProcess = subprocess.call(['az'])
+        subprocess.call(["az"])
         print("Azure cli installed!")
     except FileNotFoundError:
         msg = "\nYou don't appear to have the Azure CLI installed!!! \n\n\
@@ -687,6 +687,7 @@ def create_launch_docker_cmd(
     kwargs: TypeDict[str, Any],
     tail: bool = True,
 ) -> str:
+
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
