@@ -42,14 +42,27 @@ def thread_function(*args, **kwargs) -> None:
             port=80,
         )
     except Exception as e:
-        NETWORK_PUBLIC_HOST = "http://localhost:80"
 
-        network_root = sy.login(
-            email="info@openmined.org",
-            password="changethis",
-            url="http://localhost",
-            port=80,
-        )
+        try:
+
+            NETWORK_PUBLIC_HOST = "http://localhost:80"
+
+            network_root = sy.login(
+                email="info@openmined.org",
+                password="changethis",
+                url="http://localhost",
+                port=80,
+            )
+        except Exception as e2:
+
+            NETWORK_PUBLIC_HOST = "http://docker-host:80"
+
+            network_root = sy.login(
+                email="info@openmined.org",
+                password="changethis",
+                url="http://docker-host",
+                port=80,
+            )
 
     network_root.join_network(host_or_ip=NETWORK_PUBLIC_HOST)
 
