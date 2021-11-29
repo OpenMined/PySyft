@@ -335,7 +335,6 @@ jobs:
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker rm `docker ps -aq` --force || true
           rm -rf .tox
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T Kb1stGc3NZTmkZ07RzBegb FQykcoRH7wVFNNQ9qTbfGN au.relay.tunshell.com
           tox -e stack.test.integration.smpc
           docker rm `docker ps -aq` --force || true
           docker system prune --volumes --force || true
