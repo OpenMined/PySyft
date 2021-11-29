@@ -115,17 +115,3 @@ def hagrid() -> None:
     i = random.randint(0, 2)
     options[i]()
     hold_on_tight()
-
-
-# patch windows to use uft-8 output
-if os.name == "nt":
-    try:
-        print("Patching Windows Default Locale to use UTF-8")
-        # third party
-        import _locale
-
-        _locale._gdl_bak = _locale._getdefaultlocale
-        _locale._getdefaultlocale = lambda *args: (_locale._gdl_bak()[0], "utf8")
-        print("Finished Patching Windows Default Locale to use UTF-8")
-    except Exception as e:
-        print(f"Failed to patch Windows Default Locale. {e}")
