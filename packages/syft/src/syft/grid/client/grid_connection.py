@@ -10,6 +10,8 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import requests
+from requests.adapters import HTTPAdapter
+
 # from requests.adapters import TimeoutHTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from requests_toolbelt.multipart.encoder import MultipartEncoder
@@ -31,9 +33,8 @@ from ...proto.grid.connections.http_connection_pb2 import (
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
-from requests.adapters import HTTPAdapter
+DEFAULT_TIMEOUT = 5  # seconds
 
-DEFAULT_TIMEOUT = 5 # seconds
 
 class TimeoutHTTPAdapter(HTTPAdapter):
     def __init__(self, *args, **kwargs):
@@ -48,6 +49,7 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         if timeout is None:
             kwargs["timeout"] = self.timeout
         return super().send(request, **kwargs)
+
 
 @serializable()
 class GridHTTPConnection(HTTPConnection):
@@ -158,7 +160,7 @@ class GridHTTPConnection(HTTPConnection):
         """
         # allow retry when connecting in CI
         session = requests.Session()
-        retry = Retry(connect=3, backoff_factor=0.5)
+        retry = Retry(connect=1, backoff_factor=0.5)
         adapter = TimeoutHTTPAdapter(max_retries=retry, timeout=1)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
