@@ -22,17 +22,35 @@ from grid.db.session import get_db_session
 def thread_function() -> None:
     time.sleep(60)
 
-    NETWORK_PUBLIC_HOST = "http://localhost:80"
-    # syft absolute
-    import syft as sy
+    from requests import get
 
-    network_root = sy.login(
-        email="info@openmined.org",
-        password="changethis",
-        url="http://localhost",
-        port=80,
-    )
+    ip = get('https://api.ipify.org').content.decode('utf8')
+    print('My public IP address is: {}'.format(ip))
+
+    try:
+
+        NETWORK_PUBLIC_HOST = "http://"+ip+":80"
+        # syft absolute
+        import syft as sy
+
+        network_root = sy.login(
+            email="info@openmined.org",
+            password="changethis",
+            url="http://"+ip,
+            port=80,
+        )
+    except Exception as e:
+        NETWORK_PUBLIC_HOST = "http://localhost:80"
+
+        network_root = sy.login(
+            email="info@openmined.org",
+            password="changethis",
+            url="http://localhost",
+            port=80,
+        )
+
     network_root.join_network(host_or_ip=NETWORK_PUBLIC_HOST)
+
 
 
 if settings.NODE_TYPE.lower() == "domain":
