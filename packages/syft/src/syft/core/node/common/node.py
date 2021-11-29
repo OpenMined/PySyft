@@ -412,7 +412,7 @@ class Node(AbstractNode):
 
             self.peer_route_clients[node_id] = node_id_dict
         except Exception as e:
-            error(
+            debug(
                 f"Failed to add_route {node_id} {node_name} {host_or_ip} {is_vpn}. {e}"
             )
 
