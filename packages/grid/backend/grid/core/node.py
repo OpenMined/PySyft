@@ -22,21 +22,22 @@ from grid.db.session import get_db_session
 def thread_function() -> None:
     time.sleep(60)
 
+    # third party
     from requests import get
 
-    ip = get('https://api.ipify.org').content.decode('utf8')
-    print('My public IP address is: {}'.format(ip))
+    ip = get("https://api.ipify.org").content.decode("utf8")
+    print(f"My public IP address is: {ip}")
 
     try:
 
-        NETWORK_PUBLIC_HOST = "http://"+ip+":80"
+        NETWORK_PUBLIC_HOST = "http://" + ip + ":80"
         # syft absolute
         import syft as sy
 
         network_root = sy.login(
             email="info@openmined.org",
             password="changethis",
-            url="http://"+ip,
+            url="http://" + ip,
             port=80,
         )
     except Exception as e:
@@ -52,7 +53,6 @@ def thread_function() -> None:
     network_root.join_network(host_or_ip=NETWORK_PUBLIC_HOST)
 
 
-
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=get_db_engine(), settings=settings)
 elif settings.NODE_TYPE.lower() == "network":
@@ -61,7 +61,7 @@ elif settings.NODE_TYPE.lower() == "network":
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
     logging.info("Main    : before creating thread")
-    x = threading.Thread(target=thread_function, args=(1,))
+    x = threading.Thread(target=thread_function, args=())
     logging.info("Main    : before running thread")
     x.start()
     logging.info("Main    : wait for the thread to finish")
