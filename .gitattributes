@@ -1,3 +1,17 @@
 *.ipynb filter=nbstripout
 *.ipynb diff=ipynb
-* text eol=lf
+*.py eol=lf
+*.md eol=lf
+*.js eol=lf
+*.json eol=lf
+*.ini eol=lf
+*.html eol=lf
+*.dockerfile eol=lf
+*.csv eol=lf
+*.sh eol=lf
+
+*.jpg binary
+*.jpeg binary
+*.png binary
+*.pdf binary
+*.gif binary
