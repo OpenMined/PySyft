@@ -141,6 +141,11 @@ deployments:
       values:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+            # used to modify routing tables to tailscale
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN"]
+              privileged: true
             command:
               - /start-reload.sh
             livenessProbe:

@@ -1,6 +1,7 @@
 # stdlib
 import functools
 import os
+import subprocess
 import sys
 from typing import Any
 from typing import Callable
@@ -22,6 +23,13 @@ shell2http = Shell2HTTP(app=app, executor=executor, base_url_prefix="/commands/"
 
 hostname = os.environ.get("HOSTNAME", "node")  # default to node
 
+# wip: configuration for a "bridge" between the k8s network and the tailnet in both directions
+# for outgoing packets, the source container needs to run with CAP_NET_ADMIN to add a route such as
+#   ip route add 100.64.0.0/10 via 172.17.0.10
+# in this example 172.17.0.10 is the IP address of the tailscale pod in this cluster
+# this is wip because I haven't actually run this code - I ran these commands in a shell on the containers
+enable_proxy_to_traefik = os.environ.get("TAILSCALE_PROXY_TO_TRAEFIK", "disabled") == "enabled"
+enable_gateway_to_tailnet = os.environ.get("TAILSCALE_GATEWAY_TO_TAILNET", "disabled") == "enabled"
 
 key = os.environ.get("STACK_API_KEY", None)  # Get key from environment
 if key is None:
@@ -53,6 +61,31 @@ def up_callback(context: Dict, future: Future) -> None:
     # optional user-defined callback function
     print(context, future.result())
 
+    tailscale_ip = get_tailscale_ip()
+    if enable_proxy_to_traefik:
+        proxy_incoming(tailscale_ip, destination_ip=get_traefik_ip())
+    if enable_gateway_to_tailnet:
+        gateway_outgoing(tailscale_ip, tailscale_subnet="100.64.0.0/10")
+
+def get_tailscale_ip() -> str:
+    return subprocess.run("tailscale ip -4", capture_output=True, check=True).stdout
+
+def get_traefik_ip() -> str:
+    return subprocess.run(
+        "nslookup traefik.openmined.svc.cluster.local | grep ^Name -A1| awk '{print $2}'",
+        capture_output=True,
+        check=True,
+        shell=True
+    ).stdout
+
+def proxy_incoming(tailscale_ip: str, destination_ip: str) -> None:
+    print(f"Adding iptables rule for DNAT {tailscale_ip} -> {destination_ip}")
+    iptables_command = f"iptables -t nat -I PREROUTING -d {tailscale_ip} -j DNAT --to-destination {destination_ip}"
+    subprocess.run(iptables_command, check=True)
+
+def gateway_outgoing(tailscale_ip: str, tailscale_subnet: str) -> None:
+    iptables_command = f"iptables -t nat -A POSTROUTING -d {tailscale_subnet} -o tailscale0 -j SNAT --to-source {tailscale_ip}"
+    subprocess.run(iptables_command, check=True)
 
 shell2http.register_command(
     endpoint="up",
