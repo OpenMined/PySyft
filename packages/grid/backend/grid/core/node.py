@@ -19,9 +19,9 @@ from grid.db.session import get_db_engine
 from grid.db.session import get_db_session
 
 
-def thread_function(*args, **kwargs) -> None:
-
-    time.sleep(60)
+def thread_function(*args, **kwargs) -> None:  # type: ignore
+    # TODO: call this after the Network node is deployed instead of using a timer.
+    time.sleep(30)
 
     # third party
     from requests import get
@@ -41,7 +41,7 @@ def thread_function(*args, **kwargs) -> None:
             url="http://" + ip,
             port=80,
         )
-    except Exception as e:
+    except Exception:
 
         try:
 
@@ -53,7 +53,7 @@ def thread_function(*args, **kwargs) -> None:
                 url="http://localhost",
                 port=80,
             )
-        except Exception as e2:
+        except Exception:
 
             NETWORK_PUBLIC_HOST = "http://docker-host:80"
 
