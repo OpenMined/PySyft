@@ -257,7 +257,8 @@ def get_all_users_msg(
             del _user_json["private_key"]
 
             _user_json['budget'] = node.acc.get_remaining_budget(  # type: ignore
-                user_key=verify_key, returned_epsilon_is_private=False
+                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
+                returned_epsilon_is_private=False
             )
 
             _user_json["budget_spent"] = node.acc.user_budget(
