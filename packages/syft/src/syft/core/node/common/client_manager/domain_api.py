@@ -44,8 +44,13 @@ class DomainRequestAPI(RequestAPI):
                         + str(len(_data))
                     )
                     try:
+                        # syft absolute
+                        import syft
+
+                        syft.logger.stop()
                         if self.get(domain_metadata["id"]).ping:
                             data.append(domain_metadata)
+                        syft.logger.start()
                     except Exception:
                         """"""
                 sys.stdout.write("\r                                             \n")
