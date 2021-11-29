@@ -1,7 +1,7 @@
 FROM shaynesweeney/tailscale:latest
 
 RUN --mount=type=cache,target=/var/cache/apk \
-    apk add --no-cache python3 py3-pip
+    apk add --no-cache python3 py3-pip ca-certificates
 
 WORKDIR /tailscale
 COPY ./requirements.txt /tailscale/requirements.txt

@@ -25,13 +25,13 @@ import syft as sy
 # relative
 from . import utils
 from .... import logger
+from ....grid import GridURL
 from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...smpc.store.crypto_store import CryptoStore
 from ..passthrough import PassthroughTensor  # type: ignore
-from .party import Party
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -80,7 +80,7 @@ RING_SIZE_TO_OP = {
     },
 }
 
-CACHE_CLIENTS: Dict[Party, Any] = {}
+CACHE_CLIENTS: Dict[str, Any] = {}
 
 
 def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
@@ -107,7 +107,7 @@ class ShareTensor(PassthroughTensor):
     def __init__(
         self,
         rank: int,
-        parties_info: List[Party],
+        parties_info: List[GridURL],
         ring_size: int,
         seed_przs: int = 42,
         clients: Optional[List[Any]] = None,
@@ -135,29 +135,27 @@ class ShareTensor(PassthroughTensor):
         super().__init__(value)
 
     @staticmethod
-    def login_clients(parties_info: List[Party]) -> Any:
+    def login_clients(parties_info: List[GridURL]) -> Any:
         clients = []
         for party_info in parties_info:
-            party_info.url = party_info.url.replace("localhost", "docker-host")
-            client = CACHE_CLIENTS.get(party_info, None)
+            # if its localhost make it docker-host otherwise no change
+            external_host_info = party_info.as_docker_host()
+            client = CACHE_CLIENTS.get(str(external_host_info), None)
+
             if client is None:
                 # default cache to true, here to prevent multiple logins
                 # due to gevent monkey patching, context switch is done during
                 # during socket connection initialization.
-                CACHE_CLIENTS[party_info] = True
+                CACHE_CLIENTS[str(external_host_info)] = True
                 # TODO: refactor to use a guest account
                 client = sy.login(  # nosec
-                    url=party_info.url,
+                    url=external_host_info,
                     email="info@openmined.org",
                     password="changethis",
-                    port=party_info.port,
+                    port=external_host_info.port,
                     verbose=False,
                 )
-                base_url = client.routes[0].connection.base_url
-                client.routes[0].connection.base_url = base_url.replace(  # type: ignore
-                    "localhost", "docker-host"
-                )
-                CACHE_CLIENTS[party_info] = client
+                CACHE_CLIENTS[str(external_host_info)] = client
             clients.append(client)
         return clients
 
@@ -262,7 +260,7 @@ class ShareTensor(PassthroughTensor):
         value: Any,
         shape: Tuple[int, ...],
         rank: int,
-        parties_info: List[Party],
+        parties_info: List[GridURL],
         ring_size: int = 2 ** 32,
         seed_przs: Optional[int] = None,
         generator_przs: Optional[Any] = None,
@@ -348,7 +346,7 @@ class ShareTensor(PassthroughTensor):
         value: Optional[Any],
         shape: Tuple[int],
         rank: int,
-        parties_info: List[Party],
+        parties_info: List[GridURL],
         seed_przs: int,
         share_wrapper: Any,
         ring_size: int = 2 ** 32,
