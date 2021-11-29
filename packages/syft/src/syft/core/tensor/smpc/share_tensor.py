@@ -148,13 +148,13 @@ class ShareTensor(PassthroughTensor):
                 CACHE_CLIENTS[external_host_info] = True
                 # TODO: refactor to use a guest account
                 client = sy.login(  # nosec
-                    url=str(external_host_info),
+                    url=external_host_info,
                     email="info@openmined.org",
                     password="changethis",
                     port=external_host_info.port,
                     verbose=False,
                 )
-                CACHE_CLIENTS[party_info] = client
+                CACHE_CLIENTS[external_host_info] = client
             clients.append(client)
         return clients
 

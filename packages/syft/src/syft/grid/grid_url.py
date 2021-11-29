@@ -105,3 +105,6 @@ class GridURL:
 
     def __str__(self) -> str:
         return self.url
+
+    def __hash__(self) -> int:
+        return hash(self.__str__())
