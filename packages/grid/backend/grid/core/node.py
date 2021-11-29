@@ -19,7 +19,8 @@ from grid.db.session import get_db_engine
 from grid.db.session import get_db_session
 
 
-def thread_function() -> None:
+def thread_function(asdf) -> None:
+    asdf += 1
     time.sleep(60)
 
     # third party
@@ -61,7 +62,7 @@ elif settings.NODE_TYPE.lower() == "network":
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
     logging.info("Main    : before creating thread")
-    x = threading.Thread(target=thread_function, args=())
+    x = threading.Thread(target=thread_function, args=(1,))
     logging.info("Main    : before running thread")
     x.start()
     logging.info("Main    : wait for the thread to finish")
