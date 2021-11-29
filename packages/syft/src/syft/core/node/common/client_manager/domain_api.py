@@ -25,19 +25,30 @@ class DomainRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(client=client)
 
-    def all(self, pandas: bool = True) -> List[Any]:
+    def all(self, pandas: bool = True, online_only=True) -> List[Any]:
         response = self.perform_api_request_generic(
             syft_msg=PeerDiscoveryMessageWithReply, content={}
         )
         result = response.payload.kwargs  # type: ignore
 
         if result["status"] == "ok":
-            data = result["data"]
+            _data = result["data"]
+            if online_only:
+                data = list()
+                for domain_metadata in _data:
+                    if self.get(domain_metadata["id"]).ping:
+                        data.append(domain_metadata)
+            else:
+                data = _data
+
             if pandas:
                 data = DataFrame(data)
 
             return data
         return []
+
+    def _repr_html_(self) -> str:
+        return self.all(online_only=False)._repr_html_()
 
     def get(self, key: Union[str, int, UID, String]) -> ProxyClient:  # type: ignore
         # to make sure we target the remote Domain through the proxy we need to
@@ -46,7 +57,7 @@ class DomainRequestAPI(RequestAPI):
         node_uid = key
         try:
             if isinstance(node_uid, int):
-                domain_metadata = self.all(pandas=False)[node_uid]
+                domain_metadata = self.all(pandas=False, online_only=False)[node_uid]
                 node_uid = str(domain_metadata["id"])
             elif isinstance(node_uid, String):
                 node_uid = node_uid.upcast()

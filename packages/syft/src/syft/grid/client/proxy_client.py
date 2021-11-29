@@ -14,6 +14,7 @@ from ...core.io.address import Address
 from ...core.io.location import SpecificLocation
 from ...core.io.route import SoloRoute
 from ...core.node.common import AbstractNodeClient
+from ...core.node.common.node_service.ping.ping_messages import PingMessageWithReply
 from ...core.node.domain.client import DomainClient
 from ...logger import error
 from .grid_connection import GridHTTPConnection
@@ -24,6 +25,20 @@ class ProxyClient(DomainClient):
         # use post_init so we don't need to re-implement an empty regular init
         super().post_init()
         self.logged_in = False
+
+    @property
+    def ping(self):
+        try:
+            # Build Syft Message
+            msg = (
+                PingMessageWithReply(kwargs={"host_or_ip": "asdf"})
+                .to(address=self.address, reply_to=self.address)
+                .sign(signing_key=self.signing_key)
+            )
+            reply = self.send_immediate_msg_with_reply(msg)
+            return True
+        except Exception:
+            return False
 
     @staticmethod
     def create(
