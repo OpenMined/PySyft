@@ -237,16 +237,6 @@ class Client(AbstractNodeClient):
                 error(str(exception))
                 traceback_and_raise(exception)
             else:
-                # response.message.budget is the privacy budget. We put a check here and raise a warning?
-                try:
-                    # third party
-                    from scipy.stats import shapiro
-
-                    shapiro_result = shapiro(response.message.data)  # type: ignore
-                    if shapiro_result[1] > 0.05:
-                        print("You might have run out of privacy budget :(")
-                except:  
-                    pass
                 return response.message
 
         traceback_and_raise(
