@@ -1,0 +1,17 @@
+---
+# Dynamic configuration for Traefik with TLS certificates
+tls:
+  certificates:
+    - certFile: /etc/traefik/certs/cert.pem
+      keyFile: /etc/traefik/certs/key.pem
+  stores:
+    default:
+      defaultCertificate:
+        certFile: /etc/traefik/certs/cert.pem
+        keyFile: /etc/traefik/certs/key.pem
+  # options:
+  #   default:
+  #     minVersion: VersionTLS13
+  #     cipherSuites:
+  #       - TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256
+  #     sniStrict: false
