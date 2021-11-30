@@ -37,14 +37,14 @@ DEFAULT_TIMEOUT = 5  # seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args, **kwargs) -> None:
         self.timeout = DEFAULT_TIMEOUT
         if "timeout" in kwargs:
             self.timeout = kwargs["timeout"]
             del kwargs["timeout"]
         super().__init__(*args, **kwargs)
 
-    def send(self, request, **kwargs):
+    def send(self, request, **kwargs) -> Any:
         timeout = kwargs.get("timeout")
         if timeout is None:
             kwargs["timeout"] = self.timeout
@@ -68,7 +68,7 @@ class GridHTTPConnection(HTTPConnection):
         self.token_type: str = "'"
 
     @property
-    def header(self):
+    def header(self) -> Dict[str, str]:
 
         _header = {}
 
