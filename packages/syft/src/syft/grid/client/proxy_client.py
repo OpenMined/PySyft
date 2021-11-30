@@ -36,7 +36,7 @@ class ProxyClient(DomainClient):
             )
 
     @property
-    def ping(self):
+    def ping(self) -> bool:
         try:
             # Build Syft Message
             msg = (

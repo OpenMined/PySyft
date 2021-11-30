@@ -37,14 +37,14 @@ DEFAULT_TIMEOUT = 5  # seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.timeout = DEFAULT_TIMEOUT
         if "timeout" in kwargs:
             self.timeout = kwargs["timeout"]
             del kwargs["timeout"]
         super().__init__(*args, **kwargs)
 
-    def send(self, request, **kwargs) -> Any:
+    def send(self, request: Any, **kwargs: Any) -> Any:  # type:ignore
         timeout = kwargs.get("timeout")
         if timeout is None:
             kwargs["timeout"] = self.timeout

@@ -3,6 +3,7 @@ import sys
 import time
 from typing import Any
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -26,8 +27,8 @@ from .request_api import RequestAPI
 class DomainRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(client=client)
-        self.cache_time = 0
-        self.cache = None
+        self.cache_time = 0.0
+        self.cache: Optional[List[Any]] = None
         self.num_known_domains_even_offline_ones = 0
         self.timeout = 6000  # check for new domains every 100 minutes
 
@@ -76,9 +77,6 @@ class DomainRequestAPI(RequestAPI):
 
             return data
         return []
-
-    def _repr_html_(self) -> str:
-        return self.all()._repr_html_()
 
     def get(self, key: Union[str, int, UID, String]) -> ProxyClient:  # type: ignore
         # to make sure we target the remote Domain through the proxy we need to

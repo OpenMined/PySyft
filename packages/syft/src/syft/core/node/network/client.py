@@ -13,6 +13,7 @@ from pandas import DataFrame
 from typing_extensions import final
 
 # relative
+from ....grid.client.proxy_client import ProxyClient
 from ....logger import traceback_and_raise
 from ...common.message import SyftMessage
 from ...common.uid import UID
@@ -153,10 +154,10 @@ class NetworkClient(Client):
         # create repr_html variable first so that the stdout printing is in the right order
         repr_html = self.domains._repr_html_()
 
-        sys.stdout.write("\r\t\t     " + self.name + " network")
+        sys.stdout.write("\r\t\t     " + str(self.name) + " network")
         return repr_html
 
-    def __getitem__(self, item: int):
+    def __getitem__(self, item: int) -> ProxyClient:
         return self.domains[item]
 
     def vpn_status(self) -> Dict[str, Any]:
