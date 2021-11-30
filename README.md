@@ -1,7 +1,7 @@
 <h1 align="center">
 
   <br>
-  <a href="http://duet.openmined.org/"><img src="packages/syft/docs/img/monorepo_logo2.png" alt="Syft + Grid" width="400"></a>
+  <img src="packages/syft/docs/img/monorepo_logo2.png" alt="Syft + Grid" width="400">
   <br>
   Code for computing on data<br /> you do not own and cannot see
   <br>
