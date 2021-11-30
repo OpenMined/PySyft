@@ -14,6 +14,9 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 import requests
 
+# syft absolute
+import syft as sy
+
 # relative
 from .. import GridURL
 from ...core.io.connection import ClientConnection
@@ -65,7 +68,12 @@ def connect(
     # Create a new Solo Route using the selected connection type
     route = SoloRoute(destination=spec_location, connection=conn)
 
-    kwargs = {"name": name, "routes": [route], "signing_key": _user_key}
+    kwargs = {
+        "name": name,
+        "routes": [route],
+        "signing_key": _user_key,
+        "version": metadata.version,
+    }
 
     if client_type is NetworkClient:
         kwargs["network"] = spec_location
@@ -148,6 +156,15 @@ def login(
         print("done!")
     else:
         print("Logging into: ...", str(node.name), " Done...")
+
+    if sy.__version__ != node.version:
+        print(
+            "\n**Warning**: The syft version on your system and the node are different."
+        )
+        print(
+            f"Version on your system: {sy.__version__}\nVersion on the node: {node.version}"
+        )
+        print()
 
     return node
 
