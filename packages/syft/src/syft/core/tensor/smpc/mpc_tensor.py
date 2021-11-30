@@ -448,7 +448,7 @@ class MPCTensor(PassthroughTensor):
             max_vals = local_shares[0]._max_vals
             result = result.child.child
             if min_vals is not None and max_vals is not None:
-                result.clip(min_vals, max_vals)
+                result = result.clip(min_vals, max_vals)
             return result
 
         if hasattr(result, "child") and isinstance(result.child, ShareTensor):
