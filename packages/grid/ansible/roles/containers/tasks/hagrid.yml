@@ -10,5 +10,5 @@
   when: vagrant is defined
 
 - name: Install ansible
-  shell: "runuser -l {{ om_user }} -c 'pip install ansible ansible-core"
+  shell: "runuser -l {{ om_user }} -c 'pip install ansible ansible-core'"
   become: yes
