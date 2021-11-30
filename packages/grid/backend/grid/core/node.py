@@ -21,7 +21,7 @@ from grid.db.session import get_db_session
 
 def thread_function(*args, **kwargs) -> None:  # type: ignore
     # TODO: call this after the Network node is deployed instead of using a timer.
-    time.sleep(30)
+    time.sleep(10)
 
     # third party
     from requests import get
