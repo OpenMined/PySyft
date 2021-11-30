@@ -457,7 +457,6 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 public_only=True,
             ),
         ).reshape(self.shape)
-        print("---------------result---------------------", result)
 
         if self.sharetensor_values is not None:
             # relative
@@ -475,6 +474,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 ),
                 min_vals=self.min_vals,
                 max_vals=self.max_vals,
+                sanity_check=False,
             )
 
         return result

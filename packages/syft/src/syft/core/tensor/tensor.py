@@ -357,6 +357,7 @@ class Tensor(
         public_dtype: Optional[np.dtype] = None,
         min_vals: Optional[np.ndarray] = None,
         max_vals: Optional[np.ndarray] = None,
+        sanity_check: Optional[bool] = True,
     ) -> None:
         """data must be a list of numpy array"""
 
@@ -378,7 +379,8 @@ class Tensor(
             )
 
         if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
-            getattr(child, "dtype", None) not in [np.int32, np.bool_]
+            sanity_check
+            and getattr(child, "dtype", None) not in [np.int32, np.bool_]
             and getattr(child, "dtype", None) is not None
         ):
             raise TypeError(
