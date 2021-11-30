@@ -348,6 +348,8 @@ class Tensor(
         child: Any,
         public_shape: Optional[Tuple[int, ...]] = None,
         public_dtype: Optional[np.dtype] = None,
+        min_vals: Optional[np.ndarray] = None,
+        max_vals: Optional[np.ndarray] = None,
     ) -> None:
         """data must be a list of numpy array"""
 
@@ -396,6 +398,9 @@ class Tensor(
         self.tag_name: Optional[str] = None
         self.public_shape = public_shape
         self.public_dtype = public_dtype
+        # TODO: should move to DP Tensor level
+        self._min_vals = min_vals
+        self._max_vals = max_vals
 
     def tag(self, name: str) -> Tensor:
         self.tag_name = name

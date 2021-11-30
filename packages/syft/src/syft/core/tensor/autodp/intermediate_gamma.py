@@ -448,32 +448,34 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
 
-        result = (
-            np.array(
-                publish(
-                    scalars=self.flat_scalars,
-                    acc=acc,
-                    sigma=sigma,
-                    user_key=user_key,
-                    public_only=True,
-                )
+        result = np.array(
+            publish(
+                scalars=self.flat_scalars,
+                acc=acc,
+                sigma=sigma,
+                user_key=user_key,
+                public_only=True,
             )
-            .reshape(self.shape)
-            .clip(self.min_vals, self.max_vals)
-        )
+        ).reshape(self.shape)
 
         if self.sharetensor_values is not None:
             # relative
+            from .... import Tensor
             from ..smpc.share_tensor import ShareTensor
 
-            result = ShareTensor(
-                rank=self.sharetensor_values.rank,
-                parties_info=self.sharetensor_values.parties_info,
-                ring_size=self.sharetensor_values.ring_size,
-                seed_przs=self.sharetensor_values.seed_przs,
-                clients=self.sharetensor_values.clients,
-                value=result,
+            result = Tensor(
+                child=ShareTensor(
+                    rank=self.sharetensor_values.rank,
+                    parties_info=self.sharetensor_values.parties_info,
+                    ring_size=self.sharetensor_values.ring_size,
+                    seed_przs=self.sharetensor_values.seed_przs,
+                    clients=self.sharetensor_values.clients,
+                    value=result,
+                ),
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
             )
+
         return result
 
     def sum(self, axis: Optional[int] = None) -> IntermediateGammaTensor:

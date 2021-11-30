@@ -400,6 +400,9 @@ class MPCTensor(PassthroughTensor):
 
         # for now we need to convert the values coming back to int32
         # sometimes they are floats coming from DP
+        # relative
+        from .... import Tensor
+
         def convert_child_numpy_type(tensor: Any, np_type: type) -> Any:
             if isinstance(tensor, np.ndarray):
                 return np.array(tensor, np_type)
@@ -429,6 +432,7 @@ class MPCTensor(PassthroughTensor):
             local_shares.append(res)
 
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
+        is_tensor = isinstance(local_shares[0], Tensor)
 
         if is_share_tensor:
             local_shares = [share.child for share in local_shares]
@@ -437,6 +441,15 @@ class MPCTensor(PassthroughTensor):
         op = ShareTensor.get_op(self.ring_size, "add")
         for share in local_shares[1:]:
             result = op(result, share)
+
+        # TODO: should modify min and max vals to DPTensor
+        if is_tensor:
+            min_vals = local_shares[0]._min_vals
+            max_vals = local_shares[0]._max_vals
+            result = result.child.child
+            if min_vals is not None and max_vals is not None:
+                result.clip(min_vals, max_vals)
+            return result
 
         if hasattr(result, "child") and isinstance(result.child, ShareTensor):
             return result.child.child
