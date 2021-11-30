@@ -211,8 +211,8 @@ class MPCTensor(PassthroughTensor):
             curr_budget = client.privacy_budget  # budget after publish
             if privacy_budget == curr_budget:
                 print(
-                    f"You do not have sufficient privacy budget on {client} to perform this computation"
-                    + "\n Kindly request for additional privacy budget on client"
+                    f"You do not have sufficient privacy budget on {client.pprint}"
+                    + "\n Kindly request for additional privacy budget. \n"
                 )
 
         return MPCTensor(
