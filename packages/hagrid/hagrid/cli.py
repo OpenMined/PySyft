@@ -897,11 +897,13 @@ def make_vm_azure(
     return host_ip
 
 
-def open_port_vm_azure(resource_group: str, node_name: str, port: int) -> None:
+def open_port_vm_azure(
+    resource_group: str, node_name: str, port_name: str, port: int
+) -> None:
     cmd = f"az network nsg rule create --resource-group {resource_group} "
-    cmd += f"--nsg-name {node_name}NSG --name HTTP --destination-port-ranges {port} --priority 500"
+    cmd += f"--nsg-name {node_name}NSG --name {port_name} --destination-port-ranges {port} --priority 500"
     try:
-        print(f"Creating ngs rule.\nRunning: {cmd}")
+        print(f"Creating {port_name} {port} ngs rule.\nRunning: {cmd}")
         output = subprocess.check_call(cmd, shell=True)
         print("output", output)
         pass
@@ -931,7 +933,14 @@ def create_launch_azure_cmd(
     host_ip = make_vm_azure(snake_name, resource_group, username, key_path, size)
 
     # open port 80
-    open_port_vm_azure(resource_group=resource_group, node_name=snake_name, port=80)
+    open_port_vm_azure(
+        resource_group=resource_group, node_name=snake_name, port_name="HTTP", port=80
+    )
+
+    # open port 443
+    open_port_vm_azure(
+        resource_group=resource_group, node_name=snake_name, port_name="HTTPS", port=443
+    )
 
     # get old host
     host_term = verb.get_named_term_hostgrammar(name="host")
