@@ -191,3 +191,13 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     assert it.privacy_budget < 210
     assert it.privacy_budget > 10
     assert ca.privacy_budget == it.privacy_budget
+
+    # checking if results are clipped
+    ca_root_data = ca_root.datasets[-1]["Canada Trade"].get()
+    it_root_data = it_root.datasets[-1]["Italy Trade"].get()
+    exp_res = ca_root_data + it_root_data
+    min_vals = exp_res.child.min_vals
+    max_vals = exp_res.child.max_vals
+
+    assert (sycure_result >= min_vals).all()
+    assert (sycure_result <= max_vals).all()
