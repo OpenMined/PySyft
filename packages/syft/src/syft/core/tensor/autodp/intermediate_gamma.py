@@ -455,7 +455,8 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 sigma=sigma,
                 user_key=user_key,
                 public_only=True,
-            )
+            ),
+            dtype=np.int32,
         ).reshape(self.shape)
 
         if self.sharetensor_values is not None:
