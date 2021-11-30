@@ -448,15 +448,19 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
 
-        result = np.array(
-            publish(
-                scalars=self.flat_scalars,
-                acc=acc,
-                sigma=sigma,
-                user_key=user_key,
-                public_only=True,
+        result = (
+            np.array(
+                publish(
+                    scalars=self.flat_scalars,
+                    acc=acc,
+                    sigma=sigma,
+                    user_key=user_key,
+                    public_only=True,
+                )
             )
-        ).reshape(self.shape)
+            .reshape(self.shape)
+            .clip(self.min_vals, self.max_vals)
+        )
 
         if self.sharetensor_values is not None:
             # relative

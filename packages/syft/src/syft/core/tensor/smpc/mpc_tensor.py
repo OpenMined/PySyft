@@ -203,8 +203,16 @@ class MPCTensor(PassthroughTensor):
             share.block
 
         for share in self.child:
+            client = share.client
+            privacy_budget = client.privacy_budget  # before publish
             new_share = share.publish(sigma=sigma)
             new_shares.append(new_share)
+            curr_budget = client.privacy_budget  # budget after publish
+            if privacy_budget == curr_budget:
+                print(
+                    f"You do not have sufficient privacy budget on {client} to perform this computation"
+                    + f"\n Kindly request for additional privacy budget on {client}"
+                )
 
         return MPCTensor(
             parties=self.parties,
