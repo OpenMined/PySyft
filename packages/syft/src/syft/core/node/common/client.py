@@ -232,7 +232,7 @@ class Client(AbstractNodeClient):
             debug(output)
             msg = msg.sign(signing_key=self.signing_key)
 
-        response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
+        response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg, timeout=timeout)
         if response.is_valid:
             # check if we have an ExceptionMessage to trigger a local exception
             # from a remote exception that we caused
@@ -268,7 +268,7 @@ class Client(AbstractNodeClient):
             debug(output)
             msg = msg.sign(signing_key=self.signing_key)
         debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
-        self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
+        self.routes[route_index].send_immediate_msg_without_reply(msg=msg, timeout=timeout)
 
     def send_eventual_msg_without_reply(
         self,
@@ -286,7 +286,7 @@ class Client(AbstractNodeClient):
             signing_key=self.signing_key
         )
 
-        self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
+        self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg, timeout=timeout)
 
     def __repr__(self) -> str:
         return f"<Client pointing to node with id:{self.id}>"
