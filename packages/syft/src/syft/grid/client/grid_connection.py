@@ -153,7 +153,7 @@ class GridHTTPConnection(HTTPConnection):
         # Return node metadata / user private key
         return (metadata_pb, content["key"])
 
-    def _get_metadata(self) -> Tuple:
+    def _get_metadata(self, timeout: Optional[float] = None) -> Tuple:
         """Request Node's metadata
         :return: returns node metadata
         :rtype: str of bytes
@@ -161,7 +161,10 @@ class GridHTTPConnection(HTTPConnection):
         # allow retry when connecting in CI
         session = requests.Session()
         retry = Retry(connect=1, backoff_factor=0.5)
-        adapter = TimeoutHTTPAdapter(max_retries=retry, timeout=4)
+        if timeout is None:
+            adapter = HTTPAdapter(max_retries=retry)
+        else:
+            adapter = TimeoutHTTPAdapter(max_retries=retry, timeout=timeout)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 

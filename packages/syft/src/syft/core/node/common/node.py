@@ -407,7 +407,7 @@ class Node(AbstractNode):
             if host_or_ip not in node_id_dict[vpn_key]:
                 # connect and save the client
                 grid_url = GridURL.from_url(host_or_ip)
-                client = sy.connect(url=grid_url.with_path("/api/v1"))
+                client = sy.connect(url=grid_url.with_path("/api/v1"), timeout=0.3)
                 node_id_dict[vpn_key][host_or_ip] = client
 
             self.peer_route_clients[node_id] = node_id_dict

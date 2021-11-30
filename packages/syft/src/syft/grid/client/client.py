@@ -43,7 +43,7 @@ def connect(
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
     else:
-        metadata = conn._get_metadata()  # type: ignore
+        metadata = conn._get_metadata(timeout=timeout)  # type: ignore
         if not user_key:
             _user_key = SigningKey.generate()
         else:
