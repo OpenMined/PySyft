@@ -339,7 +339,14 @@ class Tensor(
     # MPCTensorAncestor,
 ):
 
-    __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __attr_allowlist__ = [
+        "child",
+        "tag_name",
+        "public_shape",
+        "public_dtype",
+        "_min_vals",
+        "_max_vals",
+    ]
 
     PointerClassOverride = TensorPointer
 
