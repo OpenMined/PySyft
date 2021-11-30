@@ -1016,6 +1016,9 @@ def create_launch_custom_cmd(
         if host_term.host == "localhost":
             ANSIBLE_ARGS["local"] = "true"
 
+        if kwargs["tls"] is True:
+            ANSIBLE_ARGS["tls"] = "true"
+
         if (
             kwargs["tls"] is True
             and "cert_store_path" in kwargs
