@@ -401,11 +401,17 @@ def create_launch_cmd(
     if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
         headless = True
     parsed_kwargs["headless"] = headless
-    parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
-    parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
-    parsed_kwargs["cert_store_path"] = kwargs["cert_store_path"]
-    parsed_kwargs["upload_tls_cert"] = kwargs["upload_tls_cert"]
-    parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
+
+    if "tls" in kwargs:
+        parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
+    if "test" in kwargs:
+        parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
+    if "cert_store_path" in kwargs:
+        parsed_kwargs["cert_store_path"] = kwargs["cert_store_path"]
+    if "upload_tls_cert" in kwargs:
+        parsed_kwargs["upload_tls_cert"] = kwargs["upload_tls_cert"]
+    if "upload_tls_key" in kwargs:
+        parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
 
     if host in ["docker"]:
 
@@ -737,10 +743,10 @@ def create_launch_docker_cmd(
         "VERSION_HASH": GRID_SRC_VERSION[1],
     }
 
-    if kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
+    if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
 
-    if kwargs["test"] is True:
+    if "test" in kwargs and kwargs["test"] is True:
         envs["IGNORE_TLS_ERRORS"] = "True"
 
     cmd = ""
@@ -770,9 +776,9 @@ def create_launch_docker_cmd(
         cmd += " --profile frontend"
 
     cmd += " --file docker-compose.yml"
-    if kwargs["tls"] is True:
+    if "tls" in kwargs and kwargs["tls"] is True:
         cmd += " --file docker-compose.tls.yml"
-    if kwargs["test"] is True:
+    if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
     cmd += " up"
 
@@ -1001,13 +1007,25 @@ def create_launch_custom_cmd(
         if host_term.host == "localhost":
             ANSIBLE_ARGS["local"] = "true"
 
-        if kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
+        if (
+            kwargs["tls"] is True
+            and "cert_store_path" in kwargs
+            and len(kwargs["cert_store_path"]) > 0
+        ):
             ANSIBLE_ARGS["cert_store_path"] = kwargs["cert_store_path"]
 
-        if kwargs["tls"] is True and len(kwargs["upload_tls_key"]) > 0:
+        if (
+            kwargs["tls"] is True
+            and "upload_tls_key" in kwargs
+            and len(kwargs["upload_tls_key"]) > 0
+        ):
             ANSIBLE_ARGS["upload_tls_key"] = kwargs["upload_tls_key"]
 
-        if kwargs["tls"] is True and len(kwargs["upload_tls_cert"]) > 0:
+        if (
+            kwargs["tls"] is True
+            and "upload_tls_cert" in kwargs
+            and len(kwargs["upload_tls_cert"]) > 0
+        ):
             ANSIBLE_ARGS["upload_tls_cert"] = kwargs["upload_tls_cert"]
 
         if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
