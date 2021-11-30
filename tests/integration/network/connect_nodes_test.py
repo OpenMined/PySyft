@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # third party
 import pytest
 import requests
@@ -31,14 +34,18 @@ def join_to_network_python(
 def join_to_network_rest(
     email: str, password: str, port: int, network_host: str
 ) -> None:
-    url = f"http://localhost:{port}/api/v1/login"
-    auth_response = requests.post(url, json={"email": email, "password": password})
+    grid_url = sy.grid.GridURL(port=port, path="/api/v1/login")
+    if sy.util.ssl_test():
+        grid_url = grid_url.to_tls()
+    auth_response = requests.post(
+        grid_url.url, json={"email": email, "password": password}
+    )
     auth = auth_response.json()
 
     # test HTTP API
-    url = f"http://localhost:{port}/api/v1/vpn/join/{network_host}"
+    grid_url.path = f"/api/v1/vpn/join/{network_host}"
     headers = {"Authorization": f"Bearer {auth['access_token']}"}
-    response = requests.post(url, headers=headers)
+    response = requests.post(grid_url.url, headers=headers)
 
     result = response.json()
     return result
@@ -54,6 +61,8 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
 
     assert response["status"] == "ok"
     host = response["host"]
+    if "ip" not in host:
+        print(response)
     assert host["ip"] == vpn_ip
     assert host["hostname"] == hostname
     assert host["os"] == "linux"
@@ -64,6 +73,8 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
         port=port,
         network_host=NETWORK_PUBLIC_HOST,
     )
+    if "status" not in response or response["status"] != "ok":
+        print(response)
     assert response["status"] == "ok"
 
 

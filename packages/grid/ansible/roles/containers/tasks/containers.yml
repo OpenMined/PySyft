@@ -41,3 +41,10 @@
   shell:
     cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --tail=false'
   become: yes
+  when: tls == "false"
+
+- name: Start Docker Containers with TLS
+  shell:
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --tail=false --tls --cert_store_path={{ cert_store_path }}'
+  become: yes
+  when: tls == "true"

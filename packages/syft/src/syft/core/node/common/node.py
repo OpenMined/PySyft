@@ -27,6 +27,7 @@ from sqlalchemy.orm import declarative_base
 import syft as sy
 
 # relative
+from ....grid import GridURL
 from ....lib import lib_ast
 from ....logger import debug
 from ....logger import error
@@ -361,6 +362,7 @@ class Node(AbstractNode):
             id=self.id,
             node=self.target_id,
             node_type=str(type(self).__name__),
+            version=str(sy.__version__),
         )
 
     def add_peer_routes(self, peer: NodeRow) -> None:
@@ -405,7 +407,8 @@ class Node(AbstractNode):
 
             if host_or_ip not in node_id_dict[vpn_key]:
                 # connect and save the client
-                client = sy.connect(url=f"http://{host_or_ip}/api/v1")
+                grid_url = GridURL.from_url(host_or_ip)
+                client = sy.connect(url=grid_url.with_path("/api/v1"))
                 node_id_dict[vpn_key][host_or_ip] = client
 
             self.peer_route_clients[node_id] = node_id_dict
