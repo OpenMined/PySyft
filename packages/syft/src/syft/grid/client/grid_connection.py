@@ -161,7 +161,7 @@ class GridHTTPConnection(HTTPConnection):
         # allow retry when connecting in CI
         session = requests.Session()
         retry = Retry(connect=1, backoff_factor=0.5)
-        adapter = TimeoutHTTPAdapter(max_retries=retry, timeout=0.5)
+        adapter = TimeoutHTTPAdapter(max_retries=retry, timeout=1)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 

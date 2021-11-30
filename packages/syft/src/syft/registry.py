@@ -49,14 +49,14 @@ class NetworkRegistry:
             )
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
-                res = requests.get(url, timeout=0.3)
+                res = requests.get(url, timeout=0.5)
                 online = "This is a PyGrid Network node." in res.text
             except Exception:
                 online = False
 
             if online:
                 online_networks.append(network)
-        sys.stdout.write("\r                                             \n")
+        sys.stdout.write("\r                                             ")
         return online_networks
 
     def _repr_html_(self) -> str:

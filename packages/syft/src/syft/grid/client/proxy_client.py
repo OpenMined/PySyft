@@ -26,6 +26,15 @@ class ProxyClient(DomainClient):
         super().post_init()
         self.logged_in = False
 
+    def __repr__(self) -> str:
+        if self.logged_in:
+            return super().__repr__()
+        else:
+            return (
+                f"(This is a logged out ProxyClient() object for a domain called '{self.name}'."
+                f" Please call .login(email, password) to get a full client you can use for stuff.)"
+            )
+
     @property
     def ping(self):
         try:

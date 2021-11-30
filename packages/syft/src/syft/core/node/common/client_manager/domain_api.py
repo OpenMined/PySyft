@@ -1,5 +1,6 @@
 # stdlib
 import sys
+import time
 from typing import Any
 from typing import List
 from typing import Union
@@ -25,8 +26,12 @@ from .request_api import RequestAPI
 class DomainRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(client=client)
+        self.cache_time = 0
+        self.cache = None
+        self.num_known_domains_even_offline_ones = 0
+        self.timeout = 600  # check for new domains every 10 minutes
 
-    def all(self, pandas: bool = True, online_only=True) -> List[Any]:
+    def all(self, pandas: bool = True) -> List[Any]:
         response = self.perform_api_request_generic(
             syft_msg=PeerDiscoveryMessageWithReply, content={}
         )
@@ -34,11 +39,17 @@ class DomainRequestAPI(RequestAPI):
 
         if result["status"] == "ok":
             _data = result["data"]
-            if online_only:
+            if (
+                self.cache is None
+                or (time.time() - self.cache_time > self.timeout)
+                or len(_data) != self.num_known_domains_even_offline_ones
+            ):
+                # check for logged in domains if the number of possible domains changes (if a new domain shows up)
+                self.num_known_domains_even_offline_ones = len(_data)
                 data = list()
                 for i, domain_metadata in enumerate(_data):
                     sys.stdout.write(
-                        "\rChecking domain status: "
+                        "\rChecking whether domains are online: "
                         + str(i + 1)
                         + " of "
                         + str(len(_data))
@@ -53,9 +64,12 @@ class DomainRequestAPI(RequestAPI):
                         syft.logger.start()
                     except Exception:
                         """"""
-                sys.stdout.write("\r                                             \n")
+                sys.stdout.write("\r                                             ")
+
+                self.cache = data
+                self.cache_time = time.time()
             else:
-                data = _data
+                data = self.cache
 
             if pandas:
                 data = DataFrame(data)
@@ -64,7 +78,7 @@ class DomainRequestAPI(RequestAPI):
         return []
 
     def _repr_html_(self) -> str:
-        return self.all(online_only=True)._repr_html_()
+        return self.all()._repr_html_()
 
     def get(self, key: Union[str, int, UID, String]) -> ProxyClient:  # type: ignore
         # to make sure we target the remote Domain through the proxy we need to
@@ -73,7 +87,7 @@ class DomainRequestAPI(RequestAPI):
         node_uid = key
         try:
             if isinstance(node_uid, int):
-                domain_metadata = self.all(pandas=False, online_only=False)[node_uid]
+                domain_metadata = self.all(pandas=False)[node_uid]
                 node_uid = str(domain_metadata["id"])
             elif isinstance(node_uid, String):
                 node_uid = node_uid.upcast()
