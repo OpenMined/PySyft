@@ -7,7 +7,6 @@
 *.ini eol=lf
 *.html eol=lf
 *.dockerfile eol=lf
-*.csv eol=lf
 *.sh eol=lf
 
 *.jpg binary
