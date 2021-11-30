@@ -184,7 +184,7 @@ class AdversarialAccountant:
         self, user_key: VerifyKey, returned_epsilon_is_private: bool = False
     ) -> float:
         max_spend = 0.0
-        
+
         for ent in self.entities:
             spend = self.get_eps_for_entity(
                 entity=ent,

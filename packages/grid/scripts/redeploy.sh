@@ -26,10 +26,10 @@ if [[ "${9}" = "true" ]]; then
     echo "Starting Grid with TLS"
     HAGRID_CMD="hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3} --tls --cert_store_path=${10}"
     echo $HAGRID_CMD
-    /usr/sbin/runuser -l ${4} -c $HAGRID_CMD
+    /usr/sbin/runuser -l ${4} -c "$HAGRID_CMD"
 else
     echo "Starting Grid without TLS"
     HAGRID_CMD="hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3}"
     echo $HAGRID_CMD
-    /usr/sbin/runuser -l ${4} -c $HAGRID_CMD
+    /usr/sbin/runuser -l ${4} -c "$HAGRID_CMD"
 fi
