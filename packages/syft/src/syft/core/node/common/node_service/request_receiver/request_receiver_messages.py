@@ -48,9 +48,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         address: Address,
         requester_verify_key: VerifyKey,
         owner_address: Address,
-        status: str,
-        request_type: str,
-        date: str,
+        status: Optional[str] = "",
+        request_type: Optional[str] = "",
+        date: Optional[str] = "",
         object_tags: Optional[List[str]] = None,
         object_type: str = "",
         request_description: str = "",
@@ -79,12 +79,12 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         self.destination_node_if_available = destination_node_if_available
         self.timeout_secs = timeout_secs
         self._arrival_time: Optional[float] = None
-        self.status: str = status
-        self.date: str = date
-        self.request_type: str = request_type
-        self.user_name: str = user_name
-        self.user_email: str = user_email
-        self.user_role: str = user_role
+        self.status: Optional[str] = status
+        self.date: Optional[str] = date
+        self.request_type: Optional[str] = request_type
+        self.user_name: Optional[str] = user_name
+        self.user_email: Optional[str] = user_email
+        self.user_role: Optional[str] = user_role
         self.requested_budget: float = requested_budget
         self.current_budget: float = current_budget
 
