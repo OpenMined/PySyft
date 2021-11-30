@@ -212,6 +212,7 @@ class Client(AbstractNodeClient):
             Any,  # TEMPORARY until we switch everything to NodeRunnableMessage types.
         ],
         route_index: int = 0,
+        timeout: Optional[float] = None,
     ) -> SyftMessage:
 
         # relative
@@ -255,6 +256,7 @@ class Client(AbstractNodeClient):
             SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
         ],
         route_index: int = 0,
+        timeout: Optional[float] = None,
     ) -> None:
         route_index = route_index or self.default_route_index
 
@@ -269,7 +271,10 @@ class Client(AbstractNodeClient):
         self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
 
     def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
+        self,
+        msg: EventualSyftMessageWithoutReply,
+        route_index: int = 0,
+        timeout: Optional[float] = None,
     ) -> None:
         route_index = route_index or self.default_route_index
         output = (
