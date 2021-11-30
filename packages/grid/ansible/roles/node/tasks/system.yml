@@ -23,6 +23,12 @@
     name: "{{ om_group }}"
     state: present
 
+- name: Create om user
+  user:
+    name: "{{ om_user }}"
+    append: yes
+    createhome: yes
+
 - name: Add user to om and docker
   user:
     name: "{{ om_user }}"

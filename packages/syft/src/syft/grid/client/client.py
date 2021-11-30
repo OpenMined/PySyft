@@ -38,11 +38,13 @@ def connect(
     # to build client route
     conn = conn_type(url=GridURL.from_url(url))  # type: ignore
 
+    # get metadata and check for https redirect so that login is sent over TLS
+    metadata = conn._get_metadata()  # type: ignore
+
     if credentials:
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
     else:
-        metadata = conn._get_metadata()  # type: ignore
         if not user_key:
             _user_key = SigningKey.generate()
         else:
