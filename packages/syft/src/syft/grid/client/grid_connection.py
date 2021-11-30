@@ -153,7 +153,7 @@ class GridHTTPConnection(HTTPConnection):
         # Return node metadata / user private key
         return (metadata_pb, content["key"])
 
-    def _get_metadata(self, timeout: Optional[float] = None) -> Tuple:
+    def _get_metadata(self, timeout: Optional[float] = 60) -> Tuple:
         """Request Node's metadata
         :return: returns node metadata
         :rtype: str of bytes

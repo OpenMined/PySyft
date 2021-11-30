@@ -29,7 +29,7 @@ class DomainRequestAPI(RequestAPI):
         self.cache_time = 0
         self.cache = None
         self.num_known_domains_even_offline_ones = 0
-        self.timeout = 600  # check for new domains every 10 minutes
+        self.timeout = 6000  # check for new domains every 100 minutes
 
     def all(self, pandas: bool = True) -> List[Any]:
         response = self.perform_api_request_generic(
