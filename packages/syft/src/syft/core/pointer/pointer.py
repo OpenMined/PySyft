@@ -360,13 +360,6 @@ class Pointer(AbstractPointer):
             self.gc_enabled = False
             self._exhausted = True
 
-        # third party
-        from scipy.stats import shapiro
-
-        shapiro_result = shapiro(result)  # type: ignore
-        if shapiro_result[1] > 0.05:
-            print("You might have run out of privacy budget :(")
-
         return result
 
     def _object2proto(self) -> Pointer_PB:
