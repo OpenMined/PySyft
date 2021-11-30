@@ -40,8 +40,7 @@ services:
       - default
     network_mode: service:tailscale
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./traefik:/etc/traefik
+      - "/var/run/docker.sock:/var/run/docker.sock"
     command:
       - "--providers.docker"
       - "--providers.docker.exposedbydefault=false"

@@ -13,6 +13,8 @@ pidof -o %PPID -x $0 >/dev/null && echo "ERROR: Script $0 already running" && ex
 # $6 is the node type like: domain
 # $7 is the node name like: node
 # $8 is the build directory where we copy the source so we dont trigger hot reloading
+# $9 is a bool for enabling tls or not, where true is tls enabled
+# $10 is the path to tls certs if available
 
 echo "Code has changed so redeploying with HAGrid"
 rm -rf ${8}
@@ -20,4 +22,14 @@ cp -r ${1} ${8}
 chown -R ${4}:${5} ${8}
 /usr/sbin/runuser -l ${4} -c "pip install -e ${8}/packages/hagrid"
 # /usr/sbin/runuser -l ${4} -c "hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3} --ansible_extras='docker_volume_destroy=true'"
-/usr/sbin/runuser -l ${4} -c "hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3}"
+if [[ "${9}" = "true" ]]; then
+    echo "Starting Grid with TLS"
+    HAGRID_CMD="hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3} --tls --cert_store_path=${10}"
+    echo $HAGRID_CMD
+    /usr/sbin/runuser -l ${4} -c "$HAGRID_CMD"
+else
+    echo "Starting Grid without TLS"
+    HAGRID_CMD="hagrid launch ${7} ${6} to localhost --repo=${2} --branch=${3}"
+    echo $HAGRID_CMD
+    /usr/sbin/runuser -l ${4} -c "$HAGRID_CMD"
+fi
