@@ -121,15 +121,29 @@ class RequestQueueClient(AbstractNodeClient):
 
     @property
     def pandas(self) -> pd.DataFrame:
+        # TODO:
+        # Replace all the hardcoded string by enums / abstractions.
         request_lines = [
             {
-                "Requested Object's tags": request.object_tags,
-                "Reason": request.request_description,
-                "Request ID": request.id,
-                "Requested Object's ID": request.object_id,
-                "Requested Object's type": request.object_type,
+                "Name": req.user_name,
+                "Email": req.user_email,
+                "Role": req.user_role,
+                "Request Type": req.request_type.upper(),  # type: ignore
+                "Status": req.status,
+                "Reason": req.request_description,
+                "Request ID": req.id,
+                "Requested Object's ID": req.object_id
+                if req.request_type == "data"
+                else None,
+                "Requested Object's tags": req.object_tags,
+                "Requested Budget": req.requested_budget
+                if req.request_type == "budget"
+                else None,
+                "Current Budget": req.current_budget
+                if req.request_type == "budget"
+                else None,
             }
-            for request in self.requests
+            for req in self.requests
         ]
         return pd.DataFrame(request_lines)
 
