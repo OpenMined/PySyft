@@ -36,18 +36,20 @@ def connect(
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     credentials: Dict = {},
     user_key: Optional[SigningKey] = None,
+    timeout: Optional[float] = None,
 ) -> Client:
     # Use Server metadata
     # to build client route
     conn = conn_type(url=GridURL.from_url(url))  # type: ignore
 
     # get metadata and check for https redirect so that login is sent over TLS
-    metadata = conn._get_metadata()  # type: ignore
+    metadata = conn._get_metadata(timeout=timeout)  # type: ignore
 
     if credentials:
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
     else:
+
         if not user_key:
             _user_key = SigningKey.generate()
         else:
@@ -134,7 +136,7 @@ def login(
     grid_url = grid_url.with_path("/api/v1")
 
     if verbose:
-        sys.stdout.write("Connecting to " + str(url) + "...")
+        sys.stdout.write("\rConnecting to " + str(url) + "...")
 
     if email is None or password is None:
         credentials = {}

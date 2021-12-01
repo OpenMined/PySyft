@@ -139,17 +139,21 @@ class Route(ObjectWithID):
         return f"{self.icon} ({str(self.__class__.__name__)})"
 
     def send_immediate_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithoutReply
+        self,
+        msg: SignedImmediateSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
+        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
     ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 
     def send_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
+        self,
+        msg: SignedEventualSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         traceback_and_raise(NotImplementedError)
 
@@ -165,20 +169,24 @@ class SoloRoute(Route):
         self.connection = connection
 
     def send_immediate_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithoutReply
+        self,
+        msg: SignedImmediateSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         debug(f"> Routing {msg.pprint} via {self.pprint}")
-        self.connection.send_immediate_msg_without_reply(msg=msg)
+        self.connection.send_immediate_msg_without_reply(msg=msg, timeout=timeout)
 
     def send_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
+        self,
+        msg: SignedEventualSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
-        self.connection.send_eventual_msg_without_reply(msg=msg)
+        self.connection.send_eventual_msg_without_reply(msg=msg, timeout=timeout)
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
+        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
     ) -> SignedImmediateSyftMessageWithoutReply:
-        return self.connection.send_immediate_msg_with_reply(msg=msg)
+        return self.connection.send_immediate_msg_with_reply(msg=msg, timeout=timeout)
 
     def _object2proto(self) -> SoloRoute_PB:
         route = SoloRoute_PB(

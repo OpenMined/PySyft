@@ -128,7 +128,7 @@ class RequestQueueClient(AbstractNodeClient):
                 "Name": req.user_name,
                 "Email": req.user_email,
                 "Role": req.user_role,
-                "Request Type": req.request_type.upper(), # type: ignore
+                "Request Type": req.request_type.upper(),  # type: ignore
                 "Status": req.status,
                 "Reason": req.request_description,
                 "Request ID": req.id,
