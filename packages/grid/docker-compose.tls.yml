@@ -28,6 +28,3 @@ services:
       - "--accesslog"
       # Enable the Traefik log, for configurations and errors
       - "--log"
-      # Enable the Dashboard and API
-      # - --api # admin panel
-      # - --api.insecure=true # admin panel no password
