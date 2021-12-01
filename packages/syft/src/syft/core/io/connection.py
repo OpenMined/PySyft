@@ -1,3 +1,6 @@
+# stdlib
+from typing import Optional
+
 # relative
 from ...logger import traceback_and_raise
 from ..common.message import SignedEventualSyftMessageWithoutReply
@@ -22,17 +25,21 @@ class BidirectionalConnection:
         traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
+        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
     ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithoutReply
+        self,
+        msg: SignedImmediateSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         traceback_and_raise(NotImplementedError)
 
     def send_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
+        self,
+        msg: SignedEventualSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         traceback_and_raise(NotImplementedError)
 
@@ -42,7 +49,8 @@ class ServerConnection:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
     def recv_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
+        self,
+        msg: SignedImmediateSyftMessageWithReply,
     ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 
@@ -62,16 +70,20 @@ class ClientConnection:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
+        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
     ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithoutReply
+        self,
+        msg: SignedImmediateSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         traceback_and_raise(NotImplementedError)
 
     def send_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
+        self,
+        msg: SignedEventualSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         traceback_and_raise(NotImplementedError)

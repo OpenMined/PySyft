@@ -96,7 +96,7 @@ finally:
 
 sys.path.append(str(Path(__file__)))
 
-logger.add(sink=sys.stderr, level="CRITICAL")
+logger.start()
 
 # TODO: https://github.com/OpenMined/PySyft/issues/5930
 flags._APACHE_ARROW_TENSOR_SERDE = False

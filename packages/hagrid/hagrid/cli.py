@@ -350,6 +350,19 @@ def login_azure() -> bool:
     return False
 
 
+def check_azure_cli_installed() -> bool:
+    try:
+        subprocess.call(["az"])
+        print("Azure cli installed!")
+    except FileNotFoundError:
+        msg = "\nYou don't appear to have the Azure CLI installed!!! \n\n\
+Please install it and then retry your command.\
+\n\nInstallation Instructions: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli\n"
+        raise FileNotFoundError(msg)
+
+    return True
+
+
 def str_to_bool(bool_str: Optional[str]) -> bool:
     result = False
     bool_str = str(bool_str).lower()
@@ -469,6 +482,8 @@ def create_launch_cmd(
                 f"Launching a VM locally requires: {' '.join(errors)}"
             )
     elif host in ["azure"]:
+
+        check_azure_cli_installed()
 
         while not check_azure_authed():
             print("You need to log into Azure")
@@ -595,9 +610,15 @@ def create_launch_cmd(
             errors = []
             if not DEPENDENCIES["ansible-playbook"]:
                 errors.append("ansible-playbook")
-            raise MissingDependency(
-                f"Launching a Cloud VM requires: {' '.join(errors)}"
-            )
+            msg = "\nERROR!!! MISSING DEPENDENCY!!!"
+            msg += f"\n\nLaunching a Cloud VM requires: {' '.join(errors)}"
+            msg += "\n\nPlease follow installation instructions: "
+            msg += "https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#"
+            msg += "\n\nNote: we've found the 'conda' based installation instructions to work best"
+            msg += " (e.g. something lke 'conda install -c conda-forge ansible'). "
+            msg += "The pip based instructions seem to be a bit buggy if you're using a conda environment"
+            msg += "\n"
+            raise MissingDependency(msg)
     elif host in ["aws", "gcp"]:
         print("Coming soon.")
         return ""
@@ -704,6 +725,7 @@ def create_launch_docker_cmd(
     kwargs: TypeDict[str, Any],
     tail: bool = True,
 ) -> str:
+
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
