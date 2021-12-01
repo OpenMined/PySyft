@@ -88,7 +88,7 @@ class GridHTTPConnection(HTTPConnection):
         return _header
 
     def _send_msg(
-        self, msg: SyftMessage, timeout: Optional[float] = None
+        self, msg: SyftMessage, timeout: Optional[float] = 10
     ) -> requests.Response:
         """
         Serializes Syft messages in json format and send it using HTTP protocol.
@@ -133,6 +133,7 @@ class GridHTTPConnection(HTTPConnection):
             url=str(self.base_url) + GridHTTPConnection.LOGIN_ROUTE,
             json=credentials,
             verify=verify_tls(),
+            timeout=2,
         )
 
         # Response
@@ -153,7 +154,7 @@ class GridHTTPConnection(HTTPConnection):
         # Return node metadata / user private key
         return (metadata_pb, content["key"])
 
-    def _get_metadata(self, timeout: Optional[float] = 60) -> Tuple:
+    def _get_metadata(self, timeout: Optional[float] = 2) -> Tuple:
         """Request Node's metadata
         :return: returns node metadata
         :rtype: str of bytes
@@ -190,7 +191,10 @@ class GridHTTPConnection(HTTPConnection):
     def setup(self, **content: Dict[str, Any]) -> Any:
         response = json.loads(
             requests.post(
-                str(self.base_url) + "/setup", json=content, verify=verify_tls()
+                str(self.base_url) + "/setup",
+                json=content,
+                verify=verify_tls(),
+                timeout=2,
             ).text
         )
         if response.get(RequestAPIFields.MESSAGE, None):
@@ -220,7 +224,7 @@ class GridHTTPConnection(HTTPConnection):
                 verify=verify_tls(),
             ).text
         )
-        if response.get(RequestAPIFields.MESSAGE, None):
+        if response.get(RequestAPIFields.MESSAGE, None, timeout=2):
             return response
         else:
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))

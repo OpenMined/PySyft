@@ -21,19 +21,35 @@ from grid.db.session import get_db_session
 
 def thread_function(*args, **kwargs) -> None:  # type: ignore
     # TODO: call this after the Network node is deployed instead of using a timer.
-    time.sleep(10)
 
     # third party
     from requests import get
 
     ip = get("https://api.ipify.org").content.decode("utf8")
     print(f"My public IP address is: {ip}")
+    NETWORK_PUBLIC_HOST = "http://" + ip + ":80"
+    # third party
+    import requests
 
-    try:
+    # syft absolute
+    import syft as sy
 
-        NETWORK_PUBLIC_HOST = "http://" + ip + ":80"
-        # syft absolute
-        import syft as sy
+    if (
+        requests.get("http://localhost:80/api/v1/exam/asdf", timeout=1).status_code
+        != 502
+    ):
+        NETWORK_PUBLIC_HOST = "http://localhost:80"
+
+        network_root = sy.login(
+            email="info@openmined.org",
+            password="changethis",
+            url="http://localhost",
+            port=80,
+        )
+    elif (
+        requests.get(NETWORK_PUBLIC_HOST + "/api/v1/exam/asdf", timeout=1).status_code
+        != 502
+    ):
 
         network_root = sy.login(
             email="info@openmined.org",
@@ -41,28 +57,6 @@ def thread_function(*args, **kwargs) -> None:  # type: ignore
             url="http://" + ip,
             port=80,
         )
-    except Exception:
-
-        try:
-
-            NETWORK_PUBLIC_HOST = "http://localhost:80"
-
-            network_root = sy.login(
-                email="info@openmined.org",
-                password="changethis",
-                url="http://localhost",
-                port=80,
-            )
-        except Exception:
-
-            NETWORK_PUBLIC_HOST = "http://docker-host:80"
-
-            network_root = sy.login(
-                email="info@openmined.org",
-                password="changethis",
-                url="http://docker-host",
-                port=80,
-            )
 
     vpn_s = network_root.vpn_status()
 
