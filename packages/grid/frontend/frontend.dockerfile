@@ -19,8 +19,7 @@ FROM init-stage as build-stage
 ARG NODE_TYPE
 WORKDIR /app
 COPY --from=init-stage /app .
-# ENV NODE_TYPE $NODE_TYPE
-ENV NODE_TYPE domain
+ENV NODE_TYPE $NODE_TYPE
 ENV NEXT_TELEMETRY_DISABLED 1
 RUN yarn build
 RUN yarn export
