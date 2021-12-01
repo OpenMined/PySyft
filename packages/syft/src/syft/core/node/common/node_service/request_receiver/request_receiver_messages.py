@@ -2,7 +2,6 @@
 from enum import Enum
 from typing import List
 from typing import Optional
-from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType

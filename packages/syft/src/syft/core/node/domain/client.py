@@ -125,7 +125,6 @@ class RequestQueueClient(AbstractNodeClient):
         # Replace all the hardcoded string by enums / abstractions.
         request_lines = [
             {
-                "Requested Object's tags": req.object_tags,
                 "Name": req.user_name,
                 "Email": req.user_email,
                 "Role": req.user_role,
