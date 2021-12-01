@@ -4,7 +4,7 @@ python3 -c "print('---Monkey Patching: Gevent---\n');from gevent import monkey;m
 
 if [ -f /app/grid/main.py ]; then
     DEFAULT_MODULE_NAME=grid.main
-elif [ -f /app/main.py ]; then
+    elif [ -f /app/main.py ]; then
     DEFAULT_MODULE_NAME=main
 fi
 MODULE_NAME=${MODULE_NAME:-$DEFAULT_MODULE_NAME}
@@ -13,7 +13,7 @@ export APP_MODULE=${APP_MODULE:-"$MODULE_NAME:$VARIABLE_NAME"}
 
 if [ -f /app/gunicorn_conf.py ]; then
     DEFAULT_GUNICORN_CONF=/app/gunicorn_conf.py
-elif [ -f /app/grid/gunicorn_conf.py ]; then
+    elif [ -f /app/grid/gunicorn_conf.py ]; then
     DEFAULT_GUNICORN_CONF=/app/grid/gunicorn_conf.py
 else
     DEFAULT_GUNICORN_CONF=/gunicorn_conf.py
@@ -34,6 +34,11 @@ fi
 # Start Gunicorn
 # TODO: gunicorn crashes when running in k8s with asyncio issues while uvicorn from
 # start-reload.sh seems okay
-exec gunicorn -k "$WORKER_CLASS" -c "$GUNICORN_CONF" "$APP_MODULE"
+# exec gunicorn -k "$WORKER_CLASS" -c "$GUNICORN_CONF" "$APP_MODULE"
+
+LOG_LEVEL=${LOG_LEVEL:-info}
+HOST=${HOST:-0.0.0.0}
+PORT=${PORT:-80}
+exec uvicorn --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
 
 ## fetched from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/start.sh
