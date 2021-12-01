@@ -150,7 +150,15 @@ def clean(location: str) -> None:
     type=str,
 )
 @click.option("--tls", is_flag=True, help="Launch with TLS configuration")
-@click.option("--test", is_flag=True, help="Launch with Test configuration")
+@click.option("--test", is_flag=True, help="Launch with test configuration")
+@click.option("--dev", is_flag=True, help="Shortcut for development release")
+@click.option(
+    "--release",
+    default="production",
+    required=False,
+    type=click.Choice(["production", "development"], case_sensitive=False),
+    help="Optional: choose between production and development release",
+)
 @click.option(
     "--cert_store_path",
     default="/home/om/certs",
@@ -402,10 +410,18 @@ def create_launch_cmd(
         headless = True
     parsed_kwargs["headless"] = headless
 
-    if "tls" in kwargs:
-        parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
-    if "test" in kwargs:
-        parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
+    parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
+    parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
+    parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
+
+    parsed_kwargs["release"] = "production"
+    if "release" in kwargs and kwargs["release"] != "production":
+        parsed_kwargs["release"] = kwargs["release"]
+
+    # if we use --dev override it
+    if parsed_kwargs["dev"] is True:
+        parsed_kwargs["release"] = "development"
+
     if "cert_store_path" in kwargs:
         parsed_kwargs["cert_store_path"] = kwargs["cert_store_path"]
     if "upload_tls_cert" in kwargs:
@@ -731,6 +747,7 @@ def create_launch_docker_cmd(
     print("\n")
 
     envs = {
+        "RELEASE": "production",
         "COMPOSE_DOCKER_CLI_BUILD": 1,
         "DOCKER_BUILDKIT": 1,
         "HTTP_PORT": int(host_term.free_port),
@@ -748,6 +765,9 @@ def create_launch_docker_cmd(
 
     if "test" in kwargs and kwargs["test"] is True:
         envs["IGNORE_TLS_ERRORS"] = "True"
+
+    if "release" in kwargs:
+        envs["RELEASE"] = kwargs["release"]
 
     cmd = ""
     args = []
@@ -776,6 +796,8 @@ def create_launch_docker_cmd(
         cmd += " --profile frontend"
 
     cmd += " --file docker-compose.yml"
+    if "release" in kwargs and kwargs["release"] == "development":
+        cmd += " --file docker-compose.dev.yml"
     if "tls" in kwargs and kwargs["tls"] is True:
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
@@ -1026,6 +1048,9 @@ def create_launch_custom_cmd(
 
         if kwargs["tls"] is True:
             ANSIBLE_ARGS["tls"] = "true"
+
+        if "release" in kwargs:
+            ANSIBLE_ARGS["release"] = kwargs["release"]
 
         if (
             kwargs["tls"] is True

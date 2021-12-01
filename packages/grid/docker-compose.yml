@@ -13,7 +13,7 @@ services:
       context: ./vpn
       dockerfile: tailscale.dockerfile
     environment:
-      - RELEASE=production
+      - RELEASE=${RELEASE?production}
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
       - STACK_API_KEY=$STACK_API_KEY
     volumes:
@@ -39,7 +39,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
-      - RELEASE=production
+      - RELEASE=${RELEASE?production}
     command:
       - "--providers.docker"
       - "--providers.docker.exposedbydefault=false"
@@ -64,7 +64,7 @@ services:
       args:
         NODE_TYPE: ${NODE_TYPE}
     environment:
-      - RELEASE=production
+      - RELEASE=${RELEASE?production}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
@@ -80,14 +80,14 @@ services:
     volumes:
       - app-db-data:/var/lib/postgresql/data
     environment:
-      - RELEASE=production
+      - RELEASE=${RELEASE?production}
     env_file:
       - .env
   queue:
     restart: always
     image: rabbitmq:3
     environment:
-      - RELEASE=production
+      - RELEASE=${RELEASE?production}
     volumes:
       - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
 
@@ -99,7 +99,7 @@ services:
     env_file:
       - .env
     environment:
-      - RELEASE=production
+      - RELEASE=${RELEASE?production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
@@ -128,7 +128,7 @@ services:
     env_file:
       - .env
     environment:
-      - RELEASE=production
+      - RELEASE=${RELEASE?production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
@@ -158,7 +158,7 @@ services:
     env_file:
       - .env
     environment:
-      - RELEASE=production
+      - RELEASE=${RELEASE?production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
@@ -184,7 +184,7 @@ services:
     volumes:
       - headscale-data:/headscale/data
     environment:
-      - RELEASE=production
+      - RELEASE=${RELEASE?production}
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
     ports:
