@@ -84,8 +84,8 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         self.user_name: Optional[str] = user_name
         self.user_email: Optional[str] = user_email
         self.user_role: Optional[str] = user_role
-        self.requested_budget: float = requested_budget # type: ignore
-        self.current_budget: float = current_budget # type: ignore
+        self.requested_budget: float = requested_budget  # type: ignore
+        self.current_budget: float = current_budget  # type: ignore
 
     def accept(self) -> None:
         self.send_msg(accept=True)
