@@ -165,8 +165,6 @@ deployments:
               successThreshold: 1
               failureThreshold: 3
             env:
-              - name: SYFT_USE_UVLOOP
-                value: "0"
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
               - name: POSTGRES_SERVER
@@ -181,8 +179,6 @@ deployments:
                 value: ${VERSION}
               - name: VERSION_HASH
                 value: ${VERSION_HASH}
-              - name: SERVER_NAME
-                value: ${DOMAIN}
               - name: SERVER_HOST
                 value: ${SERVER_HOST}
               - name: LOG_LEVEL
@@ -228,8 +224,6 @@ deployments:
               successThreshold: 1
               failureThreshold: 3
             env:
-              - name: SYFT_USE_UVLOOP
-                value: "0"
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
               - name: POSTGRES_SERVER
@@ -244,8 +238,6 @@ deployments:
                 value: ${VERSION}
               - name: VERSION_HASH
                 value: ${VERSION_HASH}
-              - name: SERVER_NAME
-                value: ${DOMAIN}
               - name: SERVER_HOST
                 value: ${SERVER_HOST}
               - name: LOG_LEVEL
@@ -277,8 +269,6 @@ deployments:
                 "/worker-start.sh",
               ]
             env:
-              - name: SYFT_USE_UVLOOP
-                value: "0"
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
               - name: POSTGRES_SERVER
@@ -293,8 +283,6 @@ deployments:
                 value: ${VERSION}
               - name: VERSION_HASH
                 value: ${VERSION_HASH}
-              - name: SERVER_NAME
-                value: ${DOMAIN}
               - name: SERVER_HOST
                 value: ${SERVER_HOST}
               - name: CELERY_WORKER
@@ -390,6 +378,11 @@ deployments:
     kubectl:
       manifests:
         - k8s/manifests/ingress-vpn.yaml
+
+  - name: grid-vpn-middleware-ingress
+    kubectl:
+      manifests:
+        - k8s/manifests/ingress-vpn-middleware.yaml
 
 dev:
   ports:

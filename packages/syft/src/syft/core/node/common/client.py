@@ -18,6 +18,7 @@ import pandas as pd
 import syft as sy
 
 # relative
+from ....grid import GridURL
 from ....logger import critical
 from ....logger import debug
 from ....logger import error
@@ -65,6 +66,7 @@ class Client(AbstractNodeClient):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
+        version: Optional[str] = None,
     ):
         name = f"{name}" if name is not None else None
         super().__init__(
@@ -92,6 +94,7 @@ class Client(AbstractNodeClient):
         self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
+        self.version = version
 
     def obj_exists(self, obj_id: UID) -> bool:
         raise NotImplementedError
@@ -182,17 +185,17 @@ class Client(AbstractNodeClient):
                 raise ValueError(
                     "join_network requires a Client object or host_or_ip string"
                 )
+
+            # we are leaving the client and entering the node in a container
+            # any hostnames of localhost need to be converted to docker-host
             if client is not None:
-                # connection.host has a http protocol
-                connection_host = client.routes[0].connection.host  # type: ignore
-                parts = connection_host.split("://")
-                host_or_ip = parts[1]
-                # if we are using localhost to connect we need to change to docker-host
-                # so that the domain container can connect to the host not itself
-                host_or_ip = str(host_or_ip).replace("localhost", "docker-host")
-            return self.vpn.join_network(host_or_ip=str(host_or_ip))  # type: ignore
+                grid_url = client.routes[0].connection.base_url.as_docker_host()  # type: ignore
+            else:
+                grid_url = GridURL.from_url(str(host_or_ip)).as_docker_host()
+
+            return self.vpn.join_network_vpn(grid_url=grid_url)  # type: ignore
         except Exception as e:
-            print(f"Failed to join network with {host_or_ip}. {e}")
+            print(f"Failed to join network with {client} or {host_or_ip}. {e}")
 
     @property
     def id(self) -> UID:

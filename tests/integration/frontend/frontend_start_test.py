@@ -25,6 +25,6 @@ def test_serves_domain_frontend() -> None:
 @pytest.mark.frontend
 def test_serves_network_frontend() -> None:
     title_str = "<title>network</title>"
-    url = f"http://localhost:{NETWORK_PORT}/status"
+    url = f"http://localhost:{TEST_NETWORK_PORT}/status"
     result = requests.get(url)
     assert title_str in result.text
