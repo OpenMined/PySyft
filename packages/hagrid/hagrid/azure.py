@@ -30,6 +30,7 @@ def check_azure_authed() -> bool:
 
 
 def login_azure() -> bool:
+
     cmd = "az login"
     try:
         subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)

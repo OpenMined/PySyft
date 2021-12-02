@@ -374,7 +374,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
         Cell: ({cell: {value, row}}) => <NameAndBadge onClick={() => setSelectedUser(row.original)} {...value} />
       },
       {
-        Header: 'ε Balance',
+        Header: 'ε Budget Remaining',
         accessor: 'budget_spent',
         Cell: ({cell: {value, row}}) => {
           const isBudgetRunningOut = value >= row.values.budget * 0.9
@@ -404,7 +404,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
             <FontAwesomeIcon icon={faCalendar} className="mr-1" /> Date Added
           </Text>
         ),
-        accessor: 'created_on',
+        accessor: 'created_at',
         Cell: ({cell: {value}}) => (
           <TableItem center>
             <Text size="sm" className="uppercase">
@@ -420,7 +420,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
           </Text>
         ),
         id: 'tab_added_by',
-        accessor: d => d.added_by,
+        accessor: 'added_by',
         Cell: ({cell: {value}}) => <NameAndBadge {...value} />
       },
       {
