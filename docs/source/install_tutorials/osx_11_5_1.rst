@@ -295,7 +295,7 @@ Step 8: Test Hagrid (optional)
 
     |hagrid_startup_complete|
 
-    You can then load "http://localhost:8081" to see a UI deployed which looks like:
+    You can then load "http://localhost:80" to see a UI deployed which looks like:
 
     |pygrid_ui|
 
