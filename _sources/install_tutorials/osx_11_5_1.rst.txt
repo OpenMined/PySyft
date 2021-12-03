@@ -200,7 +200,7 @@ Step 5: Install Necessary Python Packages
 
   .. code-block:: bash
 
-      pip install hagrid==0.1.8
+      pip install hagrid==0.1.9
 
 * Step 5.5: If you are using Apple MacOS M1 device, install SciPy from a prelease channel in Conda
 
