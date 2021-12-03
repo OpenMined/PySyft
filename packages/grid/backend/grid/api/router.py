@@ -6,6 +6,7 @@ from grid.api.association_requests import association_requests
 from grid.api.auth import login
 from grid.api.auth import register
 from grid.api.datasets import datasets
+from grid.api.meta import exam
 from grid.api.meta import ping
 from grid.api.meta import status
 from grid.api.requests.routes import router as requests_router
@@ -30,5 +31,6 @@ api_router.include_router(
     tags=["association-requests"],
 )
 api_router.include_router(status.router, prefix="/status")
+api_router.include_router(exam.router, prefix="/exam")
 api_router.include_router(ping.router, prefix="/ping")
 api_router.include_router(vpn.router, prefix="/vpn")

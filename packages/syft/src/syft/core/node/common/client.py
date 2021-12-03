@@ -66,6 +66,7 @@ class Client(AbstractNodeClient):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
+        version: Optional[str] = None,
     ):
         name = f"{name}" if name is not None else None
         super().__init__(
@@ -93,6 +94,7 @@ class Client(AbstractNodeClient):
         self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
+        self.version = version
 
     def obj_exists(self, obj_id: UID) -> bool:
         raise NotImplementedError
@@ -210,6 +212,7 @@ class Client(AbstractNodeClient):
             Any,  # TEMPORARY until we switch everything to NodeRunnableMessage types.
         ],
         route_index: int = 0,
+        timeout: Optional[float] = None,
     ) -> SyftMessage:
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
@@ -228,7 +231,9 @@ class Client(AbstractNodeClient):
             debug(output)
             msg = msg.sign(signing_key=self.signing_key)
 
-        response = self.routes[route_index].send_immediate_msg_with_reply(msg=msg)
+        response = self.routes[route_index].send_immediate_msg_with_reply(
+            msg=msg, timeout=timeout
+        )
         if response.is_valid:
             # check if we have an ExceptionMessage to trigger a local exception
             # from a remote exception that we caused
@@ -252,6 +257,7 @@ class Client(AbstractNodeClient):
             SignedImmediateSyftMessageWithoutReply, ImmediateSyftMessageWithoutReply
         ],
         route_index: int = 0,
+        timeout: Optional[float] = None,
     ) -> None:
         route_index = route_index or self.default_route_index
 
@@ -263,10 +269,15 @@ class Client(AbstractNodeClient):
             debug(output)
             msg = msg.sign(signing_key=self.signing_key)
         debug(f"> Sending {msg.pprint} {self.pprint} ➡️  {msg.address.pprint}")
-        self.routes[route_index].send_immediate_msg_without_reply(msg=msg)
+        self.routes[route_index].send_immediate_msg_without_reply(
+            msg=msg, timeout=timeout
+        )
 
     def send_eventual_msg_without_reply(
-        self, msg: EventualSyftMessageWithoutReply, route_index: int = 0
+        self,
+        msg: EventualSyftMessageWithoutReply,
+        route_index: int = 0,
+        timeout: Optional[float] = None,
     ) -> None:
         route_index = route_index or self.default_route_index
         output = (
@@ -278,7 +289,9 @@ class Client(AbstractNodeClient):
             signing_key=self.signing_key
         )
 
-        self.routes[route_index].send_eventual_msg_without_reply(msg=signed_msg)
+        self.routes[route_index].send_eventual_msg_without_reply(
+            msg=signed_msg, timeout=timeout
+        )
 
     def __repr__(self) -> str:
         return f"<Client pointing to node with id:{self.id}>"

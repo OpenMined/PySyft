@@ -12,3 +12,8 @@ node_type: domain
 root_user: root
 root_homedir: "/{{ root_user }}"
 docker_compose_url: https://github.com/docker/compose/releases/download/v2.0.1/docker-compose-linux-x86_64
+tls: "false"
+release: "production"
+cert_store_path: "{{ om_homedir }}/certs"
+upload_tls_key: ""
+upload_tls_cert: ""
