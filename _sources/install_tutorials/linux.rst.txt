@@ -139,7 +139,7 @@ The hardest part is done! To install the OpenMined stack that you need in order 
 
 .. code-block:: bash
 
-   pip install --pre syft
+   pip install syft
    pip install hagrid==0.1.8
 
 PySyft is a library which contains the tools to run privacy preserving machine learning.

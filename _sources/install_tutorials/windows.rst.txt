@@ -135,7 +135,7 @@ Step 6: Install Hagrid and PySyft
 
 - With the power of WSL and Anaconda, installing our software is as easy as::
 
-    pip3 install --pre syft
+    pip3 install syft
     pip3 install hagrid
 
 
