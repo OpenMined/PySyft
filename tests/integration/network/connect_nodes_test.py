@@ -28,7 +28,7 @@ TEST_ROOT_PASS = "changethis"
 def join_to_network_python(
     email: str, password: str, node_api_port: int, node_api_host: str, headscale_addr: str
 ) -> None:
-    root_client = sy.login(email=email, password=password, port=node_api_port, url=f"http://{node_api_host}")
+    root_client = sy.login(email=email, password=password, port=node_api_port, url=f"http://{node_api_host}:{node_api_port}")
 
     # test Syft API
     root_client.join_network(host_or_ip=headscale_addr)
@@ -40,7 +40,7 @@ def join_to_network_python(
 def join_to_network_rest(
     email: str, password: str, node_api_port: int, node_api_host: str, headscale_addr: str
 ) -> None:
-    grid_url = sy.grid.GridURL(host_or_ip=node_api_host, port=node_api_host, path="/api/v1/login")
+    grid_url = sy.grid.GridURL(host_or_ip=node_api_host, port=node_api_port, path="/api/v1/login")
     if sy.util.ssl_test():
         grid_url = grid_url.to_tls()
     auth_response = requests.post(
