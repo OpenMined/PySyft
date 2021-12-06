@@ -18,11 +18,11 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ...abstract.node import AbstractNode
-from .common import EventualActionWithoutReply
+from .common import ImmediateActionWithoutReply
 
 
 @serializable()
-class GarbageCollectBatchedAction(EventualActionWithoutReply):
+class GarbageCollectBatchedAction(ImmediateActionWithoutReply):
     def __init__(
         self, ids_at_location: List[UID], address: Address, msg_id: Optional[UID] = None
     ):
