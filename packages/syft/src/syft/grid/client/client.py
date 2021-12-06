@@ -136,7 +136,7 @@ def login(
     grid_url = grid_url.with_path("/api/v1")
 
     if verbose:
-        sys.stdout.write("\rConnecting to " + str(url) + "...")
+        sys.stdout.write("\rConnecting to " + str(grid_url) + "...")
 
     if email is None or password is None:
         credentials = {}
