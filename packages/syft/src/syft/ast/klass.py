@@ -159,7 +159,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             args=downcast_args,
             kwargs=downcast_kwargs,
             client=__self.client,
-            gc_enabled=False,
+            gc_enabled=True,
         )
 
         cmd = RunClassMethodSMPCAction(
@@ -221,7 +221,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
                 args=downcast_args,
                 kwargs=downcast_kwargs,
                 client=__self.client,
-                gc_enabled=False,
+                gc_enabled=True,
             )
 
             cmd = RunClassMethodAction(
@@ -997,6 +997,7 @@ def pointerize_args_and_kwargs(
             pointer_kwargs[k] = arg_ptr
         else:
             pointer_kwargs[k] = arg
+            arg.gc_enabled = gc_enabled
 
     msg = ActionSequence(obj_lst=obj_lst, address=client.address)
 

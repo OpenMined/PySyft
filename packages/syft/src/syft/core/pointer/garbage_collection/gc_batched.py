@@ -72,7 +72,7 @@ class GCBatched(GCStrategy):
                 ids_at_location=self.obj_ids, address=pointer.client.address
             )
 
-            pointer.client.send_eventual_msg_without_reply(msg)
+            pointer.client.send_immediate_msg_without_reply(msg=msg)
             self.obj_ids = []
 
         self.client = pointer.client
@@ -88,4 +88,4 @@ class GCBatched(GCStrategy):
             ids_at_location=self.obj_ids, address=self.client.address
         )
 
-        self.client.send_eventual_msg_without_reply(msg)
+        self.client.send_immediate_msg_without_reply(msg=msg)  # type: ignore

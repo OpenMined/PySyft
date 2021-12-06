@@ -163,7 +163,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
                 args=downcast_args,
                 kwargs=downcast_kwargs,
                 client=self.client,
-                gc_enabled=False,
+                gc_enabled=True,
             )
 
             cmd = RunClassMethodAction(
