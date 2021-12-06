@@ -1,8 +1,8 @@
-# stdlib
-import os
-
 # future
 from __future__ import annotations
+
+# stdlib
+import os
 
 # third party
 import pytest
