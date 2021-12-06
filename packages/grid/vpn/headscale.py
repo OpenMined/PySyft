@@ -1,13 +1,15 @@
-d# stdlib
+# stdlib
+import functools
 import os
 import sys
+from typing import Any
+from typing import Callable
 from typing import Dict
+from typing import Type
 
 # third party
 from flask import Flask
-import functools
 from flask import request
-from flask.wrappers import Response
 from flask_executor import Executor
 from flask_executor.futures import Future
 from flask_shell2http import Shell2HTTP
@@ -17,6 +19,7 @@ app = Flask(__name__)
 
 executor = Executor(app)
 
+
 def check_stack_api_key(challenge_key: str) -> bool:
     key = os.environ.get("STACK_API_KEY", None)  # Get key from environment
     if key is None:
@@ -24,6 +27,7 @@ def check_stack_api_key(challenge_key: str) -> bool:
     if challenge_key == key:
         return True
     return False
+
 
 shell2http = Shell2HTTP(app=app, executor=executor, base_url_prefix="/commands/")
 
@@ -35,16 +39,15 @@ if key is None:
     sys.exit(1)
 
 
-def basic_auth_check(f): 
-     @functools.wraps(shell2http) 
-     def inner_decorator(*args, **kwargs): 
-         #stack_api_key = request.headers.get("X-STACK-API-KEY", None)
-         if not check_stack_api_key(challenge_key=key):
-             #os.abort(Response("You are not logged in.", 401))
-             raise Exception("STACK_API_KEY doesn't match.")
-         return shell2http
-  
-     return inner_decorator
+def basic_auth_check(f: Any) -> Callable:
+    @functools.wraps(f)
+    def inner_decorator(*args: Any, **kwargs: Any) -> Type:
+        stack_api_key = request.headers.get("X-STACK-API-KEY", "")
+        if not check_stack_api_key(challenge_key=stack_api_key):
+            raise Exception("STACK_API_KEY doesn't match.")
+        return f(*args, **kwargs)
+
+    return inner_decorator
 
 
 def generate_key_callback(context: Dict, future: Future) -> None:
@@ -58,6 +61,7 @@ shell2http.register_command(
     callback_fn=generate_key_callback,
     decorators=[basic_auth_check],
 )
+
 
 def list_nodes_callback(context: Dict, future: Future) -> None:
     # optional user-defined callback function

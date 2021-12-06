@@ -121,15 +121,29 @@ class RequestQueueClient(AbstractNodeClient):
 
     @property
     def pandas(self) -> pd.DataFrame:
+        # TODO:
+        # Replace all the hardcoded string by enums / abstractions.
         request_lines = [
             {
-                "Requested Object's tags": request.object_tags,
-                "Reason": request.request_description,
-                "Request ID": request.id,
-                "Requested Object's ID": request.object_id,
-                "Requested Object's type": request.object_type,
+                "Name": req.user_name,
+                "Email": req.user_email,
+                "Role": req.user_role,
+                "Request Type": req.request_type.upper(),  # type: ignore
+                "Status": req.status,
+                "Reason": req.request_description,
+                "Request ID": req.id,
+                "Requested Object's ID": req.object_id
+                if req.request_type == "data"
+                else None,
+                "Requested Object's tags": req.object_tags,
+                "Requested Budget": req.requested_budget
+                if req.request_type == "budget"
+                else None,
+                "Current Budget": req.current_budget
+                if req.request_type == "budget"
+                else None,
             }
-            for request in self.requests
+            for req in self.requests
         ]
         return pd.DataFrame(request_lines)
 
@@ -293,6 +307,7 @@ class DomainClient(Client):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
+        version: Optional[str] = None,
     ):
         super().__init__(
             name=name,
@@ -303,6 +318,7 @@ class DomainClient(Client):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
+            version=version,
         )
 
         self.requests = RequestQueueClient(client=self)
@@ -421,6 +437,16 @@ class DomainClient(Client):
     ) -> None:
         try:
             # joining the network might take some time and won't block
+
+            # Check if the version of the network client is same as the domain client
+            if client and hasattr(client, "version"):
+                if self.version != client.version:  # type: ignore
+                    print(
+                        "\n**Warning**: The syft version on your domain and the network are different."
+                    )
+                    print(
+                        f"Domain version: {self.version}\nNetwork Version: {client.version}"  # type: ignore
+                    )
             self.join_network(client=client)
 
             timeout = 30

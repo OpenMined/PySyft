@@ -1,31 +1,32 @@
 # stdlib
 import hashlib
+import importlib
+import importlib.machinery
+import importlib.util
 import json
 import os
 from pathlib import Path
 import site
+import socket
 import subprocess
 from typing import Optional
+from typing import Tuple
 
 # third party
 import git
-import requests
 
 # relative
 from .cache import DEFAULT_BRANCH
 from .deps import MissingDependency
+from .deps import is_windows
 
 DOCKER_ERROR = """
-Instructions for v2 beta can be found here:
-You are running an old verion of docker, possibly on Linux. You need to install v2 beta.
-
-https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/
-
+You are running an old version of docker, possibly on Linux. You need to install v2.
 At the time of writing this, if you are on linux you need to run the following:
 
-mkdir -p ~/.docker/cli-plugins
-curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-rc.1/docker-compose-linux-amd64 \
--o ~/.docker/cli-plugins/docker-compose
+DOCKER_COMPOSE_VERSION=v2.1.1
+curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 \
+     -o ~/.docker/cli-plugins/docker-compose
 chmod +x ~/.docker/cli-plugins/docker-compose
 
 ALERT: you may need to run the following command to make sure you can run without sudo.
@@ -186,18 +187,21 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
     port_available = False
     while not port_available:
         try:
-            requests.get("http://" + host + ":" + str(port))
-            if search:
-                print(
-                    str(port)
-                    + " doesn't seem to be available... trying "
-                    + str(port + 1)
-                )
-                port = port + 1
-            else:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            result_of_check = sock.connect_ex((host, port))
+
+            if result_of_check != 0:
+                port_available = True
                 break
-        except requests.ConnectionError:
-            port_available = True
+            else:
+                if search:
+                    port += 1
+
+        except Exception as e:
+            print(f"Failed to check port {port}. {e}")
+
+    sock.close()
+
     if search is False and port_available is False:
         error = (
             f"{port} is in use, either free the port or "
@@ -208,6 +212,8 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
 
 
 def check_docker_version() -> Optional[str]:
+    if is_windows():
+        return "N/A"  # todo fix to work with windows
     result = os.popen("docker compose version", "r").read()
     version = None
     if "version" in result:
@@ -220,3 +226,22 @@ def check_docker_version() -> Optional[str]:
             raise MissingDependency(DOCKER_ERROR)
 
     return version
+
+
+def get_version_module() -> Tuple[str, str]:
+    try:
+        version_file_path = f"{GRID_SRC_PATH}/VERSION"
+        loader = importlib.machinery.SourceFileLoader("VERSION", version_file_path)
+        spec = importlib.util.spec_from_loader(loader.name, loader)
+        if spec:
+            version_module = importlib.util.module_from_spec(spec)
+            loader.exec_module(version_module)
+            version = version_module.get_version()  # type: ignore
+            hash = version_module.get_hash()  # type: ignore
+            return (version, hash)
+    except Exception as e:
+        print(f"Failed to retrieve versions from: {version_file_path}. {e}")
+    return ("unknown", "unknown")
+
+
+GRID_SRC_VERSION = get_version_module()

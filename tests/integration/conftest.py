@@ -21,7 +21,10 @@ def login_clients() -> None:
     for i in range(PARTIES):
         try:
             client = sy.login(
-                email="info@openmined.org", password="changethis", port=(PORT + i)
+                email="info@openmined.org",
+                password="changethis",
+                port=(PORT + i),
+                verbose=False,
             )
             clients.append(client)
         except Exception as e:

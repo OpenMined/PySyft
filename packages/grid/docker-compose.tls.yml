@@ -1,0 +1,30 @@
+version: "3.8"
+services:
+  tailscale:
+    ports:
+      - "${HTTPS_PORT}:${HTTPS_PORT}"
+  proxy:
+    environment:
+      - TRAEFIK_TLS_CONF=${TRAEFIK_TLS_CONF}
+      - TRAEFIK_TLS_CERTS=${TRAEFIK_TLS_CERTS}
+    volumes:
+      - "${TRAEFIK_TLS_CONF}:/etc/traefik/dynamic-configurations"
+      - "${TRAEFIK_TLS_CERTS}:/etc/traefik/certs"
+    command:
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
+      # custom tls cert config
+      - "--providers.file.directory=/etc/traefik/dynamic-configurations"
+      - "--providers.file.watch=true"
+      # redirect http to https
+      - "--entrypoints.web.address=:81"
+      - "--entrypoints.web.http.redirections.entrypoint.to=websecure"
+      - "--entrypoints.web.http.redirections.entrypoint.scheme=https"
+      - "--entrypoints.vpn.address=:80"
+      - "--entrypoints.websecure.address=:${HTTPS_PORT}"
+      - "--entrypoints.websecure.http.tls=true"
+      # Enable the access log, with HTTP requests
+      - "--accesslog"
+      # Enable the Traefik log, for configurations and errors
+      - "--log"

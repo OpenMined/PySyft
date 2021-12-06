@@ -1,4 +1,5 @@
 # stdlib
+import sys
 from typing import Any
 from typing import Dict
 from typing import List
@@ -12,13 +13,13 @@ from pandas import DataFrame
 from typing_extensions import final
 
 # relative
+from ....grid.client.proxy_client import ProxyClient
 from ....logger import traceback_and_raise
 from ...common.message import SyftMessage
 from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ...io.route import Route
-from ..abstract.node import AbstractNodeClient
 from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
 from ..common.client_manager.association_api import AssociationRequestAPI
@@ -51,6 +52,7 @@ class NetworkClient(Client):
         vm: Optional[Location] = None,
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
+        version: Optional[str] = None,
     ):
         super().__init__(
             name=name,
@@ -61,6 +63,7 @@ class NetworkClient(Client):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
+            version=version,
         )
 
         self.users = UserRequestAPI(client=self)
@@ -147,28 +150,15 @@ class NetworkClient(Client):
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"
 
-    def join_network(
-        self,
-        client: Optional[AbstractNodeClient] = None,
-        host_or_ip: Optional[str] = None,
-    ) -> None:
-        # this asks for a VPN key so it must be on a public interface hence the
-        # client or a public host_or_ip
-        try:
-            if client is None and host_or_ip is None:
-                raise ValueError(
-                    "join_network requires a Client object or host_or_ip string"
-                )
-            if client is not None:
-                # connection.host has http
-                connection_host = client.routes[0].connection.host  # type: ignore
-                host_or_ip = connection_host.split("://")[1]
-                # if we are connecting with localhost we need to change to docker-host
-                # so that the domain connects to the host and not the container
-                host_or_ip = str(host_or_ip).replace("localhost", "docker-host")
-            return self.vpn.join_network(host_or_ip=str(host_or_ip))
-        except Exception as e:
-            print(f"Failed to join network with {host_or_ip} {e}")
+    def _repr_html_(self) -> str:
+        # create repr_html variable first so that the stdout printing is in the right order
+        repr_html = self.domains._repr_html_()
+
+        sys.stdout.write("\r\t\t     " + str(self.name) + " network")
+        return repr_html
+
+    def __getitem__(self, item: int) -> ProxyClient:
+        return self.domains[item]
 
     def vpn_status(self) -> Dict[str, Any]:
         return self.vpn.get_status()

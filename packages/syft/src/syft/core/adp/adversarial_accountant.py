@@ -205,9 +205,12 @@ class AdversarialAccountant:
         max_spend = self.user_budget(
             user_key=user_key, returned_epsilon_is_private=returned_epsilon_is_private
         )
-
         if math.isnan(max_spend) or math.isinf(max_spend):
             print(f"Warning: Remaining budget not valid with max_spend {max_spend}")
+
+        # If there's no entity registered
+        if not len(self.entities):
+            max_spend = 0
 
         user_budget = self.entity2ledger.get_user_budget(user_key=user_key)
 

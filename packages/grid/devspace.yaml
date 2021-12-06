@@ -36,7 +36,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.6.0-alpha.4"
+      - "0.6.0"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -47,7 +47,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.6.0-alpha.4"
+      - "0.6.0"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -65,7 +65,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.6.0-alpha.4"
+      - "0.6.0"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -76,7 +76,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.6.0-alpha.4"
+      - "0.6.0"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -148,8 +148,6 @@ deployments:
               successThreshold: 1
               failureThreshold: 3
             env:
-              - name: SYFT_USE_UVLOOP
-                value: "0"
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
               - name: POSTGRES_SERVER
@@ -164,14 +162,14 @@ deployments:
                 value: ${VERSION}
               - name: VERSION_HASH
                 value: ${VERSION_HASH}
-              - name: SERVER_NAME
-                value: ${DOMAIN}
               - name: SERVER_HOST
                 value: ${SERVER_HOST}
               - name: LOG_LEVEL
                 value: debug
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -209,8 +207,6 @@ deployments:
               successThreshold: 1
               failureThreshold: 3
             env:
-              - name: SYFT_USE_UVLOOP
-                value: "0"
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
               - name: POSTGRES_SERVER
@@ -225,8 +221,6 @@ deployments:
                 value: ${VERSION}
               - name: VERSION_HASH
                 value: ${VERSION_HASH}
-              - name: SERVER_NAME
-                value: ${DOMAIN}
               - name: SERVER_HOST
                 value: ${SERVER_HOST}
               - name: LOG_LEVEL
@@ -235,6 +229,8 @@ deployments:
                 value: "1"
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -256,8 +252,6 @@ deployments:
                 "/worker-start.sh",
               ]
             env:
-              - name: SYFT_USE_UVLOOP
-                value: "0"
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
               - name: POSTGRES_SERVER
@@ -272,8 +266,6 @@ deployments:
                 value: ${VERSION}
               - name: VERSION_HASH
                 value: ${VERSION_HASH}
-              - name: SERVER_NAME
-                value: ${DOMAIN}
               - name: SERVER_HOST
                 value: ${SERVER_HOST}
               - name: CELERY_WORKER
@@ -284,6 +276,8 @@ deployments:
                 value: ${NODE_TYPE}
               - name: C_FORCE_ROOT
                 value: "1"
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
   - name: frontend
     helm:
       componentChart: true
@@ -295,7 +289,7 @@ deployments:
                 value: ${VERSION}
               - name: VERSION_HASH
                 value: ${VERSION_HASH}
-              - name: TYPE
+              - name: NODE_TYPE
                 value: ${NODE_TYPE}
         service:
           name: ${SERVICE_NAME_FRONTEND}
@@ -310,6 +304,8 @@ deployments:
             env:
               - name: NETWORK_NAME
                 value: ${NETWORK_NAME}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
             volumeMounts:
               - containerPath: /headscale/data
                 volume:
@@ -339,6 +335,8 @@ deployments:
             env:
               - name: HOSTNAME
                 value: ${DOMAIN_NAME}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
             volumeMounts:
               - containerPath: /var/lib/tailscale
                 volume:

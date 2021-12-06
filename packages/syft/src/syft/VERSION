@@ -1,14 +1,26 @@
 # Mono Repo Global Version
 # pyproject.toml uses read-version which checks for __version__ assignment
-__version__ = "0.6.0-alpha.4"
+__version__ = "0.6.0"
 # elsewhere we can call this file: `python VERSION` and simply take the stdout
 
-import sys
+# stdlib
+import os
 import subprocess
+import sys
+
+
+def get_version() -> str:
+    return __version__
+
+
+def get_hash() -> str:
+    cwd = os.path.dirname(os.path.abspath(__file__))
+    output = subprocess.check_output("git rev-parse HEAD".split(" "), cwd=cwd)
+    return output.strip().decode("ascii")
+
 
 if __name__ == "__main__":
     if len(sys.argv) > 1 and "hash" in sys.argv[1]:
-        output = subprocess.check_output("git rev-parse HEAD".split(" "))
-        print(output.strip().decode("ascii"))
+        print(get_hash())
     else:
-        print(__version__)
+        print(get_version())
