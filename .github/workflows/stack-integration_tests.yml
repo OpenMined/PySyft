@@ -144,7 +144,7 @@ jobs:
         if: runner.os == 'Linux'
         shell: bash
         run: |
-          sudo apt install libnss3-tools -y
+          sudo apt-get update && sudo apt install libnss3-tools -y
           MKCERT_VERSION=v1.4.3
           curl -sSL https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/mkcert-${MKCERT_VERSION}-linux-amd64 -o /usr/local/bin/mkcert
           chmod +x /usr/local/bin/mkcert
