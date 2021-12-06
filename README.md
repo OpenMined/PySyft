@@ -243,14 +243,14 @@ $ hagrid launch domain to docker:8081+ --tls
 This will go looking for a certificate and private key here:
 
 ```
-packages/grid/traefik/certs/key.pem
-packages/grid/traefik/certs/cert.pem
+packages/grid/traefik.d/certs/key.pem
+packages/grid/traefik.d/certs/cert.pem
 ```
 
 These files and their settings are defined in:
 
 ```
-packages/grid/traefik/dynamic-configurations/certs.yaml
+packages/grid/traefik.d/dynamic-configurations/certs.yaml
 ```
 
 During development you will need to generate ones which match localhost and then
@@ -269,7 +269,7 @@ $ brew install mkcert
 
 ```
 cd PySyft
-export GRID=$(pwd)/packages/grid && export CAROOT=$GRID/tls && export CERTS=$GRID/traefik/certs
+export GRID=$(pwd)/packages/grid && export CAROOT=$GRID/tls && export CERTS=$GRID/traefik.d/certs
 mkcert -cert-file="$CERTS/cert.pem" -key-file="$CERTS/key.pem" '*.openmined.grid' docker-host localhost 127.0.0.1 ::1
 ```
 
