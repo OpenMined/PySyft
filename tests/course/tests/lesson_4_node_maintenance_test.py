@@ -5,7 +5,7 @@ from testbook import testbook
 
 @pytest.fixture(scope="module")
 def tb():
-    with testbook("../courses/L4_NodeMaintenance.ipynb", execute=range(25)) as tb:
+    with testbook("../courses/L4_NodeMaintenance.ipynb", execute=range(30)) as tb:
         yield tb
 
 
