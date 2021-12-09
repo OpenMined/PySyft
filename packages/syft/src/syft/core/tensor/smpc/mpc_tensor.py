@@ -203,17 +203,17 @@ class MPCTensor(PassthroughTensor):
             share.block
 
         for share in self.child:
-            client = share.client
-            privacy_budget = client.privacy_budget  # before publish
+            # client = share.client
+            # privacy_budget = client.privacy_budget  # before publish
             new_share = share.publish(sigma=sigma)
             new_shares.append(new_share)
             new_share.block
-            curr_budget = client.privacy_budget  # budget after publish
-            if privacy_budget == curr_budget:
-                print(
-                    f"You do not have sufficient privacy budget on {client.pprint}"
-                    + "\n Kindly request for additional privacy budget. \n"
-                )
+            # curr_budget = client.privacy_budget  # budget after publish
+            # if privacy_budget == curr_budget:
+            #     print(
+            #         f"You do not have sufficient privacy budget on {client.pprint}"
+            #         + "\n Kindly request for additional privacy budget. \n"
+            #     )
 
         return MPCTensor(
             parties=self.parties,
@@ -447,6 +447,15 @@ class MPCTensor(PassthroughTensor):
             min_vals = local_shares[0]._min_vals
             max_vals = local_shares[0]._max_vals
             result = result.child.child
+            # third party
+            from scipy.stats import shapiro
+
+            shapiro_result = shapiro(result)  # type: ignore
+            if shapiro_result[1] > 0.05:
+                print(
+                    f"You do not have sufficient privacy budget. Kindly request for additional privacy budget. \n"
+                )
+            
             if min_vals is not None and max_vals is not None:
                 result = result.clip(min_vals, max_vals)
             return result
