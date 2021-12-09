@@ -40,8 +40,7 @@ then
     git fetch origin
     echo "Checking out branch: ${3}"
     git reset --hard
-    git checkout $3 --force
-    git pull origin $3 --rebase
+    git checkout "origin/${3}" --force
     chown -R $4:$5 .
 fi
 
@@ -51,8 +50,8 @@ then
 fi
 
 git reset --hard
-git checkout $3 --force
-git pull origin $3 --rebase
+git fetch origin
+git checkout "origin/${3}" --force
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
