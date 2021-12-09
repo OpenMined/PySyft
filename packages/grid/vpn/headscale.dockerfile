@@ -1,4 +1,4 @@
-FROM headscale/headscale:latest
+FROM headscale/headscale:0.11
 
 RUN apt-get update && apt-get install wireguard-tools python3 python3-pip -y
 
