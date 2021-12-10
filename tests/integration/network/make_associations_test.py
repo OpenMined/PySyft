@@ -3,6 +3,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from tests.integration.conftest import TestNodeData
 
 NETWORK_PORT = 9081
 DOMAIN1_PORT = 9082
@@ -10,17 +11,17 @@ DOMAIN2_PORT = 9083
 
 
 @pytest.mark.network
-def test_domain1_association_network1() -> None:
+def test_domain1_association_network1(test_network: TestNodeData, test_domain_1: TestNodeData) -> None:
     network_guest = sy.login(port=NETWORK_PORT)
 
     domain = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
+        email="info@openmined.org", password="changethis", url=test_domain_1.grid_api_url
     )
 
     domain.apply_to_network(client=network_guest)
 
     network = sy.login(
-        email="info@openmined.org", password="changethis", port=NETWORK_PORT
+        email="info@openmined.org", password="changethis", url=test_network.grid_api_url
     )
     associations = network.association.all()
     for association in associations:
@@ -32,17 +33,17 @@ def test_domain1_association_network1() -> None:
 
 
 @pytest.mark.network
-def test_domain2_association_network1() -> None:
-    network_guest = sy.login(port=NETWORK_PORT)
+def test_domain2_association_network1(test_network: TestNodeData, test_domain_2: TestNodeData) -> None:
+    network_guest = sy.login(url=test_network.grid_api_url)
 
     domain = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN2_PORT
+        email="info@openmined.org", password="changethis", url=test_domain_2.grid_api_url
     )
 
     domain.apply_to_network(client=network_guest)
 
     network = sy.login(
-        email="info@openmined.org", password="changethis", port=NETWORK_PORT
+        email="info@openmined.org", password="changethis", url=test_network.grid_api_url
     )
     associations = network.association.all()
     for association in associations:

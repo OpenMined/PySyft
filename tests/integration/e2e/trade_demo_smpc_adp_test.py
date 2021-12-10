@@ -13,6 +13,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.entity import Entity
+from tests.integration.conftest import TestNodeData
 
 sy.logger.remove()
 
@@ -35,12 +36,12 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
 
 
 @pytest.mark.e2e
-def test_end_to_end_smpc_adp_trade_demo() -> None:
+def test_end_to_end_smpc_adp_trade_demo(test_domain_1: TestNodeData, test_domain_2: TestNodeData) -> None:
     # make a unique email so we can run the test isolated
     unique_email = f"{uuid.uuid4()}@caltech.edu"
 
     # Canada
-    ca_root = sy.login(email="info@openmined.org", password="changethis", port=9082)
+    ca_root = sy.login(email="info@openmined.org", password="changethis", url=test_domain_1.grid_api_url)
     ca_data = load_data(csv_file="ca - feb 2021.csv")
 
     # NOTE: casting this tensor as np.int32 is REALLY IMPORTANT
@@ -76,7 +77,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     ca_root.users.create(**get_user_details(unique_email=unique_email))
 
     # Italy
-    it_root = sy.login(email="info@openmined.org", password="changethis", port=9083)
+    it_root = sy.login(email="info@openmined.org", password="changethis", url=test_domain_2.grid_api_url)
     it_data = load_data(csv_file="it - feb 2021.csv")
     # NOTE: casting this tensor as np.int32 is REALLY IMPORTANT
     data_batch = ((np.array(list(it_data["Trade Value (US$)"])) / 100000)[0:10]).astype(
@@ -111,10 +112,10 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     it_root.users.create(**get_user_details(unique_email=unique_email))
 
     # Data Scientist
-    ca = sy.login(email=unique_email, password="bazinga", port=9082)
+    ca = sy.login(email=unique_email, password="bazinga", url=test_domain_1.grid_api_url)
 
     ca.request_budget(eps=200, reason="increase budget!")
-    it = sy.login(email=unique_email, password="bazinga", port=9083)
+    it = sy.login(email=unique_email, password="bazinga", url=test_domain_2.grid_api_url)
 
     it.request_budget(eps=200, reason="increase budget!")
 

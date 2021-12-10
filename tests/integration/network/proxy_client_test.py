@@ -4,26 +4,23 @@ import uuid
 
 # third party
 import pytest
+from tests.integration.conftest import TestNodeData
 import torch
 
 # syft absolute
 import syft as sy
 from syft.core.node.common.action.exception_action import UnknownPrivateException
 
-NETWORK_PORT = 9081
-DOMAIN1_PORT = 9082
-DOMAIN1_VPN_IP = "100.64.0.2"
-
 
 @pytest.mark.network
-def test_domain1_via_network_proxy_client() -> None:
+def test_domain1_via_network_proxy_client(test_network: TestNodeData, test_domain_1: TestNodeData) -> None:
     unique_tag = str(uuid.uuid4())
     network_client = sy.login(
-        email="info@openmined.org", password="changethis", port=NETWORK_PORT
+        email="info@openmined.org", password="changethis", url=test_network.grid_api_url
     )
 
     domain_client = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
+        email="info@openmined.org", password="changethis", url=test_domain_1.grid_api_url
     )
 
     x = torch.Tensor([1, 2, 3])
@@ -49,37 +46,37 @@ def test_domain1_via_network_proxy_client() -> None:
 
 
 @pytest.mark.network
-def test_search_network() -> None:
+def test_search_network(test_network: TestNodeData, test_domain_1: TestNodeData) -> None:
     unique_tag = str(uuid.uuid4())
     domain_client = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
+        email="info@openmined.org", password="changethis", url=test_domain_1.grid_api_url
     )
 
     x = torch.Tensor([1, 2, 3])
     x.send(domain_client, tags=[unique_tag])
 
-    network_client = sy.login(port=NETWORK_PORT)
+    network_client = sy.login(url=test_network.grid_api_url)
 
     query = [unique_tag]
     result = network_client.search(query=query, pandas=False)
 
     assert len(result) == 1
     assert result[0]["name"] == "test_domain_1"
-    assert result[0]["host_or_ip"] == DOMAIN1_VPN_IP
+    assert result[0]["host_or_ip"] == test_domain_1.vpn_ip
 
 
 @pytest.mark.network
-def test_proxy_login_logout_network() -> None:
+def test_proxy_login_logout_network(test_network: TestNodeData, test_domain_1: TestNodeData) -> None:
     unique_tag = str(uuid.uuid4())
 
     domain_client = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
+        email="info@openmined.org", password="changethis", url=test_domain_1.grid_api_url
     )
 
     x = torch.Tensor([1, 2, 3])
     x.send(domain_client, tags=[unique_tag])
 
-    network_client = sy.login(port=NETWORK_PORT)
+    network_client = sy.login(url=test_network.grid_api_url)
     domain_list = network_client.domains.all(pandas=False)
     assert len(domain_list) > 0
 

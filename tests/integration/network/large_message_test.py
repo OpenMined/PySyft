@@ -7,6 +7,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from tests.integration.conftest import TestNodeData
 
 DOMAIN1_PORT = 9082
 
@@ -15,9 +16,9 @@ DOMAIN1_PORT = 9082
 # on the same Windows CI machine.
 @pytest.mark.xfail
 @pytest.mark.network
-def test_large_message_size() -> None:
+def test_large_message_size(test_domain_1: TestNodeData) -> None:
     domain_client = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
+        email="info@openmined.org", password="changethis", url=test_domain_1.grid_api_url
     )
 
     ndim = 11300  # 510.76 MB

@@ -5,19 +5,14 @@ import os
 import pytest
 import requests
 
+from tests.integration.conftest import TestNodeData
+
 here = os.path.dirname(__file__)
 
-TEST_DOMAIN_IP = str(os.environ.get("TEST_DOMAIN_IP", "localhost")).lower()
-TEST_DOMAIN_PORT = int(os.environ.get("TEST_DOMAIN_PORT", 9082))
-TEST_NETWORK_PORT = 9081
-
-
 @pytest.mark.frontend
-@pytest.mark.domain
-@pytest.mark.k8s
-def test_serves_domain_frontend() -> None:
+def test_serves_domain_frontend(test_domain_1: TestNodeData) -> None:
     title_str = "<title>PyGrid UI</title>"
-    url = f"http://{TEST_DOMAIN_IP}:{TEST_DOMAIN_PORT}/status"
+    url = str(test_domain_1.grid_api_url.with_path("/status"))
     result = requests.get(url)
     assert title_str in result.text
 
