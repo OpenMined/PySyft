@@ -84,6 +84,10 @@ images:
       buildKit: {}
 
 deployments:
+  - name: syft-service-acccount
+    kubectl:
+      manifests:
+      - k8s/manifests/service-account.yaml
   - name: traefik
     helm:
       chart:
@@ -139,6 +143,7 @@ deployments:
     helm:
       componentChart: true
       values:
+        serviceAccountName: syft
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             # used to modify routing tables to tailscale
@@ -187,6 +192,8 @@ deployments:
                 value: ${NODE_TYPE}
               - name: STACK_API_KEY
                 value: ${STACK_API_KEY}
+              - name: TAILSCALE_ROUTE_VIA_POD
+                value: enabled
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -354,6 +361,10 @@ deployments:
                 value: ${DOMAIN_NAME}
               - name: STACK_API_KEY
                 value: ${STACK_API_KEY}
+              - name: TAILSCALE_PROXY_TO_TRAEFIK
+                value: enabled
+              - name: TAILSCALE_GATEWAY_TO_TAILNET
+                value: enabled
             volumeMounts:
               - containerPath: /var/lib/tailscale
                 volume:
