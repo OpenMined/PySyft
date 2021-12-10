@@ -410,12 +410,11 @@ jobs:
         os: [ubuntu-latest]
         python-version: [3.9]
 
-    runs-on: [self-hosted, linux]
-
+    runs-on: ${{matrix.os}}
     steps:
-      - name: set permissions on work folder for self-runners
-        run: |
-          sudo chown -R $USER:$USER ~/actions-runner/_work/
+      # - name: set permissions on work folder for self-runners
+      #   run: |
+      #     sudo chown -R $USER:$USER ~/actions-runner/_work/
 
       - uses: actions/checkout@v2
 
@@ -479,4 +478,3 @@ jobs:
           rm -rf .tox
           tox -e stack.test.course
           docker rm `docker ps -aq` --force || true
-          docker system prune --volumes --force || true
