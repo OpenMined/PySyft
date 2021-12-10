@@ -39,8 +39,7 @@ ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
 # install iproute2 to add a route to tailscale pod IP on kubernetes
-RUN --mount=type=cache,target=/var/cache/apt \
-  apt-get update && \
+RUN apt-get update && \
   apt-get install -y --no-install-recommends iproute2
 
 # copy start scripts and gunicorn conf
