@@ -21,6 +21,12 @@ HOST=${HOST:-0.0.0.0}
 PORT=${PORT:-80}
 LOG_LEVEL=${LOG_LEVEL:-info}
 
+if [ ${TAILSCALE_ROUTE_VIA_POD-} = "enabled" ]; then
+  tailscale_ip=$(kubectl get pod -n openmined tailscale-0 -o jsonpath='{.status.podIP}')
+  ip route add 100.64.0.0/10 via "${tailscale_ip}"
+  echo "Routing tailnet via ${tailscale_ip}"
+fi
+
 # If there's a prestart.sh script in the /app directory or other path specified, run it before starting
 PRE_START_PATH=${PRE_START_PATH:-/app/prestart.sh}
 echo "Checking for script in $PRE_START_PATH"

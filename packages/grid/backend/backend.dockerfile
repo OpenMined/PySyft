@@ -29,10 +29,19 @@ ENV WAITFORIT_VERSION="v2.4.1"
 RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
   chmod +x /usr/local/bin/waitforit
 
+# install kubectl to get tailscale pod IP for routing to it
+RUN curl -o /usr/local/bin/kubectl -sSL "https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl" && \
+  chmod +x /usr/local/bin/kubectl
+
 # Backend
 FROM python:3.9.9-slim as backend
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
+
+# install iproute2 to add a route to tailscale pod IP on kubernetes
+RUN --mount=type=cache,target=/var/cache/apt \
+  apt-get update && \
+  apt-get install -y --no-install-recommends iproute2
 
 # copy start scripts and gunicorn conf
 COPY grid/backend/docker-scripts/start.sh /start.sh
@@ -48,6 +57,7 @@ RUN chmod +x /worker-start-reload.sh
 
 COPY --from=build /root/.local /root/.local
 COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
+COPY --from=build /usr/local/bin/kubectl /usr/local/bin/kubectl
 
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user watchdog pyyaml argh
