@@ -13,6 +13,7 @@ services:
       context: ./vpn
       dockerfile: tailscale.dockerfile
     environment:
+      - RELEASE=${RELEASE:-production}
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
       - STACK_API_KEY=$STACK_API_KEY
     volumes:
@@ -25,23 +26,20 @@ services:
       - "${HTTP_PORT}:81"
       - "41641/udp"
       - "4000"
-      # - "8080:8080"
     depends_on:
       - "docker-host"
 
   proxy:
     restart: always
     image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}
-    # ports:
-      # - "${HTTP_PORT}:${HTTP_PORT}"
-      # - "8080:8080"
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
     network_mode: service:tailscale
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - ./traefik:/etc/traefik
+      - "/var/run/docker.sock:/var/run/docker.sock"
+    environment:
+      - RELEASE=${RELEASE:-production}
     command:
       - "--providers.docker"
       - "--providers.docker.exposedbydefault=false"
@@ -53,22 +51,20 @@ services:
       - "--accesslog"
       # Enable the Traefik log, for configurations and errors
       - "--log"
-      # Enable the Dashboard and API
-      # - --api # admin panel
-      # - --api.insecure=true # admin panel no password
 
   frontend:
     restart: always
-    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
+    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}-${NODE_TYPE}:${VERSION-latest}"
     profiles:
       - frontend
     build:
       context: ./frontend
       dockerfile: frontend.dockerfile
-      target: "grid-ui-${FRONTEND_ENV-development}"
+      target: "grid-ui-production"
       args:
-        FRONTEND_ENV: ${FRONTEND_ENV-development}
+        NODE_TYPE: ${NODE_TYPE}
     environment:
+      - RELEASE=${RELEASE:-production}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
@@ -81,23 +77,17 @@ services:
   db:
     restart: always
     image: postgres:12
-    ports:
-      - "5432"
     volumes:
       - app-db-data:/var/lib/postgresql/data
+    environment:
+      - RELEASE=${RELEASE:-production}
     env_file:
       - .env
-    deploy:
-      placement:
-        constraints:
-          - node.labels.${STACK_NAME?Variable not set}.app-db-data == true
-
   queue:
     restart: always
-    image: rabbitmq:3-management
-    ports:
-      - "5672"
-      - "15672"
+    image: rabbitmq:3
+    environment:
+      - RELEASE=${RELEASE:-production}
     volumes:
       - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
 
@@ -109,6 +99,7 @@ services:
     env_file:
       - .env
     environment:
+      - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
@@ -120,12 +111,7 @@ services:
       context: ../
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
-    volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
-    command: /start-reload.sh
+    command: /start.sh
     labels:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
@@ -142,6 +128,7 @@ services:
     env_file:
       - .env
     environment:
+      - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
@@ -154,12 +141,7 @@ services:
       context: ../
       dockerfile: ./grid/backend/backend.dockerfile
       target: "backend"
-    volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
     labels:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
@@ -176,20 +158,14 @@ services:
     env_file:
       - .env
     environment:
+      - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
-      - CELERY_WORKER=true
-      - RUN=celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
       - C_FORCE_ROOT=1
       - STACK_API_KEY=${STACK_API_KEY}
       - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
-    volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
     build:
       context: ../
@@ -208,6 +184,7 @@ services:
     volumes:
       - headscale-data:/headscale/data
     environment:
+      - RELEASE=${RELEASE:-production}
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
     ports:

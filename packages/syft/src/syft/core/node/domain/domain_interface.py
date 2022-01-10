@@ -1,3 +1,6 @@
+# third party
+from pydantic import BaseSettings
+
 # relative
 from ...adp.adversarial_accountant import AdversarialAccountant
 from ..abstract.node_service_interface import NodeServiceInterface
@@ -17,3 +20,4 @@ class DomainInterface(NodeServiceInterface):
     datasets: DatasetManager
     setup: SetupManager
     acc: AdversarialAccountant
+    settings: BaseSettings

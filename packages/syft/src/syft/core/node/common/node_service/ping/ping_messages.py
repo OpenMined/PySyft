@@ -58,8 +58,16 @@ class PingMessageWithReply(GenericPayloadMessageWithReply):
     ) -> Dict[str, Any]:
         try:
             grid_url = grid_url_from_kwargs(self.kwargs)
-            res = requests.get(str(grid_url.with_path("/status")))
-            return {"grid_url": str(grid_url), "status_code": res.status_code}
+            res = requests.get(str(grid_url.with_path("/status")), timeout=0.25)
+            return {
+                "grid_url": str(grid_url),
+                "result": "ping succeeded",
+                "status_code": res.status_code,
+            }
         except Exception:
             print("Failed to run ping", self.kwargs)
-            return {"grid_url": str(grid_url), "error": "Error"}
+            return {
+                "grid_url": str(grid_url),
+                "result": "ping failed",
+                "status_code": 200,
+            }
