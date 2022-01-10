@@ -150,15 +150,3 @@ repos:
             "--install-types",
             "--non-interactive",
           ]
-  - repo: local
-    hooks:
-      - id: flynt
-        always_run: true
-        name: flynt
-        entry: flynt
-        exclude: ^(packages/grid/ansible)
-        args: [--fail-on-change]
-        types: [python]
-        language: python
-        additional_dependencies:
-          - flynt
