@@ -31,8 +31,6 @@ from ..accept_or_deny_request.accept_or_deny_request_messages import (
     AcceptOrDenyRequestMessage,
 )
 from ..auth import service_auth
-from ..get_all_requests.get_all_requests_messages import GetAllRequestsMessage
-from ..get_all_requests.get_all_requests_messages import GetAllRequestsResponseMessage
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import ImmediateNodeServiceWithoutReply
 from ..request_answer.request_answer_messages import RequestAnswerMessage
@@ -57,6 +55,8 @@ from .object_request_messages import GetRequestsMessage
 from .object_request_messages import GetRequestsResponse
 from .object_request_messages import UpdateRequestMessage
 from .object_request_messages import UpdateRequestResponse
+from .object_request_messages import GetAllRequestsMessage
+from .object_request_messages import GetAllRequestsResponseMessage
 
 if TYPE_CHECKING:
     # relative
