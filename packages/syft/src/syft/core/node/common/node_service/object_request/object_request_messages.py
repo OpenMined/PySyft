@@ -27,6 +27,12 @@ from ......proto.grid.messages.request_messages_pb2 import (
     DeleteRequestResponse as DeleteRequestResponse_PB,
 )
 from ......proto.grid.messages.request_messages_pb2 import (
+    GetAllRequestsMessage as GetAllRequestsMessage_PB,
+)
+from ......proto.grid.messages.request_messages_pb2 import (
+    GetAllRequestsResponseMessage as GetAllRequestsResponseMessage_PB,
+)
+from ......proto.grid.messages.request_messages_pb2 import (
     GetBudgetRequestsMessage as GetBudgetRequestsMessage_PB,
 )
 from ......proto.grid.messages.request_messages_pb2 import (
@@ -50,20 +56,13 @@ from ......proto.grid.messages.request_messages_pb2 import (
 from ......proto.grid.messages.request_messages_pb2 import (
     UpdateRequestResponse as UpdateRequestResponse_PB,
 )
-from ......proto.core.node.domain.service.get_all_requests_message_pb2 import (
-    GetAllRequestsMessage as GetAllRequestsMessage_PB,
-)
-from ......proto.core.node.domain.service.get_all_requests_message_pb2 import (
-    GetAllRequestsResponseMessage as GetAllRequestsResponseMessage_PB,
-)
-from ..request_receiver.request_receiver_messages import RequestMessage
-
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.deserialize import _deserialize
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
+from ..request_receiver.request_receiver_messages import RequestMessage
 
 
 @serializable()
@@ -996,6 +995,7 @@ class DeleteRequestResponse(ImmediateSyftMessageWithoutReply):
         """
 
         return DeleteRequestResponse_PB
+
 
 @serializable()
 class GetAllRequestsMessage(ImmediateSyftMessageWithReply):
