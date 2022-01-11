@@ -72,7 +72,7 @@ class RequestQueueClient(AbstractNodeClient):
     def requests(self) -> List[RequestMessage]:
 
         # relative
-        from ..common.node_service.get_all_requests.get_all_requests_messages import (
+        from ..common.node_service.object_request.object_request_messages import (
             GetAllRequestsMessage,
         )
 
