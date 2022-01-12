@@ -13,61 +13,25 @@ from bcrypt import hashpw
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from pydantic import BaseModel
-from pydantic import EmailStr
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query
 from sqlalchemy.orm import sessionmaker
 
 # relative
-from .....src.syft.core.node.common.node_manager.constants import ApplicationStatus
 from ..exceptions import InvalidCredentialsError
 from ..exceptions import UserNotFoundError
 from ..node_table.pdf import PDFObject
 from ..node_table.roles import Role
 from ..node_table.user import SyftUser
 from ..node_table.user import UserApplication
+from .constants import UserApplicationStatus
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
 
-# Shared properties
-class UserBase(BaseModel):
-    email: Optional[EmailStr] = None
-    is_active: Optional[bool] = True
-    is_superuser: bool = False
-    full_name: Optional[str] = None
-
-
-# Properties to receive via API on creation
-class UserCreate(UserBase):
-    email: EmailStr
-    password: str
-
-
-# Properties to receive via API on update
-class UserUpdate(UserBase):
-    password: Optional[str] = None
-
-
-class UserInDBBase(UserBase):
-    id: Optional[int] = None
-
-    class Config:
-        orm_mode = True
-
-
-# Additional properties to return via API
-class User(UserInDBBase):
-    pass
-
-
-# Additional properties stored in DB
-class UserInDB(UserInDBBase):
-    hashed_password: str
-
-
 class UserManager(DatabaseManager):
+    """Class to manage user database actions."""
+
     schema = SyftUser
 
     def __init__(self, database: Engine) -> None:
@@ -100,9 +64,6 @@ class UserManager(DatabaseManager):
         budget: Optional[float] = 0.0,
     ) -> int:
         """Stores the information of the application submitted by the user.
-
-        When a user signups on a domain/network node, the following details are saved
-        w.r.t to a user.
 
         Args:
             name (str): name of the user.
@@ -173,7 +134,9 @@ class UserManager(DatabaseManager):
         )
         session_local.close()
 
-        if status == ApplicationStatus.ACCEPTED.value:  # If application was accepted
+        if (
+            status == UserApplicationStatus.ACCEPTED.value
+        ):  # If application was accepted
             # Generate a new signing key
             _private_key = SigningKey.generate()
 
@@ -200,7 +163,7 @@ class UserManager(DatabaseManager):
                 created_at=datetime.now(),
             )
         else:
-            status = ApplicationStatus.REJECTED.value
+            status = UserApplicationStatus.REJECTED.value
 
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         candidate = (
