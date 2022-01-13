@@ -106,58 +106,6 @@ def copy_static_methods(from_class: type, to_class: type) -> None:
 
 
 
-def replace_classes_in_module(
-    module: ModuleType,
-    from_class: Callable,
-    to_class: Callable,
-    ignore_prefix: Optional[str] = None,
-) -> None:
-    """
-    Recursively replace occurrence of `from_class` to `to_class` inside module.
-
-    For example, when syft replaces torch.nn.parameter.Parameter constructor,
-    there's also need to replace the same constructor in other modules that has already
-    imported it.
-
-    :params ModuleType module: top-level module to traverse.
-    :params Callable from_class: Original constructor.
-    :param Callable to_class: syft's ObjectConstructor.
-    :param str ignore_prefix: string value containing a prefix that should be ignored.
-    """
-    visited_modules = []
-
-    # inner function definition to update a module recursively
-    def recursive_update(
-        module: ModuleType, attr_name: Union[str, None] = None
-    ) -> None:
-        """
-        Updates a specific module recursively.
-
-        :param ModuleType module: module to be updated.
-        :param str attr_name: module's attribute name to be updated. 
-        """
-        # check if we need to skip this attribute to preserve our unmodified
-        # original copy
-        if (
-            attr_name is not None
-            and ignore_prefix is not None
-            and attr_name.startswith(ignore_prefix)
-        ):
-            # found an attr that should be skipped so lets return
-            return
-        attr = getattr(module, attr_name) if isinstance(attr_name, str) else module
-        if isinstance(attr, ModuleType) and attr not in visited_modules:
-            visited_modules.append(attr)
-            for child_attr_name in dir(attr):
-                recursive_update(attr, child_attr_name)
-        elif (
-            isinstance(attr_name, str) and inspect.isclass(attr) and attr is from_class
-        ):
-            setattr(module, attr_name, to_class)
-
-    recursive_update(module)
-
-
 def full_name_with_qualname(klass: type) -> str:
     """ Returns the klass module name + klass qualname."""
     return f"{klass.__module__}.{klass.__qualname__}"
