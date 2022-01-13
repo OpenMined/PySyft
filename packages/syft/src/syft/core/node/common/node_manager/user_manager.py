@@ -1,3 +1,6 @@
+"""This file defines the class and methods which are used to perform any database queries w.r.t a User.
+"""
+
 # stdlib
 from datetime import datetime
 from typing import Any
@@ -48,6 +51,7 @@ class UserManager(DatabaseManager):
 
     @property
     def org_users(self) -> list:
+        """Return all roles in the organization."""
         org_users: List[SyftUser] = []
         for role in self.roles.org_roles:
             org_users = org_users + list(super().query(role=role.id))
@@ -356,7 +360,7 @@ class UserManager(DatabaseManager):
             InvalidCredentialsError: Raised if either the password or email is incorrect.
 
         Returns:
-            SyftUser: [description]
+            SyftUser: Returns the user for the given credentials.
         """
         try:
             user = self.first(email=email)

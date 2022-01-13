@@ -1,3 +1,7 @@
+"""This file defines all the functions/classes to perform any CRUD operation on
+the Role table, for a given domain node, in a RESTful manner.
+"""
+
 # stdlib
 from typing import Callable
 from typing import Dict
@@ -51,7 +55,22 @@ def create_role_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
-    # Check key permissions
+    """Creates a new role in the database.
+
+    Args:
+        msg (CreateRoleMessage): details of the role.
+        node (DomainInterface): domain node.
+        verify_key (VerifyKey): public digital signature/key of the user.
+
+    Raises:
+        MissingRequestKeyError: If name of the role is missing.
+        RequestError: If role already exists.
+        AuthorizationError: If user does not have permissions to create new role.
+
+    Returns:
+        SuccessResponseMessage: Success message on role creation.
+    """
+    # Check if user has permissions to create new roles
     _allowed = node.users.can_edit_roles(verify_key=verify_key)
 
     if not msg.name:
@@ -94,6 +113,20 @@ def update_role_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
+    """Updates the properties of the given role.
+
+    Args:
+        msg (UpdateRoleMessage): stores msg address and properties of the role to be updated.
+        node (DomainInterface): domain node.
+        verify_key (VerifyKey): public digital signature of the user.
+
+    Raises:
+        MissingRequestKeyError: If the role id does not exist in the `msg`.
+        AuthorizationError: If user does not have permissions to perform the update operation.
+
+    Returns:
+        SuccessResponseMessage: Message on successfully updating the role.
+    """
 
     params = {
         "name": msg.name,
@@ -112,7 +145,7 @@ def update_role_msg(
     if not msg.role_id:
         raise MissingRequestKeyError
 
-    # Check Key permissions
+    # Check if user has permissions to edit roles
     _allowed = node.users.can_edit_roles(verify_key=verify_key)
 
     if _allowed:
@@ -131,8 +164,21 @@ def get_role_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetRoleResponse:
+    """Retrieves details of a role.
 
-    # Check Key permissions
+    Args:
+        msg (GetRoleMessage): stores msg address and role id.
+        node (DomainInterface): domain node.
+        verify_key (VerifyKey): public digital signature of the user.
+
+    Raises:
+        AuthorizationError: If user does not have permissions to get role information.
+
+    Returns:
+        GetRoleResponse: details of the role.
+    """
+
+    # Check if user has permissions to triage requests
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
 
     if _allowed:
@@ -151,7 +197,21 @@ def get_all_roles_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> GetRolesResponse:
+    """Retrieves details of the all available roles.
 
+    Args:
+        msg (GetRolesMessage): stores the address of the message.
+        node (DomainInterface): domain node.
+        verify_key (VerifyKey): public digital signature of the user.
+
+    Raises:
+        AuthorizationError: If user does not have permissions to access roles.
+
+    Returns:
+        GetRolesResponse: stores the details for all the roles as a list.
+    """
+
+    # Check if user has permissions to view roles
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
 
     if _allowed:
@@ -168,6 +228,21 @@ def del_role_msg(
     node: DomainInterface,
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
+    """Delete the role corresponding to the given role id.
+
+    Args:
+        msg (DeleteRoleMessage): stores the msg address and id of the role to be deleted.
+        node (DomainInterface): domain node.
+        verify_key (VerifyKey): public digital signature of the user.
+
+    Raises:
+        AuthorizationError: If user does not have permissions to edit roles.
+
+    Returns:
+        SuccessResponseMessage: stores the response msg on successful role deletion.
+    """
+
+    # Check if user has permissions to edit roles
     _allowed = node.users.can_edit_roles(verify_key=verify_key)
 
     if _allowed:
@@ -182,6 +257,8 @@ def del_role_msg(
 
 
 class RoleManagerService(ImmediateNodeServiceWithReply):
+    """A class to handle all operations performed on the Role table."""
+
     msg_handler_map: Dict[INPUT_TYPE, Callable[..., OUTPUT_MESSAGES]] = {
         CreateRoleMessage: create_role_msg,
         UpdateRoleMessage: update_role_msg,
