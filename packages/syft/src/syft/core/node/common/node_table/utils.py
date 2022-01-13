@@ -1,3 +1,4 @@
+""" A set of useful methods used by the syft.core.node.common.node_table submodule. """
 # stdlib
 from typing import Any
 from typing import Dict
