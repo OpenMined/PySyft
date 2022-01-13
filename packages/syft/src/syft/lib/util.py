@@ -104,21 +104,6 @@ def copy_static_methods(from_class: type, to_class: type) -> None:
             setattr(to_class, attr, getattr(from_class, attr))
 
 
-def get_original_constructor_name(object_name: str) -> str:
-    """
-    Generate name for original constructor
-
-    For each custom constructor, we move the original constructor to a consistent location relative to
-    the original constructor so that each custom constructor automatically knows where to find the original
-    method it is overloading. Namely, we move the original constructor to a different attr within the same
-    module as the original constructor. This method specifies the naming convention that we use to name
-    the original constructor when it is moved.
-
-    :param str object_name: the original constructor's original name
-    :return: a modified string containing the original_{object_name}
-    :rtype: str
-    """
-    return f"original_{object_name}"
 
 
 def replace_classes_in_module(
