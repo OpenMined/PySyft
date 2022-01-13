@@ -169,7 +169,7 @@ jobs:
       - name: Stop all running containers
         continue-on-error: true
         run: |
-          powershell.exe -Command "Start-Process cmd \"/k cd /d %cd%\" -Verb RunAs"
+          powershell.exe -command "Start-Process powershell -Verb runAs"
           "C:\Program Files\Docker\Docker\DockerCli.exe" -SwitchDaemon
           powershell.exe -command "docker rm $(docker ps -aq) --force"
         shell: cmd
