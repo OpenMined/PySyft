@@ -1,6 +1,6 @@
 """
-This source file aims to replace the standard slice object/function provided by Python in order
-to be used by the PySyft's abstract syntax tree data structure during a remote call.
+This source file aims to replace the standard slice object/function provided by Python
+to be handled by the PySyft's abstract syntax tree data structure during a remote call.
 """
 
 # stdlib
@@ -66,9 +66,9 @@ class Slice(PyPrimitive):
         """
         Compare if self == other.
 
-        :param other: Object to be compared.
-        :return: returns a boolean checking if self == other.
-        :rtype: bool
+        :param Any other: Object to be compared.
+        :return: returns a PySyft boolean checking if self == other.
+        :rtype: SyPrimitiveRet
         """
         res = self.value.__eq__(upcast(other))
         return PrimitiveFactory.generate_primitive(value=res)
@@ -77,9 +77,9 @@ class Slice(PyPrimitive):
         """
         Compare if self >= other.
 
-        :param other: Object to be compared.
-        :return: returns a boolean checking if self >= other.
-        :rtype: bool
+        :param Any other: Object to be compared.
+        :return: returns a PySyft boolean checking if self >= other.
+        :rtype: SyPrimitiveRet
         """
         res = self.value.__ge__(upcast(other))  # type: ignore
         return PrimitiveFactory.generate_primitive(value=res)
@@ -88,9 +88,9 @@ class Slice(PyPrimitive):
         """
         Compare if self > other.
 
-        :param other: Object to be compared.
-        :return: returns a boolean checking if self > other.
-        :rtype: bool
+        :param Any other: Object to be compared.
+        :return: returns a PySyft boolean checking if self > other.
+        :rtype: SyPrimitiveRet
         """
         res = self.value.__gt__(upcast(other))  # type: ignore
         return PrimitiveFactory.generate_primitive(value=res)
@@ -99,9 +99,9 @@ class Slice(PyPrimitive):
         """
         Compare if self =< other.
 
-        :param other: Object to be compared.
-        :return: returns a boolean checking if self =< other.
-        :rtype: bool
+        :param Any other: Object to be compared.
+        :return: returns a PySyft boolean checking if self =< other.
+        :rtype: SyPrimitiveRet
         """
         res = self.value.__le__(upcast(other))  # type: ignore
         return PrimitiveFactory.generate_primitive(value=res)
@@ -110,9 +110,9 @@ class Slice(PyPrimitive):
         """
         Compare if self < other.
 
-        :param other: Object to be compared.
-        :return: returns a boolean checking if self < other.
-        :rtype: bool
+        :param Any other: Object to be compared.
+        :return: returns a PySyft boolean checking if self < other.
+        :rtype: SyPrimitiveRet
         """
         res = self.value.__lt__(upcast(other))  # type: ignore
         return PrimitiveFactory.generate_primitive(value=res)
@@ -122,43 +122,67 @@ class Slice(PyPrimitive):
         Compare if self != other.
 
         :param other: Object to be compared.
-        :return: returns a boolean checking if self != other.
-        :rtype: bool
+        :return: returns a PySyft boolean checking if self != other.
+        :rtype: SyPrimitiveRet
         """
         res = self.value.__ne__(upcast(other))
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __str__(self) -> str:
-        """Returns a string representation of this Slice object."""
+        """ Slice's string representation
+            
+            :return: String representation of this Slice object.
+            :rtype: str
+        """
         return self.value.__str__()
 
     def indices(self, index: int) -> tuple:
-        """Assuming a sequence of length len, calculate the start and stop
+        """
+        Assuming a sequence of length len, calculate the start and stop
         indices, and the stride length of the extended slice described by
         the Slice object. Out of bounds indices are clipped in
         a manner consistent with the handling of normal slices.
+        
+        :param int index: 
+        :return: tuple of indices.
+        :rtype: tuple
         """
         res = self.value.indices(index)
         return PrimitiveFactory.generate_primitive(value=res)
 
     @property
     def start(self) -> Optional[int]:
-        """Returns the index/position where the slicing of the object starts."""
+        """
+        Index/position where the slicing of the object starts.
+        
+        :return: Index where the slicing starts.
+        :rtype: int
+        """
         return self.value.start
 
     @property
     def step(self) -> Optional[int]:
-        """Returns the increment between each index for slicing."""
+        """
+        Increment between each index for slicing.
+        
+        :return: Slices's increment value.
+        :rtype: int
+        """
         return self.value.step
 
     @property
     def stop(self) -> Optional[int]:
-        """Returns index/position which the slicing takes place."""
+        """
+        Index/position which the slicing takes place.
+        :return: Slice's stop value.
+        :rtype: int
+        """
         return self.value.stop
 
     def upcast(self) -> slice:
         """
         Returns the standard python slice object.
+        
         :return: returns a default python slice object represented by this object instance.
         :rtype: slice
         """
@@ -167,6 +191,7 @@ class Slice(PyPrimitive):
     def _object2proto(self) -> Slice_PB:
         """
         Serialize  the Slice object instance returning a protobuf.
+        
         :return: returns a protobuf object class representing this Slice object.
         :rtype: Slice_PB
         """
@@ -192,7 +217,7 @@ class Slice(PyPrimitive):
         """
         Deserialize a protobuf object creating a new Slice object instance.
 
-        :param  proto: Protobuf object representing a serialized slice object.
+        :param Slice_PB proto: Protobuf object representing a serialized slice object.
         :return: PySyft Slice object instance.
         :rtype: Slice
         """
@@ -218,7 +243,9 @@ class Slice(PyPrimitive):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Returns the proper Slice protobuf schema.
+        """
+        Returns the proper Slice protobuf schema.
+        
         :rtype: Slice_PB
         """
         return Slice_PB
