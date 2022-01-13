@@ -26,7 +26,6 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
-from ..common.node_manager.group_manager import GroupManager
 from ..common.node_manager.node_manager import NodeManager
 from ..common.node_manager.node_route_manager import NodeRouteManager
 from ..common.node_manager.role_manager import RoleManager
@@ -101,7 +100,6 @@ class Network(Node):
         # Database Management Instances
         self.users = UserManager(db_engine)
         self.roles = RoleManager(db_engine)
-        self.groups = GroupManager(db_engine)
         self.node = NodeManager(db_engine)
         self.node_route = NodeRouteManager(db_engine)
         self.association_requests = AssociationRequestManager(db_engine)
