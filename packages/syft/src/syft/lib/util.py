@@ -43,47 +43,6 @@ def generic_update_ast(
         )
 
 
-def is_static_method(klass: type, attr: str) -> bool:
-    """
-    Test if a value of a class is static method.
-
-    Example:
-
-    .. code-block::
-
-        class MyClass(object):
-            @staticmethod
-            def method():
-                ...
-
-    
-    :param type klass: the class on which we want to check whether the method is statically implemented
-    :param str attr: the name of the method we want to check.
-
-    :return: whether or not a method named <attr> is a static method of class <klass>
-    :rtype: bool
-    """
-
-    if not inspect.isclass(klass):
-        return False
-
-    if hasattr(klass, attr):
-        value = getattr(klass, attr)
-    else:
-        return False
-
-    if getattr(klass, attr) != value:
-        raise AttributeError("Method don't match")
-
-    for cls in inspect.getmro(klass):
-        if inspect.isroutine(value):
-            if attr in cls.__dict__:
-                bound_value = cls.__dict__[attr]
-                if isinstance(bound_value, staticmethod):
-                    return True
-    return False
-
-
 def full_name_with_qualname(klass: type) -> str:
     """ Returns the klass module name + klass qualname."""
     return f"{klass.__module__}.{klass.__qualname__}"
