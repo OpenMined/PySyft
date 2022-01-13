@@ -84,28 +84,6 @@ def is_static_method(klass: type, attr: str) -> bool:
     return False
 
 
-def copy_static_methods(from_class: type, to_class: type) -> None:
-    """
-    Copies all static methods from one class to another class
-
-    This utility was initialized during the creation of the Constructor for PyTorch's "th.Tensor" class. Since we
-    replace each original constructor (th.Tensor) with on we implement (torch.UppercaseTensorConstructor), we also
-    need to make sure that our new constructor has any static methods which were previously stored on th.Tensor.
-    Otherwise, the library might look for them there, not find them, and then trigger an error.
-
-    :param type from_class: the class on which we look for static methods co copy
-    :param type to_class: the class onto which we copy all static methods found in <from_class>
-
-    """
-    # there are no static methods if from_class itself is not a type (sometimes funcs get passed in)
-
-    for attr in dir(from_class):
-        if is_static_method(klass=from_class, attr=attr):
-            setattr(to_class, attr, getattr(from_class, attr))
-
-
-
-
 def full_name_with_qualname(klass: type) -> str:
     """ Returns the klass module name + klass qualname."""
     return f"{klass.__module__}.{klass.__qualname__}"
