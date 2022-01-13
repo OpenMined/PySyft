@@ -1,10 +1,6 @@
-''' A set of util methods used by the syft.lib submodule. '''
+""" A set of util methods used by the syft.lib submodule. """
 # stdlib
-import inspect
-from types import ModuleType
 from typing import Callable
-from typing import Optional
-from typing import Union
 from typing import Union as TypeUnion
 
 # relative
@@ -14,6 +10,7 @@ from ..core.node.abstract.node import AbstractNodeClient
 # this gets called on global ast as well as clients
 # anything which wants to have its ast updated and has an add_attr method
 
+
 def generic_update_ast(
     lib_name: str,
     create_ast: Callable,
@@ -22,7 +19,7 @@ def generic_update_ast(
     """
     Update the abstract syntax tree data structure used by the Globals or AbstractNodeClient entities.
 
-    :param str lib_name: 
+    :param str lib_name:
     :param Callable create_ast:
     :param Union[Globals, AbstractNodeClient] ast_or_client:
 
@@ -44,10 +41,10 @@ def generic_update_ast(
 
 
 def full_name_with_qualname(klass: type) -> str:
-    """ Returns the klass module name + klass qualname."""
+    """Returns the klass module name + klass qualname."""
     return f"{klass.__module__}.{klass.__qualname__}"
 
 
 def full_name_with_name(klass: type) -> str:
-    """ Returns the klass module name + klass name.  """
+    """Returns the klass module name + klass name."""
     return f"{klass.__module__}.{klass.__name__}"
