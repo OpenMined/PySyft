@@ -119,9 +119,7 @@ class DataSubjectGroup:
     def __init__(self, list_of_entities: Optional[Union[list, set]] = None):
         self.entity_set: set = set()
         # Ensure each entity being tracked is unique
-        if isinstance(list_of_entities, list):
-            self.entity_set = self.entity_set.union(set(list_of_entities))
-        elif isinstance(list_of_entities, set):
+        if isinstance(list_of_entities, (list, set)):
             self.entity_set = self.entity_set.union(list_of_entities)
         elif isinstance(list_of_entities, Entity):
             self.entity_set.add(list_of_entities)  # type: ignore
@@ -143,10 +141,8 @@ class DataSubjectGroup:
         return item in self.entity_set
 
     def to_string(self) -> str:
-        output_string = ""
-        for item in self.entity_set:
-            output_string += item.to_string() + ";"
-        return output_string[:-1]
+        output_string = ";".join(item.to_string() for item in self.entity_set)
+        return output_string
 
     @staticmethod
     def from_string(blob: str) -> DataSubjectGroup:
@@ -155,7 +151,7 @@ class DataSubjectGroup:
         entity_set = set()
         for entity_blob in entity_list:
             entity_set.add(Entity.from_string(entity_blob))
-        return DataSubjectGroup(list[entity_set])  # type: ignore
+        return DataSubjectGroup(entity_set)  # type: ignore
 
     def __add__(
         self, other: Union[DataSubjectGroup, Entity, int, float]
