@@ -118,7 +118,7 @@ function RequestsAccordion({budgets}) {
                               +
                             </Text>
                             <Badge variant="primary" type="subtle">
-                              {item.req.requested_budget - item.user.current_budget} ε
+                              {item.req.requested_budget.toFixed(2)} ε
                             </Badge>
                           </div>
                         </div>
@@ -130,17 +130,17 @@ function RequestsAccordion({budgets}) {
                       <div className="flex-shrink-0">
                         <div className="flex space-x-2">
                           <div flex="flex items-center justify-between">
-                            <Text size="xl">{item.req.requested_budget.toFixed(2)}</Text>
+                            <Text size="xl">{item.req.requested_budget + item.user.current_budget}</Text>
                             <Text size="lg">ε</Text>
                           </div>
                           <div flex="flex items-center justify-between">
                             <Badge variant="primary" type="subtle">
-                              {item.req.requested_budget - item.user.current_budget}
+                              {item.req.requested_budget.toFixed(2)}
                               <FontAwesomeIcon icon={faCaretUp} className="pl-1" />
                             </Badge>
                           </div>
                         </div>
-                        <Text size="sm">Requested Budget</Text>
+                        <Text size="sm">New Budget</Text>
                       </div>
                     </div>
                   </div>
