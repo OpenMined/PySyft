@@ -274,6 +274,7 @@ class RoleManagerService(ImmediateNodeServiceWithReply):
         msg: INPUT_MESSAGES,
         verify_key: VerifyKey,
     ) -> OUTPUT_MESSAGES:
+        print(RoleManagerService.msg_handler_map[type(msg)])
         return RoleManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
         )

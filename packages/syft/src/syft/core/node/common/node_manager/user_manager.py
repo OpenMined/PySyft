@@ -1,5 +1,4 @@
-"""This file defines the class and methods which are used to perform any database queries w.r.t a User.
-"""
+"""This file defines classes and methods which are used to manage database queries on the SyftUser table."""
 
 # stdlib
 from datetime import datetime
@@ -43,6 +42,7 @@ class UserManager(DatabaseManager):
 
     @property
     def common_users(self) -> list:
+        """Return users having the common role access."""
         common_users: List[SyftUser] = []
         for role in self.roles.common_roles:
             common_users = common_users + list(super().query(role=role.id))
@@ -51,7 +51,7 @@ class UserManager(DatabaseManager):
 
     @property
     def org_users(self) -> list:
-        """Return all roles in the organization."""
+        """Return all the users in the organization."""
         org_users: List[SyftUser] = []
         for role in self.roles.org_roles:
             org_users = org_users + list(super().query(role=role.id))
