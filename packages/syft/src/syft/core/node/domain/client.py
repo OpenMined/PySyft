@@ -80,8 +80,6 @@ class RequestQueueClient(AbstractNodeClient):
             address=self.client.address, reply_to=self.client.address
         )
 
-        blob = serialize(msg, to_bytes=True)
-        msg = deserialize(blob, from_bytes=True)
 
         requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
 
