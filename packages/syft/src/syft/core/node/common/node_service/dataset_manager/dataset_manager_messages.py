@@ -382,13 +382,20 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
             if you wish to deserialize an object.
         """
 
+        metadatas = []
+        for metadata_container in proto.metadatas:
+            _metadata = dict(metadata_container.metadata)
+            for k, v in _metadata.items():
+                if isinstance(v, bytes):
+                    _metadata[k] = _deserialize(v, from_bytes=True)
+                else:
+                    _metadata[k] = v
+            metadatas.append(_metadata)
+
         return GetDatasetsResponse(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            metadatas=[
-                dict(metadata_container.metadata)
-                for metadata_container in proto.metadatas
-            ],
+            metadatas=metadatas,
         )
 
     @staticmethod
