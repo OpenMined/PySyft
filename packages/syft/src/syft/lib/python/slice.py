@@ -35,10 +35,11 @@ class Slice(PyPrimitive):
         """
         This class will receive start, stop, step and ID as valid parameters.
 
-        :param start: Index/position where the slicing of the object starts.
-        :param stop: Index/position which the slicing takes place. The slicing stops at index stop-1.
-        :param step: Determines the increment between each index for slicing.
-        :param id: PySyft's objects have an unique ID related to them.
+        Args:
+            start (Any): Index/position where the slicing of the object starts.
+            stop (Any): Index/position which the slicing takes place. The slicing stops at index stop-1.
+            step (Any): Determines the increment between each index for slicing.
+            id (UID): PySyft's objects have an unique ID related to them.
         """
 
         # first, second, third
@@ -57,8 +58,8 @@ class Slice(PyPrimitive):
         developers of Syft from modifying .id attributes after an object
         has been initialized.
 
-        :return: returns the unique id of the object
-        :rtype: UID
+        Returns:
+            UID: The unique ID of the object.
         """
         return self._id
 
@@ -66,9 +67,10 @@ class Slice(PyPrimitive):
         """
         Compare if self == other.
 
-        :param Any other: Object to be compared.
-        :return: returns a PySyft boolean checking if self == other.
-        :rtype: SyPrimitiveRet
+        Args:
+            other (Any): Object to be compared.
+        Returns:
+            SyPrimitiveRet: returns a PySyft boolean format checking if self == other.
         """
         res = self.value.__eq__(upcast(other))
         return PrimitiveFactory.generate_primitive(value=res)
@@ -77,9 +79,10 @@ class Slice(PyPrimitive):
         """
         Compare if self >= other.
 
-        :param Any other: Object to be compared.
-        :return: returns a PySyft boolean checking if self >= other.
-        :rtype: SyPrimitiveRet
+        Args:
+            other (Any): Object to be compared.
+        Returns:
+            SyPrimitiveRet: returns a PySyft boolean format checking if self >= other.
         """
         res = self.value.__ge__(upcast(other))  # type: ignore
         return PrimitiveFactory.generate_primitive(value=res)
@@ -88,20 +91,22 @@ class Slice(PyPrimitive):
         """
         Compare if self > other.
 
-        :param Any other: Object to be compared.
-        :return: returns a PySyft boolean checking if self > other.
-        :rtype: SyPrimitiveRet
+        Args:
+            other (Any): Object to be compared.
+        Returns:
+            SyPrimitiveRet: returns a PySyft boolean format checking if self > other.
         """
         res = self.value.__gt__(upcast(other))  # type: ignore
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __le__(self, other: Any) -> SyPrimitiveRet:
         """
-        Compare if self =< other.
+        Compare if self <= other.
 
-        :param Any other: Object to be compared.
-        :return: returns a PySyft boolean checking if self =< other.
-        :rtype: SyPrimitiveRet
+        Args:
+            other (Any): Object to be compared.
+        Returns:
+            SyPrimitiveRet: returns a PySyft boolean format checking if self <= other.
         """
         res = self.value.__le__(upcast(other))  # type: ignore
         return PrimitiveFactory.generate_primitive(value=res)
@@ -110,9 +115,10 @@ class Slice(PyPrimitive):
         """
         Compare if self < other.
 
-        :param Any other: Object to be compared.
-        :return: returns a PySyft boolean checking if self < other.
-        :rtype: SyPrimitiveRet
+        Args:
+            other (Any): Object to be compared.
+        Returns:
+            SyPrimitiveRet: returns a PySyft boolean format checking if self < other.
         """
         res = self.value.__lt__(upcast(other))  # type: ignore
         return PrimitiveFactory.generate_primitive(value=res)
@@ -121,18 +127,19 @@ class Slice(PyPrimitive):
         """
         Compare if self != other.
 
-        :param other: Object to be compared.
-        :return: returns a PySyft boolean checking if self != other.
-        :rtype: SyPrimitiveRet
+        Args:
+            other (Any): Object to be compared.
+        Returns:
+            SyPrimitiveRet: returns a PySyft boolean format checking if self != other.
         """
         res = self.value.__ne__(upcast(other))
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __str__(self) -> str:
-        """ Slice's string representation
-            
-            :return: String representation of this Slice object.
-            :rtype: str
+        """Slice's string representation
+
+        Returns:
+            str: The string representation of this Slice object.
         """
         return self.value.__str__()
 
@@ -142,10 +149,11 @@ class Slice(PyPrimitive):
         indices, and the stride length of the extended slice described by
         the Slice object. Out of bounds indices are clipped in
         a manner consistent with the handling of normal slices.
-        
-        :param int index: 
-        :return: tuple of indices.
-        :rtype: tuple
+
+        Args:
+            index (int): Input index.
+        Returns:
+            Tuple: A tuple of concrete indices for a range of length len.
         """
         res = self.value.indices(index)
         return PrimitiveFactory.generate_primitive(value=res)
@@ -154,9 +162,9 @@ class Slice(PyPrimitive):
     def start(self) -> Optional[int]:
         """
         Index/position where the slicing of the object starts.
-        
-        :return: Index where the slicing starts.
-        :rtype: int
+
+        Returns:
+            int: Index where the slicing starts.
         """
         return self.value.start
 
@@ -164,9 +172,9 @@ class Slice(PyPrimitive):
     def step(self) -> Optional[int]:
         """
         Increment between each index for slicing.
-        
-        :return: Slices's increment value.
-        :rtype: int
+
+        Returns:
+            int: Slices' increment value.
         """
         return self.value.step
 
@@ -174,26 +182,27 @@ class Slice(PyPrimitive):
     def stop(self) -> Optional[int]:
         """
         Index/position which the slicing takes place.
-        :return: Slice's stop value.
-        :rtype: int
+
+        Returns:
+            int: Slices' stop value.
         """
         return self.value.stop
 
     def upcast(self) -> slice:
         """
         Returns the standard python slice object.
-        
-        :return: returns a default python slice object represented by this object instance.
-        :rtype: slice
+
+        Returns:
+            slice: returns a default python slice object represented by this object instance.
         """
         return self.value
 
     def _object2proto(self) -> Slice_PB:
         """
         Serialize  the Slice object instance returning a protobuf.
-        
-        :return: returns a protobuf object class representing this Slice object.
-        :rtype: Slice_PB
+
+        Returns:
+            Slice_PB: returns a protobuf object class representing this Slice object.
         """
         slice_pb = Slice_PB()
         if self.start:
@@ -217,9 +226,10 @@ class Slice(PyPrimitive):
         """
         Deserialize a protobuf object creating a new Slice object instance.
 
-        :param Slice_PB proto: Protobuf object representing a serialized slice object.
-        :return: PySyft Slice object instance.
-        :rtype: Slice
+        Args:
+            proto (Slice_PB): Protobuf object representing a serialized slice object.
+        Returns:
+            Slice: PySyft Slice object instance.
         """
         id_: UID = sy.deserialize(blob=proto.id)
         start = None
@@ -245,7 +255,8 @@ class Slice(PyPrimitive):
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         """
         Returns the proper Slice protobuf schema.
-        
-        :rtype: Slice_PB
+
+        Returns:
+            Slice_PB: Returns the Slice's Protobuf class definition.
         """
         return Slice_PB
