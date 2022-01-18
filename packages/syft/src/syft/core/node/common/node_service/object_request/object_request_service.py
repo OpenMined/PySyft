@@ -402,8 +402,6 @@ def get_all_requests(
 
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
 
-    _requests = node.data_requests.all()
-
     if _can_triage_request:
         _requests = node.data_requests.all()
     else:
