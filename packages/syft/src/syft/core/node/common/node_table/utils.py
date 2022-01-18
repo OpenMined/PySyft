@@ -11,10 +11,7 @@ from sqlalchemy.orm import sessionmaker
 
 # relative
 from . import Base
-from .groups import Group
 from .roles import Role
-from .user import SyftUser
-from .usergroup import UserGroup
 
 datetime_cols = ["date", "created_at", "destroyed_at", "deployed_on", "updated_on"]
 
@@ -30,25 +27,6 @@ def model_to_json(model: Base) -> Dict[str, Any]:
             else:
                 json[col] = getattr(model, col)
     return json
-
-
-def expand_user_object(_user: SyftUser, db: Engine) -> Dict[str, Any]:
-    def get_group(user_group: UserGroup) -> Dict:
-        query = db.session().query
-        group = user_group.group
-        group = query(Group).get(group)
-        group = model_to_json(group)
-        return group
-
-    query = db.session().query
-    user = model_to_json(_user)
-    user["role"] = query(Role).get(user["role"])
-    user["role"] = model_to_json(user["role"])
-    user["groups"] = [
-        get_group(user_group)
-        for user_group in query(UserGroup).filter_by(user=user["id"]).all()
-    ]
-    return user
 
 
 def seed_db(db: Session) -> None:
