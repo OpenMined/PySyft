@@ -119,6 +119,13 @@ class SliceTest(unittest.TestCase):
         # Check __le__
         assert (s1.value <= s2.value) == (s1 <= s2)
 
+        # Check if Slice against slice can retrieve proper boolean return
+        std_slice = slice(1, 2, 3)
+
+        assert std_slice == s1
+
+        assert std_slice != s3
+
         class Exc(Exception):
             pass
 
