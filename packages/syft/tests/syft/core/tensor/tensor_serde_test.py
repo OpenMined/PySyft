@@ -202,10 +202,10 @@ def time_and_size_serde(obj: Any) -> np.array:
 
 
 def test_big_sept_vs_rept_child() -> None:
-    """Compare REPT of 5x10_000x7 vs SEPT of 50_000x7 to check overhead of REPT"""
-    rows = 10_000
+    """Compare REPT of 50_000x1x7 vs SEPT of 50_000x7 to check overhead of REPT"""
+    rows = 1
     cols = 7
-    rept_row_count = 5
+    rept_row_count = 50_000
 
     big_sept = make_sept(rows=rows * rept_row_count, cols=cols)
     big_sept_metrics = time_and_size_serde(big_sept)
