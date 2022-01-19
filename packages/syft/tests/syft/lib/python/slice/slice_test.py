@@ -10,6 +10,7 @@ import weakref
 import pytest
 
 # syft absolute
+from syft.core.common.uid import UID
 from syft.lib.python.list import List
 from syft.lib.python.slice import Slice
 from syft.lib.python.string import String
@@ -102,6 +103,29 @@ class SliceTest(unittest.TestCase):
         self.assertNotEqual(s1.value, (1, 2, 3))
         self.assertNotEqual(s1, "")
 
+        # Check if PySyft's Slice object gives the same cmp results as python slice object.
+        # Check __lt__
+        assert (s1.value < s2.value) == (s1 < s2)
+
+        # Check __gt__
+        assert (s1.value > s2.value) == (s1 > s2)
+
+        # Check __ne__
+        assert (s1.value != s2.value) == (s1 != s2)
+
+        # Check __ge__
+        assert (s1.value >= s2.value) == (s1 >= s2)
+
+        # Check __le__
+        assert (s1.value <= s2.value) == (s1 <= s2)
+
+        # Check if Slice against slice can retrieve proper boolean return
+        std_slice = slice(1, 2, 3)
+
+        assert std_slice == s1
+
+        assert std_slice != s3
+
         class Exc(Exception):
             pass
 
@@ -123,6 +147,17 @@ class SliceTest(unittest.TestCase):
         s2 = Slice(1, 2, BadCmp())
         self.assertEqual(s1, s1)
         self.assertRaises(Exc, lambda: s1.value == s2.value)
+
+    def test_id(self):
+        new_id = UID()
+        s1 = Slice(1, 2, 3, id=new_id)
+        assert new_id == s1.id
+
+    def test_upcast(self):
+        python_s1 = slice(1, 2, 3)
+        pysyft_s1 = Slice(1, 2, 3)
+
+        assert pysyft_s1.upcast() == python_s1
 
     def test_members(self):
         s = Slice(1)
