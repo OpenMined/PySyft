@@ -19,10 +19,13 @@ from syft.proto.core.common import (
     common_object_pb2 as proto_dot_core_dot_common_dot_common__object__pb2,
 )
 from syft.proto.core.io import address_pb2 as proto_dot_core_dot_io_dot_address__pb2
+from syft.proto.core.node.domain.service import (
+    request_message_pb2 as proto_dot_core_dot_node_dot_domain_dot_service_dot_request__message__pb2,
+)
 from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n*proto/grid/messages/request_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\x9f\x01\n\x14\x43reateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x15\x43reateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8b\x01\n\x1a\x43reateBudgetRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0e\n\x06\x62udget\x18\x03 \x01(\x02\x12\x0e\n\x06reason\x18\x04 \x01(\t"\xa6\x01\n\x18GetBudgetRequestsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x92\x01\n\x19GetBudgetRequestsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x03 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x11GetRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x12GetRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x12GetRequestsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa1\x01\n\x13GetRequestsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12&\n\x07\x63ontent\x18\x03 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa2\x01\n\x14\x44\x65leteRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8f\x01\n\x15\x44\x65leteRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xb2\x01\n\x14UpdateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0e\n\x06status\x18\x03 \x01(\t\x12\x12\n\nrequest_id\x18\x04 \x01(\t\x12\'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x15UpdateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0e\n\x06status\x18\x03 \x01(\t\x12\x12\n\nrequest_id\x18\x04 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
+    b'\n*proto/grid/messages/request_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto\x1a\x34proto/core/node/domain/service/request_message.proto"\x9f\x01\n\x14\x43reateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x15\x43reateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8b\x01\n\x1a\x43reateBudgetRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0e\n\x06\x62udget\x18\x03 \x01(\x02\x12\x0e\n\x06reason\x18\x04 \x01(\t"\xa6\x01\n\x18GetBudgetRequestsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x92\x01\n\x19GetBudgetRequestsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x03 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x11GetRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x12GetRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8c\x01\n\x12GetRequestsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa1\x01\n\x13GetRequestsResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12&\n\x07\x63ontent\x18\x03 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xa2\x01\n\x14\x44\x65leteRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x8f\x01\n\x15\x44\x65leteRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x12\n\nrequest_id\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xb2\x01\n\x14UpdateRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0e\n\x06status\x18\x03 \x01(\t\x12\x12\n\nrequest_id\x18\x04 \x01(\t\x12\'\n\x08reply_to\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address"\x9f\x01\n\x15UpdateRequestResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0e\n\x06status\x18\x03 \x01(\t\x12\x12\n\nrequest_id\x18\x04 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Address"\x8f\x01\n\x15GetAllRequestsMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\xaf\x01\n\x1dGetAllRequestsResponseMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12?\n\x08requests\x18\x03 \x03(\x0b\x32-.syft.core.node.domain.service.RequestMessageb\x06proto3'
 )
 
 
@@ -43,6 +46,10 @@ _DELETEREQUESTMESSAGE = DESCRIPTOR.message_types_by_name["DeleteRequestMessage"]
 _DELETEREQUESTRESPONSE = DESCRIPTOR.message_types_by_name["DeleteRequestResponse"]
 _UPDATEREQUESTMESSAGE = DESCRIPTOR.message_types_by_name["UpdateRequestMessage"]
 _UPDATEREQUESTRESPONSE = DESCRIPTOR.message_types_by_name["UpdateRequestResponse"]
+_GETALLREQUESTSMESSAGE = DESCRIPTOR.message_types_by_name["GetAllRequestsMessage"]
+_GETALLREQUESTSRESPONSEMESSAGE = DESCRIPTOR.message_types_by_name[
+    "GetAllRequestsResponseMessage"
+]
 CreateRequestMessage = _reflection.GeneratedProtocolMessageType(
     "CreateRequestMessage",
     (_message.Message,),
@@ -186,33 +193,59 @@ UpdateRequestResponse = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(UpdateRequestResponse)
 
+GetAllRequestsMessage = _reflection.GeneratedProtocolMessageType(
+    "GetAllRequestsMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETALLREQUESTSMESSAGE,
+        "__module__": "proto.grid.messages.request_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllRequestsMessage)
+    },
+)
+_sym_db.RegisterMessage(GetAllRequestsMessage)
+
+GetAllRequestsResponseMessage = _reflection.GeneratedProtocolMessageType(
+    "GetAllRequestsResponseMessage",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _GETALLREQUESTSRESPONSEMESSAGE,
+        "__module__": "proto.grid.messages.request_messages_pb2"
+        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetAllRequestsResponseMessage)
+    },
+)
+_sym_db.RegisterMessage(GetAllRequestsResponseMessage)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
-    _CREATEREQUESTMESSAGE._serialized_start = 164
-    _CREATEREQUESTMESSAGE._serialized_end = 323
-    _CREATEREQUESTRESPONSE._serialized_start = 326
-    _CREATEREQUESTRESPONSE._serialized_end = 466
-    _CREATEBUDGETREQUESTMESSAGE._serialized_start = 469
-    _CREATEBUDGETREQUESTMESSAGE._serialized_end = 608
-    _GETBUDGETREQUESTSMESSAGE._serialized_start = 611
-    _GETBUDGETREQUESTSMESSAGE._serialized_end = 777
-    _GETBUDGETREQUESTSRESPONSE._serialized_start = 780
-    _GETBUDGETREQUESTSRESPONSE._serialized_end = 926
-    _GETREQUESTMESSAGE._serialized_start = 929
-    _GETREQUESTMESSAGE._serialized_end = 1088
-    _GETREQUESTRESPONSE._serialized_start = 1091
-    _GETREQUESTRESPONSE._serialized_end = 1231
-    _GETREQUESTSMESSAGE._serialized_start = 1234
-    _GETREQUESTSMESSAGE._serialized_end = 1374
-    _GETREQUESTSRESPONSE._serialized_start = 1377
-    _GETREQUESTSRESPONSE._serialized_end = 1538
-    _DELETEREQUESTMESSAGE._serialized_start = 1541
-    _DELETEREQUESTMESSAGE._serialized_end = 1703
-    _DELETEREQUESTRESPONSE._serialized_start = 1706
-    _DELETEREQUESTRESPONSE._serialized_end = 1849
-    _UPDATEREQUESTMESSAGE._serialized_start = 1852
-    _UPDATEREQUESTMESSAGE._serialized_end = 2030
-    _UPDATEREQUESTRESPONSE._serialized_start = 2033
-    _UPDATEREQUESTRESPONSE._serialized_end = 2192
+    _CREATEREQUESTMESSAGE._serialized_start = 218
+    _CREATEREQUESTMESSAGE._serialized_end = 377
+    _CREATEREQUESTRESPONSE._serialized_start = 380
+    _CREATEREQUESTRESPONSE._serialized_end = 520
+    _CREATEBUDGETREQUESTMESSAGE._serialized_start = 523
+    _CREATEBUDGETREQUESTMESSAGE._serialized_end = 662
+    _GETBUDGETREQUESTSMESSAGE._serialized_start = 665
+    _GETBUDGETREQUESTSMESSAGE._serialized_end = 831
+    _GETBUDGETREQUESTSRESPONSE._serialized_start = 834
+    _GETBUDGETREQUESTSRESPONSE._serialized_end = 980
+    _GETREQUESTMESSAGE._serialized_start = 983
+    _GETREQUESTMESSAGE._serialized_end = 1142
+    _GETREQUESTRESPONSE._serialized_start = 1145
+    _GETREQUESTRESPONSE._serialized_end = 1285
+    _GETREQUESTSMESSAGE._serialized_start = 1288
+    _GETREQUESTSMESSAGE._serialized_end = 1428
+    _GETREQUESTSRESPONSE._serialized_start = 1431
+    _GETREQUESTSRESPONSE._serialized_end = 1592
+    _DELETEREQUESTMESSAGE._serialized_start = 1595
+    _DELETEREQUESTMESSAGE._serialized_end = 1757
+    _DELETEREQUESTRESPONSE._serialized_start = 1760
+    _DELETEREQUESTRESPONSE._serialized_end = 1903
+    _UPDATEREQUESTMESSAGE._serialized_start = 1906
+    _UPDATEREQUESTMESSAGE._serialized_end = 2084
+    _UPDATEREQUESTRESPONSE._serialized_start = 2087
+    _UPDATEREQUESTRESPONSE._serialized_end = 2246
+    _GETALLREQUESTSMESSAGE._serialized_start = 2249
+    _GETALLREQUESTSMESSAGE._serialized_end = 2392
+    _GETALLREQUESTSRESPONSEMESSAGE._serialized_start = 2395
+    _GETALLREQUESTSRESPONSEMESSAGE._serialized_end = 2570
 # @@protoc_insertion_point(module_scope)
