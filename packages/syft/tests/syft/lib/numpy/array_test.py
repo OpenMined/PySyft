@@ -214,3 +214,21 @@ def test_view(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None
     )
     assert (view_val == y).all()
     assert (local_view == view_val).all()
+
+
+@pytest.mark.vendor(lib="numpy")
+@pytest.mark.parametrize(
+    "dtype", [np.bool_, np.int8, np.uint8, np.int32, np.uint32, np.int64, np.uint64]
+)
+@pytest.mark.parametrize("arrow_backend", [False, True])
+def test_serde(
+    arrow_backend: bool, dtype: np.dtype, root_client: sy.VirtualMachineClient
+) -> None:
+    flags.APACHE_ARROW_TENSOR_SERDE = arrow_backend
+
+    x = np.array([1, 0, 3], dtype=dtype)
+    x_ptr = x.send(root_client)
+    y = x_ptr.get()
+
+    assert x.dtype == y.dtype
+    assert (x == y).all()

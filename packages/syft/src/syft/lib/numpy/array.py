@@ -38,19 +38,25 @@ DTYPE_REFACTOR = {
 
 
 def arrow_serialize(obj: np.ndarray) -> bytes:
+    original_dtype = obj.dtype
     apache_arrow = pa.Tensor.from_numpy(obj=obj)
     sink = pa.BufferOutputStream()
     pa.ipc.write_tensor(apache_arrow, sink)
-    return sink.getvalue().to_pybytes()
+    numpy_bytes = sink.getvalue().to_pybytes()
+    dtype = original_dtype.name
+    return NumpyProto(arrow_data=numpy_bytes, dtype=dtype)
 
 
-def arrow_deserialize(buf: bytes) -> np.ndarray:
+def arrow_deserialize(proto: NumpyProto) -> np.ndarray:
+    buf: bytes = proto.arrow_data
+    str_dtype = proto.dtype
+    original_dtype = np.dtype(str_dtype)
     reader = pa.BufferReader(buf)
     buf = reader.read_buffer()
     result = pa.ipc.read_tensor(buf)
     np_array = result.to_numpy()
     np_array.setflags(write=True)
-    return np_array
+    return np_array.astype(original_dtype)
 
 
 def protobuf_serialize(obj: np.ndarray) -> NumpyProto:
@@ -84,14 +90,14 @@ def protobuf_deserialize(proto: NumpyProto) -> np.ndarray:
 
 def serialize_numpy_array(obj: np.ndarray) -> NumpyProto:
     if flags.APACHE_ARROW_TENSOR_SERDE:
-        return NumpyProto(arrow_data=arrow_serialize(obj))
+        return arrow_serialize(obj)
     else:
         return protobuf_serialize(obj)
 
 
 def deserialize_numpy_array(proto: NumpyProto) -> np.ndarray:
     if proto.HasField("arrow_data"):
-        return arrow_deserialize(proto.arrow_data)
+        return arrow_deserialize(proto)
     else:
         return protobuf_deserialize(proto)
 
