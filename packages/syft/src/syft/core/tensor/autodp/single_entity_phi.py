@@ -511,8 +511,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         "_max_vals",
         "entity",
         "scalar_manager",
-        "n_entities",
     ]
+
+    # Number of entities in a SEPT is by definition 1
+    n_entities = 1
 
     def __init__(
         self,
@@ -539,9 +541,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             self.scalar_manager = VirtualMachinePrivateScalarManager()
         else:
             self.scalar_manager = scalar_manager
-
-        # Number of entities in a SEPT is by definition 1
-        self.n_entities = 1
 
     def init_pointer(
         self,

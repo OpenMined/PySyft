@@ -39,9 +39,7 @@ def make_bounds(data, bound: int) -> np.ndarray:
 def make_sept(rows: int, cols: int) -> SEPT:
     upper = highest()
     lower = lowest()
-    reference_data = np.random.randint(
-        low=lower, high=upper, size=(rows, cols), dtype=np.int32
-    )
+    reference_data = np.ones((rows, cols), dtype=np.int32) * highest()
     return SEPT(
         child=reference_data,
         entity=ishan(),
@@ -70,8 +68,8 @@ def test_sept_child() -> None:
     rows = 10_000
     cols = 7
     # these times and sizes are based on the above constants and Madhavas MacBook Pro 2019
-    expected_sept_mem_size = 0.8035125732421875
-    expected_sept_ser_size = 1.4993972778320312
+    expected_sept_mem_size = 0.8034133911132812
+    expected_sept_ser_size = 1.3360214233398438
     macbook_pro_2019_ser_time = 0.03371272199999975
     macbook_pro_2019_de_time = 0.02922678500000009
 
@@ -129,8 +127,8 @@ def test_rept_child() -> None:
 
     # these times and sizes are based on the above constants
     # and Madhavas MacBook Pro 2019
-    expected_rept_mem_size = 4.010650634765625
-    expected_rept_ser_size = 7.4926300048828125
+    expected_rept_mem_size = 4.010459899902344
+    expected_rept_ser_size = 6.680328369140625
     macbook_pro_2019_ser_time = 0.18791760900000032
     macbook_pro_2019_de_time = 0.1726598199999998
 
