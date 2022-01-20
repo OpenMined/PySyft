@@ -1,3 +1,8 @@
+"""This file defines different type of message classes that handle
+Protobuf serialization and de-serialization of the payload based upon
+the CRUD operation being performed on the Dataset table.
+"""
+
 # stdlib
 from typing import Dict
 from typing import List
@@ -57,12 +62,15 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
 
     def _object2proto(self) -> CreateDatasetMessage_PB:
         """Returns a protobuf serialization of self.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: CreateDatasetMessage_PB
-        .. note::
+
+        Returns:
+            CreateDatasetMessage_PB: serialized protobuf object.
+
+        Note:
             This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
@@ -77,15 +85,16 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: CreateDatasetMessage_PB,
-    ) -> "CreateDatasetMessage":
-        """Creates a CreateDatasetMessage from a protobuf
+    def _proto2object(proto: CreateDatasetMessage_PB) -> "CreateDatasetMessage":
+        """Creates a CreateDatasetMessage from the protobuf message.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: CreateDatasetMessage
-        .. note::
+
+        Returns:
+            CreateDatasetMessage: deserialized create dataset message object.
+
+        Note:
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
@@ -101,8 +110,9 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
+        """Return the type of protobuf object which stores a class of this type.
+
+        As a part of serialization and de-serialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
         Importantly, this method is also used to create the reverse lookup ability within
@@ -110,8 +120,9 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for
         details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
+
+        Returns:
+            GeneratedProtocolMessageType: the type of protobuf object which corresponds to this class.
         """
 
         return CreateDatasetMessage_PB
@@ -132,15 +143,17 @@ class GetDatasetMessage(ImmediateSyftMessageWithReply):
 
     def _object2proto(self) -> GetDatasetMessage_PB:
         """Returns a protobuf serialization of self.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: GetDatasetMessage_PB
-        .. note::
+
+        Returns:
+            GetDatasetMessage_PB: serialized protobuf object.
+
+        Note:
             This method is purely an internal method. Please use serialize(object) or one of
-            the other public serialization methods if you wish to serialize an
-            object.
+            the other public serialization methods if you wish to serialize an object.
         """
         return GetDatasetMessage_PB(
             msg_id=serialize(self.id),
@@ -153,12 +166,15 @@ class GetDatasetMessage(ImmediateSyftMessageWithReply):
     def _proto2object(
         proto: GetDatasetMessage_PB,
     ) -> "GetDatasetMessage":
-        """Creates a GetDatasetMessage from a protobuf
+        """Creates a GetDatasetMessage from a protobuf.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: GetDatasetMessage
-        .. note::
+
+        Returns:
+            GetDatasetMessage: deserialized get dataset message object.
+
+        Note:
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
@@ -172,8 +188,9 @@ class GetDatasetMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
+        """Return the type of protobuf object which stores a class of this type.
+
+        As a part of serialization and de-serialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
         Importantly, this method is also used to create the reverse lookup ability within
@@ -181,8 +198,9 @@ class GetDatasetMessage(ImmediateSyftMessageWithReply):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for
         details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
+
+        Returns:
+            GeneratedProtocolMessageType: the type of protobuf object which corresponds to this class.
         """
 
         return GetDatasetMessage_PB
@@ -202,12 +220,15 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
 
     def _object2proto(self) -> GetDatasetResponse_PB:
         """Returns a protobuf serialization of self.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
-        .. note::
+
+        Returns:
+            GetDatasetResponse_PB: serialized protobuf object.
+
+        Note:
             This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
@@ -222,12 +243,15 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
     def _proto2object(
         proto: GetDatasetResponse_PB,
     ) -> "GetDatasetResponse":
-        """Creates a SignalingOfferMessage from a protobuf
+        """Creates a SignalingOfferMessage from a protobuf.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
-        .. note::
+
+        Returns:
+            GetDatasetResponse: deserialized get dataset message object.
+
+        Note:
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
@@ -240,8 +264,10 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
-        As a part of serialization and deserialization, we need the ability to
+
+        """Return the type of protobuf object which stores a class of this type.
+
+        As a part of serialization and de-serialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
         Importantly, this method is also used to create the reverse lookup ability within
@@ -249,8 +275,9 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for
         details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
+
+        Returns:
+            GeneratedProtocolMessageType: the type of protobuf object which corresponds to this class.
         """
 
         return GetDatasetResponse_PB
@@ -269,12 +296,15 @@ class GetDatasetsMessage(ImmediateSyftMessageWithReply):
 
     def _object2proto(self) -> GetDatasetsMessage_PB:
         """Returns a protobuf serialization of self.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: GetDatasetsMessage_PB
-        .. note::
+
+        Returns:
+            GetDatasetsMessage_PB: returns a protobuf object.
+
+        Note:
             This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
@@ -289,12 +319,15 @@ class GetDatasetsMessage(ImmediateSyftMessageWithReply):
     def _proto2object(
         proto: GetDatasetsMessage_PB,
     ) -> "GetDatasetsMessage":
-        """Creates a GetDatasetsMessage from a protobuf
+        """Creates a GetDatasetsMessage from a protobuf.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: GetDatasetsMessage
-        .. note::
+
+        Returns:
+            GetDatasetsMessage: deserialized message object.
+
+        Note:
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
@@ -307,7 +340,8 @@ class GetDatasetsMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type.
+
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
@@ -316,8 +350,9 @@ class GetDatasetsMessage(ImmediateSyftMessageWithReply):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for
         details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
+
+        Returns:
+            GeneratedProtocolMessageType: the type of protobuf object which corresponds to this class.
         """
 
         return GetDatasetsMessage_PB
@@ -337,12 +372,15 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
 
     def _object2proto(self) -> GetDatasetsResponse_PB:
         """Returns a protobuf serialization of self.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: SignalingOfferMessage_PB
-        .. note::
+
+        Returns:
+            GetDatasetsResponse_PB: serialized protobuf object.
+
+        Note:
             This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
@@ -372,14 +410,13 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
     def _proto2object(
         proto: GetDatasetsResponse_PB,
     ) -> "GetDatasetsResponse":
-        """Creates a SignalingOfferMessage from a protobuf
+        """Creates a GetDatasetsResponse from the protobuf message.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: SignalingOfferMessage
-        .. note::
-            This method is purely an internal method. Please use syft.deserialize()
-            if you wish to deserialize an object.
+
+        Returns:
+            GetDatasetsResponse: deserialized dataset details.
         """
 
         metadatas = []
@@ -400,7 +437,8 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type.
+
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
@@ -409,8 +447,9 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for
         details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
+
+        Returns:
+            GeneratedProtocolMessageType: the type of protobuf object which corresponds to this class.
         """
 
         return GetDatasetsResponse_PB
@@ -433,12 +472,15 @@ class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
 
     def _object2proto(self) -> UpdateDatasetMessage_PB:
         """Returns a protobuf serialization of self.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: UpdateDatasetMessage_PB
-        .. note::
+
+        Returns:
+            UpdateDatasetMessage_PB: serialized protobuf object.
+
+        Note:
             This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
@@ -455,12 +497,15 @@ class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
     def _proto2object(
         proto: UpdateDatasetMessage_PB,
     ) -> "UpdateDatasetMessage":
-        """Creates a UpdateDatasetMessage from a protobuf
+        """Creates a UpdateDatasetMessage from a protobuf.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: UpdateDatasetMessage
-        .. note::
+
+        Returns:
+            UpdateDatasetMessage: deserialized message on dataset update operation.
+
+        Note:
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
@@ -475,7 +520,8 @@ class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type.
+
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
@@ -484,8 +530,9 @@ class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for
         details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
+
+        Returns:
+            GeneratedProtocolMessageType: the type of protobuf object which corresponds to this class.
         """
 
         return UpdateDatasetMessage_PB
@@ -508,12 +555,15 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
 
     def _object2proto(self) -> DeleteDatasetMessage_PB:
         """Returns a protobuf serialization of self.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms the current object into the corresponding
         Protobuf object so that it can be further serialized.
-        :return: returns a protobuf object
-        :rtype: DeleteDatasetMessage_PB
-        .. note::
+
+        Returns:
+            DeleteDatasetMessage_PB: serialized protobuf object.
+
+        Note:
             This method is purely an internal method. Please use serialize(object) or one of
             the other public serialization methods if you wish to serialize an
             object.
@@ -530,12 +580,15 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
     def _proto2object(
         proto: DeleteDatasetMessage_PB,
     ) -> "DeleteDatasetMessage":
-        """Creates a DeleteDatasetMessage from a protobuf
+        """Creates a DeleteDatasetMessage from a protobuf.
+
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
-        :return: returns an instance of SignalingOfferMessage
-        :rtype: DeleteDatasetMessage
-        .. note::
+
+        Returns:
+            DeleteDatasetMessage: deserialized message on dataset deletion.
+
+        Note:
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
@@ -550,7 +603,8 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        """Return the type of protobuf object which stores a class of this type
+        """Return the type of protobuf object which stores a class of this type.
+
         As a part of serialization and deserialization, we need the ability to
         lookup the protobuf object type directly from the object type. This
         static method allows us to do this.
@@ -559,8 +613,9 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
         it takes whatever type is returned from this method and adds an attribute to it
         with the type of this class attached to it. See the MetaSerializable class for
         details.
-        :return: the type of protobuf object which corresponds to this class.
-        :rtype: GeneratedProtocolMessageType
+
+        Returns:
+            GeneratedProtocolMessageType: the type of protobuf object which corresponds to this class.
         """
 
         return DeleteDatasetMessage_PB
