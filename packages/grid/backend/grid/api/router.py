@@ -1,3 +1,10 @@
+"""
+Add each api routes to the application main router.
+Accesing a specific URL the user would be redirected to the correct router
+and the specific request handler.
+"""
+
+
 # third party
 from fastapi import APIRouter
 
