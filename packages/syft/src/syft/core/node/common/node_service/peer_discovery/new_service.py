@@ -55,6 +55,7 @@ UserMessage(GetMessage, UpdateMessage, DeleteMessage):
 from __future__ import annotations
 
 # stdlib
+from abc import ABCMeta
 from typing import Any
 from typing import Dict
 from typing import List
@@ -62,21 +63,20 @@ from typing import Optional
 from typing import cast
 
 # third party
+from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 from typing_extensions import final
-
-from syft.core.node.common.exceptions import AuthorizationError
 
 # relative
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
+from ...exceptions import AuthorizationError
 from ...node_table.node import Node as NodeRow
 from ...node_table.node_route import NodeRoute as NodeRouteRow
+from ...node_table.utils import model_to_json
 from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage
-from ...node_table.utils import model_to_json
-from nacl.encoding import HexEncoder
 
 
 @serializable(recursive_serde=True)
@@ -98,13 +98,15 @@ class GetUserMessageWithReply(GenericPayloadMessageWithReply):
     message_type = GetMessage
     message_reply_type = GetReplyMessage
 
-    def run(self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None) -> Dict[str, Any]:
+    def run(
+        self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
+    ) -> Dict[str, Any]:
         # TODO: Segregate permissions to a different level (make it composable)
         _allowed = node.users.can_triage_requests(verify_key=verify_key)
         if not _allowed:
             raise AuthorizationError(
                 "get_user_msg You're not allowed to get User information!"
-                )
+            )
         else:
             # Extract User Columns
             user = node.users.first(id=self.kwargs["user_id"])
@@ -123,24 +125,43 @@ class GetUserMessageWithReply(GenericPayloadMessageWithReply):
             return _msg
 
 
+class DomainServiceRegistry(ABCMeta):
+    """A class for registering the services attached to the domain client."""
 
-class DomainServiceRegistryClass:
-    service_registry = {}
-    def __new__(cls: type[self], *args, **kwargs) -> self:
-        cls_name = getattr(cls, "__name__")
-        cls.service_registry[cls_name] = super().__new__(cls, *args, **kwargs)
+    _service_registry = {}
+
+    def __new__(cls, *args, **kwargs):
+        new_cls = type.__new__(cls, *args, **kwargs)
+        if hasattr(new_cls, "__name__"):
+            service_name = getattr(new_cls, "__name__")
+            cls._service_registry[service_name] = new_cls
+        return super(DomainServiceRegistry, cls).__new__(cls, *args, **kwargs)
 
     @classmethod
-    def get_all_services(cls):
-        return cls.service_registry
-        
-
-class NetworkServiceRegistryClass:
-    service_registry = {}
-    def __new__(cls: type[cls], *args, **kwargs) -> cls:
-        cls_name = getattr(cls, "__name__")
-        cls.service_registry[cls_name] = super().__new__(cls, *args, **kwargs)
+    def get_registered_services(cls):
+        """dict: Returns map of service inheriting this class."""
+        return dict(cls._service_registry)
 
 
-class UserService(DomainServiceRegistryClass, NetworkServiceRegistryClass, GenericPayloadMessageWithReply):
+class NetworkServiceRegistry(ABCMeta):
+    """A class for registering the services attached to the domain client."""
+
+    _service_registry = {}
+
+    def __new__(cls, *args, **kwargs):
+        new_cls = type.__new__(cls, *args, **kwargs)
+        if hasattr(new_cls, "__name__"):
+            service_name = getattr(new_cls, "__name__")
+            cls._service_registry[service_name] = new_cls
+        return super(NetworkServiceRegistry, cls).__new__(cls, *args, **kwargs)
+
+    @classmethod
+    def get_registered_services(cls):
+        """dict: Returns map of service inheriting this class."""
+        return dict(cls._service_registry)
+
+
+class UserService(
+    DomainServiceRegistry, NetworkServiceRegistry, GenericPayloadMessageWithReply
+):
     pass
