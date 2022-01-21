@@ -38,6 +38,6 @@ def test_store_object_mutation() -> None:
     guest_y.add_(guest_y)
 
     x_result = x_ptr.get(delete_obj=False)
-    assert x_result == x
+    assert all(x_result == x) is True
     y_result = y_ptr.get(delete_obj=False)
-    assert y_result == y
+    assert all(y_result == y) is True
