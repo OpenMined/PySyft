@@ -8,7 +8,7 @@ import torch as th
 # syft absolute
 import syft as sy
 
-DOMAIN_PORT = 9081
+DOMAIN_PORT = 9082
 
 
 @pytest.mark.security
