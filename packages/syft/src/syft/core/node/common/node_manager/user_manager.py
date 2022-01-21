@@ -1,3 +1,5 @@
+"""This file defines classes and methods which are used to manage database queries on the SyftUser table."""
+
 # stdlib
 from datetime import datetime
 from typing import Any
@@ -13,8 +15,6 @@ from bcrypt import hashpw
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-from pydantic import BaseModel
-from pydantic import EmailStr
 from sqlalchemy.engine import Engine
 from sqlalchemy.orm import Query
 from sqlalchemy.orm import sessionmaker
@@ -26,47 +26,13 @@ from ..node_table.pdf import PDFObject
 from ..node_table.roles import Role
 from ..node_table.user import SyftUser
 from ..node_table.user import UserApplication
+from .constants import UserApplicationStatus
 from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
 
-# Shared properties
-class UserBase(BaseModel):
-    email: Optional[EmailStr] = None
-    is_active: Optional[bool] = True
-    is_superuser: bool = False
-    full_name: Optional[str] = None
-
-
-# Properties to receive via API on creation
-class UserCreate(UserBase):
-    email: EmailStr
-    password: str
-
-
-# Properties to receive via API on update
-class UserUpdate(UserBase):
-    password: Optional[str] = None
-
-
-class UserInDBBase(UserBase):
-    id: Optional[int] = None
-
-    class Config:
-        orm_mode = True
-
-
-# Additional properties to return via API
-class User(UserInDBBase):
-    pass
-
-
-# Additional properties stored in DB
-class UserInDB(UserInDBBase):
-    hashed_password: str
-
-
 class UserManager(DatabaseManager):
+    """Class to manage user database actions."""
 
     schema = SyftUser
 
@@ -76,6 +42,7 @@ class UserManager(DatabaseManager):
 
     @property
     def common_users(self) -> list:
+        """Return users having the common role access."""
         common_users: List[SyftUser] = []
         for role in self.roles.common_roles:
             common_users = common_users + list(super().query(role=role.id))
@@ -84,6 +51,7 @@ class UserManager(DatabaseManager):
 
     @property
     def org_users(self) -> list:
+        """Return all the users in the organization."""
         org_users: List[SyftUser] = []
         for role in self.roles.org_roles:
             org_users = org_users + list(super().query(role=role.id))
@@ -99,6 +67,21 @@ class UserManager(DatabaseManager):
         website: Optional[str] = "",
         budget: Optional[float] = 0.0,
     ) -> int:
+        """Stores the information of the application submitted by the user.
+
+        Args:
+            name (str): name of the user.
+            email (str): email of the user.
+            password (str): password of the user.
+            daa_pdf (Optional[bytes]): data access agreement.
+            institution (Optional[str], optional): name of the institution to which the user belongs. Defaults to "".
+            website (Optional[str], optional): website link of the institution. Defaults to "".
+            budget (Optional[float], optional): privacy budget allocated to the user. Defaults to 0.0.
+
+        Returns:
+            int: Id of the application of the user.
+        """
+
         salt, hashed = self.__salt_and_hash_password(password, 12)
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         _pdf_obj = PDFObject(binary=daa_pdf)
@@ -125,6 +108,11 @@ class UserManager(DatabaseManager):
         return _obj_id
 
     def get_all_applicant(self) -> List[UserApplication]:
+        """Returns the application data of all the applicants in the database.
+
+        Returns:
+            List[UserApplication]: All user applications.
+        """
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         result = list(session_local.query(UserApplication).all())
         session_local.close()
@@ -133,13 +121,26 @@ class UserManager(DatabaseManager):
     def process_user_application(
         self, candidate_id: int, status: str, verify_key: VerifyKey
     ) -> None:
+        """Process the application for the given candidate.
+
+        If the application of the user was accepted, then register the user
+        and its details in the database. Finally update the application status
+        for the given user/candidate in the database.
+
+        Args:
+            candidate_id (int): user id of the candidate.
+            status (str): application status.
+            verify_key (VerifyKey): public digital signature of the user.
+        """
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         candidate = (
             session_local.query(UserApplication).filter_by(id=candidate_id).first()
         )
         session_local.close()
 
-        if status == "accepted":
+        if (
+            status == UserApplicationStatus.ACCEPTED.value
+        ):  # If application was accepted
             # Generate a new signing key
             _private_key = SigningKey.generate()
 
@@ -148,6 +149,8 @@ class UserManager(DatabaseManager):
                 "utf-8"
             )
             added_by = self.get_user(verify_key).name  # type: ignore
+
+            # Register the user in the database
             self.register(
                 name=candidate.name,
                 email=candidate.email,
@@ -164,7 +167,7 @@ class UserManager(DatabaseManager):
                 created_at=datetime.now(),
             )
         else:
-            status = "rejected"
+            status = UserApplicationStatus.REJECTED.value
 
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         candidate = (
@@ -185,6 +188,20 @@ class UserManager(DatabaseManager):
         private_key: str,
         verify_key: str,
     ) -> SyftUser:
+        """Registers a user in the database, when they signup on a domain.
+
+        Args:
+            name (str): name of the user.
+            email (str): email of the user.
+            password (str): password set by the user.
+            budget (float): privacy budget alloted to the user.
+            role (int): role of the user when they signup on the domain.
+            private_key (str): private digital signature of the user.
+            verify_key (str): public digital signature of the user.
+
+        Returns:
+            SyftUser: the registered user object.
+        """
         salt, hashed = self.__salt_and_hash_password(password, 12)
         return self.register(
             name=name,
@@ -209,6 +226,15 @@ class UserManager(DatabaseManager):
         return result
 
     def login(self, email: str, password: str) -> SyftUser:
+        """Returns the user object for the given the email and password.
+
+        Args:
+            email (str): email of the user.
+            password (str): password of the user.
+
+        Returns:
+            SyftUser: user object for the given email and password.
+        """
         return self.__login_validation(email, password)
 
     def set(  # nosec
@@ -222,6 +248,22 @@ class UserManager(DatabaseManager):
         institution: str = "",
         budget: float = 0.0,
     ) -> None:
+        """Updates the information for the given user id.
+
+        Args:
+            user_id (str): unique id of the user in the database.
+            email (str, optional): email of the user. Defaults to "".
+            password (str, optional): password of the user. Defaults to "".
+            role (int, optional): role of the user. Defaults to 0.
+            name (str, optional): name of the user. Defaults to "".
+            website (str, optional): website of the institution of the user. Defaults to "".
+            institution (str, optional): name of the institution of the user. Defaults to "".
+            budget (float, optional): privacy budget allocated to the user. Defaults to 0.0.
+
+        Raises:
+            UserNotFoundError: Raised when a user does not exits for the given user id.
+            Exception: Raised when an invalid argument/property is passed.
+        """
         if not self.contain(id=user_id):
             raise UserNotFoundError
 
@@ -259,47 +301,67 @@ class UserManager(DatabaseManager):
         self.modify({"id": user_id}, {key: value})
 
     def can_create_users(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permissions to create new users."""
         try:
             return self.role(verify_key=verify_key).can_create_users
         except UserNotFoundError:
             return False
 
     def can_upload_data(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permissions to upload data to the node."""
         try:
             return self.role(verify_key=verify_key).can_upload_data
         except UserNotFoundError:
             return False
 
     def can_triage_requests(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permissions to triage requests."""
         try:
             return self.role(verify_key=verify_key).can_triage_data_requests
         except UserNotFoundError:
             return False
 
     def can_manage_infrastructure(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permissions to manage the deployed infrastructure."""
         try:
             return self.role(verify_key=verify_key).can_manage_infrastructure
         except UserNotFoundError:
             return False
 
     def can_edit_roles(self, verify_key: VerifyKey) -> bool:
+        """Checks if a user has permission to edit roles of other users."""
         try:
             return self.role(verify_key=verify_key).can_edit_roles
         except UserNotFoundError:
             return False
 
     def role(self, verify_key: VerifyKey) -> Role:
+        """Returns the role of the given user."""
         user = self.get_user(verify_key)
         if not user:
             raise UserNotFoundError
         return self.roles.first(id=user.role)
 
     def get_user(self, verify_key: VerifyKey) -> Optional[SyftUser]:
+        """Returns the user for the given public digital signature."""
         return self.first(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
         )
 
     def __login_validation(self, email: str, password: str) -> SyftUser:
+        """Validates and returns the user object for the given credentials.
+
+        Args:
+            email (str): email of the user.
+            password (str): password of the user.
+
+        Raises:
+            UserNotFoundError: Raised if the user does not exist for the email.
+            InvalidCredentialsError: Raised if either the password or email is incorrect.
+
+        Returns:
+            SyftUser: Returns the user for the given credentials.
+        """
         try:
             user = self.first(email=email)
             if not user:
