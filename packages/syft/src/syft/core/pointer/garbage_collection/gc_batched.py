@@ -3,7 +3,7 @@
 Deleting a remote object using this logic might not send a message indicating
 to the Data Owner to remove the object from the store.
 
-Insted, it would collect the id of that object to be deleted and would only
+Instead, it would collect the id of that object to be deleted and would only
 send the "delete message" when a specific threshold limit is reached. At this
 point the Data Owner will loop through all the ids from the received message and
 will remove each object from the store.
