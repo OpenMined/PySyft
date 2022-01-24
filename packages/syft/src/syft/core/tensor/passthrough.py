@@ -21,7 +21,6 @@ import torch
 from .util import implements
 from .util import query_implementation
 
-
 AcceptableSimpleType = Union[int, bool, float, np.ndarray]
 SupportedChainType = Union["PassthroughTensor", AcceptableSimpleType]
 
