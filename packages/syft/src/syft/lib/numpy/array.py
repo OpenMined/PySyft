@@ -5,6 +5,7 @@ import torch
 
 # relative
 from ...core.common.serde.serializable import serializable
+from ...experimental_flags import ApacheArrowCompression
 from ...experimental_flags import flags
 from ...proto.lib.numpy.array_pb2 import NumpyProto
 from ..torch.tensor_util import tensor_deserializer
@@ -42,17 +43,34 @@ def arrow_serialize(obj: np.ndarray) -> bytes:
     apache_arrow = pa.Tensor.from_numpy(obj=obj)
     sink = pa.BufferOutputStream()
     pa.ipc.write_tensor(apache_arrow, sink)
-    numpy_bytes = sink.getvalue().to_pybytes()
+    buffer = sink.getvalue()
+    if flags.APACHE_ARROW_COMPRESSION is ApacheArrowCompression.NONE:
+        numpy_bytes = buffer.to_pybytes()
+    else:
+        numpy_bytes = pa.compress(
+            buffer, asbytes=True, codec=flags.APACHE_ARROW_COMPRESSION.value
+        )
     dtype = original_dtype.name
-    return NumpyProto(arrow_data=numpy_bytes, dtype=dtype)
+
+    return NumpyProto(
+        arrow_data=numpy_bytes, dtype=dtype, decompressed_size=buffer.size
+    )
 
 
 def arrow_deserialize(proto: NumpyProto) -> np.ndarray:
-    buf: bytes = proto.arrow_data
+    buf: bytes = bytes(proto.arrow_data)
     str_dtype = proto.dtype
     original_dtype = np.dtype(str_dtype)
-    reader = pa.BufferReader(buf)
-    buf = reader.read_buffer()
+    if flags.APACHE_ARROW_COMPRESSION is ApacheArrowCompression.NONE:
+        reader = pa.BufferReader(buf)
+        buf = reader.read_buffer()
+    else:
+        buf = pa.decompress(
+            buf,
+            decompressed_size=proto.decompressed_size,
+            codec=flags.APACHE_ARROW_COMPRESSION.value,
+        )
+
     result = pa.ipc.read_tensor(buf)
     np_array = result.to_numpy()
     np_array.setflags(write=True)
