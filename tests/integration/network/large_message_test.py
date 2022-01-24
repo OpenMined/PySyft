@@ -39,7 +39,7 @@ def test_large_message_size() -> None:
 
     # currently the database wont accept more than around 200mb
     if sy.flags.APACHE_ARROW_TENSOR_SERDE is False:
-        ndim = 11300  # 510.76 MB
+        ndim = 5500  # 510.76 MB
         # 127 MB in Protobuf
     else:
         ndim = 5500
@@ -48,7 +48,7 @@ def test_large_message_size() -> None:
     # rabbitmq recommends max is 512 MB
     # rabbitmq.conf has max_message_size = 536870912
 
-    x = np.zeros((ndim, ndim), dtype=np.int32)
+    x = np.random.rand((ndim, ndim))
     x_bytes = sy.serialize(x, to_bytes=True)
     mb_size = size(x_bytes)
     mb = f"{mb_size} MB"
