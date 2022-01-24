@@ -16,7 +16,6 @@ import names
 import pandas as pd
 
 # relative
-from .... import deserialize
 from ....logger import traceback_and_raise
 from ....util import validate_field
 from ...common.message import SyftMessage
@@ -72,16 +71,13 @@ class RequestQueueClient(AbstractNodeClient):
     def requests(self) -> List[RequestMessage]:
 
         # relative
-        from ..common.node_service.get_all_requests.get_all_requests_messages import (
+        from ..common.node_service.object_request.object_request_messages import (
             GetAllRequestsMessage,
         )
 
         msg = GetAllRequestsMessage(
             address=self.client.address, reply_to=self.client.address
         )
-
-        blob = serialize(msg, to_bytes=True)
-        msg = deserialize(blob, from_bytes=True)
 
         requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
 
