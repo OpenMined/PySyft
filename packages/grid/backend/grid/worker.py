@@ -26,7 +26,7 @@ def msg_without_reply(self, obj_msg: Any) -> None:  # type: ignore
         try:
             node.recv_immediate_msg_without_reply(msg=obj_msg)
         except Exception as e:
-                raise e
+            raise e
     else:
         raise Exception(
             f"This worker can only handle SignedImmediateSyftMessageWithoutReply. {obj_msg}"
