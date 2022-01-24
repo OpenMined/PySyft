@@ -9,4 +9,5 @@ message NumpyProto {
   }
 
   string dtype = 3;
+  int64 decompressed_size = 4;
 }
