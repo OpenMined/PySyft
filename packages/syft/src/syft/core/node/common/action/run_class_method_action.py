@@ -92,6 +92,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return f"RunClassMethodAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+
         method = node.lib_ast(self.path)
 
         mutating_internal = False
@@ -110,8 +111,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         if not self.is_static:
             resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
             result_read_permissions = resolved_self.read_permissions  # type: ignore
+            result_write_permissions = resolved_self.write_permissions  # type: ignore
         else:
             result_read_permissions = {}
+            result_write_permissions = {}
 
         resolved_args = list()
         tag_args = []
@@ -119,6 +122,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
+            )
+            result_write_permissions = self.intersect_keys(
+                result_write_permissions, r_arg.write_permissions
             )
             resolved_args.append(r_arg.data)  # type: ignore
             tag_args.append(r_arg)
@@ -129,6 +135,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
+            )
+            result_write_permissions = self.intersect_keys(
+                result_write_permissions, r_arg.write_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data  # type: ignore
             tag_kwargs[arg_name] = r_arg
@@ -208,11 +217,13 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         if mutating_internal:
             if isinstance(resolved_self, StorableObject):
                 resolved_self.read_permissions = result_read_permissions
+                resolved_self.write_permissions = result_write_permissions
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
                 read_permissions=result_read_permissions,
+                write_permissions=result_write_permissions,
             )
 
         inherit_tags(
