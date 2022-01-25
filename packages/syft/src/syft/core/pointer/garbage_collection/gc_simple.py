@@ -1,4 +1,9 @@
-"""A simple garbage collection heuritics."""
+"""A simple garbage collection heuristics.
+
+Deleting a remote object using this logic will send a message
+to the Data Owner indicating to remove the object from the store.
+"""
+
 # third party
 from typing_extensions import final
 
