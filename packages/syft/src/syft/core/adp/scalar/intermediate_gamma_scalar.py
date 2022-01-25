@@ -127,7 +127,7 @@ class IntermediateGammaScalar(IntermediateScalar):
 
         r2_diffs = np.array(
             [
-                GammaScalar(x.min_val, x.value, x.max_val, entity=x.entity).poly  # type: ignore
+                GammaScalar(x.min_val, x.value, x.max_val, entity=x.entity, prime=x.prime).poly  # type: ignore
                 for x in self.input_scalars
             ]
         )
