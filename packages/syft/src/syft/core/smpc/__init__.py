@@ -1,4 +1,4 @@
-"""SMPC Abstract Syntax Tree (AST) Creation.
+"""SMPC AST Creation.
 
 __init__ file for SMPC. This defines various modules, classes and methods which we currently support.
 We create an AST for all these modules, classes and methods so that they can be called remotely.
@@ -18,10 +18,17 @@ from .protocol import beaver  # noqa: 401 isort: skip
 
 
 def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
+    """Creates SMPC Abstract Syntax Tree (AST). 
+        Define a set of modules, classes and methods which are used for the creation of the SMPC AST.
+
+    Args: 
+        client (Optional[AbstractNodeClient]):  Input client object for AST operations.
+    
+    Returns:
+        The constructed SMPC AST.
+
     """
-    Creates SMPC Abstract Syntax Tree (AST). Define a set of modules, classes and methods which are used for the creation of the SMPC AST.
-    :client: Client node held at the global namespace.
-    """
+
     ast = Globals(client)
 
     modules = [
