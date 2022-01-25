@@ -16,7 +16,7 @@ class BinObject(Base):
     __tablename__ = "bin_object"
 
     id = Column(String(256), primary_key=True)
-    binary = Column(LargeBinary(3072))
+    binary = Column(LargeBinary())
     obj_name = Column(String(3072))
 
     @property
