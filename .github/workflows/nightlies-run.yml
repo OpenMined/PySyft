@@ -9,4 +9,4 @@
 
   jobs:
     call-grid-backend_test:
-      uses: OpenMined/PySyft/.github/workflows/grid-backend_test.yml@dev
+      uses: OpenMined/PySyft/.github/workflows/grid-backend_tests.yml@dev
