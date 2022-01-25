@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Optional
 
 # third party
@@ -82,3 +83,14 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return GammaScalar_PB
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, GammaScalar):
+            return (
+                self.min_val == other.min_val
+                and self.max_val == other.max_val
+                and self.value == other.value
+                and self.entity == other.entity
+                and self.prime == other.prime
+            )
+        return self == other

@@ -1,46 +1,76 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Union
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import sympy as sp
 
 # relative
+from ...proto.core.adp.scalar_manager_pb2 import (
+    VirtualMachinePrivateScalarManager as VirtualMachinePrivateScalarManager_PB,
+)
+from ...proto.core.adp.scalar_manager_pb2 import PrimeFactory as PrimeFactory_PB
+from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize as serialize
 from .entity import Entity
 from .scalar.gamma_scalar import GammaScalar
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class PrimeFactory:
-
     """IMPORTANT: it's very important that two tensors be able to tell that
     they are indeed referencing the EXACT same PrimeFactory. At present this is done
-    by ensuring that it is literally the same python object. In the future, we will probaby
-    need to formalize this. However, the main way this could go wrong is if we created some
-    alternate way for checking to see if two prime factories 'sortof looked the same' but which
-    in fact weren't the EXACT same object. This could lead to security leaks wherein two tensors
-    think two different symbols in fact are the same symbol."""
+    by ensuring that it is literally the same python object. In the future, we will
+    probaby need to formalize this. However, the main way this could go wrong is if we
+    created some alternate way for checking to see if two prime factories 'sortof looked
+    the same' but which in fact weren't the EXACT same object. This could lead to
+    security leaks wherein two tensors think two different symbols in fact are the
+    same symbol."""
 
-    __attr_allowlist__ = ["prev_prime"]
-
-    def __init__(self) -> None:
-        self.prev_prime = 1
+    def __init__(self, prime: int = 1) -> None:
+        self.prev_prime = prime
 
     def next(self) -> int:
         self.prev_prime = sp.nextprime(self.prev_prime)
         return self.prev_prime
 
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, PrimeFactory):
+            return self.prev_prime == other.prev_prime
+        return self == other
 
-@serializable(recursive_serde=True)
+    def _object2proto(self) -> PrimeFactory_PB:
+        return PrimeFactory_PB(prime=self.prev_prime)
+
+    @staticmethod
+    def _proto2object(
+        proto: PrimeFactory_PB,
+    ) -> PrimeFactory:
+        return PrimeFactory(prime=proto.prime)
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return PrimeFactory_PB
+
+
+@serializable()
 class VirtualMachinePrivateScalarManager:
-
-    __attr_allowlist__ = ["prime_factory", "prime2symbol"]
-
-    def __init__(self) -> None:
-        self.prime_factory = PrimeFactory()
-        self.prime2symbol: Dict[Any, Any] = {}
+    def __init__(
+        self,
+        prime_factory: Optional[PrimeFactory] = None,
+        prime2symbol: Dict[Any, Any] = {},
+    ) -> None:
+        self.prime_factory = (
+            prime_factory if prime_factory is not None else PrimeFactory()
+        )
+        self.prime2symbol = prime2symbol
 
     def get_symbol(
         self,
@@ -58,3 +88,30 @@ class VirtualMachinePrivateScalarManager:
         )
         self.prime2symbol[gs.prime] = gs
         return gs.prime
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, VirtualMachinePrivateScalarManager):
+            return (
+                self.prime_factory == other.prime_factory
+                and self.prime2symbol == other.prime2symbol
+            )
+        return self == other
+
+    def _object2proto(self) -> VirtualMachinePrivateScalarManager_PB:
+        return VirtualMachinePrivateScalarManager_PB(
+            prime_factory=serialize(self.prime_factory),
+            prime2symbol=serialize(self.prime2symbol),
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: VirtualMachinePrivateScalarManager_PB,
+    ) -> VirtualMachinePrivateScalarManager:
+        return VirtualMachinePrivateScalarManager(
+            prime_factory=deserialize(proto.prime_factory),
+            prime2symbol=deserialize(proto.prime2symbol),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return VirtualMachinePrivateScalarManager_PB

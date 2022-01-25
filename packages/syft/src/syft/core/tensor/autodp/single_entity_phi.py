@@ -20,6 +20,9 @@ import torch
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
+from ....proto.core.adp.phi_tensor_pb2 import (
+    SingleEntityPhiTensor as SingleEntityPhiTensor_PB,
+)
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
@@ -500,18 +503,10 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         return TensorWrappedSingleEntityPhiTensorPointer_PB
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
-
-    __attr_allowlist__ = [
-        "child",
-        "_min_vals",
-        "_max_vals",
-        "entity",
-        "scalar_manager",
-    ]
 
     # Number of entities in a SEPT is by definition 1
     n_entities = 1
@@ -2354,6 +2349,44 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         return SingleEntityPhiTensor(
             child=data, min_vals=mins, max_vals=maxes, entity=self.entity
         )
+
+    def _object2proto(self) -> SingleEntityPhiTensor_PB:
+        proto_init_kwargs = {
+            "min_vals": serialize(self._min_vals),
+            "max_vals": serialize(self._max_vals),
+            "entity": serialize(self.entity),
+            "scalar_manager": serialize(self.scalar_manager),
+        }
+
+        # either numpy array or ShareTensor
+        if isinstance(self.child, np.ndarray):
+            proto_init_kwargs["array"] = serialize(self.child)
+        elif isinstance(self.child, torch.Tensor):
+            proto_init_kwargs["array"] = serialize(np.array(self.child))
+        else:
+            proto_init_kwargs["tensor"] = serialize(self.child)
+
+        return SingleEntityPhiTensor_PB(**proto_init_kwargs)
+
+    @staticmethod
+    def _proto2object(proto: SingleEntityPhiTensor_PB) -> SingleEntityPhiTensor:
+        # either numpy array or ShareTensor
+        if proto.HasField("tensor"):
+            child = deserialize(proto.tensor)
+        else:
+            child = deserialize(proto.array)
+
+        return SingleEntityPhiTensor(
+            child=child,
+            entity=deserialize(proto.entity),
+            min_vals=deserialize(proto.min_vals),
+            max_vals=deserialize(proto.max_vals),
+            scalar_manager=deserialize(proto.scalar_manager),
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return SingleEntityPhiTensor_PB
 
 
 @implements(SingleEntityPhiTensor, np.expand_dims)

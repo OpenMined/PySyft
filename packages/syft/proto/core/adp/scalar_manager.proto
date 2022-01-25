@@ -1,0 +1,14 @@
+syntax = "proto3";
+
+package syft.core.adp;
+
+import "proto/lib/python/dict.proto";
+
+message PrimeFactory {
+    int64 prime = 1;
+}
+
+message VirtualMachinePrivateScalarManager {
+  PrimeFactory prime_factory = 1;
+  syft.lib.python.Dict prime2symbol = 2;
+}
