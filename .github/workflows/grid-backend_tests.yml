@@ -1,17 +1,16 @@
 # Grid Backend Tests
 name: Syft + Grid Backend Tests
 
+
+
 on:
+  workflow_call:
+
   pull_request:
     branches:
       - dev
       - main
       - "0.6.0"
-  workflow_call:
-    inputs:
-      none:
-        description: "Allow Grid Backend Tests to be called"
-        required: false
 
 defaults:
   run:
