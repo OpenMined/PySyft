@@ -9,6 +9,8 @@
 name: Syft Merge Tests
 
 on:
+  workflow_call:
+
   push:
     branches:
       - main
