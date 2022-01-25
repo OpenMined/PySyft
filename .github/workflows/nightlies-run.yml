@@ -23,14 +23,14 @@
       uses: bitsofsteve/PySyft/.github/workflows/stack-integration_tests.yml@dev
 
     call-syft-merge_torch_tests:
-      uses: bitsofsteve/PySyft/.github/workflows/syft-merge_torch_tests@dev
+      uses: bitsofsteve/PySyft/.github/workflows/syft-merge_torch_tests.yml@dev
 
     call-syft-pr_tests:
-      uses: bitsofsteve/PySyft/.github/workflows/syft-pr_tests@dev
+      uses: bitsofsteve/PySyft/.github/workflows/syft-pr_tests.yml@dev
 
     call-syft-security:
-      uses: bitsofsteve/PySyft/.github/workflows/syft-security@dev
+      uses: bitsofsteve/PySyft/.github/workflows/syft-security.yml@dev
 
     call-syft-version_tests:
-      uses: bitsofsteve/PySyft/.github/workflows/syft-version_tests@dev
+      uses: bitsofsteve/PySyft/.github/workflows/syft-version_tests.yml@dev
 
