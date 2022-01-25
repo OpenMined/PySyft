@@ -89,6 +89,10 @@ class VirtualMachinePrivateScalarManager:
         self.prime2symbol[gs.prime] = gs
         return gs.prime
 
+    def __hash__(self) -> int:
+        prime2symbol = frozenset(self.prime2symbol.items())
+        return hash(self.prime_factory.prev_prime) + hash(prime2symbol)
+
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, VirtualMachinePrivateScalarManager):
             return (

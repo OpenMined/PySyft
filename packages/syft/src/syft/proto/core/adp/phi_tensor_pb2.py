@@ -25,11 +25,12 @@ from syft.proto.core.tensor import (
 from syft.proto.lib.numpy import array_pb2 as proto_dot_lib_dot_numpy_dot_array__pb2
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x1fproto/core/adp/phi_tensor.proto\x12\rsyft.core.adp\x1a\x1bproto/core/adp/entity.proto\x1a\x1bproto/lib/numpy/array.proto\x1a#proto/core/adp/scalar_manager.proto\x1a$proto/core/tensor/share_tensor.proto"\xcc\x02\n\x15SingleEntityPhiTensor\x12/\n\x06tensor\x18\x01 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensorH\x00\x12+\n\x05\x61rray\x18\x02 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtoH\x00\x12,\n\x08min_vals\x18\x03 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProto\x12,\n\x08max_vals\x18\x04 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProto\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12I\n\x0escalar_manager\x18\x06 \x01(\x0b\x32\x31.syft.core.adp.VirtualMachinePrivateScalarManagerB\x07\n\x05\x63hildb\x06proto3'
+    b'\n\x1fproto/core/adp/phi_tensor.proto\x12\rsyft.core.adp\x1a\x1bproto/core/adp/entity.proto\x1a\x1bproto/lib/numpy/array.proto\x1a#proto/core/adp/scalar_manager.proto\x1a$proto/core/tensor/share_tensor.proto"\xcc\x02\n\x15SingleEntityPhiTensor\x12/\n\x06tensor\x18\x01 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensorH\x00\x12+\n\x05\x61rray\x18\x02 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtoH\x00\x12,\n\x08min_vals\x18\x03 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProto\x12,\n\x08max_vals\x18\x04 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProto\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12I\n\x0escalar_manager\x18\x06 \x01(\x0b\x32\x31.syft.core.adp.VirtualMachinePrivateScalarManagerB\x07\n\x05\x63hild"\xbf\x02\n\x12RowEntityPhiTensor\x12\x32\n\x04rows\x18\x01 \x03(\x0b\x32$.syft.core.adp.SingleEntityPhiTensor\x12.\n\x0funique_entities\x18\x02 \x03(\x0b\x32\x15.syft.core.adp.Entity\x12Q\n\x16unique_scalar_managers\x18\x03 \x03(\x0b\x32\x31.syft.core.adp.VirtualMachinePrivateScalarManager\x12\x34\n\x10row_entity_index\x18\x04 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProto\x12<\n\x18row_scalar_manager_index\x18\x05 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtob\x06proto3'
 )
 
 
 _SINGLEENTITYPHITENSOR = DESCRIPTOR.message_types_by_name["SingleEntityPhiTensor"]
+_ROWENTITYPHITENSOR = DESCRIPTOR.message_types_by_name["RowEntityPhiTensor"]
 SingleEntityPhiTensor = _reflection.GeneratedProtocolMessageType(
     "SingleEntityPhiTensor",
     (_message.Message,),
@@ -41,9 +42,22 @@ SingleEntityPhiTensor = _reflection.GeneratedProtocolMessageType(
 )
 _sym_db.RegisterMessage(SingleEntityPhiTensor)
 
+RowEntityPhiTensor = _reflection.GeneratedProtocolMessageType(
+    "RowEntityPhiTensor",
+    (_message.Message,),
+    {
+        "DESCRIPTOR": _ROWENTITYPHITENSOR,
+        "__module__": "proto.core.adp.phi_tensor_pb2"
+        # @@protoc_insertion_point(class_scope:syft.core.adp.RowEntityPhiTensor)
+    },
+)
+_sym_db.RegisterMessage(RowEntityPhiTensor)
+
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
     _SINGLEENTITYPHITENSOR._serialized_start = 184
     _SINGLEENTITYPHITENSOR._serialized_end = 516
+    _ROWENTITYPHITENSOR._serialized_start = 519
+    _ROWENTITYPHITENSOR._serialized_end = 838
 # @@protoc_insertion_point(module_scope)

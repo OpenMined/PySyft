@@ -4,22 +4,29 @@ from __future__ import annotations
 # stdlib
 from collections.abc import Sequence
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import numpy.typing as npt
 
 # relative
 from ....core.adp.entity import DataSubjectGroup as DSG
 from ....core.adp.entity import Entity
+from ....proto.core.adp.phi_tensor_pb2 import (
+    RowEntityPhiTensor as RowEntityPhiTensor_PB,
+)
 from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
+from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
 from ..broadcastable import is_broadcastable
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
@@ -31,7 +38,7 @@ from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     """This tensor is one of several tensors whose purpose is to carry metadata
     relevant to automatically tracking the privacy budgets of tensor operations. This
@@ -44,9 +51,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     significant performance benefits over other DP tracking tensors. Note that when
     we refer to the number of 'rows' we simply refer to the length of the first dimension. This
     tensor can have an arbitrary number of dimensions."""
-
-    # a list of attributes needed for serialization using RecursiveSerde
-    __attr_allowlist__ = ["child", "n_entities", "unique_entities"]
 
     def __init__(self, rows: Sequence, check_shape: bool = True):
         """Initialize a RowEntityPhiTensor
@@ -902,6 +906,130 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             new_list.append(tensor.round(decimals))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    """
+      __attr_allowlist__ = [
+        "child",
+        "_min_vals",
+        "_max_vals",
+        "entity",
+        "scalar_manager",
+    ]
+
+    # Number of entities in a SEPT is by definition 1
+    n_entities = 1
+
+    def __init__(
+        self,
+        child: SupportedChainType,
+        entity: Entity,
+        min_vals: np.ndarray,
+        max_vals: np.ndarray,
+        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
+    ) -> None:
+
+    message RowEntityPhiTensor {
+  repeated SingleEntityPhiTensor rows = 1;
+  repeated syft.core.adp.Entity unique_entities = 2;
+  repeated VirtualMachinePrivateScalarManager unique_scalar_managers = 3;
+  syft.lib.numpy.NumpyProto row_entity_index = 3;
+  syft.lib.numpy.NumpyProto row_scalar_manager_index = 4;
+}
+
+
+    """
+
+    def _object2proto(self) -> RowEntityPhiTensor:
+        entity_list = []
+        entity_dict_index: Dict[Entity, int] = {}
+        row_entity_index = []
+
+        scalar_manager_list = []
+        scalar_manager_dict_index: Dict[TypeScalarManager, int] = {}
+        row_scalar_manager_index = []
+
+        for i in self.child:
+            entity = i.entity
+            # i.entity = None  # de-duplicate by removing from the object
+            scalar_manager = i.scalar_manager
+            # i.scalar_manager = None  # de-duplicate by removing from the object
+
+            if entity in entity_dict_index:
+                index = entity_dict_index[entity]
+            else:
+                entity_list.append(entity)
+                index = len(entity_list) - 1
+                entity_dict_index[entity] = index
+            row_entity_index.append(index)
+
+            if scalar_manager in scalar_manager_dict_index:
+                vm_index = scalar_manager_dict_index[scalar_manager]
+            else:
+                scalar_manager_list.append(scalar_manager)
+                vm_index = len(scalar_manager_list) - 1
+                scalar_manager_dict_index[scalar_manager] = vm_index
+            row_scalar_manager_index.append(vm_index)
+            i._remove_entity_scalar_manager = True
+
+        if len(row_entity_index) != len(self.child):
+            raise Exception("Length of entity index must match row length")
+
+        if len(row_scalar_manager_index) != len(self.child):
+            raise Exception("Length of scalar manager index must match row length")
+
+        # print("we have this many unique entities ", entity_list)
+        # print(row_entity_index)
+        # print("we have this many unique scalar managers ", scalar_manager_list)
+        # print(row_scalar_manager_index)
+
+        # set a temporary variable
+        # for child in self.child:
+        #    child._remove_entity_scalar_manager = True
+
+        rept_pb = RowEntityPhiTensor_PB(
+            rows=[serialize(x) for x in self.child],
+            unique_entities=[serialize(x) for x in entity_list],
+            unique_scalar_managers=[serialize(x) for x in scalar_manager_list],
+            row_entity_index=serialize(np.array(row_entity_index)),
+            row_scalar_manager_index=serialize(np.array(row_scalar_manager_index)),
+        )
+
+        for child in self.child:
+            del child._remove_entity_scalar_manager
+
+        return rept_pb
+
+    @staticmethod
+    def _proto2object(proto: RowEntityPhiTensor_PB) -> RowEntityPhiTensor:
+        # get back our entities and scalar managers
+        unique_entities = [x for x in proto.unique_entities]
+        unique_scalar_managers = [x for x in proto.unique_scalar_managers]
+
+        row_entity_index = deserialize(proto.row_entity_index)
+        row_scalar_manager_index = deserialize(proto.row_scalar_manager_index)
+
+        rows = []
+        for i, row in enumerate(proto.rows):
+            # print("row", type(row))
+            # print("what do we have", row)
+            row_index = row_entity_index[i]
+            entity = unique_entities[row_index]
+            scalar_manager_index = row_scalar_manager_index[i]
+            scalar_manager = unique_scalar_managers[scalar_manager_index]
+
+            # re-attach the original de-duplicated data before deserializing
+            row.entity.CopyFrom(entity)
+            row.scalar_manager.CopyFrom(scalar_manager)
+
+            # print("what do we have after CopyFrom", row)
+
+            rows.append(deserialize(row))
+
+        return RowEntityPhiTensor(rows=rows)
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return RowEntityPhiTensor_PB
 
 
 @implements(RowEntityPhiTensor, np.expand_dims)

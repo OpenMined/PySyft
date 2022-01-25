@@ -2354,9 +2354,13 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         proto_init_kwargs = {
             "min_vals": serialize(self._min_vals),
             "max_vals": serialize(self._max_vals),
-            "entity": serialize(self.entity),
-            "scalar_manager": serialize(self.scalar_manager),
         }
+
+        # to de-duplicate entity and scalar manager at the RowEntityPhiTensor level
+        # we need to allow this to sometimes be None and not store it
+        if not getattr(self, "_remove_entity_scalar_manager", False):
+            proto_init_kwargs["entity"] = serialize(self.entity)
+            proto_init_kwargs["scalar_manager"] = serialize(self.scalar_manager)
 
         # either numpy array or ShareTensor
         if isinstance(self.child, np.ndarray):
