@@ -2,7 +2,7 @@
 
   on:
     schedule:
-      - cron: "0 22 * * *" # 10pm UTC, 3:30pm Indian, 7pm Brazil, 9am AEDT
+      - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT
     workflow_dispatch:
       inputs:
         none:
