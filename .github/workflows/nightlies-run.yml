@@ -1,0 +1,7 @@
+  on:
+    schedule:
+      - cron: "0 22 * * *" # 10pm UTC, 3:30pm Indian, 7pm Brazil, 9am AEDT
+
+  jobs:
+    call-grid-backend_test:
+      uses: OpenMined/PySyft/.github/workflows/grid-backend_test.yml@dev
