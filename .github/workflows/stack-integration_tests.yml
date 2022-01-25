@@ -4,6 +4,8 @@ name: Syft + Grid Stack Integration Tests
 on:
   # schedule:
   #   - cron: "0 22 * * *" # 7pm Brazil, 10pm UTC, 8am AEST
+  workflow_call:
+
   pull_request:
     branches:
       - dev

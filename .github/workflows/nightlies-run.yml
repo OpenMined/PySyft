@@ -12,3 +12,25 @@
   jobs:
     call-grid-backend_test:
       uses: bitsofsteve/PySyft/.github/workflows/grid-backend_tests.yml@dev
+
+    call-hagrid-pr_tests:
+      uses: bitsofsteve/PySyft/.github/workflows/hagrid-pr_tests.yml@dev
+
+    call-linting:
+      uses: bitsofsteve/PySyft/.github/workflows/linting.yml@dev
+
+    call-stack-integration_tests:
+      uses: bitsofsteve/PySyft/.github/workflows/stack-integration_tests.yml@dev
+
+    call-syft-merge_torch_tests:
+      uses: bitsofsteve/PySyft/.github/workflows/syft-merge_torch_tests@dev
+
+    call-syft-pr_tests:
+      uses: bitsofsteve/PySyft/.github/workflows/syft-pr_tests@dev
+
+    call-syft-security:
+      uses: bitsofsteve/PySyft/.github/workflows/syft-security@dev
+
+    call-syft-version_tests:
+      uses: bitsofsteve/PySyft/.github/workflows/syft-version_tests@dev
+

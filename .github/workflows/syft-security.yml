@@ -1,6 +1,8 @@
 name: Security-check
 
 on:
+  workflow_call:
+
   pull_request:
     branches:
       - dev
