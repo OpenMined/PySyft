@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -13,6 +14,7 @@ import syft as sy
 from ....proto.core.adp.scalar_pb2 import GammaScalar as GammaScalar_PB
 from ...common import UID
 from ...common.serde.serializable import serializable
+from ..entity import DataSubjectGroup
 from ..entity import Entity
 from ..search import ssid2obj
 from .abstract.base_scalar import BaseScalar
@@ -33,7 +35,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         value: float,
         max_val: float,
         prime: int,
-        entity: Optional[Entity] = None,
+        entity: Optional[Union[Entity, DataSubjectGroup]] = None,
         id: Optional[UID] = None,
         ssid: Optional[str] = None,
     ) -> None:
@@ -59,9 +61,17 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
     def _object2proto(self) -> GammaScalar_PB:
         kwargs = {
             "id": sy.serialize(self.id, to_proto=True),
-            "entity": sy.serialize(self.entity, to_proto=True),
             "prime": self.prime,
         }
+        entity_data = sy.serialize(self.entity, to_proto=True)
+        if isinstance(self.entity, Entity):
+            kwargs["entity"] = entity_data
+        elif isinstance(self.entity, DataSubjectGroup):
+            kwargs["dsg"] = entity_data
+        else:
+            raise ValueError(
+                f"Invalid type: {type(self.entity)} in GammaScalar Entity field."
+            )
 
         for field in ["max_val", "min_val", "value"]:
             if getattr(self, field) is not None:
@@ -71,12 +81,16 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
 
     @staticmethod
     def _proto2object(proto: GammaScalar_PB) -> "GammaScalar":
+        if proto.HasField("entity"):
+            entity_data = sy.deserialize(proto.entity)
+        elif proto.HasField("dsg"):
+            entity_data = sy.deserialize(proto.ds)
         return GammaScalar(
             id=sy.deserialize(proto.id, from_proto=True),
             min_val=proto.min_val if proto.HasField("min_val") else None,
             max_val=proto.max_val if proto.HasField("max_val") else None,
             value=proto.value if proto.HasField("value") else None,
-            entity=sy.deserialize(proto.entity),
+            entity=entity_data,
             prime=proto.prime,
         )
 

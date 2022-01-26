@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -14,6 +15,7 @@ import syft as sy
 from .....proto.core.adp.scalar_pb2 import BaseScalar as BaseScalar_PB
 from ....common import UID
 from ....common.serde.serializable import serializable
+from ...entity import DataSubjectGroup
 from ...entity import Entity
 from .scalar import Scalar
 
@@ -32,7 +34,7 @@ class BaseScalar(Scalar):
         min_val: float,
         value: Optional[float],
         max_val: float,
-        entity: Optional[Entity] = None,
+        entity: Optional[Union[Entity, DataSubjectGroup]] = None,
         id: Optional[UID] = None,
     ) -> None:
         self.id = id if id else UID()
