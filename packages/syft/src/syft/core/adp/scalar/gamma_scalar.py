@@ -84,7 +84,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         if proto.HasField("entity"):
             entity_data = sy.deserialize(proto.entity)
         elif proto.HasField("dsg"):
-            entity_data = sy.deserialize(proto.ds)
+            entity_data = sy.deserialize(proto.dsg)
         return GammaScalar(
             id=sy.deserialize(proto.id, from_proto=True),
             min_val=proto.min_val if proto.HasField("min_val") else None,
