@@ -1,4 +1,4 @@
-  name: Nightlies Run All Tests
+  name: Nightlies
 
   on:
     schedule:
