@@ -9,9 +9,9 @@
           description: "Run Nightlies Tests Manually"
           required: false
 
-#   jobs:
-#     call-grid-backend_test:
-#       uses: bitsofsteve/PySyft/.github/workflows/grid-backend_tests.yml@dev
+  jobs:
+    call-grid-backend_test:
+      uses: bitsofsteve/PySyft/.github/workflows/grid-backend_tests.yml@dev
 
 #     call-hagrid-pr_tests:
 #       uses: bitsofsteve/PySyft/.github/workflows/hagrid-pr_tests.yml@dev
