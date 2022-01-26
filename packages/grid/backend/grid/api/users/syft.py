@@ -2,6 +2,11 @@
 from typing import List
 
 # syft absolute
+from syft.core.node.common.node_service.peer_discovery.new_service import GetUserMessage
+
+# from syft.core.node.common.node_service.user_manager.user_manager_service import (
+#     GetUserMessage,
+# )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     CreateUserMessage,
 )
@@ -10,9 +15,6 @@ from syft.core.node.common.node_service.user_manager.user_manager_service import
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     GetCandidatesMessage,
-)
-from syft.core.node.common.node_service.user_manager.user_manager_service import (
-    GetUserMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     GetUsersMessage,
@@ -30,6 +32,7 @@ from grid.api.users.models import UserCandidate
 from grid.api.users.models import UserCreate
 from grid.api.users.models import UserPrivate
 from grid.api.users.models import UserUpdate
+from grid.core.node import get_client
 from grid.utils import send_message_with_reply
 
 
@@ -69,12 +72,19 @@ def get_all_users(current_user: UserPrivate) -> List[User]:
 
 
 def get_user(user_id: int, current_user: UserPrivate) -> User:
-    reply = send_message_with_reply(
-        signing_key=current_user.get_signing_key(),
-        message_type=GetUserMessage,
-        user_id=user_id,
+    signing_key = current_user.get_signing_key()
+    client = get_client(signing_key)
+    msg = (
+        GetUserMessage(
+            kwargs={
+                "user_id": user_id,
+            }
+        )
+        .to(address=client.address, reply_to=client.address)
+        .sign(signing_key=signing_key)
     )
-    return reply.content.upcast()
+    reply = client.send_immediate_msg_with_reply(msg=msg)
+    return reply.payload.kwargs.upcast()
 
 
 def update_user(

@@ -1,66 +1,9 @@
-"""
-Service
-    - create
-    - del
-    - update/patch
-    - get
-
-    mapping: Message: function_type
-
-
-WithReply: Blocking and return
-WithoutReply: Return None
-
-Unify with and without reply ->  Services are `reply` agnostic
-
-Composable Permissions
-"""
-
-"""
-from venv import create
-from webbrowser import get
-
-from numpy import delete
-
-
-UserService:
-- create
-- delete
-- update
-- get
-
-GetService::::::::::
-- users, datasets, roles
-
-
-GetMessage:
-  - def get
-
-UpdateMessage:
-  - def u
-
-DeleteMessage:
-  - process
-
-
-UserMessage(GetMessage, UpdateMessage, DeleteMessage):
- - get_message  = GetMessage
- - update_message = UpdateMessage
-
- UserMessage()
-  user_messages = [GetMessage, UpdateMessage]
-
-"""
-# future
-from __future__ import annotations
-
 # stdlib
-from abc import ABCMeta
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import cast
+from typing import Type
 
 # third party
 from nacl.encoding import HexEncoder
@@ -71,18 +14,17 @@ from typing_extensions import final
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ...exceptions import AuthorizationError
-from ...node_table.node import Node as NodeRow
-from ...node_table.node_route import NodeRoute as NodeRouteRow
 from ...node_table.utils import model_to_json
+from ..auth import service_auth
 from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage
+from ..node_service import NodeService
 
 
 @serializable(recursive_serde=True)
 @final
 class GetMessage(GenericPayloadMessage):
-    message_protocol = "GET"
     ...
 
 
@@ -94,13 +36,14 @@ class GetReplyMessage(GenericPayloadReplyMessage):
 
 @serializable(recursive_serde=True)
 @final
-class GetUserMessageWithReply(GenericPayloadMessageWithReply):
+class GetUserMessage(GenericPayloadMessageWithReply):
     message_type = GetMessage
     message_reply_type = GetReplyMessage
 
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
+
         # TODO: Segregate permissions to a different level (make it composable)
         _allowed = node.users.can_triage_requests(verify_key=verify_key)
         if not _allowed:
@@ -125,43 +68,46 @@ class GetUserMessageWithReply(GenericPayloadMessageWithReply):
             return _msg
 
 
-class DomainServiceRegistry(ABCMeta):
-    """A class for registering the services attached to the domain client."""
+class DomainServiceRegistry:
+    _domain_registry = []
 
-    _service_registry = {}
-
-    def __new__(cls, *args, **kwargs):
-        new_cls = type.__new__(cls, *args, **kwargs)
-        if hasattr(new_cls, "__name__"):
-            service_name = getattr(new_cls, "__name__")
-            cls._service_registry[service_name] = new_cls
-        return super(DomainServiceRegistry, cls).__new__(cls, *args, **kwargs)
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._domain_registry.append(cls)
 
     @classmethod
     def get_registered_services(cls):
         """dict: Returns map of service inheriting this class."""
-        return dict(cls._service_registry)
+        return list(cls._domain_registry)
 
 
-class NetworkServiceRegistry(ABCMeta):
+class NetworkServiceRegistry:
     """A class for registering the services attached to the domain client."""
 
-    _service_registry = {}
+    _network_registry = []
 
-    def __new__(cls, *args, **kwargs):
-        new_cls = type.__new__(cls, *args, **kwargs)
-        if hasattr(new_cls, "__name__"):
-            service_name = getattr(new_cls, "__name__")
-            cls._service_registry[service_name] = new_cls
-        return super(NetworkServiceRegistry, cls).__new__(cls, *args, **kwargs)
+    def __init_subclass__(cls, **kwargs):
+        super().__init_subclass__(**kwargs)
+        cls._network_registry.append(cls)
 
     @classmethod
     def get_registered_services(cls):
         """dict: Returns map of service inheriting this class."""
-        return dict(cls._service_registry)
+        return list(cls._network_registry)
 
 
-class UserService(
-    DomainServiceRegistry, NetworkServiceRegistry, GenericPayloadMessageWithReply
-):
-    pass
+class UserService(NetworkServiceRegistry, DomainServiceRegistry, NodeService):
+    @staticmethod
+    @service_auth(guests_welcome=True)
+    def process(
+        node: NodeServiceInterface,
+        msg: GetMessage,
+        verify_key: Optional[VerifyKey] = None,
+    ) -> GetUserMessage:
+
+        result = msg.payload.run(node=node, verify_key=verify_key)
+        return GetUserMessage(kwargs=result).back_to(address=msg.reply_to)
+
+    @staticmethod
+    def message_handler_types() -> List[Type[GetMessage]]:
+        return [GetMessage]
