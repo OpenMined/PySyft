@@ -94,3 +94,12 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
                 and self.prime == other.prime
             )
         return self == other
+
+    def __hash__(self) -> int:
+        return (
+            hash(self.min_val)
+            + hash(self.max_val)
+            + hash(self.prime)
+            + hash(self.entity)
+            + hash(self.value)
+        )
