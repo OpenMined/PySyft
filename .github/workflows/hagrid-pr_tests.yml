@@ -1,6 +1,8 @@
 name: HAGrid PR Tests
 
 on:
+  workflow_call:
+
   pull_request:
     branches:
       - dev

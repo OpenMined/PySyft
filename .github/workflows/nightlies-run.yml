@@ -1,0 +1,35 @@
+  name: Nightlies Run All Tests
+
+  on:
+    schedule:
+      - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT
+    workflow_dispatch:
+      inputs:
+        none:
+          description: "Run Nightlies Tests Manually"
+          required: false
+
+  jobs:
+    call-grid-backend_test:
+      uses: OpenMined/PySyft/.github/workflows/grid-backend_tests.yml@dev
+      
+    call-hagrid-pr_tests:
+      uses: OpenMined/PySyft/.github/workflows/hagrid-pr_tests.yml@dev
+
+    call-linting:
+      uses: OpenMined/PySyft/.github/workflows/linting.yml@dev
+
+    call-stack-integration_tests:
+      uses: OpenMined/PySyft/.github/workflows/stack-integration_tests.yml@dev
+
+    call-syft-merge_torch_tests:
+      uses: OpenMined/PySyft/.github/workflows/syft-merge_torch_tests.yml@dev
+
+    call-syft-pr_tests:
+      uses: OpenMined/PySyft/.github/workflows/syft-pr_tests.yml@dev
+
+    call-syft-security:
+      uses: OpenMined/PySyft/.github/workflows/syft-security.yml@dev
+
+    call-syft-version_tests:
+      uses: OpenMined/PySyft/.github/workflows/syft-version_tests.yml@dev
