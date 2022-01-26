@@ -64,7 +64,7 @@ class DomainRequestAPI(RequestAPI):
                             data.append(domain_metadata)
                         syft.logger.start()
                     except Exception:
-                        """"""
+                        """ """
                 sys.stdout.write("\r                                             ")
 
                 self.cache = data
