@@ -1,8 +1,8 @@
-import {render, screen, within, getNodeText, getByTestId} from '@testing-library/react'
+import { render, screen, within, getNodeText, getByTestId } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import cases from 'jest-in-case'
 
-import {Tag} from '../Tag'
+import { Tag } from '../Tag'
 
 const RandomIcon = props => (
   <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512" data-testid="test-icon" {...props}>
@@ -16,7 +16,7 @@ const RandomIcon = props => (
 describe('Tag', () => {
   cases(
     'styles:classes',
-    ({params, result}) => {
+    ({ params, result }) => {
       render(
         <Tag data-testid="test-id" {...params}>
           Omui
@@ -30,33 +30,33 @@ describe('Tag', () => {
       {
         name: 'default should be square and have primary colors',
         params: {},
-        result: 'bg-primary-100 text-primary-600 rounded-sm'
+        result: 'bg-primary-100 text-primary-600 rounded-sm',
       },
       {
         name: 'gray tag has different classes',
-        params: {variant: 'gray'},
-        result: 'bg-gray-100 text-gray-600 hover:bg-gray-800 hover:text-primary-200'
+        params: { variant: 'gray' },
+        result: 'bg-gray-100 text-gray-600 hover:bg-gray-800 hover:text-primary-200',
       },
       {
         name: 'can be disabled',
-        params: {disabled: true},
-        result: 'opacity-50 pointer-events-none'
+        params: { disabled: true },
+        result: 'opacity-50 pointer-events-none',
       },
       {
         name: 'the cursor is pointer when the tag is clickable',
-        params: {onClick: jest.fn},
-        result: 'cursor-pointer'
+        params: { onClick: jest.fn },
+        result: 'cursor-pointer',
       },
       {
         name: 'the tag is round when tagType is round',
-        params: {tagType: 'round'},
-        result: 'rounded-full'
-      }
+        params: { tagType: 'round' },
+        result: 'rounded-full',
+      },
     ]
   ),
     cases(
       'styles:typography',
-      ({params, result}) => {
+      ({ params, result }) => {
         render(
           <Tag data-testid="test-id" {...params}>
             Omui
@@ -71,29 +71,29 @@ describe('Tag', () => {
         {
           name: 'default text size should be md',
           params: {},
-          result: 'text-md'
+          result: 'text-md',
         },
         {
           name: 'size=md produces a tag with text size equal to text-md',
-          params: {size: 'md'},
-          result: 'text-md'
+          params: { size: 'md' },
+          result: 'text-md',
         },
 
         {
           name: 'size=lg produces a tag with text size equal to text-lg',
-          params: {size: 'lg'},
-          result: 'text-lg'
+          params: { size: 'lg' },
+          result: 'text-lg',
         },
         {
           name: 'size=sm produces a tag with text size equal to text-sm',
-          params: {size: 'sm'},
-          result: 'text-sm'
-        }
+          params: { size: 'sm' },
+          result: 'text-sm',
+        },
       ]
     ),
     cases(
       'render:icons',
-      ({params}) => {
+      ({ params }) => {
         const testString = 'OMui'
 
         render(
@@ -122,12 +122,12 @@ describe('Tag', () => {
       [
         {
           name: 'Should render icon on left side',
-          params: {icon: RandomIcon, iconSide: 'left'}
+          params: { icon: RandomIcon, iconSide: 'left' },
         },
         {
           name: 'Should render icon on right side',
-          params: {icon: RandomIcon, iconSide: 'right'}
-        }
+          params: { icon: RandomIcon, iconSide: 'right' },
+        },
       ]
     )
 

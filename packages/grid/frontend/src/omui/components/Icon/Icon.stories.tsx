@@ -1,10 +1,10 @@
 import React from 'react'
-import {Story, Meta} from '@storybook/react'
+import { Story, Meta } from '@storybook/react'
 
-import {Icon, IconContainerProp} from './Icon'
-import type {IconProps, IconVariantProp, IconSizeProp} from './Icon'
+import { Icon, IconContainerProp } from './Icon'
+import type { IconProps, IconVariantProp, IconSizeProp } from './Icon'
 
-const RandomIcon = ({className}: {className: string}) => (
+const RandomIcon = ({ className }: { className: string }) => (
   <svg className={className} role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512">
     <path
       fill="currentColor"
@@ -18,8 +18,8 @@ export const Template: Story<IconProps> = args => <Icon {...args} icon={RandomIc
 const size = ['xs', 'sm', 'md', 'lg', 'xl'].reverse() as IconSizeProp[]
 const container: IconContainerProp[] = ['square', 'round']
 
-export const AllIcons: Story<IconProps> = (_, {argTypes}) => {
-  const {variant} = argTypes
+export const AllIcons: Story<IconProps> = (_, { argTypes }) => {
+  const { variant } = argTypes
   return (
     <div className="space-y-12">
       {container.map((c: IconContainerProp) => (
@@ -40,14 +40,14 @@ export default {
   title: 'Atoms/Icon',
   component: Icon,
   argTypes: {
-    icon: {control: false},
-    ref: {table: {disable: true}},
-    key: {table: {disable: true}}
-  }
+    icon: { control: false },
+    ref: { table: { disable: true } },
+    key: { table: { disable: true } },
+  },
 } as Meta
 
 AllIcons.parameters = {
   controls: {
-    disabled: true
-  }
+    disabled: true,
+  },
 }

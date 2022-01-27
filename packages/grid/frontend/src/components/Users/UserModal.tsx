@@ -1,15 +1,15 @@
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faInfoCircle, faTrash} from '@fortawesome/free-solid-svg-icons'
-import {Button, Divider, H2, H6, Text} from '@/omui'
-import {RoleBadge} from '@/components/RoleBadge'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faInfoCircle, faTrash } from '@fortawesome/free-solid-svg-icons'
+import { Button, Divider, H2, H6, Text } from '@/omui'
+import { RoleBadge } from '@/components/RoleBadge'
 import Modal from '../Modal'
-import {t} from '@/i18n'
-import {formatBudget, formatDate} from '@/utils'
-import {BorderedBox} from '@/components/Boxes'
-import {useUsers} from '@/lib/data'
+import { t } from '@/i18n'
+import { formatBudget, formatDate } from '@/utils'
+import { BorderedBox } from '@/components/Boxes'
+import { useUsers } from '@/lib/data'
 
-function UserModal({show, onClose, user, onEditRole, onAdjustBudget}) {
-  const removeUser = useUsers().remove(user?.id, {onSuccess: onClose}).mutate
+function UserModal({ show, onClose, user, onEditRole, onAdjustBudget }) {
+  const removeUser = useUsers().remove(user?.id, { onSuccess: onClose }).mutate
 
   if (!user) return null
 
@@ -42,7 +42,7 @@ function UserModal({show, onClose, user, onEditRole, onAdjustBudget}) {
   )
 }
 
-function PrivacyBudgetAdjustCard({budget_spent, budget, onAdjustBudget}) {
+function PrivacyBudgetAdjustCard({ budget_spent, budget, onAdjustBudget }) {
   return (
     <div className="col-span-7 space-y-3">
       <H6 bold>
@@ -76,11 +76,11 @@ function PrivacyBudgetAdjustCard({budget_spent, budget, onAdjustBudget}) {
   )
 }
 
-function Background({email, institution, website}) {
+function Background({ email, institution, website }) {
   const info = [
-    {text: t('email'), value: email, link: Boolean(email)},
-    {text: t('company-institution'), value: institution},
-    {text: t('website-profile'), value: website, link: Boolean(website)}
+    { text: t('email'), value: email, link: Boolean(email) },
+    { text: t('company-institution'), value: institution },
+    { text: t('website-profile'), value: website, link: Boolean(website) },
   ]
   return (
     <div className="col-span-full space-y-3">
@@ -99,12 +99,12 @@ function Background({email, institution, website}) {
   )
 }
 
-function System({created_at, added_by, daa_pdf, daa_pdf_uploaded_on}) {
+function System({ created_at, added_by, daa_pdf, daa_pdf_uploaded_on }) {
   const info = [
-    {text: t('date-added'), value: formatDate(created_at)},
-    {text: t('added-by'), value: added_by},
-    {text: t('data-access-agreement'), value: daa_pdf},
-    {text: t('uploaded-on'), value: daa_pdf_uploaded_on}
+    { text: t('date-added'), value: formatDate(created_at) },
+    { text: t('added-by'), value: added_by },
+    { text: t('data-access-agreement'), value: daa_pdf },
+    { text: t('uploaded-on'), value: daa_pdf_uploaded_on },
   ]
 
   return (
@@ -124,4 +124,4 @@ function System({created_at, added_by, daa_pdf, daa_pdf_uploaded_on}) {
   )
 }
 
-export {UserModal}
+export { UserModal }

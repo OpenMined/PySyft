@@ -7,6 +7,7 @@
     "strict": false,
     "forceConsistentCasingInFileNames": true,
     "noEmit": true,
+    "incremental": true,
     "esModuleInterop": true,
     "module": "esnext",
     "moduleResolution": "node",
@@ -14,11 +15,13 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "baseUrl": "./src",
-    "types": ["cypress", "@testing-library/cypress"],
     "paths": {
-      "@/*": ["./*"]
+      "$components/*": ["./components/*"],
+      "$icons/*": ["./icons/*"],
+      "$types": ["./types"],
+      "$lib/*": ["./lib/*"]
     }
   },
-  "exclude": ["node_modules", ".next", "out"],
-  "include": ["next-env.d.ts", "./src/**/*.ts", "./src/**/*.tsx"]
+  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
+  "exclude": ["node_modules"]
 }

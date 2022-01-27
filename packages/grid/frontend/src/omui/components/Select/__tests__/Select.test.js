@@ -1,19 +1,19 @@
-import {render, screen} from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import cases from 'jest-in-case'
-import {axe} from 'jest-axe'
+import { axe } from 'jest-axe'
 
-import {Select} from '../Select'
+import { Select } from '../Select'
 
 const mockOptions = [
-  {label: 'Foundations of Private Computation', value: 'foundations'},
-  {label: 'Our Privacy Opportunity', value: 'privacy-opportunity'},
-  {label: 'Federated Learning Across Enterprises', value: 'federated-learning'}
+  { label: 'Foundations of Private Computation', value: 'foundations' },
+  { label: 'Our Privacy Opportunity', value: 'privacy-opportunity' },
+  { label: 'Federated Learning Across Enterprises', value: 'federated-learning' },
 ]
 
 cases(
   'styles:classes',
-  ({params, result}) => {
+  ({ params, result }) => {
     render(<Select data-testid="test-id" {...params} />)
 
     const selectElement = screen.getByTestId('test-id')
@@ -22,24 +22,24 @@ cases(
   [
     {
       name: 'default: default size and default states',
-      params: {options: []},
-      result: 'border-gray-100 py-2 text-md'
+      params: { options: [] },
+      result: 'border-gray-100 py-2 text-md',
     },
     {
       name: 'size: changing size and default states',
-      params: {options: [], size: 'sm'},
-      result: 'border-gray-100 py-1 text-sm'
+      params: { options: [], size: 'sm' },
+      result: 'border-gray-100 py-1 text-sm',
     },
     {
       name: 'custom-state/error: default size and error state',
-      params: {options: [], error: true},
-      result: 'border-error-500 py-2 text-md'
+      params: { options: [], error: true },
+      result: 'border-error-500 py-2 text-md',
     },
     {
       name: 'custom-state/disabled: default size and disabled state',
-      params: {options: [], disabled: true},
-      result: 'opacity-40 pointer-events-none py-2 text-md'
-    }
+      params: { options: [], disabled: true },
+      result: 'opacity-40 pointer-events-none py-2 text-md',
+    },
   ]
 )
 
@@ -53,7 +53,7 @@ describe('placeholder text', () => {
   })
 
   test('display the selected value as placeholder', () => {
-    const {value, label} = mockOptions[2]
+    const { value, label } = mockOptions[2]
     render(<Select data-testid="select-testid" value={value} options={mockOptions} />)
     const component = screen.getByTestId('select-testid')
 
@@ -70,7 +70,7 @@ describe('mouse navigation', () => {
     // Open dropdown
     userEvent.click(component)
 
-    const optionElement = screen.getByRole('menuitem', {name: mockOptions[0].label})
+    const optionElement = screen.getByRole('menuitem', { name: mockOptions[0].label })
 
     userEvent.click(optionElement)
 
@@ -97,14 +97,14 @@ describe('keyboard navigation', () => {
     expect(component).toHaveFocus()
 
     // Open dropdown
-    userEvent.type(component, '{enter}', {skipClick: true})
+    userEvent.type(component, '{enter}', { skipClick: true })
 
     // Click arrow down to walk on options
-    userEvent.type(component, '{arrowdown}', {skipClick: true})
+    userEvent.type(component, '{arrowdown}', { skipClick: true })
     const firstOptionValue = mockOptions[0].value
 
     // Select option with space
-    userEvent.type(component, '{space}', {skipClick: true})
+    userEvent.type(component, '{space}', { skipClick: true })
     expect(mockFn).toHaveBeenCalledWith(firstOptionValue)
   })
 
@@ -120,7 +120,9 @@ describe('keyboard navigation', () => {
 describe('accessibility', () => {
   test('set attributes for open state when clicking on select', async () => {
     const mockFn = jest.fn()
-    const {container} = render(<Select data-testid="select-testid" onChange={mockFn} options={mockOptions} />)
+    const { container } = render(
+      <Select data-testid="select-testid" onChange={mockFn} options={mockOptions} />
+    )
     const component = screen.getByTestId('select-testid')
     expect(component).not.toHaveAttribute('aria-expanded')
     expect(component).not.toHaveAttribute('data-active')
@@ -129,14 +131,14 @@ describe('accessibility', () => {
     expect(await axe(container)).toHaveNoViolations()
 
     // Open dropdown
-    userEvent.type(component, '{enter}', {skipClick: true})
+    userEvent.type(component, '{enter}', { skipClick: true })
     expect(component).toHaveAttribute('aria-expanded', 'true')
     expect(component).toHaveAttribute('data-active', 'true')
     expect(await axe(container)).toHaveNoViolations()
 
     // Click arrow down to walk on options
-    userEvent.type(component, '{arrowdown}{arrowdown}', {skipClick: true})
-    const {value} = mockOptions[1]
+    userEvent.type(component, '{arrowdown}{arrowdown}', { skipClick: true })
+    const { value } = mockOptions[1]
     expect(component).toHaveAttribute('aria-activedescendant', `omui-menu-item-${value}`)
     expect(await axe(container)).toHaveNoViolations()
   })

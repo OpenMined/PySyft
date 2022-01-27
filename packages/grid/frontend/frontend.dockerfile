@@ -33,3 +33,4 @@ ENV NODE_TYPE $NODE_TYPE
 COPY --from=build-stage /app/out /usr/share/nginx/html
 COPY --from=build-stage /app/docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build-stage /app/docker/nginx-backend-not-found.conf /etc/nginx/extra-conf.d/backend-not-found
+

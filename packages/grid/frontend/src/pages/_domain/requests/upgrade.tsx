@@ -1,27 +1,32 @@
-import {createContext, useContext, useMemo, useState} from 'react'
-import {Badge, Divider, H4, ListInnerContainer, Select, Tabs, Text} from '@/omui'
-import {Dot, SearchInput, TopContent} from '@/components/lib'
-import {Alert} from '@/components/Alert'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faAngleDoubleRight, faCaretUp} from '@fortawesome/free-solid-svg-icons'
+import { createContext, useContext, useMemo, useState } from 'react'
+import { Badge, Divider, H4, ListInnerContainer, Select, Tabs, Text } from '@/omui'
+import { Dot, SearchInput, TopContent } from '@/components/lib'
+import { Alert } from '@/components/Alert'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faAngleDoubleRight, faCaretUp } from '@fortawesome/free-solid-svg-icons'
 import dayjs from 'dayjs'
-import {Accordion} from '@/components/Accordion'
-import {Base} from '@/components/Layouts'
-import {AcceptDeny} from '@/components/AcceptDenyButtons'
-import {TableItem, useOMUITable} from '@/components/Table'
-import {useBudgetRequests, useRequests} from '@/lib/data'
-import {RequestStatusBadge} from '@/components/RequestStatusBadge'
+import { Accordion } from '@/components/Accordion'
+import { Base } from '@/components/Layouts'
+import { AcceptDeny } from '@/components/AcceptDenyButtons'
+import { TableItem, useOMUITable } from '@/components/Table'
+import { useBudgetRequests, useRequests } from '@/lib/data'
+import { RequestStatusBadge } from '@/components/RequestStatusBadge'
 
-const RequestsContext = createContext({budgets: [], requests: [], highlighted: null, selected: []})
+const RequestsContext = createContext({
+  budgets: [],
+  requests: [],
+  highlighted: null,
+  selected: [],
+})
 
 function PendingUpgrade() {
-  const {budgets} = useContext(RequestsContext)
+  const { budgets } = useContext(RequestsContext)
   const pending = budgets?.filter(b => b?.req?.status === 'pending')
   if (pending?.length === 0) return <EmptyUpgradeRequests />
   return <RequestsAccordion budgets={pending} />
 }
 
-function RequestsAccordion({budgets}) {
+function RequestsAccordion({ budgets }) {
   const buildUserInfo = info => [
     {
       text: 'Role',
@@ -29,7 +34,7 @@ function RequestsAccordion({budgets}) {
         <Badge variant="primary" type="subtle">
           {info.user.role}
         </Badge>
-      )
+      ),
     },
     {
       text: 'Email',
@@ -39,10 +44,10 @@ function RequestsAccordion({budgets}) {
             {info.user.email}
           </Text>
         </a>
-      )
+      ),
     },
-    {text: 'Company/Institution', value: info.user.company},
-    {text: 'Website/Profile', value: info.user.website}
+    { text: 'Company/Institution', value: info.user.company },
+    { text: 'Website/Profile', value: info.user.website },
   ]
 
   return (
@@ -73,8 +78,8 @@ function RequestsAccordion({budgets}) {
                       <Dot />
                     </ListInnerContainer>
                     <AcceptDeny
-                      onAccept={() => update({status: 'accepted'})}
-                      onDeny={() => update({status: 'denied'})}
+                      onAccept={() => update({ status: 'accepted' })}
+                      onDeny={() => update({ status: 'denied' })}
                     />{' '}
                   </div>
                 </div>
@@ -84,8 +89,9 @@ function RequestsAccordion({budgets}) {
                     className="w-1/2 flex-shrink-0 bg-gray-50 border border-gray-100 px-6 py-4 items-center"
                     style={{
                       background:
-                        'linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%), #F1F0F4'
-                    }}>
+                        'linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%), #F1F0F4',
+                    }}
+                  >
                     <div className="flex space-x-6 items-start">
                       <div className="flex-shrink-0">
                         <div className="flex items-center space-x-2 text-error-500">
@@ -191,7 +197,7 @@ function RequestsAccordion({budgets}) {
 }
 
 function HistoryUpgrade() {
-  const {budgets} = useContext(RequestsContext)
+  const { budgets } = useContext(RequestsContext)
   const history = budgets?.filter(req => req.req.status !== 'pending')
   return (
     <div className="col-span-full mt-8">
@@ -202,28 +208,31 @@ function HistoryUpgrade() {
 }
 
 function UpgradeRequestsHistoryTable() {
-  const {budgets} = useContext(RequestsContext)
-  const tableData = useMemo(() => budgets?.filter(req => req.req.status !== 'pending') ?? [], [budgets])
+  const { budgets } = useContext(RequestsContext)
+  const tableData = useMemo(
+    () => budgets?.filter(req => req.req.status !== 'pending') ?? [],
+    [budgets]
+  )
   const tableColumns = useMemo(
     () => [
       {
         Header: 'ID#',
         accessor: 'req.id',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <Badge size="sm" variant="gray" type="subtle" truncate>
             {value}
           </Badge>
-        )
+        ),
       },
       {
         Header: 'Name',
         accessor: 'user.name',
-        Cell: ({cell: {value}}) => <Text size="sm">{value}</Text>
+        Cell: ({ cell: { value } }) => <Text size="sm">{value}</Text>,
       },
       {
         Header: 'Status',
         accessor: 'req.status',
-        Cell: ({cell: {value}}) => <RequestStatusBadge status={value} />
+        Cell: ({ cell: { value } }) => <RequestStatusBadge status={value} />,
       },
       // {
       //   Header: (
@@ -254,18 +263,21 @@ function UpgradeRequestsHistoryTable() {
       {
         Header: 'Requested',
         accessor: 'req.requested_budget',
-        Cell: ({cell: {value, row}}) => (
+        Cell: ({ cell: { value, row } }) => (
           <TableItem center>
-            <Badge variant={row.original.status === 'accepted' ? 'success' : 'danger'} type="subtle">
+            <Badge
+              variant={row.original.status === 'accepted' ? 'success' : 'danger'}
+              type="subtle"
+            >
               {value} ε
             </Badge>
           </TableItem>
-        )
+        ),
       },
       {
         Header: 'New budget',
         accessor: '',
-        Cell: ({cell: {value, row}}) => (
+        Cell: ({ cell: { value, row } }) => (
           <TableItem className="h-full flex">
             <div className="flex items-center border-r pr-3">
               <Badge variant="gray" type="subtle">
@@ -276,15 +288,20 @@ function UpgradeRequestsHistoryTable() {
               </Badge>
             </div>
             <div className="flex items-center ml-3">
-              <Text size="sm" className={row.original.req.status === 'denied' ? 'text-error-600' : 'text-success-600'}>
+              <Text
+                size="sm"
+                className={
+                  row.original.req.status === 'denied' ? 'text-error-600' : 'text-success-600'
+                }
+              >
                 {row.original.req.status === 'denied'
                   ? '--'
                   : `+${row.original.req.requested_budget - row.original.user.current_budget}`}
               </Text>
             </div>
           </TableItem>
-        )
-      }
+        ),
+      },
     ],
     []
   )
@@ -292,7 +309,7 @@ function UpgradeRequestsHistoryTable() {
     data: tableData,
     columns: tableColumns,
     selectable: true,
-    sortable: true
+    sortable: true,
   })
 
   // const selected = table.instance.selectedFlatRows
@@ -325,26 +342,28 @@ function EmptyUpgradeRequests() {
 }
 
 export default function UpgradeRequests() {
-  const {data: budgetReq} = useBudgetRequests().all()
+  const { data: budgetReq } = useBudgetRequests().all()
   const [currentTab, setCurrentTab] = useState(() => 1)
   const tabsList = [
-    {id: 1, title: 'Pending'},
-    {id: 2, title: 'History'}
+    { id: 1, title: 'Pending' },
+    { id: 2, title: 'History' },
   ]
   const requests = []
 
   return (
     <Base>
-      <RequestsContext.Provider value={{budgets: budgetReq, requests, highlighted: null, selected: []}}>
+      <RequestsContext.Provider
+        value={{ budgets: budgetReq, requests, highlighted: null, selected: [] }}
+      >
         <TopContent heading="Upgrade Requests" />
         <div className="col-span-10">
           <Alert.Info
             alertStyle="topAccent"
             description={
               <Text className="text-gray-800">
-                Upgrade requests are requests made by Data Scientists on your node to get a larger amount of privacy
-                budget allocated to them. You can think of privacy budget as credits you give to a user to perform
-                computations from. These credits of{' '}
+                Upgrade requests are requests made by Data Scientists on your node to get a larger
+                amount of privacy budget allocated to them. You can think of privacy budget as
+                credits you give to a user to perform computations from. These credits of{' '}
                 <Text mono className="text-gray-600">
                   Epsilon(ɛ)
                 </Text>{' '}

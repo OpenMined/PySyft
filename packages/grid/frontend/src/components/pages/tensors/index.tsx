@@ -1,7 +1,7 @@
-import {List} from '@/components'
-import type {Tensor} from '@/types/grid-types'
+import { List } from '@/components'
+import type { Tensor } from '@/types/grid-types'
 
-export function TensorList({tensors}: {tensors: Tensor[]}) {
+export function TensorList({ tensors }: { tensors: Tensor[] }) {
   return (
     <List>
       {tensors.map(tensor => (

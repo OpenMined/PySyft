@@ -1,19 +1,19 @@
-import {useState} from 'react'
+import { useState } from 'react'
 import Link from 'next/link'
-import {faCheck} from '@fortawesome/free-solid-svg-icons'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {Button, Input, FormControl, Text} from '@/omui'
+import { faCheck } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button, Input, FormControl, Text } from '@/omui'
 import Modal from '../Modal'
-import {useUsers} from '@/lib/data'
+import { useUsers } from '@/lib/data'
 
-export function PrivacyBudgetModal({show, onClose, user}) {
-  const update = useUsers().update(user?.id, {onSuccess: onClose}).mutate
+export function PrivacyBudgetModal({ show, onClose, user }) {
+  const update = useUsers().update(user?.id, { onSuccess: onClose }).mutate
 
   const [value, setValue] = useState(user?.budget)
   // TODO: mitigated for demo
   const add = () => setValue(v => (Number(v) + 0.1).toFixed(2))
   const subtract = () => setValue(v => (Number(v) - 0.1).toFixed(2))
-  const upgrade = () => update({budget: Number(value)})
+  const upgrade = () => update({ budget: Number(value) })
 
   return (
     <Modal show={show} onClose={onClose} className="max-w-3xl">
@@ -38,8 +38,8 @@ export function PrivacyBudgetModal({show, onClose, user}) {
             step={0.1}
             addonRight="+"
             addonLeft="-"
-            addonLeftProps={{onClick: subtract}}
-            addonRightProps={{onClick: add}}
+            addonLeftProps={{ onClick: subtract }}
+            addonRightProps={{ onClick: add }}
             value={value}
             onChange={e => setValue(e.target.value)}
           />

@@ -1,6 +1,6 @@
-import {Toggle} from '@/components'
-import {gridPermissions} from '@/utils'
-import type {UserPermissions, Role} from '@/types/grid-types'
+import { Toggle } from '@/components'
+import { gridPermissions } from '@/utils'
+import type { UserPermissions, Role } from '@/types/grid-types'
 
 interface PermissionListWithToggle {
   onChange: (e: UserPermissions, e2: boolean) => void
@@ -8,7 +8,11 @@ interface PermissionListWithToggle {
   id: string | number
 }
 
-export function PermissionsListToggle({onChange, defaultPermissions, id}: PermissionListWithToggle) {
+export function PermissionsListToggle({
+  onChange,
+  defaultPermissions,
+  id,
+}: PermissionListWithToggle) {
   return (
     <>
       {Object.keys(gridPermissions).map((permission: UserPermissions) => (

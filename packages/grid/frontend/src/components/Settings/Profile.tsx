@@ -1,25 +1,25 @@
-import {useContext, useEffect, useState} from 'react'
-import {Badge, Button, Divider, H4, H5, Input, Tag, Text, TextArea} from '@/omui'
-import {XIcon} from '@heroicons/react/solid'
-import {Optional, ButtonGroup} from '@/components/lib'
-import {useSettings} from '@/lib/data'
-import {formatDate} from '@/utils'
-import {Controller, FormProvider, useForm, useFormContext} from 'react-hook-form'
-import {t} from '@/i18n'
-import {useDisclosure} from 'react-use-disclosure'
+import { useContext, useEffect, useState } from 'react'
+import { Badge, Button, Divider, H4, H5, Input, Tag, Text, TextArea } from '@/omui'
+import { XIcon } from '@heroicons/react/solid'
+import { Optional, ButtonGroup } from '@/components/lib'
+import { useSettings } from '@/lib/data'
+import { formatDate } from '@/utils'
+import { Controller, FormProvider, useForm, useFormContext } from 'react-hook-form'
+import { t } from '@/i18n'
+import { useDisclosure } from 'react-use-disclosure'
 import Modal from '@/components/Modal'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faCheckCircle, faExclamationTriangle} from '@fortawesome/free-solid-svg-icons'
-import {FormControl} from '@/omui/components/FormControl/FormControl'
-import {logout} from '@/lib/auth'
-import {useRouter} from 'next/router'
-import {useDomainSettings} from './useDomainSettings'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faCheckCircle, faExclamationTriangle } from '@fortawesome/free-solid-svg-icons'
+import { FormControl } from '@/omui/components/FormControl/FormControl'
+import { logout } from '@/lib/auth'
+import { useRouter } from 'next/router'
+import { useDomainSettings } from './useDomainSettings'
 
 function General() {
-  const {settings} = useDomainSettings()
+  const { settings } = useDomainSettings()
 
   const information = [
-    {name: t('domain-name'), value: settings?.domain_name},
+    { name: t('domain-name'), value: settings?.domain_name },
     {
       name: 'ID#',
       value: (
@@ -28,11 +28,11 @@ function General() {
             {settings?.node_id}
           </Badge>
         </span>
-      )
+      ),
     },
-    {name: t('hosted-datasets'), value: settings?.total_datasets},
-    {name: t('deployed-on'), value: formatDate(settings?.deployed_on)},
-    {name: t('owner'), value: settings?.owner}
+    { name: t('hosted-datasets'), value: settings?.total_datasets },
+    { name: t('deployed-on'), value: formatDate(settings?.deployed_on) },
+    { name: t('owner'), value: settings?.owner },
   ]
 
   return (
@@ -53,20 +53,24 @@ function General() {
 }
 
 function DomainDescription() {
-  const {register} = useFormContext()
+  const { register } = useFormContext()
   return (
     <div className="space-y-3">
       <H5>
         {t('domain-description', 'settings')}
         <Optional />
       </H5>
-      <TextArea placeholder={t('placeholder.describe-your-domain')} rows="5" {...register('description')} />
+      <TextArea
+        placeholder={t('placeholder.describe-your-domain')}
+        rows="5"
+        {...register('description')}
+      />
     </div>
   )
 }
 
 function SupportEmail() {
-  const {register} = useFormContext()
+  const { register } = useFormContext()
   return (
     <div className="space-y-3">
       <H5>
@@ -80,8 +84,8 @@ function SupportEmail() {
 }
 
 function Tags() {
-  const {control, setValue} = useFormContext()
-  const {settings} = useDomainSettings()
+  const { control, setValue } = useFormContext()
+  const { settings } = useDomainSettings()
   const [tags, setTags] = useState(() => (Array.isArray(settings?.tags) ? settings.tags : []))
 
   const updateTags = tag => {
@@ -101,8 +105,8 @@ function Tags() {
       <Controller
         control={control}
         name="thisTag"
-        render={({field}) => {
-          const {onChange, onBlur, value} = field
+        render={({ field }) => {
+          const { onChange, onBlur, value } = field
           return (
             <Input
               placeholder={t('placeholder.create-new-tag')}
@@ -115,7 +119,7 @@ function Tags() {
                   updateTags(value)
                   field.onChange('')
                 },
-                className: 'cursor-pointer'
+                className: 'cursor-pointer',
               }}
             />
           )
@@ -131,7 +135,8 @@ function Tags() {
             key={entry}
             icon={XIcon}
             iconSide="right"
-            onClick={e => setTags(prev => prev.filter(tag => tag !== entry))}>
+            onClick={e => setTags(prev => prev.filter(tag => tag !== entry))}
+          >
             {entry}
           </Tag>
         ))}
@@ -140,20 +145,20 @@ function Tags() {
 }
 
 function Profile() {
-  const {settings} = useDomainSettings()
-  const update = useSettings().create(null, {multipart: true}).mutate
+  const { settings } = useDomainSettings()
+  const update = useSettings().create(null, { multipart: true }).mutate
   const methods = useForm({
     mode: 'onChange',
     defaultValues: {
       description: settings?.description,
       tags: settings?.tags,
-      contact: settings?.contact
-    }
+      contact: settings?.contact,
+    },
   })
 
-  const onSubmit = ({thisTag, ...values}) => {
+  const onSubmit = ({ thisTag, ...values }) => {
     const formData = new FormData()
-    formData.append('settings', JSON.stringify({...values}))
+    formData.append('settings', JSON.stringify({ ...values }))
     formData.append('file', new Blob())
     update(formData)
   }
@@ -176,7 +181,7 @@ function Profile() {
   )
 }
 
-function ResetNodeConfirmationModal({show, onClose, onSuccess}) {
+function ResetNodeConfirmationModal({ show, onClose, onSuccess }) {
   const onSubmit = () => {
     onSuccess()
   }
@@ -203,12 +208,12 @@ function ResetNodeConfirmationModal({show, onClose, onSuccess}) {
   )
 }
 
-function ResetNodeSuccessModal({show}) {
+function ResetNodeSuccessModal({ show }) {
   const router = useRouter()
-  const {handleSubmit, register} = useForm()
+  const { handleSubmit, register } = useForm()
 
   const onSubmit = values => {
-    console.log('submit frustrations, suggestions', {values})
+    console.log('submit frustrations, suggestions', { values })
     onClose()
   }
 
@@ -247,8 +252,8 @@ function ResetNodeSuccessModal({show}) {
 }
 
 function ResetNode() {
-  const {open, isOpen, close} = useDisclosure(false)
-  const {open: openSuccess, isOpen: isOpenSuccess} = useDisclosure(false)
+  const { open, isOpen, close } = useDisclosure(false)
+  const { open: openSuccess, isOpen: isOpenSuccess } = useDisclosure(false)
   return (
     <div className="w-full">
       <H5>{t('reset', 'settings')}</H5>
@@ -264,4 +269,4 @@ function ResetNode() {
   )
 }
 
-export {Profile}
+export { Profile }

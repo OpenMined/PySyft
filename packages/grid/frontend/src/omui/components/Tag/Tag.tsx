@@ -1,9 +1,9 @@
 import React from 'react'
 import cn from 'classnames'
-import {Text} from '../Typography/Text'
-import {Icon} from '../Icon/Icon'
-import type {ElementType, MouseEventHandler, PropsWithChildren} from 'React'
-import type {OmuiColors} from '@/styles/colorType'
+import { Text } from '../Typography/Text'
+import { Icon } from '../Icon/Icon'
+import type { ElementType, MouseEventHandler, PropsWithChildren } from 'React'
+import type { OmuiColors } from '@/styles/colorType'
 
 export type TagSizeProp = 'sm' | 'md' | 'lg'
 export type TagTypeProp = 'round' | 'square'
@@ -13,7 +13,7 @@ const VARIANT_COLORS: Record<TagVariantProp, Partial<OmuiColors>> = {
   gray: 'gray',
   primary: 'primary',
   tertiary: 'violet',
-  quaternary: 'blue'
+  quaternary: 'blue',
 } as const
 
 interface Props {
@@ -69,17 +69,17 @@ export type TagProps = PropsWithChildren<PropsWithoutIcons | PropsWithIcons>
 
 const tagTypeStyles: Record<TagTypeProp, string> = {
   round: 'rounded-full',
-  square: 'rounded-sm'
+  square: 'rounded-sm',
 }
 
 const tagBackgoundAndTextColor: Record<TagVariantProp, string> = Object.assign(
   {},
   ...(Object.keys(VARIANT_COLORS) as TagVariantProp[]).map(variant => {
     if (variant === 'gray') {
-      return {gray: 'text-gray-600 bg-gray-100 hover:text-primary-200 hover:bg-gray-800'}
+      return { gray: 'text-gray-600 bg-gray-100 hover:text-primary-200 hover:bg-gray-800' }
     }
     const color = VARIANT_COLORS[variant]
-    return {[variant]: `text-${color}-600 bg-${color}-100 hover:text-white hover:bg-${color}-500`}
+    return { [variant]: `text-${color}-600 bg-${color}-100 hover:text-white hover:bg-${color}-500` }
   })
 )
 
@@ -113,11 +113,15 @@ const Tag = ({
 
   return (
     <Component {...props} type="button" className={classes}>
-      {icon && iconSide === 'left' ? <Icon icon={icon} size={size} variant="ghost" className={iconClasses} /> : null}
+      {icon && iconSide === 'left' ? (
+        <Icon icon={icon} size={size} variant="ghost" className={iconClasses} />
+      ) : null}
       <Text size={size}>{children}</Text>
-      {icon && iconSide === 'right' ? <Icon icon={icon} size={size} variant="ghost" className={iconClasses} /> : null}
+      {icon && iconSide === 'right' ? (
+        <Icon icon={icon} size={size} variant="ghost" className={iconClasses} />
+      ) : null}
     </Component>
   )
 }
 
-export {Tag}
+export { Tag }

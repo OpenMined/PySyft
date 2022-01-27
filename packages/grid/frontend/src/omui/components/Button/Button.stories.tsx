@@ -1,24 +1,24 @@
 import React from 'react'
-import {Story, Meta} from '@storybook/react'
+import { Story, Meta } from '@storybook/react'
 
-import {Button, IconButton} from './Button'
-import type {ButtonSize, ButtonVariant, ButtonProps, IconButtonVariant} from './Button'
+import { Button, IconButton } from './Button'
+import type { ButtonSize, ButtonVariant, ButtonProps, IconButtonVariant } from './Button'
 
 export default {
   title: 'Components/Button',
   component: Button,
   parameters: {
     controls: {
-      include: ['variant', 'size', 'children']
-    }
+      include: ['variant', 'size', 'children'],
+    },
   },
   argTypes: {
     children: {
       name: 'children',
-      type: {name: 'string'},
-      defaultValue: 'Button'
-    }
-  }
+      type: { name: 'string' },
+      defaultValue: 'Button',
+    },
+  },
 } as Meta
 
 export const Default: Story<ButtonProps> = args => <Button {...args} />
@@ -26,7 +26,7 @@ export const Default: Story<ButtonProps> = args => <Button {...args} />
 const sizes: ButtonSize[] = ['lg', 'md', 'sm', 'xs']
 const variants: ButtonVariant[] = ['gray', 'primary', 'outline', 'ghost', 'link']
 const iconVariants: IconButtonVariant[] = ['gray', 'primary', 'outline']
-const states = [{disabled: false}, {disabled: true}]
+const states = [{ disabled: false }, { disabled: true }]
 
 const AllCasesButton: Story<ButtonProps> = () => (
   <div className="flex space-x-8">
@@ -35,7 +35,13 @@ const AllCasesButton: Story<ButtonProps> = () => (
         {variants.map(variant => (
           <div className="flex space-x-4">
             {states.map(state => (
-              <Button size={size} variant={variant} leftIcon={LightIcon} rightIcon={LightIcon} {...state}>
+              <Button
+                size={size}
+                variant={variant}
+                leftIcon={LightIcon}
+                rightIcon={LightIcon}
+                {...state}
+              >
                 Button
               </Button>
             ))}
@@ -46,14 +52,20 @@ const AllCasesButton: Story<ButtonProps> = () => (
   </div>
 )
 
-const AllCasesIconButton: Story = ({rounded}: any) => (
+const AllCasesIconButton: Story = ({ rounded }: any) => (
   <div className="flex space-x-20">
     {sizes.map(size => (
       <div className="flex flex-col space-y-4">
         {iconVariants.map(variant => (
           <div className="flex space-x-4">
             {states.map(state => (
-              <IconButton size={size} variant={variant} icon={SolidIcon} rounded={rounded} {...state} />
+              <IconButton
+                size={size}
+                variant={variant}
+                icon={SolidIcon}
+                rounded={rounded}
+                {...state}
+              />
             ))}
           </div>
         ))}

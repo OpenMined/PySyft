@@ -1,6 +1,6 @@
-import {List, ListIconItem, ListItem, ListInnerContainer} from '@/omui'
-import {AcademicCapIcon, BellIcon, QuestionMarkCircleIcon} from '@heroicons/react/solid'
-import {CircleStatus} from './DomainStatus'
+import { List, ListIconItem, ListItem, ListInnerContainer } from '@/omui'
+import { AcademicCapIcon, BellIcon, QuestionMarkCircleIcon } from '@heroicons/react/solid'
+import { CircleStatus } from './DomainStatus'
 
 const QuickNav = () => {
   return (
@@ -17,4 +17,4 @@ const QuickNav = () => {
   )
 }
 
-export {QuickNav}
+export { QuickNav }

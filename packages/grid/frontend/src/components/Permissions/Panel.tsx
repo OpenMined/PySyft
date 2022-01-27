@@ -1,8 +1,8 @@
-import {usePermission} from './context'
-import {Button, Divider, Switch, Text} from '@/omui'
-import {t} from '@/i18n'
+import { usePermission } from './context'
+import { Button, Divider, Switch, Text } from '@/omui'
+import { t } from '@/i18n'
 
-import type {SyftPermissions} from '@/types/permissions'
+import type { SyftPermissions } from '@/types/permissions'
 
 // TODO: evaluate creating API endpoints for serving each permission type (!== roles)
 // TODO: should be created via a shared object between backend and frontend
@@ -19,12 +19,12 @@ export const allPermissions: Array<SyftPermissions> = [
 const disabledPermissions = ['can_manage_infrastructure']
 
 function RoleDescription() {
-  const {role} = usePermission()
+  const { role } = usePermission()
   return <Text as="p">{t(`${role.name}.description`, 'permissions')}</Text>
 }
 
-function PermissionToggler({permission}: {permission: SyftPermissions}) {
-  const {permissions, toggle} = usePermission()
+function PermissionToggler({ permission }: { permission: SyftPermissions }) {
+  const { permissions, toggle } = usePermission()
   const isChecked = permissions[permission]
   const isDisabled = disabledPermissions.includes(permission)
 
@@ -44,7 +44,7 @@ function PermissionToggler({permission}: {permission: SyftPermissions}) {
 }
 
 function PermissionsAccordionPanel() {
-  const {save} = usePermission()
+  const { save } = usePermission()
 
   return (
     <div className="px-10 w-full space-y-6">
@@ -65,4 +65,4 @@ function PermissionsAccordionPanel() {
   )
 }
 
-export {PermissionsAccordionPanel}
+export { PermissionsAccordionPanel }

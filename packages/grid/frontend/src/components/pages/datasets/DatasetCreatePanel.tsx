@@ -1,32 +1,32 @@
-import {useForm} from 'react-hook-form'
-import {Input, ActionButton, ClosePanelButton, MutationError} from '@/components'
-import {useDatasets} from '@/lib/data'
-import {DatasetRequirementsList} from '@/components/pages/datasets/DatasetRequirementsList'
-import {FileDetails} from '@/components/pages/datasets/FileDetails'
-import {ErrorMessage} from '@/utils/api-axios'
+import { useForm } from 'react-hook-form'
+import { Input, ActionButton, ClosePanelButton, MutationError } from '@/components'
+import { useDatasets } from '@/lib/data'
+import { DatasetRequirementsList } from '@/components/pages/datasets/DatasetRequirementsList'
+import { FileDetails } from '@/components/pages/datasets/FileDetails'
+import { ErrorMessage } from '@/utils/api-axios'
 
-export function DatasetCreatePanel({onClose}: {onClose: () => void}) {
+export function DatasetCreatePanel({ onClose }: { onClose: () => void }) {
   const {
     register,
     handleSubmit,
     reset,
     watch,
-    formState: {errors, isValid}
-  } = useForm({mode: 'onTouched'})
+    formState: { errors, isValid },
+  } = useForm({ mode: 'onTouched' })
 
-  const {create} = useDatasets()
+  const { create } = useDatasets()
 
   const mutation = create(
     {
       onSuccess: () => {
         reset()
         onClose()
-      }
+      },
     },
-    {headers: {'Content-Type': 'multipart/form-data'}}
+    { headers: { 'Content-Type': 'multipart/form-data' } }
   )
 
-  const onSubmit = ({file}: {file: File}) => {
+  const onSubmit = ({ file }: { file: File }) => {
     const formData = new FormData()
     formData.append('file', file?.[0])
     mutation.mutate(formData)

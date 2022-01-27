@@ -1,9 +1,9 @@
 import React from 'react'
 import cn from 'classnames'
-import type {PropsWithRef} from 'react'
+import type { PropsWithRef } from 'react'
 
-import {Divider} from '../Divider/Divider'
-import {H5} from '../Typography/Text'
+import { Divider } from '../Divider/Divider'
+import { H5 } from '../Typography/Text'
 
 type Props = {
   header?: string
@@ -13,11 +13,19 @@ type Props = {
 
 export type SidebarProps = PropsWithRef<Props>
 
-function Sidebar({header, className, children, containerProps, containerClasses, ...props}: SidebarProps) {
+function Sidebar({
+  header,
+  className,
+  children,
+  containerProps,
+  containerClasses,
+  ...props
+}: SidebarProps) {
   return (
     <div
       {...containerProps}
-      className={cn('omui-sidebar w-full flex', header ? 'flex-col' : 'flex-row', containerClasses)}>
+      className={cn('omui-sidebar w-full flex', header ? 'flex-col' : 'flex-row', containerClasses)}
+    >
       {header && (
         <>
           <H5 className="text-gray-800 dark:text-white">{header}</H5>
@@ -31,4 +39,4 @@ function Sidebar({header, className, children, containerProps, containerClasses,
   )
 }
 
-export {Sidebar}
+export { Sidebar }

@@ -1,5 +1,5 @@
 import React from 'react'
-import {Story, Meta} from '@storybook/react'
+import { Story, Meta } from '@storybook/react'
 
 import {
   List,
@@ -12,21 +12,21 @@ import {
   OrderedList,
   UnorderedList,
   OrderedListItem,
-  UnorderedListItem
+  UnorderedListItem,
 } from './List'
-import type {ListContainedProps, ListAvatarItemProps, ListIconProps, ListProps} from './List'
+import type { ListContainedProps, ListAvatarItemProps, ListIconProps, ListProps } from './List'
 
 export default {
   title: 'Components/List',
   component: List,
   parameters: {
     controls: {
-      include: ['children', 'size']
-    }
+      include: ['children', 'size'],
+    },
   },
   argTypes: {
-    children: {name: 'children', defaultValue: 'Text Here', control: {type: 'text'}}
-  }
+    children: { name: 'children', defaultValue: 'Text Here', control: { type: 'text' } },
+  },
 } as Meta
 
 export const DefaultList: Story<ListProps> = args => (
@@ -56,7 +56,10 @@ export const Unordered: Story<ListProps> = args => (
 export const Avatar: Story<ListAvatarItemProps & ListProps> = args => (
   <List size={args.size}>
     {Array.from(Array(10).keys()).map((_, index) => (
-      <ListAvatarItem key={`a-${index}`} src="https://images.unsplash.com/photo-1623288749528-e40a033da0f7">
+      <ListAvatarItem
+        key={`a-${index}`}
+        src="https://images.unsplash.com/photo-1623288749528-e40a033da0f7"
+      >
         {args.children}
       </ListAvatarItem>
     ))}
@@ -66,7 +69,10 @@ export const Avatar: Story<ListAvatarItemProps & ListProps> = args => (
 export const AvatarWithListContent: Story<ListAvatarItemProps & ListProps> = args => (
   <List size={args.size}>
     {Array.from(Array(10).keys()).map((_, index) => (
-      <ListAvatarItem key={`avlc-${index}`} src="https://images.unsplash.com/photo-1623288749528-e40a033da0f7">
+      <ListAvatarItem
+        key={`avlc-${index}`}
+        src="https://images.unsplash.com/photo-1623288749528-e40a033da0f7"
+      >
         <ListItemContent label={`${args.label}`} description={`${args.description}`} />
       </ListAvatarItem>
     ))}
@@ -74,18 +80,18 @@ export const AvatarWithListContent: Story<ListAvatarItemProps & ListProps> = arg
 )
 
 AvatarWithListContent.argTypes = {
-  label: {name: 'label', defaultValue: 'Text Here', control: {type: 'text'}},
-  description: {name: 'description', defaultValue: 'Description Here', control: {type: 'text'}}
+  label: { name: 'label', defaultValue: 'Text Here', control: { type: 'text' } },
+  description: { name: 'description', defaultValue: 'Description Here', control: { type: 'text' } },
 }
 
 AvatarWithListContent.parameters = {
   controls: {
     include: ['size', 'label', 'description'],
-    exclude: ['children']
-  }
+    exclude: ['children'],
+  },
 }
 
-const RandomIcon = ({className}: {className: string}) => (
+const RandomIcon = ({ className }: { className: string }) => (
   <svg className={className} role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512">
     <path
       fill="currentColor"

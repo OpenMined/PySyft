@@ -1,8 +1,8 @@
-import {render, screen, isInaccessible} from '@testing-library/react'
+import { render, screen, isInaccessible } from '@testing-library/react'
 import cases from 'jest-in-case'
-import {axe} from 'jest-axe'
+import { axe } from 'jest-axe'
 
-import {Icon} from '../Icon'
+import { Icon } from '../Icon'
 
 const IconMock = props => (
   <svg {...props}>
@@ -15,8 +15,8 @@ const IconMock = props => (
 
 cases(
   'styles:classes',
-  ({params, result}) => {
-    render(<Icon containerProps={{'data-testid': 'test-id'}} icon={IconMock} {...params} />)
+  ({ params, result }) => {
+    render(<Icon containerProps={{ 'data-testid': 'test-id' }} icon={IconMock} {...params} />)
 
     const iconElement = screen.getByTestId('test-id')
     expect(iconElement).toHaveClass(result)
@@ -25,20 +25,20 @@ cases(
     {
       name: 'default: default size, white text and `primary 500` background',
       params: {},
-      result: 'bg-primary-500 text-white rounded-full w-9 h-9'
+      result: 'bg-primary-500 text-white rounded-full w-9 h-9',
     },
     {
       name: 'overrides default props and classes',
-      params: {variant: 'subtle', size: 'lg', container: 'square'},
-      result: 'bg-primary-200 text-primary-600 rounded-md w-11 h-11'
-    }
+      params: { variant: 'subtle', size: 'lg', container: 'square' },
+      result: 'bg-primary-200 text-primary-600 rounded-md w-11 h-11',
+    },
   ]
 )
 
 describe('accessibility', () => {
   test('when title is set, it has an aria-label, role is img and aria-hidden and focusable are set to false', async () => {
     const title = 'my cool icon'
-    const {container, findByRole} = render(<Icon icon={IconMock} title={title} />)
+    const { container, findByRole } = render(<Icon icon={IconMock} title={title} />)
     const component = await findByRole('img')
     expect(component).toHaveAttribute('aria-label', title)
     expect(component).toHaveAttribute('focusable', 'false')
@@ -47,8 +47,8 @@ describe('accessibility', () => {
   })
 
   test('when title is not set, component is inaccessible', async () => {
-    const {getByRole} = render(<Icon icon={IconMock} />)
-    const component = getByRole('presentation', {hidden: true})
+    const { getByRole } = render(<Icon icon={IconMock} />)
+    const component = getByRole('presentation', { hidden: true })
     expect(component).toBeTruthy()
     expect(isInaccessible(component))
   })

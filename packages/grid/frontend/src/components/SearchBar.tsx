@@ -1,6 +1,6 @@
-import {useEffect, useState} from 'react'
-import {Search} from '@/components'
-import type {Dispatch, SetStateAction} from 'react'
+import { useEffect, useState } from 'react'
+import { Search } from '@/components'
+import type { Dispatch, SetStateAction } from 'react'
 
 interface SearchProps<T> {
   data: T[]
@@ -8,7 +8,7 @@ interface SearchProps<T> {
   setData: Dispatch<SetStateAction<T[]>>
 }
 
-export function SearchBar<T>({data, searchFields, setData}: SearchProps<T>) {
+export function SearchBar<T>({ data, searchFields, setData }: SearchProps<T>) {
   const [search, setSearch] = useState<string>('')
 
   useEffect(() => {

@@ -1,27 +1,34 @@
 import cn from 'classnames'
-import {Divider, List, ListAvatarItem, ListFAIconItem, Text, Badge} from '@/omui'
+import { Divider, List, ListAvatarItem, ListFAIconItem, Text, Badge } from '@/omui'
 import Link from 'next/link'
-import {useRouter} from 'next/router'
-import {DomainStatus} from './DomainStatus'
-import {faUsers, faCheck, faLemon, faHandsHelping, faChevronDown, faUserCircle} from '@fortawesome/free-solid-svg-icons'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {useMe, useSettings} from '@/lib/data'
-import {t} from '@/i18n'
-import {logout} from '@/lib/auth'
+import { useRouter } from 'next/router'
+import { DomainStatus } from './DomainStatus'
+import {
+  faUsers,
+  faCheck,
+  faLemon,
+  faHandsHelping,
+  faChevronDown,
+  faUserCircle,
+} from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useMe, useSettings } from '@/lib/data'
+import { t } from '@/i18n'
+import { logout } from '@/lib/auth'
 
 const navItems = [
-  {name: 'Users', link: '/users', icon: faUsers},
-  {name: 'Permissions', link: '/permissions', icon: faCheck},
+  { name: 'Users', link: '/users', icon: faUsers },
+  { name: 'Permissions', link: '/permissions', icon: faCheck },
   {
     name: 'Requests',
     link: '/requests/data',
     icon: faLemon,
     children: [
-      {name: 'Data Requests', link: '/requests/data'},
-      {name: 'Upgrade Requests', link: '/requests/upgrade'}
-    ]
+      { name: 'Data Requests', link: '/requests/data' },
+      { name: 'Upgrade Requests', link: '/requests/upgrade' },
+    ],
   },
-  {name: 'Networks', link: '/networks', icon: faHandsHelping}
+  { name: 'Networks', link: '/networks', icon: faHandsHelping },
 ]
 
 const SidebarNav = () => {
@@ -29,13 +36,18 @@ const SidebarNav = () => {
   const currRoute = navItems.find(item => router.asPath.startsWith(item.link))
 
   return (
-    <aside className="flex flex-col justify-between h-screen sticky top-0 dark pt-8 pb-6" style={{minWidth: 270}}>
+    <aside
+      className="flex flex-col justify-between h-screen sticky top-0 dark pt-8 pb-6"
+      style={{ minWidth: 270 }}
+    >
       <DomainInfo />
       <Divider className="mt-6 mb-10" />
       <nav className="flex-grow overflow-auto">
         <List size="lg">
           {navItems.map(navItem => {
-            const isSelected = navItem.children?.find(subItem => router.asPath.startsWith(subItem.link))
+            const isSelected = navItem.children?.find(subItem =>
+              router.asPath.startsWith(subItem.link)
+            )
             return (
               <div key={navItem.link}>
                 <Link href={navItem.link}>
@@ -48,7 +60,8 @@ const SidebarNav = () => {
                         'hover:bg-gray-800 hover:no-underline',
                         isSelected && 'bg-gray-800 text-gray-200',
                         !isSelected && currRoute === navItem && 'bg-gray-800 text-white'
-                      )}>
+                      )}
+                    >
                       {navItem.name}
                     </ListFAIconItem>
                   </a>
@@ -63,11 +76,16 @@ const SidebarNav = () => {
                             <ListFAIconItem
                               key={navItem.link}
                               icon={navItem.icon}
-                              iconColor={cn(currSubRoute ? 'text-gray-700' : 'text-gray-800 group-hover:text-gray-700')}
+                              iconColor={cn(
+                                currSubRoute
+                                  ? 'text-gray-700'
+                                  : 'text-gray-800 group-hover:text-gray-700'
+                              )}
                               className={cn(
                                 'hover:bg-gray-700 hover:no-underline',
                                 currSubRoute && 'bg-gray-700 text-white'
-                              )}>
+                              )}
+                            >
                               {subItem.name}
                             </ListFAIconItem>
                           </a>
@@ -93,7 +111,7 @@ const SidebarNav = () => {
 }
 
 function CurrentUser() {
-  const {data: currentUser} = useMe()
+  const { data: currentUser } = useMe()
 
   return (
     <Link href="/account">
@@ -107,7 +125,7 @@ function CurrentUser() {
 }
 
 function DomainInfo() {
-  const {data: domainData} = useSettings().all()
+  const { data: domainData } = useSettings().all()
 
   return (
     <List size="xl" className="px-3 flex-shrink-0">
@@ -133,4 +151,4 @@ function DomainInfo() {
   )
 }
 
-export {SidebarNav}
+export { SidebarNav }

@@ -1,4 +1,4 @@
-import type {Network} from './network.ts'
+import type { Network } from './network.ts'
 
 export interface Domain {
   id: string

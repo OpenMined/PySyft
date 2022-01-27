@@ -1,10 +1,10 @@
-import {useEffect, useState} from 'react'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {Text} from '@/omui'
-import {TopContent, SearchInput} from '@/components/lib'
-import {NetworkAccordion} from '@/components/NetworkAccordion'
-import {sections} from '@/content'
-import {SingleCenter} from '@/components/Layouts'
+import { useEffect, useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Text } from '@/omui'
+import { TopContent, SearchInput } from '@/components/lib'
+import { NetworkAccordion } from '@/components/NetworkAccordion'
+import { sections } from '@/content'
+import { SingleCenter } from '@/components/Layouts'
 import ky from 'ky'
 
 export default function Networks() {

@@ -1,23 +1,23 @@
-import {createContext, useContext} from 'react'
-import {Badge, Button, Divider, Text} from '@/omui'
-import {Dot} from '@/components/lib'
-import {Accordion} from '@/components/Accordion'
-import {formatDate} from '@/utils'
-import {useAssociationRequest} from '@/lib/data'
-import {t} from '@/i18n'
+import { createContext, useContext } from 'react'
+import { Badge, Button, Divider, Text } from '@/omui'
+import { Dot } from '@/components/lib'
+import { Accordion } from '@/components/Accordion'
+import { formatDate } from '@/utils'
+import { useAssociationRequest } from '@/lib/data'
+import { t } from '@/i18n'
 import api from '@/utils/api'
 
-import type {Network} from '@/types/network'
+import type { Network } from '@/types/network'
 
 const SLACK_ICON = 'https://upload.wikimedia.org/wikipedia/commons/7/76/Slack_Icon.png'
 
-const NetworkContext = createContext({network: null})
+const NetworkContext = createContext({ network: null })
 
 interface AccordionNetwork {
   networks: Array<Network>
 }
 
-export function NetworkAccordion({networks = []}: AccordionNetwork) {
+export function NetworkAccordion({ networks = [] }: AccordionNetwork) {
   if (!networks.length) return null
   return (
     <Accordion>
@@ -30,7 +30,7 @@ export function NetworkAccordion({networks = []}: AccordionNetwork) {
 
 function NetworkAccordionItem(network: Network) {
   return (
-    <NetworkContext.Provider value={{network}}>
+    <NetworkContext.Provider value={{ network }}>
       <Accordion.Item>
         <Title />
         <Panel />
@@ -40,7 +40,7 @@ function NetworkAccordionItem(network: Network) {
 }
 
 function Title() {
-  const {network} = useContext(NetworkContext)
+  const { network } = useContext(NetworkContext)
   const create = useAssociationRequest().create().mutate
 
   return (
@@ -72,7 +72,7 @@ function Title() {
             className="text-error-600 border-error-500 hover:bg-error-500"
             onClick={e => {
               e.stopPropagation()
-              create({type: 'remove_network_connection'})
+              create({ type: 'remove_network_connection' })
             }}
           >
             {t('buttons.leave-network')}
@@ -99,7 +99,7 @@ function Title() {
 }
 
 function Panel() {
-  const {network} = useContext(NetworkContext)
+  const { network } = useContext(NetworkContext)
 
   return (
     <div className="grid grid-cols-2 gap-4">
