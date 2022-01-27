@@ -127,6 +127,22 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     def gamma(self) -> InitialGammaTensor:
         return self.create_gamma()
 
+    @property
+    def dtype(self) -> np.dtype:
+        # REPT child is a python List which does not have a np.dtype so we will return
+        # the np.dtype of the first child in the row
+
+        # TODO: We should decide what dtype an empty list has, numpy is float64
+        if len(self.child) == 0:
+            # we need to default to something
+            return np.int32
+
+        return self.child[0].dtype
+
+    def astype(self, np_type: np.dtype) -> RowEntityPhiTensor:
+        # RowEntityPhiTensor has a python List for its child
+        return self.__class__(rows=[x.astype(np_type) for x in self.child])
+
     @staticmethod
     def convert_to_gamma(input_list: List) -> IGT:
         """This converts a REPT's data into a GammaTensor without having to initialize it. Used in comparison ops"""
@@ -518,7 +534,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
-
         new_list = list()
         for row in self.child:
             new_list.append(row.sum(*args, **kwargs))

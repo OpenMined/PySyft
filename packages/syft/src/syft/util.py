@@ -11,6 +11,7 @@ from typing import Union
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import requests
 
 # syft absolute
 import syft
@@ -426,6 +427,16 @@ def get_root_data_path() -> Path:
 
     os.makedirs(data_dir, exist_ok=True)
     return data_dir
+
+
+def download_file(url: str, full_path: Union[str, Path]) -> Path:
+    if not os.path.exists(full_path):
+        r = requests.get(url, allow_redirects=True)
+        path = os.path.dirname(full_path)
+        os.makedirs(path, exist_ok=True)
+        with open(full_path, "wb") as f:
+            f.write(r.content)
+    return Path(full_path)
 
 
 def str_to_bool(bool_str: Optional[str]) -> bool:

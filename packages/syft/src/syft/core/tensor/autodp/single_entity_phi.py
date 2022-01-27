@@ -596,13 +596,20 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
     @property
     def min_vals(self) -> np.ndarray:
-
         return self._min_vals
 
     @property
     def max_vals(self) -> np.ndarray:
-
         return self._max_vals
+
+    def astype(self, np_type: np.dtype) -> SingleEntityPhiTensor:
+        return self.__class__(
+            child=self.child.astype(np_type),
+            entity=self.entity,
+            min_vals=self.min_vals.astype(np_type),
+            max_vals=self.max_vals.astype(np_type),
+            scalar_manager=self.scalar_manager,
+        )
 
     def __repr__(self) -> str:
 
@@ -1321,6 +1328,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         min_vals = self.min_vals.sum(*args, **kwargs)
         max_vals = self.max_vals.sum(*args, **kwargs)
         entity = self.entity
+
+        data = np.array(data)
+        min_vals = np.array(min_vals)
+        max_vals = np.array(max_vals)
 
         return SingleEntityPhiTensor(
             child=data,
