@@ -4,15 +4,20 @@ package syft.core.adp;
 import "proto/core/adp/entity.proto";
 import "proto/lib/numpy/array.proto";
 import "proto/core/adp/scalar_manager.proto";
+import "proto/core/tensor/share_tensor.proto";
+import "proto/lib/python/none.proto";
 
 message SingleEntityPhiTensor {
-  bytes child = 1;
-  syft.lib.numpy.NumpyProto min_vals = 2;
-  syft.lib.numpy.NumpyProto max_vals = 3;
-  syft.core.adp.Entity entity = 4;
-  VirtualMachinePrivateScalarManager scalar_manager = 5;
+  oneof child {
+    syft.core.tensor.ShareTensor tensor = 1;
+    syft.lib.numpy.NumpyProto array = 2;
+    syft.lib.python.SyNone none = 3;
+  }
+  syft.lib.numpy.NumpyProto min_vals = 4;
+  syft.lib.numpy.NumpyProto max_vals = 5;
+  syft.core.adp.Entity entity = 6;
+  VirtualMachinePrivateScalarManager scalar_manager = 7;
 }
-
 
 message RowEntityPhiTensor {
   repeated SingleEntityPhiTensor rows = 1;

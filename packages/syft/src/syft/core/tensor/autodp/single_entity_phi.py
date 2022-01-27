@@ -2362,14 +2362,30 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             proto_init_kwargs["entity"] = serialize(self.entity)
             proto_init_kwargs["scalar_manager"] = serialize(self.scalar_manager)
 
-        proto_init_kwargs["child"] = serialize(self.child, to_bytes=True)
+        # either numpy array or ShareTensor
+        if self.child is None:
+            proto_init_kwargs["none"] = serialize(self.child)
+        elif isinstance(self.child, np.ndarray):
+            proto_init_kwargs["array"] = serialize(self.child)
+        elif isinstance(self.child, torch.Tensor):
+            proto_init_kwargs["array"] = serialize(np.array(self.child))
+        else:
+            proto_init_kwargs["tensor"] = serialize(self.child)
 
         return SingleEntityPhiTensor_PB(**proto_init_kwargs)
 
     @staticmethod
     def _proto2object(proto: SingleEntityPhiTensor_PB) -> SingleEntityPhiTensor:
+        # either numpy array or ShareTensor
+        if proto.HasField("tensor"):
+            child = deserialize(proto.tensor)
+        elif proto.HasField("array"):
+            child = deserialize(proto.array)
+        else:
+            child = deserialize(proto.none).upcast()
+
         return SingleEntityPhiTensor(
-            child=deserialize(proto.child, from_bytes=True),
+            child=child,
             entity=deserialize(proto.entity),
             min_vals=deserialize(proto.min_vals),
             max_vals=deserialize(proto.max_vals),
