@@ -1,8 +1,8 @@
-import React, {forwardRef} from 'react'
-import type {PropsWithRef, ReactNode} from 'react'
+import React, { forwardRef } from 'react'
+import type { PropsWithRef, ReactNode } from 'react'
 import cn from 'classnames'
-import {Text} from '../Typography/Text'
-import {Optional} from '@/components/lib'
+import { Text } from '../Typography/Text'
+import { Optional } from '@/components/lib'
 
 export interface Props {
   /**
@@ -40,7 +40,7 @@ export interface Props {
 export type FormControlProps = PropsWithRef<Props>
 
 const FormControl = forwardRef<HTMLDivElement, FormControlProps>(function FormControl(
-  {label, hint, disabled, required, error, optional, id, className, children, ...props},
+  { label, hint, disabled, required, error, optional, id, className, children, ...props },
   ref
 ) {
   const hintId = `omui-form-control-${id}`
@@ -57,7 +57,7 @@ const FormControl = forwardRef<HTMLDivElement, FormControlProps>(function FormCo
     disabled,
     error,
     id,
-    'aria-describedby': hint ? hintId : undefined
+    'aria-describedby': hint ? hintId : undefined,
   }
 
   return (
@@ -80,7 +80,12 @@ const FormControl = forwardRef<HTMLDivElement, FormControlProps>(function FormCo
       {React.isValidElement(children) ? React.cloneElement(children, childProps) : children}
       {hint && (
         // TODO: Update Text to extend HTMLElement intending to accept id, title, etc.
-        <Text id={hintId} size="sm" className={hintClasses} aria-live={error ? 'polite' : undefined}>
+        <Text
+          id={hintId}
+          size="sm"
+          className={hintClasses}
+          aria-live={error ? 'polite' : undefined}
+        >
           {hint}
         </Text>
       )}
@@ -88,4 +93,4 @@ const FormControl = forwardRef<HTMLDivElement, FormControlProps>(function FormCo
   )
 })
 
-export {FormControl}
+export { FormControl }

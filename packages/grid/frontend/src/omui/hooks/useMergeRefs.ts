@@ -1,5 +1,5 @@
-import {useMemo} from 'react'
-import type {Ref, MutableRefObject} from 'react'
+import { useMemo } from 'react'
+import type { Ref, MutableRefObject } from 'react'
 
 type ReactRef<T> = Ref<T> | MutableRefObject<T>
 

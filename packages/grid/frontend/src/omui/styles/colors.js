@@ -10,7 +10,7 @@ function buildColor(name, hue, saturation) {
   })
 
   return {
-    [name]: colorObject
+    [name]: colorObject,
   }
 }
 
@@ -24,5 +24,5 @@ module.exports = {
   ...buildColor('cyan', 195, 75),
   ...buildColor('blue', 225, 70),
   ...buildColor('purple', 255, 65),
-  ...buildColor('violet', 280, 64)
+  ...buildColor('violet', 280, 64),
 }

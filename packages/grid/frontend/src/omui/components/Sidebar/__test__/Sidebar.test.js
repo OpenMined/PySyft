@@ -1,8 +1,8 @@
 import React from 'react'
-import {render, screen} from '@testing-library/react'
-import {axe} from 'jest-axe'
+import { render, screen } from '@testing-library/react'
+import { axe } from 'jest-axe'
 
-import {Sidebar} from '../Sidebar'
+import { Sidebar } from '../Sidebar'
 
 describe('Sidebars', () => {
   describe('sidebar:header', () => {
@@ -21,7 +21,7 @@ describe('Sidebars', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(
+      const { container } = render(
         <Sidebar data-testid="list-id" header="Title">
           Children :)
         </Sidebar>
@@ -43,7 +43,7 @@ describe('Sidebars', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(<Sidebar data-testid="list-id">Children :)</Sidebar>)
+      const { container } = render(<Sidebar data-testid="list-id">Children :)</Sidebar>)
 
       expect(await axe(container)).toHaveNoViolations()
     })

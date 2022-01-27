@@ -38,3 +38,5 @@ tailwind.output.css
 .env*.local
 
 /cache
+
+.next

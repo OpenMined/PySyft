@@ -1,7 +1,14 @@
 import React from 'react'
 import cn from 'classnames'
-import type {PropsWithRef, ComponentPropsWithoutRef, ComponentProps, LegacyRef, KeyboardEvent, MouseEvent} from 'react'
-import {Keys} from '../../utils/keyboard'
+import type {
+  PropsWithRef,
+  ComponentPropsWithoutRef,
+  ComponentProps,
+  LegacyRef,
+  KeyboardEvent,
+  MouseEvent,
+} from 'react'
+import { Keys } from '../../utils/keyboard'
 
 export type SwitchSizeProp = 'sm' | 'md' | 'lg'
 
@@ -36,16 +43,24 @@ type Sizes = {
 const sizes: Sizes = {
   sm: 'w-7 h-4',
   md: 'w-9 h-5',
-  lg: 'w-13 h-7'
+  lg: 'w-13 h-7',
 }
 
 const ballSizes: Sizes = {
   sm: 'w-3 h-3',
   md: 'w-4 h-4',
-  lg: 'w-6 h-6'
+  lg: 'w-6 h-6',
 }
 
-function Switch({onChange, size = 'md', checked, disabled, inputRef, containerProps, ...props}: SwitchProps) {
+function Switch({
+  onChange,
+  size = 'md',
+  checked,
+  disabled,
+  inputRef,
+  containerProps,
+  ...props
+}: SwitchProps) {
   const containerClasses = cn(
     'relative inline-flex items-center flex-shrink-0 transition-colors ease-in-out duration-200 cursor-pointer rounded-full border-2 border-transparent focus:outline-none',
     sizes[size],
@@ -89,4 +104,4 @@ function Switch({onChange, size = 'md', checked, disabled, inputRef, containerPr
   )
 }
 
-export {Switch}
+export { Switch }

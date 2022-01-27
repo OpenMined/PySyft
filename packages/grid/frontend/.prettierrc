@@ -1,0 +1,9 @@
+{
+  "arrowParens": "avoid",
+  "proseWrap": "always",
+  "endOfLine": "lf",
+  "semi": false,
+  "printWidth": 100,
+  "useTabs": false,
+  "singleQuote": true
+}

@@ -1,11 +1,11 @@
-import React, {useState} from 'react'
-import {Radio} from './Radio'
-import type {RadioProps} from './Radio'
-import type {Story, Meta} from '@storybook/react'
-import {RadioGroup as RadioGroupComponent, RadioGroupProps} from './RadioGroup'
+import React, { useState } from 'react'
+import { Radio } from './Radio'
+import type { RadioProps } from './Radio'
+import type { Story, Meta } from '@storybook/react'
+import { RadioGroup as RadioGroupComponent, RadioGroupProps } from './RadioGroup'
 
-const states: Partial<RadioProps>[] = [{}, {disabled: true}]
-const cases: Partial<RadioProps>[] = [{}, {checked: true}]
+const states: Partial<RadioProps>[] = [{}, { disabled: true }]
+const cases: Partial<RadioProps>[] = [{}, { checked: true }]
 
 const AllCases: Story<RadioProps> = () => {
   return (
@@ -14,7 +14,13 @@ const AllCases: Story<RadioProps> = () => {
         {cases.map((casesProp, casesIdx) => (
           <div className="space-y-3" key={casesIdx}>
             {states.map((statesProp, statesIdx) => (
-              <Radio key={statesIdx} label="Label" {...statesProp} {...casesProp} onChange={() => void 0} />
+              <Radio
+                key={statesIdx}
+                label="Label"
+                {...statesProp}
+                {...casesProp}
+                onChange={() => void 0}
+              />
             ))}
           </div>
         ))}
@@ -23,7 +29,13 @@ const AllCases: Story<RadioProps> = () => {
         {cases.map((casesProp, casesIdx) => (
           <div className="space-y-3" key={casesIdx}>
             {states.map((statesProp, statesIdx) => (
-              <Radio key={statesIdx} label="Label" {...statesProp} {...casesProp} onChange={() => void 0} />
+              <Radio
+                key={statesIdx}
+                label="Label"
+                {...statesProp}
+                {...casesProp}
+                onChange={() => void 0}
+              />
             ))}
           </div>
         ))}
@@ -54,9 +66,9 @@ export default {
   component: Radio,
   parameters: {
     controls: {
-      include: ['label', 'inline']
-    }
-  }
+      include: ['label', 'inline'],
+    },
+  },
 } as Meta
 
 export const AllRadios = AllCases.bind({})
@@ -65,6 +77,6 @@ export const RadioGroup = GroupedValues.bind({})
 
 RadioGroup.argTypes = {
   inline: {
-    control: 'boolean'
-  }
+    control: 'boolean',
+  },
 }

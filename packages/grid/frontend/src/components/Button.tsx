@@ -1,7 +1,7 @@
-import {forwardRef} from 'react'
+import { forwardRef } from 'react'
 import cn from 'classnames'
-import {Spinner} from '@/components'
-import type {ComponentPropsWithRef} from 'react'
+import { Spinner } from '@/components'
+import type { ComponentPropsWithRef } from 'react'
 
 export function Button(props: ComponentPropsWithRef<'button'>) {
   return (
@@ -10,7 +10,8 @@ export function Button(props: ComponentPropsWithRef<'button'>) {
       className={cn(
         'flex items-center px-4 py-1 bg-cyan-800 hover:bg-opacity-70 active:bg-opacity-100 rounded-md text-white',
         props.className
-      )}>
+      )}
+    >
       {props.children}
     </button>
   )
@@ -29,21 +30,36 @@ const buttonStyles = {
     'disabled:bg-gray-300 disabled:text-gray-800 disabled:cursor-not-allowed',
     'flex-shrink-0'
   ),
-  normal: cn('bg-white', 'hover:bg-sky-500 hover:text-white', 'active:bg-sky-800 active:text-white'),
-  remove: cn('bg-red-700 text-gray-50', 'hover:bg-red-500 hover:bg-opacity-100', 'active:bg-red-800')
+  normal: cn(
+    'bg-white',
+    'hover:bg-sky-500 hover:text-white',
+    'active:bg-sky-800 active:text-white'
+  ),
+  remove: cn(
+    'bg-red-700 text-gray-50',
+    'hover:bg-red-500 hover:bg-opacity-100',
+    'active:bg-red-800'
+  ),
 }
 
-export const NormalButton = forwardRef<HTMLButtonElement, GridButton>(function NormalButton(props, ref) {
-  const {isLoading, buttonStyle = 'normal', ...buttonProps} = props
+export const NormalButton = forwardRef<HTMLButtonElement, GridButton>(function NormalButton(
+  props,
+  ref
+) {
+  const { isLoading, buttonStyle = 'normal', ...buttonProps } = props
   return (
-    <button {...buttonProps} ref={ref} className={cn(buttonStyles.base, buttonStyles[buttonStyle], props.className)}>
+    <button
+      {...buttonProps}
+      ref={ref}
+      className={cn(buttonStyles.base, buttonStyles[buttonStyle], props.className)}
+    >
       {isLoading ? <Spinner className="w-4 h-4" /> : props.children}
     </button>
   )
 })
 
 export function DeleteButton(props: GridButton) {
-  const {className, ...buttonProps} = props
+  const { className, ...buttonProps } = props
   return (
     <NormalButton {...buttonProps} buttonStyle="remove" className={cn('mt-auto', className)}>
       {props.children}

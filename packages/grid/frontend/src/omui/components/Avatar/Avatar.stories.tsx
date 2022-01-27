@@ -1,6 +1,6 @@
 import React from 'react'
-import {Story, Meta} from '@storybook/react'
-import {Avatar} from './Avatar'
+import { Story, Meta } from '@storybook/react'
+import { Avatar } from './Avatar'
 
 const AvatarStory = args => {
   return (
@@ -19,12 +19,12 @@ export default {
     size: {
       defaultValue: 'md',
       options: ['sm', 'md', 'lg', 'xl', '2xl', '3xl'],
-      control: {type: 'select'}
+      control: { type: 'select' },
     },
     show: {
-      control: {type: 'boolean'}
-    }
-  }
+      control: { type: 'boolean' },
+    },
+  },
 } as Meta
 
 export const Avatars = AvatarStory.bind({})

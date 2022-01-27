@@ -1,29 +1,36 @@
-import {useMemo, useState} from 'react'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {useForm, Controller} from 'react-hook-form'
-import {faCalendar, faTrash, faUser, faEnvelope, faPlus, faUserPlus} from '@fortawesome/free-solid-svg-icons'
-import {useDisclosure} from 'react-use-disclosure'
-import {Badge, Button, Divider, Input, H4, Select, Tabs, Text} from '@/omui'
-import {NameAndBadge, SearchInput, TopContent, Dot} from '@/components/lib'
-import {Alert} from '@/components/Alert'
-import {Base} from '@/components/Layouts'
-import {DeleteModal} from '@/components/Users/DeleteModal'
-import {AcceptDeny} from '@/components/AcceptDenyButtons'
+import { useMemo, useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { useForm, Controller } from 'react-hook-form'
+import {
+  faCalendar,
+  faTrash,
+  faUser,
+  faEnvelope,
+  faPlus,
+  faUserPlus,
+} from '@fortawesome/free-solid-svg-icons'
+import { useDisclosure } from 'react-use-disclosure'
+import { Badge, Button, Divider, Input, H4, Select, Tabs, Text } from '@/omui'
+import { NameAndBadge, SearchInput, TopContent, Dot } from '@/components/lib'
+import { Alert } from '@/components/Alert'
+import { Base } from '@/components/Layouts'
+import { DeleteModal } from '@/components/Users/DeleteModal'
+import { AcceptDeny } from '@/components/AcceptDenyButtons'
 import Modal from '@/components/Modal'
-import {TableItem, useOMUITable} from '@/components/Table'
-import {useApplicantUsers, useRoles, useUsers} from '@/lib/data'
-import {sections} from '@/content'
-import {formatDate} from '@/utils'
-import {UserModal} from '@/components/Users/UserModal'
+import { TableItem, useOMUITable } from '@/components/Table'
+import { useApplicantUsers, useRoles, useUsers } from '@/lib/data'
+import { sections } from '@/content'
+import { formatDate } from '@/utils'
+import { UserModal } from '@/components/Users/UserModal'
 
 import commonStrings from '@/i18n/en/common.json'
 import usersStrings from '@/i18n/en/users.json'
-import {ChangeRoleModal} from '@/components/Users/ChangeRoleModal'
-import {PrivacyBudgetModal} from '@/components/Users/PrivacyBudgetModal'
+import { ChangeRoleModal } from '@/components/Users/ChangeRoleModal'
+import { PrivacyBudgetModal } from '@/components/Users/PrivacyBudgetModal'
 
 function Active() {
-  const {data: roles} = useRoles().all()
-  const {data: users} = useUsers().all()
+  const { data: roles } = useRoles().all()
+  const { data: users } = useUsers().all()
   const [isCreatingUser, showCreateUser] = useState(false)
   const [selectedUser, setSelectedUser] = useState(null)
   const [selectedModal, setModal] = useState(null)
@@ -89,7 +96,7 @@ function Active() {
   )
 }
 
-function DeniedUsersTable({users}) {
+function DeniedUsersTable({ users }) {
   const tableData = useMemo(
     () =>
       users?.map(user => ({
@@ -97,8 +104,8 @@ function DeniedUsersTable({users}) {
         summary: {
           name: user.name,
           id: user.id,
-          role: user.role
-        }
+          role: user.role,
+        },
       })) ?? [],
     [users]
   )
@@ -109,7 +116,7 @@ function DeniedUsersTable({users}) {
         Header: 'Name',
         accessor: d => d.name,
         id: 'tab_name',
-        Cell: ({cell: {value}}) => <Text size="sm">{value}</Text>
+        Cell: ({ cell: { value } }) => <Text size="sm">{value}</Text>,
       },
       {
         Header: (
@@ -118,13 +125,13 @@ function DeniedUsersTable({users}) {
           </Text>
         ),
         accessor: 'denied_at',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <TableItem center>
             <Text size="sm" className="uppercase">
               {value && value !== 'None' ? formatDate(value) : ''}
             </Text>
           </TableItem>
-        )
+        ),
       },
       {
         Header: (
@@ -133,7 +140,7 @@ function DeniedUsersTable({users}) {
           </Text>
         ),
         accessor: 'added_by',
-        Cell: ({cell: {value}}) => <Text size="sm">{value}</Text>
+        Cell: ({ cell: { value } }) => <Text size="sm">{value}</Text>,
       },
       // {
       //   Header: 'DAA',
@@ -151,13 +158,13 @@ function DeniedUsersTable({users}) {
       {
         Header: 'Institution',
         accessor: 'company',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <TableItem center>
             <Text size="sm" className="uppercase">
               {value ? formatDate(value) : ''}
             </Text>
           </TableItem>
-        )
+        ),
       },
       {
         Header: (
@@ -166,12 +173,12 @@ function DeniedUsersTable({users}) {
           </Text>
         ),
         accessor: 'email',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <a href={`mailto:${value}`}>
             <Text size="sm">{value}</Text>
           </a>
-        )
-      }
+        ),
+      },
     ],
     []
   )
@@ -179,12 +186,12 @@ function DeniedUsersTable({users}) {
     data: tableData,
     columns: tableColumns,
     selectable: true,
-    sortable: true
+    sortable: true,
   })
 
   const selected = table.instance.selectedFlatRows
 
-  const {open, isOpen, close} = useDisclosure()
+  const { open, isOpen, close } = useDisclosure()
 
   return (
     <section className="space-y-6">
@@ -215,12 +222,17 @@ function DeniedUsersTable({users}) {
   )
 }
 
-function ProcessUser({id}) {
+function ProcessUser({ id }) {
   const update = useApplicantUsers().update(id).mutate
-  return <AcceptDeny onAccept={() => update({status: 'accepted'})} onDeny={() => update({status: 'rejected'})} />
+  return (
+    <AcceptDeny
+      onAccept={() => update({ status: 'accepted' })}
+      onDeny={() => update({ status: 'rejected' })}
+    />
+  )
 }
 
-function PendingUsersTable({users}) {
+function PendingUsersTable({ users }) {
   const tableData = useMemo(
     () =>
       users?.map(user => ({
@@ -228,8 +240,8 @@ function PendingUsersTable({users}) {
         summary: {
           name: user.name,
           id: user.id,
-          role: user.role
-        }
+          role: user.role,
+        },
       })) ?? [],
     [users]
   )
@@ -240,7 +252,7 @@ function PendingUsersTable({users}) {
         Header: 'Name',
         accessor: d => d.summary,
         id: 'tab_name',
-        Cell: ({cell: {value}}) => <NameAndBadge {...value} />
+        Cell: ({ cell: { value } }) => <NameAndBadge {...value} />,
       },
       {
         Header: (
@@ -249,13 +261,13 @@ function PendingUsersTable({users}) {
           </Text>
         ),
         accessor: 'created_at',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <TableItem center>
             <Text size="sm" className="uppercase">
               {value && value !== 'None' ? formatDate(value) : ''}
             </Text>
           </TableItem>
-        )
+        ),
       },
       // {
       //   Header: 'DAA',
@@ -273,13 +285,13 @@ function PendingUsersTable({users}) {
       {
         Header: 'Institution',
         accessor: 'company',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <TableItem center>
             <Text size="sm" className="uppercase">
               {value ? formatDate(value) : ''}
             </Text>
           </TableItem>
-        )
+        ),
       },
       {
         Header: (
@@ -288,17 +300,17 @@ function PendingUsersTable({users}) {
           </Text>
         ),
         accessor: 'email',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <a href={`mailto:${value}`}>
             <Text size="sm">{value}</Text>
           </a>
-        )
+        ),
       },
       {
         Header: 'Action',
         accessor: 'id',
-        Cell: ({cell: {value}}) => <ProcessUser id={value} />
-      }
+        Cell: ({ cell: { value } }) => <ProcessUser id={value} />,
+      },
     ],
     []
   )
@@ -306,12 +318,12 @@ function PendingUsersTable({users}) {
     data: tableData,
     columns: tableColumns,
     selectable: true,
-    sortable: true
+    sortable: true,
   })
 
   const selected = table.instance.selectedFlatRows
 
-  const {open, isOpen, close} = useDisclosure()
+  const { open, isOpen, close } = useDisclosure()
 
   return (
     <section className="space-y-6">
@@ -351,7 +363,7 @@ function PendingUsersTable({users}) {
     </section>
   )
 }
-function ActiveUsersTable({users, setSelectedUser}) {
+function ActiveUsersTable({ users, setSelectedUser }) {
   const tableData = useMemo(
     () =>
       users?.map(user => ({
@@ -359,8 +371,8 @@ function ActiveUsersTable({users, setSelectedUser}) {
         summary: {
           name: user.name,
           id: user.id,
-          role: user.role
-        }
+          role: user.role,
+        },
       })) ?? [],
     [users]
   )
@@ -371,32 +383,37 @@ function ActiveUsersTable({users, setSelectedUser}) {
         Header: 'Name',
         accessor: d => d.summary,
         id: 'tab_name',
-        Cell: ({cell: {value, row}}) => <NameAndBadge onClick={() => setSelectedUser(row.original)} {...value} />
+        Cell: ({ cell: { value, row } }) => (
+          <NameAndBadge onClick={() => setSelectedUser(row.original)} {...value} />
+        ),
       },
       {
-        Header: 'ε Budget Remaining',
+        Header: 'ε Balance',
         accessor: 'budget_spent',
-        Cell: ({cell: {value, row}}) => {
+        Cell: ({ cell: { value, row } }) => {
           const isBudgetRunningOut = value >= row.values.budget * 0.9
           return (
             <TableItem center>
-              <Badge type={isBudgetRunningOut ? 'solid' : 'subtle'} variant={isBudgetRunningOut ? 'danger' : 'gray'}>
+              <Badge
+                type={isBudgetRunningOut ? 'solid' : 'subtle'}
+                variant={isBudgetRunningOut ? 'danger' : 'gray'}
+              >
                 {value?.toFixed(2)} ε
               </Badge>
             </TableItem>
           )
-        }
+        },
       },
       {
         Header: 'ε Allocated Budget',
         accessor: 'budget',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <TableItem center>
             <Badge type="subtle" variant="gray">
               {value?.toFixed(2)} ε
             </Badge>
           </TableItem>
-        )
+        ),
       },
       {
         Header: (
@@ -404,14 +421,14 @@ function ActiveUsersTable({users, setSelectedUser}) {
             <FontAwesomeIcon icon={faCalendar} className="mr-1" /> Date Added
           </Text>
         ),
-        accessor: 'created_at',
-        Cell: ({cell: {value}}) => (
+        accessor: 'created_on',
+        Cell: ({ cell: { value } }) => (
           <TableItem center>
             <Text size="sm" className="uppercase">
               {value ? formatDate(value) : ''}
             </Text>
           </TableItem>
-        )
+        ),
       },
       {
         Header: (
@@ -420,8 +437,8 @@ function ActiveUsersTable({users, setSelectedUser}) {
           </Text>
         ),
         id: 'tab_added_by',
-        accessor: 'added_by',
-        Cell: ({cell: {value}}) => <NameAndBadge {...value} />
+        accessor: d => d.added_by,
+        Cell: ({ cell: { value } }) => <NameAndBadge {...value} />,
       },
       {
         Header: (
@@ -430,12 +447,12 @@ function ActiveUsersTable({users, setSelectedUser}) {
           </Text>
         ),
         accessor: 'email',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <a href={`mailto:${value}`}>
             <Text size="sm">{value}</Text>
           </a>
-        )
-      }
+        ),
+      },
     ],
     []
   )
@@ -443,12 +460,12 @@ function ActiveUsersTable({users, setSelectedUser}) {
     data: tableData,
     columns: tableColumns,
     selectable: true,
-    sortable: true
+    sortable: true,
   })
 
   const selected = table.instance.selectedFlatRows
 
-  const {open, isOpen, close} = useDisclosure()
+  const { open, isOpen, close } = useDisclosure()
 
   return (
     <section className="space-y-6">
@@ -483,7 +500,7 @@ function ActiveUsersTable({users, setSelectedUser}) {
 }
 
 function Denied() {
-  const {data: users} = useApplicantUsers().all()
+  const { data: users } = useApplicantUsers().all()
   const deniedUsers = useMemo(() => users?.filter(user => user.status === 'rejected'), [users])
 
   return (
@@ -503,7 +520,7 @@ function Denied() {
 }
 
 function Pending() {
-  const {data: users} = useApplicantUsers().all()
+  const { data: users } = useApplicantUsers().all()
   const pendingUsers = useMemo(() => users?.filter(user => user.status === 'pending'), [users])
 
   return (
@@ -531,11 +548,18 @@ function parseEpsilon(valueWithEpsilon: string | number) {
   return epsilon
 }
 
-function CreateUser({onClose}) {
-  const create = useUsers().create({onSuccess: onClose}, {multipart: true}).mutate
+function CreateUser({ onClose }) {
+  const create = useUsers().create({ onSuccess: onClose }, { multipart: true }).mutate
 
-  const {register, control, handleSubmit} = useForm({
-    defaultValues: {name: '', email: '', password: '', confirm_password: '', role: 4, budget: 10.0}
+  const { register, control, handleSubmit } = useForm({
+    defaultValues: {
+      name: '',
+      email: '',
+      password: '',
+      confirm_password: '',
+      role: 4,
+      budget: 10.0,
+    },
   })
 
   const onSubmit = data => {
@@ -554,17 +578,22 @@ function CreateUser({onClose}) {
       <div className="col-span-12 mt-4">
         <form onSubmit={handleSubmit(onSubmit)}>
           <Text size="sm">
-            PyGrid utilizes users and roles to appropriately permission data at a higher level. All users with the
-            permission Can Create Users are allowed to create users in the domain. Create a user by filling out the
-            fields below.
+            PyGrid utilizes users and roles to appropriately permission data at a higher level. All
+            users with the permission Can Create Users are allowed to create users in the domain.
+            Create a user by filling out the fields below.
           </Text>
           <div className="grid grid-cols-2 gap-6 mt-2.5 mb-12">
-            <Input {...register('name', {required: true})} label="Full name" required />
-            <Input {...register('email', {required: true})} label="Email" required />
-            <Input type="password" {...register('password', {required: true})} label="Password" required />
+            <Input {...register('name', { required: true })} label="Full name" required />
+            <Input {...register('email', { required: true })} label="Email" required />
             <Input
               type="password"
-              {...register('confirm_password', {required: true})}
+              {...register('password', { required: true })}
+              label="Password"
+              required
+            />
+            <Input
+              type="password"
+              {...register('confirm_password', { required: true })}
               label="Confirm password"
               required
             />
@@ -572,26 +601,33 @@ function CreateUser({onClose}) {
               <Controller
                 control={control}
                 name="role"
-                render={({field}) => (
-                  <Select options={[{label: 'Data Scientist', value: 4}]} label="Role" required {...field} />
+                render={({ field }) => (
+                  <Select
+                    options={[{ label: 'Data Scientist', value: 4 }]}
+                    label="Role"
+                    required
+                    {...field}
+                  />
                 )}
               />
             </div>
             <div className="col-span-full space-x-8 flex justify-between">
               <div className="flex-shrink-0">
                 <Controller
-                  render={({field: {value, ...rest}}) => (
+                  render={({ field: { value, ...rest } }) => (
                     <Input
                       label="Set Privacy Budget (PB)"
                       // type="number"
                       optional
                       addonLeft="-"
-                      addonLeftProps={{onClick: () => rest.onChange((parseEpsilon(value) - 0.1).toFixed(2))}}
+                      addonLeftProps={{
+                        onClick: () => rest.onChange((parseEpsilon(value) - 0.1).toFixed(2)),
+                      }}
                       addonRight="+"
                       addonRightProps={{
-                        onClick: () => rest.onChange((parseEpsilon(value) + 0.1).toFixed(2))
+                        onClick: () => rest.onChange((parseEpsilon(value) + 0.1).toFixed(2)),
                       }}
-                      containerProps={{className: 'max-w-42'}}
+                      containerProps={{ className: 'max-w-42' }}
                       {...rest}
                       onChange={e => rest.onChange(parseEpsilon(e.target.value).toFixed(2))}
                       value={`${Number(value).toFixed(2)} ε`}
@@ -602,15 +638,19 @@ function CreateUser({onClose}) {
                 />
               </div>
               <Text as="p" size="sm">
-                Allocating Privacy Budget (PB) is an optional setting that allows you to maintain a set standard of
-                privacy while offloading the work of manually approving every data request for a single user. You can
-                think of privacy budget as credits you give to a user to perform computations from. These credits of{' '}
+                Allocating Privacy Budget (PB) is an optional setting that allows you to maintain a
+                set standard of privacy while offloading the work of manually approving every data
+                request for a single user. You can think of privacy budget as credits you give to a
+                user to perform computations from. These credits of{' '}
                 <Text mono className="text-primary-600" size="xs">
                   Epsilon(ɛ)
                 </Text>{' '}
-                indicate the amount of visibility a user has into any one entity of your data. You can learn more about
-                privacy budgets and how to allocate them at{' '}
-                <a target="noopener noreferrer _blank" className="text-primary-600 hover:text-primary-500">
+                indicate the amount of visibility a user has into any one entity of your data. You
+                can learn more about privacy budgets and how to allocate them at{' '}
+                <a
+                  target="noopener noreferrer _blank"
+                  className="text-primary-600 hover:text-primary-500"
+                >
                   Course.OpenMined.org
                 </a>
               </Text>
@@ -644,9 +684,9 @@ function EmptyDataRequests() {
 export default function Users() {
   const [currentTab, setCurrentTab] = useState(() => 1)
   const tabsList = [
-    {id: 1, title: commonStrings.active_users, disabled: false},
-    {id: 2, title: commonStrings.pending_users, disabled: false},
-    {id: 3, title: commonStrings.denied_users, disabled: false}
+    { id: 1, title: commonStrings.active_users, disabled: false },
+    { id: 2, title: commonStrings.pending_users, disabled: false },
+    { id: 3, title: commonStrings.denied_users, disabled: false },
   ]
 
   return (

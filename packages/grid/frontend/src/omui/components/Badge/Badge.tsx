@@ -1,8 +1,8 @@
-import React, {forwardRef} from 'react'
+import React, { forwardRef } from 'react'
 import cn from 'classnames'
-import {Text} from '../Typography/Text'
-import type {HTMLAttributes, PropsWithRef} from 'react'
-import type {OmuiColors} from '@/styles/colorType'
+import { Text } from '../Typography/Text'
+import type { HTMLAttributes, PropsWithRef } from 'react'
+import type { OmuiColors } from '@/styles/colorType'
 
 export type BadgeVariantProp = 'gray' | 'primary' | 'tertiary' | 'quaternary' | 'danger' | 'success'
 export type BadgeTypeProp = 'outline' | 'subtle' | 'solid'
@@ -33,7 +33,7 @@ const VARIANT_COLORS: Record<BadgeVariantProp, OmuiColors> = {
   tertiary: 'violet',
   quaternary: 'blue',
   danger: 'error',
-  success: 'success'
+  success: 'success',
 } as const
 
 type Badges = {
@@ -50,11 +50,14 @@ const badges: Badges = Object.assign(
       [variant]: {
         outline: [
           'py-px border',
-          `border-${color}-500 text-${color}-600 dark:border-${color}-200 dark:text-${color}-200`
+          `border-${color}-500 text-${color}-600 dark:border-${color}-200 dark:text-${color}-200`,
         ],
         subtle: ['py-0.5', `bg-${color}-100 text-${color}-600`],
-        solid: ['py-0.5', color === 'gray' ? `text-primary-200 bg-gray-800` : `text-white bg-${color}-500`]
-      }
+        solid: [
+          'py-0.5',
+          color === 'gray' ? `text-primary-200 bg-gray-800` : `text-white bg-${color}-500`,
+        ],
+      },
     }
   })
 )
@@ -62,7 +65,7 @@ const badges: Badges = Object.assign(
 const defaultClass = 'inline-block h-5.5 px-1.5 rounded-sm leading-normal'
 
 const Badge = forwardRef<HTMLDivElement, Props>(function Badge(
-  {className, children, variant = 'primary', type = 'outline', truncate = false, ...props},
+  { className, children, variant = 'primary', type = 'outline', truncate = false, ...props },
   ref
 ) {
   const classes = cn(defaultClass, badges[variant]?.[type], truncate && 'truncate', className)
@@ -76,4 +79,4 @@ const Badge = forwardRef<HTMLDivElement, Props>(function Badge(
   )
 })
 
-export {Badge}
+export { Badge }

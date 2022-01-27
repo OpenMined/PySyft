@@ -1,8 +1,8 @@
 import React from 'react'
 import cn from 'classnames'
-import type {PropsWithRef, ComponentPropsWithoutRef, ComponentProps, LegacyRef} from 'react'
+import type { PropsWithRef, ComponentPropsWithoutRef, ComponentProps, LegacyRef } from 'react'
 
-import {useRadioGroupContext} from './RadioGroup'
+import { useRadioGroupContext } from './RadioGroup'
 
 export type RadioSizeProp = 'sm' | 'md' | 'lg'
 
@@ -102,4 +102,4 @@ function Radio({
   )
 }
 
-export {Radio}
+export { Radio }

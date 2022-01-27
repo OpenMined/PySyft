@@ -1,28 +1,28 @@
-import {useRef, useState} from 'react'
-import {Badge, Button, Divider, H5, Input, Tabs, Text} from '@/omui'
-import {PlusIcon} from '@heroicons/react/solid'
-import {TopContent, InputCopyToClipboard} from '@/components/lib'
-import {Switch} from '@/omui/components/Switch/Switch'
-import {useSettings} from '@/lib/data'
-import {sections} from '@/content'
-import {Base} from '@/components/Layouts'
-import {useForm} from 'react-hook-form'
-import {t} from '@/i18n'
-import {Alert} from '@/components/Alert'
-import {FormControl} from '@/omui/components/FormControl/FormControl'
-import {DomainSettingsProvider, useDomainSettings} from '@/components/Settings/useDomainSettings'
-import {Loader} from '@/components/Loader'
-import {Profile} from '@/components/Settings/Profile'
+import { useRef, useState } from 'react'
+import { Badge, Button, Divider, H5, Input, Tabs, Text } from '@/omui'
+import { PlusIcon } from '@heroicons/react/solid'
+import { TopContent, InputCopyToClipboard } from '@/components/lib'
+import { Switch } from '@/omui/components/Switch/Switch'
+import { useSettings } from '@/lib/data'
+import { sections } from '@/content'
+import { Base } from '@/components/Layouts'
+import { useForm } from 'react-hook-form'
+import { t } from '@/i18n'
+import { Alert } from '@/components/Alert'
+import { FormControl } from '@/omui/components/FormControl/FormControl'
+import { DomainSettingsProvider, useDomainSettings } from '@/components/Settings/useDomainSettings'
+import { Loader } from '@/components/Loader'
+import { Profile } from '@/components/Settings/Profile'
 
 const tabList = [
-  {title: 'Profile', id: 0, Component: Profile},
-  {title: 'Configurations', id: 1, Component: Configs, disabled: true},
-  {title: 'Updates', id: 2, Component: Updates, disabled: true}
+  { title: 'Profile', id: 0, Component: Profile },
+  { title: 'Configurations', id: 1, Component: Configs, disabled: true },
+  { title: 'Updates', id: 2, Component: Updates, disabled: true },
 ]
 
 function Configs() {
-  const {settings} = useDomainSettings()
-  const update = useSettings().create(null, {multipart: true}).mutate
+  const { settings } = useDomainSettings()
+  const update = useSettings().create(null, { multipart: true }).mutate
   const fileInputRef = useRef()
   const [file, setFile] = useState(settings.daa_document)
   const [daa, setDAA] = useState(settings!.daa)
@@ -60,7 +60,9 @@ function Configs() {
               <div className="col-span-5 flex space-x-2 items-center">
                 <div className="bg-gray-100 w-full px-2">
                   <Text size="xs" bold>
-                    {settings.daa_document === 'undefined' ? 'data_agreement.pdf' : settings.daa_document}
+                    {settings.daa_document === 'undefined'
+                      ? 'data_agreement.pdf'
+                      : settings.daa_document}
                   </Text>
                 </div>
                 <Text size="sm" className="flex-shrink-0 text-gray-400">
@@ -85,7 +87,8 @@ function Configs() {
                 onClick={() => {
                   // @ts-ignore
                   fileInputRef.current.click()
-                }}>
+                }}
+              >
                 {file ? t('buttons.replace-file') : t('buttons.upload-file')}
               </Button>
               <input
@@ -127,8 +130,8 @@ function Updates() {
 function CurrentVersion() {
   // const version = {updated: dayjs('2021-10-01').format('YYYY-MMM-DD HH:ss'), name: '0.6 alpha'}
   const versionInfo = [
-    {label: t('last-updated'), value: ''},
-    {label: t('version'), value: ''}
+    { label: t('last-updated'), value: '' },
+    { label: t('version'), value: '' },
   ]
   return (
     <div className="space-y-3">
@@ -148,13 +151,19 @@ function CurrentVersion() {
 }
 
 const updateVersionForm = [
-  {col: 4, placeholder: 'github.com/openmined/pysyft', id: 'repo', label: 'Repository', optional: true},
-  {col: 2, placeholder: 'dev', id: 'branch', label: 'Branch', optional: true},
-  {col: 2, placeholder: 'da812378asd...', id: 'hash', label: 'Hash', optional: true}
+  {
+    col: 4,
+    placeholder: 'github.com/openmined/pysyft',
+    id: 'repo',
+    label: 'Repository',
+    optional: true,
+  },
+  { col: 2, placeholder: 'dev', id: 'branch', label: 'Branch', optional: true },
+  { col: 2, placeholder: 'da812378asd...', id: 'hash', label: 'Hash', optional: true },
 ]
 
 function UpdateVersion() {
-  const {handleSubmit, register} = useForm()
+  const { handleSubmit, register } = useForm()
 
   const onSubmit = () => {}
 
@@ -178,12 +187,12 @@ function UpdateVersion() {
 }
 
 export default function Settings() {
-  const {data: settings, isLoading, isError} = useSettings().all()
+  const { data: settings, isLoading, isError } = useSettings().all()
   const [selected, setSelected] = useState(() => tabList[0].id)
   const Component = tabList[selected].Component
 
   return (
-    <DomainSettingsProvider value={{settings}}>
+    <DomainSettingsProvider value={{ settings }}>
       <Base>
         <TopContent heading={sections.settings.heading} />
         <Text as="p" className="col-span-full py-4 text-gray-600">
@@ -191,7 +200,13 @@ export default function Settings() {
         </Text>
         <InputCopyToClipboard url={settings?.url} text="Copy URL" />
         <div className="col-span-full mt-10 mb-16">
-          <Tabs align="auto" variant="outline" active={selected} tabsList={tabList} onChange={setSelected} />
+          <Tabs
+            align="auto"
+            variant="outline"
+            active={selected}
+            tabsList={tabList}
+            onChange={setSelected}
+          />
           <div className="grid grid-cols-12 gap-4 pt-16">
             {isLoading && <Loader />}
             {isError && <Alert.Error alertStyle="subtle" title={t('error-loading-settings')} />}

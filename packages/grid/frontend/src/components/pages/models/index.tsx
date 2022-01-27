@@ -1,13 +1,21 @@
-import {Fragment, useState} from 'react'
-import {useForm} from 'react-hook-form'
-import {XCircleIcon} from '@heroicons/react/solid'
-import {Disclosure} from '@headlessui/react'
-import {NormalButton, Input, Tag, Accordion} from '@/components'
-import {useModels} from '@/lib/data'
-import type {ChangeEventHandler} from 'react'
-import type {Model} from '@/types/grid-types'
+import { Fragment, useState } from 'react'
+import { useForm } from 'react-hook-form'
+import { XCircleIcon } from '@heroicons/react/solid'
+import { Disclosure } from '@headlessui/react'
+import { NormalButton, Input, Tag, Accordion } from '@/components'
+import { useModels } from '@/lib/data'
+import type { ChangeEventHandler } from 'react'
+import type { Model } from '@/types/grid-types'
 
-function TagsShowcase({id, tags, onRemove}: {id: string | number; tags: string[]; onRemove: (e: string) => void}) {
+function TagsShowcase({
+  id,
+  tags,
+  onRemove,
+}: {
+  id: string | number
+  tags: string[]
+  onRemove: (e: string) => void
+}) {
   return (
     <div className="space-y-1">
       <p className="ml-1 text-sm font-medium text-gray-700">Tags</p>
@@ -19,7 +27,8 @@ function TagsShowcase({id, tags, onRemove}: {id: string | number; tags: string[]
             {tags.length > 1 && (
               <button
                 className="flex items-center px-2 text-white bg-red-400 cursor-pointer rounded-r-md hover:bg-red-800"
-                onClick={() => onRemove(tag)}>
+                onClick={() => onRemove(tag)}
+              >
                 <XCircleIcon className="w-4 h-4" />
               </button>
             )}
@@ -30,7 +39,7 @@ function TagsShowcase({id, tags, onRemove}: {id: string | number; tags: string[]
   )
 }
 
-function AddNewTag({onAdd}) {
+function AddNewTag({ onAdd }) {
   const [tag, setTag] = useState('')
   const handleChange: ChangeEventHandler<HTMLInputElement> = event => {
     setTag(event.target.value)
@@ -70,7 +79,7 @@ function AddNewTag({onAdd}) {
   )
 }
 
-function ModelEditFormButtons({onCancel}) {
+function ModelEditFormButtons({ onCancel }) {
   return (
     <div className="w-full space-x-6 text-right">
       <NormalButton className="bg-blue-500 hover:bg-blue-800 text-gray-50">Save</NormalButton>
@@ -86,10 +95,10 @@ function ModelEditFormButtons({onCancel}) {
 type ModelEditForm = Pick<Model, 'name' | 'description'>
 
 function EditPanel(model: Model) {
-  const {update} = useModels()
+  const { update } = useModels()
   const mutation = update(model.id)
   const [tags, changeTags] = useState(model.tags)
-  const {handleSubmit, register, reset} = useForm<ModelEditForm>()
+  const { handleSubmit, register, reset } = useForm<ModelEditForm>()
 
   const onCancel = () => {
     reset()
@@ -97,7 +106,7 @@ function EditPanel(model: Model) {
   }
 
   const onSubmit = (values: ModelEditForm) => {
-    mutation.mutate({...values, tags})
+    mutation.mutate({ ...values, tags })
   }
 
   return (
@@ -139,7 +148,7 @@ function EditPanel(model: Model) {
   )
 }
 
-export function ModelList({models}: {models: Model[]}) {
+export function ModelList({ models }: { models: Model[] }) {
   return (
     <Accordion>
       {models.map(model => (
@@ -150,7 +159,9 @@ export function ModelList({models}: {models: Model[]}) {
               <p className="text-xs text-gray-500">{model.id}</p>
             </div>
             <div className="space-y-2 text-sm text-gray-700">
-              <p className="pr-12 mt-4 text-sm text-gray-700 overflow-ellipsis line-clamp-4">{model.description}</p>
+              <p className="pr-12 mt-4 text-sm text-gray-700 overflow-ellipsis line-clamp-4">
+                {model.description}
+              </p>
               <div className="flex flex-wrap">
                 {model.tags.map(tag => (
                   <Tag key={tag} className="mb-2 mr-2">

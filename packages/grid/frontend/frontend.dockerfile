@@ -49,3 +49,4 @@ COPY --from=build-stage $PROD_ROOT/out /usr/share/nginx/html
 COPY --from=build-stage $PROD_ROOT/docker/nginx.conf /etc/nginx/conf.d/default.conf
 COPY --from=build-stage $PROD_ROOT/docker/nginx-backend-not-found.conf /etc/nginx/extra-conf.d/backend-not-found
 COPY --from=build-stage $PROD_ROOT /hauuuh
+

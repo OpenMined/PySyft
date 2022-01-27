@@ -1,15 +1,15 @@
 import React from 'react'
-import {Divider} from './Divider'
-import type {Story, Meta} from '@storybook/react'
-import type {DividerProps, DividerColor} from './Divider'
+import { Divider } from './Divider'
+import type { Story, Meta } from '@storybook/react'
+import type { DividerProps, DividerColor } from './Divider'
 
 export default {
   title: 'Atoms/Divider',
-  component: Divider
+  component: Divider,
 } as Meta
 
 const Template: Story<DividerProps> = args => (
-  <div style={{height: 200}}>
+  <div style={{ height: 200 }}>
     <Divider {...args} />
   </div>
 )
@@ -29,13 +29,13 @@ export const Default = Template.bind({})
 
 export const AllHorizontal = AllColors.bind({})
 AllHorizontal.parameters = {
-  controls: {disable: true}
+  controls: { disable: true },
 }
 
 export const AllVertical = AllColors.bind({})
 AllVertical.parameters = {
-  controls: {disable: true}
+  controls: { disable: true },
 }
 AllVertical.args = {
-  orientation: 'vertical'
+  orientation: 'vertical',
 }

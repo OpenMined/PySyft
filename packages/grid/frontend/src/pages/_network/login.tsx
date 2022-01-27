@@ -1,10 +1,10 @@
-import {useState, useRef} from 'react'
-import {useRouter} from 'next/router'
-import {useForm} from 'react-hook-form'
-import {DomainConnectionStatus} from '@/components'
-import {useDomainStatus} from '@/lib/data'
-import {useAuth} from '@/context/auth-context'
-import {Input, NormalButton} from '@/components'
+import { useState, useRef } from 'react'
+import { useRouter } from 'next/router'
+import { useForm } from 'react-hook-form'
+import { DomainConnectionStatus } from '@/components'
+import { useDomainStatus } from '@/lib/data'
+import { useAuth } from '@/context/auth-context'
+import { Input, NormalButton } from '@/components'
 
 interface UserLogin {
   email: string
@@ -13,17 +13,17 @@ interface UserLogin {
 
 export default function Login() {
   const router = useRouter()
-  const {login} = useAuth()
-  const {register, handleSubmit, formState} = useForm({mode: 'onChange'})
+  const { login } = useAuth()
+  const { register, handleSubmit, formState } = useForm({ mode: 'onChange' })
   const [error, setError] = useState<boolean>(false)
   const [loading, setLoading] = useState<boolean>(false)
   const [spin, setSpin] = useState<boolean>(false)
   const rotateStyle = useRef({})
-  const {isValid} = formState
-  const {data: status} = useDomainStatus()
+  const { isValid } = formState
+  const { data: status } = useDomainStatus()
 
   if (spin) {
-    rotateStyle.current = {transform: `rotate(${Math.ceil(365 * Math.random())}deg)`}
+    rotateStyle.current = { transform: `rotate(${Math.ceil(365 * Math.random())}deg)` }
     setSpin(false)
     if (error) {
       setError(false)
@@ -35,7 +35,7 @@ export default function Login() {
       setLoading(true)
       await login(values)
       router.push('/users')
-    } catch ({message}) {
+    } catch ({ message }) {
       setError(message)
     } finally {
       setLoading(false)
@@ -61,12 +61,14 @@ export default function Login() {
                 name="email"
                 id="email"
                 label="Email"
-                ref={register({required: "Don't forget your email"})}
+                ref={register({ required: "Don't forget your email" })}
                 placeholder="owner@openmined.org"
                 error={formState.errors.email?.message}
                 onChange={() => setSpin(true)}
               />
-              {error && <span className="px-4 py-1 mt-0.5 text-sm text-gray-800 bg-red-200">{error}</span>}
+              {error && (
+                <span className="px-4 py-1 mt-0.5 text-sm text-gray-800 bg-red-200">{error}</span>
+              )}
             </div>
             <div className="flex flex-col">
               <Input
@@ -74,7 +76,7 @@ export default function Login() {
                 id="password"
                 name="password"
                 label="Password"
-                ref={register({required: 'This needs a password...'})}
+                ref={register({ required: 'This needs a password...' })}
                 placeholder="••••••••••"
                 onChange={() => setSpin(true)}
               />
@@ -82,7 +84,8 @@ export default function Login() {
             <NormalButton
               className="bg-sky-500 hover:bg-sky-300 active:bg-sky-800 text-white"
               disabled={!isValid || error}
-              isLoading={loading}>
+              isLoading={loading}
+            >
               Login
             </NormalButton>
           </div>

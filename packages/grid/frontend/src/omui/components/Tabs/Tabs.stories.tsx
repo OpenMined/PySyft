@@ -1,14 +1,14 @@
-import React, {useState} from 'react'
-import {Tabs, TabsAlignProp, TabsVariantProp} from './Tabs'
-import type {TabsProps} from './Tabs'
-import type {Story, Meta} from '@storybook/react'
+import React, { useState } from 'react'
+import { Tabs, TabsAlignProp, TabsVariantProp } from './Tabs'
+import type { TabsProps } from './Tabs'
+import type { Story, Meta } from '@storybook/react'
 
 const tabsList = [
-  {title: 'Tab Name', id: 1},
-  {title: 'Tab Name', id: 2},
-  {title: 'Tab Name', id: 3},
-  {title: 'Tab Name', id: 4},
-  {title: 'Tab Name', id: 5, disabled: true}
+  { title: 'Tab Name', id: 1 },
+  { title: 'Tab Name', id: 2 },
+  { title: 'Tab Name', id: 3 },
+  { title: 'Tab Name', id: 4 },
+  { title: 'Tab Name', id: 5, disabled: true },
 ]
 
 export const Default: Story<TabsProps> = args => {
@@ -52,13 +52,13 @@ export default {
   component: Tabs,
   parameters: {
     controls: {
-      include: ['align', 'variant', 'size']
-    }
-  }
+      include: ['align', 'variant', 'size'],
+    },
+  },
 } as Meta
 
 AllTabs.argTypes = {
   controls: {
-    include: []
-  }
+    include: [],
+  },
 }

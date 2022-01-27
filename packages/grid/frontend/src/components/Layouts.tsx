@@ -1,27 +1,24 @@
-import {Page} from '@/components/Page'
-import {Grid} from '@/components/Grid'
-import {SidebarNav} from '@/components/SidebarNav'
+import tw, { css, styled } from 'twin.macro'
+import { SideMenu } from '$components/SideMenu'
 
-export function Base({children}) {
-  return (
-    <div
-      className="omui-layout"
-      style={{background: 'linear-gradient(90deg, rgba(0, 0, 0, 0.75) 0%, rgba(0, 0, 0, 0.1) 100%), #2E2B3B'}}>
-      <SidebarNav />
-      <main className="bg-white rounded-tl-2xl relative">
-        <Page>
-          <Grid>{children}</Grid>
-        </Page>
-        <div id="omui-modal-portal" />
-      </main>
+const MainContent = styled.div`
+  ${tw`grid grid-cols-12 gap-6 pl-10 max-w-[1170px] mr-auto w-full h-full`}
+  ${tw`rounded-tl-[15px]`}
+  ${tw`py-8`}
+`
+
+const DesktopLayout = styled.div`
+  display: grid;
+  grid-template-areas: 'side-menu main-content';
+  grid-template-columns: 270px 1fr;
+  ${tw`bg-gray-800 bg-scrim-gray-dark`}
+`
+
+export const SimpleCenter = ({ children }) => (
+  <DesktopLayout>
+    <SideMenu />
+    <div tw="bg-[#F1F0F4] bg-scrim-layout-white">
+      <MainContent>{children}</MainContent>
     </div>
-  )
-}
-
-export function SingleCenter({children}) {
-  return (
-    <Base>
-      <div className="col-span-10 col-start-2 grid grid-cols-10">{children}</div>
-    </Base>
-  )
-}
+  </DesktopLayout>
+)

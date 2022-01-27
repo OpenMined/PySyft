@@ -1,8 +1,8 @@
-import React, {forwardRef} from 'react'
+import React, { forwardRef } from 'react'
 import cn from 'classnames'
-import type {ReactChild, PropsWithRef, ComponentProps, HTMLAttributes} from 'react'
+import type { ReactChild, PropsWithRef, ComponentProps, HTMLAttributes } from 'react'
 
-import {InputAddon} from './InputAddon'
+import { InputAddon } from './InputAddon'
 
 export type TextAreaVariantProp = 'outline' | 'flushed' | 'filled'
 
@@ -76,7 +76,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextAre
     'border-error-500 text-error-600 dark:border-error-400',
     variant === 'flushed' ? 'border-b rounded-t' : 'border rounded',
     addonUnstyled ? 'dark:text-error-300' : 'bg-error-50 dark:text-white dark:bg-error-600',
-    {'dark:bg-gray-800': addonUnstyled && variant === 'filled'}
+    { 'dark:bg-gray-800': addonUnstyled && variant === 'filled' }
   )
 
   const variantClasses = cn(
@@ -85,11 +85,12 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextAre
       'border rounded': variant === 'outline',
       'border-b rounded-t': variant === 'flushed',
       'border-0 rounded bg-gray-100 focus-within:bg-primary-100 dark:bg-gray-600 dark:focus-within:bg-primary-600':
-        variant === 'filled'
+        variant === 'filled',
     },
     (variant === 'outline' || variant === 'flushed') && {
-      'bg-gray-50 focus-within:bg-primary-50 dark:bg-gray-700 dark:focus-within:bg-primary-600': !addonUnstyled,
-      'dark:bg-gray-900 dark:focus-within:text-primary-300': addonUnstyled
+      'bg-gray-50 focus-within:bg-primary-50 dark:bg-gray-700 dark:focus-within:bg-primary-600':
+        !addonUnstyled,
+      'dark:bg-gray-900 dark:focus-within:text-primary-300': addonUnstyled,
     }
   )
 
@@ -115,7 +116,7 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextAre
   const ariaAttributes = {
     'aria-invalid': error ? true : undefined,
     'aria-required': required ? true : undefined,
-    'aria-readonly': readOnly ? true : undefined
+    'aria-readonly': readOnly ? true : undefined,
   }
 
   return (
@@ -127,7 +128,8 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextAre
           error={error}
           disabled={disabled}
           side="left"
-          {...addonLeftProps}>
+          {...addonLeftProps}
+        >
           {addonLeft}
         </InputAddon>
       )}
@@ -147,7 +149,8 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextAre
           error={error}
           disabled={disabled}
           side="right"
-          {...addonRightProps}>
+          {...addonRightProps}
+        >
           {addonRight}
         </InputAddon>
       )}
@@ -155,4 +158,4 @@ const TextArea = forwardRef<HTMLTextAreaElement, TextAreaProps>(function TextAre
   )
 })
 
-export {TextArea}
+export { TextArea }

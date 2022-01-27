@@ -1,6 +1,6 @@
 import React from 'react'
-import {render, screen} from '@testing-library/react'
-import {axe} from 'jest-axe'
+import { render, screen } from '@testing-library/react'
+import { axe } from 'jest-axe'
 
 import {
   List,
@@ -12,7 +12,7 @@ import {
   ListAvatarItem,
   ListProgressItem,
   ListIconItem,
-  ListItemContent
+  ListItemContent,
 } from '../List'
 
 const list = Array.from(Array(10).keys()).map(i => `Item ${i}`)
@@ -48,7 +48,7 @@ describe('Lists', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
           {list.map(i => (
             <ListItem key={i}>{i}</ListItem>
@@ -77,7 +77,7 @@ describe('Lists', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(
+      const { container } = render(
         <UnorderedList data-testid="list-id">
           {list.map(i => (
             <UnorderedListItem key={i}>{i}</UnorderedListItem>
@@ -106,7 +106,7 @@ describe('Lists', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(
+      const { container } = render(
         <OrderedList data-testid="list-id">
           {list.map(i => (
             <OrderedListItem key={i}>{i}</OrderedListItem>
@@ -175,7 +175,7 @@ describe('Lists', () => {
     })
 
     test('no axe violations with a string', async () => {
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
           {list.map(i => (
             <ListAvatarItem src={i} alt="avatar" key={i}>
@@ -190,7 +190,7 @@ describe('Lists', () => {
     })
 
     test('no axe violations with a ListItemContent', async () => {
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
           {list.map(i => (
             <ListAvatarItem src={i} alt="avatar" key={i}>
@@ -256,7 +256,7 @@ describe('Lists', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
           {list.map(i => (
             <ListProgressItem key={i}>{i}</ListProgressItem>
@@ -269,7 +269,7 @@ describe('Lists', () => {
     })
   })
 
-  const RandomIcon = ({className}) => (
+  const RandomIcon = ({ className }) => (
     <svg className={className} role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512">
       <path
         fill="currentColor"
@@ -297,7 +297,7 @@ describe('Lists', () => {
 
     test('icon size is determined by the list size', () => {
       // TODO: Transform with cases
-      const {rerender} = render(
+      const { rerender } = render(
         <List data-testid="list-id">
           {list.map(i => (
             <ListIconItem icon={RandomIcon} key={i}>
@@ -332,7 +332,7 @@ describe('Lists', () => {
 
     test('contains no axe violations', async () => {
       // TODO: they should be instantiated using cases, perhaps?
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
           {list.map(i => (
             <ListProgressItem key={i}>{i}</ListProgressItem>

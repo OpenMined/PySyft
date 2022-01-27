@@ -1,5 +1,5 @@
 import React from 'react'
-import {Story, Meta} from '@storybook/react'
+import { Story, Meta } from '@storybook/react'
 import theme from 'tailwindcss/defaultTheme'
 
 const SpacingStory = args => {
@@ -32,7 +32,9 @@ const BarSpacing = args => {
         <>
           <span>{size}</span>
           <span>{theme.spacing[size]}</span>
-          <span>{isNaN(size) ? theme.spacing[size] : `${parseFloat(theme.spacing[size]) * 16}px`}</span>
+          <span>
+            {isNaN(size) ? theme.spacing[size] : `${parseFloat(theme.spacing[size]) * 16}px`}
+          </span>
           <div className={`col-span-5 w-${size} h-4 bg-${color}-500 bg-opacity-50`} />
         </>
       ))}
@@ -46,10 +48,21 @@ export default {
   argTypes: {
     color: {
       defaultValue: 'violet',
-      options: ['magenta', 'gray', 'lime', 'marigold', 'orange', 'cyan', 'blue', 'violet', 'purple', 'red'].sort(),
-      control: {type: 'select'}
-    }
-  }
+      options: [
+        'magenta',
+        'gray',
+        'lime',
+        'marigold',
+        'orange',
+        'cyan',
+        'blue',
+        'violet',
+        'purple',
+        'red',
+      ].sort(),
+      control: { type: 'select' },
+    },
+  },
 } as Meta
 
 export const SpacingBars = BarSpacing.bind({})

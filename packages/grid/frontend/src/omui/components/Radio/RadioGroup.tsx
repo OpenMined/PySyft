@@ -1,7 +1,11 @@
-import React, {createContext, useContext, useMemo} from 'react'
-import type {ContextType} from 'react'
+import React, { createContext, useContext, useMemo } from 'react'
+import type { ContextType } from 'react'
 
-type RadioGroupContextValues = {name: string; onChange: (value: string) => void; value?: string} | null
+type RadioGroupContextValues = {
+  name: string
+  onChange: (value: string) => void
+  value?: string
+} | null
 const RadioGroupContext = createContext<RadioGroupContextValues>(null)
 RadioGroupContext.displayName = 'RadioGroupContext'
 
@@ -31,9 +35,9 @@ export type RadioGroupProps = {
   children: React.ReactNode
 }
 
-function RadioGroup({name, value, onChange, inline, children}: RadioGroupProps) {
+function RadioGroup({ name, value, onChange, inline, children }: RadioGroupProps) {
   const radioGroupApi = useMemo<ContextType<typeof RadioGroupContext>>(
-    () => ({name, value, onChange}),
+    () => ({ name, value, onChange }),
     [name, value, onChange]
   )
   return (
@@ -45,4 +49,4 @@ function RadioGroup({name, value, onChange, inline, children}: RadioGroupProps) 
   )
 }
 
-export {RadioGroup, useRadioGroupContext}
+export { RadioGroup, useRadioGroupContext }

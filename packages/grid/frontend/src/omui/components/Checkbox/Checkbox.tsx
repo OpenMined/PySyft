@@ -1,7 +1,7 @@
 import React from 'react'
 import cn from 'classnames'
-import type {PropsWithRef, ComponentPropsWithoutRef, ComponentProps, LegacyRef} from 'react'
-import {Checkmark, Indeterminate} from './Icons'
+import type { PropsWithRef, ComponentPropsWithoutRef, ComponentProps, LegacyRef } from 'react'
+import { Checkmark, Indeterminate } from './Icons'
 
 export interface Props extends ComponentPropsWithoutRef<'input'> {
   /**
@@ -38,12 +38,15 @@ export interface Props extends ComponentPropsWithoutRef<'input'> {
 
 export type CheckboxProps = PropsWithRef<Props>
 
-const defaultInputClasses = 'opacity-0 absolute h-4 w-4 appearance-none border border-transparent cursor-pointer'
+const defaultInputClasses =
+  'opacity-0 absolute h-4 w-4 appearance-none border border-transparent cursor-pointer'
 const defaultIconClasses = {
   main: 'border-2 rounded-sm w-4 h-4 flex justify-center items-center dark:text-gray-900',
-  disabled: 'bg-primary-100 text-primary-300 border-primary-100 dark:bg-primary-800 dark:border-primary-800',
-  checked: 'bg-primary-500 border-primary-500 text-white dark:bg-primary-400 dark:border-primary-400',
-  unchecked: 'border-gray-400 dark:border-gray-200 bg-transparent'
+  disabled:
+    'bg-primary-100 text-primary-300 border-primary-100 dark:bg-primary-800 dark:border-primary-800',
+  checked:
+    'bg-primary-500 border-primary-500 text-white dark:bg-primary-400 dark:border-primary-400',
+  unchecked: 'border-gray-400 dark:border-gray-200 bg-transparent',
 }
 
 function Checkbox({
@@ -64,7 +67,7 @@ function Checkbox({
   )
   const iconClasses = cn(defaultIconClasses.main, {
     [defaultIconClasses.disabled]: disabled,
-    [isChecked ? defaultIconClasses.checked : defaultIconClasses.unchecked]: !disabled
+    [isChecked ? defaultIconClasses.checked : defaultIconClasses.unchecked]: !disabled,
   })
 
   const Icon = indeterminate ? Indeterminate : Checkmark
@@ -89,4 +92,4 @@ function Checkbox({
   )
 }
 
-export {Checkbox}
+export { Checkbox }

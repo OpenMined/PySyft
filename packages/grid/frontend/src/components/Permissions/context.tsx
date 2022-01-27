@@ -1,8 +1,8 @@
-import {createContext, useContext, useState} from 'react'
-import {useRoles} from '@/lib/data'
+import { createContext, useContext, useState } from 'react'
+import { useRoles } from '@/lib/data'
 
-import type {UseMutateFunction} from 'react-query'
-import type {Role, AllSyftPermissions, SyftPermissions} from '@/types/permissions'
+import type { UseMutateFunction } from 'react-query'
+import type { Role, AllSyftPermissions, SyftPermissions } from '@/types/permissions'
 
 interface PermissionContextProps {
   role: Role
@@ -15,25 +15,32 @@ const PermissionContext = createContext<PermissionContextProps>({
   role: null,
   permissions: null,
   save: null,
-  toggle: null
+  toggle: null,
 })
 
-function PermissionsAccordionProvider({role, children}) {
+function PermissionsAccordionProvider({ role, children }) {
   const [permissions, setPermissions] = useState<AllSyftPermissions>(() => {
-    const {id, name, ...allPermissions} = role
+    const { id, name, ...allPermissions } = role
     return allPermissions
   })
 
   const update = useRoles().update(role.id).mutate
 
   const toggle = (permission: SyftPermissions) =>
-    setPermissions(prevPermissions => ({...prevPermissions, [permission]: !prevPermissions[permission]}))
+    setPermissions(prevPermissions => ({
+      ...prevPermissions,
+      [permission]: !prevPermissions[permission],
+    }))
 
-  const save = () => update({...role, ...permissions})
+  const save = () => update({ ...role, ...permissions })
 
-  return <PermissionContext.Provider value={{permissions, role, save, toggle}}>{children}</PermissionContext.Provider>
+  return (
+    <PermissionContext.Provider value={{ permissions, role, save, toggle }}>
+      {children}
+    </PermissionContext.Provider>
+  )
 }
 
 const usePermission = () => useContext(PermissionContext)
 
-export {PermissionsAccordionProvider, usePermission}
+export { PermissionsAccordionProvider, usePermission }

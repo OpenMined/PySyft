@@ -1,142 +1,97 @@
-import React, {createContext, useContext} from 'react'
-import cn from 'classnames'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {
-  faExclamationCircle,
-  faExclamationTriangle,
-  faInfoCircle,
-  faCheckCircle,
-  faTimes
-} from '@fortawesome/free-solid-svg-icons'
-import {Text} from '@/omui'
+import tw, { styled } from 'twin.macro'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import CloseIcon from '$icons/CloseIonicons'
+import type { IconName } from '@fortawesome/fontawesome-svg-core'
+import type { TwStyle } from 'twin.macro'
 
-import type {ReactNode} from 'react'
-import type {IconDefinition} from '@fortawesome/fontawesome-svg-core'
-import type {OmuiColors} from '@/omui/styles/colorType'
+type AlertType = 'success' | 'info' | 'warning' | 'danger'
 
-type AlertIconType = 'error' | 'warning' | 'info' | 'success'
-type AlertAlignType = 'left' | 'center'
-type AlertVariantType = 'oneline' | 'multiline'
-type AlertStyleType = 'subtle' | 'solid' | 'leftAccent' | 'topAccent'
-
-// fa-icons
-const alertIcons: Record<AlertIconType | 'close', IconDefinition> = {
-  error: faExclamationCircle,
-  warning: faExclamationTriangle,
-  info: faInfoCircle,
-  success: faCheckCircle,
-  close: faTimes
+interface AlertProps {
+  alertType: AlertType
+  description: string
+  title: string
+  variant: 'subtle' | 'solid'
+  leftAccent?: boolean
+  topAccent?: boolean
+  centered?: boolean
+  multiline?: boolean
+  onClose?: () => void
 }
 
-const twAlertIconSize = 'text-xl'
-
-export interface AlertProps {
-  type?: AlertIconType
-  alertStyle: AlertStyleType
-  variant?: AlertVariantType
-  align?: AlertAlignType
-  close?: boolean
-  title?: string
-  description?: ReactNode
-  className?: string
-}
-
-const AlertContext = createContext<AlertProps>({
-  type: 'info',
-  variant: 'oneline',
-  align: 'left',
-  alertStyle: 'subtle',
-  close: false,
-  title: '',
-  description: ''
-})
-
-const styles = (color: OmuiColors) => ({
-  subtle: `bg-${color}-100`,
-  solid: `bg-${color}-500 text-white`,
-  topAccent: `bg-${color}-100 border-t-4 border-${color}-500 text-gray-800`,
-  leftAccent: `bg-${color}-100 border-l-4 border-${color}-500 text-gray-800`
-})
-
-function AlertBase({
-  type = 'info',
-  variant = 'oneline',
-  align = 'left',
-  alertStyle = 'subtle',
-  close = false,
+export const Alert = ({
+  variant = 'subtle',
+  alertType = 'info',
+  leftAccent,
+  topAccent,
+  onClose,
+  centered,
+  multiline,
   title,
   description,
-  className
-}: AlertProps) {
-  const vertAlign = variant === 'oneline' && 'items-center'
+}: AlertProps) => {
+  const alertProps = { variant, alertType, leftAccent, topAccent, centered, multiline }
   return (
-    <AlertContext.Provider value={{type, variant, align, alertStyle, close, title, description}}>
-      <div className={cn('flex justify-between px-3 py-2', vertAlign, className)}>
-        <div className="p-2">
-          {variant === 'oneline' && <AlertOneLine />}
-          {variant === 'multiline' && <AlertMultiLine />}
-        </div>
-        {close && (
-          <div className="cursor-pointer">
-            <AlertIcon type="close" />
+    <Container {...alertProps}>
+      {multiline ? (
+        <div tw="flex flex-grow gap-3 p-2">
+          <FontAwesomeIcon icon={icon[alertType]} css={[iconStyle[alertType]]} tw="items-start" />
+          <div tw="flex flex-col gap-0.5">
+            <span tw="font-bold">{title}</span>
+            <span tw="text-sm">{description}</span>
           </div>
-        )}
-      </div>
-    </AlertContext.Provider>
+        </div>
+      ) : (
+        <div tw="flex items-center gap-3 flex-grow">
+          <FontAwesomeIcon icon={icon[alertType]} css={[iconStyle[alertType]]} tw="items-start" />
+          <span tw="font-bold">{title}</span>
+          <span tw="text-sm">{description}</span>
+        </div>
+      )}
+      {typeof onClose === 'function' && (
+        <button tw="flex-shrink-0 self-start" onClick={onClose}>
+          <CloseIcon />
+        </button>
+      )}
+    </Container>
   )
 }
 
-function AlertOneLine() {
-  const {title, type, description, variant, align} = useContext(AlertContext)
-  const vertAlign = variant === 'oneline' && 'items-center'
-  const horzAlign = {'justify-start': align === 'left', 'justify-center': align === 'center'}
-  return (
-    <div className={cn('flex space-x-3', vertAlign, horzAlign)}>
-      <AlertIcon type={type} />
-      {title && <Text bold>{title}</Text>}
-      {description && React.isValidElement(description) ? React.cloneElement(description) : <Text>{description}</Text>}
-    </div>
-  )
-}
-
-function AlertMultiLine() {
-  const {title, type, description} = useContext(AlertContext)
-  return (
-    <div className="flex space-x-3 items-start">
-      <AlertIcon type={type} />
-      <div className="flex-col">
-        {title && <Text bold>{title}</Text>}
-        {description && <Text>{description}</Text>}
-      </div>
-    </div>
-  )
-}
-
-function AlertIcon({type}: {type: AlertIconType | 'close'}) {
-  return (
-    <div className="w-6 h-6 flex-shrink-0 text-current">
-      <FontAwesomeIcon icon={alertIcons[type]} className={twAlertIconSize} />
-    </div>
-  )
-}
-
-function AlertError(props: AlertProps) {
-  return <AlertBase {...props} type="error" className={styles('error')[props.alertStyle]} />
-}
-
-function AlertWarning(props: AlertProps) {
-  return <AlertBase {...props} type="warning" className={styles('warning')[props.alertStyle]} />
-}
-
-function AlertInfo(props: AlertProps) {
-  return <AlertBase {...props} type="info" className={styles('primary')[props.alertStyle]} />
-}
-
-function AlertSuccess(props: AlertProps) {
-  return <AlertBase {...props} type="success" className={styles('success')[props.alertStyle]} />
-}
-
-export const Alert = Object.assign(
-  {},
-  {Base: AlertBase, Error: AlertError, Warning: AlertWarning, Info: AlertInfo, Success: AlertSuccess}
+const Container = styled.div(
+  ({ variant, alertType, leftAccent, topAccent, centered, multiline }: Partial<AlertProps>) => [
+    tw`w-full flex min-h-[56px] p-2 rounded gap-2.5`,
+    multiline && tw`min-h-[80px]`,
+    centered && tw`text-center`,
+    variant === 'solid' && solid[alertType],
+    variant === 'subtle' && subtle[alertType],
+    leftAccent && tw`border-l-4`,
+    topAccent && tw`border-t-4`,
+  ]
 )
+
+const solid: Record<AlertType, TwStyle> = {
+  danger: tw`bg-danger-500 text-gray-0`,
+  success: tw`bg-success-500 text-gray-0`,
+  warning: tw`bg-warning-500 text-gray-0`,
+  info: tw`bg-primary-500 text-gray-0`,
+}
+
+const subtle: Record<AlertType, TwStyle> = {
+  danger: tw`bg-danger-100 border-danger-600 text-gray-800`,
+  success: tw`bg-success-100 border-success-600 text-gray-800`,
+  warning: tw`bg-warning-100 border-warning-600 text-gray-800`,
+  info: tw`bg-primary-100 border-primary-600 text-gray-0`,
+}
+
+const iconStyle: Record<AlertType, TwStyle> = {
+  danger: tw`text-danger-500`,
+  success: tw`text-success-500`,
+  warning: tw`text-warning-500`,
+  info: tw`text-primary-500`,
+}
+
+const icon: Record<AlertType, IconName> = {
+  danger: 'exclamation-circle',
+  success: 'check-circle',
+  info: 'info-circle',
+  warning: 'exclamation-triangle',
+}

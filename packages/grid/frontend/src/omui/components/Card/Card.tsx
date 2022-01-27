@@ -1,13 +1,13 @@
-import React, {forwardRef} from 'react'
+import React, { forwardRef } from 'react'
 import cn from 'classnames'
-import {Text, TextSizeProp} from '../Typography/Text'
-import {Image} from '../Image/Image'
-import {Tag} from '../Tag/Tag'
-import type {MouseEventHandler, HTMLAttributes, PropsWithRef} from 'react'
+import { Text, TextSizeProp } from '../Typography/Text'
+import { Image } from '../Image/Image'
+import { Tag } from '../Tag/Tag'
+import type { MouseEventHandler, HTMLAttributes, PropsWithRef } from 'react'
 
 export type CardSizeProp = 'S' | 'M'
 export type CardVariantProp = 'coming' | 'progress' | 'completed' | 'default'
-export type CardTagProp = {name: string; onClick: () => void}
+export type CardTagProp = { name: string; onClick: () => void }
 
 interface Props extends HTMLAttributes<HTMLButtonElement> {
   /**
@@ -63,33 +63,33 @@ type Variants = {
 
 const titleSizes: Sizes = {
   S: '2xl',
-  M: '3xl'
+  M: '3xl',
 }
 
 const containerByVariant: Variants = {
   default: 'bg-gray-800 bg-gradient-to-r hover:from-black',
   coming: 'bg-gray-100 hover:bg-gray-50',
   progress: 'bg-gray-50 bg-gradient-to-l hover:from-gradient-white',
-  completed: 'bg-gray-50 hover:bg-gray-50'
+  completed: 'bg-gray-50 hover:bg-gray-50',
 }
 
 const tagTypeByVariant: Omit<Variants, 'completed' | 'progress'> = {
   default: 'primary',
-  coming: 'default'
+  coming: 'default',
 }
 
 const titleByVariant: Variants = {
   default: 'text-gray-50',
   progress: 'text-gray-800',
   coming: 'text-gray-800',
-  completed: 'text-gray-800'
+  completed: 'text-gray-800',
 }
 
 const subTitleByVariant: Variants = {
   default: 'text-primary-200',
   coming: 'text-gray-600 group-hover:text-primary-600',
   progress: 'text-primary-600',
-  completed: 'text-primary-600'
+  completed: 'text-primary-600',
 }
 
 const defaultClass =
@@ -114,15 +114,15 @@ const Card = forwardRef<HTMLButtonElement, CardProps>(function Card(
 ) {
   const classes = cn(
     defaultClass,
-    {'opacity-40 pointer-events-none': disabled},
-    {'p-6 max-w-sm': size === 'S', 'px-10 py-6 max-w-md': size === 'M'},
+    { 'opacity-40 pointer-events-none': disabled },
+    { 'p-6 max-w-sm': size === 'S', 'px-10 py-6 max-w-md': size === 'M' },
     containerByVariant[variant],
     className
   )
 
   const titleClasses = cn(titleByVariant[variant])
   const subTitleClasses = cn(subTitleByVariant[variant])
-  const imageClasses = cn('group-hover:opacity-50', {'my-4': size === 'S', 'my-6': size === 'M'})
+  const imageClasses = cn('group-hover:opacity-50', { 'my-4': size === 'S', 'my-6': size === 'M' })
 
   const shouldRenderTags = (variant === 'default' || variant === 'coming') && tags.length > 0
   const shouldRenderProgress = variant === 'progress' && progress !== undefined
@@ -146,11 +146,11 @@ const Card = forwardRef<HTMLButtonElement, CardProps>(function Card(
   )
 })
 
-const TagsList = ({tags, variant}: {tags: CardTagProp[]; variant: CardVariantProp}) => {
+const TagsList = ({ tags, variant }: { tags: CardTagProp[]; variant: CardVariantProp }) => {
   // WIP: Replace with Tag component
   return (
     <ul>
-      {tags.map(({name, onClick}) => (
+      {tags.map(({ name, onClick }) => (
         <li key={name}>
           <Tag variant={tagTypeByVariant[variant]} onClick={onClick}>
             {name}
@@ -161,7 +161,7 @@ const TagsList = ({tags, variant}: {tags: CardTagProp[]; variant: CardVariantPro
   )
 }
 
-const Progress = ({value}: {value: number}) => {
+const Progress = ({ value }: { value: number }) => {
   const rangedValue = Math.min(Math.max(value, 0), 100)
   return (
     <>
@@ -171,7 +171,7 @@ const Progress = ({value}: {value: number}) => {
       </div>
       <div className="bg-gray-200 h-1 rounded relative">
         <div
-          style={{width: `${rangedValue}%`}}
+          style={{ width: `${rangedValue}%` }}
           className="absolute h-1 bg-gradient-to-r from-primary-200 to-primary-500 rounded"
         />
       </div>
@@ -186,4 +186,4 @@ const Complete = () => (
   </div>
 )
 
-export {Card}
+export { Card }

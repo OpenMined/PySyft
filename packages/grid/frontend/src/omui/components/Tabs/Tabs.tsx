@@ -1,13 +1,18 @@
-import React, {createContext, forwardRef, useContext, useEffect, useMemo} from 'react'
+import React, { createContext, forwardRef, useContext, useEffect, useMemo } from 'react'
 import cn from 'classnames'
-import type {ReactNode, PropsWithRef, KeyboardEvent as ReactKeyboardEvent, MouseEvent as ReactMouseEvent} from 'react'
+import type {
+  ReactNode,
+  PropsWithRef,
+  KeyboardEvent as ReactKeyboardEvent,
+  MouseEvent as ReactMouseEvent,
+} from 'react'
 
-import {Keys} from '../../utils/keyboard'
+import { Keys } from '../../utils/keyboard'
 
 export type TabsVariantProp = 'outline' | 'underline'
 export type TabsSizeProp = 'sm' | 'md' | 'lg' | 'xl'
 export type TabsAlignProp = 'left' | 'right' | 'auto'
-export type TabsListProp = {id: number | string; title: ReactNode | string; disabled?: boolean}
+export type TabsListProp = { id: number | string; title: ReactNode | string; disabled?: boolean }
 
 export interface Props {
   /**
@@ -69,14 +74,14 @@ type Variants = {
 
 const alignments: Alignments = {
   left: 'justify-start',
-  right: 'justify-end'
+  right: 'justify-end',
 }
 
 const sizes: Sizes = {
   sm: 'py-2 px-2.5 text-sm',
   md: 'py-2.5 px-4 text-md',
   lg: 'py-4 px-8 text-lg',
-  xl: 'py-4.5 px-8 text-xl'
+  xl: 'py-4.5 px-8 text-xl',
 }
 
 const variants: Variants = {
@@ -84,14 +89,14 @@ const variants: Variants = {
     default: 'border-primary-500',
     active: 'bg-white border-l-2 border-r-2 border-t-2 rounded-t',
     inactive: 'border-b-2 mt-1 mx-0.5',
-    container: 'border-primary-500'
+    container: 'border-primary-500',
   },
   underline: {
     default: 'bg-transparent border-b-2',
     active: 'border-primary-500',
     inactive: 'border-gray-200',
-    container: 'border-gray-200'
-  }
+    container: 'border-gray-200',
+  },
 }
 
 const defaultSize = 'md'
@@ -109,11 +114,20 @@ type TabsContextValues = {
 const TabsContext = createContext<TabsContextValues>({
   size: defaultSize,
   variant: defaultVariant,
-  align: defaultAlign
+  align: defaultAlign,
 })
 
 const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
-  {align = defaultAlign, size = defaultSize, variant = defaultVariant, tabsList, active, onChange, children, ...props},
+  {
+    align = defaultAlign,
+    size = defaultSize,
+    variant = defaultVariant,
+    tabsList,
+    active,
+    onChange,
+    children,
+    ...props
+  },
   ref
 ) {
   const enabledTabs = useMemo(() => tabsList.filter(i => !i.disabled), [tabsList])
@@ -140,15 +154,24 @@ const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
 
   function handlePrevEl(id: TabsListProp['id']) {
     // find previous element or last of the enabled tabs list
-    const prevEl = (enabledTabs[enabledTabs.findIndex(i => i.id === id) - 1] || enabledTabs[enabledTabs.length - 1]).id
+    const prevEl = (
+      enabledTabs[enabledTabs.findIndex(i => i.id === id) - 1] ||
+      enabledTabs[enabledTabs.length - 1]
+    ).id
 
     focusAndChange(prevEl)
   }
 
-  const tabListClasses = cn('font-roboto border-b-2 flex w-full', variants[variant]?.container, alignments[align])
+  const tabListClasses = cn(
+    'font-roboto border-b-2 flex w-full',
+    variants[variant]?.container,
+    alignments[align]
+  )
 
   return (
-    <TabsContext.Provider value={{focusNext: handleNextEl, focusPrev: handlePrevEl, variant, onChange, size, align}}>
+    <TabsContext.Provider
+      value={{ focusNext: handleNextEl, focusPrev: handlePrevEl, variant, onChange, size, align }}
+    >
       <div ref={ref} {...props}>
         <div className={tabListClasses} role="tablist" aria-orientation="horizontal">
           {tabsList?.map(tab => (
@@ -165,9 +188,9 @@ const Tabs = forwardRef<HTMLDivElement, TabsProps>(function Tabs(
   )
 })
 
-export type TabProps = {isActive?: boolean} & TabsListProp
+export type TabProps = { isActive?: boolean } & TabsListProp
 
-function Tab({id, title, disabled, isActive}: TabProps) {
+function Tab({ id, title, disabled, isActive }: TabProps) {
   const context = useContext(TabsContext)
   const tabId = `omui-tab-${id}`
 
@@ -178,7 +201,7 @@ function Tab({id, title, disabled, isActive}: TabProps) {
       : ['text-gray-400', variants[context.variant]?.inactive],
     sizes[context.size],
     context.align === 'auto' ? 'w-full' : 'w-auto',
-    {'text-opacity-40 pointer-events-none': disabled}
+    { 'text-opacity-40 pointer-events-none': disabled }
   )
 
   const handleKeyDown = (event: ReactKeyboardEvent<HTMLButtonElement>) => {
@@ -186,7 +209,7 @@ function Tab({id, title, disabled, isActive}: TabProps) {
       [Keys.ArrowRight]: () => context.focusNext?.(id),
       [Keys.ArrowLeft]: () => context.focusPrev?.(id),
       [Keys.Enter]: () => context.onChange?.(id),
-      [Keys.Space]: () => context.onChange?.(id)
+      [Keys.Space]: () => context.onChange?.(id),
     }
 
     if (eventCases[event.key]) {
@@ -210,10 +233,11 @@ function Tab({id, title, disabled, isActive}: TabProps) {
       role="tab"
       tabIndex={isActive ? 0 : -1}
       disabled={disabled ? true : undefined}
-      aria-selected={isActive}>
+      aria-selected={isActive}
+    >
       {title}
     </button>
   )
 }
 
-export {Tabs}
+export { Tabs }
