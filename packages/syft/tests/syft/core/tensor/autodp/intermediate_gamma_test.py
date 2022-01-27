@@ -139,8 +139,8 @@ def test_values(sept_ishan, sept_traskmaster, gamma_tensor_min) -> None:
     assert gamma_tensor == gamma_tensor_min
     output = gamma_tensor_min._values()
     assert isinstance(output, np.ndarray)
-    assert output.shape == gamma_tensor_min.shape
-    assert (gamma_tensor_min._values() == target).all()
+    assert output.shape == target.shape
+    assert (gamma_tensor._values() == target).all()
 
 
 def test_entities(sept_ishan, sept_traskmaster) -> None:
