@@ -536,7 +536,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     def sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
         new_list = list()
         for row in self.child:
-            new_list.append(row.sum(*args, **kwargs))
+            result = row.sum(*args, **kwargs)
+            new_list.append(result.astype(self.dtype))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
