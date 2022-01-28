@@ -2393,7 +2393,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         elif proto.HasField("array"):
             child = deserialize(proto.array)
         else:
-            child = deserialize(proto.none).upcast()
+            child = deserialize(proto.none)
 
         return SingleEntityPhiTensor(
             child=child,

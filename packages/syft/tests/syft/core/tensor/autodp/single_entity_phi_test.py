@@ -309,7 +309,9 @@ def test_ne_diff_entities(
 
     result = reference_tensor != comparison_tensor
     assert isinstance(result, IGT)
-    assert result._values().all()  # Every single value here should be 1 (True) because the values are not equal
+    assert (
+        result._values().all()
+    )  # Every single value here should be 1 (True) because the values are not equal
     assert (result._max_values() == np.ones_like(result._max_values())).all()
     assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
@@ -1845,11 +1847,11 @@ def test_lt_same_entities(
 
 @pytest.fixture
 def sept_ishan(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        reference_scalar_manager: VirtualMachinePrivateScalarManager,
-        ishan: Entity,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    ishan: Entity,
 ) -> SEPT:
     return SEPT(
         child=reference_data,
@@ -1862,11 +1864,11 @@ def sept_ishan(
 
 @pytest.fixture
 def sept_traskmaster(
-        reference_data: np.ndarray,
-        upper_bound: np.ndarray,
-        lower_bound: np.ndarray,
-        reference_scalar_manager: VirtualMachinePrivateScalarManager,
-        traskmaster: Entity,
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    reference_scalar_manager: VirtualMachinePrivateScalarManager,
+    traskmaster: Entity,
 ) -> SEPT:
     return SEPT(
         child=reference_data,
@@ -1877,24 +1879,19 @@ def sept_traskmaster(
     )
 
 
-def test_lt_diff_entities_ishan(
-    sept_ishan: SEPT,
-    sept_traskmaster: SEPT
-) -> None:
+def test_lt_diff_entities_ishan(sept_ishan: SEPT, sept_traskmaster: SEPT) -> None:
     output = sept_ishan < sept_traskmaster + 1
     assert output.values.all()
 
 
-
-def test_gt_diff_entities_ishan(
-    sept_ishan: SEPT,
-    sept_traskmaster: SEPT
-) -> None:
+def test_gt_diff_entities_ishan(sept_ishan: SEPT, sept_traskmaster: SEPT) -> None:
     output = sept_ishan + 1 > sept_traskmaster
     assert output.values.all()
 
 
-@pytest.mark.skip(reason="This is broken for some reason, and has been replaced by the two tests above")
+@pytest.mark.skip(
+    reason="This is broken for some reason, and has been replaced by the two tests above"
+)
 def test_lt_diff_entities(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,

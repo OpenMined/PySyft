@@ -26,13 +26,13 @@ services:
 
   db:
     ports:
-      - "5433-5435:5432"
+      - "5432"
 
   queue:
     image: rabbitmq:3-management
     ports:
       - "5672"
-      - "15673-15675:15672"
+      - "15672"
 
   backend:
     volumes:
