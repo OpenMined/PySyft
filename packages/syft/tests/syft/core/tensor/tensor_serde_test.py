@@ -127,7 +127,7 @@ def test_rept_child() -> None:
 
     # these times and sizes are based on the above constants
     # and Madhavas MacBook Pro 2019
-    expected_rept_mem_size = 4.010459899902344
+    expected_rept_mem_size = 4.011520385742187
     expected_rept_ser_size = 6.680328369140625
     macbook_pro_2019_ser_time = 0.18791760900000032
     macbook_pro_2019_de_time = 0.1726598199999998
@@ -174,7 +174,7 @@ def test_rept_child() -> None:
 
     # we want to assert that our calculated values are smaller than the old values with
     # some tolerance
-    assert (current_rept_mem_size - expected_rept_mem_size) < 1e-3
+    assert (current_rept_mem_size - expected_rept_mem_size) < 1e-2
     assert (current_rept_bytes_size - expected_rept_ser_size) < 2e-2
     # TODO: make time benchmarks stable (probably can't run in parallel)
     # assert (time_ser - macbook_pro_2019_ser_time) < 2e-1
