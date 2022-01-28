@@ -112,7 +112,7 @@ def test_sept_child() -> None:
 
     # we want to assert that our calculated values are smaller than the old values with
     # some tolerance
-    assert (current_sept_mem_size - expected_sept_mem_size) < 1e-3
+    assert (current_sept_mem_size - expected_sept_mem_size) < 1e-1
     assert (current_sept_bytes_size - expected_sept_ser_size) < 2e-3
     # TODO: make time benchmarks stable (probably can't run in parallel)
     # assert (time_ser - macbook_pro_2019_ser_time) < 2e-1
@@ -174,7 +174,7 @@ def test_rept_child() -> None:
 
     # we want to assert that our calculated values are smaller than the old values with
     # some tolerance
-    assert (current_rept_mem_size - expected_rept_mem_size) < 1e-2
+    assert (current_rept_mem_size - expected_rept_mem_size) < 1e-1
     assert (current_rept_bytes_size - expected_rept_ser_size) < 2e-2
     # TODO: make time benchmarks stable (probably can't run in parallel)
     # assert (time_ser - macbook_pro_2019_ser_time) < 2e-1
