@@ -923,38 +923,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-    """
-      __attr_allowlist__ = [
-        "child",
-        "_min_vals",
-        "_max_vals",
-        "entity",
-        "scalar_manager",
-    ]
-
-    # Number of entities in a SEPT is by definition 1
-    n_entities = 1
-
-    def __init__(
-        self,
-        child: SupportedChainType,
-        entity: Entity,
-        min_vals: np.ndarray,
-        max_vals: np.ndarray,
-        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
-    ) -> None:
-
-    message RowEntityPhiTensor {
-  repeated SingleEntityPhiTensor rows = 1;
-  repeated syft.core.adp.Entity unique_entities = 2;
-  repeated VirtualMachinePrivateScalarManager unique_scalar_managers = 3;
-  syft.lib.numpy.NumpyProto row_entity_index = 3;
-  syft.lib.numpy.NumpyProto row_scalar_manager_index = 4;
-}
-
-
-    """
-
     def _object2proto(self) -> RowEntityPhiTensor:
         entity_list = []
         entity_dict_index: Dict[Entity, int] = {}
@@ -966,9 +934,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         for i in self.child:
             entity = i.entity
-            # i.entity = None  # de-duplicate by removing from the object
             scalar_manager = i.scalar_manager
-            # i.scalar_manager = None  # de-duplicate by removing from the object
 
             if entity in entity_dict_index:
                 index = entity_dict_index[entity]
@@ -992,15 +958,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         if len(row_scalar_manager_index) != len(self.child):
             raise Exception("Length of scalar manager index must match row length")
-
-        # print("we have this many unique entities ", entity_list)
-        # print(row_entity_index)
-        # print("we have this many unique scalar managers ", scalar_manager_list)
-        # print(row_scalar_manager_index)
-
-        # set a temporary variable
-        # for child in self.child:
-        #    child._remove_entity_scalar_manager = True
 
         rept_pb = RowEntityPhiTensor_PB(
             rows=[serialize(x) for x in self.child],
@@ -1026,8 +983,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         rows = []
         for i, row in enumerate(proto.rows):
-            # print("row", type(row))
-            # print("what do we have", row)
             row_index = row_entity_index[i]
             entity = unique_entities[row_index]
             scalar_manager_index = row_scalar_manager_index[i]
@@ -1036,8 +991,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             # re-attach the original de-duplicated data before deserializing
             row.entity.CopyFrom(entity)
             row.scalar_manager.CopyFrom(scalar_manager)
-
-            # print("what do we have after CopyFrom", row)
 
             rows.append(deserialize(row))
 

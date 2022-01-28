@@ -69,9 +69,9 @@ def test_sept_child() -> None:
     cols = 7
     # these times and sizes are based on the above constants and Madhavas MacBook Pro 2019
     expected_sept_mem_size = 0.8034133911132812
-    expected_sept_ser_size = 1.3360214233398438
-    macbook_pro_2019_ser_time = 0.03371272199999975
-    macbook_pro_2019_de_time = 0.02922678500000009
+    expected_sept_ser_size = 0.000640869140625
+    macbook_pro_2019_ser_time = 0.0011018469999997116
+    macbook_pro_2019_de_time = 0.001034114000000308
 
     sept = make_sept(rows=rows, cols=cols)
 
@@ -127,10 +127,10 @@ def test_rept_child() -> None:
 
     # these times and sizes are based on the above constants
     # and Madhavas MacBook Pro 2019
-    expected_rept_mem_size = 4.011520385742187
-    expected_rept_ser_size = 6.680328369140625
-    macbook_pro_2019_ser_time = 0.18791760900000032
-    macbook_pro_2019_de_time = 0.1726598199999998
+    expected_rept_mem_size = 4.0115203857421875
+    expected_rept_ser_size = 0.00281524658203125
+    macbook_pro_2019_ser_time = 0.002224604000000241
+    macbook_pro_2019_de_time = 0.5911229659999995
 
     sept = make_sept(rows=rows, cols=cols)
     rept_rows = [sept.copy() for i in range(rept_row_count)]
