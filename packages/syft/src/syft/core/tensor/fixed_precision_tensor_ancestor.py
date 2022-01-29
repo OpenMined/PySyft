@@ -4,7 +4,7 @@ from typing import Any
 # relative
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .manager import TensorChainManager
-from .types import SupportedChainType
+from .passthrough import SupportedChainType  # type: ignore
 
 
 class FixedPrecisionTensorAncestor(TensorChainManager):
