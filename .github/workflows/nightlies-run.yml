@@ -1,4 +1,4 @@
-  name: Nightlies Run All Tests
+  name: Nightlies
 
   on:
     schedule:
@@ -12,7 +12,7 @@
   jobs:
     call-grid-backend_test:
       uses: OpenMined/PySyft/.github/workflows/grid-backend_tests.yml@dev
-      
+
     call-hagrid-pr_tests:
       uses: OpenMined/PySyft/.github/workflows/hagrid-pr_tests.yml@dev
 

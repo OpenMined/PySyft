@@ -6,8 +6,6 @@ from raven import Client
 
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
-from syft.core.node.common.action.exceptions import RetriableError
-from syft.core.node.common.action.unfinished_task import register_unfinished_task
 
 # grid absolute
 from grid.core.celery_app import celery_app
@@ -28,10 +26,7 @@ def msg_without_reply(self, obj_msg: Any) -> None:  # type: ignore
         try:
             node.recv_immediate_msg_without_reply(msg=obj_msg)
         except Exception as e:
-            if isinstance(e, RetriableError):
-                register_unfinished_task(obj_msg, node)
-            else:
-                raise e
+            raise e
     else:
         raise Exception(
             f"This worker can only handle SignedImmediateSyftMessageWithoutReply. {obj_msg}"
