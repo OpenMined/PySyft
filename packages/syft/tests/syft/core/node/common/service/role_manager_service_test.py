@@ -1,0 +1,138 @@
+# stdlib
+from unittest.mock import patch
+
+# third party
+from nacl.signing import SigningKey
+
+# syft absolute
+import syft as sy
+from syft.core.node.common.node_service.role_manager.role_manager_messages import (
+    CreateRoleMessage,
+)
+from syft.core.node.common.node_service.role_manager.role_manager_messages import (
+    DeleteRoleMessage,
+)
+from syft.core.node.common.node_service.role_manager.role_manager_messages import (
+    GetRoleMessage,
+)
+from syft.core.node.common.node_service.role_manager.role_manager_messages import (
+    GetRoleResponse,
+)
+from syft.core.node.common.node_service.role_manager.role_manager_messages import (
+    GetRolesMessage,
+)
+from syft.core.node.common.node_service.role_manager.role_manager_messages import (
+    GetRolesResponse,
+)
+from syft.core.node.common.node_service.role_manager.role_manager_messages import (
+    UpdateRoleMessage,
+)
+from syft.core.node.common.node_service.role_manager.role_manager_service import (
+    RoleManagerService,
+)
+from syft.core.node.common.node_service.success_resp_message import (
+    SuccessResponseMessage,
+)
+
+
+def test_create_role_message() -> None:
+    domain = sy.Domain(name="Domain Name")
+    role_name = "New Role"
+    user_key = SigningKey(domain.verify_key.encode())
+
+    msg = CreateRoleMessage(
+        address=domain.address,
+        name=role_name,
+        reply_to=domain.address,
+    )
+
+    reply = None
+    with patch.object(domain.users, "can_edit_roles", return_value=True):
+        reply = RoleManagerService.process(node=domain, msg=msg, verify_key=user_key)
+
+    assert reply is not None
+    assert isinstance(reply, SuccessResponseMessage) is True
+    assert reply.resp_msg == "Role created successfully!"
+
+
+def test_update_role_message() -> None:
+    domain = sy.Domain(name="Domain Name")
+    role = domain.roles.first()
+    new_name = "New Role Name"
+    user_key = SigningKey(domain.verify_key.encode())
+
+    msg = UpdateRoleMessage(
+        address=domain.address,
+        role_id=role.id,
+        name=new_name,
+        reply_to=domain.address,
+    )
+
+    reply = None
+    with patch.object(domain.users, "can_edit_roles", return_value=True):
+        reply = RoleManagerService.process(node=domain, msg=msg, verify_key=user_key)
+
+    assert reply is not None
+    assert reply.resp_msg == "Role updated successfully!"
+    role_obj = domain.roles.first()
+    assert role_obj.name == new_name
+
+
+def test_get_role_message() -> None:
+    domain = sy.Domain(name="Domain Name")
+    role = domain.roles.first()
+    user_key = SigningKey(domain.verify_key.encode())
+
+    msg = GetRoleMessage(
+        address=domain.address,
+        role_id=role.id,
+        reply_to=domain.address,
+    )
+
+    reply = None
+    with patch.object(domain.users, "can_triage_requests", return_value=True):
+        reply = RoleManagerService.process(node=domain, msg=msg, verify_key=user_key)
+
+    assert reply is not None
+    assert isinstance(reply, GetRoleResponse) is True
+    assert reply.content is not None
+    assert reply.content["name"] == role.name
+
+
+def test_get_roles_message() -> None:
+    domain = sy.Domain(name="Domain Name")
+    user_key = SigningKey(domain.verify_key.encode())
+
+    msg = GetRolesMessage(
+        address=domain.address,
+        reply_to=domain.address,
+    )
+
+    reply = None
+    with patch.object(domain.users, "can_triage_requests", return_value=True):
+        reply = RoleManagerService.process(node=domain, msg=msg, verify_key=user_key)
+
+    assert reply is not None
+    assert isinstance(reply, GetRolesResponse) is True
+    assert reply.content is not None
+    assert type(reply.content) == list
+
+
+def test_del_role_manager() -> None:
+    domain = sy.Domain(name="Domain Name")
+    user_key = SigningKey(domain.verify_key.encode())
+    role = domain.roles.first()
+
+    msg = DeleteRoleMessage(
+        address=domain.address,
+        reply_to=domain.address,
+        role_id=role.id,
+    )
+
+    reply = None
+    with patch.object(domain.users, "can_edit_roles", return_value=True):
+        reply = RoleManagerService.process(node=domain, msg=msg, verify_key=user_key)
+
+    assert reply is not None
+    assert isinstance(reply, SuccessResponseMessage) is True
+    assert reply.resp_msg == "Role has been deleted!"
