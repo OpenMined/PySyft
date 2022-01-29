@@ -22,6 +22,7 @@ class Metadata:
         name: str = "",
         id: Optional[UID] = None,
         node_type: str = "",
+        version: str = "",
     ) -> None:
         super().__init__()
         self.name = name
@@ -31,6 +32,7 @@ class Metadata:
         else:
             self.id = UID()
         self.node_type = node_type
+        self.version = version
 
     def _object2proto(self) -> Metadata_PB:
         """Returns a protobuf serialization of self.
@@ -52,6 +54,7 @@ class Metadata:
             id=serialize(self.id),
             node=serialize(self.node),
             node_type=self.node_type,
+            version=self.version,
         )
 
     @staticmethod
@@ -74,6 +77,7 @@ class Metadata:
             name=proto.name,
             node=validate_type(_deserialize(blob=proto.node), Location),
             node_type=proto.node_type,
+            version=proto.version,
         )
 
     @staticmethod

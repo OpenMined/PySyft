@@ -19,11 +19,28 @@ import requests
 from typing_extensions import final
 
 # relative
+from ......grid import GridURL
+from ......util import verify_tls
 from .....common.serde.serializable import serializable
 from ....abstract.node import AbstractNode
 from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage
+
+
+def grid_url_from_kwargs(kwargs: Dict[str, Any]) -> GridURL:
+    try:
+        if "host_or_ip" in kwargs:
+            # old way to send these messages was with host_or_ip
+            return GridURL.from_url(str(kwargs["host_or_ip"]))
+        elif "grid_url" in kwargs:
+            # new way is with grid_url
+            return kwargs["grid_url"]
+        else:
+            raise Exception("kwargs missing host_or_ip or grid_url")
+    except Exception as e:
+        print(f"Failed to get grid_url from kwargs: {kwargs}. {e}")
+        raise e
 
 
 @serializable(recursive_serde=True)
@@ -48,15 +65,13 @@ class VPNConnectMessageWithReply(GenericPayloadMessageWithReply):
         self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         try:
-            host_or_ip = str(self.kwargs["host_or_ip"])
-            if not host_or_ip.startswith("http"):
-                host_or_ip = f"http://{host_or_ip}/vpn"
-
+            grid_url = grid_url_from_kwargs(self.kwargs)
+            grid_url = grid_url.with_path("/vpn")
             vpn_auth_key = str(self.kwargs["vpn_auth_key"])
 
             status, error = connect_with_key(
                 tailscale_host="http://tailscale:4000",
-                headscale_host=host_or_ip,
+                headscale_host=str(grid_url),
                 vpn_auth_key=vpn_auth_key,
             )
             if status:
@@ -82,11 +97,12 @@ def connect_with_key(
             f"{vpn_auth_key}",
         ],
         "timeout": 60,
-        "STACK_API_KEY": os.environ.get("STACK_API_KEY", None),
     }
+
     command_url = f"{tailscale_host}/commands/up"
 
-    resp = requests.post(command_url, json=data)
+    headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+    resp = requests.post(command_url, json=data, headers=headers)
     report = get_result(json=resp.json())
     report_dict = json.loads(report)
 
@@ -118,10 +134,7 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
         self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         try:
-            host_or_ip = str(self.kwargs["host_or_ip"])
-            if not host_or_ip.startswith("http"):
-                host_or_ip = f"http://{host_or_ip}"
-
+            grid_url = grid_url_from_kwargs(self.kwargs)
             # can't import Network due to circular imports
             if type(node).__name__ == "Network":
                 # we are already in the network and could be on the blocking backend api
@@ -137,7 +150,9 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
                 except Exception:  # nosec
                     pass
             else:
-                res = requests.post(f"{host_or_ip}/api/v1/vpn/register")
+                res = requests.post(
+                    str(grid_url.with_path("/api/v1/vpn/register")), verify=verify_tls()
+                )
                 res_json = res.json()
 
             if "vpn_auth_key" not in res_json:
@@ -146,7 +161,7 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
 
             status, error = connect_with_key(
                 tailscale_host="http://tailscale:4000",
-                headscale_host=f"{host_or_ip}/vpn",
+                headscale_host=str(grid_url.with_path("/vpn")),
                 vpn_auth_key=res_json["vpn_auth_key"],
             )
 
@@ -203,12 +218,12 @@ def extract_nested_json(nested_json: str) -> Union[Dict, List]:
 def generate_key(headscale_host: str) -> Tuple[bool, str]:
     data = {
         "timeout": 5,
-        "STACK_API_KEY": os.environ.get("STACK_API_KEY", None),
     }
 
     command_url = f"{headscale_host}/commands/generate_key"
     try:
-        resp = requests.post(command_url, json=data)
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
         report = get_result(json=resp.json())
         result_dict = dict(extract_nested_json(report))
         result = result_dict["Key"]
@@ -321,14 +336,14 @@ def get_status(
 ) -> Tuple[bool, Dict[str, str], List[Dict[str, str]]]:
     data = {
         "timeout": 5,
-        "STACK_API_KEY": os.environ.get("STACK_API_KEY", None),
     }
     command_url = f"{tailscale_host}/commands/status"
     host: Dict[str, str] = {}
     peers: List[Dict[str, str]] = []
     connected = False
     try:
-        resp = requests.post(command_url, json=data)
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
         report = get_result(json=resp.json())
         cmd_output = json.loads(report)["report"]
         connected, host, peers = clean_status_output(input=cmd_output)
@@ -339,13 +354,13 @@ def get_status(
 
 def get_result(json: Dict) -> str:
     result_url = json.get("result_url", "")
-    result_url += f'&STACK_API_KEY={os.environ.get("STACK_API_KEY", None)}'
+    headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
     tries = 0
     limit = 5
     try:
         while True:
             print("Polling API Result", tries)
-            result = requests.get(result_url)
+            result = requests.get(result_url, headers=headers)
             if '"status":"running"' in result.text:
                 time.sleep(1)
                 tries += 1

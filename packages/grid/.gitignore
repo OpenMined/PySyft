@@ -9,6 +9,7 @@ packer/output/*
 packer/packer_cache/*
 packer/base-manifest.json
 packer/azure_vars.json
+tls/
 
 # devspace
 .devspace/

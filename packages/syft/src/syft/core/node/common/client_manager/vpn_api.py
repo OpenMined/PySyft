@@ -6,6 +6,7 @@ from typing import Optional
 from typing import Type
 
 # relative
+from .....grid import GridURL
 from .....lib.python.util import upcast
 from ...abstract.node import AbstractNodeClient
 from ..action.exception_action import ExceptionMessage
@@ -18,9 +19,9 @@ class VPNAPI:
     def __init__(self, client: AbstractNodeClient):
         self.client = client
 
-    def join_network(self, host_or_ip: str) -> None:
+    def join_network_vpn(self, grid_url: GridURL) -> None:
         reply = self.perform_api_request(
-            syft_msg=VPNJoinMessageWithReply, content={"host_or_ip": host_or_ip}
+            syft_msg=VPNJoinMessageWithReply, content={"grid_url": grid_url}
         )
         logging.info(reply.payload)
         status = "error"
@@ -30,9 +31,9 @@ class VPNAPI:
             pass
 
         if status == "ok":
-            print(f"🔌 {self.client} successfully connected to the VPN: {host_or_ip}")
+            print(f"🔌 {self.client} successfully connected to the VPN: {grid_url}")
         else:
-            print(f"❌ {self.client} failed to connect to the VPN: {host_or_ip}")
+            print(f"❌ {self.client} failed to connect to the VPN: {grid_url}")
 
     def get_status(self) -> Dict[str, Any]:
         reply = self.perform_api_request(syft_msg=VPNStatusMessageWithReply, content={})

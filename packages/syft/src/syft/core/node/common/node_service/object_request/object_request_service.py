@@ -31,8 +31,6 @@ from ..accept_or_deny_request.accept_or_deny_request_messages import (
     AcceptOrDenyRequestMessage,
 )
 from ..auth import service_auth
-from ..get_all_requests.get_all_requests_messages import GetAllRequestsMessage
-from ..get_all_requests.get_all_requests_messages import GetAllRequestsResponseMessage
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import ImmediateNodeServiceWithoutReply
 from ..request_answer.request_answer_messages import RequestAnswerMessage
@@ -49,6 +47,8 @@ from .object_request_messages import CreateRequestMessage
 from .object_request_messages import CreateRequestResponse
 from .object_request_messages import DeleteRequestMessage
 from .object_request_messages import DeleteRequestResponse
+from .object_request_messages import GetAllRequestsMessage
+from .object_request_messages import GetAllRequestsResponseMessage
 from .object_request_messages import GetBudgetRequestsMessage
 from .object_request_messages import GetBudgetRequestsResponse
 from .object_request_messages import GetRequestMessage
@@ -402,8 +402,6 @@ def get_all_requests(
 
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
 
-    _requests = node.data_requests.all()
-
     if _can_triage_request:
         _requests = node.data_requests.all()
     else:
@@ -413,6 +411,14 @@ def get_all_requests(
 
     data_requests = [
         RequestMessage(
+            status=req.status,
+            user_name=req.user_name,
+            user_email=req.user_email,
+            user_role=req.user_role,
+            requested_budget=req.requested_budget,
+            current_budget=req.user_budget,
+            date=str(req.date),
+            request_type=req.request_type,
             request_id=UID.from_string(req.id),
             request_description=req.reason,
             address=node.address,
@@ -588,7 +594,9 @@ def accept_or_deny_request(
     current_user = node.users.first(
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
     )
-    _req = node.data_requests.first(id=str(_msg.request_id.value))
+    # Check if there is any pending request with this id.
+    _req = node.data_requests.first(id=str(_msg.request_id.value), status="pending")
+
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
     if _msg.accept:
         if _req and _can_triage_request:

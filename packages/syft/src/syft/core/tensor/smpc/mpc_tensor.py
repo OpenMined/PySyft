@@ -23,11 +23,11 @@ import torch
 from . import utils
 from .... import logger
 from ....ast.klass import get_run_class_method
+from ....grid import GridURL
 from ...smpc.protocol.spdz import spdz
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
-from .party import Party
 from .share_tensor import ShareTensor
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -55,7 +55,7 @@ INPLACE_OPS = {
     "resize",
 }
 
-PARTIES_REGISTER_CACHE: Dict[Any, Party] = {}
+PARTIES_REGISTER_CACHE: Dict[Any, GridURL] = {}
 
 
 class MPCTensor(PassthroughTensor):
@@ -153,11 +153,11 @@ class MPCTensor(PassthroughTensor):
         return 2 ** 32
 
     @staticmethod
-    def get_parties_info(parties: Iterable[Any]) -> List[Party]:
+    def get_parties_info(parties: Iterable[Any]) -> List[GridURL]:
         # relative
         from ....grid.client import GridHTTPConnection
 
-        parties_info: List[Party] = []
+        parties_info: List[GridURL] = []
         for party in parties:
             connection = party.routes[0].connection
             if not isinstance(connection, GridHTTPConnection):
@@ -167,20 +167,11 @@ class MPCTensor(PassthroughTensor):
                     + "We apologize for the inconvenience"
                     + "We will add support for local python objects very soon."
                 )
-            party_info = PARTIES_REGISTER_CACHE.get(party, None)
+            base_url = PARTIES_REGISTER_CACHE.get(party, None)
 
-            if party_info is None:
+            if base_url is None:
                 base_url = connection.base_url
-                if base_url.count(":") == 2:
-                    url = base_url.rsplit(":", 1)[0]
-                    port = int(base_url.rsplit(":", 1)[1].split("/")[0])
-                elif base_url.count(":") == 1:
-                    url = base_url.rsplit("/", 2)[0]
-                    port = 80
-                else:
-                    raise ValueError(f"Invalid base url  {base_url}")
-                party_info = Party(url, port)
-                PARTIES_REGISTER_CACHE[party] = party_info
+                PARTIES_REGISTER_CACHE[party] = base_url
                 try:
                     pass
                     # We do not use sy.register, should reenable after fixing.
@@ -196,7 +187,12 @@ class MPCTensor(PassthroughTensor):
                     """ """
                     # TODO : should modify to return same client if registered.
                     # print("Proxy Client already User Register", e)
-            parties_info.append(party_info)
+            if base_url is not None:
+                parties_info.append(base_url)
+            else:
+                raise Exception(
+                    f"Failed to get GridURL from {base_url} for party {party}."
+                )
 
         return parties_info
 
@@ -253,7 +249,7 @@ class MPCTensor(PassthroughTensor):
         parties: List[Any],
         shape: Tuple[int, ...],
         seed_przs: int,
-        parties_info: List[Party],
+        parties_info: List[GridURL],
         ring_size: int,
     ) -> List[ShareTensor]:
         if utils.ispointer(secret):
@@ -282,7 +278,7 @@ class MPCTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         parties: List[Any],
         seed_przs: int,
-        parties_info: List[Party],
+        parties_info: List[GridURL],
         ring_size: int,
     ) -> List[ShareTensor]:
         shares = []
@@ -333,7 +329,7 @@ class MPCTensor(PassthroughTensor):
         secret: Any,
         shape: Tuple[int, ...],
         seed_przs: int,
-        parties_info: List[Party],
+        parties_info: List[GridURL],
         ring_size: int = 2 ** 32,
     ) -> List[ShareTensor]:
         shares = []

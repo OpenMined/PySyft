@@ -1,14 +1,16 @@
 <h1 align="center">
 
   <br>
-  <a href="http://duet.openmined.org/"><img src="packages/syft/docs/img/monorepo_logo.png" alt="Syft + Grid" width="400"></a>
+  <img src="packages/syft/docs/img/monorepo_logo2.png" alt="Syft + Grid" width="400">
   <br>
   Code for computing on data<br /> you do not own and cannot see
   <br>
 
 </h1>
 
-<div align="center"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <br /> <a href="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml/badge.svg?branch=dev" /></a> <a href="https://openmined.slack.com/messages/support"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a>
+<div align="center"> <a href="https://pypi.org/project/syft/"><img src="https://pepy.tech/badge/syft" /></a> <a href="https://pypi.org/project/syft/"><img src="https://badge.fury.io/py/syft.svg" /></a> <br /> <a href="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/syft-version_tests.yml/badge.svg?branch=dev" /></a>
+ <a href="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml"><img src="https://github.com/OpenMined/PySyft/actions/workflows/nightlies-run.yml/badge.svg?branch=dev" /></a>
+<a href="https://openmined.slack.com/messages/support"><img src="https://img.shields.io/badge/chat-on%20slack-7A5979.svg" /></a>
 <br /><br />
 
 <div align="center"><a href="#"><img src="https://stars.medv.io/openmined/pysyft.svg" /></a></div>
@@ -230,6 +232,158 @@ $ ANSIBLE_ARGS='--extra-vars "deploy_only=true"' vagrant provision
 ```
 $ cd packages/grid
 $ vagrant ssh
+```
+
+## TLS and Certificates
+
+You can enable TLS in HAGrid by passing in the --tls param:
+
+```
+$ hagrid launch domain to docker:8081+ --tls
+```
+
+This will go looking for a certificate and private key here:
+
+```
+packages/grid/traefik/certs/key.pem
+packages/grid/traefik/certs/cert.pem
+```
+
+These files and their settings are defined in:
+
+```
+packages/grid/traefik/dynamic-configurations/certs.yaml
+```
+
+During development you will need to generate ones which match localhost and then
+enable --test mode so that these invalid self-signed certificates are accepted by various
+code and libraries.
+
+First, get the tool `mkcert`.
+
+### MacOS
+
+```
+$ brew install mkcert
+```
+
+### Generate Dev Cert
+
+```
+cd PySyft
+export GRID=$(pwd)/packages/grid && export CAROOT=$GRID/tls && export CERTS=$GRID/traefik/certs
+mkcert -cert-file="$CERTS/cert.pem" -key-file="$CERTS/key.pem" '*.openmined.grid' docker-host localhost 127.0.0.1 ::1
+```
+
+This will have created the certificate and private key as well as placed the root signing
+certificate (think fake SSL authority who can charge for SSL certs) in the following dir:
+
+```
+packages/grid/tls/rootCA-key.pem
+packages/grid/tls/rootCA.pem
+```
+
+To ensure that tailscale will accept these certs we mount the file into the tailscale
+container like so:
+
+```
+version: "3.8"
+services:
+  tailscale:
+    volumes:
+      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
+
+```
+
+The startup script runs `update-ca-certificates` so that the tailscale container is now
+aware of this fake authority and will accept the fake cert you have created for it.
+
+### Install Cert on Host
+
+If you wish to visit web pages with `localhost:8081` or `network1.openmined.grid` and
+have the TLS certificate warning disappear you need to install the certificate with:
+
+```
+$ mkcert -install
+```
+
+### Ignoring TLS Certs
+
+Alternatively as we do in the integration tests you can pass it as an environment variable
+to programming languages like Python like so:
+
+```
+REQUESTS_CA_BUNDLE=packages/grid/tls/rootCA.pem pytest tests/integration ...
+```
+
+When you do this, python will also accept these certificates in libraries like requests.
+Alternatively you can also tell requests to ignore invalid certificates with the `verify`
+kwarg like so:
+
+```python
+import requests
+request.get(url, verify=False)
+```
+
+To make this more convenient we have added an ENV called `IGNORE_TLS_ERRORS` which we
+set using the `--test` param in `hagrid` like so:
+
+```
+$ hagrid launch test_network_1 network to docker:9081 --tail=false --tls --test
+```
+
+You can check for this with `sy.util.verify_tls()` like so:
+
+```python
+import requests
+import syft as sy
+
+request.get(url, verify=sy.util.verify_tls())
+
+```
+
+It is important not to run `IGNORE_TLS_ERRORS=true` in production.
+
+### Ports
+
+Normally web traffic is served over port `80` for `http` and port `443` for `https`.
+Naturally during development we need to use multiple ports for multiple stacks and bind
+them to `localhost` and use things like `docker-host` to resolve this global address
+space from within any isolated containers. Currently what we do is if the `port` you
+supply to `hagrid` is `80` then we assume you are running in production and want port
+`443` for `https`. If you use any other port we will automatically find a port from
+`444` onwards and this port will be included in the `http` -> `https` 301 redirect in
+traefik proxy. Because of this most browsers and network libraries will simply follow
+this redirect so you can continue to use the normal `http` ports for everything.
+
+### Redirects
+
+The Grid API inside Syft detects if a url and port combination provided gets redirected
+to `https` and will change the `base_url` which should mean that login credentials are
+sent over `https` not `http` where possible.
+
+### VPN
+
+Due to the fact that TLS Certificates are only valid for domains and not IPs and the
+VPN is currently configured to use IPs only, we do not redirect or serve `https` over
+the VPN. The traffic being sent by `wireguard` over the VPN is already encrypted so
+there should be no need for `TLS`. The way this works is, when Grid is using `TLS` we
+forward external port `80` traffic to port `81` and then use this for the 301 redirect
+to the `TLS` port `443+`. If traffic arrives on port `80` inside the cluster it does not
+get redirected which allows the VPN IPs to respond via `http`.
+
+### Deploying Custom Certs
+
+To install certs via `hagrid` simply supply the two cert files as arguments:
+
+```
+$ hagrid launch domain to azure --tls --upload_tls_key=/path/to/certs/key.pem --upload_tls_cert=/path/to/certs/cert.pem
+```
+
+Alternatively if your machine is already setup without TLS you can simply reprovision with:
+
+```
+$ hagrid launch node_name domain to 123.x.x.x --tls --upload_tls_key=/path/to/certs/key.pem --upload_tls_cert=/path/to/certs/cert.pem
 ```
 
 ## Deploy to Cloud

@@ -198,7 +198,7 @@ Step 5: Install Necessary Python Packages
 
     .. code-block:: bash
 
-        $ pip install hagrid==0.1.8
+        $ pip install hagrid==0.1.9
 
 * Step 5.5: Install the latest version of PySyft (latest pre-release)
 

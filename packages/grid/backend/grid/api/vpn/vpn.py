@@ -21,6 +21,7 @@ from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNStatusMessageWithReply,
 )
 from syft.core.node.common.node_service.vpn.vpn_messages import VPNJoinMessageWithReply
+from syft.grid import GridURL
 from syft.lib.python.util import upcast
 
 # grid absolute
@@ -44,7 +45,7 @@ def connect(
     msg = (
         VPNConnectMessageWithReply(
             kwargs={
-                "host_or_ip": host_or_ip,
+                "grid_url": GridURL.from_url(host_or_ip),
                 "vpn_auth_key": vpn_auth_key,
             }
         )
@@ -72,7 +73,7 @@ def join(
 ) -> Dict[str, Any]:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     msg = (
-        VPNJoinMessageWithReply(kwargs={"host_or_ip": host_or_ip})
+        VPNJoinMessageWithReply(kwargs={"grid_url": GridURL.from_url(host_or_ip)})
         .to(address=node.address, reply_to=node.address)
         .sign(signing_key=user_key)
     )

@@ -23,7 +23,7 @@ We'll be working with Python 3.9 or newer. To check if you have it installed, yo
    $ python3 --version
    Python 3.9.0
 
-If you don't have the correct version of Python, installing it is as easy as running the following::
+If you don't have the correct version of Python, installing it is as easy as running the following:
 
 .. code-block:: bash
 
@@ -137,7 +137,7 @@ The hardest part is done! To install the OpenMined stack that you need in order 
 .. code-block:: bash
 
    $ pip install --pre syft
-   $ pip install hagrid=0.1.8
+   $ pip install hagrid==0.1.9
 
 PySyft is a library which contains the tools to run privacy preserving machine learning.
 Hagrid is a commandline tool that speeds up the deployment of PyGrid, the provider of a peer-to-peer network of

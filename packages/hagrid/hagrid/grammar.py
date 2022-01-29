@@ -144,12 +144,26 @@ class HostGrammarTerm(GrammarTerm):
         return bool(self.parts()[2])
 
     @property
+    def port_tls(self) -> int:
+        if self.port == 80:
+            return 443
+        return 444
+
+    @property
     def free_port(self) -> int:
         if self.port is None:
             raise BadGrammar(
                 f"{type(self)} unable to check if port {self.port} is free"
             )
         return find_available_port(host="localhost", port=self.port, search=self.search)
+
+    @property
+    def free_port_tls(self) -> int:
+        if self.port_tls is None:
+            raise BadGrammar(
+                f"{type(self)} unable to check if tls port {self.port_tls} is free"
+            )
+        return find_available_port(host="localhost", port=self.port_tls, search=True)
 
     def parts(self) -> TypeTuple[Optional[str], Optional[int], bool]:
         host = None
@@ -274,14 +288,12 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
     found_domain_or_network = False
     preposition_position = 10000
     for i, arg in enumerate(args):
-
         if "domain" in arg:
             found_domain_or_network = True
-
         elif "network" in arg:
             found_domain_or_network = True
 
-        if "to" in arg or "from" in arg:
+        if arg.strip() in ["to", "from"]:
             if i < preposition_position:
                 preposition_position = i
 
@@ -289,7 +301,6 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
 
     # Default to domain if it's not provided
     if not found_domain_or_network:
-
         if preposition_position != 10000:
             _args.insert(preposition_position, "domain")
             preposition_position += 1
@@ -306,7 +317,6 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
 
     # if there are prepositions then combine the words in the name if there are multiple
     elif preposition_position != 10000:
-
         name = ""
         for i in range(preposition_position - 1):
             name += _args[i] + " "
@@ -325,7 +335,6 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
 
 
 def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
-
     # if the command is a launch, check if any shorthands were employed
     if verb.command == "launch":
         args = launch_shorthand_support(args=args)
@@ -346,7 +355,6 @@ def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
             term_settings = verb.full_sentence[i]
 
             try:
-
                 term = term_settings["klass"](**term_settings)
                 term.parse_input(arg)
                 terms.append(term)

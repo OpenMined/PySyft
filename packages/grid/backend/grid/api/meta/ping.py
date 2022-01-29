@@ -11,6 +11,7 @@ from nacl.signing import SigningKey
 
 # syft absolute
 from syft.core.node.common.node_service.ping.ping_messages import PingMessageWithReply
+from syft.grid import GridURL
 
 # grid absolute
 from grid.api.dependencies.current_user import get_current_user
@@ -27,7 +28,7 @@ def remote_ping(
 
     # Build Syft Message
     msg = (
-        PingMessageWithReply(kwargs={"host_or_ip": host_or_ip})
+        PingMessageWithReply(kwargs={"grid_url": GridURL.from_url(host_or_ip)})
         .to(address=node.address, reply_to=node.address)
         .sign(signing_key=user_key)
     )

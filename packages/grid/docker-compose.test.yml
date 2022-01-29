@@ -1,0 +1,5 @@
+version: "3.8"
+services:
+  tailscale:
+    volumes:
+      - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem

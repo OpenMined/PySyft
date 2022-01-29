@@ -10,6 +10,9 @@
 # $6 is the node type like: domain
 # $7 is the node name like: node
 # $8 is the build directory where we copy the source so we dont trigger hot reloading
+# $9 is a bool for enabling tls or not, where true is tls enabled
+# $10 is the path to tls certs if available
+# $11 release mode, production or development with hot reloading
 
 # these commands cant be used because they trigger hot reloading
 # however without them accidental changes to the working tree might cause issues
@@ -37,8 +40,7 @@ then
     git fetch origin
     echo "Checking out branch: ${3}"
     git reset --hard
-    git checkout $3 --force
-    git pull origin $3 --rebase
+    git checkout "origin/${3}" --force
     chown -R $4:$5 .
 fi
 
@@ -48,20 +50,27 @@ then
 fi
 
 git reset --hard
-git checkout $3 --force
-git pull origin $3 --rebase
+git fetch origin
+git checkout "origin/${3}" --force
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
-CONTAINER_HASH=$(docker exec $(docker ps --format "{{.Names}}" | grep backend_1) env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
+CONTAINER_HASH=$(docker exec $(docker ps --format "{{.Names}}" | grep backend-1) env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
+
+# set a default if its missing
+if [ ! -z ${11} ]; then
+    RELEASE=${11}
+else
+    RELEASE=production
+fi
 
 if [ "$START_HASH" != "$END_HASH" ]
 then
     echo "Git hashes dont match, redeploying"
-    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8
+    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${RELEASE}
 elif [[ ! "$END_HASH" == *"$CONTAINER_HASH"* ]]
 then
     echo "Container hash doesnt match code, redeploying"
-    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8
+    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${RELEASE}
 fi
 echo "Finished autoupdate CRON"

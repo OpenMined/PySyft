@@ -173,7 +173,6 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     """
     # the prestige 🎩
     print("running the prestige 🎩")
-    # time.sleep(40)  # TODO: should modify after implementing polling .get()
 
     public_result.block_with_timeout(40)
 

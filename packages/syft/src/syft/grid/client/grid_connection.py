@@ -3,16 +3,21 @@ import io
 import json
 from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import requests
 from requests.adapters import HTTPAdapter
+
+# from requests.adapters import TimeoutHTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
 # relative
+from .. import GridURL
 from ...core.common.message import ImmediateSyftMessageWithoutReply
 from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
@@ -20,11 +25,30 @@ from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize
 from ...core.node.domain.enums import RequestAPIFields
 from ...core.node.domain.exceptions import RequestAPIException
+from ...logger import debug
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ...proto.grid.connections.http_connection_pb2 import (
     GridHTTPConnection as GridHTTPConnection_PB,
 )
+from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
+
+DEFAULT_TIMEOUT = 5  # seconds
+
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request: Any, **kwargs: Any) -> Any:  # type:ignore
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
 
 
 @serializable()
@@ -36,24 +60,20 @@ class GridHTTPConnection(HTTPConnection):
     # SYFT_MULTIPART_ROUTE = "/pysyft_multipart"
     SIZE_THRESHOLD = 20971520  # 20 MB
 
-    def __init__(self, url: str) -> None:
-        self.base_url = url
+    def __init__(self, url: Union[GridURL, str]) -> None:
+        self.base_url = GridURL.from_url(url) if isinstance(url, str) else url
+        if self.base_url is None:
+            raise Exception(f"Invalid GridURL. {self.base_url}")
         self.session_token: str = ""
         self.token_type: str = "'"
 
-    def _send_msg(self, msg: SyftMessage) -> requests.Response:
-        """
-        Serializes Syft messages in json format and send it using HTTP protocol.
-        NOTE: Auxiliary method to avoid code duplication and modularity.
-        :return: returns requests.Response object containing a JSON serialized
-        SyftMessage
-        :rtype: requests.Response
-        """
+    @property
+    def header(self) -> Dict[str, str]:
 
-        header = {}
+        _header = {}
 
         if self.session_token and self.token_type:
-            header = dict(
+            _header = dict(
                 Authorization="Bearer "
                 + json.loads(
                     '{"auth_token":"'
@@ -64,7 +84,21 @@ class GridHTTPConnection(HTTPConnection):
                 )["auth_token"]
             )
 
-        header["Content-Type"] = "application/octet-stream"
+        _header["Content-Type"] = "application/octet-stream"
+        return _header
+
+    def _send_msg(
+        self, msg: SyftMessage, timeout: Optional[float] = 10
+    ) -> requests.Response:
+        """
+        Serializes Syft messages in json format and send it using HTTP protocol.
+        NOTE: Auxiliary method to avoid code duplication and modularity.
+        :return: returns requests.Response object containing a JSON serialized
+        SyftMessage
+        :rtype: requests.Response
+        """
+
+        header = self.header
 
         route = GridHTTPConnection.SYFT_ROUTE
         # if the message has no reply lets use the streaming endpoint
@@ -81,9 +115,12 @@ class GridHTTPConnection(HTTPConnection):
         # if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
         # if True:
         r = requests.post(
-            url=self.base_url + route,
+            url=str(self.base_url) + route,
             data=msg_bytes,
             headers=header,
+            verify=verify_tls(),
+            timeout=timeout,
+            proxies=HTTPConnection.proxies,
         )
         # else:
         #     r = self.send_streamed_messages(blob_message=msg_bytes)
@@ -94,8 +131,11 @@ class GridHTTPConnection(HTTPConnection):
 
     def login(self, credentials: Dict) -> Tuple:
         response = requests.post(
-            url=self.base_url + GridHTTPConnection.LOGIN_ROUTE,
+            url=str(self.base_url) + GridHTTPConnection.LOGIN_ROUTE,
             json=credentials,
+            verify=verify_tls(),
+            timeout=2,
+            proxies=HTTPConnection.proxies,
         )
 
         # Response
@@ -116,19 +156,35 @@ class GridHTTPConnection(HTTPConnection):
         # Return node metadata / user private key
         return (metadata_pb, content["key"])
 
-    def _get_metadata(self) -> Tuple:
+    def _get_metadata(self, timeout: Optional[float] = 2) -> Tuple:
         """Request Node's metadata
         :return: returns node metadata
         :rtype: str of bytes
         """
         # allow retry when connecting in CI
         session = requests.Session()
-        retry = Retry(connect=3, backoff_factor=0.5)
-        adapter = HTTPAdapter(max_retries=retry)
+        retry = Retry(connect=1, backoff_factor=0.5)
+        if timeout is None:
+            adapter = HTTPAdapter(max_retries=retry)
+        else:
+            adapter = TimeoutHTTPAdapter(max_retries=retry, timeout=timeout)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
-        response = session.get(self.base_url + "/syft/metadata")
+        metadata_url = str(self.base_url) + "/syft/metadata"
+        response = session.get(metadata_url, verify=verify_tls())
+
+        # upgrade to tls if available
+        try:
+            if response.url.startswith("https://") and self.base_url.protocol == "http":
+                # we got redirected to https
+                self.base_url = GridURL.from_url(
+                    response.url.replace("/syft/metadata", "")
+                )
+                debug(f"GridURL Upgraded to HTTPS. {self.base_url}")
+        except Exception as e:
+            print(f"Failed to upgrade to HTTPS. {e}")
+
         metadata_pb = Metadata_PB()
         metadata_pb.ParseFromString(response.content)
 
@@ -136,7 +192,13 @@ class GridHTTPConnection(HTTPConnection):
 
     def setup(self, **content: Dict[str, Any]) -> Any:
         response = json.loads(
-            requests.post(self.base_url + "/setup", json=content).text
+            requests.post(
+                str(self.base_url) + "/setup",
+                json=content,
+                verify=verify_tls(),
+                timeout=2,
+                proxies=HTTPConnection.proxies,
+            ).text
         )
         if response.get(RequestAPIFields.MESSAGE, None):
             return response
@@ -160,10 +222,13 @@ class GridHTTPConnection(HTTPConnection):
 
         response = json.loads(
             requests.delete(
-                self.base_url + GridHTTPConnection.SYFT_ROUTE, headers=header
+                str(self.base_url) + GridHTTPConnection.SYFT_ROUTE,
+                headers=header,
+                verify=verify_tls(),
+                proxies=HTTPConnection.proxies,
             ).text
         )
-        if response.get(RequestAPIFields.MESSAGE, None):
+        if response.get(RequestAPIFields.MESSAGE, None, timeout=2):
             return response
         else:
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))
@@ -190,7 +255,13 @@ class GridHTTPConnection(HTTPConnection):
             "file": (file_path, open(file_path, "rb"), "application/octet-stream"),
         }
 
-        resp = requests.post(self.base_url + route, files=files, headers=header)
+        resp = requests.post(
+            str(self.base_url) + route,
+            files=files,
+            headers=header,
+            verify=verify_tls(),
+            proxies=HTTPConnection.proxies,
+        )
 
         return json.loads(resp.content)
 
@@ -209,9 +280,11 @@ class GridHTTPConnection(HTTPConnection):
             }
 
             resp = session.post(
-                self.base_url + GridHTTPConnection.SYFT_ROUTE_STREAM,
+                str(self.base_url) + GridHTTPConnection.SYFT_ROUTE_STREAM,
                 headers=headers,
                 data=form,
+                verify=verify_tls(),
+                proxies=HTTPConnection.proxies,
             )
 
         session.close()
@@ -219,18 +292,18 @@ class GridHTTPConnection(HTTPConnection):
 
     @property
     def host(self) -> str:
-        return self.base_url.replace("/api/v1", "")
+        return self.base_url.base_url
 
     @staticmethod
     def _proto2object(proto: GridHTTPConnection_PB) -> "GridHTTPConnection":
-        obj = GridHTTPConnection(url=proto.base_url)
+        obj = GridHTTPConnection(url=GridURL.from_url(proto.base_url))
         obj.session_token = proto.session_token
         obj.token_type = proto.token_type
         return obj
 
     def _object2proto(self) -> GridHTTPConnection_PB:
         return GridHTTPConnection_PB(
-            base_url=self.base_url,
+            base_url=str(self.base_url),
             session_token=self.session_token,
             token_type=self.token_type,
         )

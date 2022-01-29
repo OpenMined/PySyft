@@ -44,6 +44,13 @@ def test_vpn_scan() -> None:
 
     allowed_ports = [80]
     blocked_ports = [21, 4000, 8001, 8011, 8080, 5050, 5432, 5555, 5672, 15672]
+    # when SSL is enabled we route 80 to 81 externally so that we can redirect to HTTPS
+    # however we want to leave normal port 80 available over the VPN internally
+    blocked_ports.append(81)  # this shouldnt be available over the VPN
+    # SSL shouldnt be available over the VPN since IPs cant be used in certs
+    # in this case we might be bound to any number of ports during dev mode from 443+
+    for i in range(443, 451):
+        blocked_ports.append(i)
 
     # run in two containers so that all IPs are scanned externally
     for container in containers:

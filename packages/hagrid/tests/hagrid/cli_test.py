@@ -21,7 +21,7 @@ def test_hagrid_launch() -> None:
     cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
 
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
     assert "DOMAIN_NAME=" in cmd
@@ -57,7 +57,7 @@ def test_hagrid_launch_without_name_with_preposition() -> None:
     cmd = cli.create_launch_cmd(verb=verb, kwargs={}, ignore_docker_version_check=True)
 
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
     assert "DOMAIN_NAME=" in cmd
@@ -95,10 +95,10 @@ def test_launch_with_multiword_domain_name() -> None:
     print(cmd)
 
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert "DOMAIN_NAME='united_nations'" in cmd
+    assert "DOMAIN_NAME=united_nations" in cmd or "DOMAIN_NAME='united_nations'" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd
@@ -119,10 +119,13 @@ def test_launch_with_longer_multiword_domain_name() -> None:
     print(cmd)
 
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert "DOMAIN_NAME='united_states_of_america'" in cmd
+    assert (
+        "DOMAIN_NAME=united_states_of_america" in cmd
+        or "DOMAIN_NAME='united_states_of_america'" in cmd
+    )
 
     # check that tail is on by default
     assert " -d " not in cmd
@@ -143,10 +146,10 @@ def test_launch_with_longer_multiword_domain_name_with_preposition() -> None:
     print(cmd)
 
     # check that it's a domain by default
-    assert "NODE_TYPE=domain" in cmd
+    assert "NODE_TYPE=domain" in cmd or "NODE_TYPE='domain'" in cmd
 
     # check that the node has a name
-    assert "DOMAIN_NAME='united_nations'" in cmd
+    assert "DOMAIN_NAME=united_nations" in cmd or "DOMAIN_NAME='united_nations'" in cmd
 
     # check that tail is on by default
     assert " -d " not in cmd

@@ -4,6 +4,8 @@ name: Syft + Grid Stack Integration Tests
 on:
   # schedule:
   #   - cron: "0 22 * * *" # 7pm Brazil, 10pm UTC, 8am AEST
+  workflow_call:
+
   pull_request:
     branches:
       - dev
@@ -32,6 +34,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
@@ -66,10 +69,71 @@ jobs:
         run: |
           pip install tox --upgrade
 
-      # - name: Install Docker Compose
-      #   if: runner.os == 'Windows'
-      #   run: |
-      #     curl -L https://github.com/docker/compose/releases/download/v2.1.1/docker-compose-windows-x86_64.exe -o "C:\Program Files\Docker\cli-plugins\docker-compose.exe"
+      - name: Install Docker Compose
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.1.1
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        run: |
+          tox -e stack.test.integration
+
+  stack-integration-tests-tls:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.9]
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
 
       - name: Install Docker Compose
         if: runner.os == 'Linux'
@@ -80,44 +144,127 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
-      # - name: Setup WSL
-      #   if: runner.os == 'Windows'
-      #   uses: Vampire/setup-wsl@v1
-      #   with:
-      #     distribution: Ubuntu-20.04
-
-      # - name: docker cache
-      #   uses: actions/cache@v2
-      #   if: steps.changes.outputs.stack == 'true'
-      #   continue-on-error: true
-      #   with:
-      #     path: .docker-cache
-      #     key: ${{ runner.os }}-docker
-      #     restore-keys: |
-      #       ${{ runner.os }}-docker
-      # - name: Load docker images
-      #   if: steps.changes.outputs.stack == 'true'
-      #   shell: bash
-      #   run: |
-      #     ./scripts/docker_load.sh
-      # - name: Windows
-      #   if: runner.os == 'Windows'
-      #   uses: mxschmitt/action-tmate@v3
-
-      # stop-service docker
-      #  dockerd.exe --experimental
+      - name: Install mkcert
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          sudo apt update && sudo apt install libnss3-tools -y
+          MKCERT_VERSION=v1.4.3
+          curl -sSL https://github.com/FiloSottile/mkcert/releases/download/${MKCERT_VERSION}/mkcert-${MKCERT_VERSION}-linux-amd64 -o /usr/local/bin/mkcert
+          chmod +x /usr/local/bin/mkcert
+          which mkcert
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
         run: |
-          tox -e stack.test.integration
+          tox -e stack.test.integration.tls
 
-      # - name: Save docker images
+  stack-integration-tests-windows:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [Windows-10]
+        python-version: [3.9]
+
+    runs-on: [self-hosted, windows]
+
+    steps:
+      - name: Stop all running containers
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker rm $(docker ps -aq) --force"
+        shell: cmd
+
+      - name: Prune all volumes
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker volume prune --force"
+        shell: cmd
+
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+        shell: cmd
+
+      # - name: pip cache
+      #   uses: actions/cache@v2
       #   if: steps.changes.outputs.stack == 'true'
-      #   shell: bash
-      #   run: |
-      #     ./scripts/docker_save.sh
+      #   with:
+      #     path: ${{ steps.pip-cache.outputs.dir }}
+      #     key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade --user pip
+        shell: cmd
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
+        shell: cmd
+
+      - name: Start stacks
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+        run: |
+          pip install -e packages/hagrid
+          set HAGRID_ART=false
+          hagrid launch test_network_1 network to docker:9081 --tail=false --headless=true
+          hagrid launch test_domain_1 domain to docker:9082 --tail=false --headless=true
+          hagrid launch test_domain_2 domain to docker:9083 --tail=false --build=false --headless=true
+          bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
+          bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
+          bash -c "(docker logs test_network_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
+          docker ps
+        shell: cmd
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+        run: |
+          tox -e stack.test.integration.windows
+        shell: cmd
+
+      - name: Stop all running containers
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker rm $(docker ps -aq) --force"
+        shell: cmd
+
+      - name: Prune all volumes
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker volume prune --force"
+        shell: cmd
 
   stack-integration-tests-smpc:
     strategy:
@@ -139,6 +286,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
@@ -213,6 +361,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
@@ -260,3 +409,80 @@ jobs:
           curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
           sudo install devspace /usr/local/bin;
           tox -e stack.test.integration.k8s
+
+  stack-tests-course:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.9]
+
+    runs-on: ${{matrix.os}}
+    steps:
+      # - name: set permissions on work folder for self-runners
+      #   run: |
+      #     sudo chown -R $USER:$USER ~/actions-runner/_work/
+
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
+
+      - name: docker cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        with:
+          path: .docker-cache
+          key: ${{ runner.os }}-docker
+          restore-keys: |
+            ${{ runner.os }}-docker
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.1.1
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+          docker rm `docker ps -aq` --force || true
+          rm -rf .tox
+          tox -e stack.test.course
+          docker rm `docker ps -aq` --force || true

@@ -16,12 +16,10 @@ from typing import TYPE_CHECKING
 
 # relative
 from .....ast.klass import get_run_class_method
-from ....node.common.client import Client
 from ....tensor.smpc import utils
 from ...store import CryptoPrimitiveProvider
 
 EXPECTED_OPS = {"mul", "matmul"}
-cache_clients: Dict[Client, Client] = {}
 
 if TYPE_CHECKING:
     # relative

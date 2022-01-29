@@ -1,0 +1,59 @@
+version: "3.8"
+services:
+  tailscale:
+    ports:
+      - "8080"
+
+  proxy:
+    command:
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
+      - "--entrypoints.web.address=:81"
+      - "--entrypoints.vpn.address=:80"
+
+      # Enable the access log, with HTTP requests
+      - "--accesslog"
+      # Enable the Traefik log, for configurations and errors
+      - "--log"
+      # Enable the Dashboard and API
+      - --api # admin panel
+      - --api.insecure=true # admin panel no password
+
+  frontend:
+    build:
+      target: "grid-ui-development"
+
+  db:
+    ports:
+      - "5432"
+
+  queue:
+    image: rabbitmq:3-management
+    ports:
+      - "5672"
+      - "15672"
+
+  backend:
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+    command: /start-reload.sh
+
+  backend_stream:
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
+
+  celeryworker:
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start-reload.sh"

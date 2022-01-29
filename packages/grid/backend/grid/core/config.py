@@ -20,7 +20,6 @@ class Settings(BaseSettings):
     SECRET_KEY: str = secrets.token_urlsafe(32)
     # 60 minutes * 24 hours * 8 days = 8 days
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 60 * 24 * 8
-    SERVER_NAME: str = "unconfigured"
     SERVER_HOST: str = "https://localhost"
     # BACKEND_CORS_ORIGINS is a JSON-formatted list of origins
     # e.g: '["http://localhost", "http://localhost:4200", "http://localhost:3000", \
@@ -93,11 +92,13 @@ class Settings(BaseSettings):
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
 
-    DOMAIN_NAME: str = "grid_domain"
+    DOMAIN_NAME: str = "default_node_name"
     STREAM_QUEUE: bool = False
     NODE_TYPE: str = "Domain"
 
     OPEN_REGISTRATION: bool = True
+
+    DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
 
     class Config:
         case_sensitive = True

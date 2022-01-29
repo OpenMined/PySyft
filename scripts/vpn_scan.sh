@@ -5,6 +5,7 @@
 
 apk add netcat-openbsd
 apk add lsof
+apk add jq
 # lsof -i -P -n | grep LISTEN | grep -Eo ':(.+?)\s' | cut -c 2-
 
 # scan local ports
