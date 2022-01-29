@@ -1,4 +1,3 @@
-# absolute
 # syft absolute
 from syft.lib.util import full_name_with_name
 from syft.lib.util import full_name_with_qualname

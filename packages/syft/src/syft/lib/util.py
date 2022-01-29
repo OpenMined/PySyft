@@ -19,11 +19,13 @@ def generic_update_ast(
     """
     Update the abstract syntax tree data structure used by the Globals or AbstractNodeClient entities.
 
-    :param str lib_name:
-    :param Callable create_ast:
-    :param Union[Globals, AbstractNodeClient] ast_or_client:
+    Args:
+        lib_name (str): Library name to update ast.
+        create_ast (Callable): AST generation function for the given library.
+        ast_or_client (Union[Globals, AbstractNodeClient]): Entity to update ast.
 
-    :raises ValueError: raises a ValueError exception if ast_or_client isn't a Globals or AbstractNodeClient instance.
+    Raises:
+        ValueError: raises a ValueError exception if ast_or_client isn't a Globals or AbstractNodeClient instance.
     """
     if isinstance(ast_or_client, Globals):
         ast = ast_or_client
