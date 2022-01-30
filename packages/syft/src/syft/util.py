@@ -431,7 +431,8 @@ def get_root_data_path() -> Path:
 
 def download_file(url: str, full_path: Union[str, Path]) -> Path:
     if not os.path.exists(full_path):
-        r = requests.get(url, allow_redirects=True)
+        # TODO: Rasswanth fix the SSL Error.
+        r = requests.get(url, allow_redirects=True, verify=False)
         path = os.path.dirname(full_path)
         os.makedirs(path, exist_ok=True)
         with open(full_path, "wb") as f:
