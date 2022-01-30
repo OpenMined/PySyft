@@ -44,6 +44,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           pip install --upgrade --user pip
+          # pinning pip version: https://github.com/pypa/pip/issues/10825
 
       - name: Get pip cache dir
         if: steps.changes.outputs.syft == 'true'
