@@ -40,6 +40,7 @@ from ..ancestors import AutogradTensorAncestor
 from ..broadcastable import is_broadcastable
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
@@ -47,7 +48,6 @@ from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.share_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..tensor import Tensor
-from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
 from .adp_tensor import ADPTensor
 from .dp_tensor_converter import convert_to_gamma_tensor
