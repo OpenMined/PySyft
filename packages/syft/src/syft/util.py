@@ -429,9 +429,11 @@ def get_root_data_path() -> Path:
     return data_dir
 
 
-def download_file(url: str, full_path: Union[str, Path]) -> Path:
+def download_file(
+    url: str, full_path: Union[str, Path], verify: Optional[str] = None
+) -> Path:
     if not os.path.exists(full_path):
-        r = requests.get(url, allow_redirects=True)
+        r = requests.get(url, allow_redirects=True, verify=verify if verify else True)
         path = os.path.dirname(full_path)
         os.makedirs(path, exist_ok=True)
         with open(full_path, "wb") as f:

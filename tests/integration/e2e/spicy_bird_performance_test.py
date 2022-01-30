@@ -1,5 +1,6 @@
 # stdlib
 from datetime import datetime
+import os
 from pathlib import Path
 import time
 from typing import Dict
@@ -26,11 +27,12 @@ def download_spicy_bird_benchmark() -> Tuple[Dict[str, Path], List[str]]:
     folder_name = "spicy_bird"
     dataset_path = get_root_data_path() / folder_name
     paths = []
+    verify = os.environ["CAROOT"] + "/rootCA.pem"  # location of SSL certificate
     for size in sizes:
         filename = f"{size}{file_suffix}"
         url = f"{BASE_URL}{filename}"
         print(url)
-        path = download_file(url=url, full_path=dataset_path / filename)
+        path = download_file(url=url, full_path=dataset_path / filename, verify=verify)
         paths.append(path)
     return dict(zip(sizes, paths)), sizes
 
