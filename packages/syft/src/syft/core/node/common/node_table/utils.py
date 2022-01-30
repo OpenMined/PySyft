@@ -11,16 +11,19 @@ from sqlalchemy.orm import sessionmaker
 
 # relative
 from . import Base
-from .groups import Group
 from .roles import Role
-from .user import SyftUser
-from .usergroup import UserGroup
 
 datetime_cols = ["date", "created_at", "destroyed_at", "deployed_on", "updated_on"]
 
 
 def model_to_json(model: Base) -> Dict[str, Any]:
-    """Returns a JSON representation of an SQLAlchemy-backed object."""
+    """Returns a JSON representation of an SQLAlchemy-backed object.
+    
+        Args:
+            model: SQLAlchemy-backed object to be represented as a JSON data structure.
+        Returns:
+            Dict: Python dictionary representing the SQLAlchemy object.
+    """
     json = {}
     for col in model.__mapper__.attrs.keys():  # type: ignore
         if col != "hashed_password" and col != "salt":
@@ -32,26 +35,12 @@ def model_to_json(model: Base) -> Dict[str, Any]:
     return json
 
 
-def expand_user_object(_user: SyftUser, db: Engine) -> Dict[str, Any]:
-    def get_group(user_group: UserGroup) -> Dict:
-        query = db.session().query
-        group = user_group.group
-        group = query(Group).get(group)
-        group = model_to_json(group)
-        return group
-
-    query = db.session().query
-    user = model_to_json(_user)
-    user["role"] = query(Role).get(user["role"])
-    user["role"] = model_to_json(user["role"])
-    user["groups"] = [
-        get_group(user_group)
-        for user_group in query(UserGroup).filter_by(user=user["id"]).all()
-    ]
-    return user
-
-
 def seed_db(db: Session) -> None:
+    """ Creates the standard PyGrid roles and seeds it into the database.
+
+        Args:
+            db (Session): Database Session object used to handle database operations.
+    """
     new_role = Role(
         name="Data Scientist",
         can_make_data_requests=True,
@@ -115,6 +104,11 @@ def seed_db(db: Session) -> None:
 
 
 def create_memory_db_engine() -> TypeTuple[Engine, sessionmaker]:
+    """ Creates the database tables in memory instead of connecting with a real database server.
+        
+        Returns:
+            Tuple: Tuple containing both database engine and session maker.
+    """
     db_engine = create_engine("sqlite://", echo=False)
     Base.metadata.create_all(db_engine)  # type: ignore
     SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=db_engine)
