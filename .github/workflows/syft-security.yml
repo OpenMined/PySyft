@@ -43,7 +43,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade --user pip
+          pip install --upgrade --user pip==21.3.1
           # pinning pip version: https://github.com/pypa/pip/issues/10825
 
       - name: Get pip cache dir
