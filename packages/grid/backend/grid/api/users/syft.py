@@ -2,7 +2,9 @@
 from typing import List
 
 # syft absolute
-from syft.core.node.common.node_service.peer_discovery.new_service import GetUserMessage
+from syft.core.node.common.node_service.user_manager.new_user_manager_service import (
+    GetUserMessage,
+)
 
 # from syft.core.node.common.node_service.user_manager.user_manager_service import (
 #     GetUserMessage,

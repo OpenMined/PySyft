@@ -59,9 +59,9 @@ from ..common.node_service.object_request.object_request_service import (
     ObjectRequestServiceWithoutReply,
 )
 from ..common.node_service.object_request.object_request_service import RequestService
-from ..common.node_service.peer_discovery.new_service import DomainServiceRegistry
 from ..common.node_service.ping.ping_service import PingService
 from ..common.node_service.publish.publish_service import PublishScalarsService
+from ..common.node_service.registry import DomainServiceRegistry
 from ..common.node_service.request_answer.request_answer_messages import RequestStatus
 from ..common.node_service.request_answer.request_answer_service import (
     RequestAnswerService,
