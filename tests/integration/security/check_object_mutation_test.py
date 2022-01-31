@@ -9,7 +9,7 @@ import torch as th
 # syft absolute
 import syft as sy
 
-DOMAIN_PORT = 8081
+DOMAIN1_PORT = 9082
 
 
 @pytest.mark.security
@@ -17,7 +17,7 @@ def test_store_object_mutation() -> None:
     """Check if the store object can be mutated by another user."""
 
     domain = sy.login(
-        port=DOMAIN_PORT, email="info@openmined.org", password="changethis"
+        port=DOMAIN1_PORT, email="info@openmined.org", password="changethis"
     )
 
     x = th.tensor([1, 2, 3])
@@ -27,7 +27,7 @@ def test_store_object_mutation() -> None:
     y_ptr = y.send(domain, pointable=False, tags=["invisible"])
     y_ptr.id_at_location
 
-    guest = sy.login(port=DOMAIN_PORT)
+    guest = sy.login(port=DOMAIN1_PORT)
     guest_x = guest.store[x_ptr.id_at_location]
 
     guest_x.add_(guest_x)
