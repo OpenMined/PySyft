@@ -59,7 +59,7 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
     # id_at_location has to be preserved
     id_at_location = getattr(self, "id_at_location", None)
 
-    if None:
+    if id_at_location is None:
         traceback_and_raise(
             ValueError("Can't resolve a pointer that has no underlying object.")
         )
@@ -555,7 +555,10 @@ class Class(Callable):
         """Create pointer type for object."""
         attrs: Dict[str, Union[str, CallableT, property]] = {}
         for attr_name, attr in self.attrs.items():
-            attr_path_and_name = getattr(attr, "path_and_name", None)
+            attr_path_and_name: Optional[str] = getattr(attr, "path_and_name", None)
+
+            if attr_path_and_name is None:
+                raise Exception(f"Missing path_and_name in {self.attrs}")
 
             # attr_path_and_name None
             if isinstance(attr, ast.callable.Callable):
