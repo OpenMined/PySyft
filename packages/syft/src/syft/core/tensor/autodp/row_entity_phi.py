@@ -559,9 +559,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         for i in split_lst:
             final_lst.append(reduce(list_sum, i))
 
-        rows = reduce(list_sum, final_lst)
+        result_tensor = reduce(list_sum, final_lst)
 
-        return RowEntityPhiTensor(rows=rows, check_shape=False)
+        return result_tensor
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:
