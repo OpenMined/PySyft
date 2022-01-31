@@ -37,6 +37,7 @@ from ..ancestors import AutogradTensorAncestor
 from ..broadcastable import is_broadcastable
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
@@ -44,7 +45,6 @@ from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.share_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..tensor import Tensor
-from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
 from .adp_tensor import ADPTensor
 from .dp_tensor_converter import convert_to_gamma_tensor
@@ -1799,12 +1799,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             if self.entity != value.entity:
                 return NotImplemented
 
-            data = self.child ** value.child
+            data = self.child**value.child
 
-            min_min = self.min_vals ** value.min_vals
-            min_max = self.min_vals ** value.max_vals
-            max_min = self.max_vals ** value.min_vals
-            max_max = self.max_vals ** value.max_vals
+            min_min = self.min_vals**value.min_vals
+            min_max = self.min_vals**value.max_vals
+            max_min = self.max_vals**value.min_vals
+            max_max = self.max_vals**value.max_vals
 
             min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
             max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
@@ -1820,12 +1820,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         elif is_acceptable_simple_type(value):
 
-            data = self.child ** value
+            data = self.child**value
 
-            min_min = self.min_vals ** value
-            min_max = self.min_vals ** value
-            max_min = self.max_vals ** value
-            max_max = self.max_vals ** value
+            min_min = self.min_vals**value
+            min_max = self.min_vals**value
+            max_min = self.max_vals**value
+            max_max = self.max_vals**value
 
             min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
             max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore

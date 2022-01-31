@@ -25,7 +25,7 @@ class CryptoPrimitiveProvider:
         g_kwargs: Dict[str, Any] = {},
         p_kwargs: Dict[str, Any] = {},
         nr_instances: int = 1,
-        ring_size: int = 2 ** 32,
+        ring_size: int = 2**32,
     ) -> List[Any]:
         """Generate "op_str" primitives.
 
