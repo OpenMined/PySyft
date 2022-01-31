@@ -220,9 +220,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             mutating_internal = False
             # TODO: Need to clarify with Madhava/Andrew if it should be allowed to
             # create the result pointer and store it in the database.
-            traceback_and_raise(
-                Exception("You don't have permissions to perform the write operation.")
-            )
+            # traceback_and_raise(
+            #     Exception("You don't have permissions to perform the write operation.")
+            # )
 
         if mutating_internal:
             if isinstance(resolved_self, StorableObject):
