@@ -432,7 +432,7 @@ def get_root_data_path() -> Path:
 def download_file(url: str, full_path: Union[str, Path]) -> Path:
     if not os.path.exists(full_path):
         # TODO: Rasswanth fix the SSL Error.
-        r = requests.get(url, allow_redirects=True, verify=False)  # nosec
+        r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
         path = os.path.dirname(full_path)
         os.makedirs(path, exist_ok=True)
         with open(full_path, "wb") as f:
@@ -454,3 +454,42 @@ def verify_tls() -> bool:
 
 def ssl_test() -> bool:
     return len(os.environ.get("REQUESTS_CA_BUNDLE", "")) > 0
+
+
+def get_tracer(service_name: Optional[str] = None) -> Any:
+    PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
+    if not PROFILE_MODE:
+
+        def noop(*args: Any, **kwargs: Any) -> Any:
+            pass
+
+        return noop
+
+    print("Profile mode with OpenTelemetry enabled")
+    if service_name is None:
+        service_name = os.environ.get("SERVICE_NAME", "client")
+
+    jaeger_host = os.environ.get("JAEGER_HOST", "localhost")
+    jaeger_port = int(os.environ.get("JAEGER_PORT", "6831"))
+
+    # third party
+    from opentelemetry import trace
+    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.resources import SERVICE_NAME
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+    trace.set_tracer_provider(
+        TracerProvider(resource=Resource.create({SERVICE_NAME: service_name}))
+    )
+
+    jaeger_exporter = JaegerExporter(
+        agent_host_name=jaeger_host,
+        agent_port=jaeger_port,
+    )
+
+    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
+
+    tracer = trace.get_tracer(__name__)
+    return tracer

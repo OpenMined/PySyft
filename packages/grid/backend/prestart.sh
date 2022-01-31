@@ -11,7 +11,7 @@ done
 if [ "${RELEASE}" = "development" ]
 then
     echo "Installing Syft"
-    pip install --user -e /app/syft
+    pip install --user -e /app/syft[dev]
 fi
 
 python3 -c "print('---Monkey Patching: Gevent---\n');from gevent import monkey;monkey.patch_all()"

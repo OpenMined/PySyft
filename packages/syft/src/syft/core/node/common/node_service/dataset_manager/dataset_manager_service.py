@@ -15,6 +15,7 @@ import torch as th
 
 # relative
 from ...... import deserialize
+from ......util import get_tracer
 from .....common.group import VERIFYALL
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.uid import UID
@@ -35,6 +36,8 @@ from .dataset_manager_messages import GetDatasetsResponse
 from .dataset_manager_messages import UpdateDatasetMessage
 
 ENCODING = "UTF-8"
+
+tracer = get_tracer()
 
 
 def _handle_dataset_creation_grid_ui(
@@ -87,28 +90,31 @@ def _handle_dataset_creation_grid_ui(
 def _handle_dataset_creation_syft(
     msg: CreateDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> None:
-    result = deserialize(msg.dataset, from_bytes=True)
-    dataset_id = msg.metadata.get("dataset_id")
-    if not dataset_id:
-        dataset_id = node.datasets.register(**msg.metadata)
+    with tracer.start_as_current_span("_handle_dataset_creation_syft"):
+        with tracer.start_as_current_span("deserialization"):
+            result = deserialize(msg.dataset, from_bytes=True)
+        dataset_id = msg.metadata.get("dataset_id")
+        if not dataset_id:
+            dataset_id = node.datasets.register(**msg.metadata)
 
-    for table_name, table in result.items():
-        id_at_location = UID()
-        storable = StorableObject(
-            id=id_at_location,
-            data=table,
-            tags=[f"#{table_name}"],
-            search_permissions={VERIFYALL: None},
-            read_permissions={node.verify_key: node.id, verify_key: None},
-        )
-        node.store[storable.id] = storable
-        node.datasets.add(
-            name=table_name,
-            dataset_id=str(dataset_id),
-            obj_id=str(id_at_location.value),
-            dtype=str(table.__class__.__name__),
-            shape=str(table.shape),
-        )
+        for table_name, table in result.items():
+            id_at_location = UID()
+            storable = StorableObject(
+                id=id_at_location,
+                data=table,
+                tags=[f"#{table_name}"],
+                search_permissions={VERIFYALL: None},
+                read_permissions={node.verify_key: node.id, verify_key: None},
+            )
+            with tracer.start_as_current_span("save to DB"):
+                node.store[storable.id] = storable
+            node.datasets.add(
+                name=table_name,
+                dataset_id=str(dataset_id),
+                obj_id=str(id_at_location.value),
+                dtype=str(table.__class__.__name__),
+                shape=str(table.shape),
+            )
 
 
 def create_dataset_msg(

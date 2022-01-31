@@ -13,6 +13,7 @@ services:
       context: ./vpn
       dockerfile: tailscale.dockerfile
     environment:
+      - SERVICE_NAME=tailscale
       - RELEASE=${RELEASE:-production}
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
       - STACK_API_KEY=$STACK_API_KEY
@@ -39,6 +40,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
+      - SERVICE_NAME=proxy
       - RELEASE=${RELEASE:-production}
     command:
       - "--providers.docker"
@@ -64,6 +66,7 @@ services:
       args:
         NODE_TYPE: ${NODE_TYPE}
     environment:
+      - SERVICE_NAME=frontend
       - RELEASE=${RELEASE:-production}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - VERSION=${VERSION}
@@ -80,6 +83,7 @@ services:
     volumes:
       - app-db-data:/var/lib/postgresql/data
     environment:
+      - SERVICE_NAME=db
       - RELEASE=${RELEASE:-production}
     env_file:
       - .env
@@ -87,6 +91,7 @@ services:
     restart: always
     image: rabbitmq:3
     environment:
+      - SERVICE_NAME=queue
       - RELEASE=${RELEASE:-production}
     volumes:
       - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
@@ -99,6 +104,7 @@ services:
     env_file:
       - .env
     environment:
+      - SERVICE_NAME=backend
       - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
@@ -128,6 +134,7 @@ services:
     env_file:
       - .env
     environment:
+      - SERVICE_NAME=backend_stream
       - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
@@ -158,6 +165,7 @@ services:
     env_file:
       - .env
     environment:
+      - SERVICE_NAME=celeryworker
       - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}

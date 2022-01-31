@@ -17,6 +17,7 @@ from syft import Domain
 from syft.core.adp.entity import Entity
 from syft.util import download_file
 from syft.util import get_root_data_path
+from syft.util import get_tracer
 
 
 def download_spicy_bird_benchmark() -> Tuple[Dict[str, Path], List[str]]:
@@ -138,6 +139,12 @@ DOMAIN1_PORT = 9082
 
 @pytest.mark.e2e
 def test_benchmark_datasets() -> None:
+    # stdlib
+    import os
+
+    os.environ["PROFILE"] = "True"
+    tracer = get_tracer("test_benchmark_datasets")
+
     files, ordered_sizes = download_spicy_bird_benchmark()
     domain = sy.login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
@@ -152,14 +159,16 @@ def test_benchmark_datasets() -> None:
         # make smaller
         df = df[0:1000]
 
-        upload_time = time_upload(
-            domain=domain, size_name=size_name, unique_key=unique_key, df=df
-        )
+        with tracer.start_as_current_span("upload"):
+            upload_time = time_upload(
+                domain=domain, size_name=size_name, unique_key=unique_key, df=df
+            )
         benchmark_report[size_name]["upload_secs"] = upload_time
         all_chunks = get_all_chunks(domain=domain, unique_key=unique_key)
-        sum_time = time_sum(
-            domain=domain, chunk_indexes=all_chunks, size_name=size_name
-        )
+        with tracer.start_as_current_span("sum"):
+            sum_time = time_sum(
+                domain=domain, chunk_indexes=all_chunks, size_name=size_name
+            )
         benchmark_report[size_name]["sum_secs"] = sum_time
         break
 
