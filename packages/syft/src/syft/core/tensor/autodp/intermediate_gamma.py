@@ -206,6 +206,14 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             output_entities.append(combined_entities)
         return np.array(output_entities).reshape(self.shape)
 
+    def astype(self, np_type: np.dtype = np.int32) -> IntermediateGammaTensor:
+        return self.__class__(
+            term_tensor=self.term_tensor.astype(np_type),
+            coeff_tensor=self.coeff_tensor.astype(np_type),
+            bias_tensor=self.bias_tensor.astype(np_type),
+            scalar_manager=self.scalar_manager,
+        )
+
     def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
             if is_broadcastable(self.shape, other.shape):

@@ -561,7 +561,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         result_tensor = reduce(list_sum, final_lst)
 
-        return result_tensor
+        return result_tensor.astype(self.dtype)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:
