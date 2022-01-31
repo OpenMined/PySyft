@@ -140,13 +140,18 @@ def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> 
     _ = importlib.import_module(lib)
     vendor_ast = importlib.import_module(f"syft.lib.{lib}")
     PACKAGE_SUPPORT = getattr(vendor_ast, "PACKAGE_SUPPORT", None)
+    if PACKAGE_SUPPORT is None:
+        raise Exception(f"Unable to load package: {lib}. Missing PACKAGE_SUPPORT.")
     PACKAGE_SUPPORT.update(_options)
     if PACKAGE_SUPPORT is not None and vendor_requirements_available(
         vendor_requirements=PACKAGE_SUPPORT
     ):
         _add_lib(vendor_ast=vendor_ast, ast_or_client=lib_ast)
         # cache the constructor for future created clients
-        lib_ast.loaded_lib_constructors[lib] = getattr(vendor_ast, "update_ast", None)
+        update_ast_func = getattr(vendor_ast, "update_ast", None)
+        if update_ast_func is None:
+            raise Exception(f"Unable to load package: {lib}. Missing update_ast func")
+        lib_ast.loaded_lib_constructors[lib] = update_ast_func
         _regenerate_unions(lib_ast=lib_ast)
 
         for _, client in lib_ast.registered_clients.items():
