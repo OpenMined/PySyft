@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
+from functools import reduce
 from typing import Any
 from typing import Dict
 from typing import List
@@ -534,12 +535,33 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
-        new_list = list()
-        for row in self.child:
-            result = row.sum(*args, **kwargs)
-            new_list.append(result.astype(self.dtype))
+        # new_list = list()
+        # for row in self.child:
+        #     result = row.sum(*args, **kwargs)
+        #     new_list.append(result.astype(self.dtype))
+        split_lst = []  # contains the different entities
+        d = {}  # mapping of entities to list index
+        c = 0  # to keep track of index count
+        for i in self.child:
+            if i.entity not in d:
+                d[i.entity] = c
+                split_lst.append([i])
+                c += 1
+            else:
+                split_lst[d[i.entity]].append(i)
 
-        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+        def list_sum(
+            a: SingleEntityPhiTensor, b: SingleEntityPhiTensor
+        ) -> SingleEntityPhiTensor:
+            return a + b
+
+        final_lst = []
+        for i in split_lst:
+            final_lst.append(reduce(list_sum, i))
+
+        rows = reduce(list_sum, final_lst)
+
+        return RowEntityPhiTensor(rows=rows, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:

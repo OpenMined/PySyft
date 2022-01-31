@@ -518,6 +518,12 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             bias_tensor = self.bias_tensor + other
 
         else:
+            # relative
+            from .dp_tensor_converter import convert_to_gamma_tensor
+            from .single_entity_phi import SingleEntityPhiTensor
+
+            if isinstance(other, SingleEntityPhiTensor):
+                other = convert_to_gamma_tensor(other)
 
             if self.scalar_manager != other.scalar_manager:
                 # TODO: come up with a method for combining symbol factories

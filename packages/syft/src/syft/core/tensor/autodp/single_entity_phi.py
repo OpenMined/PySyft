@@ -791,7 +791,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 max_vals=max_vals,
                 scalar_manager=self.scalar_manager,
             )
-
+        elif isinstance(other, IntermediateGammaTensor):
+            return convert_to_gamma_tensor(self) + other
         else:
             raise NotImplementedError
 
