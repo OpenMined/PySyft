@@ -1,5 +1,6 @@
 # stdlib
 from copy import copy
+import time
 
 # third party
 import pytest
@@ -8,7 +9,7 @@ import torch as th
 # syft absolute
 import syft as sy
 
-DOMAIN_PORT = 9082
+DOMAIN_PORT = 8081
 
 
 @pytest.mark.security
@@ -37,7 +38,19 @@ def test_store_object_mutation() -> None:
 
     guest_y.add_(guest_y)
 
+    # Guest user should not be able to mutate objects that don't belong to them
     x_result = x_ptr.get(delete_obj=False)
     assert all(x_result == x) is True
+
     y_result = y_ptr.get(delete_obj=False)
     assert all(y_result == y) is True
+
+    # Domain owner should be able to mutate their own objects
+    x_ptr.add_(x_ptr)
+
+    # A sleep is needed because the `RunClassMethodAction` is async, and therefore if
+    # do `.get`, then the value returned by the `x_ptr` could be stale while `RunClassMethodAction`
+    # is still being executed.
+    time.sleep(1)
+    new_result = x_ptr.get(delete_obj=False)
+    assert all(new_result == (x + x)) is True

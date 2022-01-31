@@ -214,6 +214,16 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         ):
             mutating_internal = True
 
+        if verify_key not in result_write_permissions:
+            # User does not have permission write permissions to this pointer.
+            # Therefore object mutation is not allowed.
+            mutating_internal = False
+            # TODO: Need to clarify with Madhava/Andrew if it should be allowed to
+            # create the result pointer and store it in the database.
+            traceback_and_raise(
+                Exception("You don't have permissions to perform the write operation.")
+            )
+
         if mutating_internal:
             if isinstance(resolved_self, StorableObject):
                 resolved_self.read_permissions = result_read_permissions
