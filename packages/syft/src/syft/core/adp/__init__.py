@@ -118,5 +118,5 @@ def create_adp_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
 
     return ast
 
-ScalarManager = VirtualMachinePrivateScalarManager()
 
+ScalarManager = VirtualMachinePrivateScalarManager()
