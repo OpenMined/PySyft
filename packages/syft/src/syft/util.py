@@ -1,19 +1,19 @@
 # stdlib
+import asyncio
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
+import functools
+from itertools import repeat
+import operator
 import os
 from pathlib import Path
 from secrets import randbelow
 from typing import Any
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Union
-import functools
-import asyncio
-from concurrent.futures import ProcessPoolExecutor
-from concurrent.futures import ThreadPoolExecutor
-from itertools import repeat
-import operator
-from typing import Callable
-from typing import Dict
 
 # third party
 from forbiddenfruit import curse
