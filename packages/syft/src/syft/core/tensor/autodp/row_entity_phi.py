@@ -987,9 +987,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         if len(row_scalar_manager_index) != len(self.child):
             raise Exception("Length of scalar manager index must match row length")
 
-        args = [ [self.chid[0]] for i in range(8) ]
+        args = [ [self.child[0]] for i in range(8) ]
         output  = parallel_execution(row_serialize,cpu_bound=True)(args)
         print(output)
+        output2 = parallel_execution(row_deserialize,cpu_bound=True)(output)
+        print(output2)
 
         rept_pb = RowEntityPhiTensor_PB(
             rows=[serialize(x) for x in self.child],

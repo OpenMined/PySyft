@@ -13,7 +13,7 @@ from concurrent.futures import ThreadPoolExecutor
 from itertools import repeat
 import operator
 from typing import Callable
-
+from typing import Dict
 
 # third party
 from forbiddenfruit import curse
