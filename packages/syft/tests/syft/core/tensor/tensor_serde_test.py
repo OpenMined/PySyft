@@ -230,3 +230,7 @@ def test_big_sept_vs_rept_child() -> None:
     assert ((big_sept_metrics[0:2] - rept_metrics[0:2]) < 1e-3).all()
     # TODO: make time benchmarks stable (probably can't run in parallel)
     # assert ((big_sept_metrics[2:-1] - rept_metrics[2:-1]) < 1e-1).all()
+
+
+if __name__ == "__main__":
+    test_rept_child()
