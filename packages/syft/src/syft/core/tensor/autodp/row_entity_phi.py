@@ -50,7 +50,6 @@ def row_serialize(*rows: List) -> List:
 def row_deserialize(*rows: List) -> List:
     output = []
     for row in rows:
-        print(row)
         output.append(deserialize(row, from_bytes=True))
     return output
 
