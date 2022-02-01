@@ -174,3 +174,13 @@ def test_benchmark_datasets() -> None:
 
     print(benchmark_report)
     # assert False
+
+
+if __name__ == "__main__":
+    # stdlib
+    import sys
+
+    # third party
+    import pytest
+
+    pytest.main(sys.argv)

@@ -303,7 +303,7 @@ def update_request_msg(
     _req = node.data_requests.first(id=request_id)
 
     if not _req:
-        raise RequestError
+        raise RequestError(message=f"Request ID: {request_id} not found.")
 
     if status not in ["accepted", "denied"]:
         raise InvalidParameterValueError(

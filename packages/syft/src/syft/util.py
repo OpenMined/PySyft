@@ -1,10 +1,12 @@
 # stdlib
+
 import asyncio
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 import functools
 from itertools import repeat
 import operator
+from contextlib import contextmanager
 import os
 from pathlib import Path
 from secrets import randbelow
@@ -468,10 +470,12 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
     PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
     if not PROFILE_MODE:
 
-        def noop(*args: Any, **kwargs: Any) -> Any:
-            pass
+        class NoopTracer:
+            @contextmanager
+            def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
+                yield None
 
-        return noop
+        return NoopTracer()
 
     print("Profile mode with OpenTelemetry enabled")
     if service_name is None:

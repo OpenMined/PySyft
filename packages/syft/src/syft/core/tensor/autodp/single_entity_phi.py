@@ -27,6 +27,7 @@ from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
 from ....util import inherit_tags
+from ...adp import ScalarManager
 from ...adp.entity import Entity
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
@@ -517,7 +518,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         entity: Entity,
         min_vals: np.ndarray,
         max_vals: np.ndarray,
-        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
+        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = ScalarManager,
     ) -> None:
 
         # child = the actual private data
