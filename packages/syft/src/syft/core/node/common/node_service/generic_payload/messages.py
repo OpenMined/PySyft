@@ -64,3 +64,30 @@ class GenericPayloadMessageWithReply:
 
     def back_to(self, address: Address) -> Any:
         return self.message_reply_type(address=address, payload=self)
+
+
+# class GenericPayloadMessageWithReply(ImmediateSyftMessageWithReply):
+#     __attr_allowlist__ = ["kwargs", "id", "payload", "address", "reply_to", "msg_id"]
+
+#     def __init__(self, address, msg_id, payload, reply_to=None, kwargs: Dict[str, Any] = {}) -> None:
+#         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+#         if hasattr(kwargs, "upcast"):
+#             kwargs = kwargs.upcast()  # type: ignore
+#         self.kwargs = kwargs
+
+#     def run(
+#         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
+#     ) -> Dict[str, Any]:
+#         raise NotImplementedError
+
+#     def to(self, address: Address, reply_to: Address) -> Any:
+#         return self.message_type(address=address, reply_to=reply_to, payload=self)
+
+#     def back_to(self, address: Address) -> Any:
+#         return self.message_reply_type(address=address, payload=self)
+
+# msg = GenericPayloadMessageWithReply(address, reply_to, payload).sign()
+
+# result = msg.payload.run()
+
+# GenericPayloadMessageWithReply(kwargs=result).back_to(address)

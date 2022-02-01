@@ -1,7 +1,9 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Type
 
 # third party
 from nacl.encoding import HexEncoder
@@ -11,39 +13,38 @@ from typing_extensions import final
 # relative
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
-from ....domain.registry import DomainMessageRegistry
 from ...exceptions import AuthorizationError
 from ...node_table.utils import model_to_json
+from ..auth import service_auth
 from ..generic_payload.messages import GenericPayloadMessage
 from ..generic_payload.messages import GenericPayloadMessageWithReply
 from ..generic_payload.messages import GenericPayloadReplyMessage
+from ..node_service import NodeService
+from ..registry import DomainServiceRegistry
+from ..registry import NetworkServiceRegistry
 
 
 @serializable(recursive_serde=True)
 @final
-class NewGetReplyMessage(GenericPayloadReplyMessage):
+class GetMessage(GenericPayloadMessage):
     ...
 
 
 @serializable(recursive_serde=True)
 @final
-class NewGetMessage(DomainMessageRegistry, GenericPayloadMessage):
+class GetReplyMessage(GenericPayloadReplyMessage):
     ...
 
 
 @serializable(recursive_serde=True)
 @final
-class NewGetUserMessage(GenericPayloadMessageWithReply):
-    message_type = NewGetMessage
-    message_reply_type = NewGetReplyMessage
+class GetUserMessage(GenericPayloadMessageWithReply):
+    message_type = GetMessage
+    message_reply_type = GetReplyMessage
 
-    # TODO: Add message level authentication
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
-
-        if not verify_key:
-            return {}
 
         # TODO: Segregate permissions to a different level (make it composable)
         _allowed = node.users.can_triage_requests(verify_key=verify_key)  # type: ignore
@@ -67,3 +68,20 @@ class NewGetUserMessage(GenericPayloadMessageWithReply):
                 user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
             )
             return _msg
+
+
+class UserService(NetworkServiceRegistry, DomainServiceRegistry, NodeService):
+    @staticmethod
+    @service_auth(guests_welcome=True)
+    def process(
+        node: NodeServiceInterface,
+        msg: GetMessage,
+        verify_key: Optional[VerifyKey] = None,
+    ) -> GetUserMessage:
+
+        result = msg.payload.run(node=node, verify_key=verify_key)
+        return GetUserMessage(kwargs=result).back_to(address=msg.reply_to)
+
+    @staticmethod
+    def message_handler_types() -> List[Type[GetMessage]]:
+        return [GetMessage]

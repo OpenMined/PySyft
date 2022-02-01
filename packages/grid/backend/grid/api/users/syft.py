@@ -1,14 +1,11 @@
 # stdlib
+import os
 from typing import List
 
 # syft absolute
-from syft.core.node.common.node_service.user_manager.new_user_manager_service import (
-    GetUserMessage,
+from syft.core.node.common.node_service.user_manager.new_user_messages import (
+    NewGetUserMessage,
 )
-
-# from syft.core.node.common.node_service.user_manager.user_manager_service import (
-#     GetUserMessage,
-# )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     CreateUserMessage,
 )
@@ -17,6 +14,9 @@ from syft.core.node.common.node_service.user_manager.user_manager_service import
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     GetCandidatesMessage,
+)
+from syft.core.node.common.node_service.user_manager.user_manager_service import (
+    GetUserMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     GetUsersMessage,
@@ -76,17 +76,29 @@ def get_all_users(current_user: UserPrivate) -> List[User]:
 def get_user(user_id: int, current_user: UserPrivate) -> User:
     signing_key = current_user.get_signing_key()
     client = get_client(signing_key)
-    msg = (
-        GetUserMessage(
-            kwargs={
-                "user_id": user_id,
-            }
+
+    use_new_service = os.getenv("USE_NEW_SERVICE", True)
+
+    if use_new_service:
+        msg = (
+            NewGetUserMessage(
+                kwargs={
+                    "user_id": user_id,
+                }
+            )
+            .to(address=client.address, reply_to=client.address)
+            .sign(signing_key=signing_key)
         )
-        .to(address=client.address, reply_to=client.address)
-        .sign(signing_key=signing_key)
-    )
-    reply = client.send_immediate_msg_with_reply(msg=msg)
-    return reply.payload.kwargs.upcast()
+        reply = client.send_immediate_msg_with_reply(msg=msg)
+        return reply.payload.kwargs.upcast()
+    else:
+        reply = send_message_with_reply(
+            signing_key=current_user.get_signing_key(),
+            message_type=GetUserMessage,
+            user_id=user_id,
+        )
+
+        return reply.content.upcast()
 
 
 def update_user(

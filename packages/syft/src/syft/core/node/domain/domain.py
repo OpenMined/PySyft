@@ -61,7 +61,6 @@ from ..common.node_service.object_request.object_request_service import (
 from ..common.node_service.object_request.object_request_service import RequestService
 from ..common.node_service.ping.ping_service import PingService
 from ..common.node_service.publish.publish_service import PublishScalarsService
-from ..common.node_service.registry import DomainServiceRegistry
 from ..common.node_service.request_answer.request_answer_messages import RequestStatus
 from ..common.node_service.request_answer.request_answer_service import (
     RequestAnswerService,
@@ -83,6 +82,7 @@ from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
+from .service import DomainServiceClass
 
 
 class Domain(Node):
@@ -167,8 +167,7 @@ class Domain(Node):
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
 
         # TODO: New Service registration process
-        domain_services = DomainServiceRegistry.get_registered_services()
-        self.immediate_services_with_reply.extend(domain_services)
+        self.immediate_services_with_reply.append(DomainServiceClass)
 
         # TODO: @Madhava change to a map of accountants that are created on first
         # use of the DS key
