@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections.abc import Sequence
 from functools import reduce
+import multiprocessing as mp
 from typing import Any
 from typing import Dict
 from typing import List
@@ -15,6 +16,9 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import numpy.typing as npt
+
+# syft absolute
+from syft.util import parallel_execution
 
 # relative
 from ....core.adp.entity import DataSubjectGroup as DSG
@@ -37,6 +41,29 @@ from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
+
+
+def row_serialize(*rows: List) -> List:
+    return [serialize(row, to_bytes=True) for row in rows]
+
+
+def row_deserialize(*rows: List) -> List:
+    output = []
+    for row in rows:
+        output.append(deserialize(row, from_bytes=True))
+    return output
+
+def split_rows(rows: List) -> List:
+    cpu_count = mp.cpu_count()
+    n = len(rows)
+    a, b = divmod(n, cpu_count)
+    start = 0
+    output = []
+    for i in range(cpu_count):
+        end = start + a + (1 if b - i - 1 >= 0 else 0)
+        output.append(rows[start:end])
+        start = end
+    return output
 
 
 @serializable()
@@ -981,8 +1008,14 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         if len(row_scalar_manager_index) != len(self.child):
             raise Exception("Length of scalar manager index must match row length")
 
+        args = split_rows(self.child)
+        rows = parallel_execution(row_serialize, cpu_bound=True)(args)
+        output_rows = []
+        for row in rows:
+            output_rows.extend(row)
+
         rept_pb = RowEntityPhiTensor_PB(
-            rows=[serialize(x) for x in self.child],
+            rows=output_rows,
             unique_entities=[serialize(x) for x in entity_list],
             unique_scalar_managers=[serialize(x) for x in scalar_manager_list],
             row_entity_index=serialize(np.array(row_entity_index)),
@@ -997,24 +1030,30 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     @staticmethod
     def _proto2object(proto: RowEntityPhiTensor_PB) -> RowEntityPhiTensor:
         # get back our entities and scalar managers
-        unique_entities = [x for x in proto.unique_entities]
-        unique_scalar_managers = [x for x in proto.unique_scalar_managers]
+        unique_entities = [deserialize(x) for x in proto.unique_entities]
+        unique_scalar_managers = [deserialize(x) for x in proto.unique_scalar_managers]
 
         row_entity_index = deserialize(proto.row_entity_index)
         row_scalar_manager_index = deserialize(proto.row_scalar_manager_index)
 
+        args = split_rows(proto.rows)
+        rows = parallel_execution(row_deserialize, cpu_bound=True)(args)
+        output_rows = []
+        for row in rows:
+            output_rows.extend(row)
+
         rows = []
-        for i, row in enumerate(proto.rows):
+        for i, row in enumerate(output_rows):
             row_index = row_entity_index[i]
             entity = unique_entities[row_index]
             scalar_manager_index = row_scalar_manager_index[i]
             scalar_manager = unique_scalar_managers[scalar_manager_index]
 
             # re-attach the original de-duplicated data before deserializing
-            row.entity.CopyFrom(entity)
-            row.scalar_manager.CopyFrom(scalar_manager)
+            row.entity = entity
+            row.scalar_manager = scalar_manager
 
-            rows.append(deserialize(row))
+            rows.append(row)
 
         return RowEntityPhiTensor(rows=rows)
 

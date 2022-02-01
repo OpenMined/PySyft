@@ -20,7 +20,7 @@ message SingleEntityPhiTensor {
 }
 
 message RowEntityPhiTensor {
-  repeated SingleEntityPhiTensor rows = 1;
+  repeated bytes rows = 1;
   repeated syft.core.adp.Entity unique_entities = 2;
   repeated VirtualMachinePrivateScalarManager unique_scalar_managers = 3;
   syft.lib.numpy.NumpyProto row_entity_index = 4;
