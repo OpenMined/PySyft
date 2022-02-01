@@ -464,7 +464,7 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
         class NoopTracer:
             @contextmanager
             def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
-                pass
+                yield None
 
         return NoopTracer()
 
