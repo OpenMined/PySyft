@@ -47,9 +47,12 @@ def row_serialize(*rows: List) -> List:
     return [serialize(row, to_bytes=True) for row in rows]
 
 
-def row_deserialize(rows: List) -> List:
-    return [deserialize(row, from_bytes=True) for row in rows]
-
+def row_deserialize(*rows: List) -> List:
+    output = []
+    for row in rows:
+        print(row)
+        output.append(deserialize(row, from_bytes=True))
+    return output
 
 def split_rows(rows: List) -> List:
     cpu_count = mp.cpu_count()
