@@ -2398,10 +2398,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         return SingleEntityPhiTensor(
             child=child,
-            entity=deserialize(proto.entity),
+            entity= deserialize(proto.entity) if proto.HasField("entity") else None,
             min_vals=deserialize(proto.min_vals),
             max_vals=deserialize(proto.max_vals),
-            scalar_manager=deserialize(proto.scalar_manager),
+            scalar_manager=deserialize(proto.scalar_manager) if proto.HasField("scalar_manager") else None,
         )
 
     @staticmethod

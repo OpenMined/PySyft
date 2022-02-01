@@ -1028,24 +1028,30 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     @staticmethod
     def _proto2object(proto: RowEntityPhiTensor_PB) -> RowEntityPhiTensor:
         # get back our entities and scalar managers
-        unique_entities = [x for x in proto.unique_entities]
-        unique_scalar_managers = [x for x in proto.unique_scalar_managers]
+        unique_entities = [deserialize(x) for x in proto.unique_entities]
+        unique_scalar_managers = [deserialize(x) for x in proto.unique_scalar_managers]
 
         row_entity_index = deserialize(proto.row_entity_index)
         row_scalar_manager_index = deserialize(proto.row_scalar_manager_index)
 
+        args = split_rows(proto.rows)
+        rows = parallel_execution(row_deserialize, cpu_bound=True)(args)
+        output_rows = []
+        for row in rows:
+            output_rows.extend(row)
+
         rows = []
-        for i, row in enumerate(proto.rows):
+        for i, row in enumerate(output_rows):
             row_index = row_entity_index[i]
             entity = unique_entities[row_index]
             scalar_manager_index = row_scalar_manager_index[i]
             scalar_manager = unique_scalar_managers[scalar_manager_index]
 
             # re-attach the original de-duplicated data before deserializing
-            row.entity.CopyFrom(entity)
-            row.scalar_manager.CopyFrom(scalar_manager)
+            row.entity = entity
+            row.scalar_manager = scalar_manager
 
-            rows.append(deserialize(row))
+            rows.append(row)
 
         return RowEntityPhiTensor(rows=rows)
 
