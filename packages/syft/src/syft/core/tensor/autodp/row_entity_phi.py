@@ -37,7 +37,13 @@ from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
+from syft.util import parallel_execution
 
+def row_serialize(rows: List):
+    return [serialize(row,to_bytes=True) for row in rows]
+
+def row_deserialize(rows: List):
+    return [deserialize(row,from_bytes=True) for row in rows]
 
 @serializable()
 class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
@@ -980,6 +986,10 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         if len(row_scalar_manager_index) != len(self.child):
             raise Exception("Length of scalar manager index must match row length")
+
+        args = [ [self.chid[0]] for i in range(8) ]
+        output  = parallel_execution(row_serialize,cpu_bound=True)(args)
+        print(output)
 
         rept_pb = RowEntityPhiTensor_PB(
             rows=[serialize(x) for x in self.child],
