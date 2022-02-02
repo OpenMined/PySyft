@@ -9,6 +9,7 @@ import numpy as np
 
 # relative
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
+from ...adp.entity import DataSubjectGroup
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -88,7 +89,7 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
                 min_val=flat_min_vals[i],
                 value=flat_values[i],
                 max_val=flat_max_vals[i],
-                entity=flat_entities[i],
+                entity=flat_entities[i] if not isinstance(flat_entities, DataSubjectGroup) else flat_entities,
             )
             some_symbols.append(prime)
 

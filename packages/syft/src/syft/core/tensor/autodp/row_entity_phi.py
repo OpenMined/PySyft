@@ -562,33 +562,35 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
-        # new_list = list()
-        # for row in self.child:
-        #     result = row.sum(*args, **kwargs)
-        #     new_list.append(result.astype(self.dtype))
-        split_lst = []  # contains the different entities
-        d = {}  # mapping of entities to list index
-        c = 0  # to keep track of index count
-        for i in self.child:
-            if i.entity not in d:
-                d[i.entity] = c
-                split_lst.append([i])
-                c += 1
-            else:
-                split_lst[d[i.entity]].append(i)
+        # TODO: Check if this works if the number of dimensions/axes are passed as args/kwargs
 
-        def list_sum(
-            a: SingleEntityPhiTensor, b: SingleEntityPhiTensor
-        ) -> SingleEntityPhiTensor:
-            return a + b
+        # pre-initialize result
+        target_shape = self.child[0].shape
 
-        final_lst = []
-        for i in split_lst:
-            final_lst.append(reduce(list_sum, i))
+        output_values = 0
+        output_min_vals = 0
+        output_max_vals = 0
+        output_entities = []
+        scalar_manager = TypeScalarManager()
 
-        result_tensor = reduce(list_sum, final_lst)
+        for sept in self.child:
+            value = sept.sum()
+            min_vals = sept.min_vals.sum()
+            max_vals = sept.max_vals.sum()
 
-        return result_tensor.astype(self.dtype)
+            output_values = output_values + value.child
+            output_min_vals = output_min_vals + min_vals
+            output_max_vals = output_max_vals + max_vals
+            output_entities.append(sept.entity)
+            scalar_manager.combine_(sept.scalar_manager)
+
+        return InitialGammaTensor(
+            values=output_values,
+            min_vals=output_min_vals,
+            max_vals=output_max_vals,
+            entities=output_entities,
+            scalar_manager=scalar_manager,
+    )
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:
