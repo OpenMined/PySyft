@@ -113,21 +113,23 @@ def time_upload(
 def time_sum(
     domain: Domain, chunk_indexes: List[int], size_name: str, timeout: int = 999
 ) -> Tuple[float, Any]:
-    start_time = time.time()
+    total_time = 0
 
     res = None
     for chunk_index in chunk_indexes:
         # get the dataset asset for size_name at chunk_index
         dataset = domain.datasets[chunk_index][f"{size_name}_tweets"]
+        start_time = time.time()
         if res is None:
             res = dataset.sum(axis=0)
         else:
             res += dataset.sum(axis=0)
+        total_time += time.time() - start_time
 
     # make sure to block
     res.block_with_timeout(timeout)
 
-    return time.time() - start_time, res
+    return total_time, res
 
 
 def get_all_chunks(domain: Domain, unique_key: str) -> List[int]:
@@ -180,12 +182,14 @@ def test_benchmark_datasets() -> None:
             )
         benchmark_report[size_name]["sum_secs"] = sum_time
 
+        start_time = time.time()
         with tracer.start_as_current_span("publish"):
             publish_ptr = sum_ptr.publish(sigma=0.5)
             publish_ptr.block_with_timeout(timeout)
             result = publish_ptr.get(delete_obj=False)
             print("result", result)
 
+        benchmark_report[size_name]["publish_secs"] = time.time() - start_time
         break
 
     print(benchmark_report)
