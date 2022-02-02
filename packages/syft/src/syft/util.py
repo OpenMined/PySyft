@@ -467,8 +467,16 @@ def ssl_test() -> bool:
     return len(os.environ.get("REQUESTS_CA_BUNDLE", "")) > 0
 
 
+_tracer = None
+
+
 def get_tracer(service_name: Optional[str] = None) -> Any:
+    global _tracer
+    if _tracer is not None:
+        return _tracer
+
     PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
+    PROFILE_MODE = False
     if not PROFILE_MODE:
 
         class NoopTracer:
@@ -476,7 +484,8 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
             def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
                 yield None
 
-        return NoopTracer()
+        _tracer = NoopTracer()
+        return _tracer
 
     print("Profile mode with OpenTelemetry enabled")
     if service_name is None:
@@ -504,8 +513,8 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
 
     trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
 
-    tracer = trace.get_tracer(__name__)
-    return tracer
+    _tracer = trace.get_tracer(__name__)
+    return _tracer
 
 
 def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
