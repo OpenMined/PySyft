@@ -42,19 +42,18 @@ from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
 
 
-def row_serialize(rows: List[Any]) -> List[Deserializeable]:
+def row_serialize(*rows: Any) -> List[Deserializeable]:
     return [serialize(row, to_bytes=True) for row in rows]
 
 
-def row_deserialize(rows: List[Deserializeable]) -> List[Any]:
+def row_deserialize(*rows: Deserializeable) -> List[Any]:
     output = []
     for row in rows:
         output.append(deserialize(row, from_bytes=True))
     return output
 
 
-def split_rows(rows: Sequence) -> List:
-    cpu_count = mp.cpu_count()
+def split_rows(rows: Sequence, cpu_count: int) -> List:
     n = len(rows)
     a, b = divmod(n, cpu_count)
     start = 0
@@ -1008,8 +1007,10 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         if len(row_scalar_manager_index) != len(self.child):
             raise Exception("Length of scalar manager index must match row length")
 
-        args = split_rows(self.child)
-        rows = parallel_execution(row_serialize, cpu_bound=True)(args)
+        cpu_count = mp.cpu_count()
+        cpu_bound = True
+        args = split_rows(self.child, cpu_count=cpu_count)
+        rows = parallel_execution(row_serialize, cpu_bound=cpu_bound)(args)
         output_rows = []
         for row in rows:
             output_rows.extend(row)
@@ -1036,8 +1037,10 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         row_entity_index = deserialize(proto.row_entity_index)
         row_scalar_manager_index = deserialize(proto.row_scalar_manager_index)
 
-        args = split_rows(proto.rows)
-        rows = parallel_execution(row_deserialize, cpu_bound=True)(args)
+        cpu_count = mp.cpu_count()
+        cpu_bound = True
+        args = split_rows(proto.rows, cpu_count=cpu_count)
+        rows = parallel_execution(row_deserialize, cpu_bound=cpu_bound)(args)
         output_rows = []
         for row in rows:
             output_rows.extend(row)

@@ -508,6 +508,18 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
     return tracer
 
 
+def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
+    """Set the same event loop to other threads/processes.
+    This is needed because there are new threads/processes started with
+    the Executor and they do not have have an event loop set
+    Args:
+        event_loop: The event loop.
+    """
+    if event_loop:
+        asyncio.set_event_loop(event_loop)
+
+
+# local scope functions cant be pickled so this needs to be global
 def parallel_execution(
     fn: Callable[..., Any],
     parties: Union[None, List[Any]] = None,
@@ -525,15 +537,6 @@ def parallel_execution(
     Returns:
         Callable[..., List[Any]]: A Callable that returns a list of results.
     """
-
-    def initializer(event_loop: BaseSelectorEventLoop) -> None:
-        """Set the same event loop to other threads/processes.
-        This is needed because there are new threads/processes started with
-        the Executor and they do not have have an event loop set
-        Args:
-            event_loop: The event loop.
-        """
-        asyncio.set_event_loop(event_loop)
 
     @functools.wraps(fn)
     def wrapper(
@@ -554,8 +557,12 @@ def parallel_execution(
         executor: Type
         if cpu_bound:
             executor = ProcessPoolExecutor
+            # asyncio objects cannot pickled and sent across processes
+            # AttributeError: Can't pickle local object 'WeakSet.__init__.<locals>._remove'
+            loop = None
         else:
             executor = ThreadPoolExecutor
+            loop = asyncio.get_event_loop()
 
         # Each party has a list of args and a dictionary of kwargs
         nr_parties = len(args)
@@ -571,7 +578,6 @@ def parallel_execution(
             funcs = list(repeat(fn, nr_parties))
 
         futures = []
-        loop = asyncio.get_event_loop()
 
         with executor(
             max_workers=nr_parties, initializer=initializer, initargs=(loop,)

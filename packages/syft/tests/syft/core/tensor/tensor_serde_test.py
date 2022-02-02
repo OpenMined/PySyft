@@ -121,9 +121,9 @@ def test_sept_child() -> None:
 
 def test_rept_child() -> None:
     """We need to benchmark both the size and time to serialize and deserialize REPTs"""
-    rows = 10_000
-    cols = 7
-    rept_row_count = 5
+    rows = 7
+    cols = 1
+    rept_row_count = 100_000
 
     # these times and sizes are based on the above constants
     # and Madhavas MacBook Pro 2019
