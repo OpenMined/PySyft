@@ -70,6 +70,7 @@ class VirtualMachinePrivateScalarManager:
         self.prime_factory = (
             prime_factory if prime_factory is not None else PrimeFactory()
         )
+        print(prime2symbol)
         self.prime2symbol = prime2symbol
 
     def get_symbol(
@@ -100,6 +101,10 @@ class VirtualMachinePrivateScalarManager:
                 and self.prime2symbol == other.prime2symbol
             )
         return self == other
+    
+    @property
+    def primes_allocated(self) -> list:
+        return list(self.prime2symbol.keys())
 
     def _object2proto(self) -> VirtualMachinePrivateScalarManager_PB:
         return VirtualMachinePrivateScalarManager_PB(
@@ -119,3 +124,23 @@ class VirtualMachinePrivateScalarManager:
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return VirtualMachinePrivateScalarManager_PB
+    
+    
+    def combine_(self, vsm2) -> VirtualMachinePrivateScalarManager:
+        """
+        Combine two ScalarManagers by merging their prime factories.
+        ASSUME: vsm1 is the source of truth; we won't be changing its prime numbers
+        """
+        
+        for prime_number, gs in vsm2.prime2symbol.items():
+            if prime_number in self.prime2symbol:  # If there's a collision
+                new_prime = self.prime_factory.next()
+                gs.prime = new_prime
+                self.prime2symbol[new_prime] = gs
+            else:
+                self.prime2symbol[gs.prime] = gs
+        
+        
+        
+        
+        
