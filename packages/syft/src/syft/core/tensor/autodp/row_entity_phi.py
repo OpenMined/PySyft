@@ -284,7 +284,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 else:
                     # Private/Public and Private/Private are handled by the underlying SEPT self.child objects.
                     new_list.append(self.child[i] + other.child[i])
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            if len(new_list) != 1:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return new_list[0]
+
         else:
             # Broadcasting is possible, but we're skipping that for now.
             raise Exception(
@@ -583,6 +587,16 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             output_max_vals = output_max_vals + max_vals
             output_entities.append(sept.entity)
             scalar_manager.combine_(sept.scalar_manager)
+        # NOTE: for some reason the for loop based version of this is 10% faster
+        # result_tensor =  reduce(list_sum, final_lst)
+
+        # import sys
+        #result_tensor = final_lst[0]
+        #for i in range(len(final_lst) - 1):
+        #     sys.stdout.write(str(i) + " ")
+        #     sys.stdout.write(str(type(result_tensor)) + " " + str(type(final_lst[i+1])))
+        #     print()
+        #    result_tensor = result_tensor + final_lst[i+1]
 
         return InitialGammaTensor(
             values=output_values,

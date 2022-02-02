@@ -762,7 +762,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
             if self.entity.name != other.entity.name:
-                return convert_to_gamma_tensor(self) + convert_to_gamma_tensor(other)
+                left = convert_to_gamma_tensor(self)
+                right = convert_to_gamma_tensor(other)
+                return left + right
 
             data = self.child + other.child
             min_vals = self.min_vals + other.min_vals
@@ -795,6 +797,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         elif isinstance(other, IntermediateGammaTensor):
             return convert_to_gamma_tensor(self) + other
         else:
+            print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
     def __neg__(self) -> SingleEntityPhiTensor:

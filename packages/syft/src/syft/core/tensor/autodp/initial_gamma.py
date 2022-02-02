@@ -66,7 +66,11 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             self.values = values
 
         self.min_vals = min_vals
+        self._min_vals_cache = min_vals
+
         self.max_vals = max_vals
+        self._max_vals_cache = max_vals
+
         self.entities = entities
         if scalar_manager is None:
             self.scalar_manager = VirtualMachinePrivateScalarManager()
@@ -93,7 +97,7 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             )
             some_symbols.append(prime)
 
-        term_tensor = np.array(some_symbols).reshape(list(self.values.shape) + [1])
+        term_tensor = np.array(some_symbols).reshape(list(self.values.shape) + [1]).astype(np.int32)
         coeff_tensor = (term_tensor * 0) + 1
         bias_tensor = self.values * 0
 
@@ -102,4 +106,7 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
+            unique_entities=set(entities)
         )
+
+
