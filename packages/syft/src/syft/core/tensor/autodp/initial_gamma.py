@@ -65,7 +65,11 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             self.values = values
 
         self.min_vals = min_vals
+        self._min_vals_cache = min_vals
+
         self.max_vals = max_vals
+        self._max_vals_cache = max_vals
+
         self.entities = entities
         if scalar_manager is None:
             self.scalar_manager = VirtualMachinePrivateScalarManager()
@@ -101,4 +105,7 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
+            unique_entities=set(entities)
         )
+
+

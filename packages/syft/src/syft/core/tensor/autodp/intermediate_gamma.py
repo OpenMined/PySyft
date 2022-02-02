@@ -9,6 +9,7 @@ from typing import Optional
 from typing import Sequence
 from typing import Tuple
 from typing import Union
+from typing import Set
 
 # third party
 from nacl.signing import VerifyKey
@@ -59,6 +60,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # min_vals: np.ndarray,
         # max_vals: np.ndarray,
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
+        unique_entities: Optional[Set[Entity]] = set()
     ) -> None:
         super().__init__(term_tensor)
 
@@ -87,25 +89,33 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
         self.scalar_manager = scalar_manager
 
-        # Unique entities
-        self.unique_entities: set[Entity] = set()
-        self.n_entities = 0
+        if not hasattr(self, '_min_vals_cache'):
+            self._min_vals_cache = None
+        if not hasattr(self, '_max_vals_cache'):
+            self._max_vals_cache = None
 
-        for entity in set(self._entities_list()):
-            if isinstance(entity, Entity):
-                if entity not in self.unique_entities:
-                    self.unique_entities.add(entity)
-                    self.n_entities += 1
-            elif isinstance(entity, DataSubjectGroup):
-                for e in entity.entity_set:
-                    if e not in self.unique_entities:
-                        self.unique_entities.add(e)
+        self.unique_entities: set[Entity] = unique_entities
+        self.n_entities:int = len(self.unique_entities)
+
+        if self.n_entities == 0:
+            # Unique entities
+
+            for entity in set(self._entities_list()):
+                if isinstance(entity, Entity):
+                    if entity not in self.unique_entities:
+                        self.unique_entities.add(entity)
                         self.n_entities += 1
-            else:
-                raise Exception(f"{type(entity)}")
+                elif isinstance(entity, DataSubjectGroup):
+                    for e in entity.entity_set:
+                        if e not in self.unique_entities:
+                            self.unique_entities.add(e)
+                            self.n_entities += 1
+                else:
+                    raise Exception(f"{type(entity)}")
 
     @property
     def flat_scalars(self) -> List[Any]:
+        print(asdf)
         flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
         flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
         flattened_bias = self.bias_tensor.reshape(-1)
@@ -148,6 +158,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
+        if self._max_vals_cache is not None:
+            return self._max_vals_cache
+
         return np.array(list(map(lambda x: x.max_val, self.flat_scalars))).reshape(
             self.shape
         )
@@ -156,6 +169,10 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
+
+        if self._min_vals_cache is not None:
+            return self._min_vals_cache
+
         return np.array(list(map(lambda x: x.min_val, self.flat_scalars))).reshape(
             self.shape
         )
@@ -212,6 +229,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             coeff_tensor=self.coeff_tensor.astype(np_type),
             bias_tensor=self.bias_tensor.astype(np_type),
             scalar_manager=self.scalar_manager,
+            unique_entities=self.unique_entities
         )
 
     def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
@@ -525,7 +543,12 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             # EXPLAIN B: this is a 5x10
             bias_tensor = self.bias_tensor + other
 
+            max_vals_cache = self._max_values() + other
+            min_vals_cache = self._min_values() + other
+            unique_entities = self.unique_entities
+
         else:
+
             # relative
             from .dp_tensor_converter import convert_to_gamma_tensor
             from .single_entity_phi import SingleEntityPhiTensor
@@ -546,14 +569,30 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             )
             bias_tensor = self.bias_tensor + other.bias_tensor
 
+            max_vals_cache = self._max_values() + other._max_values()
+            min_vals_cache = self._min_values() + other._min_values()
+
+            if hasattr(other, "unique_entities"):
+                unique_entities = self.unique_entities.union(other.unique_entities)
+            else:
+                # TODO: add support for SingleEntitiyPhiTensor
+                # this will cause it to generate them using a more computationally intensive
+                unique_entities = None
+
         # EXPLAIN B: NEW OUTPUT becomes a 5x10x2
         # TODO: Step 2: Reduce dimensionality if possible (look for duplicates)
-        return IntermediateGammaTensor(
+        result = IntermediateGammaTensor(
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
+            unique_entities=unique_entities
         )
+
+        result._min_vals_cache = min_vals_cache
+        result._max_vals_cache = max_vals_cache
+
+        return result
 
     # def clip(self, a_min:int, a_max: int) -> IntermediateGammaTensor:
     #     """Clips the tensor at a certain minimum and maximum. a_min and a_max are
