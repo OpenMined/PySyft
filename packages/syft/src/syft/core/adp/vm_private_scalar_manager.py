@@ -77,7 +77,7 @@ class VirtualMachinePrivateScalarManager:
             prime2symbol = {}
 
         self.prime2symbol = prime2symbol
-        self.hash_cache = None
+        self.hash_cache: Optional[int] = None
 
     def get_symbol(
         self,

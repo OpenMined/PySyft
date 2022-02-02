@@ -2097,7 +2097,7 @@ def test_pow(
         child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
     )
     pow_tensor = SEPT(
-        child=reference_data**rand_pow,
+        child=reference_data ** rand_pow,
         entity=ent,
         max_vals=upper_bound,
         min_vals=lower_bound,
