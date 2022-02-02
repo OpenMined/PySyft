@@ -8,8 +8,8 @@ from typing import Union
 import numpy as np
 
 # relative
-from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...adp.entity import DataSubjectGroup
+from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -93,11 +93,17 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
                 min_val=flat_min_vals[i],
                 value=flat_values[i],
                 max_val=flat_max_vals[i],
-                entity=flat_entities[i] if not isinstance(flat_entities, DataSubjectGroup) else flat_entities,
+                entity=flat_entities[i]
+                if not isinstance(flat_entities, DataSubjectGroup)
+                else flat_entities,
             )
             some_symbols.append(prime)
 
-        term_tensor = np.array(some_symbols).reshape(list(self.values.shape) + [1]).astype(np.int32)
+        term_tensor = (
+            np.array(some_symbols)
+            .reshape(list(self.values.shape) + [1])
+            .astype(np.int32)
+        )
         coeff_tensor = (term_tensor * 0) + 1
         bias_tensor = self.values * 0
 
@@ -111,7 +117,5 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
-            unique_entities=unique_entities
+            unique_entities=unique_entities,
         )
-
-

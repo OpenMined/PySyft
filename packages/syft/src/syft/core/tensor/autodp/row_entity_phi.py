@@ -3,7 +3,8 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-from functools import reduce
+
+# from functools import reduce
 import multiprocessing as mp
 from typing import Any
 from typing import Dict
@@ -569,7 +570,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # TODO: Check if this works if the number of dimensions/axes are passed as args/kwargs
 
         # pre-initialize result
-        target_shape = self.child[0].shape
+        # target_shape = self.child[0].shape
 
         output_values = 0
         output_min_vals = 0
@@ -591,8 +592,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # result_tensor =  reduce(list_sum, final_lst)
 
         # import sys
-        #result_tensor = final_lst[0]
-        #for i in range(len(final_lst) - 1):
+        # result_tensor = final_lst[0]
+        # for i in range(len(final_lst) - 1):
         #     sys.stdout.write(str(i) + " ")
         #     sys.stdout.write(str(type(result_tensor)) + " " + str(type(final_lst[i+1])))
         #     print()
@@ -604,7 +605,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             max_vals=output_max_vals,
             entities=output_entities,
             scalar_manager=scalar_manager,
-    )
+        )
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:

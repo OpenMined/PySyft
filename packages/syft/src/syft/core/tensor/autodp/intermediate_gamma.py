@@ -7,9 +7,9 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Set
 from typing import Tuple
 from typing import Union
-from typing import Set
 
 # third party
 from nacl.signing import VerifyKey
@@ -60,7 +60,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # min_vals: np.ndarray,
         # max_vals: np.ndarray,
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
-        unique_entities: Optional[Set[Entity]] = set()
+        unique_entities: Optional[Set[Entity]] = set(),
     ) -> None:
         super().__init__(term_tensor)
 
@@ -89,13 +89,13 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
         self.scalar_manager = scalar_manager
 
-        if not hasattr(self, '_min_vals_cache'):
+        if not hasattr(self, "_min_vals_cache"):
             self._min_vals_cache = None
-        if not hasattr(self, '_max_vals_cache'):
+        if not hasattr(self, "_max_vals_cache"):
             self._max_vals_cache = None
 
         self.unique_entities: set[Entity] = unique_entities
-        self.n_entities:int = len(self.unique_entities)
+        self.n_entities: int = len(self.unique_entities)
 
         if self.n_entities == 0:
             # Unique entities
@@ -229,7 +229,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             coeff_tensor=self.coeff_tensor.astype(np_type),
             bias_tensor=self.bias_tensor.astype(np_type),
             scalar_manager=self.scalar_manager,
-            unique_entities=self.unique_entities
+            unique_entities=self.unique_entities,
         )
 
     def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
@@ -586,7 +586,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager.copy(),
-            unique_entities=unique_entities
+            unique_entities=unique_entities,
         )
 
         result._min_vals_cache = min_vals_cache

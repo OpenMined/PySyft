@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from copy import deepcopy
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -21,7 +22,7 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 from .entity import Entity
 from .scalar.gamma_scalar import GammaScalar
-from copy import deepcopy
+
 
 @serializable()
 class PrimeFactory:
@@ -107,12 +108,12 @@ class VirtualMachinePrivateScalarManager:
                 and self.prime2symbol == other.prime2symbol
             )
         return self == other
-    
+
     @property
     def primes_allocated(self) -> list:
         return list(self.prime2symbol.keys())
 
-    def copy(self):
+    def copy(self) -> VirtualMachinePrivateScalarManager:
         return deepcopy(self)
 
     def _object2proto(self) -> VirtualMachinePrivateScalarManager_PB:
@@ -133,14 +134,13 @@ class VirtualMachinePrivateScalarManager:
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return VirtualMachinePrivateScalarManager_PB
-    
-    
-    def combine_(self, vsm2) -> VirtualMachinePrivateScalarManager:
+
+    def combine_(self, vsm2: VirtualMachinePrivateScalarManager) -> None:
         """
         Combine two ScalarManagers by merging their prime factories.
         ASSUME: vsm1 is the source of truth; we won't be changing its prime numbers
         """
-        
+
         for prime_number, gs in vsm2.prime2symbol.items():
             if prime_number in self.prime2symbol:  # If there's a collision
                 new_prime = self.prime_factory.next()
@@ -148,8 +148,3 @@ class VirtualMachinePrivateScalarManager:
                 self.prime2symbol[new_prime] = gs
             else:
                 self.prime2symbol[gs.prime] = gs
-        
-        
-        
-        
-        
