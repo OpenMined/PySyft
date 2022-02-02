@@ -78,6 +78,33 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         # left and right have the same keys
         return {k: left[k] for k in intersection}
 
+    @staticmethod
+    def union_of_keys(
+        left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
+    ) -> Dict[VerifyKey, UID]:
+        """Get the union of the dict keys.
+
+        The value in the dict is the request_id, if the request_id
+        is different for some reason we still want to keep it,
+
+        Args:
+            left (Dict[VerifyKey, UID]): verify keys of one object
+            right (Dict[VerifyKey, UID]): verify keys of another object
+
+        Returns:
+            Dict[VerifyKey, UID]: union of the two dictionaries
+        """
+
+        union_keys = set(left.keys()).union(right.keys())
+
+        result = dict()
+        for k in union_keys:
+            if k in left:
+                result[k] = left[k]
+            else:
+                result[k] = right[k]
+        return result
+
     @property
     def pprint(self) -> str:
         return f"RunClassMethodAction({self.path})"
@@ -123,7 +150,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
             )
-            result_write_permissions = self.intersect_keys(
+            result_write_permissions = self.union_of_keys(
                 result_write_permissions, r_arg.write_permissions
             )
             resolved_args.append(r_arg.data)  # type: ignore
@@ -136,7 +163,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions  # type: ignore
             )
-            result_write_permissions = self.intersect_keys(
+            result_write_permissions = self.union_of_keys(
                 result_write_permissions, r_arg.write_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data  # type: ignore

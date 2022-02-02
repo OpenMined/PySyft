@@ -27,14 +27,11 @@ def test_steal_data_through_mutation(
     assert bag[0] == 1
 
     # and then mutate it with someone elses secret data
+    # stdlib
     list_obj_ptr.append(secret_ptr)
 
-    # TODO: Check if this is the behavior we want
-    # i.e. raise an Exception or append operation fails.
-    # with pytest.raises(Exception):
-    #     _ = list_obj_ptr.get()
-    result = list_obj_ptr.get()
-    assert result == [1]
+    with pytest.raises(Exception):
+        _ = list_obj_ptr.get()
 
     # before fix this was possible
     # see run_class_method_action.py: 235
