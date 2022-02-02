@@ -2,6 +2,7 @@
 from datetime import datetime
 from pathlib import Path
 import time
+from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
@@ -59,6 +60,10 @@ def upload_subset(
         min_val=0, max_val=30, entities=entities
     )
 
+    print("tweets_data serde_concurrency default", tweets_data.child.serde_concurrency)
+    tweets_data.child.serde_concurrency = 1
+    print("tweets_data serde_concurrency", tweets_data.child.serde_concurrency)
+
     # blocking
     domain.load_dataset(
         assets={f"{size_name}_tweets": tweets_data},
@@ -107,7 +112,7 @@ def time_upload(
 
 def time_sum(
     domain: Domain, chunk_indexes: List[int], size_name: str, timeout: int = 999
-) -> float:
+) -> Tuple[float, Any]:
     start_time = time.time()
 
     res = None
@@ -122,7 +127,7 @@ def time_sum(
     # make sure to block
     res.block_with_timeout(timeout)
 
-    return time.time() - start_time
+    return time.time() - start_time, res
 
 
 def get_all_chunks(domain: Domain, unique_key: str) -> List[int]:
@@ -152,6 +157,7 @@ def test_benchmark_datasets() -> None:
 
     benchmark_report = {}
     for size_name in ordered_sizes:
+        timeout = 999
         unique_key = str(hash(time.time()))
         benchmark_report[size_name] = {}
         df = pd.read_parquet(files[size_name])
@@ -166,10 +172,20 @@ def test_benchmark_datasets() -> None:
         benchmark_report[size_name]["upload_secs"] = upload_time
         all_chunks = get_all_chunks(domain=domain, unique_key=unique_key)
         with tracer.start_as_current_span("sum"):
-            sum_time = time_sum(
-                domain=domain, chunk_indexes=all_chunks, size_name=size_name
+            sum_time, sum_ptr = time_sum(
+                domain=domain,
+                chunk_indexes=all_chunks,
+                size_name=size_name,
+                timeout=timeout,
             )
         benchmark_report[size_name]["sum_secs"] = sum_time
+
+        with tracer.start_as_current_span("publish"):
+            publish_ptr = sum_ptr.publish(sigma=0.5)
+            publish_ptr.block_with_timeout(timeout)
+            result = publish_ptr.get(delete_obj=False)
+            print("result", result)
+
         break
 
     print(benchmark_report)
