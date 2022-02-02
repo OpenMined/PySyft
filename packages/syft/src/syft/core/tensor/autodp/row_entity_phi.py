@@ -26,7 +26,7 @@ from ....proto.core.adp.phi_tensor_pb2 import (
 )
 from ....util import parallel_execution
 from ...adp.vm_private_scalar_manager import (
-    VirtualMachinePrivateScalarManager as TypeScalarManager,
+    VirtualMachinePrivateScalarManager,
 )
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
@@ -128,7 +128,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 raise Exception(f"{type(entity)}")
 
     @property
-    def scalar_manager(self) -> TypeScalarManager:
+    def scalar_manager(self) -> VirtualMachinePrivateScalarManager:
         return self.child[0].scalar_manager
 
     @property
@@ -211,7 +211,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def create_gamma(
-        self, scalar_manager: Optional[TypeScalarManager] = None
+        self, scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None
     ) -> InitialGammaTensor:
 
         if scalar_manager is None:
@@ -576,7 +576,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         output_min_vals = 0
         output_max_vals = 0
         output_entities = []
-        scalar_manager = TypeScalarManager()
+        scalar_manager = VirtualMachinePrivateScalarManager()
 
         for sept in self.child:
             value = sept.sum()
@@ -995,7 +995,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         row_entity_index = []
 
         scalar_manager_list = []
-        scalar_manager_dict_index: Dict[TypeScalarManager, int] = {}
+        scalar_manager_dict_index: Dict[VirtualMachinePrivateScalarManager, int] = {}
         row_scalar_manager_index = []
 
         for i in self.child:

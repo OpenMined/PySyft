@@ -22,7 +22,7 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 from .entity import Entity
 from .scalar.gamma_scalar import GammaScalar
-
+from ...logger import warning
 
 @serializable()
 class PrimeFactory:
@@ -66,11 +66,16 @@ class VirtualMachinePrivateScalarManager:
     def __init__(
         self,
         prime_factory: Optional[PrimeFactory] = None,
-        prime2symbol: Dict[Any, Any] = {},
+        prime2symbol: Optional[Dict[Any, Any]] = None,
     ) -> None:
+
         self.prime_factory = (
             prime_factory if prime_factory is not None else PrimeFactory()
         )
+
+        if prime2symbol is None:
+            prime2symbol = {}
+
         self.prime2symbol = prime2symbol
         self.hash_cache = None
 
@@ -141,10 +146,16 @@ class VirtualMachinePrivateScalarManager:
         ASSUME: vsm1 is the source of truth; we won't be changing its prime numbers
         """
 
-        for prime_number, gs in vsm2.prime2symbol.items():
-            if prime_number in self.prime2symbol:  # If there's a collision
-                new_prime = self.prime_factory.next()
-                gs.prime = new_prime
-                self.prime2symbol[new_prime] = gs
-            else:
-                self.prime2symbol[gs.prime] = gs
+        if id(self.prime2symbol) != id(vsm2.prime2symbol):
+
+            for prime_number, gs in vsm2.prime2symbol.items():
+                if prime_number in self.prime2symbol:  # If there's a collision
+                    new_prime = self.prime_factory.next()
+                    gs.prime = new_prime
+                    self.prime2symbol[new_prime] = gs
+                else:
+                    self.prime2symbol[gs.prime] = gs
+        else:
+            warning("Detected prime2symbol where two tensors were using the same dict")
+
+
