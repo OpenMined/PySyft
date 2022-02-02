@@ -60,7 +60,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # min_vals: np.ndarray,
         # max_vals: np.ndarray,
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
-        unique_entities: Optional[Set[Entity]] = set(),
+        unique_entities: Set[Entity] = set(),
     ) -> None:
         super().__init__(term_tensor)
 

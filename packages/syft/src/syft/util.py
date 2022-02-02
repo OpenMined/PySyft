@@ -472,7 +472,7 @@ _tracer = None
 
 def get_tracer(service_name: Optional[str] = None) -> Any:
     global _tracer
-    if _tracer is not None:
+    if _tracer is not None:  # type: ignore
         return _tracer
 
     PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))

@@ -92,7 +92,7 @@ class VirtualMachinePrivateScalarManager:
             prime=self.prime_factory.next(),
         )
         self.prime2symbol[gs.prime] = gs
-        self.hash_cache = None
+        self.hash_cache: Optional[int] = None
         return gs.prime
 
     def __hash__(self) -> int:
