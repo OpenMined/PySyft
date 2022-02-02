@@ -284,7 +284,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 else:
                     # Private/Public and Private/Private are handled by the underlying SEPT self.child objects.
                     new_list.append(self.child[i] + other.child[i])
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            if len(new_list) != 1:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return new_list[0]
+
         else:
             # Broadcasting is possible, but we're skipping that for now.
             raise Exception(
@@ -586,7 +590,15 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         for i in split_lst:
             final_lst.append(reduce(list_sum, i))
 
-        result_tensor = reduce(list_sum, final_lst)
+        # result_tensor =  reduce(list_sum, final_lst)
+        import sys
+        result_tensor = final_lst[0]
+        print("Beginning final sum:")
+        for i in range(len(final_lst) - 1):
+            sys.stdout.write(str(i) + " ")
+            sys.stdout.write(str(type(result_tensor)) + " " + str(type(final_lst[i+1])))
+            print()
+            result_tensor = final_lst[i+1] + result_tensor
 
         return result_tensor.astype(self.dtype)
 

@@ -92,7 +92,7 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             )
             some_symbols.append(prime)
 
-        term_tensor = np.array(some_symbols).reshape(list(self.values.shape) + [1])
+        term_tensor = np.array(some_symbols).reshape(list(self.values.shape) + [1]).astype(np.int32)
         coeff_tensor = (term_tensor * 0) + 1
         bias_tensor = self.values * 0
 
