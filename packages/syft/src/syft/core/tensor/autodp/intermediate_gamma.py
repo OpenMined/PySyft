@@ -115,7 +115,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
     @property
     def flat_scalars(self) -> List[Any]:
-        print(asdf)
+
         flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
         flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
         flattened_bias = self.bias_tensor.reshape(-1)

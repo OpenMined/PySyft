@@ -70,7 +70,6 @@ class VirtualMachinePrivateScalarManager:
         self.prime_factory = (
             prime_factory if prime_factory is not None else PrimeFactory()
         )
-        print(prime2symbol)
         self.prime2symbol = prime2symbol
         self.hash_cache = None
 
