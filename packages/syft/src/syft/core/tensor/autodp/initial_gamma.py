@@ -101,12 +101,17 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
         coeff_tensor = (term_tensor * 0) + 1
         bias_tensor = self.values * 0
 
+        if isinstance(entities, np.ndarray):
+            unique_entities = set(list(entities.flatten()))
+        else:
+            unique_entities = set(entities)
+
         super().__init__(
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
-            unique_entities=set(entities)
+            unique_entities=unique_entities
         )
 
 
