@@ -1,7 +1,6 @@
 # stdlib
 import re
 from typing import Any
-from typing import Union
 
 # third party
 from google.protobuf.message import Message
@@ -10,6 +9,7 @@ from google.protobuf.message import Message
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
+from .types import Deserializeable
 
 
 # WARNING: This code has more 🐉 Dragons than a game of D&D 🗡🧙🎲
@@ -17,7 +17,7 @@ from ....util import index_syft_by_module_name
 # enter at your own peril...
 # seriously, get some 🧪 HP Potions and 📜 TP Scrolls ready...
 def _deserialize(
-    blob: Union[str, dict, bytes, Message],
+    blob: Deserializeable,
     from_proto: bool = True,
     from_bytes: bool = False,
 ) -> Any:

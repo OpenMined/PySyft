@@ -17,21 +17,20 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import numpy.typing as npt
 
-# syft absolute
-from syft.util import parallel_execution
-
 # relative
 from ....core.adp.entity import DataSubjectGroup as DSG
 from ....core.adp.entity import Entity
 from ....proto.core.adp.phi_tensor_pb2 import (
     RowEntityPhiTensor as RowEntityPhiTensor_PB,
 )
+from ....util import parallel_execution
 from ...adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as TypeScalarManager,
 )
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
+from ...common.serde.types import Deserializeable
 from ..broadcastable import is_broadcastable
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -43,17 +42,18 @@ from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
 
 
-def row_serialize(*rows: List) -> List:
+def row_serialize(rows: List[Any]) -> List[Deserializeable]:
     return [serialize(row, to_bytes=True) for row in rows]
 
 
-def row_deserialize(*rows: List) -> List:
+def row_deserialize(rows: List[Deserializeable]) -> List[Any]:
     output = []
     for row in rows:
         output.append(deserialize(row, from_bytes=True))
     return output
 
-def split_rows(rows: List) -> List:
+
+def split_rows(rows: Sequence) -> List:
     cpu_count = mp.cpu_count()
     n = len(rows)
     a, b = divmod(n, cpu_count)

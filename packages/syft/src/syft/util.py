@@ -1,12 +1,12 @@
 # stdlib
-
 import asyncio
+from asyncio.selector_events import BaseSelectorEventLoop
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
 import functools
 from itertools import repeat
 import operator
-from contextlib import contextmanager
 import os
 from pathlib import Path
 from secrets import randbelow
@@ -15,6 +15,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
@@ -525,7 +526,7 @@ def parallel_execution(
         Callable[..., List[Any]]: A Callable that returns a list of results.
     """
 
-    def initializer(event_loop) -> None:
+    def initializer(event_loop: BaseSelectorEventLoop) -> None:
         """Set the same event loop to other threads/processes.
         This is needed because there are new threads/processes started with
         the Executor and they do not have have an event loop set
@@ -546,7 +547,11 @@ def parallel_execution(
         Returns:
             List[Any]: Results from the parties
         """
-        executor: Union[Type[ProcessPoolExecutor], Type[ThreadPoolExecutor]]
+        if args is None or len(args) == 0:
+            raise Exception("Parallel execution requires more than 0 args")
+
+        # _base.Executor
+        executor: Type
         if cpu_bound:
             executor = ProcessPoolExecutor
         else:
@@ -554,9 +559,6 @@ def parallel_execution(
 
         # Each party has a list of args and a dictionary of kwargs
         nr_parties = len(args)
-
-        if args is None:
-            args = [[] for i in range(nr_parties)]
 
         if kwargs is None:
             kwargs = {}
