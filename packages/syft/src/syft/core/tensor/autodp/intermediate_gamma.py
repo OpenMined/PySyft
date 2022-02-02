@@ -585,7 +585,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
-            scalar_manager=self.scalar_manager,
+            scalar_manager=self.scalar_manager.copy(),
             unique_entities=unique_entities
         )
 

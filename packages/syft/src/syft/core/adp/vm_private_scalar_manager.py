@@ -21,7 +21,7 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 from .entity import Entity
 from .scalar.gamma_scalar import GammaScalar
-
+from copy import deepcopy
 
 @serializable()
 class PrimeFactory:
@@ -71,6 +71,7 @@ class VirtualMachinePrivateScalarManager:
             prime_factory if prime_factory is not None else PrimeFactory()
         )
         self.prime2symbol = prime2symbol
+        self.hash_cache = None
 
     def get_symbol(
         self,
@@ -79,6 +80,9 @@ class VirtualMachinePrivateScalarManager:
         max_val: Union[bool, int, float],
         entity: Entity,
     ) -> int:
+        # NOTE: this is overly conservative because it always creates a new scalar even when
+        # a computationally equivalent one might exist somewhere already.
+
         gs = GammaScalar(
             min_val=min_val,
             value=value,
@@ -87,11 +91,14 @@ class VirtualMachinePrivateScalarManager:
             prime=self.prime_factory.next(),
         )
         self.prime2symbol[gs.prime] = gs
+        self.hash_cache = None
         return gs.prime
 
     def __hash__(self) -> int:
-        prime2symbol = frozenset(self.prime2symbol.items())
-        return hash(self.prime_factory.prev_prime) + hash(prime2symbol)
+        if self.hash_cache is None:
+            prime2symbol = frozenset(self.prime2symbol.items())
+            self.hash_cache = hash(self.prime_factory.prev_prime) + hash(prime2symbol)
+        return self.hash_cache
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, VirtualMachinePrivateScalarManager):
@@ -100,6 +107,9 @@ class VirtualMachinePrivateScalarManager:
                 and self.prime2symbol == other.prime2symbol
             )
         return self == other
+
+    def copy(self):
+        return deepcopy(self)
 
     def _object2proto(self) -> VirtualMachinePrivateScalarManager_PB:
         return VirtualMachinePrivateScalarManager_PB(
