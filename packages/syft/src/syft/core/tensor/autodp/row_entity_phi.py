@@ -91,6 +91,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         self.child: Sequence
         super().__init__(rows)
 
+        self.serde_concurrency: int = 0
         # include this check because it's expensive to check and sometimes we can skip it when
         # we already know the rows are identically shaped.
         if check_shape:
@@ -1007,15 +1008,29 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         if len(row_scalar_manager_index) != len(self.child):
             raise Exception("Length of scalar manager index must match row length")
 
-        cpu_count = mp.cpu_count()
-        cpu_bound = True
-        args = split_rows(self.child, cpu_count=cpu_count)
-        rows = parallel_execution(row_serialize, cpu_bound=cpu_bound)(args)
-        output_rows = []
-        for row in rows:
-            output_rows.extend(row)
+        if self.serde_concurrency > 0:
+            # serde_concurrency == 0 means off
+            # serde_concurrency == 1 means auto detect cpu count
+            # serde_concurrency >= 2 means manually set process count
+            cpu_count = (
+                self.serde_concurrency if self.serde_concurrency > 1 else mp.cpu_count()
+            )
+            print(
+                "Serializing with proto.serde_concurrency == ",
+                self.serde_concurrency,
+                "cpu_count",
+                cpu_count,
+            )
+            args = split_rows(self.child, cpu_count=cpu_count)
+            rows = parallel_execution(row_serialize, cpu_bound=bool(cpu_count))(args)
+            output_rows = []
+            for row in rows:
+                output_rows.extend(row)
+        else:
+            output_rows = [serialize(row, to_bytes=True) for row in self.child]
 
         rept_pb = RowEntityPhiTensor_PB(
+            serde_concurrency=int(self.serde_concurrency),
             rows=output_rows,
             unique_entities=[serialize(x) for x in entity_list],
             unique_scalar_managers=[serialize(x) for x in scalar_manager_list],
@@ -1037,13 +1052,28 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         row_entity_index = deserialize(proto.row_entity_index)
         row_scalar_manager_index = deserialize(proto.row_scalar_manager_index)
 
-        cpu_count = mp.cpu_count()
-        cpu_bound = True
-        args = split_rows(proto.rows, cpu_count=cpu_count)
-        rows = parallel_execution(row_deserialize, cpu_bound=cpu_bound)(args)
-        output_rows = []
-        for row in rows:
-            output_rows.extend(row)
+        if proto.serde_concurrency > 0:
+            # serde_concurrency == 0 means off
+            # serde_concurrency == 1 means auto detect cpu count
+            # serde_concurrency >= 2 means manually set process count
+            cpu_count = (
+                proto.serde_concurrency
+                if proto.serde_concurrency > 1
+                else mp.cpu_count()
+            )
+            print(
+                "Serializing with proto.serde_concurrency == ",
+                proto.serde_concurrency,
+                "cpu_count",
+                cpu_count,
+            )
+            args = split_rows(proto.rows, cpu_count)
+            rows = parallel_execution(row_deserialize, cpu_bound=bool(cpu_count))(args)
+            output_rows = []
+            for row in rows:
+                output_rows.extend(row)
+        else:
+            output_rows = [deserialize(row, from_bytes=True) for row in proto.rows]
 
         rows = []
         for i, row in enumerate(output_rows):
@@ -1058,7 +1088,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
             rows.append(row)
 
-        return RowEntityPhiTensor(rows=rows)
+        rept = RowEntityPhiTensor(rows=rows)
+        rept.serde_concurrency = proto.serde_concurrency
+        return rept
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

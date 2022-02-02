@@ -136,6 +136,9 @@ def test_rept_child() -> None:
     rept_rows = [sept.copy() for i in range(rept_row_count)]
 
     rept = REPT(rows=rept_rows)
+    print("default serde_concurrency", rept.serde_concurrency)
+    # rept.serde_concurrency = 1
+    print("using serde_concurrency", rept.serde_concurrency)
 
     start = timeit.default_timer()
     ser = sy.serialize(rept, to_bytes=True)
