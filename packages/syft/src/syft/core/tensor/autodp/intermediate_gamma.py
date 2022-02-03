@@ -154,7 +154,10 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             # know that all single_poly_terms are prime therefore the query is linear
             scalar.is_linear = True
             if j in single_poly_terms:
-                if single_poly_terms[j] not in known_primes:
+                if (
+                    single_poly_terms[j] not in known_primes
+                    or single_poly_coeffs[j] != 1
+                ):
                     scalar.is_linear = False
                     break
 

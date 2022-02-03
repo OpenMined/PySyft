@@ -198,6 +198,9 @@ def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
         if getattr(i, "is_linear", None) is not True:
             can_skip = False
             break
+    if can_skip:
+        return 1.0
+
     result: Union[float, optimize.OptimizeResult] = max_lipschitz_via_jacobian(
         scalars, input_entity=entity
     )[0][-1]
