@@ -158,6 +158,7 @@ def get_mechanism_for_entity(
 
     if isinstance(entity, DataSubjectGroup):
         mechanisms = []
+
         for e in entity.entity_set:
             mechanisms.append(
                 (
