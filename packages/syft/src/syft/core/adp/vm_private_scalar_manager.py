@@ -10,6 +10,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from primesieve.numpy import primes
 import sympy as sp
 
 # relative
@@ -18,6 +19,7 @@ from ...proto.core.adp.scalar_manager_pb2 import (
     VirtualMachinePrivateScalarManager as VirtualMachinePrivateScalarManager_PB,
 )
 from ...proto.core.adp.scalar_manager_pb2 import PrimeFactory as PrimeFactory_PB
+from ..common.decorators import singleton
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
@@ -36,26 +38,30 @@ class PrimeFactory:
     security leaks wherein two tensors think two different symbols in fact are the
     same symbol."""
 
-    def __init__(self, prime: int = 1) -> None:
-        self.prev_prime = prime
+    def __init__(self, prime_index: int = 0, init_highest_prime=15485867) -> None:
+        self.prev_prime_index = prime_index
+        self.exp = 8
+        self.prime_numbers: list = primes(10**self.exp)
 
-    def next(self) -> int:
-        self.prev_prime = sp.nextprime(self.prev_prime)
-        return self.prev_prime
+    def get(self, index) -> int:
+        while index > len(self.prime_numbers):
+            self.exp += 1
+            self.prime_numbers = primes(10**self.exp)
+        return self.prime_numbers[index]
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, PrimeFactory):
-            return self.prev_prime == other.prev_prime
+            return self.prev_prime_index == other.prev_prime_index
         return self == other
 
     def _object2proto(self) -> PrimeFactory_PB:
-        return PrimeFactory_PB(prime=self.prev_prime)
+        return PrimeFactory_PB(prime=self.prev_prime_index)
 
     @staticmethod
     def _proto2object(
         proto: PrimeFactory_PB,
     ) -> PrimeFactory:
-        return PrimeFactory(prime=proto.prime)
+        return PrimeFactory()
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -70,15 +76,14 @@ class VirtualMachinePrivateScalarManager:
         prime2symbol: Optional[Dict[Any, Any]] = None,
     ) -> None:
 
-        self.prime_factory = (
-            prime_factory if prime_factory is not None else PrimeFactory()
-        )
+        self.prime_factory = PrimeFactory()
 
         if prime2symbol is None:
             prime2symbol = {}
 
         self.prime2symbol = prime2symbol
         self.hash_cache: Optional[int] = None
+        self.index = 0
 
     def get_symbol(
         self,
@@ -95,16 +100,20 @@ class VirtualMachinePrivateScalarManager:
             value=value,
             max_val=max_val,
             entity=entity,
-            prime=self.prime_factory.next(),
+            prime=self.prime_factory.get(self.index),
         )
+        print("Initializing GM:")
         self.prime2symbol[gs.prime] = gs
         self.hash_cache = None
+        self.index += 1
         return gs.prime
 
     def __hash__(self) -> int:
         if self.hash_cache is None:
             prime2symbol = frozenset(self.prime2symbol.items())
-            self.hash_cache = hash(self.prime_factory.prev_prime) + hash(prime2symbol)
+            self.hash_cache = hash(self.prime_factory.prev_prime_index) + hash(
+                prime2symbol
+            )
         return self.hash_cache
 
     def __eq__(self, other: Any) -> bool:
