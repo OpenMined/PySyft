@@ -59,8 +59,8 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         bias_tensor: np.ndarray,
         # min_vals: np.ndarray,
         # max_vals: np.ndarray,
-        scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
-        unique_entities: Set[Entity] = set(),
+        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
+        unique_entities: Optional[Set[Entity]] = None,
     ) -> None:
         super().__init__(term_tensor)
 
@@ -87,14 +87,14 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # EXPLAIN B: this is a 5x10
         # self.max_vals = max_vals
 
-        self.scalar_manager = scalar_manager
+        self.scalar_manager = scalar_manager if scalar_manager is not None else VirtualMachinePrivateScalarManager()
 
         if not hasattr(self, "_min_vals_cache"):
             self._min_vals_cache = None
         if not hasattr(self, "_max_vals_cache"):
             self._max_vals_cache = None
 
-        self.unique_entities: set[Entity] = unique_entities
+        self.unique_entities: set[Entity] = unique_entities if unique_entities is not None else set()
         self.n_entities: int = len(self.unique_entities)
 
         if self.n_entities == 0:

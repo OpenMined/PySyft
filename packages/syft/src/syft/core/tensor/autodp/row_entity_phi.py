@@ -566,46 +566,56 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
-    def sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
+    def sum(self, *args: Any, **kwargs: Any) -> IGT:
         # TODO: Check if this works if the number of dimensions/axes are passed as args/kwargs
 
         # pre-initialize result
         # target_shape = self.child[0].shape
+        if len(args) > 0 or len(kwargs) > 0:
+            raise NotImplementedError
 
-        output_values = 0
-        output_min_vals = 0
-        output_max_vals = 0
-        output_entities = []
-        scalar_manager = VirtualMachinePrivateScalarManager()
+        flat_symbols = []
+        unique_entities = set()
+        for row in self.child:
+            if not isinstance(row, SingleEntityPhiTensor):
+                raise NotImplementedError
+            flat_child = row.child.flatten()
+            flat_min = row.min_vals.flatten()
+            flat_max = row.max_vals.flatten()
+            for i in range(len(flat_child)):
+                prime = self.scalar_manager.get_symbol(
+                    min_val=flat_min[i],
+                    value=flat_child[i],
+                    max_val=flat_max[i],
+                    entity=row.entity,
+                )
+                flat_symbols.append(prime)
+            unique_entities.add(row.entity)
 
-        for sept in self.child:
-            value = sept.sum()
-            min_vals = sept.min_vals.sum()
-            max_vals = sept.max_vals.sum()
-
-            output_values = output_values + value.child
-            output_min_vals = output_min_vals + min_vals
-            output_max_vals = output_max_vals + max_vals
-            output_entities.append(sept.entity)
-            scalar_manager.combine_(sept.scalar_manager)
-        # NOTE: for some reason the for loop based version of this is 10% faster
-        # result_tensor =  reduce(list_sum, final_lst)
-
-        # import sys
-        # result_tensor = final_lst[0]
-        # for i in range(len(final_lst) - 1):
-        #     sys.stdout.write(str(i) + " ")
-        #     sys.stdout.write(str(type(result_tensor)) + " " + str(type(final_lst[i+1])))
-        #     print()
-        #    result_tensor = result_tensor + final_lst[i+1]
-
-        return InitialGammaTensor(
-            values=output_values,
-            min_vals=output_min_vals,
-            max_vals=output_max_vals,
-            entities=output_entities,
-            scalar_manager=scalar_manager,
+        term_tensor = (
+            np.array(flat_symbols)
+            .reshape([1, len(flat_symbols)])
+            .astype(np.int32)
         )
+        coeff_tensor = np.ones_like(term_tensor)
+        bias_tensor = np.zeros((1,), dtype=np.int32)
+
+        return IGT(
+            term_tensor=term_tensor,
+            coeff_tensor=coeff_tensor,
+            bias_tensor=bias_tensor,
+            scalar_manager=self.scalar_manager,
+            unique_entities=unique_entities,
+        )
+
+
+
+
+
+
+
+
+
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:
