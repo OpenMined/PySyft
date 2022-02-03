@@ -571,7 +571,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         # pre-initialize result
         # target_shape = self.child[0].shape
-        if len(args) > 0 or len(kwargs) > 0:
+        if len(args) > 0 or kwargs.get('axis', None) is not None:
+            print(args)
+            print(kwargs)
             raise NotImplementedError
 
         flat_symbols = []
