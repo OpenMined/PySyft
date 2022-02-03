@@ -34,6 +34,7 @@ from .dataset_manager_messages import GetDatasetResponse
 from .dataset_manager_messages import GetDatasetsMessage
 from .dataset_manager_messages import GetDatasetsResponse
 from .dataset_manager_messages import UpdateDatasetMessage
+from syft.core.node.common import cache_obj
 
 ENCODING = "UTF-8"
 
@@ -108,6 +109,8 @@ def _handle_dataset_creation_syft(
             )
             with tracer.start_as_current_span("save to DB"):
                 node.store[storable.id] = storable
+            if id_at_location not in cache_obj:
+                cache_obj[id_at_location] = table
             node.datasets.add(
                 name=table_name,
                 dataset_id=str(dataset_id),
