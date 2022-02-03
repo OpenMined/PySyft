@@ -209,9 +209,9 @@ def time_sum(
         dataset = domain.datasets[chunk_index][f"{size_name}_tweets"]
         start_time = time.time()
         if res is None:
-            res = dataset.sum(axis=0)
+            res = dataset.sum()
         else:
-            res += dataset.sum(axis=0)
+            res += dataset.sum()
         total_time += time.time() - start_time
 
     # make sure to block
