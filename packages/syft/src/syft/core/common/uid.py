@@ -11,7 +11,26 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from ...logger import critical
 from ...logger import traceback_and_raise
 from ...proto.core.common.common_object_pb2 import UID as UID_PB
+from .decorators import singleton
 from .serde.serializable import serializable
+
+
+@singleton
+class UIDValueGenerator:
+    def __init__(self, n_uids=10000000) -> None:
+        self.uid_store: list[uuid_type] = []
+        self.__prepopulate(n_uids)
+
+    def __prepopulate(self, n_uids):
+        for _ in range(n_uids):
+            self.uid_store.append(uuid.uuid4())
+
+    def get_uid(self):
+        for uid in self.uid_store:
+            yield uid
+
+
+uuid_value_generator = UIDValueGenerator().get_uid()
 
 
 @serializable()
@@ -62,8 +81,7 @@ class UID:
 
             # for more info on how this UUID is generated:
             # https://docs.python.org/3/library/uuid.html
-            value = uuid.uuid4()
-
+            value = next(uuid_value_generator, uuid.uuid4())
         # save the ID's value. Note that this saves the uuid value
         # itself instead of saving the
         self.value = value
