@@ -7,6 +7,7 @@ from typing import Callable
 from typing import DefaultDict
 from typing import Dict
 from typing import List
+from typing import Optional
 
 
 class CryptoPrimitiveProvider:
@@ -22,11 +23,13 @@ class CryptoPrimitiveProvider:
     def generate_primitives(
         op_str: str,
         parties: List[Any],
-        g_kwargs: Dict[str, Any] = {},
-        p_kwargs: Dict[str, Any] = {},
+        g_kwargs: Optional[Dict[str, Any]] = None,
+        p_kwargs: Optional[Dict[str, Any]] = None,
         nr_instances: int = 1,
         ring_size: int = 2**32,
     ) -> List[Any]:
+        g_kwargs = g_kwargs if g_kwargs is not None else {}
+        p_kwargs = p_kwargs if p_kwargs is not None else {}
         """Generate "op_str" primitives.
 
         Args:

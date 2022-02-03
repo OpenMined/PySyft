@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import Optional
 from typing import Union
 
@@ -39,7 +38,6 @@ class Device(Node):
         device: SpecificLocation = SpecificLocation(),
         vm: Optional[Location] = None,
         device_type: Any = None,
-        vms: Dict[UID, VirtualMachine] = {},
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
     ):

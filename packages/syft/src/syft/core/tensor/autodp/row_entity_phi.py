@@ -25,9 +25,7 @@ from ....proto.core.adp.phi_tensor_pb2 import (
     RowEntityPhiTensor as RowEntityPhiTensor_PB,
 )
 from ....util import parallel_execution
-from ...adp.vm_private_scalar_manager import (
-    VirtualMachinePrivateScalarManager,
-)
+from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
@@ -571,7 +569,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         # pre-initialize result
         # target_shape = self.child[0].shape
-        if len(args) > 0 or kwargs.get('axis', None) is not None:
+        if len(args) > 0 or kwargs.get("axis", None) is not None:
             print(args)
             print(kwargs)
             raise NotImplementedError
@@ -600,9 +598,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             unique_entities.add(row.entity)
 
         term_tensor = (
-            np.array(flat_symbols)
-            .reshape([1, len(flat_symbols)])
-            .astype(np.int32)
+            np.array(flat_symbols).reshape([1, len(flat_symbols)]).astype(np.int32)
         )
         coeff_tensor = np.ones_like(term_tensor)
         bias_tensor = np.zeros((1,), dtype=np.int32)
@@ -618,15 +614,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         result._max_vals_cache = max_val_sum
 
         return result
-
-
-
-
-
-
-
-
-
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:
