@@ -34,7 +34,7 @@ DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
-    credentials: Dict = {},
+    credentials: Optional[Dict] = None,
     user_key: Optional[SigningKey] = None,
     timeout: Optional[float] = None,
 ) -> Client:
@@ -44,6 +44,8 @@ def connect(
 
     # get metadata and check for https redirect so that login is sent over TLS
     metadata = conn._get_metadata(timeout=timeout)  # type: ignore
+
+    credentials = credentials if credentials is not None else {}
 
     if credentials:
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
