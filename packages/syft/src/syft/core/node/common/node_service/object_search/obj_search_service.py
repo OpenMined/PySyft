@@ -36,6 +36,7 @@ from .....io.address import Address
 from .....pointer.pointer import Pointer
 from ....abstract.node import AbstractNode
 from ..node_service import ImmediateNodeServiceWithReply
+from syft.core.node.common import cache_obj
 
 
 @serializable()
@@ -224,7 +225,11 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
 
             # if object id is specified - return just that object
             else:
-                objs = [node.store[msg.obj_id]]
+                if msg.obj_id in cache_obj:
+                    print("------------Entered Cache---------")
+                    objs = [cache_obj[msg.obj_id]]
+                else:
+                    objs = [node.store[msg.obj_id]]
 
             for obj in objs:
                 # if this tensor allows anyone to search for it, then one of its keys
