@@ -17,7 +17,7 @@ from .serde.serializable import serializable
 
 @singleton
 class UIDValueGenerator:
-    def __init__(self, n_uids=10000000) -> None:
+    def __init__(self, n_uids=100000) -> None:
         self.uid_store: list[uuid_type] = []
         self.__prepopulate(n_uids)
 

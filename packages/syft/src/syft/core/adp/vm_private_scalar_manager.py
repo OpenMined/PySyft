@@ -40,11 +40,11 @@ class PrimeFactory:
 
     def __init__(self, prime_index: int = 0, init_highest_prime=15485867) -> None:
         self.prev_prime_index = prime_index
-        self.exp = 8
+        self.exp = 2
         self.prime_numbers: list = primes(10**self.exp)
 
     def get(self, index) -> int:
-        while index > len(self.prime_numbers):
+        while index > len(self.prime_numbers)-1:
             self.exp += 1
             self.prime_numbers = primes(10**self.exp)
         return self.prime_numbers[index]
@@ -100,9 +100,9 @@ class VirtualMachinePrivateScalarManager:
             value=value,
             max_val=max_val,
             entity=entity,
-            prime=self.prime_factory.get(self.index),
+            prime=int(self.prime_factory.get(self.index)),
         )
-        print("Initializing GM:")
+
         self.prime2symbol[gs.prime] = gs
         self.hash_cache = None
         self.index += 1
