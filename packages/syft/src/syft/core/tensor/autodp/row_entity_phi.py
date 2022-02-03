@@ -575,6 +575,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError
 
         flat_symbols = []
+        min_val_sum = 0
+        max_val_sum = 0
         unique_entities = set()
         for row in self.child:
             if not isinstance(row, SingleEntityPhiTensor):
@@ -582,6 +584,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             flat_child = row.child.flatten()
             flat_min = row.min_vals.flatten()
             flat_max = row.max_vals.flatten()
+
+            min_val_sum += flat_min.sum()
+            max_val_sum += flat_max.sum()
             for i in range(len(flat_child)):
                 prime = self.scalar_manager.get_symbol(
                     min_val=flat_min[i],
@@ -600,13 +605,17 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         coeff_tensor = np.ones_like(term_tensor)
         bias_tensor = np.zeros((1,), dtype=np.int32)
 
-        return IGT(
+        result = IGT(
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
             unique_entities=unique_entities,
         )
+        result._min_vals_cache = min_val_sum
+        result._max_vals_cache = max_val_sum
+
+        return result
 
 
 
