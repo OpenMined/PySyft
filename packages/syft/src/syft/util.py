@@ -17,6 +17,7 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+from typing import Sequence
 
 # third party
 from forbiddenfruit import curse
@@ -601,3 +602,20 @@ def parallel_execution(
         return local_shares
 
     return wrapper
+
+def split_rows(rows: Sequence, cpu_count: int) -> List:
+    n = len(rows)
+    a, b = divmod(n, cpu_count)
+    start = 0
+    output = []
+    for i in range(cpu_count):
+        end = start + a + (1 if b - i - 1 >= 0 else 0)
+        output.append(rows[start:end])
+        start = end
+    return output
+
+def list_sum(*inp_lst):
+    s=inp_lst[0]
+    for i in inp_lst[1:]:
+        s = s+i
+    return s

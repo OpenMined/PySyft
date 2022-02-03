@@ -39,6 +39,7 @@ from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
+from syft.util import split_rows
 
 
 def row_serialize(*rows: Any) -> List[Deserializeable]:
@@ -52,16 +53,6 @@ def row_deserialize(*rows: Deserializeable) -> List[Any]:
     return output
 
 
-def split_rows(rows: Sequence, cpu_count: int) -> List:
-    n = len(rows)
-    a, b = divmod(n, cpu_count)
-    start = 0
-    output = []
-    for i in range(cpu_count):
-        end = start + a + (1 if b - i - 1 >= 0 else 0)
-        output.append(rows[start:end])
-        start = end
-    return output
 
 
 @serializable()

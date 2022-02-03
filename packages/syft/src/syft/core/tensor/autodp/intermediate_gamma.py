@@ -10,6 +10,7 @@ from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
+import multiprocessing as mp
 
 # third party
 from nacl.signing import VerifyKey
@@ -26,8 +27,12 @@ from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from ..broadcastable import is_broadcastable
 from .adp_tensor import ADPTensor
+from syft.util import split_rows
+from syft.util import parallel_execution
+from syft.util import list_sum
 
 SupportedChainType = Union[int, bool, float, np.ndarray, PassthroughTensor]
+
 
 
 @serializable(recursive_serde=True)
@@ -138,7 +143,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             # single_poly_min_val = flattened_min_vals[i]
             # single_poly_max_val = flattened_max_vals[i]
 
-            scalar = single_poly_bias
+            input_mp = [single_poly_bias]
 
             for j in range(len(single_poly_terms)):
                 term = single_poly_terms[j]
@@ -147,9 +152,16 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 for prime, n_times in factorint(term).items():
                     input_scalar = self.scalar_manager.prime2symbol[prime]
                     right = input_scalar * n_times * coeff
-                    scalar = scalar + right
-
-            print("Known Primes in List:" + str(len(known_primes)))
+                    input_mp.append(right)
+        
+            
+            num_process = min(mp.cpu_count(),len(input_mp))
+            args = split_rows(input_mp,cpu_count=num_process)
+            #print(args)
+            output = parallel_execution(list_sum,cpu_bound=True)(args)
+            scalar = sum(output)
+                
+            #print("Known Primes in List:" + str(len(known_primes)))
             # to optimize down stream we can prevent search on linear queries if we
             # know that all single_poly_terms are prime therefore the query is linear
             scalar.is_linear = True
