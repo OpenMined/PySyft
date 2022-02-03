@@ -87,14 +87,20 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # EXPLAIN B: this is a 5x10
         # self.max_vals = max_vals
 
-        self.scalar_manager = scalar_manager if scalar_manager is not None else VirtualMachinePrivateScalarManager()
+        self.scalar_manager = (
+            scalar_manager
+            if scalar_manager is not None
+            else VirtualMachinePrivateScalarManager()
+        )
 
         if not hasattr(self, "_min_vals_cache"):
-            self._min_vals_cache = None
+            self._min_vals_cache: Optional[np.array] = None
         if not hasattr(self, "_max_vals_cache"):
-            self._max_vals_cache = None
+            self._max_vals_cache: Optional[np.array] = None
 
-        self.unique_entities: set[Entity] = unique_entities if unique_entities is not None else set()
+        self.unique_entities: set[Entity] = (
+            unique_entities if unique_entities is not None else set()
+        )
         self.n_entities: int = len(self.unique_entities)
 
         if self.n_entities == 0:

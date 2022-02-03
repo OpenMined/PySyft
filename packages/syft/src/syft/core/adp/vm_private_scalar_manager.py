@@ -13,6 +13,7 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import sympy as sp
 
 # relative
+from ...logger import warning
 from ...proto.core.adp.scalar_manager_pb2 import (
     VirtualMachinePrivateScalarManager as VirtualMachinePrivateScalarManager_PB,
 )
@@ -22,7 +23,7 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 from .entity import Entity
 from .scalar.gamma_scalar import GammaScalar
-from ...logger import warning
+
 
 @serializable()
 class PrimeFactory:
@@ -157,5 +158,3 @@ class VirtualMachinePrivateScalarManager:
                     self.prime2symbol[gs.prime] = gs
         else:
             warning("Detected prime2symbol where two tensors were using the same dict")
-
-
