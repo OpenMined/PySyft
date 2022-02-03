@@ -31,6 +31,8 @@ class IntermediateScalar(Scalar):
     def __init__(self, poly: BasicSymbol, id: Optional[UID] = None) -> None:
         self.poly = poly
         self.id = id if id else UID()
+        self._min_val: Optional[float] = None
+        self._max_val: Optional[float] = None
 
     @property
     def sympoly(self) -> BasicSymbol:
@@ -78,18 +80,28 @@ class IntermediateScalar(Scalar):
 
     @property
     def max_val(self) -> Optional[float]:
+        # TODO: Verify that his doesnt change anything with budget spend
+        if self._max_val is not None:
+            return self._max_val
+
         if self.poly is not None:
             results = flatten_and_maximize_poly(-self.poly)
             if len(results) >= 1:
-                return float(-results[-1].fun)
+                self._max_val = float(-results[-1].fun)
+                return self._max_val
         return None
 
     @property
     def min_val(self) -> Optional[float]:
+        # TODO: Verify that his doesnt change anything with budget spend
+        if self._min_val is not None:
+            return self._min_val
+
         if self.poly is not None:
             results = flatten_and_maximize_poly(self.poly)
             if len(results) >= 1:
-                return float(results[-1].fun)
+                self._min_val = float(results[-1].fun)
+                return self._min_val
         return None
 
     @property

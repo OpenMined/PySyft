@@ -195,7 +195,7 @@ class IntermediateGammaScalar(IntermediateScalar):
                 out += symbol_vector[index] ** 2
             # there's a small bit of rounding error from this constraint - this should
             # only be used as a double check or as a backup!!!
-            return out**0.5 - 1 / 2**16
+            return out ** 0.5 - 1 / 2 ** 16
 
         constraints.append({"type": "ineq", "fun": non_negative_additive_terms})
         results = minimize_function(
