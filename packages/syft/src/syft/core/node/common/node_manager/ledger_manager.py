@@ -119,7 +119,7 @@ class DictLedger(AbstractLedger):
         return self._entity_dict.keys()
 
     def get_user_budget(self, user_key: VerifyKey) -> float:
-        return float(999999)
+        return float(999999999)
 
 
 class DatabaseLedger(DatabaseManager, AbstractLedger):

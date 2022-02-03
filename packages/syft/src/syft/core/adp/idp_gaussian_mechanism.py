@@ -96,7 +96,7 @@ class iDPGaussianMechanism(Mechanism):
         fdp_off: bool = True,
         use_basic_rdp_to_approx_dp_conversion: bool = False,
         use_fdp_based_rdp_to_approx_dp_conversion: bool = False,
-        user_key: Optional[VerifyKey] = None,
+        user_key: Optional[VerifyKey] = None
     ):
 
         # the sigma parameter is the std of the noise divide by the l2 sensitivity
@@ -111,6 +111,7 @@ class iDPGaussianMechanism(Mechanism):
             "public_value": float(squared_l2_norm_upper_bound),
             "L": float(L),
         }  # This will be useful for the Calibrator
+
         self.entity_name = entity_name
         # TODO: should a generic unspecified mechanism have a name and a param dictionary?
 

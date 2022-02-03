@@ -73,6 +73,7 @@ def run(size: int) -> None:
     # publish
     print("running publish")
     start_time = time.time()
+    time.sleep(1)
     # scalene_profiler.start()
     res = left_result.publish(sigma=1000, acc=acc, user_key=the_actual_key)
     # scalene_profiler.stop()

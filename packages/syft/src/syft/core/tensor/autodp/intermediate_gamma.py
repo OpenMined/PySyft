@@ -127,9 +127,11 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # flattened_min_vals = self._min_values().reshape(-1)
         # flattened_max_vals = self._max_values().reshape(-1)
 
+        known_primes: set[int] = set(self.scalar_manager.prime2symbol.keys())
+
         scalars = list()
-        known_primes: set[int] = set()
         for i in range(len(flattened_terms)):
+
             single_poly_terms = flattened_terms[i]
             single_poly_coeffs = flattened_coeffs[i]
             single_poly_bias = flattened_bias[i]
@@ -144,12 +146,10 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
                 for prime, n_times in factorint(term).items():
                     input_scalar = self.scalar_manager.prime2symbol[prime]
-                    known_primes = known_primes.union(
-                        self.scalar_manager.prime2symbol.keys()
-                    )
                     right = input_scalar * n_times * coeff
                     scalar = scalar + right
 
+            print("Known Primes in List:" + str(len(known_primes)))
             # to optimize down stream we can prevent search on linear queries if we
             # know that all single_poly_terms are prime therefore the query is linear
             scalar.is_linear = True

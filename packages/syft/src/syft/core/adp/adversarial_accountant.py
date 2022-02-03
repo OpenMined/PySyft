@@ -12,6 +12,7 @@ from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
 from typing import Union
+from functools import lru_cache
 
 # third party
 from autodp.autodp_core import Mechanism
@@ -27,6 +28,45 @@ from .entity import DataSubjectGroup
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 
+def compose_mechanisms(mechanisms, delta):
+    sigmas = list()
+    squared_l2_norms = list()
+    squared_l2_norm_upper_bounds = list()
+    Ls = list()
+    values = list()
+
+    for m in mechanisms:
+        sigmas.append(m.params['sigma'])
+        squared_l2_norms.append(m.params['private_value'])
+        squared_l2_norm_upper_bounds.append(m.params['public_value'])
+        Ls.append(m.params['L'])
+        values.append(m.params['value'])
+
+    sigmas = tuple(sigmas)
+    squared_l2_norms = tuple(squared_l2_norms)
+    squared_l2_norm_upper_bounds = tuple(squared_l2_norm_upper_bounds)
+    Ls = tuple(Ls)
+    values = tuple(values)
+
+    return compose_mechanisms_via_simplified_args_for_lru_cache(sigmas, squared_l2_norms,squared_l2_norm_upper_bounds,Ls,values, delta)
+
+@lru_cache(maxsize=None)
+def compose_mechanisms_via_simplified_args_for_lru_cache(sigmas, squared_l2_norms,squared_l2_norm_upper_bounds,Ls,values, delta):
+    mechanisms = list()
+    for i in range(len(sigmas)):
+
+        m = iDPGaussianMechanism(sigma=sigmas[i],
+                                 squared_l2_norm=squared_l2_norms[i],
+                                 squared_l2_norm_upper_bound=squared_l2_norm_upper_bounds[i],
+                                 L=Ls[i],
+                                 entity_name='')
+        m.params['value'] = values[i]
+        mechanisms.append(m)
+    # compose them with the transformation: compose
+    compose = Composition()
+    composed_mech = compose(mechanisms, [1] * len(mechanisms))
+    eps = composed_mech.get_approxDP(delta)
+    return eps
 
 class AdversarialAccountant:
     """Adversarial Accountant class that keeps track of budget and maintains a privacy ledger."""
@@ -79,9 +119,6 @@ class AdversarialAccountant:
         returned_epsilon_is_private: bool = False,
     ) -> float:
 
-        # compose them with the transformation: compose
-        compose = Composition()
-
         # fetch mechanisms from the database
         table_mechanisms = self.entity2ledger.query(entity_name=entity.name)  # type: ignore
         mechanisms = [x.obj for x in table_mechanisms]
@@ -132,8 +169,9 @@ class AdversarialAccountant:
 
         # map dataset
         if len(mechanisms) > 0:
-            composed_mech = compose(mechanisms, [1] * len(mechanisms))
-            eps = composed_mech.get_approxDP(self.delta)
+            # composed_mech = compose(mechanisms, [1] * len(mechanisms))
+            # eps = composed_mech.get_approxDP(self.delta)
+            eps = compose_mechanisms(tuple(mechanisms), self.delta)
 
             # if we have a user key, get the budget and clamp the epsilon
             # if user_key is not None:
@@ -176,9 +214,9 @@ class AdversarialAccountant:
         # @Andrew can we use <= or does it have to be <
         has_budget = spent <= user_budget
         # print(f"has_budget = {spend} < {user_budget}")
-        print("\n\nHas Budget:" + str(has_budget))
-        print("YOU'VE SPENT:" + str(spent))
-        print("USER BUDGET:" + str(user_budget))
+        # print("\n\nHas Budget:" + str(has_budget))
+        # print("YOU'VE SPENT:" + str(spent))
+        # print("USER BUDGET:" + str(user_budget))
         return has_budget
 
     # returns maximum entity epsilon
