@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from collections.abc import KeysView
 from typing import List
@@ -57,12 +60,73 @@ class MechanismManager(DatabaseManager):
         return obj_id
 
 
-class LedgerManager(DatabaseManager):
+class AbstractLedger:
+    def register_mechanisms(self, mechanisms: list) -> None:
+        raise NotImplementedError
 
+    def query(  # type: ignore
+        self, entity_name: Optional[str] = None, user_key: Optional[str] = None
+    ) -> List[iDPGaussianMechanism]:
+        raise NotImplementedError
+
+    def keys(self) -> KeysView:
+        raise NotImplementedError
+
+    def get_user_budget(self, user_key: VerifyKey) -> float:
+        raise NotImplementedError
+
+
+class DictLedger(AbstractLedger):
+    def __init__(self) -> None:
+        super().__init__()
+        self._entity_dict: dict[str, iDPGaussianMechanism] = {}
+        self._user_key_dict: dict[VerifyKey, iDPGaussianMechanism] = {}
+        self._user_budget: dict[VerifyKey, float] = {}
+
+    def register_mechanisms(self, mechanisms: list) -> None:
+        for m in mechanisms:
+            # if entity doesnt exist:
+            if m.entity_name not in self._entity_dict:
+                # write to the entity table
+                self._entity_dict[m.entity_name] = m
+            if m.user_key not in self._user_key_dict:
+                self._user_key_dict[m.user_key] = m
+
+    def query(
+        self, entity_name: Optional[str] = None, user_key: Optional[VerifyKey] = None
+    ) -> List[iDPGaussianMechanism]:
+        mechanisms = []
+        if entity_name is not None and user_key is None:
+            if entity_name in self._entity_dict:
+                mechanisms.append(self._entity_dict[entity_name])
+                return mechanisms
+        elif user_key is not None and entity_name is None:
+            if user_key in self._user_key_dict:
+                mechanisms.append(self._user_key_dict[user_key])
+                return mechanisms
+        elif entity_name is not None and user_key is not None:
+            mechanisms.extend(self._entity_dict.values())
+            m_set = set(mechanisms)
+            return list(m_set.intersection(self._user_key_dict.values()))
+        else:
+            mechanisms.extend(self._entity_dict.values())
+            mechanisms.extend(self._user_key_dict.values())
+            return list(set(mechanisms))
+
+        return mechanisms
+
+    def keys(self) -> KeysView:
+        return self._entity_dict.keys()
+
+    def get_user_budget(self, user_key: VerifyKey) -> float:
+        return float(999999)
+
+
+class DatabaseLedger(DatabaseManager, AbstractLedger):
     schema = Ledger
 
     def __init__(self, database: Engine) -> None:
-        super().__init__(db=database, schema=LedgerManager.schema)
+        super().__init__(db=database, schema=DatabaseLedger.schema)
         self.entity_manager = EntityManager(database)
         self.mechanism_manager = MechanismManager(database)
 
@@ -82,7 +146,6 @@ class LedgerManager(DatabaseManager):
         return KeysView(self.entity_manager.all())  # type: ignore
 
     def register_mechanisms(self, mechanisms: list) -> None:
-
         for m in mechanisms:
             # if entity doesnt exist:
             if not self.entity_manager.contain(name=m.entity_name):

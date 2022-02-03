@@ -562,14 +562,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
     @property
     def gamma(self) -> InitialGammaTensor:
-
         """Property to cast this tensor into a GammaTensor"""
         return self.create_gamma()
 
     def create_gamma(
         self, scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None
     ) -> InitialGammaTensor:
-
         """Return a new Gamma tensor based on this phi tensor"""
 
         if scalar_manager is None:

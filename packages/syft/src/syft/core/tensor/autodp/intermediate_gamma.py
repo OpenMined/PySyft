@@ -490,16 +490,17 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             )
         ).reshape(self.shape)
 
-        if self.sharetensor_values is not None:
+        sharetensor_values = getattr(self, "sharetensor_values", None)
+        if sharetensor_values is not None:
             # relative
             from ..smpc.share_tensor import ShareTensor
 
             result = ShareTensor(
-                rank=self.sharetensor_values.rank,
-                parties_info=self.sharetensor_values.parties_info,
-                ring_size=self.sharetensor_values.ring_size,
-                seed_przs=self.sharetensor_values.seed_przs,
-                clients=self.sharetensor_values.clients,
+                rank=sharetensor_values.rank,
+                parties_info=sharetensor_values.parties_info,
+                ring_size=sharetensor_values.ring_size,
+                seed_przs=sharetensor_values.seed_przs,
+                clients=sharetensor_values.clients,
                 value=result,
             )
         return result

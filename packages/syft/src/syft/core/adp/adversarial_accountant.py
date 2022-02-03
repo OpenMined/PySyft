@@ -20,7 +20,9 @@ from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
 # relative
-from ..node.common.node_manager.ledger_manager import LedgerManager
+from ..node.common.node_manager.ledger_manager import AbstractLedger
+from ..node.common.node_manager.ledger_manager import DatabaseLedger
+from ..node.common.node_manager.ledger_manager import DictLedger
 from .entity import DataSubjectGroup
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
@@ -36,9 +38,9 @@ class AdversarialAccountant:
         if db_engine is not None:
             # this is a database-backed lookup table
             # maps an entity to an actual budget
-            self.entity2ledger = LedgerManager(db_engine)
+            self.entity2ledger: AbstractLedger = DatabaseLedger(db_engine)
         else:
-            self.entity2ledger = {}  # type: ignore
+            self.entity2ledger: AbstractLedger = DictLedger()  # type: ignore
 
         # this is a temporary lookup table for mechanisms we're not sure
         # we're going to keep (See publish.py for how this is used)
