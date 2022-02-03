@@ -192,6 +192,12 @@ def minimize_function(
 
 
 def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
+    # if all scalars have is_linear = True, we will skip the search below
+    can_skip = True
+    for i in scalars:
+        if getattr(i, "is_linear", None) is not True:
+            can_skip = False
+            break
     result: Union[float, optimize.OptimizeResult] = max_lipschitz_via_jacobian(
         scalars, input_entity=entity
     )[0][-1]

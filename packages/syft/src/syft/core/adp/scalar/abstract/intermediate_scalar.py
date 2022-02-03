@@ -26,18 +26,25 @@ from .scalar import Scalar
 
 @serializable()
 class IntermediateScalar(Scalar):
-    """Serializable Scalar class that supports polynomial representations of data."""
+    """
+    Serializable Scalar class that supports polynomial representations of data.
+    It is assumed that IntermediateScalar is immutable and therefore we will cache
+    the sympoly creation because poly wont change
+    """
 
     def __init__(self, poly: BasicSymbol, id: Optional[UID] = None) -> None:
         self.poly = poly
         self.id = id if id else UID()
         self._min_val: Optional[float] = None
         self._max_val: Optional[float] = None
+        self._sympoly: Optional[BasicSymbol] = None
 
     @property
     def sympoly(self) -> BasicSymbol:
         """Sympy version of self.poly"""
-        return PymbolicToSympyMapper()(self.poly)
+        if self._sympoly is None:
+            self._sympoly = PymbolicToSympyMapper()(self.poly)
+        return self._sympoly
 
     def __mul__(self, other: IntermediateScalar) -> IntermediateScalar:
         raise NotImplementedError
