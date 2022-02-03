@@ -214,7 +214,7 @@ def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
     # else:
     #     return -float(result.fun)
 
-
+max_lipschitz_via_jacobian_cnt = 0
 def max_lipschitz_via_jacobian(
     scalars: TypeList[Any],  # TODO: Fix Scalar type circular
     input_entity: Optional[Entity] = None,
@@ -224,6 +224,10 @@ def max_lipschitz_via_jacobian(
 ) -> TypeTuple[TypeList[float], Any]:
     # scalars = R^d` representing the d' dimensional output of g
     # input_entity = the 'i'th entity for which we want to compute a lipschitz bound
+    global max_lipschitz_via_jacobian_cnt
+    max_lipschitz_via_jacobian_cnt += 1
+
+    print(f"max_lipschitz_via_jacobian: {max_lipschitz_via_jacobian_cnt}")
 
     input_scalars = set()
     for s in scalars:

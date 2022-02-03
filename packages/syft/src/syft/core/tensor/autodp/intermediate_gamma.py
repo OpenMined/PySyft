@@ -149,7 +149,12 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 term = single_poly_terms[j]
                 coeff = single_poly_coeffs[j]
 
-                for prime, n_times in factorint(term).items():
+                if term in known_primes:
+                    prime_list = [(term, 1)]
+                else:
+                    prime_list = factorint(term).items()
+
+                for prime, n_times in prime_list:
                     input_scalar = self.scalar_manager.prime2symbol[prime]
                     right = input_scalar * n_times * coeff
                     input_mp.append(right)
