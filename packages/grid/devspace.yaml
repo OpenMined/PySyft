@@ -271,7 +271,7 @@ deployments:
               - name: CELERY_WORKER
                 value: "true"
               - name: RUN
-                value: "celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500"
+                value: "celery -A grid.worker worker -l info -Q main-queue --pool=solo -c 1"
               - name: NODE_TYPE
                 value: ${NODE_TYPE}
               - name: C_FORCE_ROOT
