@@ -14,9 +14,12 @@ from typing_extensions import final
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain.registry import DomainMessageRegistry
-from ...exceptions import AuthorizationError
+
+# from ...exceptions import AuthorizationError
 from ...node_table.utils import model_to_json
 from ..generic_payload.syft_message import SyftMessage
+from ..permissions import check_permissions
+from .user_permissions import UserCanTriageRequest
 
 
 @serializable(recursive_serde=True)
@@ -29,21 +32,21 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
             return {}
 
         # TODO: Segregate permissions to a different level (make it composable)
-        _allowed = node.users.can_triage_requests(verify_key=verify_key)  # type: ignore
-        if not _allowed:
-            raise AuthorizationError(
-                "get_user_msg You're not allowed to get User information!"
-            )
-        else:
-            # Extract User Columns
-            user = node.users.first(id=self.kwargs["user_id"])  # type: ignore
-            _msg = model_to_json(user)
+        # _allowed = node.users.can_triage_requests(verify_key=verify_key)  # type: ignore
+        # if not _allowed:
+        #     raise AuthorizationError(
+        #         "get_user_msg You're not allowed to get User information!"
+        #     )
 
-            # Use role name instead of role ID.
-            _msg["role"] = node.roles.first(id=_msg["role"]).name  # type: ignore
+        # Extract User Columns
+        user = node.users.first(id=self.kwargs["user_id"])  # type: ignore
+        _msg = model_to_json(user)
 
-            # Remove private key
-            del _msg["private_key"]
+        # Use role name instead of role ID.
+        _msg["role"] = node.roles.first(id=_msg["role"]).name  # type: ignore
+
+        # Remove private key
+        del _msg["private_key"]
 
             # Get budget spent
             _msg["budget_spent"] = node.acc.user_budget(  # type: ignore

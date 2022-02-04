@@ -1,3 +1,6 @@
+# stdlib
+import os
+
 # third party
 from fastapi import FastAPI
 from httpx import AsyncClient
@@ -50,6 +53,18 @@ class TestUsersRoutes:
     @pytest.mark.asyncio
     async def test_get_specific_user(self, app: FastAPI, client: AsyncClient) -> None:
         headers = await authenticate_owner(app, client)
+
+        # Test new service
+        os.environ["USE_NEW_SERVICE"] = str(True)
+        print("ENV", os.getenv("USE_NEW_SERVICE"))
+        res = await client.get(
+            app.url_path_for("users:read_one", **{"user_id": 1}), headers=headers
+        )
+        assert res.status_code == status.HTTP_200_OK
+
+        # Test old service
+        os.environ["USE_NEW_SERVICE"] = str(False)
+        print("ENV", os.getenv("USE_NEW_SERVICE"))
         res = await client.get(
             app.url_path_for("users:read_one", **{"user_id": 1}), headers=headers
         )
