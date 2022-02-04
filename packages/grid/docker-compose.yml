@@ -79,7 +79,7 @@ services:
 
   db:
     restart: always
-    image: postgres:12
+    image: postgres:14
     volumes:
       - app-db-data:/var/lib/postgresql/data
     environment:
@@ -93,10 +93,12 @@ services:
       - postgres
       - --shared_buffers=8GB # 32 MB
       - --max_connections=1000 # default 100
-      # - --temp_buffers=8MB # default 8 MB
-      # - --work_mem= # default 4 MB
+      - --temp_buffers=8GB # default 8 MB
+      - --work_mem=8GB # default 4 MB
+      - --effective_io_concurrency=8 # default 1
+      # - --block_size=16384 # default 8192
       # - --max_files_per_process=1000 # default 1000
-      # - --effective_io_concurrency=1 # default 1
+      # - --segment_size=8GB # default 1GB # cant change
 
   queue:
     restart: always
