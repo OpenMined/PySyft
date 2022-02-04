@@ -9,8 +9,8 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
-from .....common.serde.serializable import serializable
 from .....common.message import ImmediateSyftMessage
+from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain.registry import DomainMessageRegistry
 from ...exceptions import AuthorizationError
@@ -24,8 +24,9 @@ from ..generic_payload.syft_message import SyftMessage
 @serializable(recursive_serde=True)
 @final
 class GetUserMessage(SyftMessage, DomainMessageRegistry):
-
-    def run(self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None) -> ImmediateSyftMessage:
+    def run(
+        self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
+    ) -> ImmediateSyftMessage:
         if not verify_key:
             return {}
 
@@ -56,8 +57,9 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class GetUsersMessage(SyftMessage, DomainMessageRegistry):
-
-    def run(self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None) -> ImmediateSyftMessage:
+    def run(
+        self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
+    ) -> ImmediateSyftMessage:
         # Check key permissions
         _allowed = node.users.can_triage_requests(verify_key=verify_key)
         if not _allowed:
@@ -84,44 +86,6 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
                 returned_epsilon_is_private=False,
             )
             _msg.append(_user_json)
-            
+
             return _msg
 
-'''
-@serializable(recursive_serde=True)
-@final
-class NewGetUserMessage(GenericPayloadMessageWithReply):
-    message_type = NewGetMessage
-    message_reply_type = NewGetReplyMessage
-
-    # TODO: Add message level authentication
-    def run(
-        self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
-    ) -> Dict[str, Any]:
-
-        if not verify_key:
-            return {}
-
-        # TODO: Segregate permissions to a different level (make it composable)
-        _allowed = node.users.can_triage_requests(verify_key=verify_key)  # type: ignore
-        if not _allowed:
-            raise AuthorizationError(
-                "get_user_msg You're not allowed to get User information!"
-            )
-        else:
-            # Extract User Columns
-            user = node.users.first(id=self.kwargs["user_id"])  # type: ignore
-            _msg = model_to_json(user)
-
-            # Use role name instead of role ID.
-            _msg["role"] = node.roles.first(id=_msg["role"]).name  # type: ignore
-
-            # Remove private key
-            del _msg["private_key"]
-
-            # Get budget spent
-            _msg["budget_spent"] = node.acc.user_budget(  # type: ignore
-                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
-            )
-            return _msg
-'''
