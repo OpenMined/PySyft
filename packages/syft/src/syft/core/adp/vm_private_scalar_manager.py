@@ -164,7 +164,11 @@ class VirtualMachinePrivateScalarManager:
 
             for prime_number, gs in vsm2.prime2symbol.items():
                 if prime_number in self.prime2symbol:  # If there's a collision
-                    new_prime = self.prime_factory.next()
+                    index = 0
+                    length = len(self.prime_factory.prime_numbers)
+                    while prime_number >= self.prime_factory.prime_numbers[index]:
+                        index += 1
+                    new_prime = self.prime_factory.get(prime_number)
                     gs.prime = new_prime
                     self.prime2symbol[new_prime] = gs
                 else:
