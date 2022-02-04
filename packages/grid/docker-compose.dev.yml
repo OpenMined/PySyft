@@ -26,7 +26,7 @@ services:
 
   db:
     ports:
-      - "5432"
+      - "5432:5432"
 
   queue:
     image: rabbitmq:3-management
