@@ -5,6 +5,7 @@
 # - add a unit test for each method (at least)
 
 # stdlib
+from functools import lru_cache
 import math
 from typing import Dict as TypeDict
 from typing import KeysView as TypeKeysView
@@ -12,7 +13,6 @@ from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
 from typing import Union
-from functools import lru_cache
 
 # third party
 from autodp.autodp_core import Mechanism
@@ -28,6 +28,7 @@ from .entity import DataSubjectGroup
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 
+
 def compose_mechanisms(mechanisms, delta):
     sigmas = list()
     squared_l2_norms = list()
@@ -36,11 +37,11 @@ def compose_mechanisms(mechanisms, delta):
     values = list()
 
     for m in mechanisms:
-        sigmas.append(m.params['sigma'])
-        squared_l2_norms.append(m.params['private_value'])
-        squared_l2_norm_upper_bounds.append(m.params['public_value'])
-        Ls.append(m.params['L'])
-        values.append(m.params['value'])
+        sigmas.append(m.params["sigma"])
+        squared_l2_norms.append(m.params["private_value"])
+        squared_l2_norm_upper_bounds.append(m.params["public_value"])
+        Ls.append(m.params["L"])
+        values.append(m.params["value"])
 
     sigmas = tuple(sigmas)
     squared_l2_norms = tuple(squared_l2_norms)
@@ -48,25 +49,33 @@ def compose_mechanisms(mechanisms, delta):
     Ls = tuple(Ls)
     values = tuple(values)
 
-    return compose_mechanisms_via_simplified_args_for_lru_cache(sigmas, squared_l2_norms,squared_l2_norm_upper_bounds,Ls,values, delta)
+    return compose_mechanisms_via_simplified_args_for_lru_cache(
+        sigmas, squared_l2_norms, squared_l2_norm_upper_bounds, Ls, values, delta
+    )
+
 
 @lru_cache(maxsize=None)
-def compose_mechanisms_via_simplified_args_for_lru_cache(sigmas, squared_l2_norms,squared_l2_norm_upper_bounds,Ls,values, delta):
+def compose_mechanisms_via_simplified_args_for_lru_cache(
+    sigmas, squared_l2_norms, squared_l2_norm_upper_bounds, Ls, values, delta
+):
     mechanisms = list()
     for i in range(len(sigmas)):
 
-        m = iDPGaussianMechanism(sigma=sigmas[i],
-                                 squared_l2_norm=squared_l2_norms[i],
-                                 squared_l2_norm_upper_bound=squared_l2_norm_upper_bounds[i],
-                                 L=Ls[i],
-                                 entity_name='')
-        m.params['value'] = values[i]
+        m = iDPGaussianMechanism(
+            sigma=sigmas[i],
+            squared_l2_norm=squared_l2_norms[i],
+            squared_l2_norm_upper_bound=squared_l2_norm_upper_bounds[i],
+            L=Ls[i],
+            entity_name="",
+        )
+        m.params["value"] = values[i]
         mechanisms.append(m)
     # compose them with the transformation: compose
     compose = Composition()
     composed_mech = compose(mechanisms, [1] * len(mechanisms))
     eps = composed_mech.get_approxDP(delta)
     return eps
+
 
 class AdversarialAccountant:
     """Adversarial Accountant class that keeps track of budget and maintains a privacy ledger."""

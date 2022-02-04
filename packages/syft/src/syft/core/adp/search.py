@@ -214,7 +214,10 @@ def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
     # else:
     #     return -float(result.fun)
 
+
 max_lipschitz_via_jacobian_cnt = 0
+
+
 def max_lipschitz_via_jacobian(
     scalars: TypeList[Any],  # TODO: Fix Scalar type circular
     input_entity: Optional[Entity] = None,
@@ -334,7 +337,7 @@ def max_lipschitz_via_jacobian(
     if try_hessian_shortcut:
         h = j.jacobian([x.sympoly for x in input_scalars])
         if (
-            len(solve(np.sum(h ** 2), *[x.sympoly for x in input_scalars], dict=True))
+            len(solve(np.sum(h**2), *[x.sympoly for x in input_scalars], dict=True))
             == 0
         ):
             print(

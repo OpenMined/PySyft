@@ -44,7 +44,7 @@ class PrimeFactory:
         self.prime_numbers: list = primes(10**self.exp)
 
     def get(self, index) -> int:
-        while index > len(self.prime_numbers)-1:
+        while index > len(self.prime_numbers) - 1:
             self.exp += 1
             self.prime_numbers = primes(10**self.exp)
         return self.prime_numbers[index]
@@ -131,7 +131,9 @@ class VirtualMachinePrivateScalarManager:
     def copy(self) -> VirtualMachinePrivateScalarManager:
 
         # intentionally avoiding accidentally copying the prime factory
-        new_mgr = VirtualMachinePrivateScalarManager(prime2symbol=deepcopy(self.prime2symbol))
+        new_mgr = VirtualMachinePrivateScalarManager(
+            prime2symbol=deepcopy(self.prime2symbol)
+        )
 
         return new_mgr
 

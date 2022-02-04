@@ -96,7 +96,7 @@ class iDPGaussianMechanism(Mechanism):
         fdp_off: bool = True,
         use_basic_rdp_to_approx_dp_conversion: bool = False,
         use_fdp_based_rdp_to_approx_dp_conversion: bool = False,
-        user_key: Optional[VerifyKey] = None
+        user_key: Optional[VerifyKey] = None,
     ):
 
         # the sigma parameter is the std of the noise divide by the l2 sensitivity

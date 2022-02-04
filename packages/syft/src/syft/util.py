@@ -206,6 +206,17 @@ def obj2pointer_type(obj: object) -> type:
     return ref.pointer_type  # type: ignore
 
 
+def fqn2pointer_type(fqn: str) -> type:
+    try:
+        ref = syft.lib_ast.query(fqn)
+    except Exception as e:
+        log = f"Cannot find {fqn} in lib_ast. {e}"
+        critical(log)
+        raise Exception(log)
+
+    return ref.pointer_type  # type: ignore
+
+
 def key_emoji(key: object) -> str:
     try:
         if isinstance(key, (bytes, SigningKey, VerifyKey)):

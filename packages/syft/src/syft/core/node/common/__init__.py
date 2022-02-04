@@ -51,4 +51,5 @@ def create_client_ast(client: Optional[AbstractNodeClient] = None) -> Any:
 
     return ast
 
+
 cache_obj = {}

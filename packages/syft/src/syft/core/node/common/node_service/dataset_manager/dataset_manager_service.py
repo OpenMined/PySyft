@@ -14,6 +14,7 @@ import numpy as np
 import torch as th
 
 # relative
+from ... import cache_obj
 from ...... import deserialize
 from ......util import get_tracer
 from .....common.group import VERIFYALL
@@ -34,7 +35,6 @@ from .dataset_manager_messages import GetDatasetResponse
 from .dataset_manager_messages import GetDatasetsMessage
 from .dataset_manager_messages import GetDatasetsResponse
 from .dataset_manager_messages import UpdateDatasetMessage
-from syft.core.node.common import cache_obj
 
 ENCODING = "UTF-8"
 

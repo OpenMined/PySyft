@@ -100,6 +100,20 @@ services:
       # - --max_files_per_process=1000 # default 1000
       # - --segment_size=8GB # default 1GB # cant change
 
+  redis:
+    restart: always
+    image: redis:6.2
+    volumes:
+      - app-redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    ports:
+      - "6379:6379"
+    environment:
+      - SERVICE_NAME=db
+      - RELEASE=${RELEASE:-production}
+    env_file:
+      - .env
+
   queue:
     restart: always
     image: rabbitmq:3
@@ -223,6 +237,7 @@ volumes:
   app-db-data:
   tailscale-data:
   headscale-data:
+  app-redis-data:
 
 networks:
   traefik-public:

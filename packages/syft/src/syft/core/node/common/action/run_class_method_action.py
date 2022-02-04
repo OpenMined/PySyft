@@ -13,6 +13,7 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # relative
+from .. import cache_obj
 from ..... import lib
 from .....logger import traceback_and_raise
 from .....logger import warning
@@ -27,7 +28,6 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
-from syft.core.node.common import cache_obj
 
 
 @serializable()
@@ -112,7 +112,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             if self._self.id_at_location in cache_obj:
                 resolved_self = cache_obj[self._self.id_at_location]
             else:
-                resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
+                resolved_self = retrieve_object(
+                    node, self._self.id_at_location, self.path
+                )
             result_read_permissions = resolved_self.read_permissions  # type: ignore
         else:
             result_read_permissions = {}
