@@ -625,4 +625,4 @@ def list_sum(*inp_lst):
 
 
 def concurrency_count(factor: float = 0.8) -> int:
-    return mp.cpu_count() * factor
+    return int(mp.cpu_count() * factor)
