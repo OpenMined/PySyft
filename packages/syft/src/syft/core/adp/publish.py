@@ -85,7 +85,7 @@ def publish(
     while len(overbudgeted_entities) > 0 and iterator < 3:
         print("publish.py:86: INSIDE:  while len(overbudgeted_entities) > 0 and iterator < 3:")
         iterator += 1
-
+        print("publish.py:88: len(overbudgeted_entities) == " + str(len(overbudgeted_entities)))
         print("publish.py:89:  for output_scalar in scalars:")
         input_scalars = set()
         for output_scalar in scalars:
