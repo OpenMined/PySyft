@@ -129,7 +129,11 @@ class VirtualMachinePrivateScalarManager:
         return list(self.prime2symbol.keys())
 
     def copy(self) -> VirtualMachinePrivateScalarManager:
-        return deepcopy(self)
+
+        # intentionally avoiding accidentally copying the prime factory
+        new_mgr = VirtualMachinePrivateScalarManager(prime2symbol=deepcopy(self.prime2symbol))
+
+        return new_mgr
 
     def _object2proto(self) -> VirtualMachinePrivateScalarManager_PB:
         return VirtualMachinePrivateScalarManager_PB(
