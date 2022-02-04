@@ -10,7 +10,6 @@ from typing import Sequence
 from typing import Set
 from typing import Tuple
 from typing import Union
-import multiprocessing as mp
 
 # third party
 from nacl.signing import VerifyKey
@@ -20,6 +19,10 @@ from sympy.ntheory.factor_ import factorint
 # relative
 from ....core.adp.entity import DataSubjectGroup
 from ....core.adp.entity import Entity
+from ....util import concurrency_count
+from ....util import list_sum
+from ....util import parallel_execution
+from ....util import split_rows
 from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import serializable
@@ -27,12 +30,8 @@ from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from ..broadcastable import is_broadcastable
 from .adp_tensor import ADPTensor
-from syft.util import split_rows
-from syft.util import parallel_execution
-from syft.util import list_sum
 
 SupportedChainType = Union[int, bool, float, np.ndarray, PassthroughTensor]
-
 
 
 @serializable(recursive_serde=True)
@@ -158,15 +157,14 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     input_scalar = self.scalar_manager.prime2symbol[prime]
                     right = input_scalar * n_times * coeff
                     input_mp.append(right)
-        
-            
-            num_process = min(mp.cpu_count(),len(input_mp))
-            args = split_rows(input_mp,cpu_count=num_process)
-            #print(args)
-            output = parallel_execution(list_sum,cpu_bound=True)(args)
+
+            num_process = min(concurrency_count(), len(input_mp))
+            args = split_rows(input_mp, cpu_count=num_process)
+            # print(args)
+            output = parallel_execution(list_sum, cpu_bound=True)(args)
             scalar = sum(output)
-                
-            #print("Known Primes in List:" + str(len(known_primes)))
+
+            # print("Known Primes in List:" + str(len(known_primes)))
             # to optimize down stream we can prevent search on linear queries if we
             # know that all single_poly_terms are prime therefore the query is linear
             scalar.is_linear = True
