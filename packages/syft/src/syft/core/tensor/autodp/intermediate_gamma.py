@@ -50,6 +50,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         "term_tensor",
         "coeff_tensor",
         "bias_tensor",
+        "value_tensor",
         "scalar_manager",
         "child",
         "unique_entities",
@@ -61,6 +62,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         term_tensor: np.ndarray,
         coeff_tensor: np.ndarray,
         bias_tensor: np.ndarray,
+        value_tensor: Optional[np.ndarray] = None,
         # min_vals: np.ndarray,
         # max_vals: np.ndarray,
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
@@ -82,6 +84,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # EXPLAIN A: this is "b"
         # EXPLAIN B: this is a 5x10
         self.bias_tensor = bias_tensor
+
+        # optional cache of values
+        self.value_tensor = value_tensor
 
         # EXPLAIN A: this is "min_vals"
         # EXPLAIN B: this is a 5x10
@@ -177,6 +182,11 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     break
 
             scalars.append(scalar)
+
+        if self.value_tensor is not None:
+            flat_value_tensor = self.value_tensor.flatten()
+            for i in range(len(scalars)):
+                scalars[i]._value_cache = flat_value_tensor[i]
 
         return scalars
 

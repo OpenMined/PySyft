@@ -605,6 +605,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError
 
         flat_symbols = []
+        flat_values = []
         min_val_sum = 0
         max_val_sum = 0
         unique_entities = set()
@@ -614,6 +615,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             flat_child = row.child.flatten()
             flat_min = row.min_vals.flatten()
             flat_max = row.max_vals.flatten()
+
+            flat_values.append(flat_child)
 
             min_val_sum += flat_min.sum()
             max_val_sum += flat_max.sum()
@@ -627,13 +630,16 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 flat_symbols.append(prime)
             unique_entities.add(row.entity)
 
+
         term_tensor = (
             np.array(flat_symbols).reshape([1, len(flat_symbols)]).astype(np.int32)
         )
         coeff_tensor = np.ones_like(term_tensor)
         bias_tensor = np.zeros((1,), dtype=np.int32)
+        value_tensor = np.sum(flat_values, axis=0)
 
         result = IGT(
+            value_tensor=value_tensor,
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,

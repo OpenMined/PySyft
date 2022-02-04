@@ -113,6 +113,10 @@ class IntermediateScalar(Scalar):
 
     @property
     def value(self) -> Optional[float]:
+
+        if hasattr(self, '_value_cache'):
+            return self._value_cache
+
         if self.poly is not None:
             result = EM(
                 context={obj.poly.name: obj.value for obj in self.input_scalars}  # type: ignore
