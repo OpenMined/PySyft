@@ -1,7 +1,9 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
+from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
@@ -9,15 +11,11 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
-from .....common.message import ImmediateSyftMessage
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain.registry import DomainMessageRegistry
 from ...exceptions import AuthorizationError
 from ...node_table.utils import model_to_json
-from ..generic_payload.messages import GenericPayloadMessage
-from ..generic_payload.messages import GenericPayloadMessageWithReply
-from ..generic_payload.messages import GenericPayloadReplyMessage
 from ..generic_payload.syft_message import SyftMessage
 
 
@@ -26,7 +24,7 @@ from ..generic_payload.syft_message import SyftMessage
 class GetUserMessage(SyftMessage, DomainMessageRegistry):
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
-    ) -> ImmediateSyftMessage:
+    ) -> Union[List, Dict[str, Any]]:
         if not verify_key:
             return {}
 
@@ -57,35 +55,36 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
 @serializable(recursive_serde=True)
 @final
 class GetUsersMessage(SyftMessage, DomainMessageRegistry):
-    def run(
+    def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
-    ) -> ImmediateSyftMessage:
+    ) -> Union[List, Dict[str, Any]]:
         # Check key permissions
         _allowed = node.users.can_triage_requests(verify_key=verify_key)
         if not _allowed:
             raise AuthorizationError(
                 "get_all_users_msg You're not allowed to get User information!"
             )
+        else:
+            # Get All Users
+            users = node.users.all()
+            _msg = []
+            for user in users:
+                _user_json = model_to_json(user)
+                # Use role name instead of role ID.
+                _user_json["role"] = node.roles.first(id=_user_json["role"]).name
 
-        # Get All Users
-        users = node.users.all()
-        _msg = []
-        for user in users:
-            _user_json = model_to_json(user)
-            # Use role name instead of role ID.
-            _user_json["role"] = node.roles.first(id=_user_json["role"]).name
+                # Remove private key
+                del _user_json["private_key"]
 
-            # Remove private key
-            del _user_json["private_key"]
+                # Remaining Budget
+                # TODO:
+                # Rename it from budget_spent to remaining budget
+                _user_json["budget_spent"] = node.acc.get_remaining_budget(  # type: ignore
+                    user_key=VerifyKey(
+                        user.verify_key.encode("utf-8"), encoder=HexEncoder
+                    ),
+                    returned_epsilon_is_private=False,
+                )
+                _msg.append(_user_json)
 
-            # Remaining Budget
-            # TODO:
-            # Rename it from budget_spent to remaining budget
-            _user_json["budget_spent"] = node.acc.get_remaining_budget(  # type: ignore
-                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
-                returned_epsilon_is_private=False,
-            )
-            _msg.append(_user_json)
-
-            return _msg
-
+                return _msg

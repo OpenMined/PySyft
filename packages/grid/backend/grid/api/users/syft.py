@@ -2,13 +2,13 @@
 import os
 from typing import List
 
-# syft absolute
-if  os.getenv("USE_NEW_SERVICE", True):
+if os.getenv("USE_NEW_SERVICE", True):
+    # syft absolute
     from syft.core.node.common.node_service.user_manager.new_user_messages import (
-           GetUserMessage,
+        GetUserMessage,
     )
     from syft.core.node.common.node_service.user_manager.new_user_messages import (
-           GetUsersMessage,
+        GetUsersMessage,
     )
 else:
     from syft.core.node.common.node_service.user_manager.user_manager_service import (
@@ -18,6 +18,7 @@ else:
         GetUsersMessage,
     )
 
+# syft absolute
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     CreateUserMessage,
 )
@@ -40,7 +41,6 @@ from grid.api.users.models import UserCandidate
 from grid.api.users.models import UserCreate
 from grid.api.users.models import UserPrivate
 from grid.api.users.models import UserUpdate
-from grid.core.node import get_client
 from grid.utils import send_message_with_reply
 
 
@@ -80,10 +80,11 @@ def get_all_users(current_user: UserPrivate) -> List[User]:
 
 def get_user(user_id: int, current_user: UserPrivate) -> User:
     return send_message_with_reply(
-            signing_key=current_user.get_signing_key(),
-            message_type=GetUserMessage,
-            user_id=user_id,
-        )
+        signing_key=current_user.get_signing_key(),
+        message_type=GetUserMessage,
+        user_id=user_id,
+    )
+
 
 def update_user(
     user_id: int, current_user: UserPrivate, updated_user: UserUpdate

@@ -1,7 +1,7 @@
 # stdlib
+import os
 from typing import Any
 from typing import Optional
-import os
 
 # third party
 from nacl.signing import SigningKey
@@ -32,16 +32,18 @@ def send_message_with_reply(
 
     use_new_service = os.getenv("USE_NEW_SERVICE", True)
     if use_new_service:
-            msg = message_type(address=address, reply_to=reply_to, kwargs=content).sign(signing_key=signing_key)
-            reply = client.send_immediate_msg_with_reply(msg=msg)
-            try:
-                reply = reply.kwargs.upcast()
-            except:
-                reply = reply.kwargs
+        msg = message_type(address=address, reply_to=reply_to, kwargs=content).sign(
+            signing_key=signing_key
+        )
+        reply = client.send_immediate_msg_with_reply(msg=msg)
+        try:
+            reply = reply.kwargs.upcast()
+        except Exception:
+            reply = reply.kwargs
     else:
-            msg = message_type(address=address, reply_to=reply_to, **content)
-            reply = client.send_immediate_msg_with_reply(msg=msg)
-            reply.content.upcast()
+        msg = message_type(address=address, reply_to=reply_to, **content)
+        reply = client.send_immediate_msg_with_reply(msg=msg)
+        reply.content.upcast()
 
     check_if_syft_reply_is_exception(reply)
     return reply
