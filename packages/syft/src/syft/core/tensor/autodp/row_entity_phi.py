@@ -5,7 +5,6 @@ from __future__ import annotations
 from collections.abc import Sequence
 
 # from functools import reduce
-import multiprocessing as mp
 from typing import Any
 from typing import Dict
 from typing import List
@@ -24,7 +23,9 @@ from ....core.adp.entity import Entity
 from ....proto.core.adp.phi_tensor_pb2 import (
     RowEntityPhiTensor as RowEntityPhiTensor_PB,
 )
+from ....util import concurrency_count
 from ....util import parallel_execution
+from ....util import split_rows
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
@@ -39,7 +40,6 @@ from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
-from syft.util import split_rows
 
 
 def row_serialize(*rows: Any) -> List[Deserializeable]:
@@ -51,8 +51,6 @@ def row_deserialize(*rows: Deserializeable) -> List[Any]:
     for row in rows:
         output.append(deserialize(row, from_bytes=True))
     return output
-
-
 
 
 @serializable()
@@ -1029,7 +1027,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             # serde_concurrency == 1 means auto detect cpu count
             # serde_concurrency >= 2 means manually set process count
             cpu_count = (
-                self.serde_concurrency if self.serde_concurrency > 1 else mp.cpu_count()
+                self.serde_concurrency
+                if self.serde_concurrency > 1
+                else concurrency_count()
             )
             print(
                 "Serializing with proto.serde_concurrency == ",
@@ -1075,7 +1075,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             cpu_count = (
                 proto.serde_concurrency
                 if proto.serde_concurrency > 1
-                else mp.cpu_count()
+                else concurrency_count()
             )
             print(
                 "Serializing with proto.serde_concurrency == ",

@@ -6,6 +6,7 @@ from concurrent.futures import ThreadPoolExecutor
 from contextlib import contextmanager
 import functools
 from itertools import repeat
+import multiprocessing as mp
 import operator
 import os
 from pathlib import Path
@@ -15,9 +16,9 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Sequence
 from typing import Type
 from typing import Union
-from typing import Sequence
 
 # third party
 from forbiddenfruit import curse
@@ -603,6 +604,7 @@ def parallel_execution(
 
     return wrapper
 
+
 def split_rows(rows: Sequence, cpu_count: int) -> List:
     n = len(rows)
     a, b = divmod(n, cpu_count)
@@ -614,8 +616,13 @@ def split_rows(rows: Sequence, cpu_count: int) -> List:
         start = end
     return output
 
+
 def list_sum(*inp_lst):
-    s=inp_lst[0]
+    s = inp_lst[0]
     for i in inp_lst[1:]:
-        s = s+i
+        s = s + i
     return s
+
+
+def concurrency_count(factor: float = 0.8) -> int:
+    return mp.cpu_count() * factor
