@@ -294,7 +294,7 @@ class RedisStore(ObjectStore):
             local_session.close()
             return obj
         except Exception as e:
-            print("Failed to __getitem__", key, e)
+            raise KeyError(f"Object not found! for UID: {key}")
 
     def is_dataset(self, key: UID) -> bool:
         local_session = sessionmaker(bind=self.db)()
