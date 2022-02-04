@@ -26,9 +26,9 @@ class DomainServiceClass(NodeService):
         verify_key: Optional[VerifyKey] = None,
     ) -> GenericPayloadMessageWithReply:
 
-        result = msg.payload.run(node=node, verify_key=verify_key)
-        payload_class = msg.payload.__class__
-        return payload_class(kwargs=result).back_to(address=msg.reply_to)
+        result = msg.run(node=node, verify_key=verify_key)
+        payload_class = msg.__class__
+        return payload_class(address=msg.reply_to, kwargs=result)
 
     @staticmethod
     def message_handler_types() -> list:
