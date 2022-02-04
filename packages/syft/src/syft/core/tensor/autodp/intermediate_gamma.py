@@ -599,6 +599,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     "Cannot add two tensors with different symbol encodings"
                 )
 
+            output_scalar_manager = self.scalar_manager.copy()
+            output_scalar_manager.combine_(other.scalar_manager)
+
             # Step 1: Concatenate
             term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)  # type: ignore
             coeff_tensor = np.concatenate(  # type: ignore
@@ -622,7 +625,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
-            scalar_manager=self.scalar_manager.copy(),
+            scalar_manager=output_scalar_manager,
             unique_entities=unique_entities,
         )
 
