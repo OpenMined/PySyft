@@ -71,7 +71,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
             read_permissions=read_permissions,
             search_permissions=search_permissions,
         )
-        print("PublishScalarsService:74:  msg.id_at_location == " + str(msg.id_at_location))
+        print("PublishScalarsService:74:  msg.id_at_location == " + str(msg.id_at_location) + " obj_type:" + str(type(storable)))
         print("PublishScalarsService:75: TRY: node.store[msg.id_at_location] = storable")
         node.store[msg.id_at_location] = storable
         print("PublishScalarsService:77: SUCCESS: node.store[msg.id_at_location] = storable")
