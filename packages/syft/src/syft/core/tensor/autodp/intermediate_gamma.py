@@ -591,11 +591,11 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             if isinstance(other, SingleEntityPhiTensor):
                 other = convert_to_gamma_tensor(other)
 
-            if self.scalar_manager != other.scalar_manager:
+            # if self.scalar_manager != other.scalar_manager:
                 # TODO: come up with a method for combining symbol factories
-                raise Exception(
-                    "Cannot add two tensors with different symbol encodings"
-                )
+                # raise Exception(
+                #     "Cannot add two tensors with different symbol encodings"
+                # )
 
             output_scalar_manager = self.scalar_manager.copy()
             output_scalar_manager.combine_(other.scalar_manager)
