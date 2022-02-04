@@ -2,13 +2,22 @@
 import os
 from typing import List
 
-if os.getenv("USE_NEW_SERVICE", True):
+if bool(os.getenv("USE_NEW_SERVICE", True)):
     # syft absolute
+    from syft.core.node.common.node_service.user_manager.new_user_messages import (
+        CreateUserMessage,
+    )
+    from syft.core.node.common.node_service.user_manager.new_user_messages import (
+        DeleteUserMessage,
+    )
     from syft.core.node.common.node_service.user_manager.new_user_messages import (
         GetUserMessage,
     )
     from syft.core.node.common.node_service.user_manager.new_user_messages import (
         GetUsersMessage,
+    )
+    from syft.core.node.common.node_service.user_manager.new_user_messages import (
+        UpdateUserMessage,
     )
 else:
     from syft.core.node.common.node_service.user_manager.user_manager_service import (
@@ -17,22 +26,23 @@ else:
     from syft.core.node.common.node_service.user_manager.user_manager_service import (
         GetUsersMessage,
     )
+    from syft.core.node.common.node_service.user_manager.user_manager_service import (
+        UpdateUserMessage,
+    )
+    from syft.core.node.common.node_service.user_manager.user_manager_service import (
+        CreateUserMessage,
+    )
+    from syft.core.node.common.node_service.user_manager.user_manager_service import (
+        DeleteUserMessage,
+    )
+
 
 # syft absolute
-from syft.core.node.common.node_service.user_manager.user_manager_service import (
-    CreateUserMessage,
-)
-from syft.core.node.common.node_service.user_manager.user_manager_service import (
-    DeleteUserMessage,
-)
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     GetCandidatesMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_manager_service import (
     ProcessUserCandidateMessage,
-)
-from syft.core.node.common.node_service.user_manager.user_manager_service import (
-    UpdateUserMessage,
 )
 
 # grid absolute
@@ -50,6 +60,7 @@ def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
         message_type=CreateUserMessage,
         **dict(new_user)
     )
+    reply = type("message", (object,), dict(reply))()
     return reply.resp_msg
 
 
@@ -95,6 +106,7 @@ def update_user(
         user_id=user_id,
         **updated_user.dict(exclude_unset=True)
     )
+    reply = type("message", (object,), dict(reply))()
     return reply.resp_msg
 
 
@@ -104,6 +116,6 @@ def delete_user(user_id: int, current_user: UserPrivate) -> str:
         message_type=DeleteUserMessage,
         user_id=user_id,
     )
-
+    reply = type("message", (object,), dict(reply))()
     # return reply.message - if the other one doesn't work try this one? ;)
     return reply.resp_msg
