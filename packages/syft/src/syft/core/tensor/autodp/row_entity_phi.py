@@ -11,6 +11,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
+from functools import reduce
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -553,7 +554,47 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
+    def pre_sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
+        # new_list = list()
+        # for row in self.child:
+        #     result = row.sum(*args, **kwargs)
+        #     new_list.append(result.astype(self.dtype))
+        split_lst = []  # contains the different entities
+        d = {}  # mapping of entities to list index
+        c = 0  # to keep track of index count
+        for i in self.child:
+            if i.entity not in d:
+                d[i.entity] = c
+                split_lst.append([i])
+                c += 1
+            else:
+                split_lst[d[i.entity]].append(i)
+
+        def list_sum(
+            a: SingleEntityPhiTensor, b: SingleEntityPhiTensor
+        ) -> SingleEntityPhiTensor:
+            return a + b
+
+        final_lst = []
+        for i in split_lst:
+            final_lst.append(reduce(list_sum, i))
+
+        return RowEntityPhiTensor(final_lst)
+
+        # result_tensor = reduce(list_sum, final_lst)
+
+        # return result_tensor.astype(self.dtype)
+
     def sum(self, *args: Any, **kwargs: Any) -> IGT:
+        # pre-sum sums all of the rows which are SEPT with the same
+        # entity, this will reduce the number of input scalars for
+        # the gamma tensor dramatically if there are any shared
+        # entities. Final sum completes the sum, usually
+        # returning a gammatensor.
+        return self.pre_sum(*args, **kwargs).final_sum(*args, **kwargs)
+
+    # Since this is being used differently compared to supertype, ignoring type annotation errors
+    def final_sum(self, *args: Any, **kwargs: Any) -> IGT:
         # TODO: Check if this works if the number of dimensions/axes are passed as args/kwargs
 
         # pre-initialize result

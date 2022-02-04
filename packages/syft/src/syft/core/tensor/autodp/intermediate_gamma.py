@@ -507,7 +507,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         return self.term_tensor.shape
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
-
+        print("IntermediaGammaTensor:510: TRY: publish(scalars=self.flat_scalars)")
         result = np.array(
             publish(
                 scalars=self.flat_scalars,
@@ -517,7 +517,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 public_only=True,
             )
         ).reshape(self.shape)
-
+        print("IntermediaGammaTensor:510: SUCCESS: publish(scalars=self.flat_scalars)")
         sharetensor_values = getattr(self, "sharetensor_values", None)
         if sharetensor_values is not None:
             # relative
