@@ -167,6 +167,8 @@ class VirtualMachinePrivateScalarManager:
                     index = 0
                     length = len(self.prime_factory.prime_numbers)
                     while prime_number >= self.prime_factory.prime_numbers[index]:
+                        if index >= length:
+                            break
                         index += 1
                     new_prime = self.prime_factory.get(prime_number)
                     gs.prime = new_prime
