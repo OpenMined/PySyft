@@ -1,12 +1,13 @@
 # stdlib
 from typing import Any
 from typing import Optional
+import os
 
 # third party
 from nacl.signing import SigningKey
 
 # syft absolute
-from syft.core.common.message import ImmediateSyftMessageWithReply
+from syft.core.common.message import SyftMessage
 from syft.core.io.address import Address
 from syft.core.node.common.action.exception_action import ExceptionMessage
 from syft.lib.python.dict import Dict
@@ -17,7 +18,7 @@ from grid.core.node import get_client
 
 def send_message_with_reply(
     signing_key: SigningKey,
-    message_type: ImmediateSyftMessageWithReply,
+    message_type: SyftMessage,
     address: Optional[Address] = None,
     reply_to: Optional[Address] = None,
     **content: Any
@@ -29,8 +30,18 @@ def send_message_with_reply(
     if reply_to is None:
         reply_to = client.address
 
-    msg = message_type(address=address, reply_to=reply_to, **content)
-    reply = client.send_immediate_msg_with_reply(msg=msg)
+    use_new_service = os.getenv("USE_NEW_SERVICE", True)
+    if use_new_service:
+            msg = message_type(address=address, reply_to=reply_to, kwargs=content).sign(signing_key=signing_key)
+            reply = client.send_immediate_msg_with_reply(msg=msg)
+            try:
+                reply = reply.kwargs.upcast()
+            except:
+                reply = reply.kwargs
+    else:
+            msg = message_type(address=address, reply_to=reply_to, **content)
+            reply = client.send_immediate_msg_with_reply(msg=msg)
+            reply.content.upcast()
 
     check_if_syft_reply_is_exception(reply)
     return reply
