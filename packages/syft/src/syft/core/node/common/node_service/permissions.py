@@ -1,5 +1,6 @@
 # stdlib
 from functools import wraps
+from typing import List
 
 
 class AND:
@@ -7,8 +8,10 @@ class AND:
         self.op1 = op1
         self.op2 = op2
 
-    def has_permission(self, node):
-        return self.op1.has_permission(node) and self.op2.has_permission(node)
+    def has_permission(self, node, verify_key):
+        return self.op1.has_permission(node, verify_key) and self.op2.has_permission(
+            node, verify_key
+        )
 
 
 class OR:
@@ -30,53 +33,25 @@ class NOT:
         return not self.op1.has_permission(node, verify_key)
 
 
-class OperationHolderMixin:
+class BasePermissionMetaclass(type):
     def __and__(self, other):
-        return OperandHolder(AND, self, other)
+        return AND(self, other)
 
     def __or__(self, other):
-        return OperandHolder(OR, self, other)
+        return OR(self, other)
 
     def __rand__(self, other):
-        return OperandHolder(AND, other, self)
+        return AND(other, self)
 
     def __ror__(self, other):
-        return OperandHolder(OR, other, self)
+        return OR(other, self)
 
     def __invert__(self):
-        return SingleOperandHolder(NOT, self)
-
-
-class SingleOperandHolder(OperationHolderMixin):
-    def __init__(self, operator_class, op1_class):
-        self.operator_class = operator_class
-        self.op1_class = op1_class
-
-    def __call__(self, *args, **kwargs):
-        op1 = self.op1_class(*args, **kwargs)
-        return self.operator_class(op1)
-
-
-class OperandHolder(OperationHolderMixin):
-    def __init__(self, operator_class, op1_class, op2_class):
-        self.operator_class = operator_class
-        self.op1_class = op1_class
-        self.op2_class = op2_class
-
-    def __call__(self, *args, **kwargs):
-        op1 = self.op1_class(*args, **kwargs)
-        op2 = self.op2_class(*args, **kwargs)
-        return self.operator_class(op1, op2)
-
-
-class BasePermissionMetaclass(OperationHolderMixin, type):
-    pass
+        return NOT(self)
 
 
 class BasePermission(metaclass=BasePermissionMetaclass):
-    """
-    A base class from which all permission classes should inherit.
-    """
+    """A base class from which all permission classes should inherit."""
 
     def has_permission(self, node, verify_key):
         """
@@ -85,12 +60,19 @@ class BasePermission(metaclass=BasePermissionMetaclass):
         return True
 
 
-def check_permissions(permission_classes=[]):
+def check_permissions(permission_classes: List = []):
+    """A decorator to check the given the permission classes are satisfied.
+        Raises an appropriate exception if one of the permission is not permitted.
+
+    Args:
+        permission_classes (List, optional): List of permission classes. Defaults to [].
+    """
+
     def decorator(func):
         @wraps(func)
         def wrapper_func(*args, **kwargs):
-            for permission in permission_classes:
-                if not permission.has_permission(*args, **kwargs):
+            for permission_class in permission_classes:
+                if not permission_class.has_permission(*args, **kwargs):
                     raise Exception()
             return func(*args, **kwargs)
 

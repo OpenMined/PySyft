@@ -21,11 +21,16 @@ from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
 from ...node_table.utils import model_to_json
 from ..generic_payload.syft_message import SyftMessage
+from ..permissions import check_permissions
+from .user_permissions import UserCanTriageRequest
 
 
 @serializable(recursive_serde=True)
 @final
 class GetUserMessage(SyftMessage, DomainMessageRegistry):
+    permission_classes = [UserCanTriageRequest]
+
+    @check_permissions(permission_classes=permission_classes)
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Union[List, Dict[str, Any]]:
