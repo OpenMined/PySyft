@@ -19,6 +19,7 @@ from sympy.ntheory.factor_ import factorint
 # relative
 from ....core.adp.entity import DataSubjectGroup
 from ....core.adp.entity import Entity
+from ....core.adp.intermediate_gamma_scalar import IntermediateGammaScalar
 from ....util import concurrency_count
 from ....util import list_sum
 from ....util import parallel_execution
@@ -167,7 +168,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             args = split_rows(input_mp, cpu_count=num_process)
             # print(args)
             output = parallel_execution(list_sum, cpu_bound=True)(args)
-            scalar = sum(output)
+            scalar: IntermediateGammaScalar = sum(output)
 
             # print("Known Primes in List:" + str(len(known_primes)))
             # to optimize down stream we can prevent search on linear queries if we

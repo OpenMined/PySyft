@@ -38,9 +38,9 @@ class BaseScalar(Scalar):
         id: Optional[UID] = None,
     ) -> None:
         self.id = id if id else UID()
-        self._min_val = float(min_val)
+        self._min_val: Optional[float] = float(min_val)
         self._value = float(value) if value is not None else None
-        self._max_val = float(max_val)
+        self._max_val: Optional[float] = float(max_val)
         self.entity = entity if entity is not None else Entity()
 
     @property
