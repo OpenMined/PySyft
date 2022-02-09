@@ -82,10 +82,10 @@ class UID:
 
             # for more info on how this UUID is generated:
             # https://docs.python.org/3/library/uuid.html
-            uuid_value = next(uuid_value_generator, uuid.uuid4())
+            value = next(uuid_value_generator, uuid.uuid4())
         # save the ID's value. Note that this saves the uuid value
         # itself instead of saving the
-        self.value = uuid_value
+        self.value = value
 
     @staticmethod
     def from_string(value: str) -> "UID":
