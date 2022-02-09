@@ -266,14 +266,14 @@ class RedisStore(ObjectStore):
             key_str = key
             key_uid = UID.from_string(key_str)
 
-        bin = self.redis.get(key_str)
-        obj = syft.deserialize(bin, from_bytes=True)
+        obj = self.redis.get(key_str)
         obj_metadata = (
             local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
         )
-
         if obj is None or obj_metadata is None:
-            raise KeyError(f"Object not found! for UID: {key_uid}")
+            raise KeyError(f"Object not found! for UID: {key_str}")
+
+        obj = syft.deserialize(obj, from_bytes=True)
 
         obj = StorableObject(
             id=key_uid,
