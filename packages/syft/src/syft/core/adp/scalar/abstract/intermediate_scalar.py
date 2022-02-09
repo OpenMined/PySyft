@@ -115,7 +115,7 @@ class IntermediateScalar(Scalar):
     def value(self) -> Optional[float]:
 
         if hasattr(self, "_value_cache"):
-            return self._value_cache
+            return self._value_cache  # type: ignore
 
         if self.poly is not None:
             result = EM(

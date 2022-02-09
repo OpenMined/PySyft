@@ -36,12 +36,14 @@ class PrimeFactory:
     security leaks wherein two tensors think two different symbols in fact are the
     same symbol."""
 
-    def __init__(self, prime_index: int = 0, init_highest_prime=15485867) -> None:
+    def __init__(
+        self, prime_index: int = 0, init_highest_prime: int = 15485867
+    ) -> None:
         self.prev_prime_index = prime_index
         self.exp = 2
         self.prime_numbers: list = primes(10**self.exp)
 
-    def get(self, index) -> int:
+    def get(self, index: int) -> int:
         while index > len(self.prime_numbers) - 1:
             self.exp += 1
             self.prime_numbers = primes(10**self.exp)

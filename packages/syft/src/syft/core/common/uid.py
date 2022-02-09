@@ -1,5 +1,6 @@
 # stdlib
 from typing import Any
+from typing import Generator
 from typing import Optional
 import uuid
 from uuid import UUID as uuid_type
@@ -25,7 +26,7 @@ class UIDValueGenerator:
         for _ in range(n_uids):
             self.uid_store.append(uuid.uuid4())
 
-    def get_uid(self) -> None:
+    def get_uid(self) -> Generator:
         for uid in self.uid_store:
             yield uid
 
@@ -81,10 +82,10 @@ class UID:
 
             # for more info on how this UUID is generated:
             # https://docs.python.org/3/library/uuid.html
-            value = next(uuid_value_generator, uuid.uuid4())
+            uuid_value = next(uuid_value_generator, uuid.uuid4())
         # save the ID's value. Note that this saves the uuid value
         # itself instead of saving the
-        self.value = value
+        self.value = uuid_value
 
     @staticmethod
     def from_string(value: str) -> "UID":
