@@ -8,10 +8,12 @@
 from functools import lru_cache
 import math
 from typing import Dict as TypeDict
+from typing import Iterable
 from typing import KeysView as TypeKeysView
 from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -29,7 +31,9 @@ from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
 
 
-def compose_mechanisms(mechanisms, delta):
+def compose_mechanisms(
+    mechanisms: Iterable[iDPGaussianMechanism], delta: float
+) -> float:
     sigmas = list()
     squared_l2_norms = list()
     squared_l2_norm_upper_bounds = list()
@@ -43,21 +47,25 @@ def compose_mechanisms(mechanisms, delta):
         Ls.append(m.params["L"])
         values.append(m.params["value"])
 
-    sigmas = tuple(sigmas)
-    squared_l2_norms = tuple(squared_l2_norms)
-    squared_l2_norm_upper_bounds = tuple(squared_l2_norm_upper_bounds)
-    Ls = tuple(Ls)
-    values = tuple(values)
-
     return compose_mechanisms_via_simplified_args_for_lru_cache(
-        sigmas, squared_l2_norms, squared_l2_norm_upper_bounds, Ls, values, delta
+        tuple(sigmas),
+        tuple(squared_l2_norms),
+        tuple(squared_l2_norm_upper_bounds),
+        tuple(Ls),
+        tuple(values),
+        delta,
     )
 
 
 @lru_cache(maxsize=None)
 def compose_mechanisms_via_simplified_args_for_lru_cache(
-    sigmas, squared_l2_norms, squared_l2_norm_upper_bounds, Ls, values, delta
-):
+    sigmas: Tuple[float],
+    squared_l2_norms: Tuple[float],
+    squared_l2_norm_upper_bounds: Tuple[float],
+    Ls: Tuple[float],
+    values: Tuple[float],
+    delta: float,
+) -> float:
     mechanisms = list()
     for i in range(len(sigmas)):
 

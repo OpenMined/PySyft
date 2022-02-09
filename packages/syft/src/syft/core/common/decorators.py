@@ -1,8 +1,12 @@
 # stdlib
 import functools
+from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import List
 
 
-def singleton(cls):
+def singleton(cls: Any) -> Callable:
     """
     Handy decorator for creating a singleton class
     Description:
@@ -28,10 +32,10 @@ def singleton(cls):
         True
         >>>
     """
-    previous_instances = {}
+    previous_instances: Dict[Any, Any] = {}
 
     @functools.wraps(cls)
-    def wrapper(*args, **kwargs):
+    def wrapper(*args: List[Any], **kwargs: Dict[Any, Any]) -> Any:
         if cls in previous_instances and previous_instances.get(cls, None).get(
             "args"
         ) == (args, kwargs):

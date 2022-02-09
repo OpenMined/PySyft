@@ -17,15 +17,15 @@ from .serde.serializable import serializable
 
 @singleton
 class UIDValueGenerator:
-    def __init__(self, n_uids=100000) -> None:
+    def __init__(self, n_uids: int = 100000) -> None:
         self.uid_store: list[uuid_type] = []
         self.__prepopulate(n_uids)
 
-    def __prepopulate(self, n_uids):
+    def __prepopulate(self, n_uids: int) -> None:
         for _ in range(n_uids):
             self.uid_store.append(uuid.uuid4())
 
-    def get_uid(self):
+    def get_uid(self) -> None:
         for uid in self.uid_store:
             yield uid
 

@@ -227,7 +227,7 @@ class RedisStore(ObjectStore):
         return self.values().__sizeof__()
 
     def __str__(self) -> str:
-        print("RedisStore __str__")
+        return str(self.values())
 
     def __len__(self) -> int:
         return self.client.dbsize()

@@ -628,7 +628,7 @@ def split_rows(rows: Sequence, cpu_count: int) -> List:
     return output
 
 
-def list_sum(*inp_lst):
+def list_sum(*inp_lst: List[Any]) -> Any:
     s = inp_lst[0]
     for i in inp_lst[1:]:
         s = s + i
