@@ -109,12 +109,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
         resolved_self = None
         if not self.is_static:
-            if self._self.id_at_location in cache_obj:
-                resolved_self = cache_obj[self._self.id_at_location]
-            else:
-                resolved_self = retrieve_object(
-                    node, self._self.id_at_location, self.path
-                )
+            resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
             result_read_permissions = resolved_self.read_permissions  # type: ignore
         else:
             result_read_permissions = {}
@@ -153,9 +148,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            # resolved_self_previous_bytes = sy.serialize(
-            #     resolved_self.data, to_bytes=True
-            # )
+            resolved_self_previous_bytes = sy.serialize(
+                resolved_self.data, to_bytes=True
+            )
             method_name = self.path.split(".")[-1]
 
             target_method = getattr(resolved_self.data, method_name, None)
@@ -203,18 +198,17 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         # check if resolved_self has changed and if so mark as mutating_internal
         # this prevents someone from mutating an object they own with something they
         # do not own and the read_permissions not flowing backwards
-        # TODO: Rasswanth revert after
-        # if (
-        #     resolved_self_previous_bytes is not None
-        #     and resolved_self is not None
-        #     and resolved_self_previous_bytes
-        #     != sy.serialize(resolved_self.data, to_bytes=True)
-        # ):
-        #     mutating_internal = True
+        if (
+            resolved_self_previous_bytes is not None
+            and resolved_self is not None
+            and resolved_self_previous_bytes
+            != sy.serialize(resolved_self.data, to_bytes=True)
+        ):
+            mutating_internal = True
 
-        # if mutating_internal:
-        #     if isinstance(resolved_self, StorableObject):
-        #         resolved_self.read_permissions = result_read_permissions
+        if mutating_internal:
+            if isinstance(resolved_self, StorableObject):
+                resolved_self.read_permissions = result_read_permissions
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,

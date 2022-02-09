@@ -50,6 +50,3 @@ def create_client_ast(client: Optional[AbstractNodeClient] = None) -> Any:
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
-
-
-cache_obj = {}
