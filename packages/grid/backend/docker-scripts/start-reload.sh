@@ -32,10 +32,6 @@ else
 fi
 
 # Start Uvicorn with live reload
-if [ -z $SCALENE ] ; then
-    exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
-else
-    scalene --json --outfile "/tmp/profile/${SERVICE_NAME}.json" grid/profile.py
-fi
+exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
 
 ## fetched from https://github.com/tiangolo/uvicorn-gunicorn-docker/blob/master/docker-images/start.sh

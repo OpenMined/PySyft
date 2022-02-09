@@ -68,8 +68,8 @@ def test_sept_child() -> None:
     rows = 10_000
     cols = 7
     # these times and sizes are based on the above constants and Madhavas MacBook Pro 2019
-    expected_sept_mem_size = 0.8034133911132812
-    expected_sept_ser_size = 0.000640869140625
+    expected_sept_mem_size = 0.8039932250976562
+    expected_sept_ser_size = 0.00063323974609375
     macbook_pro_2019_ser_time = 0.0011018469999997116
     macbook_pro_2019_de_time = 0.001034114000000308
 
@@ -131,8 +131,8 @@ def test_rept_child() -> None:
 
     # these times and sizes are based on the above constants
     # and Madhavas MacBook Pro 2019
-    expected_rept_mem_size = 4.0115203857421875
-    expected_rept_ser_size = 0.00281524658203125
+    expected_rept_mem_size = 4.012321472167969
+    expected_rept_ser_size = 0.00313568115234375
     macbook_pro_2019_ser_time = 0.002224604000000241
     macbook_pro_2019_de_time = 0.5911229659999995
 
@@ -140,9 +140,7 @@ def test_rept_child() -> None:
     rept_rows = [sept.copy() for i in range(rept_row_count)]
 
     rept = REPT(rows=rept_rows)
-    print("default serde_concurrency", rept.serde_concurrency)
     # rept.serde_concurrency = 1
-    print("using serde_concurrency", rept.serde_concurrency)
 
     start = timeit.default_timer()
     ser = sy.serialize(rept, to_bytes=True)
@@ -237,7 +235,3 @@ def test_big_sept_vs_rept_child() -> None:
     assert ((big_sept_metrics[0:2] - rept_metrics[0:2]) < 1e-3).all()
     # TODO: make time benchmarks stable (probably can't run in parallel)
     # assert ((big_sept_metrics[2:-1] - rept_metrics[2:-1]) < 1e-1).all()
-
-
-if __name__ == "__main__":
-    test_rept_child()

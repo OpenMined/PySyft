@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Iterable
 from typing import KeysView
 from typing import List
@@ -33,184 +34,181 @@ def create_storable(
     return obj
 
 
-# class BinObjectManager(ObjectStore):
-#     def __init__(self, db: Session) -> None:
-#         self.db = db
+class DictStore(ObjectStore):
+    def __init__(self, db: Session) -> None:
+        self.db = db
+        self.kv_store: dict[UID, Any] = {}
 
-#     def get_object(self, key: UID) -> Optional[StorableObject]:
-#         try:
-#             return self.__getitem__(key)
-#         except KeyError as e:  # noqa: F841
-#             return None
+    def get_object(self, key: UID) -> Optional[StorableObject]:
+        try:
+            return self.__getitem__(key)
+        except KeyError as e:  # noqa: F841
+            return None
 
-#     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
-#         return [obj for obj in self.values() if isinstance(obj.data, obj_type)]
+    def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
+        # raise NotImplementedError("get_objects_of_type")
+        # return [obj for obj in self.values() if isinstance(obj.data, obj_type)]
+        return self.values()
 
-#     def __sizeof__(self) -> int:
-#         return self.values().__sizeof__()
+    def __sizeof__(self) -> int:
+        return self.values().__sizeof__()
 
-#     def __str__(self) -> str:
-#         return str(self.values())
+    def __str__(self) -> str:
+        print("DictStore __str__")
 
-#     def __len__(self) -> int:
-#         local_session = sessionmaker(bind=self.db)()
-#         result = local_session.query(ObjectMetadata).count()
-#         local_session.close()
-#         return result
+    def __len__(self) -> int:
+        return len(self.kv_store.keys())
 
-#     def keys(self) -> KeysView[UID]:
-#         local_session = sessionmaker(bind=self.db)()
-#         keys = local_session.query(BinObject.id).all()
-#         keys = [UID.from_string(k[0]) for k in keys]
-#         local_session.close()
-#         return keys
+    def keys(self) -> KeysView[UID]:
+        return self.kv_store.keys()
 
-#     def values(self) -> List[StorableObject]:
-#         obj_keys = self.keys()
-#         values = []
-#         for key in obj_keys:
-#             try:
-#                 values.append(self.__getitem__(key))
-#             except Exception as e:  # noqa: F841
-#                 print("Unable to get item for key", key)  # TODO: TechDebt add logging
-#                 print(e)
-#         return values
+    def values(self) -> List[StorableObject]:
+        return self.kv_store.values()
 
-#     def __contains__(self, key: UID) -> bool:
-#         local_session = sessionmaker(bind=self.db)()
-#         result = (
-#             local_session.query(BinObject).filter_by(id=str(key.value)).first()
-#             is not None
-#         )
-#         local_session.close()
-#         return result
+    def __contains__(self, key: UID) -> bool:
+        return key in self.kv_store
 
-#     def __getitem__(self, key: UID) -> StorableObject:
-#         local_session = sessionmaker(bind=self.db)()
-#         bin_obj = local_session.query(BinObject).filter_by(id=str(key.value)).first()
-#         obj_metadata = (
-#             local_session.query(ObjectMetadata).filter_by(obj=str(key.value)).first()
-#         )
+    def __getitem__(self, key: Union[UID, str, bytes]) -> StorableObject:
+        try:
+            local_session = sessionmaker(bind=self.db)()
+            # bin_obj = local_session.query(BinObject).filter_by(id=str(key.value)).first()
 
-#         if not bin_obj or not obj_metadata:
-#             raise KeyError(f"Object not found! for UID: {key}")
+            if isinstance(key, UID):
+                key_str = str(key.value)
+                key_uid = key
+            elif isinstance(key, bytes):
+                key_str = str(key.decode("utf-8"))
+                key_uid = UID.from_string(key_str)
+            else:
+                key_str = key
+                key_uid = UID.from_string(key_str)
 
-#         obj = StorableObject(
-#             id=UID.from_string(bin_obj.id),
-#             data=bin_obj.obj,
-#             description=obj_metadata.description,
-#             tags=obj_metadata.tags,
-#             read_permissions=dict(
-#                 syft.deserialize(
-#                     bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
-#                 )
-#             ),
-#             search_permissions=dict(
-#                 syft.deserialize(
-#                     bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
-#                 )
-#             ),
-#             # name=obj_metadata.name,
-#         )
-#         local_session.close()
-#         return obj
+            obj = self.kv_store[key_uid]
+            obj_metadata = (
+                local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
+            )
 
-#     def is_dataset(self, key: UID) -> bool:
-#         local_session = sessionmaker(bind=self.db)()
-#         is_dataset_obj = (
-#             local_session.query(BinObjDataset).filter_by(obj=str(key.value)).exists()
-#         )
-#         is_dataset_obj = local_session.query(is_dataset_obj).scalar()
-#         local_session.close()
-#         return is_dataset_obj
+            if obj is None or obj_metadata is None:
+                raise KeyError(f"Object not found! for UID: {key_uid}")
 
-#     def _get_obj_dataset_relation(self, key: UID) -> Optional[BinObjDataset]:
-#         local_session = sessionmaker(bind=self.db)()
-#         obj_dataset_relation = (
-#             local_session.query(BinObjDataset).filter_by(obj=str(key.value)).first()
-#         )
-#         local_session.close()
-#         return obj_dataset_relation
+            obj = StorableObject(
+                id=key_uid,
+                data=obj,
+                description=obj_metadata.description,
+                tags=obj_metadata.tags,
+                read_permissions=dict(
+                    syft.deserialize(
+                        bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
+                    )
+                ),
+                search_permissions=dict(
+                    syft.deserialize(
+                        bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
+                    )
+                ),
+                # name=obj_metadata.name,
+            )
+            local_session.close()
+            return obj
+        except Exception as e:
+            print(f"Cant store object {key}", e)
+            raise KeyError(f"Object not found! for UID: {key}")
 
-#     def __setitem__(self, key: UID, value: StorableObject) -> None:
-#         bin_obj = BinObject(id=str(key.value), obj=value.data)
-#         # metadata_dict = storable_to_dict(value)
-#         metadata_obj = ObjectMetadata(
-#             obj=bin_obj.id,
-#             tags=value.tags,
-#             description=value.description,
-#             read_permissions=cast(
-#                 bytes,
-#                 syft.serialize(
-#                     syft.lib.python.Dict(value.read_permissions), to_bytes=True
-#                 ),
-#             ).hex(),
-#             search_permissions=cast(
-#                 bytes,
-#                 syft.serialize(
-#                     syft.lib.python.Dict(value.search_permissions), to_bytes=True
-#                 ),
-#             ).hex(),
-#             # name=metadata_dict["name"],
-#         )
+    def is_dataset(self, key: UID) -> bool:
+        local_session = sessionmaker(bind=self.db)()
+        is_dataset_obj = (
+            local_session.query(BinObjDataset).filter_by(obj=str(key.value)).exists()
+        )
+        is_dataset_obj = local_session.query(is_dataset_obj).scalar()
+        local_session.close()
+        return is_dataset_obj
 
-#         obj_dataset_relation = self._get_obj_dataset_relation(key)
-#         if obj_dataset_relation:
-#             # Create a object dataset relationship for the new object
-#             obj_dataset_relation = BinObjDataset(
-#                 id=obj_dataset_relation.id,
-#                 name=obj_dataset_relation.name,
-#                 obj=bin_obj.id,
-#                 dataset=obj_dataset_relation.dataset,
-#                 dtype=obj_dataset_relation.dtype,
-#                 shape=obj_dataset_relation.shape,
-#             )
+    def _get_obj_dataset_relation(self, key: UID) -> Optional[BinObjDataset]:
+        local_session = sessionmaker(bind=self.db)()
+        obj_dataset_relation = (
+            local_session.query(BinObjDataset).filter_by(obj=str(key.value)).first()
+        )
+        local_session.close()
+        return obj_dataset_relation
 
-#         if self.__contains__(key):
-#             self.delete(key)
+    def __setitem__(self, key: UID, value: StorableObject) -> None:
+        try:
+            self.kv_store[key] = value
+        except Exception as e:
+            print(f"failed to add {key} and value to dict", e)
 
-#         local_session = sessionmaker(bind=self.db)()
-#         local_session.add(bin_obj)
-#         local_session.add(metadata_obj)
-#         local_session.add(obj_dataset_relation) if obj_dataset_relation else None
-#         local_session.commit()
-#         local_session.close()
+        metadata_obj = ObjectMetadata(
+            obj=str(key.value),
+            tags=value.tags,
+            description=value.description,
+            read_permissions=cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.read_permissions), to_bytes=True
+                ),
+            ).hex(),
+            search_permissions=cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.search_permissions), to_bytes=True
+                ),
+            ).hex(),
+            # name=metadata_dict["name"],
+        )
 
-#     def delete(self, key: UID) -> None:
-#         try:
-#             local_session = sessionmaker(bind=self.db)()
+        obj_dataset_relation = self._get_obj_dataset_relation(key)
+        if obj_dataset_relation:
+            # Create a object dataset relationship for the new object
+            obj_dataset_relation = BinObjDataset(
+                id=obj_dataset_relation.id,
+                name=obj_dataset_relation.name,
+                obj=key,
+                dataset=obj_dataset_relation.dataset,
+                dtype=obj_dataset_relation.dtype,
+                shape=obj_dataset_relation.shape,
+            )
 
-#             object_to_delete = (
-#                 local_session.query(BinObject).filter_by(id=str(key.value)).first()
-#             )
-#             metadata_to_delete = (
-#                 local_session.query(ObjectMetadata)
-#                 .filter_by(obj=str(key.value))
-#                 .first()
-#             )
-#             local_session.delete(metadata_to_delete)
-#             local_session.delete(object_to_delete)
-#             local_session.commit()
-#             local_session.close()
-#         except Exception as e:
-#             print(f"{type(self)} Exception in __delitem__ error {key}. {e}")
+        local_session = sessionmaker(bind=self.db)()
+        local_session.add(metadata_obj)
+        local_session.add(obj_dataset_relation) if obj_dataset_relation else None
+        local_session.commit()
+        local_session.close()
 
-#     def clear(self) -> None:
-#         local_session = sessionmaker(bind=self.db)()
-#         local_session.query(BinObject).delete()
-#         local_session.query(ObjectMetadata).delete()
-#         local_session.commit()
-#         local_session.close()
+    def delete(self, key: UID) -> None:
+        try:
+            del self.kv_store[key]
+            local_session = sessionmaker(bind=self.db)()
+            metadata_to_delete = (
+                local_session.query(ObjectMetadata)
+                .filter_by(obj=str(key.value))
+                .first()
+            )
+            local_session.delete(metadata_to_delete)
+            local_session.commit()
+            local_session.close()
+        except Exception as e:
+            print(f"{type(self)} Exception in __delitem__ error {key}. {e}")
 
-#     def __repr__(self) -> str:
-#         return str(self.values())
+    def clear(self) -> None:
+        self.kv_store = {}
+        local_session = sessionmaker(bind=self.db)()
+        local_session.query(ObjectMetadata).delete()
+        local_session.commit()
+        local_session.close()
+
+    def __repr__(self) -> str:
+        return "DictStore __repr__"
 
 
 class RedisStore(ObjectStore):
     def __init__(self, db: Session) -> None:
         self.db = db
         print("connecting to redis")
-        self.redis = redis.Redis(host="redis", port=6379)
+        try:
+            self.redis = redis.Redis(host="redis", port=6379)
+        except Exception as e:
+            print("failed to load redis", e)
+            raise e
 
     def get_object(self, key: UID) -> Optional[StorableObject]:
         try:
@@ -251,9 +249,7 @@ class RedisStore(ObjectStore):
         return self.redis.contains(str(key.value))
 
     def __getitem__(self, key: Union[UID, str, bytes]) -> StorableObject:
-
         local_session = sessionmaker(bind=self.db)()
-        # bin_obj = local_session.query(BinObject).filter_by(id=str(key.value)).first()
 
         if isinstance(key, UID):
             key_str = str(key.value)
