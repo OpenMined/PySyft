@@ -14,7 +14,6 @@ import numpy as np
 import torch as th
 
 # relative
-from ... import cache_obj
 from ...... import deserialize
 from ......util import get_tracer
 from .....common.group import VERIFYALL

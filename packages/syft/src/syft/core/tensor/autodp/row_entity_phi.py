@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
+from functools import reduce
 
 # from functools import reduce
 from typing import Any
@@ -11,7 +12,6 @@ from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from functools import reduce
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -629,7 +629,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 )
                 flat_symbols.append(prime)
             unique_entities.add(row.entity)
-
 
         term_tensor = (
             np.array(flat_symbols).reshape([1, len(flat_symbols)]).astype(np.int32)

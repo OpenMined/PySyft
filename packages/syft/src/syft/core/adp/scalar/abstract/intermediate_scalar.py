@@ -114,7 +114,7 @@ class IntermediateScalar(Scalar):
     @property
     def value(self) -> Optional[float]:
 
-        if hasattr(self, '_value_cache'):
+        if hasattr(self, "_value_cache"):
             return self._value_cache
 
         if self.poly is not None:

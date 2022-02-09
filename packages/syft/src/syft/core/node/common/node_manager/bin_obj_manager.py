@@ -251,50 +251,48 @@ class RedisStore(ObjectStore):
         return self.redis.contains(str(key.value))
 
     def __getitem__(self, key: Union[UID, str, bytes]) -> StorableObject:
-        try:
-            local_session = sessionmaker(bind=self.db)()
-            # bin_obj = local_session.query(BinObject).filter_by(id=str(key.value)).first()
 
-            if isinstance(key, UID):
-                key_str = str(key.value)
-                key_uid = key
-            elif isinstance(key, bytes):
-                key_str = str(key.decode("utf-8"))
-                key_uid = UID.from_string(key_str)
-            else:
-                key_str = key
-                key_uid = UID.from_string(key_str)
+        local_session = sessionmaker(bind=self.db)()
+        # bin_obj = local_session.query(BinObject).filter_by(id=str(key.value)).first()
 
-            bin = self.redis.get(key_str)
-            obj = syft.deserialize(bin, from_bytes=True)
-            obj_metadata = (
-                local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
-            )
+        if isinstance(key, UID):
+            key_str = str(key.value)
+            key_uid = key
+        elif isinstance(key, bytes):
+            key_str = str(key.decode("utf-8"))
+            key_uid = UID.from_string(key_str)
+        else:
+            key_str = key
+            key_uid = UID.from_string(key_str)
 
-            if obj is None or obj_metadata is None:
-                raise KeyError(f"Object not found! for UID: {key_uid}")
+        bin = self.redis.get(key_str)
+        obj = syft.deserialize(bin, from_bytes=True)
+        obj_metadata = (
+            local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
+        )
 
-            obj = StorableObject(
-                id=key_uid,
-                data=obj,
-                description=obj_metadata.description,
-                tags=obj_metadata.tags,
-                read_permissions=dict(
-                    syft.deserialize(
-                        bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
-                    )
-                ),
-                search_permissions=dict(
-                    syft.deserialize(
-                        bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
-                    )
-                ),
-                # name=obj_metadata.name,
-            )
-            local_session.close()
-            return obj
-        except Exception as e:
-            raise KeyError(f"Object not found! for UID: {key}")
+        if obj is None or obj_metadata is None:
+            raise KeyError(f"Object not found! for UID: {key_uid}")
+
+        obj = StorableObject(
+            id=key_uid,
+            data=obj,
+            description=obj_metadata.description,
+            tags=obj_metadata.tags,
+            read_permissions=dict(
+                syft.deserialize(
+                    bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
+                )
+            ),
+            search_permissions=dict(
+                syft.deserialize(
+                    bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
+                )
+            ),
+            # name=obj_metadata.name,
+        )
+        local_session.close()
+        return obj
 
     def is_dataset(self, key: UID) -> bool:
         local_session = sessionmaker(bind=self.db)()
@@ -314,11 +312,9 @@ class RedisStore(ObjectStore):
         return obj_dataset_relation
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        try:
-            bin = syft.serialize(value.data, to_bytes=True)
-            self.redis.set(str(key.value), bin)
-        except Exception as e:
-            print("failed to write key to redis", key)
+
+        bin = syft.serialize(value.data, to_bytes=True)
+        self.redis.set(str(key.value), bin)
 
         metadata_obj = ObjectMetadata(
             obj=str(key.value),

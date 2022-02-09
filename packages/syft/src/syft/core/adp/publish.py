@@ -73,19 +73,28 @@ def publish(
     )
     print("publish.py:74: SUCCESS: overbudgeted_entities = acc.overbudgeted_entities(")
 
-    print("publish.py:76: TRY:  if len(overbudgeted_entities) > 0: scalars = deepcopy(scalars)")
+    print(
+        "publish.py:76: TRY:  if len(overbudgeted_entities) > 0: scalars = deepcopy(scalars)"
+    )
     # so that we don't modify the original polynomial
     # it might be fine to do so but just playing it safe
     if len(overbudgeted_entities) > 0:
         scalars = deepcopy(scalars)
-    print("publish.py:81: SUCCESS:  if len(overbudgeted_entities) > 0: scalars = deepcopy(scalars)")
+    print(
+        "publish.py:81: SUCCESS:  if len(overbudgeted_entities) > 0: scalars = deepcopy(scalars)"
+    )
 
     # If some overbudgeted entity is found, run this.
     iterator = 0
     while len(overbudgeted_entities) > 0 and iterator < 3:
-        print("publish.py:86: INSIDE:  while len(overbudgeted_entities) > 0 and iterator < 3:")
+        print(
+            "publish.py:86: INSIDE:  while len(overbudgeted_entities) > 0 and iterator < 3:"
+        )
         iterator += 1
-        print("publish.py:88: len(overbudgeted_entities) == " + str(len(overbudgeted_entities)))
+        print(
+            "publish.py:88: len(overbudgeted_entities) == "
+            + str(len(overbudgeted_entities))
+        )
         print("publish.py:89:  for output_scalar in scalars:")
         input_scalars = set()
         for output_scalar in scalars:
@@ -127,19 +136,27 @@ def publish(
         acc.temp_append(ms)
         print("publish.py:127:  SUCCESS: acc.temp_append(ms)")
 
-        print("publish.py:130:  TRY:  overbudgeted_entities = acc.overbudgeted_entities(")
+        print(
+            "publish.py:130:  TRY:  overbudgeted_entities = acc.overbudgeted_entities("
+        )
         overbudgeted_entities = acc.overbudgeted_entities(
             temp_entities=acc.temp_entity2ledger,
             user_key=user_key,
             returned_epsilon_is_private=True,
         )
-        print("publish.py:136:  SUCCESS:  overbudgeted_entities = acc.overbudgeted_entities(")
+        print(
+            "publish.py:136:  SUCCESS:  overbudgeted_entities = acc.overbudgeted_entities("
+        )
 
-    print("publish.py:138:  TRY:  output = [s.value + random.gauss(0, sigma) for s in scalars]")
+    print(
+        "publish.py:138:  TRY:  output = [s.value + random.gauss(0, sigma) for s in scalars]"
+    )
     # Add to each scalar a a gaussian noise in an interval between
     # 0 to sigma value.
     output = [s.value + random.gauss(0, sigma) for s in scalars]
-    print("publish.py:142:  SUCCESS:  output = [s.value + random.gauss(0, sigma) for s in scalars]")
+    print(
+        "publish.py:142:  SUCCESS:  output = [s.value + random.gauss(0, sigma) for s in scalars]"
+    )
 
     print("publish.py:144:  TRY:  acc.save_temp_ledger_to_longterm_ledger()")
     # Persist the temporary ledger into the database.

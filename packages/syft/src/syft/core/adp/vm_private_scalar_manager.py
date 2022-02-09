@@ -11,7 +11,6 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from primesieve.numpy import primes
-import sympy as sp
 
 # relative
 from ...logger import warning
@@ -19,7 +18,6 @@ from ...proto.core.adp.scalar_manager_pb2 import (
     VirtualMachinePrivateScalarManager as VirtualMachinePrivateScalarManager_PB,
 )
 from ...proto.core.adp.scalar_manager_pb2 import PrimeFactory as PrimeFactory_PB
-from ..common.decorators import singleton
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize

@@ -13,7 +13,6 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # relative
-from .. import cache_obj
 from ..... import lib
 from .....logger import traceback_and_raise
 from .....logger import warning
