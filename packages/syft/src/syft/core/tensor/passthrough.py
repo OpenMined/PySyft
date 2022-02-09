@@ -18,7 +18,6 @@ import numpy as np
 import torch
 
 # relative
-# from ..pointer.pointer import Pointer
 from .util import implements
 from .util import query_implementation
 
