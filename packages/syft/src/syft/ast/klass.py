@@ -555,7 +555,10 @@ class Class(Callable):
         """Create pointer type for object."""
         attrs: Dict[str, Union[str, CallableT, property]] = {}
         for attr_name, attr in self.attrs.items():
-            attr_path_and_name = getattr(attr, "path_and_name", None)
+            attr_path_and_name: Optional[str] = getattr(attr, "path_and_name", None)
+
+            if attr_path_and_name is None:
+                raise Exception(f"Missing path_and_name in {self.attrs}")
 
             # attr_path_and_name None
             if isinstance(attr, ast.callable.Callable):
