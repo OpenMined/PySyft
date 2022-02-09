@@ -54,7 +54,7 @@ class DictStore(ObjectStore):
         return self.values().__sizeof__()
 
     def __str__(self) -> str:
-        print("DictStore __str__")
+        return f"{type(self)}"
 
     def __len__(self) -> int:
         return len(self.kv_store.keys())
@@ -197,7 +197,7 @@ class DictStore(ObjectStore):
         local_session.close()
 
     def __repr__(self) -> str:
-        return "DictStore __repr__"
+        return f"{type(self)}"
 
 
 class RedisStore(ObjectStore):
@@ -225,7 +225,7 @@ class RedisStore(ObjectStore):
         return self.values().__sizeof__()
 
     def __str__(self) -> str:
-        return str(self.values())
+        return f"{type(self)}"
 
     def __len__(self) -> int:
         return self.client.dbsize()
@@ -372,4 +372,4 @@ class RedisStore(ObjectStore):
         local_session.close()
 
     def __repr__(self) -> str:
-        return "RedisStore __repr__"
+        return f"{type(self)}"
