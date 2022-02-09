@@ -128,7 +128,7 @@ class Node(AbstractNode):
         verify_key: Optional[VerifyKey] = None,
         TableBase: Any = None,
         db_engine: Any = None,
-        store_type: Optional[type] = RedisStore,
+        store_type: type = RedisStore,
     ):
 
         # The node has a name - it exists purely to help the

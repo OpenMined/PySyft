@@ -39,7 +39,7 @@ class VirtualMachine(Node):
         vm: SpecificLocation = SpecificLocation(),
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
-        store_type: Optional[type] = DictStore,
+        store_type: type = DictStore,
     ):
         super().__init__(
             name=name,

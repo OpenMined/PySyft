@@ -1,7 +1,7 @@
 # stdlib
+from collections.abc import Collection
 from typing import Any
 from typing import Iterable
-from typing import KeysView
 from typing import List
 from typing import Optional
 from typing import Union
@@ -59,11 +59,17 @@ class DictStore(ObjectStore):
     def __len__(self) -> int:
         return len(self.kv_store.keys())
 
-    def keys(self) -> KeysView[UID]:
+    def keys(self) -> Collection[UID]:
         return self.kv_store.keys()
 
     def values(self) -> List[StorableObject]:
-        return self.kv_store.values()
+        keys = self.kv_store.keys()
+        # this is bad we need to decouple getting the data from the search
+        all_values = []
+        for key in keys:
+            all_values.append(self.__getitem__(key))
+
+        return all_values
 
     def __contains__(self, key: UID) -> bool:
         return key in self.kv_store
@@ -111,8 +117,8 @@ class DictStore(ObjectStore):
             local_session.close()
             return obj
         except Exception as e:
-            print(f"Cant store object {key}", e)
-            raise KeyError(f"Object not found! for UID: {key}")
+            print(f"Cant store object {str(key)}", e)
+            raise KeyError(f"Object not found! for UID: {str(key)}")
 
     def is_dataset(self, key: UID) -> bool:
         local_session = sessionmaker(bind=self.db)()
@@ -205,7 +211,7 @@ class RedisStore(ObjectStore):
         self.db = db
         print("connecting to redis")
         try:
-            self.redis = redis.Redis(host="redis", port=6379)
+            self.redis: redis.client.Redis = redis.Redis(host="redis", port=6379)
         except Exception as e:
             print("failed to load redis", e)
             raise e
@@ -228,9 +234,9 @@ class RedisStore(ObjectStore):
         return f"{type(self)}"
 
     def __len__(self) -> int:
-        return self.client.dbsize()
+        return self.redis.dbsize()
 
-    def keys(self) -> KeysView[UID]:
+    def keys(self) -> Collection[UID]:
         key_bytes = self.redis.keys()
         key_ids = [UID.from_string(str(key.decode("utf-8"))) for key in key_bytes]
         return key_ids
@@ -242,11 +248,10 @@ class RedisStore(ObjectStore):
         for key in key_bytes:
             all_values.append(self.__getitem__(key))
 
-        # return self.redis.mget(self.keys())
         return all_values
 
     def __contains__(self, key: UID) -> bool:
-        return self.redis.contains(str(key.value))
+        return str(key.value) in self.redis
 
     def __getitem__(self, key: Union[UID, str, bytes]) -> StorableObject:
         local_session = sessionmaker(bind=self.db)()
