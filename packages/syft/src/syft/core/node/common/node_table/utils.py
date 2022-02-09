@@ -1,3 +1,4 @@
+""" A set of useful methods used by the syft.core.node.common.node_table submodule. """
 # stdlib
 from typing import Any
 from typing import Dict
@@ -13,11 +14,13 @@ from sqlalchemy.orm import sessionmaker
 from . import Base
 from .roles import Role
 
+# attribute names representing a date owned by the PyGrid's database schemas.
 datetime_cols = ["date", "created_at", "destroyed_at", "deployed_on", "updated_on"]
 
 
 def model_to_json(model: Base) -> Dict[str, Any]:
-    """Returns a JSON representation of an SQLAlchemy-backed object.
+    """
+    Returns a JSON representation of an SQLAlchemy-backed object.
 
     Args:
         model: SQLAlchemy-backed object to be represented as a JSON data structure.
@@ -36,7 +39,7 @@ def model_to_json(model: Base) -> Dict[str, Any]:
 
 
 def seed_db(db: Session) -> None:
-    """Creates the standard PyGrid roles and seeds it into the database.
+    """ Creates the standard PyGrid roles and seeds it into the database.
 
     Args:
         db (Session): Database Session object used to handle database operations.
