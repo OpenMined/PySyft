@@ -506,7 +506,7 @@ class DictTest(unittest.TestCase):
             # -1: b has same structure as a
             # +1: b is a.copy()
             for log2size in range(12):
-                size = 2 ** log2size
+                size = 2**log2size
                 a = Dict()
                 b = Dict()
                 for i in range(size):

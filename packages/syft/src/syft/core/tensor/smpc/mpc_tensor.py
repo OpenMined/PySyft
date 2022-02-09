@@ -150,7 +150,7 @@ class MPCTensor(PassthroughTensor):
             return ring_size
 
         logger.warning("Ring size was not found! Defaulting to 2**32.")
-        return 2 ** 32
+        return 2**32
 
     @staticmethod
     def get_parties_info(parties: Iterable[Any]) -> List[GridURL]:
@@ -330,7 +330,7 @@ class MPCTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         seed_przs: int,
         parties_info: List[GridURL],
-        ring_size: int = 2 ** 32,
+        ring_size: int = 2**32,
     ) -> List[ShareTensor]:
         shares = []
         nr_parties = len(parties_info)
