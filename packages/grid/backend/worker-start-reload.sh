@@ -15,8 +15,4 @@ pip install --user -e /app/syft[dev]
 python3 -c "print('---Monkey Patching: Gevent---\n');from gevent import monkey;monkey.patch_all()"
 python /app/grid/backend_prestart.py
 
-if [ -z $SCALENE ] ; then
-    watchmedo auto-restart --directory=/app --pattern=*.py --recursive -- celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
-else
-    scalene --json --outfile "/tmp/profile/${SERVICE_NAME}.json" /root/.local/bin/celery -A grid.worker worker -l info -Q main-queue --pool=solo
-fi
+watchmedo auto-restart --directory=/app --pattern=*.py --recursive -- celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500

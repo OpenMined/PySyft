@@ -5,6 +5,7 @@ import time
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Tuple
 
 # third party
@@ -16,15 +17,22 @@ import pytest
 import syft as sy
 from syft import Domain
 from syft.core.adp.entity import Entity
+from syft.core.node.common.node_service.user_manager.user_messages import (
+    UpdateUserMessage,
+)
+from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor
 from syft.util import download_file
 from syft.util import get_root_data_path
 from syft.util import get_tracer
 
 
-def download_spicy_bird_benchmark() -> Tuple[Dict[str, Path], List[str]]:
+def download_spicy_bird_benchmark(
+    sizes: Optional[List[str]] = None,
+) -> Tuple[Dict[str, Path], List[str]]:
+    sizes = sizes if sizes else ["100K", "250K", "500K", "750K", "1M"]
     file_suffix = "_rows_dataset_sample.parquet"
     BASE_URL = "https://raw.githubusercontent.com/madhavajay/datasets/main/spicy_bird/"
-    sizes = ["100K", "250K", "500K", "750K", "1M"]
+
     folder_name = "spicy_bird"
     dataset_path = get_root_data_path() / folder_name
     paths = []
@@ -45,20 +53,30 @@ def upload_subset(
     start_index: int,
     end_index: int,
     count: int,
+    entity_count: Optional[int] = None,
 ) -> None:
     name = f"Tweets - {size_name} - {unique_key} - {count}"
     impressions = ((np.array(list(df["impressions"][start_index:end_index])))).astype(
         np.int32
     )
-    publication_title = list(df["publication_title"][start_index:end_index])
+
+    if entity_count is not None:
+        user_id = list(df["user_id"].unique()[0:entity_count])
+    else:
+        user_id = list(df["user_id"][start_index:end_index])
 
     entities = list()
-    for i in range(len(publication_title)):
-        entities.append(Entity(name=publication_title[i]))
+    for i in range(len(impressions)):
+        uid = i % len(user_id)
+        entities.append(Entity(name=f"User {user_id[uid]}"))
+
+    assert len(set(entities)) == entity_count
 
     tweets_data = sy.Tensor(impressions).private(
         min_val=0, max_val=30, entities=entities
     )
+
+    assert isinstance(tweets_data.child, RowEntityPhiTensor)
 
     print("tweets_data serde_concurrency default", tweets_data.child.serde_concurrency)
     tweets_data.child.serde_concurrency = 1
@@ -77,7 +95,8 @@ def time_upload(
     size_name: str,
     unique_key: str,
     df: pd.DataFrame,
-    chunk_size: int = 250_000,
+    chunk_size: int = 1_000_000,
+    entity_count: Optional[int] = None,
 ) -> float:
     start_time = time.time()
 
@@ -95,6 +114,7 @@ def time_upload(
             start_index=i,
             end_index=i + chunk_size,
             count=count,
+            entity_count=entity_count,
         )
 
     # upload final chunk
@@ -106,6 +126,7 @@ def time_upload(
         start_index=last_val,
         end_index=df.shape[0],
         count=count + 1,
+        entity_count=entity_count,
     )
     return time.time() - start_time
 
@@ -146,30 +167,40 @@ DOMAIN1_PORT = 9082
 
 @pytest.mark.e2e
 def test_benchmark_datasets() -> None:
-    # stdlib
-    import os
-
-    os.environ["PROFILE"] = "True"
     tracer = get_tracer("test_benchmark_datasets")
 
-    files, ordered_sizes = download_spicy_bird_benchmark()
+    # 1M takes about 5 minutes right now for all the extra serde so lets use 100K
+    # in the integration test
+    key_size = "100K"
+    files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
     domain = sy.login(
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
+    # Upgrade admins budget
+    content = {"user_id": 1, "budget": 9999999}
+    domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
+
+    budget_before = domain.privacy_budget
+
     benchmark_report = {}
-    for size_name in ordered_sizes:
+    for size_name in reversed(ordered_sizes):
         timeout = 999
         unique_key = str(hash(time.time()))
         benchmark_report[size_name] = {}
         df = pd.read_parquet(files[size_name])
 
         # make smaller
-        df = df[0:1000]
+        # df = df[0:100]
+        entity_count = 1000
 
         with tracer.start_as_current_span("upload"):
             upload_time = time_upload(
-                domain=domain, size_name=size_name, unique_key=unique_key, df=df
+                domain=domain,
+                size_name=size_name,
+                unique_key=unique_key,
+                df=df,
+                entity_count=entity_count,
             )
         benchmark_report[size_name]["upload_secs"] = upload_time
         all_chunks = get_all_chunks(domain=domain, unique_key=unique_key)
@@ -192,15 +223,18 @@ def test_benchmark_datasets() -> None:
         benchmark_report[size_name]["publish_secs"] = time.time() - start_time
         break
 
+    budget_after = domain.privacy_budget
     print(benchmark_report)
-    # assert False
 
+    # no budget is spent even if the amount is checked
+    diff = budget_before - budget_after
+    print(f"Used {diff} Privacy Budget")
+    # assert budget_before != budget_after
 
-if __name__ == "__main__":
-    # stdlib
-    import sys
+    # Revert admins budget
+    content = {"user_id": 1, "budget": 5.55}
+    domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
 
-    # third party
-    import pytest
-
-    pytest.main(sys.argv)
+    assert benchmark_report[key_size]["upload_secs"] <= 70
+    assert benchmark_report[key_size]["sum_secs"] <= 1
+    assert benchmark_report[key_size]["publish_secs"] <= 10

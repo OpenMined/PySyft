@@ -128,6 +128,7 @@ class Node(AbstractNode):
         verify_key: Optional[VerifyKey] = None,
         TableBase: Any = None,
         db_engine: Any = None,
+        store_type: Optional[type] = RedisStore,
     ):
 
         # The node has a name - it exists purely to help the
@@ -167,7 +168,7 @@ class Node(AbstractNode):
         # self.store is the elastic memory.
 
         # self.store = BinObjectManager(db=self.db_engine)
-        self.store = RedisStore(db=self.db_engine)
+        self.store = store_type(db=self.db_engine)
         self.setup = SetupManager(database=self.db_engine)
 
         # We need to register all the services once a node is created
