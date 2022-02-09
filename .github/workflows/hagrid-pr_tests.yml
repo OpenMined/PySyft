@@ -28,6 +28,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
@@ -68,7 +69,10 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           bandit -r .
-          safety check
+          # temporarily ignore unpatched numpy issue because devs don't agree
+          # https://github.com/pyupio/safety-db/issues/2349
+          # https://github.com/numpy/numpy/issues/19038
+          safety check -i 44715
 
       - name: Build Wheel
         if: steps.changes.outputs.hagrid == 'true'
@@ -90,6 +94,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
@@ -113,6 +118,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 

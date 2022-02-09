@@ -236,8 +236,8 @@ def get_version_module() -> Tuple[str, str]:
         if spec:
             version_module = importlib.util.module_from_spec(spec)
             loader.exec_module(version_module)
-            version = version_module.get_version()  # type: ignore
-            hash = version_module.get_hash()  # type: ignore
+            version = version_module.get_version()
+            hash = version_module.get_hash()
             return (version, hash)
     except Exception as e:
         print(f"Failed to retrieve versions from: {version_file_path}. {e}")
