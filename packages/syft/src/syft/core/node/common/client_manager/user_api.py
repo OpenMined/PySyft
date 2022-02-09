@@ -8,11 +8,11 @@ from ...abstract.node import AbstractNodeClient
 from ...domain.enums import ResponseObjectEnum
 from ..exceptions import AuthorizationError
 from ..node_service.user_auth.user_auth_messages import UserLoginMessageWithReply
-from ..node_service.user_manager.user_messages import CreateUserMessage
-from ..node_service.user_manager.user_messages import DeleteUserMessage
-from ..node_service.user_manager.user_messages import GetUserMessage
-from ..node_service.user_manager.user_messages import GetUsersMessage
-from ..node_service.user_manager.user_messages import UpdateUserMessage
+from ..node_service.user_manager.new_user_messages import CreateUserMessage
+from ..node_service.user_manager.new_user_messages import DeleteUserMessage
+from ..node_service.user_manager.new_user_messages import GetUserMessage
+from ..node_service.user_manager.new_user_messages import GetUsersMessage
+from ..node_service.user_manager.new_user_messages import UpdateUserMessage
 from .request_api import RequestAPI
 
 
@@ -45,10 +45,10 @@ class UserRequestAPI(RequestAPI):
                 )  # type: ignore
                 logger.info(response)
             else:
-                response = self.perform_api_request(
+                response = self.perform_request(
                     syft_msg=self._create_message, content=kwargs
                 )
-                logger.info(response.resp_msg)
+                logger.info(response.message)
         except Exception as e:
             print("failing to create user", e)
             try:
