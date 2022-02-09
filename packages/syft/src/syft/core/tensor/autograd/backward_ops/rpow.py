@@ -18,10 +18,10 @@ class RPowOp(Op):
         requires_grad = x.requires_grad
 
         if is_acceptable_simple_type(y):
-            return AutogradTensor(y ** x.child, requires_grad=requires_grad)
+            return AutogradTensor(y**x.child, requires_grad=requires_grad)
 
         requires_grad = requires_grad or y.requires_grad
-        return AutogradTensor(y.child ** x.child, requires_grad=requires_grad)
+        return AutogradTensor(y.child**x.child, requires_grad=requires_grad)
 
     def _backward(self, grad: AutogradTensor, backprop_id: uuid.UUID) -> None:
 
@@ -31,7 +31,7 @@ class RPowOp(Op):
 
             y_form = self.y
 
-            self.x.add_grad(np.log(y_form) * grad * y_form ** self.x)
+            self.x.add_grad(np.log(y_form) * grad * y_form**self.x)
 
             if self.x.grad_fn:
                 self.x.backward(backprop_id=backprop_id)

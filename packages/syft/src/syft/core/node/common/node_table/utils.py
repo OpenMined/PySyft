@@ -20,11 +20,12 @@ datetime_cols = ["date", "created_at", "destroyed_at", "deployed_on", "updated_o
 
 def model_to_json(model: Base) -> Dict[str, Any]:
     """
-    Builds a JSON representation of an SQLAlchemy-backed object.
+    Returns a JSON representation of an SQLAlchemy-backed object.
 
-    :param SQLALchemy.Base model: SQLAlchemy-backed object to be parsed.
-    :return json: model's dict representation
-    :rtype: Dict
+    Args:
+        model: SQLAlchemy-backed object to be represented as a JSON data structure.
+    Returns:
+        Dict: Python dictionary representing the SQLAlchemy object.
     """
     json = {}
     for col in model.__mapper__.attrs.keys():  # type: ignore
@@ -38,10 +39,10 @@ def model_to_json(model: Base) -> Dict[str, Any]:
 
 
 def seed_db(db: Session) -> None:
-    """
-    Creates the initial PyGrid roles and populates the database Role table.
+    """ Creates the standard PyGrid roles and seeds it into the database.
 
-    :param SQLAlchemy.Session db: Database open session.
+    Args:
+        db (Session): Database Session object used to handle database operations.
     """
     new_role = Role(
         name="Data Scientist",
@@ -106,10 +107,10 @@ def seed_db(db: Session) -> None:
 
 
 def create_memory_db_engine() -> TypeTuple[Engine, sessionmaker]:
-    """
-    Creates a memory version of the PyGrid's database schema.
+    """Creates the database tables in memory instead of connecting with a real database server.
 
-    :return: tuple containing the database engine and the database open session.
+    Returns:
+        Tuple: Tuple containing both database engine and session maker.
     """
     db_engine = create_engine("sqlite://", echo=False)
     Base.metadata.create_all(db_engine)  # type: ignore
