@@ -20,10 +20,9 @@ class DomainServiceClass(NodeService):
         msg: SyftMessage,
         verify_key: Optional[VerifyKey] = None,
     ) -> SyftMessage:
-
-        result = msg.run(node=node, verify_key=verify_key)
+        result = msg.run(node=node, verify_key=verify_key).dict()  # type: ignore
         payload_class = msg.__class__
-        return payload_class(address=msg.reply_to, kwargs=result)  # type: ignore
+        return payload_class(address=msg.reply_to, kwargs=result, reply=True)  # type: ignore
 
     @staticmethod
     def message_handler_types() -> list:
