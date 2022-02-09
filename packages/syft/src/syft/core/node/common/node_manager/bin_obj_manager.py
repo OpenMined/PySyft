@@ -1,6 +1,6 @@
 # stdlib
-from typing import Collection
 from typing import Any
+from typing import Collection
 from typing import Iterable
 from typing import List
 from typing import Optional
@@ -168,7 +168,7 @@ class DictStore(ObjectStore):
             obj_dataset_relation = BinObjDataset(
                 id=obj_dataset_relation.id,
                 name=obj_dataset_relation.name,
-                obj=key,
+                obj=str(key.value),
                 dataset=obj_dataset_relation.dataset,
                 dtype=obj_dataset_relation.dtype,
                 shape=obj_dataset_relation.shape,
