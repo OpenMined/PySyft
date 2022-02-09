@@ -134,8 +134,8 @@ class Float(float, PyPrimitive):
         res = super().__rfloordiv__(other)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __round__(self, n: Optional[int] = None) -> SyPrimitiveRet:
-        res = super().__round__(n)
+    def __round__(self, *args: Any, **kwargs: Any) -> SyPrimitiveRet:  # type: ignore
+        res = super().__round__(*args, **kwargs)
         return PrimitiveFactory.generate_primitive(value=res)
 
     def __rtruediv__(self, other: Any) -> SyPrimitiveRet:
