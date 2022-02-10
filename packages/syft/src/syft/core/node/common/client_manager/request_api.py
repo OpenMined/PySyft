@@ -18,7 +18,7 @@ if flags.USE_NEW_SERVICE:
         NewSyftMessage as SyftMessage,
     )
 else:
-    from ....common.message import SyftMessage
+    from ....common.message import SyftMessage  # type: ignore
 
 # relative
 from ...abstract.node import AbstractNodeClient
@@ -142,7 +142,7 @@ class RequestAPI:
 
     def perform_api_request_generic(
         self,
-        syft_msg: Optional[Type[SyftMessage]],
+        syft_msg: Optional[Type[SyftMessage]],  # type: ignore
         content: Optional[Dict[Any, Any]] = None,
     ) -> Any:
         if syft_msg is None:
@@ -155,7 +155,7 @@ class RequestAPI:
         if content is None:
             content = {}
         signed_msg = syft_msg_constructor(
-            address=self.client.address, reply_to=self.client.address, kwargs=content
+            address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
         ).sign(
             signing_key=self.client.signing_key
         )  # type: ignore

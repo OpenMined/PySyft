@@ -1,81 +1,95 @@
 # stdlib
+from typing import Any
 from typing import Optional
+from typing import Type
 
 # third party
 from nacl.signing import VerifyKey
 
 # relative
 from ...abstract.node_service_interface import NodeServiceInterface
-from ..node_service.generic_payload.syft_message import NewSyftMessage
+from ..node_service.generic_payload.syft_message import NewSyftMessage as SyftMessage
+
+
+class Operation:
+    """Executes an operation between two operands."""
+
+    def __init__(self, op1: Any, op2: Any, operator: Any) -> None:
+        self.op1 = op1
+        self.op2 = op2
+        self.operator = operator
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        op1 = self.op1(*args, **kwargs)
+        op2 = self.op2(*args, **kwargs)
+        return self.operator(op1, op2)
+
+
+class BinaryOperation:
+    """Executes an operation on a single operand."""
+
+    def __init__(self, op1: Any, operator: Any) -> None:
+        self.op1 = op1
+        self.operator = operator
+
+    def __call__(self, *args: Any, **kwargs: Any) -> Any:
+        op1 = self.op1(*args, **kwargs)
+        return self.operator(op1)
 
 
 class AND:
     """Implements the `AND` functionality on a set of permission classes."""
 
-    def __init__(self, op1, op2):
+    def __init__(self, op1: Type["BasePermission"], op2: Type["BasePermission"]):
         self.op1 = op1
         self.op2 = op2
 
-    def has_permission(self, *args, **kwargs) -> bool:
+    def has_permission(self, *args: Any, **kwargs: Any) -> bool:
         return self.op1.has_permission(*args, **kwargs) and self.op2.has_permission(
             *args, **kwargs
         )
-
-    def __call__(self):
-        self.op1 = self.op1()
-        self.op2 = self.op2()
-        return self
 
 
 class OR:
     """Implements the `OR` functionality on a set of permission classes."""
 
-    def __init__(self, op1, op2):
+    def __init__(self, op1: Type["BasePermission"], op2: Type["BasePermission"]):
         self.op1 = op1
         self.op2 = op2
 
-    def has_permission(self, *args, **kwargs):
+    def has_permission(self, *args: Any, **kwargs: Any) -> bool:
         return self.op1.has_permission(*args, **kwargs) or self.op2.has_permission(
             *args, **kwargs
         )
-
-    def __call__(self):
-        self.op1 = self.op1()
-        self.op2 = self.op2()
-        return self
 
 
 class NOT:
     """Implements the `NOT` functionality on a permission class."""
 
-    def __init__(self, op1):
+    def __init__(self, op1: Type["BasePermission"]):
         self.op1 = op1
 
-    def has_permission(self, *args, **kwargs) -> bool:
+    def has_permission(self, *args: Any, **kwargs: Any) -> bool:
         return not self.op1.has_permission(*args, **kwargs)
-
-    def __call__(self):
-        self.op1 = self.op1()
-        return self
 
 
 class BasePermissionMetaclass(type):
     """A metaclass to allow composition between different permission classes."""
 
-    def __and__(self, other) -> AND:
-        return AND(self, other)
+    def __and__(self, other: Type["BasePermission"]) -> Operation:
+        return Operation(self, other, AND)
 
-    def __or__(self, other) -> OR:
-        return OR(self, other)
+    def __or__(self, other: Type["BasePermission"]) -> Operation:
+        return Operation(self, other, OR)
 
-    def __rand__(self, other) -> AND:
-        return AND(other, self)
+    def __rand__(self, other: Type["BasePermission"]) -> Operation:
+        return Operation(other, self, AND)
 
-    def __ror__(self, other) -> OR:
-        return OR(other, self)
+    def __ror__(self, other: Type["BasePermission"]) -> Operation:
+        return Operation(other, self, OR)
 
-    def __invert__(self) -> NOT:
-        return NOT(self)
+    def __invert__(self) -> BinaryOperation:
+        return BinaryOperation(self, NOT)
 
 
 class BasePermission(metaclass=BasePermissionMetaclass):
@@ -83,7 +97,7 @@ class BasePermission(metaclass=BasePermissionMetaclass):
 
     def has_permission(
         self,
-        msg: NewSyftMessage,
+        msg: SyftMessage,
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
     ) -> bool:

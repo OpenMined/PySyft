@@ -30,7 +30,7 @@ class DomainServiceClass(NodeService):
             verify_key (Optional[VerifyKey], optional): unique verification of the user. Defaults to None.
 
         Returns:
-            NewSyftMessage: response message.
+            SyftMessage: response message.
 
         Note:
             TODO: Error and Exception Handling. Errors can be messages of `NewSyftMessage` type.

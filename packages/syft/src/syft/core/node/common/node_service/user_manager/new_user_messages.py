@@ -23,8 +23,11 @@ from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
 from ...node_table.utils import model_to_json
 from ...permissions.permissions import BasePermission
+from ...permissions.permissions import BinaryOperation
+from ...permissions.user_permissions import IsNodeDaaEnabled
 from ...permissions.user_permissions import UserCanCreateUsers
 from ...permissions.user_permissions import UserCanTriageRequest
+from ...permissions.user_permissions import UserIsOwner
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
 from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
@@ -63,14 +66,11 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> Union[List, Dict[str, Any]]:
-        # Check key permissions
-        if node.setup.first(domain_name=node.name).daa and not self.payload.daa_pdf:
-            raise AuthorizationError(
-                message="You can't apply a new User without a DAA document!"
-            )
 
         # Check if email/password fields are empty
-        if not self.payload.email or not self.payload.password:
+        if not getattr(self.payload, "email", "") or not getattr(
+            self.payload, "password", ""
+        ):
             raise MissingRequestKeyError(
                 message="Invalid request payload, empty fields (email/password)!"
             )
@@ -96,18 +96,14 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
             budget=self.payload.budget,
         )
 
-        user_role_id = -1
-        try:
-            user_role_id = node.users.role(verify_key=verify_key).id
-        except Exception as e:
-            print("verify_key not in db", e)
-
-        if node.roles.can_create_users(role_id=user_role_id):
-            node.users.process_user_application(
-                candidate_id=app_id, status="accepted", verify_key=verify_key
-            )
+        node.users.process_user_application(
+            candidate_id=app_id, status="accepted", verify_key=verify_key
+        )
 
         return CreateUserMessage.Reply()
+
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        return [UserCanCreateUsers, IsNodeDaaEnabled]
 
 
 @serializable(recursive_serde=True)
@@ -219,22 +215,12 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Union[None, ReplyPayload]:
 
-        _target_user = node.users.first(id=self.payload.user_id)
-        _not_owner = (
-            node.roles.first(id=_target_user.role).name != node.roles.owner_role.name
-        )
-
-        if _not_owner:
-            node.users.delete(id=self.payload.user_id)
-        else:
-            raise AuthorizationError(
-                "You're not allowed to delete this user information!"
-            )
+        node.users.delete(id=self.payload.user_id)
 
         return DeleteUserMessage.Reply()
 
-    def get_permissions(self) -> List[Type[BasePermission]]:
-        return [UserCanCreateUsers]
+    def get_permissions(self) -> List[Union[Type[BasePermission], BinaryOperation]]:
+        return [UserCanCreateUsers, ~UserIsOwner]
 
 
 @serializable(recursive_serde=True)

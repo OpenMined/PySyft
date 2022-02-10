@@ -6,7 +6,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from ...abstract.node_service_interface import NodeServiceInterface
-from ..node_service.generic_payload.syft_message import NewSyftMessage
+from ..node_service.generic_payload.syft_message import NewSyftMessage as SyftMessage
 from .permissions import BasePermission
 
 
@@ -16,10 +16,10 @@ class UserCanTriageRequest(BasePermission):
 
     def has_permission(
         self,
-        msg: NewSyftMessage,
+        msg: SyftMessage,
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
-    ):
+    ) -> bool:
         return (
             node.users.can_triage_requests(verify_key=verify_key)
             if verify_key
@@ -30,10 +30,10 @@ class UserCanTriageRequest(BasePermission):
 class UserCanCreateUsers(BasePermission):
     def has_permission(
         self,
-        msg: NewSyftMessage,
+        msg: SyftMessage,
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
-    ):
+    ) -> bool:
         return (
             node.users.can_create_users(verify_key=verify_key) if verify_key else False
         )
@@ -42,20 +42,20 @@ class UserCanCreateUsers(BasePermission):
 class UserCanEditRoles(BasePermission):
     def has_permission(
         self,
-        msg: NewSyftMessage,
+        msg: SyftMessage,
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
-    ):
+    ) -> bool:
         return node.users.can_edit_roles(verify_key=verify_key) if verify_key else False
 
 
 class UserCanUploadData(BasePermission):
     def has_permission(
         self,
-        msg: NewSyftMessage,
+        msg: SyftMessage,
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
-    ):
+    ) -> bool:
         return (
             node.users.can_upload_data(verify_key=verify_key) if verify_key else False
         )
@@ -64,13 +64,13 @@ class UserCanUploadData(BasePermission):
 class IsNodeDaaEnabled(BasePermission):
     def has_permission(
         self,
-        msg: NewSyftMessage,
+        msg: SyftMessage,
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
     ) -> bool:
         msg = type("message", (object,), msg.kwargs.upcast())()  # type: ignore
 
-        if node.setup.first(domain_name=node.name).daa and not hasattr(msg, "daa_pdf"):
+        if node.setup.first(domain_name=node.name).daa and not hasattr(msg, "daa_pdf"):  # type: ignore
             return False
 
         return True
@@ -78,8 +78,8 @@ class IsNodeDaaEnabled(BasePermission):
 
 class UserIsOwner(BasePermission):
     def has_permission(
-        self, msg: NewSyftMessage, node: NodeServiceInterface, verify_key: VerifyKey
-    ):
+        self, msg: SyftMessage, node: NodeServiceInterface, verify_key: VerifyKey
+    ) -> bool:
 
         if hasattr(msg.kwargs, "upcast"):
             msg_kwargs = msg.kwargs.upcast()  # type: ignore
@@ -94,9 +94,15 @@ class UserIsOwner(BasePermission):
         _target_user = node.users.first(id=user_id)
         request_user = node.users.get_user(verify_key=verify_key)
 
-        # If the user has role `Owner` or request user is the target user
-        _is_owner = (
-            node.roles.first(id=_target_user.role).name == node.roles.owner_role.name
-        ) or (request_user and _target_user.id == request_user.id)
-
+        _is_owner = False
+        if _target_user:  # If target user exists
+            if (
+                node.roles.first(id=_target_user.role).name
+                == node.roles.owner_role.name
+            ):  # If the user has role `Owner`
+                _is_owner = True
+            elif request_user and (
+                _target_user.id == request_user.id
+            ):  # request user is the target user
+                _is_owner = True
         return _is_owner
