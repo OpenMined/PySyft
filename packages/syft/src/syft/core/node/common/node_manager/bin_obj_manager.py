@@ -99,7 +99,7 @@ class DictStore(ObjectStore):
 
             obj = StorableObject(
                 id=key_uid,
-                data=obj,
+                data=obj.data,
                 description=obj_metadata.description,
                 tags=obj_metadata.tags,
                 read_permissions=dict(
