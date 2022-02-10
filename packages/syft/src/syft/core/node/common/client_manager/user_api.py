@@ -63,7 +63,7 @@ class UserRequestAPI(RequestAPI):
                     )
                     logger.info(response.message)
                 else:
-                    response = self.perform_request(
+                    response = self.perform_api_request(
                         syft_msg=self._create_message, content=kwargs
                     )
                     logger.info(response.resp_msg)

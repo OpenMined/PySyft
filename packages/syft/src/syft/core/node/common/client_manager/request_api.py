@@ -11,6 +11,7 @@ from pandas import DataFrame
 
 # relative
 from .....experimental_flags import flags
+from ..node_service.generic_payload.syft_message import NewSyftMessage
 
 if flags.USE_NEW_SERVICE:
     # relative
@@ -49,7 +50,7 @@ class RequestAPI:
         self.perform_request = self.perform_api_request_generic
 
     def create(self, **kwargs: Any) -> None:
-        if flags.USE_NEW_SERVICE:
+        if isinstance(self._delete_message, NewSyftMessage):
             response = self.perform_request(
                 syft_msg=self._create_message, content=kwargs  # type: ignore
             )
@@ -61,7 +62,7 @@ class RequestAPI:
             logging.info(response.resp_msg)
 
     def get(self, **kwargs: Any) -> Any:
-        if flags.USE_NEW_SERVICE:
+        if isinstance(self._delete_message, NewSyftMessage):
             return self.to_obj(
                 self.perform_request(syft_msg=self._get_message, content=kwargs)
             )
@@ -71,7 +72,7 @@ class RequestAPI:
             )
 
     def all(self) -> List[Any]:
-        if flags.USE_NEW_SERVICE:
+        if isinstance(self._delete_message, NewSyftMessage):
             result = list(
                 self.perform_request(syft_msg=self._get_all_message).dict().values()
             )
@@ -89,7 +90,7 @@ class RequestAPI:
         return DataFrame(self.all())
 
     def update(self, **kwargs: Any) -> None:
-        if flags.USE_NEW_SERVICE:
+        if isinstance(self._delete_message, NewSyftMessage):
             response = self.perform_request(
                 syft_msg=self._update_message, content=kwargs
             )
@@ -101,8 +102,15 @@ class RequestAPI:
             logging.info(response.resp_msg)
 
     def delete(self, **kwargs: Any) -> None:
-        response = self.perform_request(syft_msg=self._delete_message, content=kwargs)
-        logging.info(response.message)
+        if isinstance(self._delete_message, NewSyftMessage):
+            response = self.perform_request(
+                syft_msg=self._delete_message, content=kwargs
+            )
+            logging.info(response.message)
+        else:
+            response = self.perform_api_request(
+                syft_msg=self._delete_message, content=kwargs
+            )
 
     def to_obj(self, result: Any) -> Any:
         if result:
@@ -154,16 +162,28 @@ class RequestAPI:
 
         if content is None:
             content = {}
-        signed_msg = syft_msg_constructor(
-            address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
-        ).sign(
-            signing_key=self.client.signing_key
-        )  # type: ignore
+
+        if isinstance(syft_msg, NewSyftMessage):
+            signed_msg = syft_msg_constructor(
+                address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
+            ).sign(
+                signing_key=self.client.signing_key
+            )  # type: ignore
+        else:
+            signed_msg = (
+                syft_msg_constructor(kwargs=content)
+                .to(  # type: ignore
+                    address=self.client.address, reply_to=self.client.address
+                )
+                .sign(signing_key=self.client.signing_key)
+            )
         response = self.client.send_immediate_msg_with_reply(msg=signed_msg)
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
-            return response.payload
+            if isinstance(syft_msg, NewSyftMessage):
+                return response.payload
+            return response
 
     def _repr_html_(self) -> str:
         return self.pandas()._repr_html_()
