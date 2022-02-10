@@ -340,7 +340,7 @@ class RedisStore(ObjectStore):
         if obj_dataset_relation:
             # Create a object dataset relationship for the new object
             obj_dataset_relation = BinObjDataset(
-                id=obj_dataset_relation.id,
+                # id=obj_dataset_relation.id,  NOTE: Commented temporarily
                 name=obj_dataset_relation.name,
                 obj=str(key.value),
                 dataset=obj_dataset_relation.dataset,
