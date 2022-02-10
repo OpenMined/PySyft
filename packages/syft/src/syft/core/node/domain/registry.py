@@ -6,8 +6,6 @@ from typing import List
 class DomainMessageRegistry:
     """A class for registering messages that can be used by the domain service."""
 
-    __slots___ = ("get_registered_messages",)
-
     __domain_message_registry: List = []
 
     def __init_subclass__(cls, **kwargs: Any) -> None:

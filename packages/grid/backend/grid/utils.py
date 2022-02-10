@@ -1,5 +1,4 @@
 # stdlib
-import os
 from typing import Any
 from typing import Optional
 
@@ -7,6 +6,7 @@ from typing import Optional
 from nacl.signing import SigningKey
 
 # syft absolute
+from syft import flags
 from syft.core.common.message import SyftMessage
 from syft.core.io.address import Address
 from syft.core.node.common.action.exception_action import ExceptionMessage
@@ -30,7 +30,7 @@ def send_message_with_reply(
     if reply_to is None:
         reply_to = client.address
 
-    use_new_service = os.getenv("USE_NEW_SERVICE", True)
+    use_new_service = flags.USE_NEW_SERVICE
     if use_new_service:
         msg = message_type(address=address, reply_to=reply_to, kwargs=content).sign(
             signing_key=signing_key
@@ -43,7 +43,6 @@ def send_message_with_reply(
     else:
         msg = message_type(address=address, reply_to=reply_to, **content)
         reply = client.send_immediate_msg_with_reply(msg=msg)
-        reply.content.upcast()
 
     check_if_syft_reply_is_exception(reply)
     return reply

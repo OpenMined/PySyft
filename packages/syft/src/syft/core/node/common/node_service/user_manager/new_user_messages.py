@@ -1,9 +1,9 @@
 # stdlib
-import email
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Type
 from typing import Union
 
 # third party
@@ -22,17 +22,17 @@ from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
 from ...node_table.utils import model_to_json
-from ...permissions.permissions import check_permissions
+from ...permissions.permissions import BasePermission
 from ...permissions.user_permissions import UserCanCreateUsers
 from ...permissions.user_permissions import UserCanTriageRequest
+from ..generic_payload.syft_message import NewSyftMessage
 from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
-from ..generic_payload.syft_message import SyftMessage
 
 
 @serializable(recursive_serde=True)
 @final
-class CreateUserMessage(SyftMessage, DomainMessageRegistry):
+class CreateUserMessage(NewSyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -112,7 +112,7 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
 
 @serializable(recursive_serde=True)
 @final
-class GetUserMessage(SyftMessage, DomainMessageRegistry):
+class GetUserMessage(NewSyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -131,11 +131,9 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
         website: Optional[str] = ""
         added_by: Optional[str] = ""
 
-    permission_classes = [UserCanTriageRequest]
     request_payload_type = Request
     reply_payload_type = Reply
 
-    @check_permissions(permission_classes=permission_classes)
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Union[None, ReplyPayload]:
@@ -154,10 +152,13 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
         )
         return reply
 
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        return [UserCanTriageRequest]
+
 
 @serializable(recursive_serde=True)
 @final
-class GetUsersMessage(SyftMessage, DomainMessageRegistry):
+class GetUsersMessage(NewSyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -167,11 +168,9 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
     class Reply(ReplyPayload):
         users: List[GetUserMessage.Reply] = []
 
-    permission_classes = [UserCanTriageRequest]
     request_payload_type = Request
     reply_payload_type = Reply
 
-    @check_permissions(permission_classes=permission_classes)
     def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Union[None, ReplyPayload]:
@@ -197,10 +196,13 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
         reply.users = users_list
         return reply
 
+    def get_permissions(self) -> List:
+        return [UserCanTriageRequest]
+
 
 @serializable(recursive_serde=True)
 @final
-class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
+class DeleteUserMessage(NewSyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -210,11 +212,9 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
     class Reply(ReplyPayload):
         message: str = "User deleted successfully!"
 
-    permission_classes = [UserCanCreateUsers]
     request_payload_type = Request
     reply_payload_type = Reply
 
-    @check_permissions(permission_classes=permission_classes)
     def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Union[None, ReplyPayload]:
@@ -233,10 +233,13 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
 
         return DeleteUserMessage.Reply()
 
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        return [UserCanCreateUsers]
+
 
 @serializable(recursive_serde=True)
 @final
-class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
+class UpdateUserMessage(NewSyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -252,11 +255,9 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
     class Reply(ReplyPayload):
         message: str = "User updated successfully!"
 
-    permission_classes = [UserCanCreateUsers]
     request_payload_type = Request
     reply_payload_type = Reply
 
-    @check_permissions(permission_classes=permission_classes)
     def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> Union[None, ReplyPayload]:
@@ -353,3 +354,6 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
                 raise AuthorizationError("You're not allowed to change User roles!")
 
         return UpdateUserMessage.Reply()
+
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        return [UserCanCreateUsers]

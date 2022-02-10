@@ -1,8 +1,10 @@
 # stdlib
-import os
 from typing import List
 
-if bool(os.getenv("USE_NEW_SERVICE", True)):
+# syft absolute
+from syft import flags
+
+if flags.USE_NEW_SERVICE:
     # syft absolute
     from syft.core.node.common.node_service.user_manager.new_user_messages import (
         CreateUserMessage,

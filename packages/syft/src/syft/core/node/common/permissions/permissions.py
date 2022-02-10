@@ -1,81 +1,91 @@
 # stdlib
-from functools import wraps
-from typing import List
+from typing import Optional
+
+# third party
+from nacl.signing import VerifyKey
+
+# relative
+from ...abstract.node_service_interface import NodeServiceInterface
+from ..node_service.generic_payload.syft_message import NewSyftMessage
 
 
 class AND:
+    """Implements the `AND` functionality on a set of permission classes."""
+
     def __init__(self, op1, op2):
         self.op1 = op1
         self.op2 = op2
 
-    def has_permission(self, node, verify_key):
-        return self.op1.has_permission(node, verify_key) and self.op2.has_permission(
-            node, verify_key
+    def has_permission(self, *args, **kwargs) -> bool:
+        return self.op1.has_permission(*args, **kwargs) and self.op2.has_permission(
+            *args, **kwargs
         )
+
+    def __call__(self):
+        self.op1 = self.op1()
+        self.op2 = self.op2()
+        return self
 
 
 class OR:
+    """Implements the `OR` functionality on a set of permission classes."""
+
     def __init__(self, op1, op2):
         self.op1 = op1
         self.op2 = op2
 
-    def has_permission(self, node, verify_key):
-        return self.op1.has_permission(node, verify_key) or self.op2.has_permission(
-            node, verify_key
+    def has_permission(self, *args, **kwargs):
+        return self.op1.has_permission(*args, **kwargs) or self.op2.has_permission(
+            *args, **kwargs
         )
+
+    def __call__(self):
+        self.op1 = self.op1()
+        self.op2 = self.op2()
+        return self
 
 
 class NOT:
+    """Implements the `NOT` functionality on a permission class."""
+
     def __init__(self, op1):
         self.op1 = op1
 
-    def has_permission(self, node, verify_key):
-        return not self.op1.has_permission(node, verify_key)
+    def has_permission(self, *args, **kwargs) -> bool:
+        return not self.op1.has_permission(*args, **kwargs)
+
+    def __call__(self):
+        self.op1 = self.op1()
+        return self
 
 
 class BasePermissionMetaclass(type):
-    def __and__(self, other):
+    """A metaclass to allow composition between different permission classes."""
+
+    def __and__(self, other) -> AND:
         return AND(self, other)
 
-    def __or__(self, other):
+    def __or__(self, other) -> OR:
         return OR(self, other)
 
-    def __rand__(self, other):
+    def __rand__(self, other) -> AND:
         return AND(other, self)
 
-    def __ror__(self, other):
+    def __ror__(self, other) -> OR:
         return OR(other, self)
 
-    def __invert__(self):
+    def __invert__(self) -> NOT:
         return NOT(self)
 
 
 class BasePermission(metaclass=BasePermissionMetaclass):
     """A base class from which all permission classes should inherit."""
 
-    def has_permission(self, node, verify_key):
-        """
-        Return `True` if permission is granted, `False` otherwise.
-        """
-        return True
-
-
-def check_permissions(permission_classes: List = []):
-    """A decorator to check the given the permission classes are satisfied.
-        Raises an appropriate exception if one of the permission is not permitted.
-
-    Args:
-        permission_classes (List, optional): List of permission classes. Defaults to [].
-    """
-
-    def decorator(func):
-        @wraps(func)
-        def wrapper_func(*args, **kwargs):
-            for permission_class in permission_classes:
-                if not permission_class.has_permission(*args, **kwargs):
-                    raise Exception()
-            return func(*args, **kwargs)
-
-        return wrapper_func
-
-    return decorator
+    def has_permission(
+        self,
+        msg: NewSyftMessage,
+        node: NodeServiceInterface,
+        verify_key: Optional[VerifyKey],
+    ) -> bool:
+        """Return `True` if permission is granted, `False` otherwise."""
+        raise NotImplementedError
