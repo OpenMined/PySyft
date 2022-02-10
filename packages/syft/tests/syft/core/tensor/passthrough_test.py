@@ -4,7 +4,7 @@ from typing import Any
 # third party
 import numpy as np
 
-# import pytest
+import pytest
 import torch
 
 # syft absolute
@@ -68,33 +68,21 @@ def test_dtype() -> None:
     assert tensor.dtype == np.int32
 
 
-# This test only works if the return statement for logical_and in passthrough.py
-# is changed FROM:
-#                       retrun self.__class__(self.child and other)
-# TO:
-#                       return self and other
-#
-# I could not figure out how to execute tests on the code the way it is now
-# when trying to evaluate Passthrough tensors. The only way I got
-# it to start producing the correct result was to change the return statement.
-#
-# Note: uncomment import pytest (line: 7) if running this test.
+def test_logical_and() -> None:
+    data_a = np.array([True, False, True])
+    data_b = np.array([False, False, True])
+    data_c = np.array([False, False])
+    tensor_a = PassthroughTensor(child=data_a)
+    tensor_b = PassthroughTensor(child=data_b)
+    tensor_c = PassthroughTensor(child=data_c)
+    expected = tensor_b
+    result = tensor_a.logical_and(tensor_b)
 
-# def test_logical_and() -> None:
-#     data_a = np.array([True, False, True])
-#     data_b = np.array([False, False, True])
-#     data_c = np.array([False, False])
-#     tensor_a = PassthroughTensor(child=data_a)
-#     tensor_b = PassthroughTensor(child=data_b)
-#     tensor_c = PassthroughTensor(child=data_c)
-#     expected = tensor_b
-#     result = tensor_a.logical_and(tensor_b)
+    assert result == expected
 
-#     assert result == expected
-
-#     with pytest.raises(Exception,
-#         match = "Tensor shapes do not match for __eq__: [0-9]+ != [0-9]+"):
-#             tensor_b.logical_and(tensor_c)
+    with pytest.raises(Exception,
+        match = "Tensor shapes do not match for __eq__: [0-9]+ != [0-9]+"):
+            tensor_b.logical_and(tensor_c)
 
 
 def test__abs__() -> None:
@@ -219,27 +207,27 @@ def test__le__() -> None:
 
 
 def test__ne__() -> None:
-    data_a = np.array([1, 2, 3], dtype=np.int32)
+    data_a = np.array([0, 1, 2], dtype=np.int32)
     data_b = np.zeros((3,), dtype=np.int32)
     tensor_a = PassthroughTensor(child=data_a)
     tensor_b = PassthroughTensor(child=data_b)
     result_a = tensor_a.__ne__(tensor_b)
-    result_b = tensor_b.__ne__(data_b)
+    result_b = tensor_b.__ne__(data_a)
 
-    assert result_a is True
-    assert result_b is False
+    assert all(result_a.child) is False
+    assert all(result_b.child) is False
 
 
 def test__eq__() -> None:
-    data_a = np.array([1, 2, 3], dtype=np.int32)
+    data_a = np.array([0, 1, 2], dtype=np.int32)
     data_b = np.zeros((3,), dtype=np.int32)
     tensor_a = PassthroughTensor(child=data_a)
     tensor_b = PassthroughTensor(child=data_b)
     result_a = tensor_a.__eq__(tensor_b)
     result_b = tensor_a.__eq__(data_a)
 
-    assert result_a is False
-    assert result_b is True
+    assert all(result_a.child) is False
+    assert all(result_b.child) is True
 
 
 def test__floordiv__() -> None:
@@ -838,12 +826,12 @@ class PtTensorSubclass(PassthroughTensor):
         return f"{self.child} {self.unit}"
 
 
-def __add__(self, other):
-    if self.unit == other.unit:
-        result = np.subtract(self.child + other.child)
-        return PtTensorSubclass(result, self.unit)
-    else:
-        raise ValueError("PtTensorSubclass(for testing) must have the same units")
+    def __add__(self, other):
+        if self.unit == other.unit:
+          result = self.child + other.child
+          return PtTensorSubclass(result, self.unit)
+        else:
+            raise ValueError("PtTensorSubclass(for testing) must have the same units")
 
 
 @implements(PtTensorSubclass, np.subtract)
@@ -903,10 +891,10 @@ def test__array_function__() -> None:
 
 def test__array_ufunc__() -> None:
     data_a = np.array([1, 2, 3], dtype=np.int32)
+    tensor_a = PtTensorSubclass(child=data_a, unit="Hedgehogs")
 
     # Testing implementation False
     data_b = np.array([2, 4, 6], dtype=np.int32)
-    tensor_a = PtTensorSubclass(child=data_a, unit="Hedgehogs")
     expected_a = PtTensorSubclass(child=data_b, unit="Hedgehogs")
     result_a = tensor_a.__array_ufunc__(
         PtTensorSubclass.__add__, "__call__", tensor_a, tensor_a
@@ -914,10 +902,13 @@ def test__array_ufunc__() -> None:
 
     assert result_a == expected_a
 
-    # Testing implementation True
+    # Explicitly Testing implementation True 
+    # (def test_square implicitly calls __array_ufunc__ and triggers an implementation)
     data_c = np.array([0, 0, 0], dtype=np.int32)
     expected_b = PtTensorSubclass(child=data_c, unit="Hegehogs")
-    result_b = tensor_a.__array_ufunc__(np.subtract, "__call__", tensor_a, tensor_a)
+    result_b = tensor_a.__array_ufunc__(
+        np.subtract, "__call__", tensor_a, tensor_a
+    )
 
     assert result_b == expected_b
 
