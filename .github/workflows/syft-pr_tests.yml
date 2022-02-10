@@ -73,7 +73,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           bandit -r src
-          safety check
+          safety check -i 44715
 
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
