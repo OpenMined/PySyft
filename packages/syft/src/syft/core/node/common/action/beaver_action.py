@@ -10,6 +10,7 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # relative
+from .....logger import debug
 from .....proto.core.node.common.action.beaver_action_pb2 import (
     BeaverAction as BeaverAction_PB,
 )
@@ -85,6 +86,9 @@ class BeaverAction(ImmediateActionWithoutReply):
         delta_id = self.delta_id
         BeaverAction.beaver_populate(eps, eps_id, node)
         BeaverAction.beaver_populate(delta, delta_id, node)
+        debug(
+            f"🏪 Beaver Populate on {node} ,EPS Value: {eps}-{eps_id} ,Delta Value: {delta}-{delta_id}"
+        )
 
     def _object2proto(self) -> BeaverAction_PB:
         eps = sy.serialize(self.eps)
