@@ -24,6 +24,7 @@ from ...exceptions import UserNotFoundError
 from ...node_table.utils import model_to_json
 from ...permissions.permissions import BasePermission
 from ...permissions.permissions import BinaryOperation
+from ...permissions.permissions import Operation
 from ...permissions.user_permissions import IsNodeDaaEnabled
 from ...permissions.user_permissions import UserCanCreateUsers
 from ...permissions.user_permissions import UserCanTriageRequest
@@ -258,9 +259,6 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
         )
 
         # Change own information
-        if self.payload.user_id == 0:
-            self.payload.user_id = int(node.users.get_user(verify_key).id)  # type: ignore
-
         _valid_user = node.users.contain(id=self.payload.user_id)
 
         if not _valid_parameters:
@@ -271,35 +269,14 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
         if not _valid_user:
             raise UserNotFoundError
 
-        # Change Institution
-        if self.payload.institution:
-            node.users.set(
-                user_id=str(self.payload.user_id), institution=self.payload.institution
-            )
+        payload_dict = self.payload.dict(exclude_unset=True)
+        user_id = payload_dict.pop("user_id")
 
-        # Change Website
-        if self.payload.website:
-            node.users.set(
-                user_id=str(self.payload.user_id), website=self.payload.website
-            )
-
-        # Change Email Request
-        elif self.payload.email:
-            node.users.set(user_id=str(self.payload.user_id), email=self.payload.email)
-
-        # Change Password Request
-        elif self.payload.password:
-            node.users.set(
-                user_id=str(self.payload.user_id), password=self.payload.password
-            )
-
-        # Change Name Request
-        elif self.payload.name:
-            node.users.set(user_id=str(self.payload.user_id), name=self.payload.name)
-
-        # Change Role Request
-        elif self.payload.role:
-            target_user = node.users.first(id=self.payload.user_id)
+        # If Change Role Request, then check if user
+        # has proper permissions.
+        # TODO: This can also be simplified further.
+        if self.payload.role:  # type: ignore
+            target_user = node.users.first(id=user_id)
             _allowed = (
                 self.payload.role != node.roles.owner_role.name  # Target Role != Owner
                 and target_user.role
@@ -311,15 +288,17 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
 
             # If all premises were respected
             if _allowed:
-                new_role_id = node.roles.first(name=self.payload.role).id
-                node.users.set(user_id=self.payload.user_id, role=new_role_id)  # type: ignore
+                role = payload_dict.pop("role")
+                new_role_id = node.roles.first(name=role).id
+                node.users.set(user_id=user_id, role=new_role_id)  # type: ignore
             elif (  # Transfering Owner's role
                 self.payload.role == node.roles.owner_role.name  # target role == Owner
                 and node.users.role(verify_key=verify_key).name
                 == node.roles.owner_role.name  # Current user is the current node owner.
             ):
-                new_role_id = node.roles.first(name=self.payload.role).id
-                node.users.set(user_id=str(self.payload.user_id), role=new_role_id)
+                role = payload_dict.pop("role")
+                new_role_id = node.roles.first(name=role).id
+                node.users.set(user_id=str(user_id), role=new_role_id)
                 current_user = node.users.get_user(verify_key=verify_key)
                 node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)  # type: ignore
                 # Updating current node keys
@@ -339,7 +318,12 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
             else:
                 raise AuthorizationError("You're not allowed to change User roles!")
 
+        # Update values of all other parameters
+        for param, val in payload_dict.items():
+            update_dict = {"user_id": user_id, param: val}
+            node.users.set(**update_dict)
+
         return UpdateUserMessage.Reply()
 
-    def get_permissions(self) -> List[Type[BasePermission]]:
-        return [UserCanCreateUsers]
+    def get_permissions(self) -> List[Union[Type[BasePermission], Operation]]:
+        return [UserCanCreateUsers | UserIsOwner]
