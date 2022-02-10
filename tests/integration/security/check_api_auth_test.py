@@ -14,7 +14,7 @@ def make_curl_cmd(url: str, key: str, container: str) -> str:
 
 @pytest.mark.security
 def test_api_auth() -> None:
-    container = "test_network_1-tailscale-1"
+    container = "test_network_1_tailscale_1"
     urls = [
         "http://headscale:4000/commands/generate_key",
         "http://tailscale:4000/commands/status",

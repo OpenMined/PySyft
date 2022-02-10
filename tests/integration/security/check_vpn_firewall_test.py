@@ -38,7 +38,7 @@ def test_vpn_scan() -> None:
     # the tailscale container is currently the same so we can get away with a
     # single external scan
     containers = [
-        "test_network_1-tailscale-1",
+        "test_network_1_tailscale_1",
         # "test_domain_1-tailscale-1",
     ]
 
