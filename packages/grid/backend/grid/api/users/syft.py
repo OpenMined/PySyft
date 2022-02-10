@@ -62,7 +62,8 @@ def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
         message_type=CreateUserMessage,
         **dict(new_user)
     )
-    reply = type("message", (object,), dict(reply))()
+    if flags.USE_NEW_SERVICE:
+        reply = type("message", (object,), dict(reply))()
     return reply.resp_msg
 
 
@@ -86,17 +87,24 @@ def process_applicant_request(
 
 
 def get_all_users(current_user: UserPrivate) -> List[User]:
-    return send_message_with_reply(
+    result = send_message_with_reply(
         signing_key=current_user.get_signing_key(), message_type=GetUsersMessage
     )
+    if not flags.USE_NEW_SERVICE:
+        result = [user.upcast() for user in result.content]
+    return result
 
 
 def get_user(user_id: int, current_user: UserPrivate) -> User:
-    return send_message_with_reply(
+    result = send_message_with_reply(
         signing_key=current_user.get_signing_key(),
         message_type=GetUserMessage,
         user_id=user_id,
     )
+    if not flags.USE_NEW_SERVICE:
+        result = result.content.upcast()
+
+    return result
 
 
 def update_user(
@@ -108,7 +116,8 @@ def update_user(
         user_id=user_id,
         **updated_user.dict(exclude_unset=True)
     )
-    reply = type("message", (object,), dict(reply))()
+    if flags.USE_NEW_SERVICE:
+        reply = type("message", (object,), dict(reply))()
     return reply.resp_msg
 
 
@@ -118,6 +127,7 @@ def delete_user(user_id: int, current_user: UserPrivate) -> str:
         message_type=DeleteUserMessage,
         user_id=user_id,
     )
-    reply = type("message", (object,), dict(reply))()
+    if flags.USE_NEW_SERVICE:
+        reply = type("message", (object,), dict(reply))()
     # return reply.message - if the other one doesn't work try this one? ;)
     return reply.resp_msg

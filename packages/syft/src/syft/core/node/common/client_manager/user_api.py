@@ -3,16 +3,28 @@ from typing import Any
 from typing import Dict
 
 # relative
+from .....experimental_flags import flags
 from .....logger import logger
 from ...abstract.node import AbstractNodeClient
 from ...domain.enums import ResponseObjectEnum
 from ..exceptions import AuthorizationError
 from ..node_service.user_auth.user_auth_messages import UserLoginMessageWithReply
-from ..node_service.user_manager.new_user_messages import CreateUserMessage
-from ..node_service.user_manager.new_user_messages import DeleteUserMessage
-from ..node_service.user_manager.new_user_messages import GetUserMessage
-from ..node_service.user_manager.new_user_messages import GetUsersMessage
-from ..node_service.user_manager.new_user_messages import UpdateUserMessage
+
+if flags.USE_NEW_SERVICE:
+    # relative
+    from ..node_service.user_manager.new_user_messages import CreateUserMessage
+    from ..node_service.user_manager.new_user_messages import DeleteUserMessage
+    from ..node_service.user_manager.new_user_messages import GetUserMessage
+    from ..node_service.user_manager.new_user_messages import GetUsersMessage
+    from ..node_service.user_manager.new_user_messages import UpdateUserMessage
+else:
+    from ..node_service.user_manager.user_messages import CreateUserMessage
+    from ..node_service.user_manager.user_messages import DeleteUserMessage
+    from ..node_service.user_manager.user_messages import GetUserMessage
+    from ..node_service.user_manager.user_messages import GetUsersMessage
+    from ..node_service.user_manager.user_messages import UpdateUserMessage
+
+# relative
 from .request_api import RequestAPI
 
 
@@ -45,10 +57,17 @@ class UserRequestAPI(RequestAPI):
                 )  # type: ignore
                 logger.info(response)
             else:
-                response = self.perform_request(
-                    syft_msg=self._create_message, content=kwargs
-                )
-                logger.info(response.message)
+                if flags.USE_NEW_SERVICE:
+                    response = self.perform_request(
+                        syft_msg=self._create_message, content=kwargs
+                    )
+                    logger.info(response.message)
+                else:
+                    response = self.perform_request(
+                        syft_msg=self._create_message, content=kwargs
+                    )
+                    logger.info(response.resp_msg)
+
         except Exception as e:
             print("failing to create user", e)
             try:

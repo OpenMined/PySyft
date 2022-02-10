@@ -25,14 +25,14 @@ from ...node_table.utils import model_to_json
 from ...permissions.permissions import BasePermission
 from ...permissions.user_permissions import UserCanCreateUsers
 from ...permissions.user_permissions import UserCanTriageRequest
-from ..generic_payload.syft_message import NewSyftMessage
+from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
 from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
 
 
 @serializable(recursive_serde=True)
 @final
-class CreateUserMessage(NewSyftMessage, DomainMessageRegistry):
+class CreateUserMessage(SyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -112,7 +112,7 @@ class CreateUserMessage(NewSyftMessage, DomainMessageRegistry):
 
 @serializable(recursive_serde=True)
 @final
-class GetUserMessage(NewSyftMessage, DomainMessageRegistry):
+class GetUserMessage(SyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -158,7 +158,7 @@ class GetUserMessage(NewSyftMessage, DomainMessageRegistry):
 
 @serializable(recursive_serde=True)
 @final
-class GetUsersMessage(NewSyftMessage, DomainMessageRegistry):
+class GetUsersMessage(SyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -202,7 +202,7 @@ class GetUsersMessage(NewSyftMessage, DomainMessageRegistry):
 
 @serializable(recursive_serde=True)
 @final
-class DeleteUserMessage(NewSyftMessage, DomainMessageRegistry):
+class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -239,7 +239,7 @@ class DeleteUserMessage(NewSyftMessage, DomainMessageRegistry):
 
 @serializable(recursive_serde=True)
 @final
-class UpdateUserMessage(NewSyftMessage, DomainMessageRegistry):
+class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):

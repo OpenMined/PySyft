@@ -7,7 +7,9 @@ from nacl.signing import VerifyKey
 # relative
 from ....core.node.abstract.node_service_interface import NodeServiceInterface
 from ....core.node.common.node_service.auth import service_auth
-from ....core.node.common.node_service.generic_payload.syft_message import SyftMessage
+from ....core.node.common.node_service.generic_payload.syft_message import (
+    NewSyftMessage as SyftMessage,
+)
 from ....core.node.common.node_service.node_service import NodeService
 from .registry import DomainMessageRegistry
 

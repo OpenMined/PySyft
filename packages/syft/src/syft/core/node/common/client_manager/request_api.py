@@ -10,12 +10,22 @@ from typing import Type
 from pandas import DataFrame
 
 # relative
-# from ....common.message import SyftMessage
+from .....experimental_flags import flags
+
+if flags.USE_NEW_SERVICE:
+    # relative
+    from ..node_service.generic_payload.syft_message import (
+        NewSyftMessage as SyftMessage,
+    )
+else:
+    from ....common.message import SyftMessage
+
+# relative
 from ...abstract.node import AbstractNodeClient
 from ...domain.enums import RequestAPIFields
 from ..action.exception_action import ExceptionMessage
-from ..node_service.generic_payload.messages import GenericPayloadMessageWithReply
-from ..node_service.generic_payload.syft_message import SyftMessage
+
+# from ..node_service.generic_payload.messages import GenericPayloadMessageWithReply
 
 
 class RequestAPI:
@@ -39,27 +49,56 @@ class RequestAPI:
         self.perform_request = self.perform_api_request_generic
 
     def create(self, **kwargs: Any) -> None:
-        response = self.perform_request(
-            syft_msg=self._create_message, content=kwargs  # type: ignore
-        )
-        logging.info(response.message)
+        if flags.USE_NEW_SERVICE:
+            response = self.perform_request(
+                syft_msg=self._create_message, content=kwargs  # type: ignore
+            )
+            logging.info(response.message)
+        else:
+            response = self.perform_api_request(
+                syft_msg=self._create_message, content=kwargs  # type: ignore
+            )
+            logging.info(response.resp_msg)
 
     def get(self, **kwargs: Any) -> Any:
-        return self.to_obj(
-            self.perform_request(syft_msg=self._get_message, content=kwargs)
-        )
+        if flags.USE_NEW_SERVICE:
+            return self.to_obj(
+                self.perform_request(syft_msg=self._get_message, content=kwargs)
+            )
+        else:
+            return self.to_obj(
+                self.perform_api_request(syft_msg=self._get_message, content=kwargs)
+            )
 
     def all(self) -> List[Any]:
-        return sum(
-            self.perform_request(syft_msg=self._get_all_message).dict().values(), []
-        )
+        if flags.USE_NEW_SERVICE:
+            result = list(
+                self.perform_request(syft_msg=self._get_all_message).dict().values()
+            )
+        else:
+            result = []
+            for content in self.perform_api_request(
+                syft_msg=self._get_all_message
+            ).content:
+                if hasattr(content, "upcast"):
+                    content = content.upcast()
+                result.append(content)
+        return result
 
     def pandas(self) -> DataFrame:
         return DataFrame(self.all())
 
     def update(self, **kwargs: Any) -> None:
-        response = self.perform_request(syft_msg=self._update_message, content=kwargs)
-        logging.info(response.message)
+        if flags.USE_NEW_SERVICE:
+            response = self.perform_request(
+                syft_msg=self._update_message, content=kwargs
+            )
+            logging.info(response.message)
+        else:
+            response = self.perform_api_request(
+                syft_msg=self._delete_message, content=kwargs
+            )
+            logging.info(response.resp_msg)
 
     def delete(self, **kwargs: Any) -> None:
         response = self.perform_request(syft_msg=self._delete_message, content=kwargs)
@@ -68,7 +107,10 @@ class RequestAPI:
     def to_obj(self, result: Any) -> Any:
         if result:
             _class_name = self._response_key.capitalize()
-            result = type(_class_name, (object,), result.dict())()
+            if flags.USE_NEW_SERVICE:
+                result = type(_class_name, (object,), result.dict())()
+            else:
+                result = type(_class_name, (object,), result)()
 
         return result
 
