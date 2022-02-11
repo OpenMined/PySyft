@@ -45,7 +45,7 @@ def _resolve_pointer_type(self: Pointer) -> Pointer:
     """Resolve pointer of the object.
 
     Creates a request on a pointer to validate and regenerate the current pointer type. This method
-    is useful when deadling with AnyPointer or Union<types>Pointers, to retrieve the real pointer.
+    is useful when dealing with AnyPointer or Union<types>Pointers, to retrieve the real pointer.
 
     The existing pointer will be deleted and a new one will be generated. The remote data won't
     be touched.

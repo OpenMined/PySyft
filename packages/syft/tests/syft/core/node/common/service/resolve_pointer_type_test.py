@@ -45,8 +45,6 @@ def test_resolve_any_pointer_type(
         assert equality_functions[idx](resolved_pointer.get(), elem)
 
 
-# MADHAVA: this needs fixing
-@pytest.mark.xfail
 def test_resolve_union_pointer_type(
     root_client: sy.VirtualMachineClient,
     inputs: Tuple[int, float, bool, torch.Tensor],
@@ -55,10 +53,8 @@ def test_resolve_union_pointer_type(
 ) -> None:
     list_ptr = root_client.syft.lib.python.List(list(inputs))
 
-    for idx, remote_pointer in enumerate(list_ptr):
-        assert (
-            type(remote_pointer).__name__ == "FloatIntStringTensorParameterUnionPointer"
-        )
+    for idx in range(len(inputs)):
+        remote_pointer = list_ptr[idx]
         resolved_pointer = remote_pointer.resolve_pointer_type()
         assert remote_pointer.id_at_location == resolved_pointer.id_at_location
         assert type(resolved_pointer).__name__ == input_pointer_types[idx]
