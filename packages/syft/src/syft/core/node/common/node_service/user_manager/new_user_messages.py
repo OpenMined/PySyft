@@ -1,6 +1,4 @@
 # stdlib
-from typing import Any
-from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Type
@@ -64,9 +62,9 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         Reply  # Creates a proper Reply payload message structure as a response.
     )
 
-    def run(  # type: ignore
+    def run(
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
-    ) -> Union[List, Dict[str, Any]]:
+    ) -> ReplyPayload:  # type: ignore
 
         # Check if email/password fields are empty
         if not getattr(self.payload, "email", "") or not getattr(
@@ -133,7 +131,7 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
 
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
-    ) -> Union[None, ReplyPayload]:
+    ) -> ReplyPayload:
         # Retrieve User Model
         user = node.users.first(id=self.payload.user_id)  # type: ignore
 
@@ -170,7 +168,7 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
 
     def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
-    ) -> Union[None, ReplyPayload]:
+    ) -> ReplyPayload:
         # Get All Users
         users = node.users.all()
         users_list = list()
@@ -189,8 +187,7 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
             )
             users_list.append(user_model)
 
-        reply = GetUsersMessage.Reply.construct()
-        reply.users = users_list
+        reply = GetUsersMessage.Reply(users=users_list)
         return reply
 
     def get_permissions(self) -> List:
@@ -214,7 +211,7 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
 
     def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
-    ) -> Union[None, ReplyPayload]:
+    ) -> ReplyPayload:
 
         node.users.delete(id=self.payload.user_id)
 
@@ -247,7 +244,7 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
 
     def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
-    ) -> Union[None, ReplyPayload]:
+    ) -> ReplyPayload:
 
         _valid_parameters = (
             self.payload.email

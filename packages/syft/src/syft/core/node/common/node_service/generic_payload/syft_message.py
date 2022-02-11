@@ -3,7 +3,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import Union
 
 # third party
 from nacl.signing import VerifyKey
@@ -76,7 +75,7 @@ class NewSyftMessage(ImmediateSyftMessage):
 
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
-    ) -> Union[None, Payload]:
+    ) -> ReplyPayload:
         raise NotImplementedError
 
     def get_permissions(self) -> List:
