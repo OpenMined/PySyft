@@ -16,7 +16,7 @@ def retrieve_object(
     while True:
         store_obj = node.store.get_object(key=id_at_location)
         if store_obj is None:
-            if ctr % 200 == 0:
+            if ctr % 1500 == 0:
                 critical(
                     f"execute_action on {path} failed due to missing object"
                     + f" at: {id_at_location}"
@@ -36,7 +36,7 @@ def beaver_retrieve_object(
     while True:
         store_obj = node.store.get_object(key=id_at_location)
         if store_obj is None or len(store_obj.data) != nr_parties:
-            if ctr % 200 == 0:
+            if ctr % 1500 == 0:
                 critical(
                     f"Beaver Retrieval failed for {nr_parties} parties due to missing object"
                     + f" at: {id_at_location} values: {store_obj}"

@@ -86,7 +86,8 @@ class BeaverAction(ImmediateActionWithoutReply):
         delta_id = self.delta_id
         BeaverAction.beaver_populate(eps, eps_id, node)
         BeaverAction.beaver_populate(delta, delta_id, node)
-        info(
+        info("check")
+        print(
             f"🏪 Beaver Populate on {node} ,EPS Value: {eps}-{eps_id} ,Delta Value: {delta}-{delta_id}"
         )
 
