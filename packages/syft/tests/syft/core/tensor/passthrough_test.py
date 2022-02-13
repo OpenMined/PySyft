@@ -1,4 +1,5 @@
 # stdlib
+from opcode import hasconst
 from typing import Any
 
 # third party
@@ -205,28 +206,28 @@ def test__le__() -> None:
     assert result_b == tensor_c
 
 
-# def test__ne__() -> None:
-#     data_a = np.array([0, 1, 2], dtype=np.int32)
-#     data_b = np.zeros((3,), dtype=np.int32)
-#     tensor_a = PassthroughTensor(child=data_a)
-#     tensor_b = PassthroughTensor(child=data_b)
-#     result_a = tensor_a.__ne__(tensor_b)
-#     result_b = tensor_b.__ne__(data_a)
+def test__ne__() -> None:
+    data_a = np.array([0, 1, 2], dtype=np.int32)
+    data_b = np.zeros((3,), dtype=np.int32)
+    tensor_a = PassthroughTensor(child=data_a)
+    tensor_b = PassthroughTensor(child=data_b)
+    result_a = tensor_a.__ne__(tensor_b)
+    result_b = tensor_b.__ne__(data_a)
 
-#     assert all(result_a.child) is False
-#     assert all(result_b.child) is False
+    assert all(result_a.child) is False
+    assert all(result_b.child) is False
 
 
-# def test__eq__() -> None:
-#     data_a = np.array([0, 1, 2], dtype=np.int32)
-#     data_b = np.zeros((3,), dtype=np.int32)
-#     tensor_a = PassthroughTensor(child=data_a)
-#     tensor_b = PassthroughTensor(child=data_b)
-#     result_a = tensor_a.__eq__(tensor_b)
-#     result_b = tensor_a.__eq__(data_a)
+def test__eq__() -> None:
+    data_a = np.array([0, 1, 2], dtype=np.int32)
+    data_b = np.zeros((3,), dtype=np.int32)
+    tensor_a = PassthroughTensor(child=data_a)
+    tensor_b = PassthroughTensor(child=data_b)
+    result_a = tensor_a.__eq__(tensor_b)
+    result_b = tensor_a.__eq__(data_a)
 
-#     assert all(result_a.child) is False
-#     assert all(result_b.child) is True
+    assert all(result_a.child) is False
+    assert all(result_b.child) is True
 
 
 def test__floordiv__() -> None:
@@ -763,12 +764,30 @@ def test_std() -> None:
     assert tensor.std().child.round(4) == 2.2913
 
 
-# Needs an additional test for PassthroughTensor with "copy_tensor" attribute.
+def test_sum_copy() -> None:
+    data = np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]]], dtype=np.int32)
+    tensor = PassthroughTensor(child=data)
+    
+    class DummyTensor(PassthroughTensor):
+        pass
+
+    def copy_tensor(self) -> None:  # type: ignore
+        return DummyTensor(child=self.child)
+
+    tensor.copy_tensor = copy_tensor(tensor)
+    result = tensor.sum()
+
+    assert result.child == 28
+    assert isinstance(result, (DummyTensor))
+    assert id(result.child) != id(tensor.child)
+
+
 def test_sum() -> None:
     data = np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]]], dtype=np.int32)
     tensor = PassthroughTensor(child=data)
-
-    assert tensor.sum().child == 28
+    result = tensor.sum()
+    assert result.child == 28
+    assert isinstance(result, (PassthroughTensor))
 
 
 def test_take() -> None:
