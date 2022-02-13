@@ -1,5 +1,4 @@
 # stdlib
-from opcode import hasconst
 from typing import Any
 
 # third party
@@ -80,9 +79,10 @@ def test_logical_and() -> None:
 
     assert result == expected
 
-    with pytest.raises(Exception,
-        match = "Tensor shapes do not match for __eq__: [0-9]+ != [0-9]+"):
-            tensor_b.logical_and(tensor_c)
+    with pytest.raises(
+        Exception, match="Tensor shapes do not match for __eq__: [0-9]+ != [0-9]+"
+    ):
+        tensor_b.logical_and(tensor_c)
 
 
 def test__abs__() -> None:
@@ -767,7 +767,7 @@ def test_std() -> None:
 def test_sum_copy() -> None:
     data = np.array([[[0, 1], [2, 3]], [[4, 5], [6, 7]]], dtype=np.int32)
     tensor = PassthroughTensor(child=data)
-    
+
     class DummyTensor(PassthroughTensor):
         pass
 
@@ -843,11 +843,10 @@ class PtTensorSubclass(PassthroughTensor):
     def __str__(self):
         return f"{self.child} {self.unit}"
 
-
     def __add__(self, other):
         if self.unit == other.unit:
-          result = self.child + other.child
-          return PtTensorSubclass(result, self.unit)
+            result = self.child + other.child
+            return PtTensorSubclass(result, self.unit)
         else:
             raise ValueError("PtTensorSubclass(for testing) must have the same units")
 
@@ -920,13 +919,11 @@ def test__array_ufunc__() -> None:
 
     assert result_a == expected_a
 
-    # Explicitly Testing implementation True 
+    # Explicitly Testing implementation True
     # (def test_square implicitly calls __array_ufunc__ and triggers an implementation)
     data_c = np.array([0, 0, 0], dtype=np.int32)
     expected_b = PtTensorSubclass(child=data_c, unit="Hegehogs")
-    result_b = tensor_a.__array_ufunc__(
-        np.subtract, "__call__", tensor_a, tensor_a
-    )
+    result_b = tensor_a.__array_ufunc__(np.subtract, "__call__", tensor_a, tensor_a)
 
     assert result_b == expected_b
 

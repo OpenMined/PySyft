@@ -109,11 +109,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     #     return tuple(self.child.shape)
 
-
-
-    # Changed return statement for logical_and as method was not working correctly with 
-    # PassthroughTensor. While testing I was unable to return a tensor with the 
-    # element by element comparrison of two input tensors. 
+    # Changed return statement for logical_and as method was not working correctly with
+    # PassthroughTensor. While testing I was unable to return a tensor with the
+    # element by element comparrison of two input tensors.
     # This change fixed it as far as I can tell.
     def logical_and(self, other):
         if is_acceptable_simple_type(other) or (self.child.shape == other.child.shape):
@@ -532,10 +530,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         return self.__class__(self.child.std(axis=axis))
 
-
     # Changed line: 546  from:  tensor = self.copy_tensor()
     # Because while testing kept getting: TypeError 'obj' is not callable
-    # Someone check it please because I am not at all confident about the change. 
+    # Someone check it please because I am not at all confident about the change.
 
     # numpy.sum(a, axis=None, dtype=None, out=None, keepdims=<no value>, initial=<no value>, where=<no value>)
     def sum(
