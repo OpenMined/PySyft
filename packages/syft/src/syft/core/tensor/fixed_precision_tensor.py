@@ -26,7 +26,7 @@ class FixedPrecisionTensor(PassthroughTensor):
     ) -> None:
         self._base = base
         self._precision = precision
-        self._scale = base ** precision
+        self._scale = base**precision
         if value is not None:
             fpt_value = self._scale * value
             encoded_value = fpt_value.astype(np.int64)
