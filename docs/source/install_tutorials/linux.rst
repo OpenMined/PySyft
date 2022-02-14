@@ -123,7 +123,7 @@ d. If not, go through the `instructions here <https://www.rockyourcode.com/how-t
     .. code-block:: bash
 
        mkdir -p ~/.docker/cli-plugins
-       curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
+       curl -sSL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
        chmod +x ~/.docker/cli-plugins/docker-compose
 
 e. Also, make sure you can run without sudo:
