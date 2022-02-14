@@ -13,7 +13,7 @@ from uuid import UUID
 import numpy as np
 
 # relative
-from .....logger import info 
+from .....logger import info
 from ....common.uid import UID
 from ....store.storeable_object import StorableObject
 from ....tensor.smpc import utils
