@@ -120,6 +120,7 @@ class GridHTTPConnection(HTTPConnection):
             headers=header,
             verify=verify_tls(),
             timeout=timeout,
+            proxies=HTTPConnection.proxies,
         )
         # else:
         #     r = self.send_streamed_messages(blob_message=msg_bytes)
@@ -134,6 +135,7 @@ class GridHTTPConnection(HTTPConnection):
             json=credentials,
             verify=verify_tls(),
             timeout=2,
+            proxies=HTTPConnection.proxies,
         )
 
         # Response
@@ -195,6 +197,7 @@ class GridHTTPConnection(HTTPConnection):
                 json=content,
                 verify=verify_tls(),
                 timeout=2,
+                proxies=HTTPConnection.proxies,
             ).text
         )
         if response.get(RequestAPIFields.MESSAGE, None):
@@ -222,6 +225,7 @@ class GridHTTPConnection(HTTPConnection):
                 str(self.base_url) + GridHTTPConnection.SYFT_ROUTE,
                 headers=header,
                 verify=verify_tls(),
+                proxies=HTTPConnection.proxies,
             ).text
         )
         if response.get(RequestAPIFields.MESSAGE, None, timeout=2):
@@ -252,7 +256,11 @@ class GridHTTPConnection(HTTPConnection):
         }
 
         resp = requests.post(
-            str(self.base_url) + route, files=files, headers=header, verify=verify_tls()
+            str(self.base_url) + route,
+            files=files,
+            headers=header,
+            verify=verify_tls(),
+            proxies=HTTPConnection.proxies,
         )
 
         return json.loads(resp.content)
@@ -276,6 +284,7 @@ class GridHTTPConnection(HTTPConnection):
                 headers=headers,
                 data=form,
                 verify=verify_tls(),
+                proxies=HTTPConnection.proxies,
             )
 
         session.close()

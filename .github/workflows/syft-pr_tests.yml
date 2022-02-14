@@ -7,6 +7,8 @@
 name: Syft PR Tests
 
 on:
+  workflow_call:
+
   pull_request:
     branches:
       - dev
@@ -33,6 +35,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
@@ -73,7 +76,10 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           bandit -r src
-          safety check
+          # temporarily ignore unpatched numpy issue because devs don't agree
+          # https://github.com/pyupio/safety-db/issues/2349
+          # https://github.com/numpy/numpy/issues/19038
+          safety check -i 44715
 
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
