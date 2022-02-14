@@ -79,7 +79,7 @@ class GrammarTerm:
         type: str,
         name: str,
         default: Optional[Union[str, Callable]] = None,
-        options: TypeList = None,
+        options: Optional[TypeList] = None,
         example: Optional[str] = None,
         **kwargs: TypeDict[str, Any],
     ) -> None:

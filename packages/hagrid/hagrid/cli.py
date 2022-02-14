@@ -245,7 +245,7 @@ class Question:
         kind: str,
         default: Optional[str] = None,
         cache: bool = False,
-        options: TypeList[str] = None,
+        options: Optional[TypeList[str]] = None,
     ) -> None:
         self.var_name = var_name
         self.question = question
