@@ -571,6 +571,10 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         )
 
     def __add__(self, other: Any) -> IntermediateGammaTensor:
+        output_scalar_manager = self.scalar_manager.copy()
+        # TODO: add support for SingleEntitiyPhiTensor
+        # this will cause it to generate them using a more computationally intensive
+        unique_entities = None
 
         if is_acceptable_simple_type(other):
 
@@ -608,7 +612,6 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             #     "Cannot add two tensors with different symbol encodings"
             # )
 
-            output_scalar_manager = self.scalar_manager.copy()
             output_scalar_manager.combine_(other.scalar_manager)
 
             # Step 1: Concatenate
@@ -623,10 +626,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
             if hasattr(other, "unique_entities"):
                 unique_entities = self.unique_entities.union(other.unique_entities)
-            else:
-                # TODO: add support for SingleEntitiyPhiTensor
-                # this will cause it to generate them using a more computationally intensive
-                unique_entities = None
+                
 
         # EXPLAIN B: NEW OUTPUT becomes a 5x10x2
         # TODO: Step 2: Reduce dimensionality if possible (look for duplicates)
