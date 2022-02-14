@@ -5,7 +5,7 @@ on:
     - cron: "30 01 * * 4" # Thursday
 
 jobs:
-  deploy-syft-alpha:
+  deploy-syft-beta:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
