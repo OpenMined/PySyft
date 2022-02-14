@@ -13,6 +13,7 @@ from typing import Union
 from .. import ast
 from .. import lib
 from ..core.common.pointer import AbstractPointer
+from ..core.common.uid import UID
 from ..core.node.common.action.get_or_set_static_attribute_action import (
     GetSetStaticAttributeAction,
 )
@@ -146,7 +147,9 @@ class StaticAttribute(ast.attribute.Attribute):
 
         resolved_pointer_type = self.client.lib_ast.query(self.return_type_name)
         result = resolved_pointer_type.pointer_type(client=self.client)
-        result_id_at_location = getattr(result, "id_at_location", None)
+        result_id_at_location: Optional[UID] = getattr(result, "id_at_location", None)
+        if result_id_at_location is None:
+            raise Exception("Can't get remote value if there is no id_at_location")
 
         downcasted_set_arg = lib.python.util.downcast(set_arg)
         downcasted_set_arg_ptr = downcasted_set_arg.send(self.client)

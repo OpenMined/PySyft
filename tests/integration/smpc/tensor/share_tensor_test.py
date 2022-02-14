@@ -10,7 +10,7 @@ from syft.core.tensor.smpc.share_tensor import ShareTensor
 
 @pytest.mark.smpc
 def test_bit_extraction() -> None:
-    share = ShareTensor(rank=0, parties_info=[], ring_size=2 ** 32)
+    share = ShareTensor(rank=0, parties_info=[], ring_size=2**32)
     data = np.array([[21, 32], [-54, 89]], dtype=np.int32)
     share.child = data
     exp_res1 = np.array([[False, False], [True, False]], dtype=np.bool_)
@@ -25,7 +25,7 @@ def test_bit_extraction() -> None:
 
 @pytest.mark.smpc
 def test_bit_extraction_exception() -> None:
-    share = ShareTensor(rank=0, parties_info=[], ring_size=2 ** 32)
+    share = ShareTensor(rank=0, parties_info=[], ring_size=2**32)
     data = np.array([[21, 32], [-54, 89]], dtype=np.int32)
     share.child = data
 

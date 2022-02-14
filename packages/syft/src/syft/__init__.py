@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.6.0"
+__version__ = "0.7.0-beta.0"
 
 # stdlib
 from pathlib import Path
@@ -80,9 +80,6 @@ from .registry import NetworkRegistry  # noqa: F401
 sys.path.append(str(Path(__file__)))
 
 logger.start()
-
-# TODO: https://github.com/OpenMined/PySyft/issues/5930
-flags._APACHE_ARROW_TENSOR_SERDE = False
 
 
 def module_property(func: Any) -> None:
