@@ -1,5 +1,8 @@
+.. _macOS_install:
+
+=================================
 macOS Tutorial (Big Sur - 11.5.1)
-*********************************
+=================================
 
 Welcome to the beginner installation tutorial for domain deployment on your personal macOS machine!
 
