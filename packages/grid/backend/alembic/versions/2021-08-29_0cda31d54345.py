@@ -44,6 +44,13 @@ def upgrade() -> None:
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
+        "bin_object",
+        sa.Column("id", sa.String(length=256), nullable=False),
+        sa.Column("binary", sa.LargeBinary(length=3072), nullable=True),
+        sa.Column("obj_name", sa.String(length=3072), nullable=True),
+        sa.PrimaryKeyConstraint("id"),
+    )
+    op.create_table(
         "dataset",
         sa.Column("id", sa.String(length=256), nullable=False),
         sa.Column("name", sa.String(length=256), nullable=True),
@@ -102,6 +109,7 @@ def upgrade() -> None:
         sa.Column("dtype", sa.String(length=256), nullable=True),
         sa.Column("shape", sa.String(length=256), nullable=True),
         sa.ForeignKeyConstraint(["dataset"], ["dataset.id"], ondelete="CASCADE"),
+        sa.ForeignKeyConstraint(["obj"], ["bin_object.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -113,6 +121,7 @@ def upgrade() -> None:
         sa.Column("name", sa.String(), nullable=True),
         sa.Column("read_permissions", sa.JSON(), nullable=True),
         sa.Column("search_permissions", sa.JSON(), nullable=True),
+        sa.ForeignKeyConstraint(["obj"], ["bin_object.id"], ondelete="CASCADE"),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -196,6 +205,7 @@ def downgrade() -> None:
     op.drop_table("group")
     op.drop_table("environment")
     op.drop_table("dataset")
+    op.drop_table("bin_object")
     op.drop_table("association_request")
     op.drop_table("association")
     # ### end Alembic commands ###
