@@ -232,8 +232,8 @@ class SliceTest(unittest.TestCase):
         # values exceeding sys.maxsize (see issue #14794).
         vals = [
             None,
-            -(2 ** 100),
-            -(2 ** 30),
+            -(2**100),
+            -(2**30),
             -53,
             -7,
             -1,
@@ -241,10 +241,10 @@ class SliceTest(unittest.TestCase):
             1,
             7,
             53,
-            2 ** 30,
-            2 ** 100,
+            2**30,
+            2**100,
         ]
-        lengths = [0, 1, 7, 53, 2 ** 30, 2 ** 100]
+        lengths = [0, 1, 7, 53, 2**30, 2**100]
         for slice_args in itertools.product(vals, repeat=3):
             s = Slice(*slice_args)
             for length in lengths:
