@@ -9,6 +9,8 @@
 name: Syft Merge Tests
 
 on:
+  workflow_call:
+
   push:
     branches:
       - main
@@ -46,6 +48,7 @@ jobs:
         uses: dorny/paths-filter@v2
         id: changes
         with:
+          base: ${{ github.ref }}
           token: ${{ github.token }}
           filters: .github/file-filters.yml
 
