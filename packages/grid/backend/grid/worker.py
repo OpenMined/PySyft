@@ -24,7 +24,7 @@ client_sentry = Client(settings.SENTRY_DSN)
 def msg_without_reply(self, obj_msg: Any) -> None:  # type: ignore
     if isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
         try:
-            print(f"📘📘📘 Celery execution: {obj_msg.message}")
+            # print(f"📘📘📘 Celery execution: {obj_msg.message}")
             node.recv_immediate_msg_without_reply(msg=obj_msg)
         except Exception as e:
             raise e
