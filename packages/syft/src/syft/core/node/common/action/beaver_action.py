@@ -1,4 +1,5 @@
 # stdlib
+from typing import Dict
 from typing import List
 from typing import Optional
 
@@ -21,6 +22,8 @@ from ....store.storeable_object import StorableObject
 from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+
+BEAVER_CACHE: Dict[UID, StorableObject] = {}  # Global cache for spdz mask values
 
 
 @serializable()
@@ -58,7 +61,10 @@ class BeaverAction(ImmediateActionWithoutReply):
             id_at_location (UID): the location to store the data in.
             node Optional[AbstractNode] : The node on which the data is stored.
         """
-        obj = node.store.get_object(key=id_at_location)  # type: ignore
+        # TODO: Rasswanth Should modify storage to DB context,done
+        # temporarily here to prevent race condition.
+
+        obj = BEAVER_CACHE.get(id_at_location, None)  # type: ignore
         if obj is None:
             list_data = sy.lib.python.List([data])
             result = StorableObject(
@@ -66,7 +72,7 @@ class BeaverAction(ImmediateActionWithoutReply):
                 data=list_data,
                 read_permissions={},
             )
-            node.store[id_at_location] = result  # type: ignore
+            BEAVER_CACHE[id_at_location] = result  # type: ignore
         elif isinstance(obj.data, sy.lib.python.List):
             list_obj: List = obj.data
             list_obj.append(data)
@@ -75,10 +81,12 @@ class BeaverAction(ImmediateActionWithoutReply):
                 data=list_obj,
                 read_permissions={},
             )
-            node.store[id_at_location] = result  # type: ignore
+            BEAVER_CACHE[id_at_location] = result  # type: ignore
         else:
             raise Exception(f"Object at {id_at_location} should be a List or None")
-        print(f"Value after Beaver Execution: {id_at_location}-{node.store.get_object(key=id_at_location)}")
+        print(
+            f"Value after Beaver Execution: {id_at_location}-{node.store.get_object(key=id_at_location)}"
+        )
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         eps = self.eps
