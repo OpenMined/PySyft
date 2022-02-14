@@ -1,0 +1,317 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.test.module_test &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.test.module_test</h1><div class="highlight"><pre>
+<span></span><span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">enum</span> <span class="kn">import</span> <span class="n">Enum</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">..common.serde.serializable</span> <span class="kn">import</span> <span class="n">serializable</span>
+
+<span class="n">global_value</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">5</span>
+
+
+<span class="k">def</span> <span class="nf">global_function</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">global_value</span>
+
+
+<div class="viewcode-block" id="A"><a class="viewcode-back" href="../../../../api_reference/syft.core.test.module_test.html#syft.core.test.module_test.A">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">A</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This is a test class to be used in functionality test.&quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;_private_attr&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">]</span>
+    <span class="n">__attr_allowlist__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;_private_attr&quot;</span><span class="p">,</span> <span class="s2">&quot;n&quot;</span><span class="p">]</span>
+
+    <span class="n">static_attr</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">4</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_private_attr</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">5.5</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">3</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;A&quot;</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">&lt;</span> <span class="n">A</span><span class="o">.</span><span class="n">static_attr</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span>
+
+    <span class="k">def</span> <span class="nf">test_method</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">test_property</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_private_attr</span>
+
+    <span class="nd">@test_property</span><span class="o">.</span><span class="n">setter</span>
+    <span class="k">def</span> <span class="nf">test_property</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_private_attr</span> <span class="o">=</span> <span class="n">value</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">static_method</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">True</span></div>
+
+
+<div class="viewcode-block" id="B"><a class="viewcode-back" href="../../../../api_reference/syft.core.test.module_test.html#syft.core.test.module_test.B">[docs]</a><span class="k">class</span> <span class="nc">B</span><span class="p">(</span><span class="n">Enum</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This is a test enum to be used in functionality test.&quot;&quot;&quot;</span>
+
+    <span class="n">Car</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="n">Cat</span> <span class="o">=</span> <span class="mi">2</span>
+    <span class="n">Dog</span> <span class="o">=</span> <span class="mi">3</span></div>
+
+
+<div class="viewcode-block" id="IterWithoutLen"><a class="viewcode-back" href="../../../../api_reference/syft.core.test.module_test.html#syft.core.test.module_test.IterWithoutLen">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">IterWithoutLen</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;This is a test class for testing iterator method in Klass.&quot;&quot;&quot;</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">]</span>
+    <span class="n">__attr_allowlist__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;n&quot;</span><span class="p">]</span>
+
+    <span class="n">static_attr</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;IterWithoutLen&quot;</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">return</span> <span class="bp">self</span>
+
+    <span class="k">def</span> <span class="fm">__next__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">&lt;</span> <span class="n">A</span><span class="o">.</span><span class="n">static_attr</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">n</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">n</span> <span class="o">+=</span> <span class="mi">1</span>
+            <span class="k">return</span> <span class="n">result</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">StopIteration</span></div>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">C</span><span class="p">:</span>
+
+    <span class="n">__attr_allowlist__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;dynamic_object&quot;</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dynamic_object</span> <span class="o">=</span> <span class="mi">123</span>
+
+    <span class="k">def</span> <span class="nf">dummy_reloadable_func</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">0</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">type_reload_func</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">C</span><span class="o">.</span><span class="n">dummy_reloadable_func</span> <span class="o">=</span> <span class="n">C</span><span class="o">.</span><span class="n">func_1</span>  <span class="c1"># type: ignore</span>
+
+    <span class="k">def</span> <span class="nf">obj_reload_func</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;RELOADING OBJ FUNCTION&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">dummy_reloadable_func</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">func_2</span>  <span class="c1"># type: ignore</span>
+
+    <span class="k">def</span> <span class="nf">func_1</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">1</span>
+
+    <span class="k">def</span> <span class="nf">func_2</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="mi">2</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

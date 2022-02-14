@@ -1,0 +1,916 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.node.common.node &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../_static/jquery.js"></script>
+    <script src="../../../../../_static/underscore.js"></script>
+    <script src="../../../../../_static/doctools.js"></script>
+    <script src="../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../../index.html">
+  <img src="../../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.node.common.node</h1><div class="highlight"><pre>
+<span></span><span class="c1"># -*- coding: utf-8 -*-</span>
+<span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">CODING GUIDELINES:</span>
+
+<span class="sd">Do NOT (without talking to trask):</span>
+<span class="sd">- add another high level method for sending or receiving messages (like recv_eventual_msg_without_reply)</span>
+<span class="sd">- add a service to the list of services below unless you&#39;re SURE all nodes will need it!</span>
+<span class="sd">- serialize anything with pickle</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Type</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TypeVar</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">SigningKey</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">VerifyKey</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy</span> <span class="kn">import</span> <span class="n">create_engine</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="kn">import</span> <span class="n">declarative_base</span>
+
+<span class="c1"># syft absolute</span>
+<span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">....grid</span> <span class="kn">import</span> <span class="n">GridURL</span>
+<span class="kn">from</span> <span class="nn">....lib</span> <span class="kn">import</span> <span class="n">lib_ast</span>
+<span class="kn">from</span> <span class="nn">....logger</span> <span class="kn">import</span> <span class="n">debug</span>
+<span class="kn">from</span> <span class="nn">....logger</span> <span class="kn">import</span> <span class="n">error</span>
+<span class="kn">from</span> <span class="nn">....logger</span> <span class="kn">import</span> <span class="n">info</span>
+<span class="kn">from</span> <span class="nn">....logger</span> <span class="kn">import</span> <span class="n">traceback_and_raise</span>
+<span class="kn">from</span> <span class="nn">....util</span> <span class="kn">import</span> <span class="n">get_subclasses</span>
+<span class="kn">from</span> <span class="nn">...common.message</span> <span class="kn">import</span> <span class="n">EventualSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">...common.message</span> <span class="kn">import</span> <span class="n">ImmediateSyftMessageWithReply</span>
+<span class="kn">from</span> <span class="nn">...common.message</span> <span class="kn">import</span> <span class="n">ImmediateSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">...common.message</span> <span class="kn">import</span> <span class="n">SignedEventualSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">...common.message</span> <span class="kn">import</span> <span class="n">SignedImmediateSyftMessageWithReply</span>
+<span class="kn">from</span> <span class="nn">...common.message</span> <span class="kn">import</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">...common.message</span> <span class="kn">import</span> <span class="n">SignedMessage</span>
+<span class="kn">from</span> <span class="nn">...common.message</span> <span class="kn">import</span> <span class="n">SyftMessage</span>
+<span class="kn">from</span> <span class="nn">...common.uid</span> <span class="kn">import</span> <span class="n">UID</span>
+<span class="kn">from</span> <span class="nn">...io.location</span> <span class="kn">import</span> <span class="n">Location</span>
+<span class="kn">from</span> <span class="nn">...io.location</span> <span class="kn">import</span> <span class="n">SpecificLocation</span>
+<span class="kn">from</span> <span class="nn">...io.route</span> <span class="kn">import</span> <span class="n">Route</span>
+<span class="kn">from</span> <span class="nn">...io.route</span> <span class="kn">import</span> <span class="n">SoloRoute</span>
+<span class="kn">from</span> <span class="nn">...io.virtual</span> <span class="kn">import</span> <span class="n">create_virtual_connection</span>
+<span class="kn">from</span> <span class="nn">..abstract.node</span> <span class="kn">import</span> <span class="n">AbstractNode</span>
+<span class="kn">from</span> <span class="nn">.action.exception_action</span> <span class="kn">import</span> <span class="n">ExceptionMessage</span>
+<span class="kn">from</span> <span class="nn">.action.exception_action</span> <span class="kn">import</span> <span class="n">UnknownPrivateException</span>
+<span class="kn">from</span> <span class="nn">.client</span> <span class="kn">import</span> <span class="n">Client</span>
+<span class="kn">from</span> <span class="nn">.metadata</span> <span class="kn">import</span> <span class="n">Metadata</span>
+<span class="kn">from</span> <span class="nn">.node_manager.bin_obj_manager</span> <span class="kn">import</span> <span class="n">BinObjectManager</span>
+<span class="kn">from</span> <span class="nn">.node_manager.setup_manager</span> <span class="kn">import</span> <span class="n">SetupManager</span>
+<span class="kn">from</span> <span class="nn">.node_service.auth</span> <span class="kn">import</span> <span class="n">AuthorizationException</span>
+<span class="kn">from</span> <span class="nn">.node_service.child_node_lifecycle.child_node_lifecycle_service</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ChildNodeLifecycleService</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.node_service.get_repr.get_repr_service</span> <span class="kn">import</span> <span class="n">GetReprService</span>
+<span class="kn">from</span> <span class="nn">.node_service.heritage_update.heritage_update_service</span> <span class="kn">import</span> <span class="n">HeritageUpdateService</span>
+<span class="kn">from</span> <span class="nn">.node_service.msg_forwarding.msg_forwarding_service</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SignedMessageWithReplyForwardingService</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.node_service.msg_forwarding.msg_forwarding_service</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">SignedMessageWithoutReplyForwardingService</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.node_service.node_service</span> <span class="kn">import</span> <span class="n">EventualNodeServiceWithoutReply</span>
+<span class="kn">from</span> <span class="nn">.node_service.node_service</span> <span class="kn">import</span> <span class="n">ImmediateNodeServiceWithReply</span>
+<span class="kn">from</span> <span class="nn">.node_service.object_action.obj_action_service</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">EventualObjectActionServiceWithoutReply</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.node_service.object_action.obj_action_service</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ImmediateObjectActionServiceWithReply</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.node_service.object_action.obj_action_service</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ImmediateObjectActionServiceWithoutReply</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.node_service.object_search.obj_search_service</span> <span class="kn">import</span> <span class="n">ImmediateObjectSearchService</span>
+<span class="kn">from</span> <span class="nn">.node_service.object_search_permission_update.obj_search_permission_service</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ImmediateObjectSearchPermissionUpdateService</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.node_service.resolve_pointer_type.resolve_pointer_type_service</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">ResolvePointerTypeService</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">.node_service.testing_services.repr_service</span> <span class="kn">import</span> <span class="n">ReprService</span>
+<span class="kn">from</span> <span class="nn">.node_service.vpn.vpn_messages</span> <span class="kn">import</span> <span class="n">VPNRegisterMessage</span>
+<span class="kn">from</span> <span class="nn">.node_table</span> <span class="kn">import</span> <span class="n">Base</span>
+<span class="kn">from</span> <span class="nn">.node_table.node</span> <span class="kn">import</span> <span class="n">Node</span> <span class="k">as</span> <span class="n">NodeRow</span>
+
+<span class="c1"># this generic type for Client bound by Client</span>
+<span class="n">ClientT</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;ClientT&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="n">Client</span><span class="p">)</span>
+
+
+<span class="c1"># TODO: Move but right now import loop prevents importing from the RequestMessage</span>
+<div class="viewcode-block" id="DuplicateRequestException"><a class="viewcode-back" href="../../../../../api_reference/syft.core.node.common.node.html#syft.core.node.common.node.DuplicateRequestException">[docs]</a><span class="k">class</span> <span class="nc">DuplicateRequestException</span><span class="p">(</span><span class="ne">Exception</span><span class="p">):</span>
+    <span class="k">pass</span></div>
+
+
+<div class="viewcode-block" id="Node"><a class="viewcode-back" href="../../../../../api_reference/syft.core.node.common.node.html#syft.core.node.common.node.Node">[docs]</a><span class="k">class</span> <span class="nc">Node</span><span class="p">(</span><span class="n">AbstractNode</span><span class="p">):</span>
+
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    Basic class for a syft node behavior, explicit purpose node will</span>
+<span class="sd">    inherit this class (e.g., Device, Domain, Network, and VirtualMachine).</span>
+
+<span class="sd">    Each node is identified by an id of type ID and a name of type string.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">client_type</span> <span class="o">=</span> <span class="n">ClientT</span>
+    <span class="n">child_type_client_type</span> <span class="o">=</span> <span class="n">ClientT</span>
+
+    <span class="n">ChildT</span> <span class="o">=</span> <span class="n">TypeVar</span><span class="p">(</span><span class="s2">&quot;ChildT&quot;</span><span class="p">,</span> <span class="n">bound</span><span class="o">=</span><span class="s2">&quot;Node&quot;</span><span class="p">)</span>
+    <span class="n">child_type</span> <span class="o">=</span> <span class="n">ChildT</span>
+
+    <span class="n">signing_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SigningKey</span><span class="p">]</span>
+    <span class="n">verify_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VerifyKey</span><span class="p">]</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">network</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Location</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">domain</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Location</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">device</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Location</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">vm</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Location</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">signing_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SigningKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verify_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VerifyKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">TableBase</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">db_engine</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">):</span>
+
+        <span class="c1"># The node has a name - it exists purely to help the</span>
+        <span class="c1"># end user have some idea about what this node is in a human</span>
+        <span class="c1"># readable form. It is not guaranteed to be unique (or to</span>
+        <span class="c1"># really be anything for that matter).</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span> <span class="n">network</span><span class="o">=</span><span class="n">network</span><span class="p">,</span> <span class="n">domain</span><span class="o">=</span><span class="n">domain</span><span class="p">,</span> <span class="n">device</span><span class="o">=</span><span class="n">device</span><span class="p">,</span> <span class="n">vm</span><span class="o">=</span><span class="n">vm</span>
+        <span class="p">)</span>
+
+        <span class="c1"># TableBase is the base class from which all ORM classes must inherit</span>
+        <span class="c1"># If one isn&#39;t provided then we can simply make one.</span>
+        <span class="k">if</span> <span class="n">TableBase</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">TableBase</span> <span class="o">=</span> <span class="n">declarative_base</span><span class="p">()</span>
+
+        <span class="c1"># If not provided a session connecting us to the database, let&#39;s just</span>
+        <span class="c1"># initialize a database in memory</span>
+        <span class="k">if</span> <span class="n">db_engine</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">db_engine</span> <span class="o">=</span> <span class="n">create_engine</span><span class="p">(</span><span class="s2">&quot;sqlite://&quot;</span><span class="p">,</span> <span class="n">echo</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="n">Base</span><span class="o">.</span><span class="n">metadata</span><span class="o">.</span><span class="n">create_all</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="c1"># cache these variables on self</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">TableBase</span> <span class="o">=</span> <span class="n">TableBase</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db_engine</span> <span class="o">=</span> <span class="n">db_engine</span>
+        <span class="c1"># self.db = db</span>
+        <span class="c1"># self.session = db</span>
+
+        <span class="c1"># launch the tables in the database</span>
+        <span class="c1"># Tudor: experimental</span>
+        <span class="c1"># self.TableBase.metadata.create_all(engine)</span>
+
+        <span class="c1"># Any object that needs to be stored on a node is stored here</span>
+        <span class="c1"># More specifically, all collections of objects are found here</span>
+        <span class="c1"># There should be NO COLLECTIONS stored as attributes directly</span>
+        <span class="c1"># on a Node if there is a chance that the collections could</span>
+        <span class="c1"># become quite numerous (or otherwise fill up RAM).</span>
+        <span class="c1"># self.store is the elastic memory.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">store</span> <span class="o">=</span> <span class="n">BinObjectManager</span><span class="p">(</span><span class="n">db</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db_engine</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">setup</span> <span class="o">=</span> <span class="n">SetupManager</span><span class="p">(</span><span class="n">database</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db_engine</span><span class="p">)</span>
+
+        <span class="c1"># We need to register all the services once a node is created</span>
+        <span class="c1"># On the off chance someone forgot to do this (super unlikely)</span>
+        <span class="c1"># this flag exists to check it.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">services_registered</span> <span class="o">=</span> <span class="kc">False</span>
+
+        <span class="c1"># In order to be able to write generic services (in .service)</span>
+        <span class="c1"># which can work for all node types, sometimes we need to have</span>
+        <span class="c1"># a reference to what node type this node is. This attribute</span>
+        <span class="c1"># provides that ability.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node_type</span> <span class="o">=</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span>
+        <span class="c1"># ABOUT SERVICES AND MESSAGES</span>
+
+        <span class="c1"># Each service corresponds to one or more message types which</span>
+        <span class="c1"># the service processes. There are two kinds of messages, those</span>
+        <span class="c1"># which require a reply and those which do not. Thus, there</span>
+        <span class="c1"># are two kinds of services, service which generate a reply</span>
+        <span class="c1"># and services which do not. It&#39;s important to distinguish</span>
+        <span class="c1"># between them because:</span>
+        <span class="c1">#</span>
+        <span class="c1"># 1) services which do not return a reply</span>
+        <span class="c1"># can typically be run on a more flexible time-table, whereas</span>
+        <span class="c1"># services which require a reply often care about the latency</span>
+        <span class="c1"># of the reply.</span>
+        <span class="c1">#</span>
+        <span class="c1"># 2) Services which do not return a reply aren&#39;t likely to leak</span>
+        <span class="c1"># any information because no information is leaving. Thus, our</span>
+        <span class="c1"># privacy/security concerns are more concentrated within service</span>
+        <span class="c1"># which reply with some amount of information.</span>
+
+        <span class="c1"># for messages which need a reply, this uses the type</span>
+        <span class="c1"># of the message to look up the service which</span>
+        <span class="c1"># addresses that message.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_msg_with_reply_router</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span>
+            <span class="n">Type</span><span class="p">[</span><span class="n">ImmediateSyftMessageWithReply</span><span class="p">],</span> <span class="n">ImmediateNodeServiceWithReply</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># for messages which don&#39;t lead to a reply, this uses</span>
+        <span class="c1"># the type of the message to look up the service</span>
+        <span class="c1"># which addresses that message.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_msg_without_reply_router</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span>
+            <span class="n">Type</span><span class="p">[</span><span class="n">ImmediateSyftMessageWithoutReply</span><span class="p">],</span> <span class="n">Any</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># for messages which don&#39;t need to be run right now</span>
+        <span class="c1"># and will not generate a reply.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eventual_msg_without_reply_router</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span>
+            <span class="n">Type</span><span class="p">[</span><span class="n">EventualSyftMessageWithoutReply</span><span class="p">],</span> <span class="n">EventualNodeServiceWithoutReply</span>
+        <span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># This is the list of services which all node support.</span>
+        <span class="c1"># You can read more about them by reading their respective</span>
+        <span class="c1"># class documentation.</span>
+
+        <span class="c1"># TODO: Support ImmediateNodeServiceWithoutReply Parent Class</span>
+        <span class="c1"># for services which run immediately and do not return a reply</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_without_reply</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_without_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ReprService</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_without_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">HeritageUpdateService</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_without_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ChildNodeLifecycleService</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_without_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">ImmediateObjectActionServiceWithoutReply</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_without_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">ImmediateObjectSearchPermissionUpdateService</span>
+        <span class="p">)</span>
+
+        <span class="c1"># TODO: Support ImmediateNodeServiceWithReply Parent Class</span>
+        <span class="c1"># for services which run immediately and return a reply</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_with_reply</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_with_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ImmediateObjectActionServiceWithReply</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_with_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ImmediateObjectSearchService</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_with_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">GetReprService</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_with_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ResolvePointerTypeService</span><span class="p">)</span>
+
+        <span class="c1"># for services which can run at a later time and do not return a reply</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eventual_services_without_reply</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">eventual_services_without_reply</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+            <span class="n">EventualObjectActionServiceWithoutReply</span>
+        <span class="p">)</span>
+
+        <span class="c1"># This is a special service which cannot be listed in any</span>
+        <span class="c1"># of the other services because it handles messages of all types.</span>
+        <span class="c1"># Thus, it does not live in a message router since</span>
+        <span class="c1"># routers only exist to decide which messages go to which</span>
+        <span class="c1"># services, and they require that every message only correspond</span>
+        <span class="c1"># to only one service type. If we have more messages like</span>
+        <span class="c1"># these we&#39;ll make a special category for &quot;services that</span>
+        <span class="c1"># all messages are applied to&quot; but for now this will do.</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">signed_message_with_reply_forwarding_service</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">SignedMessageWithReplyForwardingService</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">signed_message_without_reply_forwarding_service</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">SignedMessageWithoutReplyForwardingService</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">allowed_unsigned_messages</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">allowed_unsigned_messages</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">VPNRegisterMessage</span><span class="p">)</span>
+
+        <span class="c1"># now we need to load the relevant frameworks onto the node</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">lib_ast</span> <span class="o">=</span> <span class="n">lib_ast</span>
+        <span class="c1"># The node needs to sign messages that it sends so that recipients know that it</span>
+        <span class="c1"># comes from the node. In order to do that, the node needs to generate keys</span>
+        <span class="c1"># for itself to sign and verify with.</span>
+
+        <span class="c1"># create a signing key if one isn&#39;t provided</span>
+        <span class="k">if</span> <span class="n">signing_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signing_key</span> <span class="o">=</span> <span class="n">SigningKey</span><span class="o">.</span><span class="n">generate</span><span class="p">()</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">signing_key</span> <span class="o">=</span> <span class="n">signing_key</span>
+
+        <span class="c1"># if verify key isn&#39;t provided, get verify key from signing key</span>
+        <span class="k">if</span> <span class="n">verify_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">verify_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signing_key</span><span class="o">.</span><span class="n">verify_key</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">verify_key</span> <span class="o">=</span> <span class="n">verify_key</span>
+
+        <span class="c1"># PERMISSION REGISTRY:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root_verify_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">verify_key</span>  <span class="c1"># TODO: CHANGE</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">guest_verify_key_registry</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">admin_verify_key_registry</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">cpl_ofcr_verify_key_registry</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">UID</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Client</span><span class="p">]]]</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="c1"># TODO: remove hacky signaling_msgs when SyftMessages become Storable.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signaling_msgs</span> <span class="o">=</span> <span class="p">{}</span>
+
+        <span class="c1"># For logging the number of messages received</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_counter</span> <span class="o">=</span> <span class="mi">0</span>
+
+    <span class="k">def</span> <span class="nf">post_init</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt; Creating </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">set_node_uid</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">setup</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">setup</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="c1"># if its empty it will be set during CreateInitialSetUpMessage</span>
+            <span class="k">if</span> <span class="n">setup</span><span class="o">.</span><span class="n">node_id</span> <span class="o">!=</span> <span class="s2">&quot;&quot;</span><span class="p">:</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">node_id</span> <span class="o">=</span> <span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">setup</span><span class="o">.</span><span class="n">node_id</span><span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Invalid Node UID in Setup Table. </span><span class="si">{</span><span class="n">setup</span><span class="o">.</span><span class="n">node_id</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="k">raise</span> <span class="n">e</span>
+
+                <span class="n">location</span> <span class="o">=</span> <span class="n">SpecificLocation</span><span class="p">(</span><span class="n">name</span><span class="o">=</span><span class="n">setup</span><span class="o">.</span><span class="n">domain_name</span><span class="p">,</span> <span class="nb">id</span><span class="o">=</span><span class="n">node_id</span><span class="p">)</span>
+                <span class="c1"># TODO: Fix with proper isinstance when the class will import</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;Domain&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">domain</span> <span class="o">=</span> <span class="n">location</span>
+                <span class="k">elif</span> <span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;Network&quot;</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">network</span> <span class="o">=</span> <span class="n">location</span>
+                <span class="n">info</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Finished setting Node UID. </span><span class="si">{</span><span class="n">location</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+            <span class="n">info</span><span class="p">(</span><span class="s2">&quot;Setup hasnt run yet so ignoring set_node_uid&quot;</span><span class="p">)</span>
+            <span class="k">pass</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">icon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;📍&quot;</span>
+
+    <span class="k">def</span> <span class="nf">get_client</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">routes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Route</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">signing_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SigningKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClientT</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">routes</span><span class="p">:</span>
+            <span class="n">conn_client</span> <span class="o">=</span> <span class="n">create_virtual_connection</span><span class="p">(</span><span class="n">node</span><span class="o">=</span><span class="bp">self</span><span class="p">)</span>
+            <span class="n">solo</span> <span class="o">=</span> <span class="n">SoloRoute</span><span class="p">(</span><span class="n">destination</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="p">,</span> <span class="n">connection</span><span class="o">=</span><span class="n">conn_client</span><span class="p">)</span>
+            <span class="c1"># inject name</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">solo</span><span class="p">,</span> <span class="s2">&quot;name&quot;</span><span class="p">,</span> <span class="sa">f</span><span class="s2">&quot;Route (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> &lt;-&gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2"> Client)&quot;</span><span class="p">)</span>
+            <span class="n">routes</span> <span class="o">=</span> <span class="p">[</span><span class="n">solo</span><span class="p">]</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_type</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">routes</span><span class="o">=</span><span class="n">routes</span><span class="p">,</span>
+            <span class="n">network</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">network</span><span class="p">,</span>
+            <span class="n">domain</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">domain</span><span class="p">,</span>
+            <span class="n">device</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">device</span><span class="p">,</span>
+            <span class="n">vm</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">vm</span><span class="p">,</span>
+            <span class="n">signing_key</span><span class="o">=</span><span class="n">signing_key</span><span class="p">,</span>  <span class="c1"># If no signing_key is passed, the client generates one.</span>
+            <span class="n">verify_key</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>  <span class="c1"># DO NOT PASS IN A VERIFY KEY!!! The client generates one.</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_root_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">routes</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Route</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ClientT</span><span class="p">:</span>
+        <span class="n">client</span><span class="p">:</span> <span class="n">ClientT</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_client</span><span class="p">(</span><span class="n">routes</span><span class="o">=</span><span class="n">routes</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">root_verify_key</span> <span class="o">=</span> <span class="n">client</span><span class="o">.</span><span class="n">verify_key</span>
+        <span class="k">return</span> <span class="n">client</span>
+
+    <span class="k">def</span> <span class="nf">get_metadata_for_client</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Metadata</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Metadata</span><span class="p">(</span>
+            <span class="n">name</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">name</span> <span class="k">else</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="nb">id</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">node</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">target_id</span><span class="p">,</span>
+            <span class="n">node_type</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span><span class="p">),</span>
+            <span class="n">version</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">sy</span><span class="o">.</span><span class="n">__version__</span><span class="p">),</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">add_peer_routes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">peer</span><span class="p">:</span> <span class="n">NodeRow</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">routes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node_route</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">node_id</span><span class="o">=</span><span class="n">peer</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="k">for</span> <span class="n">route</span> <span class="ow">in</span> <span class="n">routes</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">add_route</span><span class="p">(</span>
+                    <span class="n">node_id</span><span class="o">=</span><span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">peer</span><span class="o">.</span><span class="n">node_uid</span><span class="p">),</span>
+                    <span class="n">node_name</span><span class="o">=</span><span class="n">peer</span><span class="o">.</span><span class="n">node_name</span><span class="p">,</span>
+                    <span class="n">host_or_ip</span><span class="o">=</span><span class="n">route</span><span class="o">.</span><span class="n">host_or_ip</span><span class="p">,</span>
+                    <span class="n">is_vpn</span><span class="o">=</span><span class="n">route</span><span class="o">.</span><span class="n">is_vpn</span><span class="p">,</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to add route to peer </span><span class="si">{</span><span class="n">peer</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reload_peer_clients</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">peers</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>  <span class="c1"># type: ignore</span>
+        <span class="k">for</span> <span class="n">peer</span> <span class="ow">in</span> <span class="n">peers</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_peer_routes</span><span class="p">(</span><span class="n">peer</span><span class="o">=</span><span class="n">peer</span><span class="p">)</span>
+        <span class="n">debug</span><span class="p">(</span><span class="s2">&quot;Finished loading all the peer clients&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">all_peer_clients</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">UID</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="n">Client</span><span class="p">]]:</span>
+        <span class="c1"># get all the routes for each client and sort by VPN first</span>
+        <span class="n">all_clients</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="k">for</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">all_clients</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="p">[</span><span class="n">node_id</span><span class="p">][</span><span class="s2">&quot;vpn&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+            <span class="p">)</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="p">[</span><span class="n">node_id</span><span class="p">][</span><span class="s2">&quot;public&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+        <span class="k">return</span> <span class="n">all_clients</span>
+
+    <span class="k">def</span> <span class="nf">add_route</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">node_id</span><span class="p">:</span> <span class="n">UID</span><span class="p">,</span> <span class="n">node_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">host_or_ip</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">is_vpn</span><span class="p">:</span> <span class="nb">bool</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Adding route </span><span class="si">{</span><span class="n">node_id</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">node_name</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">host_or_ip</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">is_vpn</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">vpn_key</span> <span class="o">=</span> <span class="s2">&quot;vpn&quot;</span> <span class="k">if</span> <span class="n">is_vpn</span> <span class="k">else</span> <span class="s2">&quot;public&quot;</span>
+            <span class="c1"># make sure the node_id is in the Dict</span>
+            <span class="n">node_id_dict</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Client</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;vpn&quot;</span><span class="p">:</span> <span class="p">{},</span> <span class="s2">&quot;public&quot;</span><span class="p">:</span> <span class="p">{}}</span>
+            <span class="k">if</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="p">:</span>
+                <span class="n">node_id_dict</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span>
+
+            <span class="k">if</span> <span class="n">host_or_ip</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">node_id_dict</span><span class="p">[</span><span class="n">vpn_key</span><span class="p">]:</span>
+                <span class="c1"># connect and save the client</span>
+                <span class="n">grid_url</span> <span class="o">=</span> <span class="n">GridURL</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="n">host_or_ip</span><span class="p">)</span>
+                <span class="n">client</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">connect</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">grid_url</span><span class="o">.</span><span class="n">with_path</span><span class="p">(</span><span class="s2">&quot;/api/v1&quot;</span><span class="p">),</span> <span class="n">timeout</span><span class="o">=</span><span class="mf">0.3</span><span class="p">)</span>
+                <span class="n">node_id_dict</span><span class="p">[</span><span class="n">vpn_key</span><span class="p">][</span><span class="n">host_or_ip</span><span class="p">]</span> <span class="o">=</span> <span class="n">client</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span> <span class="o">=</span> <span class="n">node_id_dict</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Failed to add_route </span><span class="si">{</span><span class="n">node_id</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">node_name</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">host_or_ip</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">is_vpn</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_peer_client</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node_id</span><span class="p">:</span> <span class="n">UID</span><span class="p">,</span> <span class="n">only_vpn</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Client</span><span class="p">]:</span>
+        <span class="c1"># if we don&#39;t have it see if we can get it from the db first</span>
+        <span class="k">if</span> <span class="n">node_id</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="p">:</span>
+            <span class="n">peer</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="n">node_uid</span><span class="o">=</span><span class="n">node_id</span><span class="o">.</span><span class="n">no_dash</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">add_peer_routes</span><span class="p">(</span><span class="n">peer</span><span class="o">=</span><span class="n">peer</span><span class="p">)</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">node_id</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="n">routes</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="p">[</span><span class="n">node_id</span><span class="p">]</span>
+                <span class="c1"># if we want VPN only then check there are some</span>
+                <span class="k">if</span> <span class="n">only_vpn</span> <span class="ow">and</span> <span class="s2">&quot;vpn&quot;</span> <span class="ow">in</span> <span class="n">routes</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">routes</span><span class="p">[</span><span class="s2">&quot;vpn&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># we want VPN only but there are none</span>
+                    <span class="k">return</span> <span class="kc">None</span>
+                <span class="k">elif</span> <span class="s2">&quot;vpn&quot;</span> <span class="ow">in</span> <span class="n">routes</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">routes</span><span class="p">[</span><span class="s2">&quot;vpn&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># if we have VPN lets use it</span>
+                    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">routes</span><span class="p">[</span><span class="s2">&quot;vpn&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="k">elif</span> <span class="s2">&quot;public&quot;</span> <span class="ow">in</span> <span class="n">routes</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">routes</span><span class="p">[</span><span class="s2">&quot;public&quot;</span><span class="p">])</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="c1"># we only have public and don&#39;t care</span>
+                    <span class="k">return</span> <span class="nb">list</span><span class="p">(</span><span class="n">routes</span><span class="p">[</span><span class="s2">&quot;public&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">values</span><span class="p">())[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Exception while selecting node_id </span><span class="si">{</span><span class="n">node_id</span><span class="si">}</span><span class="s2"> from peer_route_clients. &quot;</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">peer_route_clients</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># there are no routes for this ID</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UID</span><span class="p">:</span>
+        <span class="n">traceback_and_raise</span><span class="p">(</span><span class="ne">NotImplementedError</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">message_is_for_me</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SyftMessage</span><span class="p">,</span> <span class="n">SignedMessage</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">traceback_and_raise</span><span class="p">(</span><span class="ne">NotImplementedError</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">recv_immediate_msg_with_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedImmediateSyftMessageWithReply</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span><span class="p">:</span>
+        <span class="n">contents</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+        <span class="c1"># exceptions can be easily triggered which break any loops</span>
+        <span class="c1"># so we need to catch them here and respond with a special exception</span>
+        <span class="c1"># message reply</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;&gt; Received with Reply </span><span class="si">{</span><span class="n">contents</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">contents</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="c1"># try to process message</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">process_message</span><span class="p">(</span>
+                <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">router</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">immediate_msg_with_reply_router</span>
+            <span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">),</span> <span class="n">e</span><span class="p">)</span>
+            <span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="n">public_exception</span><span class="p">:</span> <span class="ne">Exception</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">AuthorizationException</span><span class="p">):</span>
+                <span class="n">private_log_msg</span> <span class="o">=</span> <span class="s2">&quot;An AuthorizationException has been triggered&quot;</span>
+                <span class="n">public_exception</span> <span class="o">=</span> <span class="n">e</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">private_log_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;An </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2"> has been triggered&quot;</span>  <span class="c1"># dont send</span>
+                <span class="n">public_exception</span> <span class="o">=</span> <span class="n">UnknownPrivateException</span><span class="p">(</span>
+                    <span class="s2">&quot;UnknownPrivateException has been triggered.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># try printing a useful message</span>
+                <span class="n">private_log_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; by </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="n">private_log_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;from </span><span class="si">{</span><span class="n">contents</span><span class="o">.</span><span class="n">reply_to</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># type: ignore</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unable to format the private log message&quot;</span><span class="p">)</span>
+                <span class="k">pass</span>
+            <span class="c1"># show the host what the real exception is</span>
+            <span class="n">error</span><span class="p">(</span><span class="n">private_log_msg</span><span class="p">)</span>
+
+            <span class="c1"># send the public exception back</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">ExceptionMessage</span><span class="p">(</span>
+                <span class="n">address</span><span class="o">=</span><span class="n">contents</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+                <span class="n">msg_id_causing_exception</span><span class="o">=</span><span class="n">contents</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">exception_type</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">public_exception</span><span class="p">),</span>
+                <span class="n">exception_msg</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">public_exception</span><span class="p">),</span>
+            <span class="p">)</span>
+
+        <span class="c1"># maybe I shouldn&#39;t have created process_message because it screws up</span>
+        <span class="c1"># all the type inference.</span>
+        <span class="n">res_msg</span> <span class="o">=</span> <span class="n">response</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">signing_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signing_key</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="n">output</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;&gt; </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2"> Signing </span><span class="si">{</span><span class="n">res_msg</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2"> with &quot;</span>
+            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">key_emoji</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signing_key</span><span class="o">.</span><span class="n">verify_key</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># type: ignore</span>
+        <span class="p">)</span>
+        <span class="n">debug</span><span class="p">(</span><span class="n">output</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res_msg</span>
+
+    <span class="k">def</span> <span class="nf">recv_immediate_msg_without_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">contents</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="n">msg</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">contents</span><span class="p">:</span>
+            <span class="n">debug</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;&gt; Received without Reply </span><span class="si">{</span><span class="n">contents</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">contents</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_message</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">router</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">immediate_msg_without_reply_router</span><span class="p">)</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">pass</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Exception processing </span><span class="si">{</span><span class="n">contents</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># public_exception: Exception</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">DuplicateRequestException</span><span class="p">):</span>
+                <span class="n">private_log_msg</span> <span class="o">=</span> <span class="s2">&quot;An DuplicateRequestException has been triggered&quot;</span>
+                <span class="c1"># public_exception = e</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">private_log_msg</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;An </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">e</span><span class="p">)</span><span class="si">}</span><span class="s2"> has been triggered&quot;</span>  <span class="c1"># dont send</span>
+                <span class="c1"># public_exception = UnknownPrivateException(</span>
+                <span class="c1">#     &quot;UnknownPrivateException has been triggered.&quot;</span>
+                <span class="c1"># )</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="c1"># try printing a useful message</span>
+                <span class="n">private_log_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot; by </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span><span class="si">}</span><span class="s2"> &quot;</span>
+                <span class="n">private_log_msg</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;from </span><span class="si">{</span><span class="n">contents</span><span class="o">.</span><span class="n">reply_to</span><span class="si">}</span><span class="s2">&quot;</span>  <span class="c1"># type: ignore</span>
+            <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                <span class="n">error</span><span class="p">(</span><span class="s2">&quot;Unable to format the private log message&quot;</span><span class="p">)</span>
+                <span class="k">pass</span>
+            <span class="c1"># show the host what the real exception is</span>
+            <span class="n">error</span><span class="p">(</span><span class="n">private_log_msg</span><span class="p">)</span>
+
+            <span class="c1"># we still want to raise for now due to certain exceptions we expect</span>
+            <span class="c1"># in tests</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">DuplicateRequestException</span><span class="p">):</span>
+                <span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="c1"># TODO: A lot of tests are depending on this raise which seems bad</span>
+                <span class="n">traceback_and_raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+            <span class="c1"># TODO: finish code to send ExceptionMessage back</span>
+            <span class="c1"># if isinstance(e, DuplicateRequestException):</span>
+            <span class="c1">#     # we have a reply_to</span>
+            <span class="c1">#     # send the public exception back</span>
+            <span class="c1">#     response = ExceptionMessage(</span>
+            <span class="c1">#         address=msg.message.reply_to,  # type: ignore</span>
+            <span class="c1">#         msg_id_causing_exception=msg.message.id,</span>
+            <span class="c1">#         exception_type=type(public_exception),</span>
+            <span class="c1">#         exception_msg=str(public_exception),</span>
+            <span class="c1">#     )</span>
+            <span class="c1">#     res_msg = response.sign(signing_key=self.signing_key)  # type: ignore</span>
+            <span class="c1">#     self.client.send_immediate_msg_with_reply.process(</span>
+            <span class="c1">#         node=self,</span>
+            <span class="c1">#         msg=res_msg,</span>
+            <span class="c1">#     )</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">recv_eventual_msg_without_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedEventualSyftMessageWithoutReply</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">process_message</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">router</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">eventual_msg_without_reply_router</span><span class="p">)</span>
+
+    <span class="c1"># TODO: Add SignedEventualSyftMessageWithoutReply and others</span>
+    <span class="k">def</span> <span class="nf">process_message</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedMessage</span><span class="p">,</span> <span class="n">router</span><span class="p">:</span> <span class="nb">dict</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">SyftMessage</span><span class="p">,</span> <span class="kc">None</span><span class="p">]:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">message_counter</span> <span class="o">+=</span> <span class="mi">1</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">contents</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span>
+                <span class="n">msg</span><span class="p">,</span> <span class="s2">&quot;message&quot;</span><span class="p">,</span> <span class="n">msg</span>
+            <span class="p">)</span>  <span class="c1"># in the event the message is unsigned</span>
+            <span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt; Processing 📨 </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2"> @ </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">contents</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">message_is_for_me</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">):</span>
+                <span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;&gt; Recipient Found </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">pprint</span><span class="si">}{</span><span class="n">msg</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">target_emoji</span><span class="p">()</span><span class="si">}</span><span class="s2"> == </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+
+                <span class="c1"># only a small number of messages are allowed to be unsigned otherwise</span>
+                <span class="c1"># they need to be valid</span>
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowed_unsigned_messages</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">msg</span><span class="o">.</span><span class="n">is_valid</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+                    <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Message is not valid. </span><span class="si">{</span><span class="n">msg</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="n">traceback_and_raise</span><span class="p">(</span><span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Message is not valid.&quot;</span><span class="p">))</span>
+
+                <span class="c1"># Process Message here</span>
+                <span class="k">try</span><span class="p">:</span>  <span class="c1"># we use try/except here because it&#39;s marginally faster in Python</span>
+                    <span class="n">service</span> <span class="o">=</span> <span class="n">router</span><span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">contents</span><span class="p">)]</span>
+                <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                    <span class="n">log</span> <span class="o">=</span> <span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;The node </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="si">}</span><span class="s2"> of type </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2"> cannot process messages of type &quot;</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">contents</span><span class="p">)</span><span class="si">}</span><span class="s2"> because there is no service running to process it.&quot;</span>
+                        <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="n">error</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">ensure_services_have_been_registered_error_if_not</span><span class="p">()</span>
+                    <span class="n">traceback_and_raise</span><span class="p">(</span><span class="ne">KeyError</span><span class="p">(</span><span class="n">log</span><span class="p">))</span>
+
+                <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">allowed_unsigned_messages</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">process</span><span class="p">(</span><span class="n">node</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="o">=</span><span class="n">contents</span><span class="p">,</span> <span class="n">verify_key</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="n">service</span><span class="o">.</span><span class="n">process</span><span class="p">(</span>
+                        <span class="n">node</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                        <span class="n">msg</span><span class="o">=</span><span class="n">contents</span><span class="p">,</span>
+                        <span class="n">verify_key</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">verify_key</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="k">return</span> <span class="n">result</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">debug</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;&gt; Recipient Not Found ↪️ </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">pprint</span><span class="si">}{</span><span class="n">msg</span><span class="o">.</span><span class="n">address</span><span class="o">.</span><span class="n">target_emoji</span><span class="p">()</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+                <span class="c1"># Forward message onwards</span>
+                <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">msg</span><span class="p">),</span> <span class="n">SignedImmediateSyftMessageWithReply</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">signed_message_with_reply_forwarding_service</span><span class="o">.</span><span class="n">process</span><span class="p">(</span>
+                        <span class="n">node</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                        <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+                    <span class="p">)</span>
+                <span class="k">if</span> <span class="nb">issubclass</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">msg</span><span class="p">),</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">signed_message_without_reply_forwarding_service</span><span class="o">.</span><span class="n">process</span><span class="p">(</span>
+                        <span class="n">node</span><span class="o">=</span><span class="bp">self</span><span class="p">,</span>
+                        <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+                    <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">error</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+            <span class="k">raise</span> <span class="n">e</span>
+        <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">ensure_services_have_been_registered_error_if_not</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">services_registered</span><span class="p">:</span>
+            <span class="n">traceback_and_raise</span><span class="p">(</span>
+                <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Please call _register_services on node. This seems to have&quot;</span>
+                    <span class="s2">&quot;been skipped for some reason.&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_register_services</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;In this method, we set each message type to the appropriate</span>
+<span class="sd">        service for this node. It&#39;s important to note that one message type</span>
+<span class="sd">        cannot map to multiple services on any given node type. If you want to</span>
+<span class="sd">        send information to a different service, create a new message type for that</span>
+<span class="sd">        service. Put another way, a service can have multiple message types which</span>
+<span class="sd">        correspond to it, but each message type can only have one service (per node</span>
+<span class="sd">        subclass) which corresponds to it.&quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">isr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_with_reply</span><span class="p">:</span>
+            <span class="c1"># Create a single instance of the service to cache in the router corresponding</span>
+            <span class="c1"># to one or more message types.</span>
+            <span class="n">isr_instance</span> <span class="o">=</span> <span class="n">isr</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">handler_type</span> <span class="ow">in</span> <span class="n">isr</span><span class="o">.</span><span class="n">message_handler_types</span><span class="p">():</span>
+                <span class="c1"># for each explicitly supported type, add it to the router</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">immediate_msg_with_reply_router</span><span class="p">[</span><span class="n">handler_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">isr_instance</span>
+
+                <span class="c1"># for all sub-classes of the explicitly supported type, add them</span>
+                <span class="c1"># to the router as well.</span>
+                <span class="k">for</span> <span class="n">handler_type_subclass</span> <span class="ow">in</span> <span class="n">get_subclasses</span><span class="p">(</span><span class="n">obj_type</span><span class="o">=</span><span class="n">handler_type</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">immediate_msg_with_reply_router</span><span class="p">[</span>
+                        <span class="n">handler_type_subclass</span>
+                    <span class="p">]</span> <span class="o">=</span> <span class="n">isr_instance</span>
+
+        <span class="k">for</span> <span class="n">iswr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">immediate_services_without_reply</span><span class="p">:</span>
+            <span class="c1"># Create a single instance of the service to cache in the router corresponding</span>
+            <span class="c1"># to one or more message types.</span>
+            <span class="n">iswr_instance</span> <span class="o">=</span> <span class="n">iswr</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">handler_type</span> <span class="ow">in</span> <span class="n">iswr</span><span class="o">.</span><span class="n">message_handler_types</span><span class="p">():</span>
+
+                <span class="c1"># for each explicitly supported type, add it to the router</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">immediate_msg_without_reply_router</span><span class="p">[</span><span class="n">handler_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">iswr_instance</span>
+
+                <span class="c1"># for all sub-classes of the explicitly supported type, add them</span>
+                <span class="c1"># to the router as well.</span>
+                <span class="k">for</span> <span class="n">handler_type_subclass</span> <span class="ow">in</span> <span class="n">get_subclasses</span><span class="p">(</span><span class="n">obj_type</span><span class="o">=</span><span class="n">handler_type</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">immediate_msg_without_reply_router</span><span class="p">[</span>
+                        <span class="n">handler_type_subclass</span>
+                    <span class="p">]</span> <span class="o">=</span> <span class="n">iswr_instance</span>
+
+        <span class="k">for</span> <span class="n">eswr</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">eventual_services_without_reply</span><span class="p">:</span>
+            <span class="c1"># Create a single instance of the service to cache in the router corresponding</span>
+            <span class="c1"># to one or more message types.</span>
+            <span class="n">eswr_instance</span> <span class="o">=</span> <span class="n">eswr</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">handler_type</span> <span class="ow">in</span> <span class="n">eswr</span><span class="o">.</span><span class="n">message_handler_types</span><span class="p">():</span>
+
+                <span class="c1"># for each explicitly supported type, add it to the router</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">eventual_msg_without_reply_router</span><span class="p">[</span><span class="n">handler_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">eswr_instance</span>
+
+                <span class="c1"># for all sub-classes of the explicitly supported type, add them</span>
+                <span class="c1"># to the router as well.</span>
+                <span class="k">for</span> <span class="n">handler_type_subclass</span> <span class="ow">in</span> <span class="n">get_subclasses</span><span class="p">(</span><span class="n">obj_type</span><span class="o">=</span><span class="n">handler_type</span><span class="p">):</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">eventual_msg_without_reply_router</span><span class="p">[</span>
+                        <span class="n">handler_type_subclass</span>
+                    <span class="p">]</span> <span class="o">=</span> <span class="n">eswr_instance</span>
+
+        <span class="c1"># Set the services_registered flag to true so that we know that all services</span>
+        <span class="c1"># have been properly registered. This mostly exists because someone might</span>
+        <span class="c1"># accidentally delete (forget to call) this method inside the __init__ function</span>
+        <span class="c1"># of a sub-class of Node.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">services_registered</span> <span class="o">=</span> <span class="kc">True</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">no_dash</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;-&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">node_type</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">name</span><span class="si">}</span><span class="s2">: </span><span class="si">{</span><span class="n">no_dash</span><span class="si">}</span><span class="s2">&quot;</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,811 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.tensor.passthrough &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.tensor.passthrough</h1><div class="highlight"><pre>
+<span></span><span class="c1"># type: ignore</span>
+<span class="c1"># future</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span> <span class="k">as</span> <span class="n">TypeTuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Type</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="c1"># relative</span>
+<span class="c1"># from ..pointer.pointer import Pointer</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">implements</span>
+<span class="kn">from</span> <span class="nn">.util</span> <span class="kn">import</span> <span class="n">query_implementation</span>
+
+<span class="n">AcceptableSimpleType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+<span class="n">SupportedChainType</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span><span class="s2">&quot;PassthroughTensor&quot;</span><span class="p">,</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+
+
+<span class="k">def</span> <span class="nf">is_acceptable_simple_type</span><span class="p">(</span><span class="n">obj</span><span class="p">):</span>
+    <span class="k">return</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="p">(</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">))</span>
+
+
+<div class="viewcode-block" id="PassthroughTensor"><a class="viewcode-back" href="../../../../api_reference/syft.core.tensor.passthrough.html#syft.core.tensor.passthrough.PassthroughTensor">[docs]</a><span class="k">class</span> <span class="nc">PassthroughTensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">mixins</span><span class="o">.</span><span class="n">NDArrayOperatorsMixin</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;A simple tensor class which passes method/function calls to self.child&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">child</span>
+
+    <span class="c1"># TODO: Remove</span>
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">_data_child</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">data</span> <span class="o">=</span> <span class="bp">self</span>
+        <span class="k">while</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">data</span><span class="p">,</span> <span class="s2">&quot;child&quot;</span><span class="p">):</span>
+            <span class="n">data</span> <span class="o">=</span> <span class="n">data</span><span class="o">.</span><span class="n">child</span>
+        <span class="k">return</span> <span class="n">data</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="nb">float</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="nb">int</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="nb">bool</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">return</span> <span class="p">(</span><span class="mi">1</span><span class="p">,)</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">dtype</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">dtype</span>
+
+    <span class="c1"># @property</span>
+    <span class="c1"># def shape(self) -&gt; Union[TypeTuple[Any, ...], List[Any]]:</span>
+    <span class="c1">#     &quot;&quot;&quot;There are 3 options for where shape information can be sourced from:</span>
+
+    <span class="c1">#     - self.client_shape: which is a logical attempt on the client side to infer</span>
+    <span class="c1">#       shape information</span>
+    <span class="c1">#     - self.child.shape: which just says that this layer of logical abstraction isn&#39;t</span>
+    <span class="c1">#       responsible for tracking shape and inhereits it from the child</span>
+    <span class="c1">#     - Pointer.shape: a special case of the other two wherein shape is called on a</span>
+    <span class="c1">#       Pointer and it fetches that information from a remote object if</span>
+    <span class="c1">#       Pointer.client_shape is not available (is None).</span>
+
+    <span class="c1">#     By default the priority for where shape information should come from is:</span>
+    <span class="c1">#     - self.client_shape is first because this doesn&#39;t leverage private information.</span>
+    <span class="c1">#     - self.child.shape is second as a delegation of the first</span>
+    <span class="c1">#     - Pointer.client_shape as a special case of the previous</span>
+    <span class="c1">#     - Pointer.remote_shape is a last resort because it requires calling .request()</span>
+    <span class="c1">#       and .get()</span>
+
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     if self.client_shape is not None:</span>
+    <span class="c1">#         return self.client_shape</span>
+
+    <span class="c1">#     elif self.child is not None:</span>
+
+    <span class="c1">#         # note that this will attempt client_shape on the child before</span>
+    <span class="c1">#         # anything else because it too will call this method</span>
+    <span class="c1">#         shape = self.child.shape</span>
+
+    <span class="c1">#         if isinstance(shape, Pointer):</span>
+    <span class="c1">#             return shape.get(request_block=True)</span>
+    <span class="c1">#         else:</span>
+    <span class="c1">#             return shape</span>
+
+    <span class="c1">#     else:</span>
+    <span class="c1">#         msg = (</span>
+    <span class="c1">#             &quot;Not sure how to find shape because self.client_shape and self.child&quot;</span>
+    <span class="c1">#             + &quot;are both none&quot;</span>
+    <span class="c1">#         )</span>
+    <span class="c1">#         raise Exception(msg)</span>
+
+    <span class="c1">#     return tuple(self.child.shape)</span>
+
+    <span class="k">def</span> <span class="nf">logical_and</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">shape</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="ow">and</span> <span class="n">other</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Tensor shapes do not match for __eq__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__abs__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__abs__</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">+</span> <span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__radd__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">other</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">other</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">-</span> <span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">-</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rsub__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="o">-</span><span class="p">(</span><span class="bp">self</span> <span class="o">-</span> <span class="n">other</span><span class="p">)</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__gt__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">&gt;</span> <span class="n">other</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__ge__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">&gt;=</span> <span class="n">other</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">&gt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">&lt;</span> <span class="n">other</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__le__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">&lt;=</span> <span class="n">other</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">&lt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">!=</span> <span class="n">other</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">==</span> <span class="n">other</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__floordiv__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__floordiv__</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__floordiv__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__rfloordiv__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="fm">__floordiv__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__floordiv__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__lshift__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__lshift__</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__lshift__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__rlshift__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="fm">__lshift__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__lshift__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__rshift__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__rshift__</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__rshift__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__rrshift__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="fm">__rshift__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__rshift__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__pow__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__pow__</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__pow__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__rpow__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__rpow__</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__rpow__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__divmod__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__divmod__</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__divmod__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__neg__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">*</span> <span class="o">-</span><span class="mi">1</span>
+
+    <span class="k">def</span> <span class="fm">__index__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__index__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__invert__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__invert__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">copy</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">*</span> <span class="n">other</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">*</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rmul__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__rmul__</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__rmul__</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__matmul__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_dot</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rmatmul__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">other</span><span class="o">.</span><span class="n">manual_dot</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__truediv__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">*</span> <span class="p">(</span><span class="mi">1</span> <span class="o">/</span> <span class="n">other</span><span class="p">))</span>  <span class="c1"># type: ignore</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">/</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__rtruediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">other</span><span class="o">.</span><span class="fm">__truediv__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">manual_dot</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+
+        <span class="n">expanded_self</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">expanded_self</span> <span class="o">=</span> <span class="n">expanded_self</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">],</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+        <span class="p">)</span>
+        <span class="n">expanded_other</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">reshape</span><span class="p">([</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">axis</span><span class="o">=</span><span class="mi">0</span>
+        <span class="p">)</span>
+
+        <span class="n">prod</span> <span class="o">=</span> <span class="n">expanded_self</span> <span class="o">*</span> <span class="n">expanded_other</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">prod</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="mi">1</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="nf">dot</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">manual_dot</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reshape</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">dims</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="o">*</span><span class="n">dims</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">repeat</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">repeats</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]],</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">repeats</span><span class="p">,</span> <span class="n">axis</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">resize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">new_shape</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]],</span>
+        <span class="n">refcheck</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="c1"># Should be modified to  remove copy</span>
+        <span class="c1"># https://stackoverflow.com/questions/23253144/numpy-the-array-doesnt-have-its-own-data</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">resize</span><span class="p">(</span><span class="n">new_shape</span><span class="p">,</span> <span class="n">refcheck</span><span class="o">=</span><span class="n">refcheck</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">T</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">transpose</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="nf">transpose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">bool</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">,</span> <span class="n">PassthroughTensor</span><span class="p">,</span> <span class="nb">slice</span><span class="p">,</span> <span class="bp">Ellipsis</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">,</span> <span class="n">AcceptableSimpleType</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">PassthroughTensor</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+
+    <span class="c1"># numpy.argmax(a, axis=None, out=None)</span>
+    <span class="k">def</span> <span class="nf">argmax</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">argmax</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">argmin</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">argmin</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+
+    <span class="c1"># numpy.argsort(a, axis=-1, kind=None, order=None)</span>
+    <span class="k">def</span> <span class="nf">argsort</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">argsort</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+
+    <span class="c1"># ndarray.sort(axis=-1, kind=None, order=None)</span>
+    <span class="k">def</span> <span class="nf">sort</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span> <span class="n">kind</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">))</span>
+
+    <span class="c1"># numpy.clip(a, a_min, a_max, out=None, **kwargs)</span>
+    <span class="k">def</span> <span class="nf">clip</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="nb">min</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AcceptableSimpleType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="nb">max</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AcceptableSimpleType</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="nb">min</span><span class="p">,</span> <span class="nb">max</span><span class="p">))</span>
+
+    <span class="c1"># numpy.cumprod(a, axis=None, dtype=None, out=None)</span>
+    <span class="k">def</span> <span class="nf">cumprod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">cumprod</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">))</span>
+
+    <span class="c1"># TODO : override default datatype as np.int32 until we have support np.int64</span>
+    <span class="c1"># numpy.cumsum(a, axis=None, dtype=None, out=None)</span>
+    <span class="k">def</span> <span class="nf">cumsum</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span>
+        <span class="n">out</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">))</span>
+
+    <span class="c1"># numpy.trace(a, offset=0, axis1=0, axis2=1, dtype=None, out=None)</span>
+    <span class="k">def</span> <span class="nf">trace</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">axis1</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">axis2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span>
+        <span class="n">out</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span>
+                <span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=</span><span class="n">axis1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=</span><span class="n">axis2</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">dtype</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">out</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># numpy.diagonal(a, offset=0, axis1=0, axis2=1)</span>
+    <span class="k">def</span> <span class="nf">diagonal</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="n">axis2</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">axis1</span><span class="p">,</span> <span class="n">axis2</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">tolist</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">tolist</span><span class="p">())</span>
+
+    <span class="c1"># ndarray.flatten(order=&#39;C&#39;)</span>
+    <span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;C&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="p">))</span>
+
+    <span class="c1"># ndarray.partition(kth, axis=- 1, kind=&#39;introselect&#39;, order=None)</span>
+    <span class="k">def</span> <span class="nf">partition</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">kth</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]],</span>
+        <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">kind</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;introselect&quot;</span><span class="p">,</span>
+        <span class="n">order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">kth</span><span class="o">=</span><span class="n">kth</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">kind</span><span class="o">=</span><span class="n">kind</span><span class="p">,</span> <span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">)</span>  <span class="c1"># inplace op</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="c1"># ndarray.ravel([order])</span>
+    <span class="k">def</span> <span class="nf">ravel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;C&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">))</span>
+
+    <span class="c1"># ndarray.compress(condition, axis=None, out=None)</span>
+    <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">condition</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">out</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">condition</span><span class="o">=</span><span class="n">condition</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># ndarray.swapaxes(axis1, axis2)</span>
+    <span class="k">def</span> <span class="nf">swapaxes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">axis2</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="n">axis1</span><span class="p">,</span> <span class="n">axis2</span><span class="p">))</span>
+
+    <span class="c1"># ndarray.put(indices, values, mode=&#39;raise&#39;)</span>
+    <span class="k">def</span> <span class="nf">put</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">indices</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">values</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;raise&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">indices</span><span class="o">=</span><span class="n">indices</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">)</span>  <span class="c1"># inplace op</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+    <span class="c1"># ndarray.__pos__(/)</span>
+    <span class="k">def</span> <span class="fm">__pos__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="fm">__pos__</span><span class="p">())</span>
+
+    <span class="c1"># numpy.mean(a, axis=None, dtype=None, out=None, keepdims=&lt;no value&gt;, *, where=&lt;no value&gt;)</span>
+    <span class="k">def</span> <span class="nf">mean</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">floating</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">mean</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+    <span class="c1"># ndarray.max(axis=None, out=None, keepdims=False, initial=&lt;no value&gt;, where=True)</span>
+    <span class="k">def</span> <span class="nf">max</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">max</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">))</span>
+
+    <span class="c1"># ndarray.min(axis=None, out=None, keepdims=False, initial=&lt;no value&gt;, where=True)</span>
+    <span class="k">def</span> <span class="nf">min</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">min</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">))</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">ndim</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">unsignedinteger</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">ndim</span>
+
+    <span class="c1"># ndarray.prod(axis=None, dtype=None, out=None, keepdims=False, initial=1, where=True)</span>
+    <span class="k">def</span> <span class="nf">prod</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">))</span>
+
+    <span class="c1"># numpy.squeeze(a, axis=None)</span>
+    <span class="k">def</span> <span class="nf">squeeze</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">))</span>
+
+    <span class="c1"># numpy.std(a, axis=None, dtype=None, out=None, ddof=0, keepdims=&lt;no value&gt;, *, where=&lt;no value&gt;)</span>
+    <span class="k">def</span> <span class="nf">std</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">std</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">))</span>
+
+    <span class="c1"># numpy.sum(a, axis=None, dtype=None, out=None, keepdims=&lt;no value&gt;, initial=&lt;no value&gt;, where=&lt;no value&gt;)</span>
+    <span class="k">def</span> <span class="nf">sum</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">)</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;copy_tensor&quot;</span><span class="p">):</span>
+            <span class="n">tensor</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy_tensor</span><span class="p">()</span>
+            <span class="n">tensor</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">result</span>
+            <span class="k">return</span> <span class="n">tensor</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+
+    <span class="c1"># numpy.take(a, indices, axis=None, out=None, mode=&#39;raise&#39;)</span>
+    <span class="k">def</span> <span class="nf">take</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">indices</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">TypeTuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">],</span>
+        <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">out</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;raise&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">take</span><span class="p">(</span>
+                <span class="n">indices</span><span class="p">,</span>
+                <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span>
+                <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="c1"># numpy.choose(a, choices, out=None, mode=&#39;raise&#39;)</span>
+    <span class="k">def</span> <span class="nf">choose</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">choices</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]],</span>
+        <span class="n">out</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;raise&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">choose</span><span class="p">(</span>
+                <span class="n">choices</span><span class="p">,</span>
+                <span class="n">out</span><span class="o">=</span><span class="n">out</span><span class="p">,</span>
+                <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">astype</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">np_type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np_type</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__array_function__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">func</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+        <span class="n">types</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">],</span>  <span class="c1"># what this means =  List of Type(Type())</span>
+        <span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+        <span class="c1"># Note: this allows subclasses that don&#39;t override</span>
+        <span class="c1"># __array_function__ to handle PassthroughTensor objects.</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">all</span><span class="p">(</span><span class="nb">issubclass</span><span class="p">(</span><span class="n">t</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">)</span> <span class="k">for</span> <span class="n">t</span> <span class="ow">in</span> <span class="n">types</span><span class="p">):</span>
+            <span class="k">return</span> <span class="bp">NotImplemented</span>
+
+        <span class="n">implementation</span> <span class="o">=</span> <span class="n">query_implementation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">func</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">implementation</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">implementation</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">func</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="nf">__array_ufunc__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">ufunc</span><span class="p">,</span> <span class="n">method</span><span class="p">,</span> <span class="o">*</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">):</span>
+        <span class="n">implementation</span> <span class="o">=</span> <span class="n">query_implementation</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">,</span> <span class="n">ufunc</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">implementation</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">implementation</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">ufunc</span><span class="p">(</span><span class="o">*</span><span class="n">inputs</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">(child=</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="si">}</span><span class="s2">)&quot;</span></div>
+
+
+<span class="nd">@implements</span><span class="p">(</span><span class="n">PassthroughTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">square</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">square</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">x</span> <span class="o">*</span> <span class="n">x</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

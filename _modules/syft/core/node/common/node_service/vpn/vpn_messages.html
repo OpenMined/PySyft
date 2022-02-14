@@ -1,0 +1,580 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.node.common.node_service.vpn.vpn_messages &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../../../_static/jquery.js"></script>
+    <script src="../../../../../../../_static/underscore.js"></script>
+    <script src="../../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../../../../index.html">
+  <img src="../../../../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.node.common.node_service.vpn.vpn_messages</h1><div class="highlight"><pre>
+<span></span><span class="c1"># future</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">import</span> <span class="nn">json</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">import</span> <span class="nn">re</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">VerifyKey</span>
+<span class="kn">import</span> <span class="nn">requests</span>
+<span class="kn">from</span> <span class="nn">typing_extensions</span> <span class="kn">import</span> <span class="n">final</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">......grid</span> <span class="kn">import</span> <span class="n">GridURL</span>
+<span class="kn">from</span> <span class="nn">......util</span> <span class="kn">import</span> <span class="n">verify_tls</span>
+<span class="kn">from</span> <span class="nn">.....common.serde.serializable</span> <span class="kn">import</span> <span class="n">serializable</span>
+<span class="kn">from</span> <span class="nn">....abstract.node</span> <span class="kn">import</span> <span class="n">AbstractNode</span>
+<span class="kn">from</span> <span class="nn">..generic_payload.messages</span> <span class="kn">import</span> <span class="n">GenericPayloadMessage</span>
+<span class="kn">from</span> <span class="nn">..generic_payload.messages</span> <span class="kn">import</span> <span class="n">GenericPayloadMessageWithReply</span>
+<span class="kn">from</span> <span class="nn">..generic_payload.messages</span> <span class="kn">import</span> <span class="n">GenericPayloadReplyMessage</span>
+
+
+<span class="k">def</span> <span class="nf">grid_url_from_kwargs</span><span class="p">(</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">GridURL</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="s2">&quot;host_or_ip&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="c1"># old way to send these messages was with host_or_ip</span>
+            <span class="k">return</span> <span class="n">GridURL</span><span class="o">.</span><span class="n">from_url</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;host_or_ip&quot;</span><span class="p">]))</span>
+        <span class="k">elif</span> <span class="s2">&quot;grid_url&quot;</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="p">:</span>
+            <span class="c1"># new way is with grid_url</span>
+            <span class="k">return</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;grid_url&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;kwargs missing host_or_ip or grid_url&quot;</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get grid_url from kwargs: </span><span class="si">{</span><span class="n">kwargs</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="n">e</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNConnectMessage</span><span class="p">(</span><span class="n">GenericPayloadMessage</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNConnectReplyMessage</span><span class="p">(</span><span class="n">GenericPayloadReplyMessage</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNConnectMessageWithReply</span><span class="p">(</span><span class="n">GenericPayloadMessageWithReply</span><span class="p">):</span>
+    <span class="n">message_type</span> <span class="o">=</span> <span class="n">VPNConnectMessage</span>
+    <span class="n">message_reply_type</span> <span class="o">=</span> <span class="n">VPNConnectReplyMessage</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">AbstractNode</span><span class="p">,</span> <span class="n">verify_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VerifyKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">grid_url</span> <span class="o">=</span> <span class="n">grid_url_from_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">grid_url</span> <span class="o">=</span> <span class="n">grid_url</span><span class="o">.</span><span class="n">with_path</span><span class="p">(</span><span class="s2">&quot;/vpn&quot;</span><span class="p">)</span>
+            <span class="n">vpn_auth_key</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;vpn_auth_key&quot;</span><span class="p">])</span>
+
+            <span class="n">status</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> <span class="n">connect_with_key</span><span class="p">(</span>
+                <span class="n">tailscale_host</span><span class="o">=</span><span class="s2">&quot;http://tailscale:4000&quot;</span><span class="p">,</span>
+                <span class="n">headscale_host</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">grid_url</span><span class="p">),</span>
+                <span class="n">vpn_auth_key</span><span class="o">=</span><span class="n">vpn_auth_key</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;connect with key failed&quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to run </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">}</span>
+
+
+<span class="k">def</span> <span class="nf">connect_with_key</span><span class="p">(</span>
+    <span class="n">tailscale_host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">headscale_host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">vpn_auth_key</span><span class="p">:</span> <span class="nb">str</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;args&quot;</span><span class="p">:</span> <span class="p">[</span>
+            <span class="s2">&quot;-login-server&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">headscale_host</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;--reset&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;--force-reauth&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;--authkey&quot;</span><span class="p">,</span>
+            <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">vpn_auth_key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="mi">60</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">command_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tailscale_host</span><span class="si">}</span><span class="s2">/commands/up&quot;</span>
+
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;X-STACK-API-KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;STACK_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)}</span>
+    <span class="n">resp</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">command_url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+    <span class="n">report</span> <span class="o">=</span> <span class="n">get_result</span><span class="p">(</span><span class="n">json</span><span class="o">=</span><span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+    <span class="n">report_dict</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">report</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">int</span><span class="p">(</span><span class="n">report_dict</span><span class="p">[</span><span class="s2">&quot;returncode&quot;</span><span class="p">])</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="n">report_dict</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;report&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">))</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNJoinMessage</span><span class="p">(</span><span class="n">GenericPayloadMessage</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNJoinReplyMessage</span><span class="p">(</span><span class="n">GenericPayloadReplyMessage</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNJoinMessageWithReply</span><span class="p">(</span><span class="n">GenericPayloadMessageWithReply</span><span class="p">):</span>
+    <span class="n">message_type</span> <span class="o">=</span> <span class="n">VPNJoinMessage</span>
+    <span class="n">message_reply_type</span> <span class="o">=</span> <span class="n">VPNJoinReplyMessage</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">AbstractNode</span><span class="p">,</span> <span class="n">verify_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VerifyKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">grid_url</span> <span class="o">=</span> <span class="n">grid_url_from_kwargs</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="c1"># can&#39;t import Network due to circular imports</span>
+            <span class="k">if</span> <span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)</span><span class="o">.</span><span class="vm">__name__</span> <span class="o">==</span> <span class="s2">&quot;Network&quot;</span><span class="p">:</span>
+                <span class="c1"># we are already in the network and could be on the blocking backend api</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="n">VPNRegisterMessageWithReply</span><span class="p">(</span><span class="n">kwargs</span><span class="o">=</span><span class="p">{})</span><span class="o">.</span><span class="n">to</span><span class="p">(</span>
+                    <span class="n">address</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">address</span><span class="p">,</span> <span class="n">reply_to</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">address</span>
+                <span class="p">)</span>
+                <span class="n">reply</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">recv_immediate_msg_with_reply</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span><span class="o">.</span><span class="n">message</span>
+                <span class="n">res_json</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="n">res_json</span><span class="p">[</span><span class="s2">&quot;vpn_auth_key&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span>
+                        <span class="n">reply</span><span class="o">.</span><span class="n">payload</span><span class="o">.</span><span class="n">kwargs</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;vpn_auth_key&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+                    <span class="p">)</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>  <span class="c1"># nosec</span>
+                    <span class="k">pass</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">res</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">grid_url</span><span class="o">.</span><span class="n">with_path</span><span class="p">(</span><span class="s2">&quot;/api/v1/vpn/register&quot;</span><span class="p">)),</span> <span class="n">verify</span><span class="o">=</span><span class="n">verify_tls</span><span class="p">()</span>
+                <span class="p">)</span>
+                <span class="n">res_json</span> <span class="o">=</span> <span class="n">res</span><span class="o">.</span><span class="n">json</span><span class="p">()</span>
+
+            <span class="k">if</span> <span class="s2">&quot;vpn_auth_key&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">res_json</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Registration failed&quot;</span><span class="p">,</span> <span class="n">res</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">}</span>
+
+            <span class="n">status</span><span class="p">,</span> <span class="n">error</span> <span class="o">=</span> <span class="n">connect_with_key</span><span class="p">(</span>
+                <span class="n">tailscale_host</span><span class="o">=</span><span class="s2">&quot;http://tailscale:4000&quot;</span><span class="p">,</span>
+                <span class="n">headscale_host</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">grid_url</span><span class="o">.</span><span class="n">with_path</span><span class="p">(</span><span class="s2">&quot;/vpn&quot;</span><span class="p">)),</span>
+                <span class="n">vpn_auth_key</span><span class="o">=</span><span class="n">res_json</span><span class="p">[</span><span class="s2">&quot;vpn_auth_key&quot;</span><span class="p">],</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;connect with key failed&quot;</span><span class="p">,</span> <span class="n">error</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to run </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">}</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNRegisterMessage</span><span class="p">(</span><span class="n">GenericPayloadMessage</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNRegisterReplyMessage</span><span class="p">(</span><span class="n">GenericPayloadReplyMessage</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNRegisterMessageWithReply</span><span class="p">(</span><span class="n">GenericPayloadMessageWithReply</span><span class="p">):</span>
+    <span class="n">message_type</span> <span class="o">=</span> <span class="n">VPNRegisterMessage</span>
+    <span class="n">message_reply_type</span> <span class="o">=</span> <span class="n">VPNRegisterReplyMessage</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">AbstractNode</span><span class="p">,</span> <span class="n">verify_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VerifyKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">status</span><span class="p">,</span> <span class="n">vpn_auth_key</span> <span class="o">=</span> <span class="n">generate_key</span><span class="p">(</span><span class="n">headscale_host</span><span class="o">=</span><span class="s2">&quot;http://headscale:4000&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">status</span><span class="p">:</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">,</span> <span class="s2">&quot;vpn_auth_key&quot;</span><span class="p">:</span> <span class="n">vpn_auth_key</span><span class="p">}</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;register and create vpn_auth_key failed&quot;</span><span class="p">)</span>
+                <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to run </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">}</span>
+
+
+<span class="c1"># the response contains a dict with a key called &quot;report&quot; which contains unescaped json</span>
+<span class="k">def</span> <span class="nf">extract_nested_json</span><span class="p">(</span><span class="n">nested_json</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">Dict</span><span class="p">,</span> <span class="n">List</span><span class="p">]:</span>
+    <span class="n">matcher</span> <span class="o">=</span> <span class="sa">r</span><span class="s1">&#39;&quot;report&quot;:&quot;(.+)</span><span class="se">\\</span><span class="s1">n&quot;&#39;</span>
+    <span class="n">parts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">findall</span><span class="p">(</span><span class="n">matcher</span><span class="p">,</span> <span class="n">nested_json</span><span class="p">)</span>
+    <span class="n">report_json</span> <span class="o">=</span> <span class="n">parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">n&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\\</span><span class="s2">t&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span><span class="o">.</span><span class="n">replace</span><span class="p">(</span><span class="s1">&#39;</span><span class="se">\\</span><span class="s1">&quot;&#39;</span><span class="p">,</span> <span class="s1">&#39;&quot;&#39;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">report_json</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">generate_key</span><span class="p">(</span><span class="n">headscale_host</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="nb">str</span><span class="p">]:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="n">command_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">headscale_host</span><span class="si">}</span><span class="s2">/commands/generate_key&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;X-STACK-API-KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;STACK_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)}</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">command_url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+        <span class="n">report</span> <span class="o">=</span> <span class="n">get_result</span><span class="p">(</span><span class="n">json</span><span class="o">=</span><span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+        <span class="n">result_dict</span> <span class="o">=</span> <span class="nb">dict</span><span class="p">(</span><span class="n">extract_nested_json</span><span class="p">(</span><span class="n">report</span><span class="p">))</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">result_dict</span><span class="p">[</span><span class="s2">&quot;Key&quot;</span><span class="p">]</span>
+
+        <span class="c1"># check if we got a key</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">result</span><span class="p">)</span> <span class="o">==</span> <span class="mi">48</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="kc">True</span><span class="p">,</span> <span class="n">result</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;failed to make request&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">(</span><span class="kc">False</span><span class="p">,</span> <span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNStatusMessage</span><span class="p">(</span><span class="n">GenericPayloadMessage</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNStatusReplyMessage</span><span class="p">(</span><span class="n">GenericPayloadReplyMessage</span><span class="p">):</span>
+    <span class="o">...</span>
+
+
+<span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="nd">@final</span>
+<span class="k">class</span> <span class="nc">VPNStatusMessageWithReply</span><span class="p">(</span><span class="n">GenericPayloadMessageWithReply</span><span class="p">):</span>
+    <span class="n">message_type</span> <span class="o">=</span> <span class="n">VPNStatusMessage</span>
+    <span class="n">message_reply_type</span> <span class="o">=</span> <span class="n">VPNStatusReplyMessage</span>
+
+    <span class="k">def</span> <span class="nf">run</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">AbstractNode</span><span class="p">,</span> <span class="n">verify_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VerifyKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">up</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">peers</span> <span class="o">=</span> <span class="n">get_status</span><span class="p">(</span><span class="n">tailscale_host</span><span class="o">=</span><span class="s2">&quot;http://tailscale:4000&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;ok&quot;</span><span class="p">,</span> <span class="s2">&quot;connected&quot;</span><span class="p">:</span> <span class="n">up</span><span class="p">,</span> <span class="s2">&quot;host&quot;</span><span class="p">:</span> <span class="n">host</span><span class="p">,</span> <span class="s2">&quot;peers&quot;</span><span class="p">:</span> <span class="n">peers</span><span class="p">}</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to run </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">kwargs</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+            <span class="k">return</span> <span class="p">{</span><span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="s2">&quot;error&quot;</span><span class="p">}</span>
+
+
+<div class="viewcode-block" id="clean_status_output"><a class="viewcode-back" href="../../../../../../../api_reference/syft.core.node.common.node_service.vpn.vpn_messages.html#syft.core.node.common.node_service.vpn.vpn_messages.clean_status_output">[docs]</a><span class="k">def</span> <span class="nf">clean_status_output</span><span class="p">(</span>
+    <span class="nb">input</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]:</span>
+    <span class="c1"># example input</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    # Health check:</span>
+<span class="sd">    #     - dns: rename /etc/resolv.conf /etc/resolv.pre-tailscale-backup.conf: device or resource busy</span>
+
+<span class="sd">    100.64.0.1      test_domain_1        omnet        linux   -</span>
+<span class="sd">    100.64.0.2      test_network_1       omnet        linux   active; relay &quot;syd&quot;, tx 1188 rx 1040</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">up</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="n">peers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">host</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="k">if</span> <span class="s2">&quot;Tailscale is stopped.&quot;</span> <span class="ow">in</span> <span class="nb">input</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">up</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">peers</span>
+    <span class="k">elif</span> <span class="s2">&quot;unexpected state: NoState&quot;</span> <span class="ow">in</span> <span class="nb">input</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">up</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">peers</span>
+
+    <span class="n">count</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">line</span> <span class="ow">in</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="p">)</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span><span class="p">):</span>
+        <span class="n">matches</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">match</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;^\d.+&quot;</span><span class="p">,</span> <span class="n">line</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">matches</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">stat_parts</span> <span class="o">=</span> <span class="n">re</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="sa">r</span><span class="s2">&quot;(\s+)&quot;</span><span class="p">,</span> <span class="n">matches</span><span class="o">.</span><span class="n">string</span><span class="p">)</span>
+                <span class="n">entry</span> <span class="o">=</span> <span class="p">{}</span>
+                <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;ip&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stat_parts</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;hostname&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stat_parts</span><span class="p">[</span><span class="mi">2</span><span class="p">]</span>
+                <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;network&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stat_parts</span><span class="p">[</span><span class="mi">4</span><span class="p">]</span>
+                <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;os&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">stat_parts</span><span class="p">[</span><span class="mi">6</span><span class="p">]</span>
+                <span class="n">connection_info_parts</span> <span class="o">=</span> <span class="n">matches</span><span class="o">.</span><span class="n">string</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="n">entry</span><span class="p">[</span><span class="s2">&quot;os&quot;</span><span class="p">])</span>
+                <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;connection_info&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;n/a&quot;</span>
+                <span class="n">connection_info</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+                <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">connection_info_parts</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="n">connection_info</span> <span class="o">=</span> <span class="n">connection_info_parts</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="o">.</span><span class="n">strip</span><span class="p">()</span>
+                    <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;connection_info&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">connection_info</span>
+
+                <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;connection_status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;n/a&quot;</span>
+                <span class="k">if</span> <span class="s2">&quot;active&quot;</span> <span class="ow">in</span> <span class="n">connection_info</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;connection_status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;active&quot;</span>
+
+                <span class="k">if</span> <span class="s2">&quot;idle&quot;</span> <span class="ow">in</span> <span class="n">connection_info</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;connection_status&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;idle&quot;</span>
+
+                <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;connection_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;n/a&quot;</span>
+                <span class="k">if</span> <span class="s2">&quot;relay&quot;</span> <span class="ow">in</span> <span class="n">connection_info</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;connection_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;relay&quot;</span>
+
+                <span class="k">if</span> <span class="s2">&quot;direct&quot;</span> <span class="ow">in</span> <span class="n">connection_info</span><span class="p">:</span>
+                    <span class="n">entry</span><span class="p">[</span><span class="s2">&quot;connection_type&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;direct&quot;</span>
+
+                <span class="k">if</span> <span class="n">count</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+                    <span class="n">host</span> <span class="o">=</span> <span class="n">entry</span>
+                    <span class="n">count</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="n">up</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">peers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entry</span><span class="p">)</span>
+
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Error parsing tailscale status output&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+                <span class="k">pass</span>
+
+    <span class="k">return</span> <span class="n">up</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">peers</span></div>
+
+
+<span class="k">def</span> <span class="nf">get_status</span><span class="p">(</span>
+    <span class="n">tailscale_host</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">bool</span><span class="p">,</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">],</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]]:</span>
+    <span class="n">data</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="s2">&quot;timeout&quot;</span><span class="p">:</span> <span class="mi">5</span><span class="p">,</span>
+    <span class="p">}</span>
+    <span class="n">command_url</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">tailscale_host</span><span class="si">}</span><span class="s2">/commands/status&quot;</span>
+    <span class="n">host</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+    <span class="n">peers</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="n">connected</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;X-STACK-API-KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;STACK_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)}</span>
+        <span class="n">resp</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">post</span><span class="p">(</span><span class="n">command_url</span><span class="p">,</span> <span class="n">json</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+        <span class="n">report</span> <span class="o">=</span> <span class="n">get_result</span><span class="p">(</span><span class="n">json</span><span class="o">=</span><span class="n">resp</span><span class="o">.</span><span class="n">json</span><span class="p">())</span>
+        <span class="n">cmd_output</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">loads</span><span class="p">(</span><span class="n">report</span><span class="p">)[</span><span class="s2">&quot;report&quot;</span><span class="p">]</span>
+        <span class="n">connected</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">peers</span> <span class="o">=</span> <span class="n">clean_status_output</span><span class="p">(</span><span class="nb">input</span><span class="o">=</span><span class="n">cmd_output</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;failed to make request&quot;</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">connected</span><span class="p">,</span> <span class="n">host</span><span class="p">,</span> <span class="n">peers</span>
+
+
+<span class="k">def</span> <span class="nf">get_result</span><span class="p">(</span><span class="n">json</span><span class="p">:</span> <span class="n">Dict</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">result_url</span> <span class="o">=</span> <span class="n">json</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;result_url&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)</span>
+    <span class="n">headers</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;X-STACK-API-KEY&quot;</span><span class="p">:</span> <span class="n">os</span><span class="o">.</span><span class="n">environ</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;STACK_API_KEY&quot;</span><span class="p">,</span> <span class="s2">&quot;&quot;</span><span class="p">)}</span>
+    <span class="n">tries</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="n">limit</span> <span class="o">=</span> <span class="mi">5</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">while</span> <span class="kc">True</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Polling API Result&quot;</span><span class="p">,</span> <span class="n">tries</span><span class="p">)</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">result_url</span><span class="p">,</span> <span class="n">headers</span><span class="o">=</span><span class="n">headers</span><span class="p">)</span>
+            <span class="k">if</span> <span class="s1">&#39;&quot;status&quot;:&quot;running&quot;&#39;</span> <span class="ow">in</span> <span class="n">result</span><span class="o">.</span><span class="n">text</span><span class="p">:</span>
+                <span class="n">time</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mi">1</span><span class="p">)</span>
+                <span class="n">tries</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">if</span> <span class="n">tries</span> <span class="o">&gt;</span> <span class="n">limit</span><span class="p">:</span>
+                    <span class="k">break</span>
+                <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">text</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Failed to get result&quot;</span><span class="p">,</span> <span class="n">json</span><span class="p">,</span> <span class="n">e</span><span class="p">)</span>
+    <span class="k">return</span> <span class="s2">&quot;</span><span class="si">{}</span><span class="s2">&quot;</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

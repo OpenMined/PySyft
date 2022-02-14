@@ -1,0 +1,1031 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.tensor.smpc.share_tensor &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../_static/jquery.js"></script>
+    <script src="../../../../../_static/underscore.js"></script>
+    <script src="../../../../../_static/doctools.js"></script>
+    <script src="../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../../index.html">
+  <img src="../../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.tensor.smpc.share_tensor</h1><div class="highlight"><pre>
+<span></span><span class="c1"># future</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">from</span> <span class="nn">functools</span> <span class="kn">import</span> <span class="n">lru_cache</span>
+<span class="kn">import</span> <span class="nn">operator</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">google.protobuf.reflection</span> <span class="kn">import</span> <span class="n">GeneratedProtocolMessageType</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="c1"># syft absolute</span>
+<span class="c1"># absolute</span>
+<span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">....</span> <span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span> <span class="nn">....grid</span> <span class="kn">import</span> <span class="n">GridURL</span>
+<span class="kn">from</span> <span class="nn">....proto.core.tensor.share_tensor_pb2</span> <span class="kn">import</span> <span class="n">ShareTensor</span> <span class="k">as</span> <span class="n">ShareTensor_PB</span>
+<span class="kn">from</span> <span class="nn">...common.serde.deserialize</span> <span class="kn">import</span> <span class="n">_deserialize</span> <span class="k">as</span> <span class="n">deserialize</span>
+<span class="kn">from</span> <span class="nn">...common.serde.serializable</span> <span class="kn">import</span> <span class="n">serializable</span>
+<span class="kn">from</span> <span class="nn">...common.serde.serialize</span> <span class="kn">import</span> <span class="n">_serialize</span> <span class="k">as</span> <span class="n">serialize</span>
+<span class="kn">from</span> <span class="nn">...smpc.store.crypto_store</span> <span class="kn">import</span> <span class="n">CryptoStore</span>
+<span class="kn">from</span> <span class="nn">..passthrough</span> <span class="kn">import</span> <span class="n">PassthroughTensor</span>  <span class="c1"># type: ignore</span>
+
+<span class="n">METHODS_FORWARD_ALL_SHARES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;repeat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;copy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;diagonal&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;flatten&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;transpose&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;partition&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;resize&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ravel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;compress&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;reshape&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;squeeze&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;swapaxes&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;__pos__&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;__neg__&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;take&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;choose&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cumsum&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;trace&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">INPLACE_OPS</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;resize&quot;</span><span class="p">,</span> <span class="s2">&quot;put&quot;</span><span class="p">}</span>
+<span class="n">RING_SIZE_TO_OP</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="mi">2</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;add&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">xor</span><span class="p">,</span>
+        <span class="s2">&quot;sub&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">xor</span><span class="p">,</span>
+        <span class="s2">&quot;mul&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">and_</span><span class="p">,</span>
+        <span class="s2">&quot;lt&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">lt</span><span class="p">,</span>
+        <span class="s2">&quot;gt&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">gt</span><span class="p">,</span>
+        <span class="s2">&quot;ge&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">ge</span><span class="p">,</span>
+        <span class="s2">&quot;le&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">le</span><span class="p">,</span>
+        <span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">eq</span><span class="p">,</span>
+        <span class="s2">&quot;ne&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">ne</span><span class="p">,</span>
+    <span class="p">},</span>
+    <span class="mi">2</span>
+    <span class="o">**</span> <span class="mi">32</span><span class="p">:</span> <span class="p">{</span>
+        <span class="s2">&quot;add&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">add</span><span class="p">,</span>
+        <span class="s2">&quot;sub&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">sub</span><span class="p">,</span>
+        <span class="s2">&quot;mul&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">mul</span><span class="p">,</span>
+        <span class="s2">&quot;lt&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">lt</span><span class="p">,</span>
+        <span class="s2">&quot;gt&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">gt</span><span class="p">,</span>
+        <span class="s2">&quot;ge&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">ge</span><span class="p">,</span>
+        <span class="s2">&quot;le&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">le</span><span class="p">,</span>
+        <span class="s2">&quot;eq&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">eq</span><span class="p">,</span>
+        <span class="s2">&quot;ne&quot;</span><span class="p">:</span> <span class="n">operator</span><span class="o">.</span><span class="n">ne</span><span class="p">,</span>
+    <span class="p">},</span>
+<span class="p">}</span>
+
+<span class="n">CACHE_CLIENTS</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<span class="k">def</span> <span class="nf">populate_store</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">ShareTensor</span><span class="o">.</span><span class="n">crypto_store</span><span class="o">.</span><span class="n">populate_store</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+
+<div class="viewcode-block" id="ShareTensor"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor">[docs]</a><span class="nd">@serializable</span><span class="p">()</span>
+<span class="k">class</span> <span class="nc">ShareTensor</span><span class="p">(</span><span class="n">PassthroughTensor</span><span class="p">):</span>
+    <span class="n">crypto_store</span> <span class="o">=</span> <span class="n">CryptoStore</span><span class="p">()</span>
+
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;rank&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ring_size&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;clients&quot;</span><span class="p">,</span>  <span class="c1"># clients connections</span>
+        <span class="s2">&quot;min_value&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;max_value&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;generator_przs&quot;</span><span class="p">,</span>
+        <span class="c1"># Only ShareTensors with seed_przs could be sent over the wire</span>
+        <span class="s2">&quot;seed_przs&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;parties_info&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;nr_parties&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">parties_info</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">GridURL</span><span class="p">],</span>
+        <span class="n">ring_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">seed_przs</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">42</span><span class="p">,</span>
+        <span class="n">clients</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">init_clients</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># TODO: Ring size needs to be changed to 2^64 (or other specific sizes)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">rank</span> <span class="o">=</span> <span class="n">rank</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span> <span class="o">=</span> <span class="n">ring_size</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">nr_parties</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parties_info</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parties_info</span> <span class="o">=</span> <span class="n">parties_info</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">clients</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="n">clients</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clients</span> <span class="o">=</span> <span class="n">clients</span>
+        <span class="k">elif</span> <span class="n">init_clients</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">clients</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="o">.</span><span class="n">login_clients</span><span class="p">(</span><span class="n">parties_info</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">min_value</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">max_value</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="o">.</span><span class="n">compute_min_max_from_ring</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span>
+        <span class="p">)</span>
+
+        <span class="c1"># This should be set only in the deserializer</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">generator_przs</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed_przs</span> <span class="o">=</span> <span class="n">seed_przs</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">value</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">login_clients</span><span class="p">(</span><span class="n">parties_info</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">GridURL</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">clients</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">party_info</span> <span class="ow">in</span> <span class="n">parties_info</span><span class="p">:</span>
+            <span class="c1"># if its localhost make it docker-host otherwise no change</span>
+            <span class="n">external_host_info</span> <span class="o">=</span> <span class="n">party_info</span><span class="o">.</span><span class="n">as_docker_host</span><span class="p">()</span>
+            <span class="n">client</span> <span class="o">=</span> <span class="n">CACHE_CLIENTS</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">external_host_info</span><span class="p">),</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">client</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># default cache to true, here to prevent multiple logins</span>
+                <span class="c1"># due to gevent monkey patching, context switch is done during</span>
+                <span class="c1"># during socket connection initialization.</span>
+                <span class="n">CACHE_CLIENTS</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">external_host_info</span><span class="p">)]</span> <span class="o">=</span> <span class="kc">True</span>
+                <span class="c1"># TODO: refactor to use a guest account</span>
+                <span class="n">client</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">login</span><span class="p">(</span>  <span class="c1"># nosec</span>
+                    <span class="n">url</span><span class="o">=</span><span class="n">external_host_info</span><span class="p">,</span>
+                    <span class="n">email</span><span class="o">=</span><span class="s2">&quot;info@openmined.org&quot;</span><span class="p">,</span>
+                    <span class="n">password</span><span class="o">=</span><span class="s2">&quot;changethis&quot;</span><span class="p">,</span>
+                    <span class="n">port</span><span class="o">=</span><span class="n">external_host_info</span><span class="o">.</span><span class="n">port</span><span class="p">,</span>
+                    <span class="n">verbose</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="n">CACHE_CLIENTS</span><span class="p">[</span><span class="nb">str</span><span class="p">(</span><span class="n">external_host_info</span><span class="p">)]</span> <span class="o">=</span> <span class="n">client</span>
+            <span class="n">clients</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">clients</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">item</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="nb">int</span><span class="p">,</span> <span class="nb">slice</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">ShareTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ShareTensor</span><span class="p">(</span>
+            <span class="n">rank</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span>
+            <span class="n">parties_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parties_info</span><span class="p">,</span>
+            <span class="n">ring_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span>
+            <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">item</span><span class="p">],</span>
+            <span class="n">clients</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clients</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">copy_tensor</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ShareTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ShareTensor</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span>
+            <span class="n">rank</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span>
+            <span class="n">parties_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parties_info</span><span class="p">,</span>
+            <span class="n">ring_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span>
+            <span class="n">seed_przs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seed_przs</span><span class="p">,</span>
+            <span class="n">clients</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">clients</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@lru_cache</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">compute_min_max_from_ring</span><span class="p">(</span><span class="n">ring_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">32</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">int</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">ring_size</span> <span class="o">==</span> <span class="mi">2</span><span class="p">:</span>
+            <span class="n">min_value</span><span class="p">,</span> <span class="n">max_value</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span> <span class="mi">1</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">min_value</span> <span class="o">=</span> <span class="p">(</span><span class="o">-</span><span class="n">ring_size</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span>
+            <span class="n">max_value</span> <span class="o">=</span> <span class="p">(</span><span class="n">ring_size</span><span class="p">)</span> <span class="o">//</span> <span class="mi">2</span> <span class="o">-</span> <span class="mi">1</span>
+        <span class="k">return</span> <span class="n">min_value</span><span class="p">,</span> <span class="n">max_value</span>
+
+<div class="viewcode-block" id="ShareTensor.get_op"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.get_op">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="nd">@lru_cache</span><span class="p">(</span><span class="n">maxsize</span><span class="o">=</span><span class="kc">None</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">get_op</span><span class="p">(</span><span class="n">ring_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">op_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Returns method attribute based on ring_size and op_str.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            ring_size (int): Ring size</span>
+<span class="sd">            op_str (str): Operation string.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            op (Callable[...,Any]): The operation method for the op_str.</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError : If invalid ring size or op_str is given as input.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ops</span> <span class="o">=</span> <span class="n">RING_SIZE_TO_OP</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ring_size</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ops</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Do not have operations for ring size </span><span class="si">{</span><span class="n">ring_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">op</span> <span class="o">=</span> <span class="n">ops</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">op_str</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">op</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Operator </span><span class="si">{</span><span class="n">op_str</span><span class="si">}</span><span class="s2"> does not exist for ring size </span><span class="si">{</span><span class="n">ring_size</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">op</span></div>
+
+    <span class="sd">&quot;&quot;&quot; TODO: Remove this -- we would use generate_przs since the scenario we are testing is that</span>
+<span class="sd">    the secret is remotly</span>
+<span class="sd">    @staticmethod</span>
+<span class="sd">    def generate_shares(secret, nr_shares, ring_size=2 ** 64):</span>
+<span class="sd">        from .fixed_precision_tensor import FixedPrecisionTensor</span>
+
+<span class="sd">        if not isinstance(secret, (int, FixedPrecisionTensor)):</span>
+<span class="sd">            secret = FixedPrecisionTensor(value=secret)</span>
+
+<span class="sd">        shape = secret.shape</span>
+<span class="sd">        min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)</span>
+
+<span class="sd">        generator_shares = np.random.default_rng()</span>
+
+<span class="sd">        random_shares = []</span>
+<span class="sd">        for i in range(nr_shares):</span>
+<span class="sd">            random_value = generator_shares.integers(</span>
+<span class="sd">                low=min_value, high=max_value, size=shape</span>
+<span class="sd">            )</span>
+<span class="sd">            fpt_value = FixedPrecisionTensor(value=random_value)</span>
+<span class="sd">            random_shares.append(fpt_value)</span>
+
+<span class="sd">        shares_fpt = []</span>
+<span class="sd">        for i in range(nr_shares):</span>
+<span class="sd">            if i == 0:</span>
+<span class="sd">                share = value = random_shares[i]</span>
+<span class="sd">            elif i &lt; nr_shares - 1:</span>
+<span class="sd">                share = random_shares[i] - random_shares[i - 1]</span>
+<span class="sd">            else:</span>
+<span class="sd">                share = secret - random_shares[i - 1]</span>
+
+<span class="sd">            shares_fpt.append(share)</span>
+
+<span class="sd">        # Add the ShareTensor class between them</span>
+<span class="sd">        shares = []</span>
+<span class="sd">        for rank, share_fpt in enumerate(shares_fpt):</span>
+<span class="sd">            share_fpt.child = ShareTensor(rank=rank, value=share_fpt.child)</span>
+<span class="sd">            shares.append(share_fpt)</span>
+
+<span class="sd">        return shares</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">generate_przs</span><span class="p">(</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">parties_info</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">GridURL</span><span class="p">],</span>
+        <span class="n">ring_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">32</span><span class="p">,</span>
+        <span class="n">seed_przs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">generator_przs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">init_clients</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+
+        <span class="n">nr_parties</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parties_info</span><span class="p">)</span>
+
+        <span class="c1"># Try:</span>
+        <span class="c1"># 1. First get numpy type if secret is numpy and obtain ring size from there</span>
+        <span class="c1"># 2. If not get the type from the ring size</span>
+
+        <span class="n">numpy_type</span> <span class="o">=</span> <span class="kc">None</span>
+        <span class="n">ring_size_final</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="n">ring_size_from_type</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">TYPE_TO_RING_SIZE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span>
+            <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">),</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">ring_size_from_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Could not get ring size from </span><span class="si">{value}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">ring_size_final</span> <span class="o">=</span> <span class="n">ring_size_from_type</span>
+            <span class="n">numpy_type</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">dtype</span>
+
+        <span class="k">if</span> <span class="n">numpy_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">numpy_type</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">RING_SIZE_TO_TYPE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">ring_size</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+            <span class="n">ring_size_final</span> <span class="o">=</span> <span class="n">ring_size</span>
+
+        <span class="k">if</span> <span class="n">numpy_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Ring size </span><span class="si">{</span><span class="n">ring_size</span><span class="si">}</span><span class="s2"> not known how to be treated&quot;</span><span class="p">)</span>
+
+        <span class="c1"># relative</span>
+        <span class="kn">from</span> <span class="nn">..tensor</span> <span class="kn">import</span> <span class="n">Tensor</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">seed_przs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)</span> <span class="o">==</span> <span class="p">(</span><span class="n">generator_przs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Only seed_przs or generator should be populated&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">Tensor</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">zeros</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy_type</span><span class="p">))</span>
+
+        <span class="c1"># TODO: Sending the seed and having each party generate the shares is not safe</span>
+        <span class="c1"># Since the parties would know some of the other parties shares (this might not impose a risk</span>
+        <span class="c1"># when shares are not sent between parties -- like private addition/subtraction, but it might</span>
+        <span class="c1"># impose for multiplication</span>
+        <span class="c1"># The secret holder should generate the shares and send them to the other parties</span>
+        <span class="k">if</span> <span class="n">generator_przs</span><span class="p">:</span>
+            <span class="n">generator_shares</span> <span class="o">=</span> <span class="n">generator_przs</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">generator_shares</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">seed_przs</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">ShareTensor</span><span class="p">):</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">child</span>
+
+        <span class="n">share</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="p">(</span>
+            <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">child</span><span class="p">,</span>
+            <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+            <span class="n">parties_info</span><span class="o">=</span><span class="n">parties_info</span><span class="p">,</span>
+            <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>  <span class="c1"># type: ignore #TODO:Inspect as we could pass none.</span>
+            <span class="n">init_clients</span><span class="o">=</span><span class="n">init_clients</span><span class="p">,</span>
+            <span class="n">ring_size</span><span class="o">=</span><span class="n">ring_size_final</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+        <span class="p">)</span>
+
+        <span class="n">share</span><span class="o">.</span><span class="n">generator_przs</span> <span class="o">=</span> <span class="n">generator_shares</span>
+        <span class="n">shares</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">generator_shares</span><span class="o">.</span><span class="n">integers</span><span class="p">(</span>
+                <span class="n">low</span><span class="o">=</span><span class="n">share</span><span class="o">.</span><span class="n">min_value</span><span class="p">,</span>
+                <span class="n">high</span><span class="o">=</span><span class="n">share</span><span class="o">.</span><span class="n">max_value</span><span class="p">,</span>
+                <span class="n">size</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                <span class="n">endpoint</span><span class="o">=</span><span class="kc">True</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">numpy_type</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr_parties</span><span class="p">)</span>
+        <span class="p">]</span>
+
+        <span class="n">op</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="o">.</span><span class="n">get_op</span><span class="p">(</span><span class="n">ring_size_final</span><span class="p">,</span> <span class="s2">&quot;sub&quot;</span><span class="p">)</span>
+        <span class="n">przs_share</span> <span class="o">=</span> <span class="n">op</span><span class="p">(</span><span class="n">shares</span><span class="p">[</span><span class="n">rank</span><span class="p">],</span> <span class="n">shares</span><span class="p">[(</span><span class="n">rank</span> <span class="o">+</span> <span class="mi">1</span><span class="p">)</span> <span class="o">%</span> <span class="n">nr_parties</span><span class="p">])</span>
+        <span class="n">share</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">op</span><span class="p">(</span><span class="n">share</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">przs_share</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">share</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">generate_przs_on_dp_tensor</span><span class="p">(</span>
+        <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span>
+        <span class="n">rank</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">parties_info</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">GridURL</span><span class="p">],</span>
+        <span class="n">seed_przs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">share_wrapper</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">ring_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">32</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PassthroughTensor</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">value</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">share</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="o">.</span><span class="n">generate_przs</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">child</span><span class="p">,</span>
+                <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+                <span class="n">parties_info</span><span class="o">=</span><span class="n">parties_info</span><span class="p">,</span>
+                <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>
+                <span class="n">ring_size</span><span class="o">=</span><span class="n">ring_size</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">share</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="o">.</span><span class="n">generate_przs</span><span class="p">(</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                <span class="n">rank</span><span class="o">=</span><span class="n">rank</span><span class="p">,</span>
+                <span class="n">parties_info</span><span class="o">=</span><span class="n">parties_info</span><span class="p">,</span>
+                <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>
+                <span class="n">ring_size</span><span class="o">=</span><span class="n">ring_size</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">share_wrapper</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">share</span>
+
+        <span class="k">return</span> <span class="n">share_wrapper</span>
+
+<div class="viewcode-block" id="ShareTensor.sanity_check"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.sanity_check">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">sanity_check</span><span class="p">(</span>
+        <span class="n">share</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Check type for share</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            share (Union[int, float, ShareTensor, np.ndarray, torch.Tensor]): value to check</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: if type is not supported</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">share</span><span class="p">,</span> <span class="nb">float</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Type float not supported yet!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">share</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="n">np</span><span class="o">.</span><span class="n">issubdtype</span><span class="p">(</span><span class="n">share</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">integer</span><span class="p">)</span>
+            <span class="ow">and</span> <span class="n">share</span><span class="o">.</span><span class="n">dtype</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">dtype</span><span class="p">(</span><span class="s2">&quot;bool&quot;</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;NPArray should have type int or bool, but found </span><span class="si">{</span><span class="n">share</span><span class="o">.</span><span class="n">dtype</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">share</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="ow">and</span> <span class="n">torch</span><span class="o">.</span><span class="n">is_floating_point</span><span class="p">(</span><span class="n">share</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Torch tensor should have type int, but found float&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="ShareTensor.apply_function"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.apply_function">[docs]</a>    <span class="k">def</span> <span class="nf">apply_function</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">],</span> <span class="n">op_str</span><span class="p">:</span> <span class="nb">str</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply a given operation.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[int, float, torch.Tensor, np.ndarray, &quot;ShareTensor&quot;]): tensor to apply the operator.</span>
+<span class="sd">            op_str (str): Operator.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor: Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">op</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="o">.</span><span class="n">get_op</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span> <span class="n">op_str</span><span class="p">)</span>
+        <span class="n">numpy_type</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">RING_SIZE_TO_TYPE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">numpy_type</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Do not know numpy type for ring size </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;=====================================================&quot;</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;OP&quot;</span><span class="p">,</span> <span class="n">op</span><span class="p">,</span> <span class="n">numpy_type</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;====================================================&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ShareTensor</span><span class="p">):</span>
+            <span class="n">utils</span><span class="o">.</span><span class="n">get_ring_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">ring_size</span><span class="p">)</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">op</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">y</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># TODO: Converting y to numpy because doing &quot;numpy op torch tensor&quot; raises exception</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">op</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">numpy_type</span><span class="p">))</span>  <span class="c1"># TODO: change to np.int64</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy_tensor</span><span class="p">()</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="ShareTensor.add"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;add&quot; operation between &quot;self&quot; and &quot;y&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[int, float, torch.Tensor, np.ndarray, &quot;ShareTensor&quot;]): self + y</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="n">new_share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;add&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.sub"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.sub">[docs]</a>    <span class="k">def</span> <span class="nf">sub</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;sub&quot; operation between &quot;self&quot; and &quot;y&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[int, float, torch.Tensor, np.ndarray, &quot;ShareTensor&quot;]): self - y</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;sub&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.rsub"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.rsub">[docs]</a>    <span class="k">def</span> <span class="nf">rsub</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;rsub&quot; operation between &quot;self&quot; and &quot;y&quot;</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[int, float, torch.Tensor, np.ndarray, &quot;ShareTensor&quot;]): y - self</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_self</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">mul</span><span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="n">new_self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;add&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.mul"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.mul">[docs]</a>    <span class="k">def</span> <span class="nf">mul</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;mul&quot; operation between &quot;self&quot; and &quot;y&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[int, float, torch.Tensor, np.ndarray, &quot;ShareTensor&quot;]): self * y</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># if isinstance(y, ShareTensor):</span>
+        <span class="c1">#     raise ValueError(</span>
+        <span class="c1">#         &quot;We should not reach this point for private multiplication. Only public one&quot;</span>
+        <span class="c1">#     )</span>
+
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;mul&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.matmul"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.matmul">[docs]</a>    <span class="k">def</span> <span class="nf">matmul</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;matmul&quot; operation between &quot;self&quot; and &quot;y&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[int, float, torch.Tensor, np.ndarray, &quot;ShareTensor&quot;]): self @ y.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor: Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ShareTensor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Private matmul not supported yet&quot;</span><span class="p">)</span>
+
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.rmatmul"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.rmatmul">[docs]</a>    <span class="k">def</span> <span class="nf">rmatmul</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;rmatmul&quot; operation between &quot;y&quot; and &quot;self&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (torch.Tensor): y @ self</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ShareTensor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Private matmul not supported yet&quot;</span><span class="p">)</span>
+
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.lt"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.lt">[docs]</a>    <span class="k">def</span> <span class="nf">lt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;lt&quot; operation between &quot;y&quot; and &quot;self&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[ShareTensor,np.ndarray]): self &lt; y</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># raise ValueError(</span>
+        <span class="c1">#     &quot;It should not reach this point since we generate SMPCAction for this&quot;</span>
+        <span class="c1"># )</span>
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;lt&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.gt"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.gt">[docs]</a>    <span class="k">def</span> <span class="nf">gt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;gt&quot; operation between &quot;y&quot; and &quot;self&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[ShareTensor,np.ndarray]): self &gt; y</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># raise ValueError(</span>
+        <span class="c1">#     &quot;It should not reach this point since we generate SMPCAction for this&quot;</span>
+        <span class="c1"># )</span>
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;gt&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.ge"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.ge">[docs]</a>    <span class="k">def</span> <span class="nf">ge</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;ge&quot; operation between &quot;y&quot; and &quot;self&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[ShareTensor,np.ndarray]): self &gt;= y</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># raise ValueError(</span>
+        <span class="c1">#     &quot;It should not reach this point since we generate SMPCAction for this&quot;</span>
+        <span class="c1"># )</span>
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;ge&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.le"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.le">[docs]</a>    <span class="k">def</span> <span class="nf">le</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;le&quot; operation between &quot;y&quot; and &quot;self&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[ShareTensor,np.ndarray]): self &lt;= y</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># raise ValueError(</span>
+        <span class="c1">#     &quot;It should not reach this point since we generate SMPCAction for this&quot;</span>
+        <span class="c1"># )</span>
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;le&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.ne"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.ne">[docs]</a>    <span class="k">def</span> <span class="nf">ne</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;ne&quot; operation between &quot;y&quot; and &quot;self&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[ShareTensor,np.ndarray]): self != y</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># raise ValueError(</span>
+        <span class="c1">#     &quot;It should not reach this point since we generate SMPCAction for this&quot;</span>
+        <span class="c1"># )</span>
+        <span class="n">ShareTensor</span><span class="o">.</span><span class="n">sanity_check</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+        <span class="n">new_share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">apply_function</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;ne&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">new_share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.bit_decomposition"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.bit_decomposition">[docs]</a>    <span class="k">def</span> <span class="nf">bit_decomposition</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;decomposition&quot; operation on self</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            None</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;It should not reach this point since we generate SMPCAction for this&quot;</span>
+        <span class="p">)</span></div>
+
+<div class="viewcode-block" id="ShareTensor.eq"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.eq">[docs]</a>    <span class="k">def</span> <span class="nf">eq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Equal operator.</span>
+<span class="sd">        Check if &quot;self&quot; is equal with another object given a set of</span>
+<span class="sd">            attributes to compare.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            other (Any): Value to compare.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            bool: True if equal False if not.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Rasswanth: Fix later after the comparison operation</span>
+        <span class="c1"># relative</span>
+        <span class="c1"># from .... import Tensor</span>
+
+        <span class="c1"># if (</span>
+        <span class="c1">#     isinstance(self.child, Tensor)</span>
+        <span class="c1">#     and isinstance(other.child, Tensor)</span>
+        <span class="c1">#     and (self.child != other.child).child.any()  # type: ignore</span>
+        <span class="c1"># ):</span>
+        <span class="c1">#     return False</span>
+
+        <span class="c1"># if (</span>
+        <span class="c1">#     isinstance(self.child, np.ndarray)</span>
+        <span class="c1">#     and isinstance(other.child, np.ndarray)</span>
+        <span class="c1">#     and (self.child != other.child).any()</span>
+        <span class="c1"># ):</span>
+        <span class="c1">#     return False</span>
+
+        <span class="c1"># if self.rank != other.rank:</span>
+        <span class="c1">#     return False</span>
+
+        <span class="c1"># if self.ring_size != other.ring_size:</span>
+        <span class="c1">#     return False</span>
+
+        <span class="c1"># if self.nr_parties != other.nr_parties:</span>
+        <span class="c1">#     return False</span>
+
+        <span class="c1"># return True</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span></div>
+
+    <span class="c1"># TRASK: commenting out because ShareTEnsor doesn&#39;t appear to have .session_uuid or .config</span>
+    <span class="c1"># def div(</span>
+    <span class="c1">#     self, y: Union[int, float, torch.Tensor, np.ndarray, &quot;ShareTensor&quot;]</span>
+    <span class="c1"># ) -&gt; &quot;ShareTensor&quot;:</span>
+    <span class="c1">#     &quot;&quot;&quot;Apply the &quot;div&quot; operation between &quot;self&quot; and &quot;y&quot;.</span>
+    <span class="c1">#</span>
+    <span class="c1">#     Args:</span>
+    <span class="c1">#         y (Union[int, float, torch.Tensor, np.ndarray, &quot;ShareTensor&quot;]): Denominator.</span>
+    <span class="c1">#</span>
+    <span class="c1">#     Returns:</span>
+    <span class="c1">#         ShareTensor: Result of the operation.</span>
+    <span class="c1">#</span>
+    <span class="c1">#     Raises:</span>
+    <span class="c1">#         ValueError: If y is not an integer or LongTensor.</span>
+    <span class="c1">#     &quot;&quot;&quot;</span>
+    <span class="c1">#     if not isinstance(y, (int, torch.LongTensor)):</span>
+    <span class="c1">#         raise ValueError(&quot;Div works (for the moment) only with integers!&quot;)</span>
+    <span class="c1">#</span>
+    <span class="c1">#     res = ShareTensor(session_uuid=self.session_uuid, config=self.config)</span>
+    <span class="c1">#     # res = self.apply_function(y, &quot;floordiv&quot;)</span>
+    <span class="c1">#     res.tensor = self.tensor // y</span>
+    <span class="c1">#     return res</span>
+
+<div class="viewcode-block" id="ShareTensor.bit_extraction"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.bit_extraction">[docs]</a>    <span class="k">def</span> <span class="nf">bit_extraction</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">pos</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ShareTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Extracts the bit at the specified position.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            pos (int): position to extract bit.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            ShareTensor : extracted bits at specific position.</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If invalid position is provided.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">ring_bits</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_nr_bits</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">pos</span> <span class="o">&lt;</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">pos</span> <span class="o">&gt;</span> <span class="n">ring_bits</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Invalid position for bit_extraction: </span><span class="si">{</span><span class="n">pos</span><span class="si">}</span><span class="s2">, must be in range:[0,</span><span class="si">{</span><span class="n">ring_bits</span><span class="o">-</span><span class="mi">1</span><span class="si">}</span><span class="s2">]&quot;</span>
+            <span class="p">)</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">numpy_type</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">RING_SIZE_TO_TYPE</span><span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">]</span>
+        <span class="c1"># logical shift</span>
+        <span class="n">bit_mask</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">numpy_type</span><span class="p">)</span> <span class="o">&lt;&lt;</span> <span class="n">pos</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">&amp;</span> <span class="n">bit_mask</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="n">value</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">bool_</span><span class="p">)</span>
+        <span class="n">share</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy_tensor</span><span class="p">()</span>
+        <span class="n">share</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">value</span>
+        <span class="k">return</span> <span class="n">share</span></div>
+
+<div class="viewcode-block" id="ShareTensor.hook_method"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.share_tensor.html#syft.core.tensor.smpc.share_tensor.ShareTensor.hook_method">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">hook_method</span><span class="p">(</span><span class="n">__self</span><span class="p">:</span> <span class="n">ShareTensor</span><span class="p">,</span> <span class="n">method_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Hook a framework method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            method_name (str): method to hook</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A hooked method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">method_all_shares</span><span class="p">(</span>
+            <span class="n">_self</span><span class="p">:</span> <span class="n">ShareTensor</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+
+            <span class="n">share</span> <span class="o">=</span> <span class="n">_self</span><span class="o">.</span><span class="n">child</span>
+            <span class="k">if</span> <span class="n">method_name</span> <span class="o">!=</span> <span class="s2">&quot;resize&quot;</span><span class="p">:</span>
+                <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">share</span><span class="p">,</span> <span class="n">method_name</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># Should be modified to remove copy</span>
+                <span class="c1"># https://stackoverflow.com/questions/23253144/numpy-the-array-doesnt-have-its-own-data</span>
+                <span class="n">share</span> <span class="o">=</span> <span class="n">share</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+                <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">share</span><span class="p">,</span> <span class="n">method_name</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">method_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">INPLACE_OPS</span><span class="p">:</span>
+                <span class="n">new_share</span> <span class="o">=</span> <span class="n">method</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">method</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="n">new_share</span> <span class="o">=</span> <span class="n">share</span>
+
+            <span class="n">res</span> <span class="o">=</span> <span class="n">_self</span><span class="o">.</span><span class="n">copy_tensor</span><span class="p">()</span>
+
+            <span class="c1"># TODO : Some operations return np.int64 by default, should modify</span>
+            <span class="c1"># when we have support for np.int64 or do explicit casting.</span>
+            <span class="k">if</span> <span class="n">method_name</span> <span class="o">==</span> <span class="s2">&quot;trace&quot;</span><span class="p">:</span>
+                <span class="n">new_share</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">new_share</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+            <span class="n">res</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">new_share</span>
+
+            <span class="k">return</span> <span class="n">res</span>
+
+        <span class="k">return</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">method_all_shares</span><span class="p">,</span> <span class="n">__self</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">in</span> <span class="n">METHODS_FORWARD_ALL_SHARES</span> <span class="ow">or</span> <span class="n">attr_name</span> <span class="ow">in</span> <span class="n">INPLACE_OPS</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ShareTensor</span><span class="o">.</span><span class="n">hook_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_object2proto</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">ShareTensor_PB</span><span class="p">:</span>
+        <span class="n">proto_init_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span>
+            <span class="s2">&quot;parties_info&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">serialize</span><span class="p">(</span><span class="n">party</span><span class="p">)</span> <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">parties_info</span><span class="p">],</span>
+            <span class="s2">&quot;seed_przs&quot;</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">seed_przs</span><span class="p">,</span>
+            <span class="s2">&quot;ring_size&quot;</span><span class="p">:</span> <span class="n">sy</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span> <span class="n">to_bytes</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="n">proto_init_kwargs</span><span class="p">[</span><span class="s2">&quot;array&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">):</span>
+            <span class="n">proto_init_kwargs</span><span class="p">[</span><span class="s2">&quot;array&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialize</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">proto_init_kwargs</span><span class="p">[</span><span class="s2">&quot;tensor&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">serialize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">ShareTensor_PB</span><span class="p">(</span><span class="o">**</span><span class="n">proto_init_kwargs</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_proto2object</span><span class="p">(</span><span class="n">proto</span><span class="p">:</span> <span class="n">ShareTensor_PB</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;ShareTensor&quot;</span><span class="p">:</span>
+        <span class="n">init_kwargs</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="s2">&quot;rank&quot;</span><span class="p">:</span> <span class="n">proto</span><span class="o">.</span><span class="n">rank</span><span class="p">,</span>
+            <span class="s2">&quot;parties_info&quot;</span><span class="p">:</span> <span class="p">[</span><span class="n">deserialize</span><span class="p">(</span><span class="n">party</span><span class="p">)</span> <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="n">proto</span><span class="o">.</span><span class="n">parties_info</span><span class="p">],</span>
+            <span class="s2">&quot;seed_przs&quot;</span><span class="p">:</span> <span class="n">proto</span><span class="o">.</span><span class="n">seed_przs</span><span class="p">,</span>
+            <span class="s2">&quot;ring_size&quot;</span><span class="p">:</span> <span class="nb">int</span><span class="p">(</span><span class="n">sy</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span><span class="n">proto</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span> <span class="n">from_bytes</span><span class="o">=</span><span class="kc">True</span><span class="p">)),</span>
+        <span class="p">}</span>
+        <span class="k">if</span> <span class="n">proto</span><span class="o">.</span><span class="n">HasField</span><span class="p">(</span><span class="s2">&quot;tensor&quot;</span><span class="p">):</span>
+            <span class="n">init_kwargs</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserialize</span><span class="p">(</span><span class="n">proto</span><span class="o">.</span><span class="n">tensor</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">init_kwargs</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">deserialize</span><span class="p">(</span><span class="n">proto</span><span class="o">.</span><span class="n">array</span><span class="p">)</span>
+
+        <span class="c1"># init_kwargs[&quot;init_clients&quot;] = True</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="p">(</span><span class="o">**</span><span class="n">init_kwargs</span><span class="p">)</span>
+        <span class="n">generator_przs</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">default_rng</span><span class="p">(</span><span class="n">proto</span><span class="o">.</span><span class="n">seed_przs</span><span class="p">)</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">generator_przs</span> <span class="o">=</span> <span class="n">generator_przs</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_protobuf_schema</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GeneratedProtocolMessageType</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">ShareTensor_PB</span>
+
+    <span class="fm">__add__</span> <span class="o">=</span> <span class="n">add</span>
+    <span class="fm">__radd__</span> <span class="o">=</span> <span class="n">add</span>
+    <span class="fm">__sub__</span> <span class="o">=</span> <span class="n">sub</span>
+    <span class="fm">__rsub__</span> <span class="o">=</span> <span class="n">rsub</span>
+    <span class="fm">__mul__</span> <span class="o">=</span> <span class="n">mul</span>
+    <span class="fm">__rmul__</span> <span class="o">=</span> <span class="n">mul</span>
+    <span class="fm">__matmul__</span> <span class="o">=</span> <span class="n">matmul</span>
+    <span class="fm">__rmatmul__</span> <span class="o">=</span> <span class="n">rmatmul</span>
+    <span class="fm">__lt__</span> <span class="o">=</span> <span class="n">lt</span>
+    <span class="fm">__gt__</span> <span class="o">=</span> <span class="n">gt</span>
+    <span class="fm">__ge__</span> <span class="o">=</span> <span class="n">ge</span>
+    <span class="fm">__le__</span> <span class="o">=</span> <span class="n">le</span>
+    <span class="fm">__eq__</span> <span class="o">=</span> <span class="n">eq</span>
+    <span class="fm">__ne__</span> <span class="o">=</span> <span class="n">ne</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

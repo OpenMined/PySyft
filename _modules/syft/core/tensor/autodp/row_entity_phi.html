@@ -1,0 +1,1125 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.tensor.autodp.row_entity_phi &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../_static/jquery.js"></script>
+    <script src="../../../../../_static/underscore.js"></script>
+    <script src="../../../../../_static/doctools.js"></script>
+    <script src="../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../../index.html">
+  <img src="../../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.tensor.autodp.row_entity_phi</h1><div class="highlight"><pre>
+<span></span><span class="c1"># future</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">Sequence</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">....core.adp.entity</span> <span class="kn">import</span> <span class="n">DataSubjectGroup</span> <span class="k">as</span> <span class="n">DSG</span>
+<span class="kn">from</span> <span class="nn">....core.adp.entity</span> <span class="kn">import</span> <span class="n">Entity</span>
+<span class="kn">from</span> <span class="nn">...adp.vm_private_scalar_manager</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">VirtualMachinePrivateScalarManager</span> <span class="k">as</span> <span class="n">TypeScalarManager</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">...common.serde.serializable</span> <span class="kn">import</span> <span class="n">serializable</span>
+<span class="kn">from</span> <span class="nn">..broadcastable</span> <span class="kn">import</span> <span class="n">is_broadcastable</span>
+<span class="kn">from</span> <span class="nn">..passthrough</span> <span class="kn">import</span> <span class="n">PassthroughTensor</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">..passthrough</span> <span class="kn">import</span> <span class="n">implements</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">..passthrough</span> <span class="kn">import</span> <span class="n">is_acceptable_simple_type</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">..types</span> <span class="kn">import</span> <span class="n">AcceptableSimpleType</span>
+<span class="kn">from</span> <span class="nn">.adp_tensor</span> <span class="kn">import</span> <span class="n">ADPTensor</span>
+<span class="kn">from</span> <span class="nn">.initial_gamma</span> <span class="kn">import</span> <span class="n">InitialGammaTensor</span>
+<span class="kn">from</span> <span class="nn">.intermediate_gamma</span> <span class="kn">import</span> <span class="n">IntermediateGammaTensor</span> <span class="k">as</span> <span class="n">IGT</span>
+<span class="kn">from</span> <span class="nn">.single_entity_phi</span> <span class="kn">import</span> <span class="n">SingleEntityPhiTensor</span>
+
+
+<div class="viewcode-block" id="RowEntityPhiTensor"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor">[docs]</a><span class="nd">@serializable</span><span class="p">(</span><span class="n">recursive_serde</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+<span class="k">class</span> <span class="nc">RowEntityPhiTensor</span><span class="p">(</span><span class="n">PassthroughTensor</span><span class="p">,</span> <span class="n">ADPTensor</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;This tensor is one of several tensors whose purpose is to carry metadata</span>
+<span class="sd">    relevant to automatically tracking the privacy budgets of tensor operations. This</span>
+<span class="sd">    tensor is called &#39;Phi&#39; tensor because it assumes that each number in the tensor</span>
+<span class="sd">    originates from a single entity (no numbers originate from multiple entities). This</span>
+<span class="sd">    tensor is called &#39;RowEntity&#39; because it additionally assumes that all entries in a row</span>
+<span class="sd">    come from the same entity (note: multiple rows may also be from the same or different</span>
+<span class="sd">    entities). The reason we have a tensor specifically for tracking row-organized entities</span>
+<span class="sd">    is that data entity-linked by row is very common and specifically accommodating it offers</span>
+<span class="sd">    significant performance benefits over other DP tracking tensors. Note that when</span>
+<span class="sd">    we refer to the number of &#39;rows&#39; we simply refer to the length of the first dimension. This</span>
+<span class="sd">    tensor can have an arbitrary number of dimensions.&quot;&quot;&quot;</span>
+
+    <span class="c1"># a list of attributes needed for serialization using RecursiveSerde</span>
+    <span class="n">__attr_allowlist__</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;child&quot;</span><span class="p">,</span> <span class="s2">&quot;n_entities&quot;</span><span class="p">,</span> <span class="s2">&quot;unique_entities&quot;</span><span class="p">]</span>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.__init__"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.__init__">[docs]</a>    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">rows</span><span class="p">:</span> <span class="n">Sequence</span><span class="p">,</span> <span class="n">check_shape</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">):</span>
+        <span class="sd">&quot;&quot;&quot;Initialize a RowEntityPhiTensor</span>
+
+<span class="sd">        rows: the actual data organized as an iterable (can be any type of iterable)</span>
+<span class="sd">        check_shape: whether or not we are already confident that the objects in iterable</span>
+<span class="sd">            &#39;rows&#39; all have the same dimension (check if we&#39;re not sure).</span>
+
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># Container type heirachy: https://docs.python.org/3/library/collections.abc.html</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span> <span class="n">Sequence</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">rows</span><span class="p">)</span>
+
+        <span class="c1"># include this check because it&#39;s expensive to check and sometimes we can skip it when</span>
+        <span class="c1"># we already know the rows are identically shaped.</span>
+        <span class="k">if</span> <span class="n">check_shape</span><span class="p">:</span>
+
+            <span class="c1"># shape of the first row we use for reference</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="n">rows</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+
+            <span class="c1"># check each row to make sure it&#39;s the same shape as the first</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">rows</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+                <span class="k">if</span> <span class="n">shape</span> <span class="o">!=</span> <span class="n">row</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;All rows in RowEntityPhiTensor must match: </span><span class="si">{</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">row</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+
+        <span class="sd">&quot;&quot;&quot;Calculate the number of unique entities behind the REPT&quot;&quot;&quot;</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">unique_entities</span><span class="p">:</span> <span class="nb">set</span><span class="p">[</span><span class="n">Entity</span><span class="p">]</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">n_entities</span> <span class="o">=</span> <span class="mi">0</span>
+        <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">entities</span><span class="o">.</span><span class="n">flatten</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">Entity</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">entity</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unique_entities</span><span class="p">:</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">unique_entities</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">n_entities</span> <span class="o">+=</span> <span class="mi">1</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">continue</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">DSG</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">entity</span><span class="o">.</span><span class="n">entity_set</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="n">e</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">unique_entities</span><span class="p">:</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">unique_entities</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">n_entities</span> <span class="o">+=</span> <span class="mi">1</span>
+                    <span class="k">else</span><span class="p">:</span>
+                        <span class="k">continue</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">scalar_manager</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TypeScalarManager</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">scalar_manager</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">min_vals</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">max_vals</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">value</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">([</span><span class="n">x</span><span class="o">.</span><span class="n">child</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">])</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">entities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># we must cast the result of x.shape prod to an int because sometimes</span>
+        <span class="c1"># it can be a float depending on the original type which fails to</span>
+        <span class="c1"># multiply the [x.entity] array</span>
+        <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span>
+            <span class="p">[[</span><span class="n">x</span><span class="o">.</span><span class="n">entity</span><span class="p">]</span> <span class="o">*</span> <span class="nb">int</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">x</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span><span class="o">.</span><span class="n">prod</span><span class="p">())</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">]</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">gamma</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InitialGammaTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">create_gamma</span><span class="p">()</span>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.convert_to_gamma"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.convert_to_gamma">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">convert_to_gamma</span><span class="p">(</span><span class="n">input_list</span><span class="p">:</span> <span class="n">List</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">IGT</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;This converts a REPT&#39;s data into a GammaTensor without having to initialize it. Used in comparison ops&quot;&quot;&quot;</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">entities</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">mins</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">maxes</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">input_list</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="n">target_shape</span> <span class="o">=</span> <span class="p">[</span><span class="nb">len</span><span class="p">(</span><span class="n">input_list</span><span class="p">)]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="n">input_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">input_list</span><span class="p">),</span> <span class="n">input_list</span><span class="p">)</span>
+            <span class="n">target_shape</span> <span class="o">=</span> <span class="n">input_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span>
+
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="n">input_list</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">):</span>
+                <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+                <span class="n">entity_array</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">entity</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="nb">object</span><span class="p">)</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span>
+                    <span class="nb">len</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">flatten</span><span class="p">())</span>
+                <span class="p">)</span>
+                <span class="n">entities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entity_array</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+                <span class="n">mins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">min_vals</span><span class="p">)</span>
+                <span class="n">maxes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">max_vals</span><span class="p">)</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">IGT</span><span class="p">):</span>
+                <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">_values</span><span class="p">())</span>
+                <span class="n">entities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">_entities</span><span class="p">())</span>
+                <span class="n">mins</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">_min_values</span><span class="p">())</span>
+                <span class="n">maxes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">_max_values</span><span class="p">())</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unknown type in REPT: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">tensor</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">InitialGammaTensor</span><span class="p">(</span>
+            <span class="n">values</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">values</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">target_shape</span><span class="p">),</span>
+            <span class="n">entities</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">target_shape</span><span class="p">),</span>
+            <span class="n">min_vals</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">mins</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">target_shape</span><span class="p">),</span>
+            <span class="n">max_vals</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">concatenate</span><span class="p">(</span><span class="n">maxes</span><span class="p">)</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">target_shape</span><span class="p">),</span>
+            <span class="n">scalar_manager</span><span class="o">=</span><span class="n">input_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">scalar_manager</span><span class="p">,</span>
+        <span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">create_gamma</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">scalar_manager</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">TypeScalarManager</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">InitialGammaTensor</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">scalar_manager</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">scalar_manager</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">scalar_manager</span>
+
+        <span class="k">return</span> <span class="n">InitialGammaTensor</span><span class="p">(</span>
+            <span class="n">values</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">value</span><span class="p">,</span>  <span class="c1"># 5 x 10 data</span>
+            <span class="n">min_vals</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">min_vals</span><span class="p">,</span>  <span class="c1"># 5 x 10 minimum values</span>
+            <span class="n">max_vals</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">max_vals</span><span class="p">,</span>  <span class="c1"># 5 x 10 maximum values</span>
+            <span class="n">entities</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">entities</span><span class="p">,</span>  <span class="c1"># list of 5 entities</span>
+            <span class="n">scalar_manager</span><span class="o">=</span><span class="n">scalar_manager</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="o">...</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">tuple</span><span class="p">([</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)]</span> <span class="o">+</span> <span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">RowEntityPhiTensor</span><span class="p">,</span> <span class="n">IGT</span><span class="p">]:</span>
+
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">other</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">==</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">InitialGammaTensor</span><span class="p">):</span>
+                        <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">gamma_output</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="o">.</span><span class="n">convert_to_gamma</span><span class="p">(</span><span class="n">new_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __eq__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">RowEntityPhiTensor</span><span class="p">,</span> <span class="n">IGT</span><span class="p">]:</span>
+
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">other</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">!=</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">InitialGammaTensor</span><span class="p">):</span>
+                        <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">gamma_output</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="o">.</span><span class="n">convert_to_gamma</span><span class="p">(</span><span class="n">new_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __ne__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__add__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">RowEntityPhiTensor</span><span class="p">,</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="c1"># TODO: Catch unacceptable types (str, dict, etc) to avoid errors for other.child below</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">other</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Private/Public and Private/Private are handled by the underlying SEPT self.child objects.</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">+</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Broadcasting is possible, but we&#39;re skipping that for now.</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __add__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__sub__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">RowEntityPhiTensor</span><span class="p">,</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="c1"># TODO: Catch unacceptable types (str, dict, etc) to avoid errors for other.child below</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">other</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">-</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __sub__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__mul__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">RowEntityPhiTensor</span><span class="p">,</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="k">if</span> <span class="n">is_broadcastable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                        <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">*</span> <span class="n">other</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))]</span>
+                    <span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __sub__: </span><span class="si">{</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="s1">&#39;shape&#39;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># int, float, bool, etc</span>
+                <span class="n">new_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">child</span> <span class="o">*</span> <span class="n">other</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">RowEntityPhiTensor</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">is_broadcastable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">self_child</span><span class="p">,</span> <span class="n">other_child</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s2">&quot;Zipping two different lengths will drop data. &quot;</span>
+                            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">self_child</span> <span class="o">*</span> <span class="n">other_child</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __sub__: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="c1"># If even a single SEPT in the REPT isn&#39;t broadcastable, the multiplication operation doesn&#39;t work</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="n">is_broadcastable</span><span class="p">(</span><span class="n">child</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __sub__: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span> <span class="o">*</span> <span class="n">other</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">)</span>
+
+        <span class="c1"># if is_acceptable_simple_type(other) or len(self.child) == len(other.child):</span>
+        <span class="c1">#     new_list = list()</span>
+        <span class="c1">#     for i in range(len(self.child)):</span>
+        <span class="c1">#         if is_acceptable_simple_type(other):</span>
+        <span class="c1">#             if isinstance(other, (int, bool, float)):</span>
+        <span class="c1">#                 new_list.append(self.child[i] * other)</span>
+        <span class="c1">#             else:</span>
+        <span class="c1">#                 new_list.append(self.child[i] * other[i])</span>
+        <span class="c1">#         else:</span>
+        <span class="c1">#             if isinstance(other, RowEntityPhiTensor):</span>
+        <span class="c1">#                 new_list.append(self.child[i] * other.child[i])</span>
+        <span class="c1">#             elif isinstance(other, SingleEntityPhiTensor):</span>
+        <span class="c1">#</span>
+        <span class="c1">#                 new_list.append(self.child[i] * other)</span>
+        <span class="c1">#     return RowEntityPhiTensor(rows=new_list, check_shape=False)</span>
+        <span class="c1"># else:</span>
+        <span class="c1">#     raise Exception(</span>
+        <span class="c1">#         f&quot;Tensor dims do not match for __mul__: {len(self.child)} != {len(other.child)}&quot;</span>
+        <span class="c1">#     )</span>
+
+    <span class="k">def</span> <span class="fm">__pos__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="p">[</span><span class="o">+</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">],</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__neg__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="p">[</span><span class="o">-</span><span class="n">x</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">],</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__or__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span>
+            <span class="n">rows</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="o">|</span> <span class="n">other</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">],</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__and__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span>
+            <span class="n">rows</span><span class="o">=</span><span class="p">[</span><span class="n">x</span> <span class="o">&amp;</span> <span class="n">other</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">],</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__truediv__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">RowEntityPhiTensor</span><span class="p">,</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">other</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">/</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">])</span>
+            <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __truediv__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">repeat</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">repeats</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]],</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">repeats</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">.repeat for repeats: List </span><span class="si">{</span><span class="n">repeats</span><span class="si">}</span><span class="s2"> not implemented yet&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">axis</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;Conservatively, RowEntityPhiTensor doesn&#39;t yet support repeat(axis=None)&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">axis</span> <span class="o">==</span> <span class="o">-</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">_</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">repeats</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">axis</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">repeats</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="c1"># axis is negative</span>
+        <span class="k">elif</span> <span class="nb">abs</span><span class="p">(</span><span class="n">axis</span><span class="p">)</span> <span class="o">&lt;</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">repeats</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">))</span>
+            <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;&#39;axis&#39; arg is negative and strangely large... not sure what to do.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">flatten</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;C&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">flatten</span><span class="p">(</span><span class="n">order</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">ravel</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;C&quot;</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">ravel</span><span class="p">(</span><span class="n">order</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">swapaxes</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis1</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">axis2</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis1</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">axis2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;For now, you can&#39;t swap the first axis b/c that would &quot;</span>
+                <span class="s2">&quot;probably create a Gamma Tensor. Sorry about that!&quot;</span>
+            <span class="p">)</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="c1"># Axis=0 for REPT.child is Axis=1 for REPT, so subtract 1</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">swapaxes</span><span class="p">(</span><span class="n">axis1</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">axis2</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">squeeze</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># If the first axis can be squeezed then there is only one</span>
+            <span class="c1"># tensor in the REPT, as such it might be a SEPT</span>
+            <span class="c1"># TODO: Check if the output type is still a REPT</span>
+            <span class="c1"># if isinstance(self.child[0], SEPT): return self.child[0]</span>
+            <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">squeeze</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">new_list</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">reshape</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="nb">int</span><span class="p">,</span>
+            <span class="n">Union</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">[</span><span class="n">Sequence</span><span class="p">[</span><span class="nb">int</span><span class="p">]]],</span>
+        <span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">.reshape for shape: int </span><span class="si">{</span><span class="n">shape</span><span class="si">}</span><span class="s2"> is not implemented&quot;</span>
+            <span class="p">)</span>
+        <span class="c1"># This is to fix the bug where shape = ([a, b, c], )</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">Sequence</span><span class="p">):</span>
+            <span class="n">shape</span> <span class="o">=</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+
+        <span class="k">if</span> <span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;For now, you can&#39;t reshape the first dimension because that would&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;probably require creating a gamma tensor.&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">shape</span><span class="p">)</span>
+                <span class="o">+</span> <span class="s2">&quot; and &quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+            <span class="p">)</span>
+
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.resize"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.resize">[docs]</a>    <span class="k">def</span> <span class="nf">resize</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">new_shape</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]],</span>
+        <span class="n">refcheck</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;This method is identical to reshape, but it modifies the Tensor in-place instead of returning a new one&quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">new_shape</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;new_shape: </span><span class="si">{</span><span class="n">new_shape</span><span class="si">}</span><span class="s2"> must be a Tuple for </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">new_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;For now, you can&#39;t reshape the first dimension because that would&quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;probably require creating a gamma tensor.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">reshape</span><span class="p">(</span><span class="n">new_shape</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+
+        <span class="c1"># Modify the tensor data in-place instead of returning a new one.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">new_list</span></div>
+
+    <span class="k">def</span> <span class="nf">compress</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">condition</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">bool</span><span class="p">],</span>
+        <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">out</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="c1"># TODO: Could any conditions result in GammaTensors being formed?</span>
+        <span class="c1"># TODO: Will min/max vals change upon filtering? I don&#39;t think so, since they&#39;re data independent</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">compress</span><span class="p">(</span><span class="n">condition</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">out</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">partition</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">kth</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]],</span>
+        <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="o">-</span><span class="mi">1</span><span class="p">,</span>
+        <span class="n">kind</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;introselect&quot;</span><span class="p">,</span>
+        <span class="n">order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>  <span class="c1"># Unclear how to sort the SEPTs in a REPT</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">partition</span><span class="p">(</span><span class="n">kth</span><span class="p">,</span> <span class="n">axis</span><span class="p">,</span> <span class="n">kind</span><span class="p">,</span> <span class="n">order</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Since this is being used differently compared to supertype, ignoring type annotation errors</span>
+    <span class="k">def</span> <span class="nf">sum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">sum</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="c1"># Since this is being used differently compared to supertype, ignoring type annotation errors</span>
+    <span class="k">def</span> <span class="nf">transpose</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">dims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dims</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">dims</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="mi">0</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Can&#39;t move dim 0 in RowEntityPhiTensor at this time&quot;</span><span class="p">)</span>
+
+            <span class="n">new_dims</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">dims</span><span class="p">[</span><span class="mi">1</span><span class="p">:]))</span>
+
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">transpose</span><span class="p">(</span><span class="o">*</span><span class="n">new_dims</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">transpose</span><span class="p">())</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__le__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">other</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">InitialGammaTensor</span><span class="p">):</span>
+                        <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">gamma_output</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="o">.</span><span class="n">convert_to_gamma</span><span class="p">(</span><span class="n">new_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __le__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__lt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">other</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&lt;</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">InitialGammaTensor</span><span class="p">):</span>
+                        <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">gamma_output</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="o">.</span><span class="n">convert_to_gamma</span><span class="p">(</span><span class="n">new_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __lt__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__gt__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">other</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">InitialGammaTensor</span><span class="p">):</span>
+                        <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">gamma_output</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="o">.</span><span class="n">convert_to_gamma</span><span class="p">(</span><span class="n">new_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __gt__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__ge__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">==</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)):</span>
+                <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">other</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="n">result</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span> <span class="o">&gt;=</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span>
+                    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">InitialGammaTensor</span><span class="p">):</span>
+                        <span class="n">gamma_output</span> <span class="o">=</span> <span class="kc">True</span>
+                    <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">result</span><span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">gamma_output</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="o">.</span><span class="n">convert_to_gamma</span><span class="p">(</span><span class="n">new_list</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Tensor dims do not match for __ge__: </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> != </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">cumprod</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">cumprod</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">cumsum</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">cumsum</span><span class="p">(</span><span class="n">axis</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">clip</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">a_min</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">a_max</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">a_min</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">a_max</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;ValueError: clip: must set either max or min&quot;</span><span class="p">)</span>
+
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">clip</span><span class="p">(</span><span class="n">a_min</span><span class="o">=</span><span class="n">a_min</span><span class="p">,</span> <span class="n">a_max</span><span class="o">=</span><span class="n">a_max</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__floordiv__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">AcceptableSimpleType</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">,</span> <span class="n">RowEntityPhiTensor</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="c1"># We will let the underlying SingleEntityPhiTensor logic handle most of the errors/exceptions</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span> <span class="o">//</span> <span class="n">other</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span> <span class="o">//</span> <span class="n">other</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">RowEntityPhiTensor</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_broadcastable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Shapes not broadcastable: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                        <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span> <span class="o">//</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s2">&quot;Zipping two different lengths will drop data. &quot;</span>
+                            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">self_tensors</span><span class="p">,</span> <span class="n">other_tensors</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                        <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">self_tensors</span> <span class="o">//</span> <span class="n">other_tensors</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__mod__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">AcceptableSimpleType</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">,</span> <span class="n">RowEntityPhiTensor</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+        <span class="c1"># We will let the underlying SingleEntityPhiTensor logic handle most of the errors/exceptions</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span> <span class="o">%</span> <span class="n">other</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span> <span class="o">%</span> <span class="n">other</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">RowEntityPhiTensor</span><span class="p">):</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">is_broadcastable</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Shapes not broadcastable: </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">, </span><span class="si">{</span><span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">other</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                    <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                        <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span> <span class="o">%</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                            <span class="s2">&quot;Zipping two different lengths will drop data. &quot;</span>
+                            <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                        <span class="p">)</span>
+                    <span class="k">for</span> <span class="n">self_tensors</span><span class="p">,</span> <span class="n">other_tensors</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                        <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">self_tensors</span> <span class="o">%</span> <span class="n">other_tensors</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__divmod__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">AcceptableSimpleType</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">,</span> <span class="n">RowEntityPhiTensor</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">:</span>
+        <span class="c1"># Let logic written out in mod, floordiv and SEPT handle all exceptions</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">//</span> <span class="n">other</span><span class="p">,</span> <span class="bp">self</span> <span class="o">%</span> <span class="n">other</span>
+
+    <span class="k">def</span> <span class="fm">__matmul__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">other</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">AcceptableSimpleType</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">,</span> <span class="n">RowEntityPhiTensor</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="fm">__matmul__</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">):</span>
+            <span class="c1"># Whether the output of the matmul is SEPT or IGT, we let SEPT code determine that</span>
+            <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="fm">__matmul__</span><span class="p">(</span><span class="n">other</span><span class="p">))</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">RowEntityPhiTensor</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Zipping two different lengths will drop data. &quot;</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">for</span> <span class="n">self_tensor</span><span class="p">,</span> <span class="n">other_tensor</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">self_tensor</span><span class="o">.</span><span class="fm">__matmul__</span><span class="p">(</span><span class="n">other_tensor</span><span class="p">))</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">trace</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">axis1</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">axis2</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span><span class="p">,</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">,</span>
+        <span class="n">out</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">axis1</span> <span class="o">==</span> <span class="mi">0</span> <span class="ow">or</span> <span class="n">axis2</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>  <span class="c1"># This would create a GammaTensor</span>
+        <span class="k">if</span> <span class="n">dtype</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;We currently only support np.int32 dtypes for our tensors. &quot;</span>
+                <span class="s2">&quot;We will be adding support for more dtypes soon! Sorry for the inconvenience.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="c1"># Axis #1 for REPT = Axis #0 for its SEPT child, etc</span>
+        <span class="n">axis1</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="n">axis2</span> <span class="o">-=</span> <span class="mi">1</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">trace</span><span class="p">(</span><span class="n">offset</span><span class="p">,</span> <span class="n">axis1</span><span class="p">,</span> <span class="n">axis2</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">out</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">prod</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>  <span class="c1"># might be bad that the default behaviour currently is not implemented...</span>
+        <span class="n">dtype</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">out</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">keepdims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">initial</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+        <span class="n">where</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">dtype</span> <span class="ow">and</span> <span class="n">dtype</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;We currently only support np.int32 dtypes for our tensors. &quot;</span>
+                <span class="s2">&quot;We will be adding support for more dtypes soon! Sorry for the inconvenience.&quot;</span>
+            <span class="p">)</span>
+        <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>  <span class="c1"># GammaTensor</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">prod</span><span class="p">(</span><span class="n">axis</span> <span class="o">-</span> <span class="mi">1</span><span class="p">,</span> <span class="n">dtype</span><span class="p">,</span> <span class="n">out</span><span class="p">,</span> <span class="n">keepdims</span><span class="p">,</span> <span class="n">initial</span><span class="p">,</span> <span class="n">where</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.any"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.any">[docs]</a>    <span class="k">def</span> <span class="nf">any</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">keepdims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">where</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Test whether any element along a given axis evaluates to True&quot;&quot;&quot;</span>
+
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">any</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="p">,</span> <span class="n">where</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.all"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.all">[docs]</a>    <span class="k">def</span> <span class="nf">all</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">keepdims</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">where</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Test whether all elements along a given axis evaluates to True&quot;&quot;&quot;</span>
+
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">all</span><span class="p">(</span><span class="n">axis</span><span class="p">,</span> <span class="n">keepdims</span><span class="p">,</span> <span class="n">where</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.abs"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.abs">[docs]</a>    <span class="k">def</span> <span class="nf">abs</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">out</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Calculate the absolute value element-wise&quot;&quot;&quot;</span>
+
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">abs</span><span class="p">(</span><span class="n">out</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.pow"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.pow">[docs]</a>    <span class="k">def</span> <span class="nf">pow</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">RowEntityPhiTensor</span><span class="p">,</span> <span class="n">AcceptableSimpleType</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return elements raised to powers from value, element-wise&quot;&quot;&quot;</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="p">[</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">value</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))]</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>  <span class="c1"># int, float, bool, etc</span>
+                <span class="n">new_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">child</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">RowEntityPhiTensor</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="p">[</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">]</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span><span class="p">])</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+            <span class="p">]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="n">SingleEntityPhiTensor</span><span class="p">):</span>
+            <span class="n">new_list</span> <span class="o">=</span> <span class="p">[</span><span class="n">i</span><span class="o">.</span><span class="n">pow</span><span class="p">(</span><span class="n">value</span><span class="p">)</span> <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">NotImplementedError</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.copy"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">order</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;K&quot;</span><span class="p">,</span> <span class="n">subok</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">bool</span><span class="p">]</span> <span class="o">=</span> <span class="kc">True</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return copy of the given object&quot;&quot;&quot;</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">copy</span><span class="p">(</span><span class="n">order</span><span class="o">=</span><span class="n">order</span><span class="p">,</span> <span class="n">subok</span><span class="o">=</span><span class="n">subok</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.take"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.take">[docs]</a>    <span class="k">def</span> <span class="nf">take</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">indices</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">axis</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;raise&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Take elements from an array along an axis&quot;&quot;&quot;</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">take</span><span class="p">(</span><span class="n">indices</span><span class="o">=</span><span class="n">indices</span><span class="p">,</span> <span class="n">axis</span><span class="o">=</span><span class="n">axis</span><span class="p">,</span> <span class="n">mode</span><span class="o">=</span><span class="n">mode</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="RowEntityPhiTensor.diagonal"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.autodp.row_entity_phi.html#syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor.diagonal">[docs]</a>    <span class="k">def</span> <span class="nf">diagonal</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">offset</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">axis1</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+        <span class="n">axis2</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Return specified diagonals&quot;&quot;&quot;</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">row</span><span class="o">.</span><span class="n">diagonal</span><span class="p">(</span><span class="n">offset</span><span class="o">=</span><span class="n">offset</span><span class="p">,</span> <span class="n">axis1</span><span class="o">=</span><span class="n">axis1</span><span class="p">,</span> <span class="n">axis2</span><span class="o">=</span><span class="n">axis2</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">round</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">decimals</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+        <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">tensor</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor</span><span class="o">.</span><span class="n">round</span><span class="p">(</span><span class="n">decimals</span><span class="p">))</span>
+
+        <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span></div>
+
+
+<span class="nd">@implements</span><span class="p">(</span><span class="n">RowEntityPhiTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">expand_dims</span><span class="p">(</span><span class="n">a</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">typing</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span> <span class="n">axis</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RowEntityPhiTensor</span><span class="p">:</span>
+
+    <span class="k">if</span> <span class="n">axis</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+            <span class="s2">&quot;Currently, we don&#39;t have functionality for axis=0 but we could with a bit more work.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">new_rows</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">row</span> <span class="ow">in</span> <span class="n">a</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+        <span class="n">new_rows</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">np</span><span class="o">.</span><span class="n">expand_dims</span><span class="p">(</span><span class="n">row</span><span class="p">,</span> <span class="n">axis</span> <span class="o">-</span> <span class="mi">1</span><span class="p">))</span>
+
+    <span class="k">return</span> <span class="n">RowEntityPhiTensor</span><span class="p">(</span><span class="n">rows</span><span class="o">=</span><span class="n">new_rows</span><span class="p">,</span> <span class="n">check_shape</span><span class="o">=</span><span class="kc">False</span><span class="p">)</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

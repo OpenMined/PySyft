@@ -1,5 +1,8 @@
+.. _windows_install:
+
+=================
 Windows Tutorials
-*****************
+=================
 
 The following instructions are for Windows 10 version 2004 or higher.
 

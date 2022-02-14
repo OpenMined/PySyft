@@ -1,0 +1,782 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.tensor.ancestors &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.tensor.ancestors</h1><div class="highlight"><pre>
+<span></span><span class="c1"># future</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">import</span> <span class="nn">textwrap</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Type</span>
+<span class="kn">import</span> <span class="nn">uuid</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">VerifyKey</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">from</span> <span class="nn">numpy.typing</span> <span class="kn">import</span> <span class="n">ArrayLike</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">..adp.entity</span> <span class="kn">import</span> <span class="n">Entity</span>
+<span class="kn">from</span> <span class="nn">..adp.vm_private_scalar_manager</span> <span class="kn">import</span> <span class="n">VirtualMachinePrivateScalarManager</span>
+<span class="kn">from</span> <span class="nn">.manager</span> <span class="kn">import</span> <span class="n">TensorChainManager</span>
+<span class="kn">from</span> <span class="nn">.passthrough</span> <span class="kn">import</span> <span class="n">PassthroughTensor</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">.passthrough</span> <span class="kn">import</span> <span class="n">is_acceptable_simple_type</span>  <span class="c1"># type: ignore</span>
+
+<span class="n">_SingleEntityPhiTensorRef</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">_SingleEntityPhiTensor</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">]:</span>
+    <span class="k">global</span> <span class="n">_SingleEntityPhiTensorRef</span>
+    <span class="k">if</span> <span class="n">_SingleEntityPhiTensorRef</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># relative</span>
+        <span class="kn">from</span> <span class="nn">.autodp.single_entity_phi</span> <span class="kn">import</span> <span class="n">SingleEntityPhiTensor</span>
+
+        <span class="n">_SingleEntityPhiTensorRef</span> <span class="o">=</span> <span class="n">SingleEntityPhiTensor</span>
+    <span class="k">return</span> <span class="n">_SingleEntityPhiTensorRef</span>
+
+
+<span class="n">_RowEntityPhiTensorRef</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">_RowEntityPhiTensor</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">]:</span>
+    <span class="k">global</span> <span class="n">_RowEntityPhiTensorRef</span>
+    <span class="k">if</span> <span class="n">_RowEntityPhiTensorRef</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># relative</span>
+        <span class="kn">from</span> <span class="nn">.autodp.row_entity_phi</span> <span class="kn">import</span> <span class="n">RowEntityPhiTensor</span>
+
+        <span class="n">_RowEntityPhiTensorRef</span> <span class="o">=</span> <span class="n">RowEntityPhiTensor</span>
+    <span class="k">return</span> <span class="n">_RowEntityPhiTensorRef</span>
+
+
+<span class="n">_AutogradTensorRef</span> <span class="o">=</span> <span class="kc">None</span>
+
+
+<span class="k">def</span> <span class="nf">_AutogradTensor</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Type</span><span class="p">[</span><span class="n">PassthroughTensor</span><span class="p">]:</span>
+    <span class="k">global</span> <span class="n">_AutogradTensorRef</span>
+    <span class="k">if</span> <span class="n">_AutogradTensorRef</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># relative</span>
+        <span class="kn">from</span> <span class="nn">.autograd.tensor</span> <span class="kn">import</span> <span class="n">AutogradTensor</span>
+
+        <span class="n">_AutogradTensorRef</span> <span class="o">=</span> <span class="n">AutogradTensor</span>
+    <span class="k">return</span> <span class="n">_AutogradTensorRef</span>
+
+
+<div class="viewcode-block" id="AutogradTensorAncestor"><a class="viewcode-back" href="../../../../api_reference/syft.core.tensor.ancestors.html#syft.core.tensor.ancestors.AutogradTensorAncestor">[docs]</a><span class="k">class</span> <span class="nc">AutogradTensorAncestor</span><span class="p">(</span><span class="n">TensorChainManager</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Inherited by any class which might have or like to have AutogradTensor in its chain</span>
+<span class="sd">    of .child objects&quot;&quot;&quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">grad</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+        <span class="n">child_gradient</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">grad</span>
+        <span class="k">if</span> <span class="n">child_gradient</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="kc">None</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="n">child_gradient</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">requires_grad</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">requires_grad</span>
+
+    <span class="k">def</span> <span class="nf">backward</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grad</span><span class="o">=</span><span class="kc">None</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+
+        <span class="n">AutogradTensor</span> <span class="o">=</span> <span class="n">_AutogradTensor</span><span class="p">()</span>
+
+        <span class="c1"># TODO: @Madhava question, if autograd(requires_grad=True) is not set</span>
+        <span class="c1"># we still end up in here from AutogradTensorAncestor but child.backward</span>
+        <span class="c1"># has no backprop_id</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">AutogradTensorAncestor</span><span class="p">)</span> <span class="ow">or</span> <span class="nb">isinstance</span><span class="p">(</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">AutogradTensor</span>
+        <span class="p">):</span>
+
+            <span class="k">if</span> <span class="n">grad</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="ow">not</span> <span class="n">is_acceptable_simple_type</span><span class="p">(</span><span class="n">grad</span><span class="p">):</span>
+                <span class="n">grad</span> <span class="o">=</span> <span class="n">grad</span><span class="o">.</span><span class="n">child</span>
+
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">backward</span><span class="p">(</span><span class="n">grad</span><span class="p">,</span> <span class="n">backprop_id</span><span class="o">=</span><span class="n">uuid</span><span class="o">.</span><span class="n">uuid4</span><span class="p">())</span>  <span class="c1"># type: ignore</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;No AutogradTensor found in chain, but backward() method called.&quot;</span>
+            <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">autograd</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">requires_grad</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">AutogradTensorAncestor</span><span class="p">:</span>
+        <span class="n">AutogradTensor</span> <span class="o">=</span> <span class="n">_AutogradTensor</span><span class="p">()</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">push_abstraction_top</span><span class="p">(</span><span class="n">AutogradTensor</span><span class="p">,</span> <span class="n">requires_grad</span><span class="o">=</span><span class="n">requires_grad</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+
+<span class="k">def</span> <span class="nf">entity_creation_wizard</span><span class="p">(</span><span class="n">data</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]:</span>
+
+    <span class="n">w</span> <span class="o">=</span> <span class="n">textwrap</span><span class="o">.</span><span class="n">TextWrapper</span><span class="p">(</span><span class="n">initial_indent</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">,</span> <span class="n">subsequent_indent</span><span class="o">=</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="n">welcome_msg</span> <span class="o">=</span> <span class="s2">&quot;Welcome to the Data Subject Annotation Wizard!!!&quot;</span>
+
+    <span class="n">description1</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;You&#39;ve arrived here because you called Tensor.private() without passing in any entities!</span>
+<span class="s2">Since the purpose of .private() is to add metadata for the support of automatic differential</span>
+<span class="s2">privacy budgeting, you need to describe which parts of your Tensor correspond to which</span>
+<span class="s2">real-world data subjects (entities) whose privacy you want to protect. This is the only</span>
+<span class="s2">way the system knows, for example, that it costs twice as much privacy budget when twice</span>
+<span class="s2">as much of your data (say, 2 rows instead of 1 row) refer to the same entity.&quot;&quot;&quot;</span>
+
+    <span class="n">description2</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;Entities can be people (such as a medical patient), places (such as a family&#39;s address), or</span>
+<span class="s2">even organizations (such as a business, state, or country). If you&#39;re not sure what kind of entity</span>
+<span class="s2">to include, just ask yourself the question, &quot;who am I trying to protect the privacy of?&quot;. If it&#39;s</span>
+<span class="s2">an organization, make one entity per organization. If it&#39;s people, make one entity per person.</span>
+<span class="s2">If it&#39;s a group of people who are somehow similar/linked to each other (such as a family),</span>
+<span class="s2">make each entity a different group. For more information on differential privacy, see OpenMined&#39;s</span>
+<span class="s2">course on the subject: https://courses.openmined.org/&quot;&quot;&quot;</span>
+
+    <span class="n">description3</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;Since you didn&#39;t pass in entities into .private() (or you did so incorrectly), this wizard is</span>
+<span class="s2">going to guide you through the process of annotating your data with entities.&quot;&quot;&quot;</span>
+
+    <span class="n">description4</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;In this wizard, we&#39;re going to ask you for *unique identifiers* which refer to the entities</span>
+<span class="s2">in your data. While the unique identifiers need not be personal data (they can be random strings of letters and numbers</span>
+<span class="s2">if you like). It is ESSENTIAL that you use the same identifier when referring to the same entity in the</span>
+<span class="s2">data that you never accidentally refer to two entities by the same identifier. Additionally, if you plan</span>
+<span class="s2">to do any kind of data JOIN with another dataset, it is ESSENTIAL that you are using the same unique</span>
+<span class="s2">identifiers for entities as the data you&#39;re joining with. Since these unique identifiers may be personal</span>
+<span class="s2">information, PySyft might not be able to detect if two tensors are using different identifiers for the</span>
+<span class="s2">same person.&quot;&quot;&quot;</span>
+
+    <span class="n">description5</span> <span class="o">=</span> <span class="s2">&quot;&quot;&quot;So, in this tutorial we&#39;re going to be asking you to specify Unique Identifiers (UIDs) for each entity</span>
+<span class="s2">in your data. This could be an email, street address, or any other string that identifies someone</span>
+<span class="s2">uniquely in your data and in the data you intend to use with your data (if any).&quot;&quot;&quot;</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">69</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">welcome_msg</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">69</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">description1</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">description2</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">description3</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">description4</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="n">description5</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Do you understand, and are you ready to proceed? (yes/no)&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="n">consent</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">consent</span> <span class="o">==</span> <span class="s2">&quot;no&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;User cancelled entity creation wizard!&quot;</span><span class="p">)</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Excellent! Let&#39;s begin!&quot;</span><span class="p">)</span>
+    <span class="c1"># print(&quot;\tYou passed in a tensor with the shape:&quot; + str(data.shape))</span>
+    <span class="nb">print</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">69</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="s2">&quot;Question 1: Is this entire tensor referring to the same entity?&quot;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="s2">&quot;Examples:&quot;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> - a single medical scan of one patient&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> - a single spreadsheet of proprietary statistics about a business&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> - a tensor of facts about a country&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="sd">&quot;&quot;&quot;(if the tensor is about one entity, but it also contains multiple other entities within,</span>
+<span class="sd">such as a tensor about all the customers of one business, ask yourself, are you trying to</span>
+<span class="sd">protect the people or the business)&quot;&quot;&quot;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="s2">&quot;If yes, write the UID of the entity this data is about, otherwise write &#39;no&#39; &quot;</span>
+            <span class="s2">&quot; because this data is about more than one entity.&quot;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="n">single_uid</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">single_uid</span> <span class="o">!=</span> <span class="s2">&quot;no&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">69</span><span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+                <span class="s2">&quot;Excellent! Your data will be annotated as referring to:&quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">single_uid</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+                <span class="s2">&quot;Congratulations! You&#39;re all done with the Data Subject Annotation Wizard!!!&quot;</span>
+                <span class="s2">&quot;In the future, you can accomplish this without the wizard by running:&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+        <span class="nb">print</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">.private(entities=&#39;&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">single_uid</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;&#39;)&quot;</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">()</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;=&quot;</span> <span class="o">*</span> <span class="mi">69</span><span class="p">)</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">single_uid</span><span class="p">]</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">69</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span>
+        <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+            <span class="s2">&quot;Question 2: Does each row correspond to an entity, perhaps with occasional repeats (yes/no)?&quot;</span>
+        <span class="p">)</span>
+    <span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="n">answer</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">))</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">69</span><span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">answer</span> <span class="o">==</span> <span class="s2">&quot;yes&quot;</span><span class="p">:</span>
+        <span class="nb">print</span><span class="p">(</span>
+            <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+                <span class="s2">&quot;Question 3: Excellent! Well, since your dataset has &quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span>
+                <span class="o">+</span> <span class="s2">&quot; rows, &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;would you like to hand enter an entity for each one (yes) or if there are too &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;many for you to hand-enter, we&#39;ll print some example code for you to run (no).&quot;</span>
+            <span class="p">)</span>
+        <span class="p">)</span>
+
+        <span class="nb">print</span><span class="p">()</span>
+
+        <span class="n">answer</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">))</span>
+
+        <span class="k">if</span> <span class="n">answer</span> <span class="o">==</span> <span class="s2">&quot;yes&quot;</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">()</span>
+
+            <span class="n">entities</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">data</span><span class="p">)):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">61</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">()</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">Data Row &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">i</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">data</span><span class="p">[</span><span class="n">i</span><span class="p">])))</span>
+                <span class="n">ent</span> <span class="o">=</span> <span class="nb">input</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2"> What entity is this row about:&quot;</span><span class="p">)</span>
+                <span class="n">entities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">ent</span><span class="p">)</span>
+                <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;-&quot;</span> <span class="o">*</span> <span class="mi">61</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+                    <span class="s2">&quot;All done! Next time if you want to skip the wizard, call .private() like this:&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+                    <span class="s2">&quot;.private(entities=[&#39;&quot;</span>
+                    <span class="o">+</span> <span class="n">entities</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+                    <span class="o">+</span> <span class="s2">&quot;&#39;, &#39;&quot;</span>
+                    <span class="o">+</span> <span class="n">entities</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="o">+</span> <span class="s2">&quot;&#39;, &#39;&quot;</span>
+                    <span class="o">+</span> <span class="n">entities</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span>
+                    <span class="o">+</span> <span class="s2">&quot;&#39;])&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+                    <span class="s2">&quot; where you pass in entities as a list of strings, one per row. As long as you&quot;</span>
+                    <span class="s2">&quot; pass in the same number of entities as there are rows in your tensor, it will&quot;</span>
+                    <span class="s2">&quot; automatically detect you have and assume you mean one entity per row.&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+            <span class="k">return</span> <span class="n">entities</span>
+
+        <span class="k">elif</span> <span class="n">answer</span> <span class="o">==</span> <span class="s2">&quot;no&quot;</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">()</span>
+
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+                    <span class="s2">&quot;Excellent. Well, in that case you&#39;ll need to re-run .private() but pass in&quot;</span>
+                    <span class="s2">&quot; a list of strings where each string is a unique identifier for an entity, and where&quot;</span>
+                    <span class="s2">&quot; the length of the list is equal to the number of rows in your tensor. Like so:&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="s2">&quot;.private(entities=[&#39;bob&#39;, &#39;alice&#39;, &#39;john&#39;])&quot;</span><span class="p">))</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot; Now just to make sure I don&#39;t corrupt your tensor - I&#39;m going to throw an exception.&quot;</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;Wizard aborted. Please run .private(entities=&lt;your entities&gt;)&quot;</span>
+                <span class="s2">&quot; again with your list of entity unique identifiers (strings),&quot;</span>
+                <span class="s2">&quot;one per row of your tensor.&quot;</span>
+            <span class="p">)</span>
+    <span class="k">elif</span> <span class="n">answer</span> <span class="o">==</span> <span class="s2">&quot;no&quot;</span><span class="p">:</span>
+
+        <span class="nb">print</span><span class="p">(</span><span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span><span class="s2">&quot;Question 3: Is your data one entity for every column (yes/no)?&quot;</span><span class="p">))</span>
+
+        <span class="nb">print</span><span class="p">()</span>
+
+        <span class="n">answer</span> <span class="o">=</span> <span class="nb">str</span><span class="p">(</span><span class="nb">input</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span><span class="p">))</span>
+
+        <span class="nb">print</span><span class="p">()</span>
+
+        <span class="k">if</span> <span class="n">answer</span> <span class="o">==</span> <span class="s2">&quot;yes&quot;</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+                    <span class="s2">&quot;We don&#39;t yet support this form of injestion. Please transpose your data&quot;</span>
+                    <span class="s2">&quot; into one entity per row and re-run the wizard. Aborting:)&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;Wizard aborted.&quot;</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="n">answer</span> <span class="o">==</span> <span class="s2">&quot;no&quot;</span><span class="p">:</span>
+
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="n">w</span><span class="o">.</span><span class="n">fill</span><span class="p">(</span>
+                    <span class="s2">&quot;It sounds like your tensor is a random assortment of entities (and perhaps empty/non-entities). &quot;</span>
+                    <span class="s2">&quot;If you have empty values, just create random entities for them for now. If you have various &quot;</span>
+                    <span class="s2">&quot;entities scattered throughout your tensor (not organized by row), then you&#39;ll need to pass &quot;</span>
+                    <span class="s2">&quot;in a np.ndarray of strings which is identically shaped to your data in entities like so:&quot;</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2">tensor = sy.Tensor(np.ones((2,2)).astype(np.int32))&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2">entities = np.array([[&#39;bob&#39;, &#39;alice&#39;],[&#39;charlie&#39;, &#39;danielle&#39;]])&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t\t</span><span class="s2">tensor.private(min_val=0, max_val=1, entities=entities))&quot;</span><span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;Aborting wizard now so that you rcan re-run .private with the right parameters.&quot;</span>
+            <span class="p">)</span>
+            <span class="nb">print</span><span class="p">()</span>
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;Wizard aborted. Please run .private(entities=&lt;your entities&gt;)&quot;</span>
+                <span class="s2">&quot; again with your np.ndarray of entity unique identifiers (strings),&quot;</span>
+                <span class="s2">&quot; one per value of your tensor and where your np.ndarray of entities is&quot;</span>
+                <span class="s2">&quot; the same shape as your data.&quot;</span>
+            <span class="p">)</span>
+    <span class="nb">print</span><span class="p">()</span>
+
+    <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span> <span class="o">+</span> <span class="s2">&quot;_&quot;</span> <span class="o">*</span> <span class="mi">69</span><span class="p">)</span>
+    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+        <span class="s2">&quot;Not sure what happened... this code shouldn&#39;t have been reached. Try answering questions with &quot;</span>
+        <span class="s2">&quot;options given by the prompts (such as yes/no).&quot;</span>
+    <span class="p">)</span>
+
+
+<div class="viewcode-block" id="PhiTensorAncestor"><a class="viewcode-back" href="../../../../api_reference/syft.core.tensor.ancestors.html#syft.core.tensor.ancestors.PhiTensorAncestor">[docs]</a><span class="k">class</span> <span class="nc">PhiTensorAncestor</span><span class="p">(</span><span class="n">TensorChainManager</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;Inherited by any class which might have or like to have SingleEntityPhiTensor in its chain</span>
+<span class="sd">    of .child objects&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">child</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">child</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">int</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">shape</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">min_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">min_vals</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">max_vals</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">max_vals</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">gamma</span><span class="p">(</span><span class="bp">self</span><span class="p">):</span>  <span class="c1"># type: ignore</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="vm">__class__</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">gamma</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">acc</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span><span class="p">,</span> <span class="n">user_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PhiTensorAncestor</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">acc</span><span class="o">=</span><span class="n">acc</span><span class="p">,</span> <span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">,</span> <span class="n">user_key</span><span class="o">=</span><span class="n">user_key</span><span class="p">)</span>
+
+<div class="viewcode-block" id="PhiTensorAncestor.copy"><a class="viewcode-back" href="../../../../api_reference/syft.core.tensor.ancestors.html#syft.core.tensor.ancestors.PhiTensorAncestor.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PhiTensorAncestor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;This should certainly be implemented by the subclass but adding this here to satisfy mypy.&quot;&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="bp">NotImplemented</span></div>
+
+    <span class="k">def</span> <span class="nf">private</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">min_val</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">max_val</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">scalar_manager</span><span class="p">:</span> <span class="n">VirtualMachinePrivateScalarManager</span> <span class="o">=</span> <span class="n">VirtualMachinePrivateScalarManager</span><span class="p">(),</span>
+        <span class="n">entities</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">skip_blocking_checks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PhiTensorAncestor</span><span class="p">:</span>
+
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span><span class="o">.</span><span class="n">_private</span><span class="p">(</span>
+            <span class="n">min_val</span><span class="o">=</span><span class="n">min_val</span><span class="p">,</span>
+            <span class="n">max_val</span><span class="o">=</span><span class="n">max_val</span><span class="p">,</span>
+            <span class="n">scalar_manager</span><span class="o">=</span><span class="n">scalar_manager</span><span class="p">,</span>
+            <span class="n">entities</span><span class="o">=</span><span class="n">entities</span><span class="p">,</span>
+            <span class="n">skip_blocking_checks</span><span class="o">=</span><span class="n">skip_blocking_checks</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_private</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">min_val</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">max_val</span><span class="p">:</span> <span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">scalar_manager</span><span class="p">:</span> <span class="n">VirtualMachinePrivateScalarManager</span> <span class="o">=</span> <span class="n">VirtualMachinePrivateScalarManager</span><span class="p">(),</span>
+        <span class="n">entities</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">skip_blocking_checks</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PhiTensorAncestor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+
+        <span class="c1"># PHASE 1: RUN CHECKS</span>
+
+        <span class="c1"># Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)</span>
+            <span class="ow">or</span> <span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span> <span class="o">!=</span> <span class="n">np</span><span class="o">.</span><span class="n">int32</span>
+        <span class="p">):</span>
+
+            <span class="n">msg</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="s2">&quot;At present, you can only call .private() &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;on syft.Tensor objects wrapping np.int32 arrays. You called it on a &quot;</span>
+                <span class="o">+</span> <span class="s2">&quot;syft.Tensor wrapping a &quot;</span>
+                <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">))</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="n">msg</span> <span class="o">+=</span> <span class="s2">&quot; with dtype:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">getattr</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">))</span>
+
+            <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+        <span class="c1"># Check 2: If entities == None, then run the entity creation tutorial</span>
+        <span class="k">if</span> <span class="n">entities</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+
+            <span class="k">if</span> <span class="n">skip_blocking_checks</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Error: &#39;entities&#39; argument to .private() must not be None!&quot;</span>
+                <span class="p">)</span>
+            <span class="nb">print</span><span class="p">(</span>
+                <span class="s2">&quot;ALERT: You didn&#39;t pass in any entities. Launching entity wizard...</span><span class="se">\n</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+            <span class="n">entities</span> <span class="o">=</span> <span class="n">entity_creation_wizard</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+
+        <span class="c1"># Check 3: If entities is a string, make it a list with one entity in it</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+            <span class="n">entities</span> <span class="o">=</span> <span class="p">[</span><span class="n">Entity</span><span class="p">(</span><span class="n">entities</span><span class="p">)]</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="n">Entity</span><span class="p">):</span>
+            <span class="n">entities</span> <span class="o">=</span> <span class="p">[</span><span class="n">entities</span><span class="p">]</span>
+
+        <span class="c1"># Check 4: If entities are a list, are the items strings or Entity objects.</span>
+        <span class="c1"># If they&#39;re strings lets create Entity objects.</span>
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="nb">list</span><span class="p">):</span>
+            <span class="n">_entities</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">entities</span><span class="p">:</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="nb">str</span><span class="p">):</span>
+                    <span class="n">_entities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Entity</span><span class="p">(</span><span class="n">e</span><span class="p">))</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="nb">int</span><span class="p">):</span>
+                    <span class="n">_entities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">Entity</span><span class="p">(</span><span class="nb">str</span><span class="p">(</span><span class="n">e</span><span class="p">)))</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="n">Entity</span><span class="p">):</span>
+                    <span class="n">_entities</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">e</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">)):</span>
+                    <span class="c1"># looks like it&#39;s actually a list of tensors, let&#39;s try to</span>
+                    <span class="c1"># cast the whole thing to an ndarray nd see if that works.</span>
+                    <span class="n">entities</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span>
+                    <span class="k">break</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="s2">&quot;What kind of entity is this?!&quot;</span><span class="p">)</span>
+
+            <span class="n">entities</span> <span class="o">=</span> <span class="n">_entities</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entities</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">entities</span><span class="o">.</span><span class="n">shape</span> <span class="o">!=</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;Entities shape doesn&#39;t match data shape. If you&#39;re&quot;</span>
+                    <span class="s2">&quot; going to pass in something other than 1 entity for the&quot;</span>
+                    <span class="s2">&quot; entire tensor or one entity per row, you&#39;re going to need&quot;</span>
+                    <span class="s2">&quot; to make the np.ndarray of entities have the same shape as&quot;</span>
+                    <span class="s2">&quot; the tensor you&#39;re calling .private() on. Try again.&quot;</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;We don&#39;t yet support passing in a tensor of arbitrary entities. &quot;</span>
+                    <span class="s2">&quot;For now, call.flatten() on your tensor so you have one entity per row, &quot;</span>
+                    <span class="s2">&quot;or split your tensor into separate tensors for each value. We apologize &quot;</span>
+                    <span class="s2">&quot;for the inconvenience and will be adding this functionality soon!&quot;</span>
+                <span class="p">)</span>
+
+        <span class="c1"># PHASE 2: CREATE CHILD</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+            <span class="c1"># if there&#39;s only one entity - push a SingleEntityPhiTensor</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+                <span class="n">min_vals</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">*</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">min_val</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;min_val should be a float, got &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">min_val</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; instead.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+                <span class="n">max_vals</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span> <span class="o">*</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">max_val</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;max_val should be a float, got &quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">min_val</span><span class="p">))</span> <span class="o">+</span> <span class="s2">&quot; instead.&quot;</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">push_abstraction_top</span><span class="p">(</span>
+                <span class="n">_SingleEntityPhiTensor</span><span class="p">(),</span>
+                <span class="n">entity</span><span class="o">=</span><span class="n">entities</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span>  <span class="c1"># type: ignore</span>
+                <span class="n">min_vals</span><span class="o">=</span><span class="n">min_vals</span><span class="p">,</span>
+                <span class="n">max_vals</span><span class="o">=</span><span class="n">max_vals</span><span class="p">,</span>
+                <span class="n">scalar_manager</span><span class="o">=</span><span class="n">scalar_manager</span><span class="p">,</span>  <span class="c1"># type: ignore</span>
+            <span class="p">)</span>
+
+        <span class="c1"># if there&#39;s row-level entities - push a RowEntityPhiTensor</span>
+        <span class="k">elif</span> <span class="n">entities</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">len</span><span class="p">(</span><span class="n">entities</span><span class="p">)</span> <span class="o">==</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">[</span><span class="mi">0</span><span class="p">]:</span>
+
+            <span class="n">class_type</span> <span class="o">=</span> <span class="n">_SingleEntityPhiTensor</span><span class="p">()</span>
+
+            <span class="n">new_list</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">entity</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">entities</span><span class="p">):</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">min_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+                    <span class="n">min_vals</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">min_val</span>  <span class="c1"># noqa: E203</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                        <span class="s2">&quot;min_val should be a float, got &quot;</span>
+                        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">min_val</span><span class="p">))</span>
+                        <span class="o">+</span> <span class="s2">&quot; instead.&quot;</span>
+                    <span class="p">)</span>
+
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">max_val</span><span class="p">,</span> <span class="p">(</span><span class="nb">float</span><span class="p">,</span> <span class="nb">int</span><span class="p">)):</span>
+                    <span class="n">max_vals</span> <span class="o">=</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="mi">0</span><span class="p">)</span> <span class="o">+</span> <span class="n">max_val</span>  <span class="c1"># noqa: E203</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                        <span class="s2">&quot;max_val should be a float, got &quot;</span>
+                        <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="nb">type</span><span class="p">(</span><span class="n">min_val</span><span class="p">))</span>
+                        <span class="o">+</span> <span class="s2">&quot; instead.&quot;</span>
+                    <span class="p">)</span>
+
+                <span class="n">value</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="n">i</span> <span class="p">:</span> <span class="n">i</span> <span class="o">+</span> <span class="mi">1</span><span class="p">]</span>  <span class="c1"># noqa: E203</span>
+
+                <span class="n">new_list</span><span class="o">.</span><span class="n">append</span><span class="p">(</span>
+                    <span class="n">class_type</span><span class="p">(</span>
+                        <span class="n">child</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                        <span class="n">entity</span><span class="o">=</span><span class="n">entity</span><span class="p">,</span>
+                        <span class="n">min_vals</span><span class="o">=</span><span class="n">min_vals</span><span class="p">,</span>
+                        <span class="n">max_vals</span><span class="o">=</span><span class="n">max_vals</span><span class="p">,</span>
+                        <span class="n">scalar_manager</span><span class="o">=</span><span class="n">scalar_manager</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="bp">self</span><span class="o">.</span><span class="n">replace_abstraction_top</span><span class="p">(</span><span class="n">_RowEntityPhiTensor</span><span class="p">(),</span> <span class="n">rows</span><span class="o">=</span><span class="n">new_list</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="c1"># TODO: if there&#39;s element-level entities - push all elements with PhiScalars</span>
+        <span class="k">else</span><span class="p">:</span>
+
+            <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                <span class="s2">&quot;If you&#39;re passing in mulitple entities, please pass in one entity per row.&quot;</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

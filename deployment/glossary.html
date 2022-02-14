@@ -8,36 +8,41 @@
 
     <title>Glossary &#8212; PySyft  documentation</title>
     
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
-
+    <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
     
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
-
+    <link rel="stylesheet"
+      href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
     
       
-
+  
     
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/pydata-sphinx-theme.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/pysyft.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
+    <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="prev" title="Advanced Deployment: Introduction to HaGrid" href="index.html" />
+    <link rel="next" title="API reference" href="../api_reference/index.html" />
+    <link rel="prev" title="User guide" href="../user_guide/index.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -55,9 +60,11 @@
   <div id="navbar-start">
     
     
+
 <a class="navbar-brand" href="../index.html">
-<p class="title">PySyft</p>
+  <img src="../_static/logo.png" class="logo" alt="logo">
 </a>
+
 
     
   </div>
@@ -73,32 +80,26 @@
       <div class="navbar-center-item">
         <ul id="navbar-main-elements" class="navbar-nav">
     <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../install_tutorials/overview.html">
-  Beginner-level PySyft and PyGrid Installation Tutorials
+ <a class="reference internal nav-link" href="../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 current active nav-item">
+ <a class="reference internal nav-link" href="../user_guide/index.html">
+  User guide
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../install_tutorials/linux.html">
-  Installation on Linux (&gt;=20.04.03)
+ <a class="reference internal nav-link" href="../api_reference/index.html">
+  API reference
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../install_tutorials/windows.html">
-  Windows Tutorials
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../install_tutorials/osx_11_5_1.html">
-  macOS Tutorial (Big Sur - 11.5.1)
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="index.html">
-  Advanced Deployment: Introduction to HaGrid
+ <a class="reference internal nav-link" href="../developer_guide/index.html">
+  Contributor Guidelines
  </a>
 </li>
 
@@ -118,6 +119,14 @@
       
       <div class="navbar-end-item">
         <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
       </ul>
       </div>
       
@@ -132,14 +141,32 @@
           
             
             <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
   <i class="icon fas fa-search"></i>
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
   <div class="bd-toc-item active">
-    
+    <ul class="current nav bd-sidenav">
+ <li class="toctree-l1 current active has-children">
+  <a class="current reference internal" href="#">
+   Glossary
+  </a>
+  <input checked="" class="toctree-checkbox" id="toctree-checkbox-1" name="toctree-checkbox-1" type="checkbox"/>
+  <label for="toctree-checkbox-1">
+   <i class="fas fa-chevron-down">
+   </i>
+  </label>
+  <ul class="simple">
+  </ul>
+ </li>
+</ul>
+
   </div>
 </nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
             </div>
             
           
@@ -256,7 +283,7 @@
     </a>
     <ul class="nav section-nav flex-column">
      <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#id1">
+      <a class="reference internal nav-link" href="#id2">
        Data Scientist
       </a>
      </li>
@@ -318,7 +345,7 @@
               <div>
                 
   <section id="glossary">
-<h1>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h1>
+<span id="id1"></span><h1>Glossary<a class="headerlink" href="#glossary" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
 <section id="general-terms">
@@ -397,8 +424,8 @@ In our specific setup the privacy budget is measured against data subjects, not 
 <h2>User roles<a class="headerlink" href="#user-roles" title="Permalink to this headline">¶</a></h2>
 <section id="default-roles">
 <h3>Default roles<a class="headerlink" href="#default-roles" title="Permalink to this headline">¶</a></h3>
-<section id="id1">
-<h4>Data Scientist<a class="headerlink" href="#id1" title="Permalink to this headline">¶</a></h4>
+<section id="id2">
+<h4>Data Scientist<a class="headerlink" href="#id2" title="Permalink to this headline">¶</a></h4>
 <p>This role is for users who will be performing computations on your datasets. They may be users you know directly or those who found your domain through search and discovery. By default this user can see a <code class="docutils literal notranslate"><span class="pre">list</span> <span class="pre">of</span> <span class="pre">your</span> <span class="pre">datasets</span></code> and can request to get results. This user will also be required to sign a <code class="docutils literal notranslate"><span class="pre">Data</span> <span class="pre">Access</span> <span class="pre">Agreement</span></code> if you have required one in the <code class="docutils literal notranslate"><span class="pre">Domain</span> <span class="pre">Settings</span> <span class="pre">Configurations</span></code>.</p>
 <p>Default permissions:</p>
 <ul class="simple">
@@ -452,13 +479,20 @@ In our specific setup the privacy budget is measured against data subjects, not 
               
               
               <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="index.html" title="previous page">
+<div class='prev-next-area'>
+    <a class='left-prev' id="prev-link" href="../user_guide/index.html" title="previous page">
         <i class="fas fa-angle-left"></i>
         <div class="prev-next-info">
             <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">Advanced Deployment: Introduction to HaGrid</p>
+            <p class="prev-next-title">User guide</p>
         </div>
+    </a>
+    <a class='right-next' id="next-link" href="../api_reference/index.html" title="next page">
+    <div class="prev-next-info">
+        <p class="prev-next-subtitle">next</p>
+        <p class="prev-next-title">API reference</p>
+    </div>
+    <i class="fas fa-angle-right"></i>
     </a>
 </div>
               
@@ -468,8 +502,8 @@ In our specific setup the privacy budget is measured against data subjects, not 
       </div>
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
+    <script src="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
   <div class="container">
     
     <div class="footer-item">
@@ -480,7 +514,7 @@ In our specific setup the privacy budget is measured against data subjects, not 
     
     <div class="footer-item">
       <p class="sphinx-version">
-Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
 </p>
     </div>
     

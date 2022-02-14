@@ -1,0 +1,952 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.node.common.node_service.object_request.object_request_service &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../../../../" id="documentation_options" src="../../../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../../../_static/jquery.js"></script>
+    <script src="../../../../../../../_static/underscore.js"></script>
+    <script src="../../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../../../../index.html">
+  <img src="../../../../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.node.common.node_service.object_request.object_request_service</h1><div class="highlight"><pre>
+<span></span><span class="c1"># future</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">datetime</span> <span class="kn">import</span> <span class="n">datetime</span>
+<span class="kn">import</span> <span class="nn">time</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">TYPE_CHECKING</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Type</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">nacl.encoding</span> <span class="kn">import</span> <span class="n">HexEncoder</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">VerifyKey</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">......util</span> <span class="kn">import</span> <span class="n">validate_type</span>
+<span class="kn">from</span> <span class="nn">.....common.message</span> <span class="kn">import</span> <span class="n">ImmediateSyftMessageWithReply</span>
+<span class="kn">from</span> <span class="nn">.....common.message</span> <span class="kn">import</span> <span class="n">ImmediateSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">.....common.uid</span> <span class="kn">import</span> <span class="n">UID</span>
+<span class="kn">from</span> <span class="nn">...exceptions</span> <span class="kn">import</span> <span class="n">AuthorizationError</span>
+<span class="kn">from</span> <span class="nn">...exceptions</span> <span class="kn">import</span> <span class="n">InvalidParameterValueError</span>
+<span class="kn">from</span> <span class="nn">...exceptions</span> <span class="kn">import</span> <span class="n">MissingRequestKeyError</span>
+<span class="kn">from</span> <span class="nn">...exceptions</span> <span class="kn">import</span> <span class="n">RequestError</span>
+<span class="kn">from</span> <span class="nn">...node</span> <span class="kn">import</span> <span class="n">DuplicateRequestException</span>
+<span class="kn">from</span> <span class="nn">...node_table.utils</span> <span class="kn">import</span> <span class="n">model_to_json</span>
+<span class="kn">from</span> <span class="nn">..accept_or_deny_request.accept_or_deny_request_messages</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">AcceptOrDenyRequestMessage</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..auth</span> <span class="kn">import</span> <span class="n">service_auth</span>
+<span class="kn">from</span> <span class="nn">..get_all_requests.get_all_requests_messages</span> <span class="kn">import</span> <span class="n">GetAllRequestsMessage</span>
+<span class="kn">from</span> <span class="nn">..get_all_requests.get_all_requests_messages</span> <span class="kn">import</span> <span class="n">GetAllRequestsResponseMessage</span>
+<span class="kn">from</span> <span class="nn">..node_service</span> <span class="kn">import</span> <span class="n">ImmediateNodeServiceWithReply</span>
+<span class="kn">from</span> <span class="nn">..node_service</span> <span class="kn">import</span> <span class="n">ImmediateNodeServiceWithoutReply</span>
+<span class="kn">from</span> <span class="nn">..request_answer.request_answer_messages</span> <span class="kn">import</span> <span class="n">RequestAnswerMessage</span>
+<span class="kn">from</span> <span class="nn">..request_answer.request_answer_messages</span> <span class="kn">import</span> <span class="n">RequestAnswerResponse</span>
+<span class="kn">from</span> <span class="nn">..request_handler.request_handler_messages</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">GetAllRequestHandlersResponseMessage</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..request_handler.request_handler_messages</span> <span class="kn">import</span> <span class="n">GetAllRequestHandlersMessage</span>
+<span class="kn">from</span> <span class="nn">..request_handler.request_handler_messages</span> <span class="kn">import</span> <span class="n">UpdateRequestHandlerMessage</span>
+<span class="kn">from</span> <span class="nn">..request_receiver.request_receiver_messages</span> <span class="kn">import</span> <span class="n">RequestMessage</span>
+<span class="kn">from</span> <span class="nn">..request_receiver.request_receiver_messages</span> <span class="kn">import</span> <span class="n">RequestStatus</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">CreateBudgetRequestMessage</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">CreateRequestMessage</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">CreateRequestResponse</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">DeleteRequestMessage</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">DeleteRequestResponse</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">GetBudgetRequestsMessage</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">GetBudgetRequestsResponse</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">GetRequestMessage</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">GetRequestResponse</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">GetRequestsMessage</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">GetRequestsResponse</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">UpdateRequestMessage</span>
+<span class="kn">from</span> <span class="nn">.object_request_messages</span> <span class="kn">import</span> <span class="n">UpdateRequestResponse</span>
+
+<span class="k">if</span> <span class="n">TYPE_CHECKING</span><span class="p">:</span>
+    <span class="c1"># relative</span>
+    <span class="kn">from</span> <span class="nn">....domain.domain</span> <span class="kn">import</span> <span class="n">Domain</span>
+
+
+<span class="k">def</span> <span class="nf">create_request_msg</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">CreateRequestMessage</span><span class="p">,</span>
+    <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">CreateRequestResponse</span><span class="p">:</span>
+    <span class="c1"># Get Payload Content</span>
+    <span class="n">current_user_id</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;current_user&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">object_id</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;object_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">reason</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;reason&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">request_type</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;request_type&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+    <span class="n">object_type</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;object_type&quot;</span><span class="p">,</span> <span class="s2">&quot;storable object&quot;</span><span class="p">)</span>
+
+    <span class="n">users</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">current_user_id</span><span class="p">:</span>
+        <span class="n">current_user</span> <span class="o">=</span> <span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span>
+            <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">current_user</span> <span class="o">=</span> <span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">current_user_id</span><span class="p">)</span>
+
+    <span class="c1"># since we reject/accept requests based on the ID, we don&#39;t want there to be</span>
+    <span class="c1"># multiple requests with the same ID because this could cause security problems.</span>
+    <span class="n">_duplicate_request</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">contain</span><span class="p">(</span>
+        <span class="n">object_id</span><span class="o">=</span><span class="n">object_id</span><span class="p">,</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">_duplicate_request</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DuplicateRequestException</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;You have already requested </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">content</span><span class="p">[</span><span class="s1">&#39;object_id&#39;</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># Check if object_id/reason/request_type fields are empty</span>
+    <span class="n">missing_paramaters</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">object_id</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">reason</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">request_type</span>
+    <span class="k">if</span> <span class="n">missing_paramaters</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingRequestKeyError</span><span class="p">(</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Invalid request payload, empty fields (object_id/reason/request_type)!&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">valid_paramaters</span> <span class="o">=</span> <span class="n">request_type</span> <span class="o">==</span> <span class="s2">&quot;data&quot;</span> <span class="ow">or</span> <span class="n">request_type</span> <span class="o">==</span> <span class="s2">&quot;budget&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">valid_paramaters</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterValueError</span><span class="p">(</span>
+            <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Request type should be either &quot;data” or “budget”.&#39;</span>
+        <span class="p">)</span>
+
+    <span class="n">requests</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span>
+    <span class="n">object_uid</span> <span class="o">=</span> <span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">object_id</span><span class="p">)</span>
+
+    <span class="n">request_obj</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">create_request</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="n">user_name</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
+        <span class="n">object_id</span><span class="o">=</span><span class="n">object_id</span><span class="p">,</span>
+        <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span>
+        <span class="n">request_type</span><span class="o">=</span><span class="n">request_type</span><span class="p">,</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+        <span class="n">object_type</span><span class="o">=</span><span class="n">object_type</span><span class="p">,</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">object_uid</span><span class="p">]</span><span class="o">.</span><span class="n">_tags</span><span class="p">,</span>
+    <span class="p">)</span>
+    <span class="n">request_json</span> <span class="o">=</span> <span class="n">model_to_json</span><span class="p">(</span><span class="n">request_obj</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">CreateRequestResponse</span><span class="p">(</span>
+        <span class="n">address</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+        <span class="n">status_code</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+        <span class="n">content</span><span class="o">=</span><span class="n">request_json</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">create_budget_request_msg</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">CreateBudgetRequestMessage</span><span class="p">,</span>
+    <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">verify_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Can&#39;t process Request service without a given &quot;</span> <span class="s2">&quot;verification key&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># since we reject/accept requests based on the ID, we don&#39;t want there to be</span>
+    <span class="c1"># multiple requests with the same ID because this could cause security problems.</span>
+    <span class="n">_duplicate_request</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">contain</span><span class="p">(</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+        <span class="n">status</span><span class="o">=</span><span class="s2">&quot;pending&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">_duplicate_request</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DuplicateRequestException</span><span class="p">(</span>
+            <span class="s2">&quot;You have already requested this item before!&quot;</span><span class="p">,</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span>
+            <span class="s2">&quot;My Requests&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">current_user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">create_request</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="n">user_name</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">user_email</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
+        <span class="n">user_role</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">roles</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">role</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">user_budget</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">budget</span><span class="p">,</span>
+        <span class="n">institution</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">institution</span><span class="p">,</span>
+        <span class="n">website</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">website</span><span class="p">,</span>
+        <span class="n">reason</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+        <span class="n">object_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">UID</span><span class="p">()</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+        <span class="n">object_type</span><span class="o">=</span><span class="s2">&quot;&lt;Budget&gt;&quot;</span><span class="p">,</span>
+        <span class="n">requested_budget</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">budget</span><span class="p">,</span>
+        <span class="n">request_type</span><span class="o">=</span><span class="s2">&quot;budget&quot;</span><span class="p">,</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_request_msg</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">GetRequestMessage</span><span class="p">,</span>
+    <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GetRequestResponse</span><span class="p">:</span>
+
+    <span class="c1"># Get Payload Content</span>
+    <span class="n">request_id</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">request_id</span>
+    <span class="n">current_user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="p">)</span>
+    <span class="n">current_user_id</span> <span class="o">=</span> <span class="n">current_user</span><span class="o">.</span><span class="n">id</span>
+
+    <span class="n">users</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">current_user_id</span><span class="p">:</span>
+        <span class="n">current_user_id</span> <span class="o">=</span> <span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span>
+            <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">id</span>
+
+    <span class="n">requests</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span>
+    <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request_id</span><span class="p">)</span>
+
+    <span class="c1"># A user can get a request if he&#39;s the owner of that request</span>
+    <span class="c1"># or has the can_triage_requests permission</span>
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">request</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">current_user_id</span> <span class="ow">or</span> <span class="n">users</span><span class="o">.</span><span class="n">can_triage_requests</span><span class="p">(</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">allowed</span><span class="p">:</span>
+        <span class="n">request_json</span> <span class="o">=</span> <span class="n">model_to_json</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AuthorizationError</span><span class="p">(</span><span class="s2">&quot;You&#39;re not allowed to get Request information!&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">GetRequestResponse</span><span class="p">(</span>
+        <span class="n">address</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+        <span class="n">status_code</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+        <span class="n">request_id</span><span class="o">=</span><span class="n">request_json</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_all_request_msg</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">GetRequestsMessage</span><span class="p">,</span>
+    <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GetRequestsResponse</span><span class="p">:</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span>
+
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">users</span><span class="o">.</span><span class="n">can_triage_requests</span><span class="p">(</span><span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">allowed</span><span class="p">:</span>
+        <span class="n">requests</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">request_type</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="k">for</span> <span class="n">request</span> <span class="ow">in</span> <span class="n">requests</span><span class="p">:</span>
+            <span class="c1"># Get current state user</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">==</span> <span class="n">RequestStatus</span><span class="o">.</span><span class="n">Pending</span><span class="p">:</span>
+                <span class="n">_user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+                <span class="n">user</span> <span class="o">=</span> <span class="n">model_to_json</span><span class="p">(</span><span class="n">_user</span><span class="p">)</span>
+                <span class="n">user</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">roles</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">_user</span><span class="o">.</span><span class="n">role</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">user</span><span class="p">[</span><span class="s2">&quot;current_budget&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s2">&quot;budget&quot;</span><span class="p">]</span>
+            <span class="c1"># Get History state user</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">get_user_info</span><span class="p">(</span><span class="n">request_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">request</span> <span class="o">=</span> <span class="n">model_to_json</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="s2">&quot;req&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">})</span>
+
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AuthorizationError</span><span class="p">(</span><span class="s2">&quot;You&#39;re not allowed to get Request information!&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">GetRequestsResponse</span><span class="p">(</span>
+        <span class="n">status_code</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+        <span class="n">address</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+        <span class="n">content</span><span class="o">=</span><span class="n">response</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_all_budget_requests</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">GetBudgetRequestsMessage</span><span class="p">,</span>
+    <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GetBudgetRequestsResponse</span><span class="p">:</span>
+    <span class="n">users</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span>
+
+    <span class="n">allowed</span> <span class="o">=</span> <span class="n">users</span><span class="o">.</span><span class="n">can_triage_requests</span><span class="p">(</span><span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="p">)</span>
+    <span class="n">response</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">if</span> <span class="n">allowed</span><span class="p">:</span>
+        <span class="n">requests</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">request_type</span><span class="o">=</span><span class="s2">&quot;budget&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">request</span> <span class="ow">in</span> <span class="n">requests</span><span class="p">:</span>
+            <span class="c1"># Get current state user</span>
+            <span class="k">if</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">request</span><span class="o">.</span><span class="n">id</span><span class="p">)</span> <span class="o">==</span> <span class="n">RequestStatus</span><span class="o">.</span><span class="n">Pending</span><span class="p">:</span>
+                <span class="n">_user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">user_id</span><span class="p">)</span>
+                <span class="n">user</span> <span class="o">=</span> <span class="n">model_to_json</span><span class="p">(</span><span class="n">_user</span><span class="p">)</span>
+                <span class="n">user</span><span class="p">[</span><span class="s2">&quot;role&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">roles</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">_user</span><span class="o">.</span><span class="n">role</span><span class="p">)</span><span class="o">.</span><span class="n">name</span>
+                <span class="n">user</span><span class="p">[</span><span class="s2">&quot;current_budget&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">user</span><span class="p">[</span><span class="s2">&quot;budget&quot;</span><span class="p">]</span>
+                <span class="n">request</span> <span class="o">=</span> <span class="n">model_to_json</span><span class="p">(</span><span class="n">request</span><span class="p">)</span>
+            <span class="c1"># Get History state user</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">get_user_info</span><span class="p">(</span><span class="n">request_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+                <span class="n">request</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">get_req_info</span><span class="p">(</span><span class="n">request_id</span><span class="o">=</span><span class="n">request</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+            <span class="n">response</span><span class="o">.</span><span class="n">append</span><span class="p">({</span><span class="s2">&quot;user&quot;</span><span class="p">:</span> <span class="n">user</span><span class="p">,</span> <span class="s2">&quot;req&quot;</span><span class="p">:</span> <span class="n">request</span><span class="p">})</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AuthorizationError</span><span class="p">(</span><span class="s2">&quot;You&#39;re not allowed to get Request information!&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">GetBudgetRequestsResponse</span><span class="p">(</span>
+        <span class="n">address</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+        <span class="n">content</span><span class="o">=</span><span class="n">response</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">update_request_msg</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">UpdateRequestMessage</span><span class="p">,</span>
+    <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UpdateRequestResponse</span><span class="p">:</span>
+
+    <span class="c1"># Get Payload Content</span>
+    <span class="n">request_id</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">request_id</span>
+    <span class="n">status</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">status</span>
+
+    <span class="c1"># Check if status field is empty</span>
+    <span class="n">missing_paramaters</span> <span class="o">=</span> <span class="ow">not</span> <span class="n">status</span>
+    <span class="k">if</span> <span class="n">missing_paramaters</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">MissingRequestKeyError</span><span class="p">(</span>
+            <span class="n">message</span><span class="o">=</span><span class="s2">&quot;Invalid request payload, empty fields (status)!&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">_req</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request_id</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">_req</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">RequestError</span>
+
+    <span class="k">if</span> <span class="n">status</span> <span class="ow">not</span> <span class="ow">in</span> <span class="p">[</span><span class="s2">&quot;accepted&quot;</span><span class="p">,</span> <span class="s2">&quot;denied&quot;</span><span class="p">]:</span>
+        <span class="k">raise</span> <span class="n">InvalidParameterValueError</span><span class="p">(</span>
+            <span class="n">message</span><span class="o">=</span><span class="s1">&#39;Request status should be either &quot;accepted&quot; or &quot;denied&quot;&#39;</span>
+        <span class="p">)</span>
+
+    <span class="n">_can_triage_request</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">can_triage_requests</span><span class="p">(</span><span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="p">)</span>
+    <span class="n">_current_user_key</span> <span class="o">=</span> <span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="n">_req_owner</span> <span class="o">=</span> <span class="n">_current_user_key</span> <span class="o">==</span> <span class="n">_req</span><span class="o">.</span><span class="n">verify_key</span>
+
+    <span class="k">if</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;accepted&quot;</span> <span class="ow">and</span> <span class="n">_can_triage_request</span><span class="p">:</span>
+        <span class="c1"># if the type of object being requested has the word &#39;budget&#39; in it, then we&#39;re</span>
+        <span class="c1"># not really requesting an object per-say, we&#39;re requesting for a budget increase</span>
+        <span class="c1"># TODO: clean up the RequestMessage API to explicitly have multiple request types, including</span>
+        <span class="c1"># one for budget requests.</span>
+        <span class="k">if</span> <span class="s2">&quot;&lt;Budget&gt;&quot;</span> <span class="ow">in</span> <span class="n">_req</span><span class="o">.</span><span class="n">object_type</span><span class="p">:</span>
+            <span class="n">current_user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="n">verify_key</span><span class="o">=</span><span class="n">_req</span><span class="o">.</span><span class="n">verify_key</span><span class="p">)</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+                <span class="n">user_id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">budget</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">budget</span> <span class="o">+</span> <span class="n">_req</span><span class="o">.</span><span class="n">requested_budget</span><span class="p">,</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">tmp_obj</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">_req</span><span class="o">.</span><span class="n">object_id</span><span class="p">)]</span>
+            <span class="n">tmp_obj</span><span class="o">.</span><span class="n">read_permissions</span><span class="p">[</span>
+                <span class="n">VerifyKey</span><span class="p">(</span><span class="n">_req</span><span class="o">.</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span> <span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="n">_req</span><span class="o">.</span><span class="n">id</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">_req</span><span class="o">.</span><span class="n">object_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">tmp_obj</span>
+        <span class="c1"># this should be an enum not a string</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">request_id</span><span class="o">=</span><span class="n">_req</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="k">elif</span> <span class="n">status</span> <span class="o">==</span> <span class="s2">&quot;denied&quot;</span> <span class="ow">and</span> <span class="p">(</span><span class="n">_can_triage_request</span> <span class="ow">or</span> <span class="n">_req_owner</span><span class="p">):</span>
+        <span class="c1"># this should be an enum not a string</span>
+        <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">set</span><span class="p">(</span><span class="n">request_id</span><span class="o">=</span><span class="n">_req</span><span class="o">.</span><span class="n">id</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">status</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AuthorizationError</span><span class="p">(</span><span class="s2">&quot;You&#39;re not allowed to update Request information!&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">UpdateRequestResponse</span><span class="p">(</span>
+        <span class="n">address</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+        <span class="n">status_code</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+        <span class="n">status</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+        <span class="n">request_id</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">request_id</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">del_request_msg</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">DeleteRequestMessage</span><span class="p">,</span>
+    <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">DeleteRequestResponse</span><span class="p">:</span>
+
+    <span class="n">request_id</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">request_id</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="s2">&quot;request_id&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+    <span class="n">current_user_id</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="p">)</span><span class="o">.</span><span class="n">id</span>
+
+    <span class="n">requests</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span>
+    <span class="n">request</span> <span class="o">=</span> <span class="n">requests</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request_id</span><span class="p">)</span>
+
+    <span class="c1"># Only the creator of a request may delete their request.</span>
+    <span class="k">if</span> <span class="n">request</span><span class="o">.</span><span class="n">user_id</span> <span class="o">==</span> <span class="n">current_user_id</span><span class="p">:</span>
+        <span class="n">requests</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">request_id</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">AuthorizationError</span><span class="p">(</span><span class="s2">&quot;You&#39;re not allowed to delete this Request!&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">DeleteRequestResponse</span><span class="p">(</span>
+        <span class="n">address</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">reply_to</span><span class="p">,</span>
+        <span class="n">status_code</span><span class="o">=</span><span class="mi">200</span><span class="p">,</span>
+        <span class="n">request_id</span><span class="o">=</span><span class="n">request_id</span>
+        <span class="c1"># content={&quot;msg&quot;: &quot;Request deleted!&quot;},</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">request_answer_msg</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">RequestAnswerMessage</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span> <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">RequestAnswerResponse</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">verify_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Can&#39;t process Request service without a given &quot;</span> <span class="s2">&quot;verification key&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">status</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">status</span><span class="p">(</span><span class="n">request_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">request_id</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+    <span class="n">address</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">reply_to</span>
+    <span class="k">return</span> <span class="n">RequestAnswerResponse</span><span class="p">(</span>
+        <span class="n">request_id</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">request_id</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="n">address</span><span class="p">,</span> <span class="n">status</span><span class="o">=</span><span class="n">status</span>
+    <span class="p">)</span>
+
+
+<span class="c1"># TODO: Check if this method/message should really be a service_without_reply message</span>
+<span class="k">def</span> <span class="nf">get_all_requests</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">GetAllRequestsMessage</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span> <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GetAllRequestsResponseMessage</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">verify_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Can&#39;t process Request service without a given &quot;</span> <span class="s2">&quot;verification key&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">_can_triage_request</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">can_triage_requests</span><span class="p">(</span><span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="p">)</span>
+
+    <span class="n">_requests</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+
+    <span class="k">if</span> <span class="n">_can_triage_request</span><span class="p">:</span>
+        <span class="n">_requests</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_requests</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">query</span><span class="p">(</span>
+            <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+        <span class="p">)</span>
+
+    <span class="n">data_requests</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="n">RequestMessage</span><span class="p">(</span>
+            <span class="n">status</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">status</span><span class="p">,</span>
+            <span class="n">user_name</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">user_name</span><span class="p">,</span>
+            <span class="n">user_email</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">user_email</span><span class="p">,</span>
+            <span class="n">user_role</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">user_role</span><span class="p">,</span>
+            <span class="n">requested_budget</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">requested_budget</span><span class="p">,</span>
+            <span class="n">current_budget</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">user_budget</span><span class="p">,</span>
+            <span class="n">date</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">date</span><span class="p">),</span>
+            <span class="n">request_type</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">request_type</span><span class="p">,</span>
+            <span class="n">request_id</span><span class="o">=</span><span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+            <span class="n">request_description</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">reason</span><span class="p">,</span>
+            <span class="n">address</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+            <span class="n">owner_address</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+            <span class="n">object_id</span><span class="o">=</span><span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">req</span><span class="o">.</span><span class="n">object_id</span><span class="p">),</span>
+            <span class="n">object_type</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">object_type</span><span class="p">,</span>
+            <span class="n">object_tags</span><span class="o">=</span><span class="n">req</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+            <span class="n">requester_verify_key</span><span class="o">=</span><span class="n">VerifyKey</span><span class="p">(</span>
+                <span class="n">req</span><span class="o">.</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span> <span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span>
+            <span class="p">),</span>
+            <span class="n">timeout_secs</span><span class="o">=</span><span class="kc">None</span><span class="p">,</span>
+        <span class="p">)</span>
+        <span class="k">for</span> <span class="n">req</span> <span class="ow">in</span> <span class="n">_requests</span>
+    <span class="p">]</span>
+
+    <span class="k">return</span> <span class="n">GetAllRequestsResponseMessage</span><span class="p">(</span><span class="n">requests</span><span class="o">=</span><span class="n">data_requests</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">reply_to</span><span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">get_all_request_handlers</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">GetAllRequestHandlersMessage</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span> <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GetAllRequestHandlersResponseMessage</span><span class="p">:</span>
+
+    <span class="k">if</span> <span class="n">verify_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Can&#39;t process Request service without a given &quot;</span> <span class="s2">&quot;verification key&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">handlers</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">verify_key</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">root_verify_key</span><span class="p">:</span>
+        <span class="n">existing_handlers</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;request_handlers&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">existing_handlers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">handlers</span> <span class="o">=</span> <span class="n">existing_handlers</span>
+
+    <span class="k">return</span> <span class="n">GetAllRequestHandlersResponseMessage</span><span class="p">(</span><span class="n">handlers</span><span class="o">=</span><span class="n">handlers</span><span class="p">,</span> <span class="n">address</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">reply_to</span><span class="p">)</span>
+
+
+<div class="viewcode-block" id="RequestService"><a class="viewcode-back" href="../../../../../../../api_reference/syft.core.node.common.node_service.object_request.object_request_service.html#syft.core.node.common.node_service.object_request.object_request_service.RequestService">[docs]</a><span class="k">class</span> <span class="nc">RequestService</span><span class="p">(</span><span class="n">ImmediateNodeServiceWithReply</span><span class="p">):</span>
+    <span class="n">INPUT_TYPE</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">CreateRequestMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">GetRequestMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">GetRequestsMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">GetBudgetRequestsMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">UpdateRequestMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">DeleteRequestMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">RequestAnswerMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">GetAllRequestsMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">GetAllRequestHandlersMessage</span><span class="p">],</span>
+    <span class="p">]</span>
+
+    <span class="n">INPUT_MESSAGES</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">CreateRequestMessage</span><span class="p">,</span>
+        <span class="n">GetRequestMessage</span><span class="p">,</span>
+        <span class="n">GetRequestsMessage</span><span class="p">,</span>
+        <span class="n">GetBudgetRequestsMessage</span><span class="p">,</span>
+        <span class="n">UpdateRequestMessage</span><span class="p">,</span>
+        <span class="n">DeleteRequestMessage</span><span class="p">,</span>
+        <span class="n">RequestAnswerMessage</span><span class="p">,</span>
+        <span class="n">GetAllRequestsMessage</span><span class="p">,</span>
+        <span class="n">GetAllRequestHandlersMessage</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">OUTPUT_MESSAGES</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">CreateRequestResponse</span><span class="p">,</span>
+        <span class="n">GetRequestResponse</span><span class="p">,</span>
+        <span class="n">GetRequestsResponse</span><span class="p">,</span>
+        <span class="n">GetBudgetRequestsResponse</span><span class="p">,</span>
+        <span class="n">UpdateRequestResponse</span><span class="p">,</span>
+        <span class="n">DeleteRequestResponse</span><span class="p">,</span>
+        <span class="n">RequestAnswerResponse</span><span class="p">,</span>
+        <span class="n">GetAllRequestsResponseMessage</span><span class="p">,</span>
+        <span class="n">GetAllRequestHandlersResponseMessage</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">msg_handler_map</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">INPUT_TYPE</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">OUTPUT_MESSAGES</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">CreateRequestMessage</span><span class="p">:</span> <span class="n">create_request_msg</span><span class="p">,</span>
+        <span class="n">GetRequestMessage</span><span class="p">:</span> <span class="n">get_request_msg</span><span class="p">,</span>
+        <span class="n">GetRequestsMessage</span><span class="p">:</span> <span class="n">get_all_request_msg</span><span class="p">,</span>
+        <span class="n">GetBudgetRequestsMessage</span><span class="p">:</span> <span class="n">get_all_budget_requests</span><span class="p">,</span>
+        <span class="n">UpdateRequestMessage</span><span class="p">:</span> <span class="n">update_request_msg</span><span class="p">,</span>
+        <span class="n">DeleteRequestMessage</span><span class="p">:</span> <span class="n">del_request_msg</span><span class="p">,</span>
+        <span class="n">RequestAnswerMessage</span><span class="p">:</span> <span class="n">request_answer_msg</span><span class="p">,</span>
+        <span class="n">GetAllRequestsMessage</span><span class="p">:</span> <span class="n">get_all_requests</span><span class="p">,</span>
+        <span class="n">GetAllRequestHandlersMessage</span><span class="p">:</span> <span class="n">get_all_request_handlers</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@service_auth</span><span class="p">(</span><span class="n">guests_welcome</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span>
+        <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="n">INPUT_MESSAGES</span><span class="p">,</span>
+        <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OUTPUT_MESSAGES</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">RequestService</span><span class="o">.</span><span class="n">msg_handler_map</span><span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">msg</span><span class="p">)](</span>
+            <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">node</span><span class="o">=</span><span class="n">node</span><span class="p">,</span> <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">message_handler_types</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">ImmediateSyftMessageWithReply</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">CreateRequestMessage</span><span class="p">,</span>
+            <span class="n">GetRequestMessage</span><span class="p">,</span>
+            <span class="n">GetRequestsMessage</span><span class="p">,</span>
+            <span class="n">GetRequestsMessage</span><span class="p">,</span>
+            <span class="n">GetBudgetRequestsMessage</span><span class="p">,</span>
+            <span class="n">UpdateRequestMessage</span><span class="p">,</span>
+            <span class="n">DeleteRequestMessage</span><span class="p">,</span>
+            <span class="n">RequestAnswerMessage</span><span class="p">,</span>
+            <span class="n">GetAllRequestsMessage</span><span class="p">,</span>
+            <span class="n">GetAllRequestHandlersMessage</span><span class="p">,</span>
+        <span class="p">]</span></div>
+
+
+<span class="k">def</span> <span class="nf">build_request_message</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">RequestMessage</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span> <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">verify_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Can&#39;t process Request service without a given &quot;</span> <span class="s2">&quot;verification key&quot;</span>
+        <span class="p">)</span>
+    <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">requester_verify_key</span> <span class="o">!=</span> <span class="n">verify_key</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+            <span class="s2">&quot;You tried to request access for a key that is not yours!&quot;</span>
+            <span class="s2">&quot;You cannot do this! Whatever key you want to request access&quot;</span>
+            <span class="s2">&quot;for must be the verify key that also verifies the message&quot;</span>
+            <span class="s2">&quot;containing the request.&quot;</span>
+        <span class="p">)</span>
+
+    <span class="c1"># since we reject/accept requests based on the ID, we don&#39;t want there to be</span>
+    <span class="c1"># multiple requests with the same ID because this could cause security problems.</span>
+    <span class="n">_duplicate_request</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">contain</span><span class="p">(</span>
+        <span class="n">object_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">object_id</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+    <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">_duplicate_request</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="n">DuplicateRequestException</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;You have already requested </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">object_id</span><span class="si">}</span><span class="s2"> &quot;</span><span class="p">,</span>
+            <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">all</span><span class="p">(),</span>
+            <span class="s2">&quot;My Requests&quot;</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="n">current_user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+
+    <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">create_request</span><span class="p">(</span>
+        <span class="n">user_id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+        <span class="n">user_name</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">user_email</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">email</span><span class="p">,</span>
+        <span class="n">user_role</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">roles</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">role</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+        <span class="n">user_budget</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">budget</span><span class="p">,</span>
+        <span class="n">institution</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">institution</span><span class="p">,</span>
+        <span class="n">website</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">website</span><span class="p">,</span>
+        <span class="n">object_id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">object_id</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+        <span class="n">reason</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">request_description</span><span class="p">,</span>
+        <span class="n">request_type</span><span class="o">=</span><span class="s2">&quot;data&quot;</span><span class="p">,</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span>
+        <span class="n">object_type</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">object_type</span><span class="p">,</span>
+        <span class="n">tags</span><span class="o">=</span><span class="n">node</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">msg</span><span class="o">.</span><span class="n">object_id</span><span class="p">]</span><span class="o">.</span><span class="n">_tags</span> <span class="k">if</span> <span class="s2">&quot;budget&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">msg</span><span class="o">.</span><span class="n">object_type</span> <span class="k">else</span> <span class="p">[],</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">accept_or_deny_request</span><span class="p">(</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">AcceptOrDenyRequestMessage</span><span class="p">,</span> <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span> <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">verify_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Can&#39;t process AcceptOrDenyRequestService without a specified verification key&quot;</span>
+        <span class="p">)</span>
+
+    <span class="n">_msg</span><span class="p">:</span> <span class="n">AcceptOrDenyRequestMessage</span> <span class="o">=</span> <span class="n">validate_type</span><span class="p">(</span><span class="n">msg</span><span class="p">,</span> <span class="n">AcceptOrDenyRequestMessage</span><span class="p">)</span>
+
+    <span class="n">current_user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span>
+        <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span><span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">)</span>
+    <span class="p">)</span>
+    <span class="c1"># Check if there is any pending request with this id.</span>
+    <span class="n">_req</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">_msg</span><span class="o">.</span><span class="n">request_id</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="n">status</span><span class="o">=</span><span class="s2">&quot;pending&quot;</span><span class="p">)</span>
+
+    <span class="n">_can_triage_request</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">can_triage_requests</span><span class="p">(</span><span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span><span class="p">)</span>
+    <span class="k">if</span> <span class="n">_msg</span><span class="o">.</span><span class="n">accept</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">_req</span> <span class="ow">and</span> <span class="n">_can_triage_request</span><span class="p">:</span>
+            <span class="k">if</span> <span class="s2">&quot;&lt;Budget&gt;&quot;</span> <span class="ow">in</span> <span class="n">_req</span><span class="o">.</span><span class="n">object_type</span><span class="p">:</span>
+                <span class="n">current_user</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="n">verify_key</span><span class="o">=</span><span class="n">_req</span><span class="o">.</span><span class="n">verify_key</span><span class="p">)</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">users</span><span class="o">.</span><span class="n">set</span><span class="p">(</span>
+                    <span class="n">user_id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                    <span class="n">budget</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">budget</span> <span class="o">+</span> <span class="n">_req</span><span class="o">.</span><span class="n">requested_budget</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">tmp_obj</span> <span class="o">=</span> <span class="n">node</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">_req</span><span class="o">.</span><span class="n">object_id</span><span class="p">)]</span>
+                <span class="n">tmp_obj</span><span class="o">.</span><span class="n">read_permissions</span><span class="p">[</span>
+                    <span class="n">VerifyKey</span><span class="p">(</span><span class="n">_req</span><span class="o">.</span><span class="n">verify_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(</span><span class="s2">&quot;utf-8&quot;</span><span class="p">),</span> <span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span>
+                <span class="p">]</span> <span class="o">=</span> <span class="n">_req</span><span class="o">.</span><span class="n">id</span>
+                <span class="n">node</span><span class="o">.</span><span class="n">store</span><span class="p">[</span><span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">_req</span><span class="o">.</span><span class="n">object_id</span><span class="p">)]</span> <span class="o">=</span> <span class="n">tmp_obj</span>
+
+            <span class="c1"># TODO: In the future we&#39;ll probably need to keep a request history</span>
+            <span class="c1"># So, instead of deleting a data access request, we would like to just change its</span>
+            <span class="c1"># status.</span>
+            <span class="c1"># node.data_requests.set(request_id=_req.id, status=&quot;accepted&quot;)</span>
+            <span class="c1"># node.data_requests.delete(id=_req.id)</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;accepted&quot;</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">_req_owner</span> <span class="o">=</span> <span class="n">current_user</span><span class="o">.</span><span class="n">verify_key</span> <span class="o">==</span> <span class="n">_req</span><span class="o">.</span><span class="n">verify_key</span>
+        <span class="k">if</span> <span class="n">_req</span> <span class="ow">and</span> <span class="p">(</span><span class="n">_can_triage_request</span> <span class="ow">or</span> <span class="n">_req_owner</span><span class="p">):</span>
+            <span class="c1"># TODO: In the future we&#39;ll probably need to keep a request history</span>
+            <span class="c1"># So, instead of deleting a data access request, we would like to just change its</span>
+            <span class="c1"># status.</span>
+            <span class="c1"># node.data_requests.set(request_id=_req.id, status=&quot;denied&quot;)</span>
+            <span class="c1"># node.data_requests.delete(id=_req.id)</span>
+            <span class="n">status</span> <span class="o">=</span> <span class="s2">&quot;denied&quot;</span>
+
+    <span class="n">node</span><span class="o">.</span><span class="n">data_requests</span><span class="o">.</span><span class="n">modify</span><span class="p">(</span>
+        <span class="p">{</span><span class="s2">&quot;id&quot;</span><span class="p">:</span> <span class="n">_req</span><span class="o">.</span><span class="n">id</span><span class="p">},</span>
+        <span class="p">{</span>
+            <span class="s2">&quot;status&quot;</span><span class="p">:</span> <span class="n">status</span><span class="p">,</span>
+            <span class="s2">&quot;reviewer_name&quot;</span><span class="p">:</span> <span class="n">current_user</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;reviewer_role&quot;</span><span class="p">:</span> <span class="n">node</span><span class="o">.</span><span class="n">roles</span><span class="o">.</span><span class="n">first</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">current_user</span><span class="o">.</span><span class="n">role</span><span class="p">)</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+            <span class="s2">&quot;reviewer_comment&quot;</span><span class="p">:</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;updated_on&quot;</span><span class="p">:</span> <span class="n">datetime</span><span class="o">.</span><span class="n">now</span><span class="p">(),</span>
+        <span class="p">},</span>
+    <span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+
+<span class="k">def</span> <span class="nf">update_req_handler</span><span class="p">(</span>
+    <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+    <span class="n">msg</span><span class="p">:</span> <span class="n">UpdateRequestHandlerMessage</span><span class="p">,</span>
+    <span class="n">verify_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VerifyKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="n">verify_key</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="s2">&quot;Can&#39;t process Request service without a given &quot;</span> <span class="s2">&quot;verification key&quot;</span>
+        <span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">verify_key</span> <span class="o">==</span> <span class="n">node</span><span class="o">.</span><span class="n">root_verify_key</span><span class="p">:</span>
+        <span class="n">replacement_handlers</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="c1"># find if there exists a handler match the handler passed in</span>
+        <span class="n">existing_handlers</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;request_handlers&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="c1"># debug(f&quot;&gt; Updating Request Handlers with existing: {existing_handlers}&quot;)</span>
+        <span class="k">if</span> <span class="n">existing_handlers</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">matched</span> <span class="o">=</span> <span class="kc">None</span>
+            <span class="k">for</span> <span class="n">existing_handler</span> <span class="ow">in</span> <span class="n">existing_handlers</span><span class="p">:</span>
+                <span class="c1"># we match two handlers according to their tags</span>
+                <span class="k">if</span> <span class="n">existing_handler</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]</span> <span class="o">==</span> <span class="n">msg</span><span class="o">.</span><span class="n">handler</span><span class="p">[</span><span class="s2">&quot;tags&quot;</span><span class="p">]:</span>
+                    <span class="n">matched</span> <span class="o">=</span> <span class="n">existing_handler</span>
+                    <span class="c1"># if an existing_handler match the passed in handler,</span>
+                    <span class="c1"># we ignore it in for loop</span>
+                    <span class="k">continue</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># if an existing_handler does not match the passed in</span>
+                    <span class="c1"># handler, we keep it</span>
+                    <span class="n">replacement_handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">existing_handler</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">msg</span><span class="o">.</span><span class="n">keep</span><span class="p">:</span>
+                <span class="n">msg</span><span class="o">.</span><span class="n">handler</span><span class="p">[</span><span class="s2">&quot;created_time&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">time</span><span class="o">.</span><span class="n">time</span><span class="p">()</span>
+                <span class="n">replacement_handlers</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">msg</span><span class="o">.</span><span class="n">handler</span><span class="p">)</span>
+                <span class="k">if</span> <span class="n">matched</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;&gt; Replacing a Request Handler </span><span class="si">{</span><span class="n">matched</span><span class="si">}</span><span class="s2"> with: </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">handler</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                    <span class="c1"># debug(</span>
+                    <span class="c1">#    f&quot;&gt; Replacing a Request Handler {matched} with: {msg.handler}&quot;</span>
+                    <span class="c1"># )</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt; Adding a Request Handler </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">handler</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                    <span class="c1"># debug(f&quot;&gt; Adding a Request Handler {msg.handler}&quot;)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt; Removing a Request Handler with: </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">handler</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+                <span class="c1"># debug(f&quot;&gt; Removing a Request Handler with: {msg.handler}&quot;)</span>
+
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">node</span><span class="p">,</span> <span class="s2">&quot;request_handlers&quot;</span><span class="p">,</span> <span class="n">replacement_handlers</span><span class="p">)</span>
+            <span class="c1"># debug(f&quot;&gt; Finished Updating Request Handlers with: {existing_handlers}&quot;)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># TODO: Replace line below</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt; Node has no Request Handlers attribute: </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">node</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+            <span class="c1"># error(f&quot;&gt; Node has no Request Handlers attribute: {type(node)}&quot;)</span>
+
+    <span class="k">return</span>
+
+
+<span class="k">class</span> <span class="nc">ObjectRequestServiceWithoutReply</span><span class="p">(</span><span class="n">ImmediateNodeServiceWithoutReply</span><span class="p">):</span>
+    <span class="n">INPUT_TYPE</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">RequestMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">CreateBudgetRequestMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">AcceptOrDenyRequestMessage</span><span class="p">],</span>
+        <span class="n">Type</span><span class="p">[</span><span class="n">UpdateRequestHandlerMessage</span><span class="p">],</span>
+    <span class="p">]</span>
+
+    <span class="n">INPUT_MESSAGES</span> <span class="o">=</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">RequestMessage</span><span class="p">,</span>
+        <span class="n">AcceptOrDenyRequestMessage</span><span class="p">,</span>
+        <span class="n">UpdateRequestHandlerMessage</span><span class="p">,</span>
+    <span class="p">]</span>
+
+    <span class="n">msg_handler_map</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">INPUT_TYPE</span><span class="p">,</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="kc">None</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+        <span class="n">RequestMessage</span><span class="p">:</span> <span class="n">build_request_message</span><span class="p">,</span>
+        <span class="n">CreateBudgetRequestMessage</span><span class="p">:</span> <span class="n">create_budget_request_msg</span><span class="p">,</span>
+        <span class="n">AcceptOrDenyRequestMessage</span><span class="p">:</span> <span class="n">accept_or_deny_request</span><span class="p">,</span>
+        <span class="n">UpdateRequestHandlerMessage</span><span class="p">:</span> <span class="n">update_req_handler</span><span class="p">,</span>
+    <span class="p">}</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="nd">@service_auth</span><span class="p">(</span><span class="n">guests_welcome</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">def</span> <span class="nf">process</span><span class="p">(</span>
+        <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">RequestMessage</span><span class="p">,</span>
+            <span class="n">AcceptOrDenyRequestMessage</span><span class="p">,</span>
+            <span class="n">UpdateRequestHandlerMessage</span><span class="p">,</span>
+        <span class="p">],</span>
+        <span class="n">verify_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">ObjectRequestServiceWithoutReply</span><span class="o">.</span><span class="n">msg_handler_map</span><span class="p">[</span><span class="nb">type</span><span class="p">(</span><span class="n">msg</span><span class="p">)](</span>
+            <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">node</span><span class="o">=</span><span class="n">node</span><span class="p">,</span> <span class="n">verify_key</span><span class="o">=</span><span class="n">verify_key</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">message_handler_types</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">Type</span><span class="p">[</span><span class="n">ImmediateSyftMessageWithoutReply</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="p">[</span>
+            <span class="n">RequestMessage</span><span class="p">,</span>
+            <span class="n">AcceptOrDenyRequestMessage</span><span class="p">,</span>
+            <span class="n">UpdateRequestHandlerMessage</span><span class="p">,</span>
+            <span class="n">CreateBudgetRequestMessage</span><span class="p">,</span>
+        <span class="p">]</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

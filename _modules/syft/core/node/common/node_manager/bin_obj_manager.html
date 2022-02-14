@@ -1,0 +1,412 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.node.common.node_manager.bin_obj_manager &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../../../" id="documentation_options" src="../../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../../_static/jquery.js"></script>
+    <script src="../../../../../../_static/underscore.js"></script>
+    <script src="../../../../../../_static/doctools.js"></script>
+    <script src="../../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../../../index.html">
+  <img src="../../../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.node.common.node_manager.bin_obj_manager</h1><div class="highlight"><pre>
+<span></span><span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">KeysView</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">cast</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm</span> <span class="kn">import</span> <span class="n">sessionmaker</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.orm.session</span> <span class="kn">import</span> <span class="n">Session</span>
+<span class="kn">from</span> <span class="nn">torch</span> <span class="kn">import</span> <span class="n">Tensor</span>
+
+<span class="c1"># syft absolute</span>
+<span class="kn">import</span> <span class="nn">syft</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">....common.uid</span> <span class="kn">import</span> <span class="n">UID</span>
+<span class="kn">from</span> <span class="nn">....node.common.node_table.bin_obj_dataset</span> <span class="kn">import</span> <span class="n">BinObjDataset</span>
+<span class="kn">from</span> <span class="nn">....store</span> <span class="kn">import</span> <span class="n">ObjectStore</span>
+<span class="kn">from</span> <span class="nn">....store.storeable_object</span> <span class="kn">import</span> <span class="n">StorableObject</span>
+<span class="kn">from</span> <span class="nn">..node_table.bin_obj</span> <span class="kn">import</span> <span class="n">BinObject</span>
+<span class="kn">from</span> <span class="nn">..node_table.bin_obj_metadata</span> <span class="kn">import</span> <span class="n">ObjectMetadata</span>
+
+<span class="n">ENCODING</span> <span class="o">=</span> <span class="s2">&quot;UTF-8&quot;</span>
+
+
+<span class="k">def</span> <span class="nf">create_storable</span><span class="p">(</span>
+    <span class="n">_id</span><span class="p">:</span> <span class="n">UID</span><span class="p">,</span> <span class="n">data</span><span class="p">:</span> <span class="n">Tensor</span><span class="p">,</span> <span class="n">description</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">tags</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StorableObject</span><span class="p">:</span>
+    <span class="n">obj</span> <span class="o">=</span> <span class="n">StorableObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">_id</span><span class="p">,</span> <span class="n">data</span><span class="o">=</span><span class="n">data</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="n">description</span><span class="p">,</span> <span class="n">tags</span><span class="o">=</span><span class="n">tags</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">obj</span>
+
+
+<div class="viewcode-block" id="BinObjectManager"><a class="viewcode-back" href="../../../../../../api_reference/syft.core.node.common.node_manager.bin_obj_manager.html#syft.core.node.common.node_manager.bin_obj_manager.BinObjectManager">[docs]</a><span class="k">class</span> <span class="nc">BinObjectManager</span><span class="p">(</span><span class="n">ObjectStore</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">db</span><span class="p">:</span> <span class="n">Session</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">db</span> <span class="o">=</span> <span class="n">db</span>
+
+    <span class="k">def</span> <span class="nf">get_object</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">UID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">StorableObject</span><span class="p">]:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">KeyError</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># noqa: F841</span>
+            <span class="k">return</span> <span class="kc">None</span>
+
+    <span class="k">def</span> <span class="nf">get_objects_of_type</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">obj_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">StorableObject</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="p">[</span><span class="n">obj</span> <span class="k">for</span> <span class="n">obj</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">obj</span><span class="o">.</span><span class="n">data</span><span class="p">,</span> <span class="n">obj_type</span><span class="p">)]</span>
+
+    <span class="k">def</span> <span class="nf">__sizeof__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()</span><span class="o">.</span><span class="n">__sizeof__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">())</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="n">local_session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">)()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ObjectMetadata</span><span class="p">)</span><span class="o">.</span><span class="n">count</span><span class="p">()</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="BinObjectManager.keys"><a class="viewcode-back" href="../../../../../../api_reference/syft.core.node.common.node_manager.bin_obj_manager.html#syft.core.node.common.node_manager.bin_obj_manager.BinObjectManager.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">KeysView</span><span class="p">[</span><span class="n">UID</span><span class="p">]:</span>
+        <span class="n">local_session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">)()</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">BinObject</span><span class="o">.</span><span class="n">id</span><span class="p">)</span><span class="o">.</span><span class="n">all</span><span class="p">()</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span><span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">k</span><span class="p">[</span><span class="mi">0</span><span class="p">])</span> <span class="k">for</span> <span class="n">k</span> <span class="ow">in</span> <span class="n">keys</span><span class="p">]</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">keys</span></div>
+
+<div class="viewcode-block" id="BinObjectManager.values"><a class="viewcode-back" href="../../../../../../api_reference/syft.core.node.common.node_manager.bin_obj_manager.html#syft.core.node.common.node_manager.bin_obj_manager.BinObjectManager.values">[docs]</a>    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">StorableObject</span><span class="p">]:</span>
+
+        <span class="n">obj_keys</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">key</span> <span class="ow">in</span> <span class="n">obj_keys</span><span class="p">:</span>
+            <span class="k">try</span><span class="p">:</span>
+                <span class="n">values</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">key</span><span class="p">))</span>
+            <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>  <span class="c1"># noqa: F841</span>
+                <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;Unable to get item for key&quot;</span><span class="p">,</span> <span class="n">key</span><span class="p">)</span>  <span class="c1"># TODO: TechDebt add logging</span>
+                <span class="nb">print</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">values</span></div>
+
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">UID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">local_session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">)()</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">BinObject</span><span class="p">)</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+        <span class="p">)</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">UID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">StorableObject</span><span class="p">:</span>
+        <span class="n">local_session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">)()</span>
+        <span class="n">bin_obj</span> <span class="o">=</span> <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">BinObject</span><span class="p">)</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="n">obj_metadata</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ObjectMetadata</span><span class="p">)</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="p">)</span>
+
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">bin_obj</span> <span class="ow">or</span> <span class="ow">not</span> <span class="n">obj_metadata</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">KeyError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Object not found! for UID: </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="n">obj</span> <span class="o">=</span> <span class="n">StorableObject</span><span class="p">(</span>
+            <span class="nb">id</span><span class="o">=</span><span class="n">UID</span><span class="o">.</span><span class="n">from_string</span><span class="p">(</span><span class="n">bin_obj</span><span class="o">.</span><span class="n">id</span><span class="p">),</span>
+            <span class="n">data</span><span class="o">=</span><span class="n">bin_obj</span><span class="o">.</span><span class="n">obj</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">obj_metadata</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="n">obj_metadata</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+            <span class="n">read_permissions</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                <span class="n">syft</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span>
+                    <span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="n">obj_metadata</span><span class="o">.</span><span class="n">read_permissions</span><span class="p">),</span> <span class="n">from_bytes</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span>
+            <span class="p">),</span>
+            <span class="n">search_permissions</span><span class="o">=</span><span class="nb">dict</span><span class="p">(</span>
+                <span class="n">syft</span><span class="o">.</span><span class="n">deserialize</span><span class="p">(</span>
+                    <span class="nb">bytes</span><span class="o">.</span><span class="n">fromhex</span><span class="p">(</span><span class="n">obj_metadata</span><span class="o">.</span><span class="n">search_permissions</span><span class="p">),</span> <span class="n">from_bytes</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">)</span>
+            <span class="p">),</span>
+            <span class="c1"># name=obj_metadata.name,</span>
+        <span class="p">)</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">obj</span>
+
+    <span class="k">def</span> <span class="nf">is_dataset</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">UID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="n">local_session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">)()</span>
+        <span class="n">is_dataset_obj</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">BinObjDataset</span><span class="p">)</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">exists</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">is_dataset_obj</span> <span class="o">=</span> <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">is_dataset_obj</span><span class="p">)</span><span class="o">.</span><span class="n">scalar</span><span class="p">()</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">is_dataset_obj</span>
+
+    <span class="k">def</span> <span class="nf">_get_obj_dataset_relation</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">UID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">BinObjDataset</span><span class="p">]:</span>
+        <span class="n">local_session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">)()</span>
+        <span class="n">obj_dataset_relation</span> <span class="o">=</span> <span class="p">(</span>
+            <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">BinObjDataset</span><span class="p">)</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+        <span class="p">)</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">obj_dataset_relation</span>
+
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">UID</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">StorableObject</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">bin_obj</span> <span class="o">=</span> <span class="n">BinObject</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">value</span><span class="p">),</span> <span class="n">obj</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">data</span><span class="p">)</span>
+        <span class="c1"># metadata_dict = storable_to_dict(value)</span>
+        <span class="n">metadata_obj</span> <span class="o">=</span> <span class="n">ObjectMetadata</span><span class="p">(</span>
+            <span class="n">obj</span><span class="o">=</span><span class="n">bin_obj</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+            <span class="n">tags</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">tags</span><span class="p">,</span>
+            <span class="n">description</span><span class="o">=</span><span class="n">value</span><span class="o">.</span><span class="n">description</span><span class="p">,</span>
+            <span class="n">read_permissions</span><span class="o">=</span><span class="n">cast</span><span class="p">(</span>
+                <span class="nb">bytes</span><span class="p">,</span>
+                <span class="n">syft</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span>
+                    <span class="n">syft</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">Dict</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">read_permissions</span><span class="p">),</span> <span class="n">to_bytes</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">),</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span>
+            <span class="n">search_permissions</span><span class="o">=</span><span class="n">cast</span><span class="p">(</span>
+                <span class="nb">bytes</span><span class="p">,</span>
+                <span class="n">syft</span><span class="o">.</span><span class="n">serialize</span><span class="p">(</span>
+                    <span class="n">syft</span><span class="o">.</span><span class="n">lib</span><span class="o">.</span><span class="n">python</span><span class="o">.</span><span class="n">Dict</span><span class="p">(</span><span class="n">value</span><span class="o">.</span><span class="n">search_permissions</span><span class="p">),</span> <span class="n">to_bytes</span><span class="o">=</span><span class="kc">True</span>
+                <span class="p">),</span>
+            <span class="p">)</span><span class="o">.</span><span class="n">hex</span><span class="p">(),</span>
+            <span class="c1"># name=metadata_dict[&quot;name&quot;],</span>
+        <span class="p">)</span>
+
+        <span class="n">obj_dataset_relation</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_get_obj_dataset_relation</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj_dataset_relation</span><span class="p">:</span>
+            <span class="c1"># Create a object dataset relationship for the new object</span>
+            <span class="n">obj_dataset_relation</span> <span class="o">=</span> <span class="n">BinObjDataset</span><span class="p">(</span>
+                <span class="nb">id</span><span class="o">=</span><span class="n">obj_dataset_relation</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">name</span><span class="o">=</span><span class="n">obj_dataset_relation</span><span class="o">.</span><span class="n">name</span><span class="p">,</span>
+                <span class="n">obj</span><span class="o">=</span><span class="n">bin_obj</span><span class="o">.</span><span class="n">id</span><span class="p">,</span>
+                <span class="n">dataset</span><span class="o">=</span><span class="n">obj_dataset_relation</span><span class="o">.</span><span class="n">dataset</span><span class="p">,</span>
+                <span class="n">dtype</span><span class="o">=</span><span class="n">obj_dataset_relation</span><span class="o">.</span><span class="n">dtype</span><span class="p">,</span>
+                <span class="n">shape</span><span class="o">=</span><span class="n">obj_dataset_relation</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="n">key</span><span class="p">):</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">key</span><span class="p">)</span>
+
+        <span class="n">local_session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">)()</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">bin_obj</span><span class="p">)</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">metadata_obj</span><span class="p">)</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">obj_dataset_relation</span><span class="p">)</span> <span class="k">if</span> <span class="n">obj_dataset_relation</span> <span class="k">else</span> <span class="kc">None</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+<div class="viewcode-block" id="BinObjectManager.delete"><a class="viewcode-back" href="../../../../../../api_reference/syft.core.node.common.node_manager.bin_obj_manager.html#syft.core.node.common.node_manager.bin_obj_manager.BinObjectManager.delete">[docs]</a>    <span class="k">def</span> <span class="nf">delete</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">UID</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">local_session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">)()</span>
+
+            <span class="n">object_to_delete</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">BinObject</span><span class="p">)</span><span class="o">.</span><span class="n">filter_by</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">value</span><span class="p">))</span><span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">metadata_to_delete</span> <span class="o">=</span> <span class="p">(</span>
+                <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ObjectMetadata</span><span class="p">)</span>
+                <span class="o">.</span><span class="n">filter_by</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="nb">str</span><span class="p">(</span><span class="n">key</span><span class="o">.</span><span class="n">value</span><span class="p">))</span>
+                <span class="o">.</span><span class="n">first</span><span class="p">()</span>
+            <span class="p">)</span>
+            <span class="n">local_session</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">metadata_to_delete</span><span class="p">)</span>
+            <span class="n">local_session</span><span class="o">.</span><span class="n">delete</span><span class="p">(</span><span class="n">object_to_delete</span><span class="p">)</span>
+            <span class="n">local_session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+            <span class="n">local_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span><span class="si">}</span><span class="s2"> Exception in __delitem__ error </span><span class="si">{</span><span class="n">key</span><span class="si">}</span><span class="s2">. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="BinObjectManager.clear"><a class="viewcode-back" href="../../../../../../api_reference/syft.core.node.common.node_manager.bin_obj_manager.html#syft.core.node.common.node_manager.bin_obj_manager.BinObjectManager.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">local_session</span> <span class="o">=</span> <span class="n">sessionmaker</span><span class="p">(</span><span class="n">bind</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">db</span><span class="p">)()</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">BinObject</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">ObjectMetadata</span><span class="p">)</span><span class="o">.</span><span class="n">delete</span><span class="p">()</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">commit</span><span class="p">()</span>
+        <span class="n">local_session</span><span class="o">.</span><span class="n">close</span><span class="p">()</span></div>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">())</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

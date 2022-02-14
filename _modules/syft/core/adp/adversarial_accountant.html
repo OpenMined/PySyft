@@ -1,0 +1,476 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.adp.adversarial_accountant &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.adp.adversarial_accountant</h1><div class="highlight"><pre>
+<span></span><span class="c1"># CLEANUP NOTES:</span>
+<span class="c1"># - remove unused comments</span>
+<span class="c1"># - add documentation for each method</span>
+<span class="c1"># - add comments inline explaining each piece</span>
+<span class="c1"># - add a unit test for each method (at least)</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">import</span> <span class="nn">math</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span> <span class="k">as</span> <span class="n">TypeDict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">KeysView</span> <span class="k">as</span> <span class="n">TypeKeysView</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span> <span class="k">as</span> <span class="n">TypeList</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Set</span> <span class="k">as</span> <span class="n">TypeSet</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">autodp.autodp_core</span> <span class="kn">import</span> <span class="n">Mechanism</span>
+<span class="kn">from</span> <span class="nn">autodp.transformer_zoo</span> <span class="kn">import</span> <span class="n">Composition</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">VerifyKey</span>
+<span class="kn">from</span> <span class="nn">sqlalchemy.engine</span> <span class="kn">import</span> <span class="n">Engine</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">..node.common.node_manager.ledger_manager</span> <span class="kn">import</span> <span class="n">LedgerManager</span>
+<span class="kn">from</span> <span class="nn">.entity</span> <span class="kn">import</span> <span class="n">DataSubjectGroup</span>
+<span class="kn">from</span> <span class="nn">.entity</span> <span class="kn">import</span> <span class="n">Entity</span>
+<span class="kn">from</span> <span class="nn">.idp_gaussian_mechanism</span> <span class="kn">import</span> <span class="n">iDPGaussianMechanism</span>
+
+
+<div class="viewcode-block" id="AdversarialAccountant"><a class="viewcode-back" href="../../../../api_reference/syft.core.adp.adversarial_accountant.html#syft.core.adp.adversarial_accountant.AdversarialAccountant">[docs]</a><span class="k">class</span> <span class="nc">AdversarialAccountant</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Adversarial Accountant class that keeps track of budget and maintains a privacy ledger.&quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">db_engine</span><span class="p">:</span> <span class="n">Engine</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">max_budget</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mi">10</span><span class="p">,</span> <span class="n">delta</span><span class="p">:</span> <span class="nb">float</span> <span class="o">=</span> <span class="mf">1e-6</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">db_engine</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># this is a database-backed lookup table</span>
+            <span class="c1"># maps an entity to an actual budget</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">entity2ledger</span> <span class="o">=</span> <span class="n">LedgerManager</span><span class="p">(</span><span class="n">db_engine</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">entity2ledger</span> <span class="o">=</span> <span class="p">{}</span>  <span class="c1"># type: ignore</span>
+
+        <span class="c1"># this is a temporary lookup table for mechanisms we&#39;re not sure</span>
+        <span class="c1"># we&#39;re going to keep (See publish.py for how this is used)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">temp_entity2ledger</span><span class="p">:</span> <span class="n">TypeDict</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">max_budget</span> <span class="o">=</span> <span class="n">max_budget</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">delta</span> <span class="o">=</span> <span class="n">delta</span>
+
+    <span class="k">def</span> <span class="nf">temp_append</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">entity2mechanisms</span><span class="p">:</span> <span class="n">TypeDict</span><span class="p">[</span><span class="n">Entity</span><span class="p">,</span> <span class="n">TypeList</span><span class="p">[</span><span class="n">Mechanism</span><span class="p">]]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># add the mechanisms to all of the entities</span>
+        <span class="k">for</span> <span class="n">key</span><span class="p">,</span> <span class="n">ms</span> <span class="ow">in</span> <span class="n">entity2mechanisms</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="n">key</span> <span class="ow">not</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_entity2ledger</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">temp_entity2ledger</span><span class="p">[</span><span class="n">key</span><span class="p">]</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">ms</span><span class="p">:</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">temp_entity2ledger</span><span class="p">[</span><span class="n">key</span><span class="p">]</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">append</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">entity2mechanisms</span><span class="p">:</span> <span class="n">TypeDict</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="n">TypeList</span><span class="p">[</span><span class="n">Mechanism</span><span class="p">]])</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">mechanisms</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="c1"># add all the mechanisms</span>
+        <span class="k">for</span> <span class="n">_</span><span class="p">,</span> <span class="n">ms</span> <span class="ow">in</span> <span class="n">entity2mechanisms</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">for</span> <span class="n">m</span> <span class="ow">in</span> <span class="n">ms</span><span class="p">:</span>
+                <span class="n">mechanisms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">m</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">entity2ledger</span><span class="o">.</span><span class="n">register_mechanisms</span><span class="p">(</span><span class="n">mechanisms</span><span class="p">)</span>
+
+    <span class="c1"># save the temporary ledger into the database</span>
+    <span class="k">def</span> <span class="nf">save_temp_ledger_to_longterm_ledger</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">entity2mechanisms</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">temp_entity2ledger</span><span class="p">)</span>
+
+    <span class="c1"># return epsilons for each entity</span>
+    <span class="k">def</span> <span class="nf">get_eps_for_entity</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">entity</span><span class="p">:</span> <span class="n">Entity</span><span class="p">,</span>
+        <span class="n">user_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">VerifyKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">returned_epsilon_is_private</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+
+        <span class="c1"># compose them with the transformation: compose</span>
+        <span class="n">compose</span> <span class="o">=</span> <span class="n">Composition</span><span class="p">()</span>
+
+        <span class="c1"># fetch mechanisms from the database</span>
+        <span class="n">table_mechanisms</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entity2ledger</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">entity_name</span><span class="o">=</span><span class="n">entity</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="n">mechanisms</span> <span class="o">=</span> <span class="p">[</span><span class="n">x</span><span class="o">.</span><span class="n">obj</span> <span class="k">for</span> <span class="n">x</span> <span class="ow">in</span> <span class="n">table_mechanisms</span><span class="p">]</span>
+
+        <span class="c1"># filter out mechanisms that weren&#39;t created by this data scientist user</span>
+        <span class="k">if</span> <span class="n">user_key</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">filtered_mechanisms</span> <span class="o">=</span> <span class="p">[]</span>
+            <span class="k">for</span> <span class="n">mech</span> <span class="ow">in</span> <span class="n">mechanisms</span><span class="p">:</span>
+                <span class="k">if</span> <span class="n">mech</span><span class="o">.</span><span class="n">user_key</span> <span class="o">==</span> <span class="n">user_key</span><span class="p">:</span>
+                    <span class="n">filtered_mechanisms</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">mech</span><span class="p">)</span>
+
+            <span class="n">mechanisms</span> <span class="o">=</span> <span class="n">filtered_mechanisms</span>
+
+        <span class="k">if</span> <span class="n">entity</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_entity2ledger</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">mechanisms</span> <span class="o">=</span> <span class="n">mechanisms</span> <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">temp_entity2ledger</span><span class="p">[</span><span class="n">entity</span><span class="p">]</span>
+
+        <span class="c1"># # filter out mechanisms that weren&#39;t created by this data scientist user</span>
+        <span class="c1"># if user_key is not None:</span>
+        <span class="c1">#     filtered_mechanisms = []</span>
+        <span class="c1">#     for mech in mechanisms:</span>
+        <span class="c1">#         # left = _deserialize(mech.user_key, from_bytes=True)</span>
+        <span class="c1">#         # print(&quot;Comparing Left:&quot; + str(mech.user_key) + &quot; of type &quot; + str(type(mech.user_key)))</span>
+        <span class="c1">#         # print(&quot;Comparing Right:&quot; + str(user_key) + &quot; of type &quot; + str(type(user_key)))</span>
+
+        <span class="c1">#         # user_key = VerifyKey(user_key.encode(&quot;utf-8&quot;), encoder=HexEncoder)</span>
+
+        <span class="c1">#         if mech.user_key == user_key:</span>
+        <span class="c1">#             filtered_mechanisms.append(mech)</span>
+
+        <span class="c1">#     mechanisms = filtered_mechanisms</span>
+
+        <span class="c1"># print(&quot;Num mechanisms after TEMP:&quot; + str(len(mechanisms)))</span>
+        <span class="c1"># for m in mechanisms:</span>
+        <span class="c1"># print(&quot;Filtered Mechanism Entity:&quot; + str(m.entity_name))</span>
+
+        <span class="c1"># print(&quot;Mechanisma after filtering: &quot;, mechanisms)</span>
+        <span class="c1"># use verify key to specify the user</span>
+        <span class="c1"># for all entities in the db,</span>
+        <span class="c1"># how do we ensure that no data scientist</span>
+        <span class="c1"># exceeds the budget of any entity?</span>
+
+        <span class="k">if</span> <span class="n">returned_epsilon_is_private</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">mech</span> <span class="ow">in</span> <span class="n">mechanisms</span><span class="p">:</span>
+                <span class="n">mech</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mech</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;private_value&quot;</span><span class="p">]</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">for</span> <span class="n">mech</span> <span class="ow">in</span> <span class="n">mechanisms</span><span class="p">:</span>
+                <span class="n">mech</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;value&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">mech</span><span class="o">.</span><span class="n">params</span><span class="p">[</span><span class="s2">&quot;public_value&quot;</span><span class="p">]</span>
+
+        <span class="c1"># map dataset</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">mechanisms</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">composed_mech</span> <span class="o">=</span> <span class="n">compose</span><span class="p">(</span><span class="n">mechanisms</span><span class="p">,</span> <span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">*</span> <span class="nb">len</span><span class="p">(</span><span class="n">mechanisms</span><span class="p">))</span>
+            <span class="n">eps</span> <span class="o">=</span> <span class="n">composed_mech</span><span class="o">.</span><span class="n">get_approxDP</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">delta</span><span class="p">)</span>
+
+            <span class="c1"># if we have a user key, get the budget and clamp the epsilon</span>
+            <span class="c1"># if user_key is not None:</span>
+            <span class="c1">#     user_budget = self.entity2ledger.get_user_budget(user_key=user_key)</span>
+            <span class="c1">#     print(&quot;USER BUDGET:&quot; + str(user_budget))</span>
+            <span class="c1">#     print(f&quot;EPS: {eps}&quot;)</span>
+            <span class="c1">#     if eps &gt; user_budget:</span>
+            <span class="c1">#         print(&quot;setting the eps to the user budget&quot;)</span>
+            <span class="c1">#         eps = user_budget</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">eps</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">eps</span><span class="p">)</span>
+
+        <span class="c1"># # Query for eps given delta</span>
+        <span class="c1"># return PhiScalar(</span>
+        <span class="c1">#     value=composed_mech.get_approxDP(self.delta),</span>
+        <span class="c1">#     min_val=0,</span>
+        <span class="c1">#     max_val=self.max_budget,</span>
+        <span class="c1">#     entity=entity,</span>
+        <span class="c1"># )</span>
+
+    <span class="c1"># checks if the entity has budget or not</span>
+    <span class="k">def</span> <span class="nf">has_budget</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">entity</span><span class="p">:</span> <span class="n">Entity</span><span class="p">,</span>
+        <span class="n">user_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+        <span class="n">returned_epsilon_is_private</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+
+        <span class="n">spent</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_eps_for_entity</span><span class="p">(</span>
+            <span class="n">entity</span><span class="o">=</span><span class="n">entity</span><span class="p">,</span>
+            <span class="n">user_key</span><span class="o">=</span><span class="n">user_key</span><span class="p">,</span>
+            <span class="n">returned_epsilon_is_private</span><span class="o">=</span><span class="n">returned_epsilon_is_private</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="n">user_budget</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entity2ledger</span><span class="o">.</span><span class="n">get_user_budget</span><span class="p">(</span><span class="n">user_key</span><span class="o">=</span><span class="n">user_key</span><span class="p">)</span>
+
+        <span class="c1"># print(&quot;ACCOUNTANT MAX BUDGET&quot;, self.max_budget)</span>
+        <span class="c1"># @Andrew can we use &lt;= or does it have to be &lt;</span>
+        <span class="n">has_budget</span> <span class="o">=</span> <span class="n">spent</span> <span class="o">&lt;=</span> <span class="n">user_budget</span>
+        <span class="c1"># print(f&quot;has_budget = {spend} &lt; {user_budget}&quot;)</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">Has Budget:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">has_budget</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;YOU&#39;VE SPENT:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">spent</span><span class="p">))</span>
+        <span class="nb">print</span><span class="p">(</span><span class="s2">&quot;USER BUDGET:&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="n">user_budget</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">has_budget</span>
+
+    <span class="c1"># returns maximum entity epsilon</span>
+    <span class="k">def</span> <span class="nf">user_budget</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">user_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span> <span class="n">returned_epsilon_is_private</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="n">max_spend</span> <span class="o">=</span> <span class="mf">0.0</span>
+
+        <span class="k">for</span> <span class="n">ent</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">entities</span><span class="p">:</span>
+            <span class="n">spend</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">get_eps_for_entity</span><span class="p">(</span>
+                <span class="n">entity</span><span class="o">=</span><span class="n">ent</span><span class="p">,</span>
+                <span class="n">user_key</span><span class="o">=</span><span class="n">user_key</span><span class="p">,</span>
+                <span class="n">returned_epsilon_is_private</span><span class="o">=</span><span class="n">returned_epsilon_is_private</span><span class="p">,</span>
+            <span class="p">)</span>
+            <span class="k">if</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">spend</span><span class="p">)</span> <span class="ow">or</span> <span class="n">math</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">spend</span><span class="p">):</span>
+                <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Spend is </span><span class="si">{</span><span class="n">spend</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">spend</span> <span class="o">&gt;</span> <span class="n">max_spend</span><span class="p">:</span>
+                <span class="n">max_spend</span> <span class="o">=</span> <span class="nb">float</span><span class="p">(</span><span class="n">spend</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">max_spend</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">get_remaining_budget</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">user_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span> <span class="n">returned_epsilon_is_private</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">float</span><span class="p">:</span>
+        <span class="n">max_spend</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">user_budget</span><span class="p">(</span>
+            <span class="n">user_key</span><span class="o">=</span><span class="n">user_key</span><span class="p">,</span> <span class="n">returned_epsilon_is_private</span><span class="o">=</span><span class="n">returned_epsilon_is_private</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">math</span><span class="o">.</span><span class="n">isnan</span><span class="p">(</span><span class="n">max_spend</span><span class="p">)</span> <span class="ow">or</span> <span class="n">math</span><span class="o">.</span><span class="n">isinf</span><span class="p">(</span><span class="n">max_spend</span><span class="p">):</span>
+            <span class="nb">print</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Warning: Remaining budget not valid with max_spend </span><span class="si">{</span><span class="n">max_spend</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+        <span class="c1"># If there&#39;s no entity registered</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">entities</span><span class="p">):</span>
+            <span class="n">max_spend</span> <span class="o">=</span> <span class="mi">0</span>
+
+        <span class="n">user_budget</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">entity2ledger</span><span class="o">.</span><span class="n">get_user_budget</span><span class="p">(</span><span class="n">user_key</span><span class="o">=</span><span class="n">user_key</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">float</span><span class="p">(</span><span class="n">user_budget</span> <span class="o">-</span> <span class="n">max_spend</span><span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">entities</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">TypeKeysView</span><span class="p">[</span><span class="n">Entity</span><span class="p">]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">entity2ledger</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+
+    <span class="c1"># returns a collection of entities having no budget</span>
+    <span class="k">def</span> <span class="nf">overbudgeted_entities</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">temp_entities</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">TypeDict</span><span class="p">[</span><span class="n">Entity</span><span class="p">,</span> <span class="n">TypeList</span><span class="p">[</span><span class="n">iDPGaussianMechanism</span><span class="p">]],</span>
+            <span class="n">TypeDict</span><span class="p">[</span><span class="n">DataSubjectGroup</span><span class="p">,</span> <span class="n">TypeList</span><span class="p">[</span><span class="n">iDPGaussianMechanism</span><span class="p">]],</span>
+        <span class="p">],</span>
+        <span class="n">user_key</span><span class="p">:</span> <span class="n">VerifyKey</span><span class="p">,</span>
+        <span class="n">returned_epsilon_is_private</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span><span class="n">TypeSet</span><span class="p">[</span><span class="n">Entity</span><span class="p">],</span> <span class="n">TypeSet</span><span class="p">[</span><span class="n">DataSubjectGroup</span><span class="p">]]:</span>
+        <span class="n">entities</span> <span class="o">=</span> <span class="nb">set</span><span class="p">()</span>
+
+        <span class="k">for</span> <span class="n">entity</span><span class="p">,</span> <span class="n">_</span> <span class="ow">in</span> <span class="n">temp_entities</span><span class="o">.</span><span class="n">items</span><span class="p">():</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">DataSubjectGroup</span><span class="p">):</span>
+                <span class="k">for</span> <span class="n">e</span> <span class="ow">in</span> <span class="n">entity</span><span class="o">.</span><span class="n">entity_set</span><span class="p">:</span>
+                    <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_budget</span><span class="p">(</span>
+                        <span class="n">e</span><span class="p">,</span>
+                        <span class="n">user_key</span><span class="o">=</span><span class="n">user_key</span><span class="p">,</span>
+                        <span class="n">returned_epsilon_is_private</span><span class="o">=</span><span class="n">returned_epsilon_is_private</span><span class="p">,</span>
+                    <span class="p">):</span>
+                        <span class="n">entities</span><span class="o">.</span><span class="n">add</span><span class="p">(</span>
+                            <span class="n">entity</span>
+                        <span class="p">)</span>  <span class="c1"># Leave out the whole group if ANY of its entities are over budget</span>
+            <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">entity</span><span class="p">,</span> <span class="n">Entity</span><span class="p">):</span>
+                <span class="k">if</span> <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">has_budget</span><span class="p">(</span>
+                    <span class="n">entity</span><span class="p">,</span>
+                    <span class="n">user_key</span><span class="o">=</span><span class="n">user_key</span><span class="p">,</span>
+                    <span class="n">returned_epsilon_is_private</span><span class="o">=</span><span class="n">returned_epsilon_is_private</span><span class="p">,</span>
+                <span class="p">):</span>
+                    <span class="n">entities</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">entity</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span>
+        <span class="k">return</span> <span class="n">entities</span>
+
+    <span class="c1"># prints entity and its epsilon value</span>
+    <span class="k">def</span> <span class="nf">print_ledger</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">returned_epsilon_is_private</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">entity</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">entities</span><span class="p">:</span>
+            <span class="k">if</span> <span class="n">entity</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="nb">print</span><span class="p">(</span>
+                    <span class="nb">str</span><span class="p">(</span><span class="n">entity</span><span class="o">.</span><span class="n">name</span><span class="p">)</span>
+                    <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\t</span><span class="s2">&quot;</span>
+                    <span class="o">+</span> <span class="nb">str</span><span class="p">(</span>
+                        <span class="bp">self</span><span class="o">.</span><span class="n">get_eps_for_entity</span><span class="p">(</span>
+                            <span class="n">entity</span><span class="o">=</span><span class="n">entity</span><span class="p">,</span>
+                            <span class="n">returned_epsilon_is_private</span><span class="o">=</span><span class="n">returned_epsilon_is_private</span><span class="p">,</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+                <span class="p">)</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

@@ -1,0 +1,1143 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.tensor.smpc.mpc_tensor &#8212; PySyft  documentation</title>
+    
+    <link href="../../../../../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../../../../../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
+    
+    <link rel="stylesheet"
+      href="../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
+    
+      
+  
+    
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/styles/pydata-sphinx-theme.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/css/pysyft.css" />
+    
+    <link rel="preload" as="script" href="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../_static/jquery.js"></script>
+    <script src="../../../../../_static/underscore.js"></script>
+    <script src="../../../../../_static/doctools.js"></script>
+    <script src="../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../../index.html">
+  <img src="../../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.tensor.smpc.mpc_tensor</h1><div class="highlight"><pre>
+<span></span><span class="c1"># future</span>
+<span class="kn">from</span> <span class="nn">__future__</span> <span class="kn">import</span> <span class="n">annotations</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">import</span> <span class="nn">functools</span>
+<span class="kn">import</span> <span class="nn">itertools</span>
+<span class="kn">import</span> <span class="nn">secrets</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Iterable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Tuple</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">import</span> <span class="nn">numpy</span> <span class="k">as</span> <span class="nn">np</span>
+<span class="kn">import</span> <span class="nn">numpy.typing</span> <span class="k">as</span> <span class="nn">npt</span>
+<span class="kn">import</span> <span class="nn">torch</span>
+
+<span class="c1"># relative</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">utils</span>
+<span class="kn">from</span> <span class="nn">....</span> <span class="kn">import</span> <span class="n">logger</span>
+<span class="kn">from</span> <span class="nn">....ast.klass</span> <span class="kn">import</span> <span class="n">get_run_class_method</span>
+<span class="kn">from</span> <span class="nn">....grid</span> <span class="kn">import</span> <span class="n">GridURL</span>
+<span class="kn">from</span> <span class="nn">...smpc.protocol.spdz</span> <span class="kn">import</span> <span class="n">spdz</span>
+<span class="kn">from</span> <span class="nn">..passthrough</span> <span class="kn">import</span> <span class="n">PassthroughTensor</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">..passthrough</span> <span class="kn">import</span> <span class="n">SupportedChainType</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">..util</span> <span class="kn">import</span> <span class="n">implements</span>  <span class="c1"># type: ignore</span>
+<span class="kn">from</span> <span class="nn">.share_tensor</span> <span class="kn">import</span> <span class="n">ShareTensor</span>
+
+<span class="n">METHODS_FORWARD_ALL_SHARES</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;repeat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;copy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;diagonal&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;flatten&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;transpose&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;partition&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;resize&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ravel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;compress&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;reshape&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;squeeze&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;swapaxes&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sum&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;__pos__&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;__neg__&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;take&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;choose&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cumsum&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;trace&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+<span class="n">INPLACE_OPS</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;resize&quot;</span><span class="p">,</span>
+<span class="p">}</span>
+
+<span class="n">PARTIES_REGISTER_CACHE</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">GridURL</span><span class="p">]</span> <span class="o">=</span> <span class="p">{}</span>
+
+
+<div class="viewcode-block" id="MPCTensor"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.mpc_tensor.html#syft.core.tensor.smpc.mpc_tensor.MPCTensor">[docs]</a><span class="k">class</span> <span class="nc">MPCTensor</span><span class="p">(</span><span class="n">PassthroughTensor</span><span class="p">):</span>
+    <span class="vm">__slots__</span> <span class="o">=</span> <span class="p">(</span>
+        <span class="s2">&quot;seed_przs&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;mpc_shape&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;parties&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;parties_info&quot;</span><span class="p">,</span>
+        <span class="s2">&quot;ring_size&quot;</span><span class="p">,</span>
+    <span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">parties</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">shares</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">seed_przs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">ring_size</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">secret</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">shares</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Secret or shares should be populated!&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="p">(</span><span class="n">shares</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">)</span> <span class="ow">and</span> <span class="p">(</span><span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shares</span><span class="p">,</span> <span class="p">(</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">))):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Shares should be a list or tuple&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">seed_przs</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="c1"># Allow the user to specify if they want to use a specific seed when generating the shares</span>
+            <span class="c1"># ^This is unsecure and should be used with cautioness</span>
+            <span class="n">seed_przs</span> <span class="o">=</span> <span class="n">secrets</span><span class="o">.</span><span class="n">randbits</span><span class="p">(</span><span class="mi">32</span><span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">seed_przs</span> <span class="o">=</span> <span class="n">seed_przs</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parties</span> <span class="o">=</span> <span class="n">parties</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">parties_info</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">get_parties_info</span><span class="p">(</span><span class="n">parties</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">ring_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span> <span class="o">=</span> <span class="n">ring_size</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">get_ring_size_from_secret</span><span class="p">(</span><span class="n">secret</span><span class="p">,</span> <span class="n">shares</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">mpc_shape</span> <span class="o">=</span> <span class="n">shape</span>
+
+        <span class="c1"># TODO: We can get this from the the secret if the secret is local</span>
+        <span class="c1"># TODO: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?stories_sort_by\</span>
+        <span class="c1">#  =priority&amp;stories_group_by=WORKFLOW_STATE</span>
+        <span class="k">if</span> <span class="n">shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Shape of the secret should be known&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">secret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">shares</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">_get_shares_from_secret</span><span class="p">(</span>
+                <span class="n">secret</span><span class="o">=</span><span class="n">secret</span><span class="p">,</span>
+                <span class="n">parties</span><span class="o">=</span><span class="n">parties</span><span class="p">,</span>
+                <span class="n">parties_info</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parties_info</span><span class="p">,</span>
+                <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>
+                <span class="n">ring_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">shares</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Shares should not be None at this step&quot;</span><span class="p">)</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">list</span><span class="p">(</span><span class="n">MPCTensor</span><span class="o">.</span><span class="n">_mpc_from_shares</span><span class="p">(</span><span class="n">shares</span><span class="p">,</span> <span class="n">parties</span><span class="o">=</span><span class="n">parties</span><span class="p">))</span>
+
+        <span class="c1"># we need to make sure that when we zip up clients from</span>
+        <span class="c1"># multiple MPC tensors that they are in corresponding order</span>
+        <span class="c1"># so we always sort all of them by the id of the domain</span>
+        <span class="c1"># TODO: store children as lists of dictionaries because eventually</span>
+        <span class="c1"># it&#39;s likely that we have multiple shares from the same client</span>
+        <span class="c1"># (For example, if you wanted a domain to have 90% share ownership</span>
+        <span class="c1"># you&#39;d need to produce 10 shares and give 9 of them to the same domain)</span>
+        <span class="c1"># TODO captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-\</span>
+        <span class="c1">#  demo?stories_sort_by=priority&amp;stories_group_by=WORKFLOW_STATE</span>
+        <span class="n">res</span><span class="o">.</span><span class="n">sort</span><span class="p">(</span><span class="n">key</span><span class="o">=</span><span class="k">lambda</span> <span class="n">share</span><span class="p">:</span> <span class="n">share</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">name</span> <span class="o">+</span> <span class="n">share</span><span class="o">.</span><span class="n">client</span><span class="o">.</span><span class="n">id</span><span class="o">.</span><span class="n">no_dash</span><span class="p">)</span>
+
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_ring_size_from_secret</span><span class="p">(</span>
+        <span class="n">secret</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span> <span class="n">shares</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">int</span><span class="p">:</span>
+        <span class="k">if</span> <span class="n">secret</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">shares</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>  <span class="c1"># type: ignore</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">value</span> <span class="o">=</span> <span class="n">secret</span>
+        <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">ispointer</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;public_dtype&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">dtype</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">value</span><span class="p">,</span> <span class="s2">&quot;dtype&quot;</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="n">ring_size</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">TYPE_TO_RING_SIZE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">dtype</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">ring_size</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">ring_size</span>
+
+        <span class="n">logger</span><span class="o">.</span><span class="n">warning</span><span class="p">(</span><span class="s2">&quot;Ring size was not found! Defaulting to 2**32.&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">32</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_parties_info</span><span class="p">(</span><span class="n">parties</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">GridURL</span><span class="p">]:</span>
+        <span class="c1"># relative</span>
+        <span class="kn">from</span> <span class="nn">....grid.client</span> <span class="kn">import</span> <span class="n">GridHTTPConnection</span>
+
+        <span class="n">parties_info</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">GridURL</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="n">parties</span><span class="p">:</span>
+            <span class="n">connection</span> <span class="o">=</span> <span class="n">party</span><span class="o">.</span><span class="n">routes</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">connection</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">connection</span><span class="p">,</span> <span class="n">GridHTTPConnection</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">TypeError</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;You tried to pass </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">connection</span><span class="p">)</span><span class="si">}</span><span class="s2"> for multiplication dependent operation.&quot;</span>
+                    <span class="o">+</span> <span class="s2">&quot;Currently Syft works only with hagrid&quot;</span>
+                    <span class="o">+</span> <span class="s2">&quot;We apologize for the inconvenience&quot;</span>
+                    <span class="o">+</span> <span class="s2">&quot;We will add support for local python objects very soon.&quot;</span>
+                <span class="p">)</span>
+            <span class="n">base_url</span> <span class="o">=</span> <span class="n">PARTIES_REGISTER_CACHE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">party</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+            <span class="k">if</span> <span class="n">base_url</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">base_url</span> <span class="o">=</span> <span class="n">connection</span><span class="o">.</span><span class="n">base_url</span>
+                <span class="n">PARTIES_REGISTER_CACHE</span><span class="p">[</span><span class="n">party</span><span class="p">]</span> <span class="o">=</span> <span class="n">base_url</span>
+                <span class="k">try</span><span class="p">:</span>
+                    <span class="k">pass</span>
+                    <span class="c1"># We do not use sy.register, should reenable after fixing.</span>
+                    <span class="c1"># sy.register(  # nosec</span>
+                    <span class="c1">#     name=&quot;Howard Wolowtiz&quot;,</span>
+                    <span class="c1">#     email=&quot;howard@mit.edu&quot;,</span>
+                    <span class="c1">#     password=&quot;astronaut&quot;,</span>
+                    <span class="c1">#     url=url,</span>
+                    <span class="c1">#     port=port,</span>
+                    <span class="c1">#     verbose=False,</span>
+                    <span class="c1"># )</span>
+                <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+                    <span class="sd">&quot;&quot;&quot; &quot;&quot;&quot;</span>
+                    <span class="c1"># TODO : should modify to return same client if registered.</span>
+                    <span class="c1"># print(&quot;Proxy Client already User Register&quot;, e)</span>
+            <span class="k">if</span> <span class="n">base_url</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="n">parties_info</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">base_url</span><span class="p">)</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="sa">f</span><span class="s2">&quot;Failed to get GridURL from </span><span class="si">{</span><span class="n">base_url</span><span class="si">}</span><span class="s2"> for party </span><span class="si">{</span><span class="n">party</span><span class="si">}</span><span class="s2">.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">parties_info</span>
+
+    <span class="k">def</span> <span class="nf">publish</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">sigma</span><span class="p">:</span> <span class="nb">float</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="n">new_shares</span> <span class="o">=</span> <span class="p">[]</span>
+
+        <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">share</span><span class="o">.</span><span class="n">block</span>
+
+        <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">new_share</span> <span class="o">=</span> <span class="n">share</span><span class="o">.</span><span class="n">publish</span><span class="p">(</span><span class="n">sigma</span><span class="o">=</span><span class="n">sigma</span><span class="p">)</span>
+            <span class="n">new_shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_share</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">MPCTensor</span><span class="p">(</span>
+            <span class="n">parties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parties</span><span class="p">,</span>
+            <span class="n">shares</span><span class="o">=</span><span class="n">new_shares</span><span class="p">,</span>
+            <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">mpc_shape</span><span class="p">,</span>
+            <span class="n">seed_przs</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">seed_przs</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">shape</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">]]:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpc_shape</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_mpc_from_shares</span><span class="p">(</span>
+        <span class="n">shares</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">],</span>
+        <span class="n">parties</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">shares</span><span class="p">,</span> <span class="p">(</span><span class="nb">list</span><span class="p">,</span> <span class="nb">tuple</span><span class="p">)):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;_mpc_from_shares expected a list or tuple of shares&quot;</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">ispointer</span><span class="p">(</span><span class="n">shares</span><span class="p">[</span><span class="mi">0</span><span class="p">]):</span>
+            <span class="c1"># Remote shares</span>
+            <span class="k">return</span> <span class="n">shares</span>
+        <span class="k">elif</span> <span class="n">parties</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Parties should not be None if shares are not already sent to parties&quot;</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">_mpc_from_local_shares</span><span class="p">(</span><span class="n">shares</span><span class="p">,</span> <span class="n">parties</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_mpc_from_local_shares</span><span class="p">(</span>
+        <span class="n">shares</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">],</span> <span class="n">parties</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">]:</span>
+        <span class="c1"># TODO: ShareTensor needs to have serde serializer/deserializer</span>
+        <span class="n">shares_ptr</span> <span class="o">=</span> <span class="p">[</span><span class="n">share</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">party</span><span class="p">)</span> <span class="k">for</span> <span class="n">share</span><span class="p">,</span> <span class="n">party</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="n">shares</span><span class="p">,</span> <span class="n">parties</span><span class="p">)]</span>
+        <span class="k">return</span> <span class="n">shares_ptr</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_shares_from_secret</span><span class="p">(</span>
+        <span class="n">secret</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">parties</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">seed_przs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">parties_info</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">GridURL</span><span class="p">],</span>
+        <span class="n">ring_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">ispointer</span><span class="p">(</span><span class="n">secret</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Shape must be specified when the secret is remote&quot;</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">_get_shares_from_remote_secret</span><span class="p">(</span>
+                <span class="n">secret</span><span class="o">=</span><span class="n">secret</span><span class="p">,</span>
+                <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                <span class="n">parties</span><span class="o">=</span><span class="n">parties</span><span class="p">,</span>
+                <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>
+                <span class="n">parties_info</span><span class="o">=</span><span class="n">parties_info</span><span class="p">,</span>
+                <span class="n">ring_size</span><span class="o">=</span><span class="n">ring_size</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">_get_shares_from_local_secret</span><span class="p">(</span>
+            <span class="n">secret</span><span class="o">=</span><span class="n">secret</span><span class="p">,</span>
+            <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>
+            <span class="n">ring_size</span><span class="o">=</span><span class="n">ring_size</span><span class="p">,</span>
+            <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+            <span class="n">parties_info</span><span class="o">=</span><span class="n">parties_info</span><span class="p">,</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_shares_from_remote_secret</span><span class="p">(</span>
+        <span class="n">secret</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">parties</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span>
+        <span class="n">seed_przs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">parties_info</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">GridURL</span><span class="p">],</span>
+        <span class="n">ring_size</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">]:</span>
+        <span class="n">shares</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">party</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">parties</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">secret</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="n">party</span> <span class="o">==</span> <span class="n">secret</span><span class="o">.</span><span class="n">client</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">secret</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="c1"># relative</span>
+            <span class="kn">from</span> <span class="nn">..autodp.single_entity_phi</span> <span class="kn">import</span> <span class="p">(</span>
+                <span class="n">TensorWrappedSingleEntityPhiTensorPointer</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">secret</span><span class="p">,</span> <span class="n">TensorWrappedSingleEntityPhiTensorPointer</span><span class="p">):</span>
+
+                <span class="n">share_wrapper</span> <span class="o">=</span> <span class="n">secret</span><span class="o">.</span><span class="n">to_local_object_without_private_data_child</span><span class="p">()</span>
+                <span class="n">share_wrapper_pointer</span> <span class="o">=</span> <span class="n">share_wrapper</span><span class="o">.</span><span class="n">send</span><span class="p">(</span><span class="n">party</span><span class="p">)</span>
+
+                <span class="n">remote_share</span> <span class="o">=</span> <span class="n">party</span><span class="o">.</span><span class="n">syft</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">tensor</span><span class="o">.</span><span class="n">smpc</span><span class="o">.</span><span class="n">share_tensor</span><span class="o">.</span><span class="n">ShareTensor</span><span class="o">.</span><span class="n">generate_przs_on_dp_tensor</span><span class="p">(</span>
+                    <span class="n">rank</span><span class="o">=</span><span class="n">i</span><span class="p">,</span>
+                    <span class="n">parties_info</span><span class="o">=</span><span class="n">parties_info</span><span class="p">,</span>
+                    <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                    <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                    <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>
+                    <span class="n">share_wrapper</span><span class="o">=</span><span class="n">share_wrapper_pointer</span><span class="p">,</span>
+                    <span class="n">ring_size</span><span class="o">=</span><span class="n">ring_size</span><span class="p">,</span>
+                <span class="p">)</span>
+
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">remote_share</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">party</span><span class="o">.</span><span class="n">syft</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">tensor</span><span class="o">.</span><span class="n">smpc</span><span class="o">.</span><span class="n">share_tensor</span><span class="o">.</span><span class="n">ShareTensor</span><span class="o">.</span><span class="n">generate_przs</span><span class="p">(</span>
+                        <span class="n">rank</span><span class="o">=</span><span class="n">i</span><span class="p">,</span>
+                        <span class="n">parties_info</span><span class="o">=</span><span class="n">parties_info</span><span class="p">,</span>
+                        <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                        <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                        <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>
+                        <span class="n">ring_size</span><span class="o">=</span><span class="n">ring_size</span><span class="p">,</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+
+            <span class="n">shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">remote_share</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">shares</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_get_shares_from_local_secret</span><span class="p">(</span>
+        <span class="n">secret</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span>
+        <span class="n">shape</span><span class="p">:</span> <span class="n">Tuple</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="o">...</span><span class="p">],</span>
+        <span class="n">seed_przs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span>
+        <span class="n">parties_info</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">GridURL</span><span class="p">],</span>
+        <span class="n">ring_size</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">**</span> <span class="mi">32</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">]:</span>
+        <span class="n">shares</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">nr_parties</span> <span class="o">=</span> <span class="nb">len</span><span class="p">(</span><span class="n">parties_info</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">i</span> <span class="ow">in</span> <span class="nb">range</span><span class="p">(</span><span class="n">nr_parties</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">i</span> <span class="o">==</span> <span class="n">nr_parties</span> <span class="o">-</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="n">secret</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">value</span> <span class="o">=</span> <span class="kc">None</span>
+
+            <span class="n">local_share</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="o">.</span><span class="n">generate_przs</span><span class="p">(</span>
+                <span class="n">rank</span><span class="o">=</span><span class="n">i</span><span class="p">,</span>
+                <span class="n">parties_info</span><span class="o">=</span><span class="n">parties_info</span><span class="p">,</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">value</span><span class="p">,</span>
+                <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>
+                <span class="n">init_clients</span><span class="o">=</span><span class="kc">False</span><span class="p">,</span>
+                <span class="n">ring_size</span><span class="o">=</span><span class="n">ring_size</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="n">shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">local_share</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">shares</span>
+
+    <span class="k">def</span> <span class="nf">request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">reason</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span><span class="p">,</span>
+        <span class="n">block</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+        <span class="n">timeout_secs</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="n">verbose</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">for</span> <span class="n">child</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">child</span><span class="o">.</span><span class="n">request</span><span class="p">(</span>
+                <span class="n">reason</span><span class="o">=</span><span class="n">reason</span><span class="p">,</span> <span class="n">block</span><span class="o">=</span><span class="n">block</span><span class="p">,</span> <span class="n">timeout_secs</span><span class="o">=</span><span class="n">timeout_secs</span><span class="p">,</span> <span class="n">verbose</span><span class="o">=</span><span class="n">verbose</span>
+            <span class="p">)</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">block</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MPCTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Block until all shares have been created.&quot;&quot;&quot;</span>
+        <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">share</span><span class="o">.</span><span class="n">block</span>
+
+        <span class="k">return</span> <span class="bp">self</span>
+
+<div class="viewcode-block" id="MPCTensor.block_with_timeout"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.mpc_tensor.html#syft.core.tensor.smpc.mpc_tensor.MPCTensor.block_with_timeout">[docs]</a>    <span class="k">def</span> <span class="nf">block_with_timeout</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">secs</span><span class="p">:</span> <span class="nb">int</span><span class="p">,</span> <span class="n">secs_per_poll</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">1</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;MPCTensor&quot;</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Block until all shares have been created or until timeout expires.&quot;&quot;&quot;</span>
+
+        <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">share</span><span class="o">.</span><span class="n">block_with_timeout</span><span class="p">(</span><span class="n">secs</span><span class="o">=</span><span class="n">secs</span><span class="p">,</span> <span class="n">secs_per_poll</span><span class="o">=</span><span class="n">secs_per_poll</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="bp">self</span></div>
+
+    <span class="k">def</span> <span class="nf">reconstruct</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># TODO: It might be that the resulted shares (if we run any computation) might</span>
+        <span class="c1"># not be available at this point. We need to have this fail well with a nice</span>
+        <span class="c1"># description as to which node wasn&#39;t able to be reconstructued.</span>
+        <span class="c1"># Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\</span>
+        <span class="c1"># stories_sort_by=priority&amp;stories_group_by=WORKFLOW_STATE</span>
+
+        <span class="c1"># for now we need to convert the values coming back to int32</span>
+        <span class="c1"># sometimes they are floats coming from DP</span>
+        <span class="k">def</span> <span class="nf">convert_child_numpy_type</span><span class="p">(</span><span class="n">tensor</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">np_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+            <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">):</span>
+                <span class="k">return</span> <span class="n">np</span><span class="o">.</span><span class="n">array</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="n">np_type</span><span class="p">)</span>
+            <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">tensor</span><span class="p">,</span> <span class="s2">&quot;child&quot;</span><span class="p">):</span>
+                <span class="n">tensor</span><span class="o">.</span><span class="n">child</span> <span class="o">=</span> <span class="n">convert_child_numpy_type</span><span class="p">(</span>
+                    <span class="n">tensor</span><span class="o">=</span><span class="n">tensor</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">np_type</span><span class="o">=</span><span class="n">np_type</span>
+                <span class="p">)</span>
+            <span class="k">return</span> <span class="n">tensor</span>
+
+        <span class="n">dtype</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">RING_SIZE_TO_TYPE</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">dtype</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Type for ring size </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="si">}</span><span class="s2"> was not found!&quot;</span><span class="p">)</span>
+
+        <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">share</span><span class="o">.</span><span class="n">exists</span><span class="p">:</span>
+                <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span>
+                    <span class="s2">&quot;One of the shares doesn&#39;t exist. This probably means the SMPC &quot;</span>
+                    <span class="s2">&quot;computation isn&#39;t yet complete. Try again in a moment or call .block.reconstruct()&quot;</span>
+                    <span class="s2">&quot;instead to block until the SMPC operation is complete which creates this variable.&quot;</span>
+                <span class="p">)</span>
+
+        <span class="n">local_shares</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">share</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">convert_child_numpy_type</span><span class="p">(</span><span class="n">res</span><span class="p">,</span> <span class="n">dtype</span><span class="p">)</span>
+            <span class="n">local_shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">res</span><span class="p">)</span>
+
+        <span class="n">is_share_tensor</span> <span class="o">=</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">local_shares</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">ShareTensor</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="n">is_share_tensor</span><span class="p">:</span>
+            <span class="n">local_shares</span> <span class="o">=</span> <span class="p">[</span><span class="n">share</span><span class="o">.</span><span class="n">child</span> <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="n">local_shares</span><span class="p">]</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">local_shares</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="n">ShareTensor</span><span class="o">.</span><span class="n">get_op</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span> <span class="s2">&quot;add&quot;</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="n">local_shares</span><span class="p">[</span><span class="mi">1</span><span class="p">:]:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">op</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="n">share</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">result</span><span class="p">,</span> <span class="s2">&quot;child&quot;</span><span class="p">)</span> <span class="ow">and</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">result</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">ShareTensor</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">result</span><span class="o">.</span><span class="n">child</span><span class="o">.</span><span class="n">child</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="n">get</span> <span class="o">=</span> <span class="n">reconstruct</span>
+
+<div class="viewcode-block" id="MPCTensor.hook_method"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.mpc_tensor.html#syft.core.tensor.smpc.mpc_tensor.MPCTensor.hook_method">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">hook_method</span><span class="p">(</span><span class="n">__self</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">,</span> <span class="n">method_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Callable</span><span class="p">[</span><span class="o">...</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Hook a framework method.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            method_name (str): method to hook</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            A hooked method</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="k">def</span> <span class="nf">method_all_shares</span><span class="p">(</span>
+            <span class="n">_self</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+        <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+
+            <span class="n">shares</span> <span class="o">=</span> <span class="p">[]</span>
+
+            <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="n">_self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                <span class="n">method</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">share</span><span class="p">,</span> <span class="n">method_name</span><span class="p">)</span>
+                <span class="n">new_share</span> <span class="o">=</span> <span class="n">method</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="n">shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">new_share</span><span class="p">)</span>
+
+                <span class="c1"># TODO: generalize type after fixed precision</span>
+                <span class="n">dummy_res</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">randint</span><span class="p">(</span>
+                    <span class="n">_self</span><span class="o">.</span><span class="n">mpc_shape</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">size</span><span class="o">=</span><span class="n">_self</span><span class="o">.</span><span class="n">mpc_shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span>  <span class="c1"># type: ignore</span>
+                <span class="p">)</span>
+                <span class="k">if</span> <span class="n">method_name</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">INPLACE_OPS</span><span class="p">:</span>
+                    <span class="n">dummy_res</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">dummy_res</span><span class="p">,</span> <span class="n">method_name</span><span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="n">dummy_res</span><span class="p">,</span> <span class="n">method_name</span><span class="p">)(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+
+                <span class="n">new_shape</span> <span class="o">=</span> <span class="n">dummy_res</span><span class="o">.</span><span class="n">shape</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="p">(</span><span class="n">parties</span><span class="o">=</span><span class="n">_self</span><span class="o">.</span><span class="n">parties</span><span class="p">,</span> <span class="n">shares</span><span class="o">=</span><span class="n">shares</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">new_shape</span><span class="p">)</span>
+            <span class="k">return</span> <span class="n">res</span>
+
+        <span class="k">return</span> <span class="n">functools</span><span class="o">.</span><span class="n">partial</span><span class="p">(</span><span class="n">method_all_shares</span><span class="p">,</span> <span class="n">__self</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">attr_name</span> <span class="ow">in</span> <span class="n">METHODS_FORWARD_ALL_SHARES</span><span class="p">:</span>
+            <span class="k">return</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">hook_method</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="nb">object</span><span class="o">.</span><span class="fm">__getattribute__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span>
+
+<div class="viewcode-block" id="MPCTensor.reshare"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.mpc_tensor.html#syft.core.tensor.smpc.mpc_tensor.MPCTensor.reshare">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">reshare</span><span class="p">(</span><span class="n">mpc_tensor</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">,</span> <span class="n">parties</span><span class="p">:</span> <span class="n">Iterable</span><span class="p">[</span><span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Reshare a given secret to a superset of parties.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            mpc_tensor(MPCTensor): input MPCTensor to reshare.</span>
+<span class="sd">            parties(List[Any]): Input parties List.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            res_mpc(MPCTensor): Reshared MPCTensor.</span>
+<span class="sd">        Raises:</span>
+<span class="sd">            ValueError: If the input MPCTensor and input parties are same.</span>
+
+<span class="sd">        Note:</span>
+<span class="sd">        We provide an additional layer of abstraction such that,</span>
+<span class="sd">        when computation is performed on data belonging to different parties</span>
+<span class="sd">        The underlying secret are automatically converted into secret shares of their input.</span>
+
+<span class="sd">        Assume there are two parties Parties P1,P2</span>
+
+<span class="sd">        tensor_1 = data_pointer_1 (party 1 data)</span>
+<span class="sd">        tensor_2 = data_pointer_2 (party 2 data)</span>
+
+<span class="sd">        result -------&gt; tensor_1+ tensor_1 (local computation as the data</span>
+<span class="sd">        belongs to the same party)</span>
+
+<span class="sd">        Interesting scenario is when</span>
+
+<span class="sd">        result --------&gt; tensor_1+tensor_2</span>
+
+<span class="sd">        Each tensor belongs to two different parties.</span>
+<span class="sd">        There are automatically secret shared without the user</span>
+<span class="sd">        knowing that a MPCTensor is being created underneath.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">mpc_parties</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">mpc_tensor</span><span class="o">.</span><span class="n">parties</span><span class="p">)</span>
+        <span class="n">parties</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">parties</span><span class="p">)</span>
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">mpc_tensor</span><span class="o">.</span><span class="n">shape</span>
+        <span class="n">seed_przs</span> <span class="o">=</span> <span class="n">mpc_tensor</span><span class="o">.</span><span class="n">seed_przs</span>
+        <span class="n">client_map</span> <span class="o">=</span> <span class="p">{</span><span class="n">share</span><span class="o">.</span><span class="n">client</span><span class="p">:</span> <span class="n">share</span> <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="n">mpc_tensor</span><span class="o">.</span><span class="n">child</span><span class="p">}</span>
+
+        <span class="k">if</span> <span class="n">mpc_parties</span> <span class="o">==</span> <span class="n">parties</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="s2">&quot;Input parties for resharing are same as the input parties.&quot;</span>
+            <span class="p">)</span>
+        <span class="n">parties_info</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">get_parties_info</span><span class="p">(</span><span class="n">parties</span><span class="p">)</span>
+        <span class="n">shares</span> <span class="o">=</span> <span class="p">[</span><span class="n">client_map</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">party</span><span class="p">)</span> <span class="k">for</span> <span class="n">party</span> <span class="ow">in</span> <span class="n">parties</span><span class="p">]</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">party</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="n">parties</span><span class="p">):</span>
+            <span class="n">shares</span><span class="p">[</span>
+                <span class="n">i</span>
+            <span class="p">]</span> <span class="o">=</span> <span class="n">party</span><span class="o">.</span><span class="n">syft</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">tensor</span><span class="o">.</span><span class="n">smpc</span><span class="o">.</span><span class="n">share_tensor</span><span class="o">.</span><span class="n">ShareTensor</span><span class="o">.</span><span class="n">generate_przs</span><span class="p">(</span>
+                <span class="n">rank</span><span class="o">=</span><span class="n">i</span><span class="p">,</span>
+                <span class="n">parties_info</span><span class="o">=</span><span class="n">parties_info</span><span class="p">,</span>
+                <span class="n">value</span><span class="o">=</span><span class="n">shares</span><span class="p">[</span><span class="n">i</span><span class="p">],</span>
+                <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span>
+                <span class="n">seed_przs</span><span class="o">=</span><span class="n">seed_przs</span><span class="p">,</span>
+                <span class="n">ring_size</span><span class="o">=</span><span class="n">mpc_tensor</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span>
+            <span class="p">)</span>
+
+        <span class="n">res_mpc</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="p">(</span><span class="n">shares</span><span class="o">=</span><span class="n">shares</span><span class="p">,</span> <span class="n">ring_size</span><span class="o">=</span><span class="n">mpc_tensor</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">parties</span><span class="o">=</span><span class="n">parties</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="k">return</span> <span class="n">res_mpc</span></div>
+
+<div class="viewcode-block" id="MPCTensor.sanity_checks"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.mpc_tensor.html#syft.core.tensor.smpc.mpc_tensor.MPCTensor.sanity_checks">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">sanity_checks</span><span class="p">(</span><span class="n">mpc_tensor</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Tuple</span><span class="p">[</span><span class="n">MPCTensor</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="sd">&quot;&quot;&quot;Performs sanity checks to share data to whole superset of parites involved.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            mpc_tensor(MPCTensor): input MPCTensor to perform sanity check on.</span>
+<span class="sd">            other (Any): input operand.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            Tuple[MPCTensor,Any]: Rehared Tensor values.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="n">utils</span><span class="o">.</span><span class="n">ispointer</span><span class="p">(</span><span class="n">other</span><span class="p">):</span>
+            <span class="n">parties</span> <span class="o">=</span> <span class="n">mpc_tensor</span><span class="o">.</span><span class="n">parties</span>
+            <span class="n">client</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">client</span>
+            <span class="n">public_shape</span> <span class="o">=</span> <span class="n">other</span><span class="o">.</span><span class="n">public_shape</span>
+            <span class="k">if</span> <span class="n">public_shape</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># TODO: Should be modified after Trask&#39;s Synthetic data PR.</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;The input tensor pointer should have public shape.&quot;</span><span class="p">)</span>
+            <span class="k">if</span> <span class="n">client</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">parties</span><span class="p">:</span>
+                <span class="n">new_parties</span> <span class="o">=</span> <span class="p">[</span><span class="n">client</span><span class="p">]</span>
+                <span class="n">new_parties</span> <span class="o">+=</span> <span class="n">parties</span>
+                <span class="n">mpc_tensor</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">reshare</span><span class="p">(</span><span class="n">mpc_tensor</span><span class="p">,</span> <span class="n">new_parties</span><span class="p">)</span>
+
+            <span class="n">other</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="p">(</span><span class="n">secret</span><span class="o">=</span><span class="n">other</span><span class="p">,</span> <span class="n">parties</span><span class="o">=</span><span class="n">new_parties</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">public_shape</span><span class="p">)</span>
+
+        <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">):</span>
+            <span class="n">p1</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">mpc_tensor</span><span class="o">.</span><span class="n">parties</span><span class="p">)</span>  <span class="c1"># parties in first MPCTensor</span>
+            <span class="n">p2</span> <span class="o">=</span> <span class="nb">set</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">parties</span><span class="p">)</span>  <span class="c1"># parties in second MPCTensor.</span>
+            <span class="k">if</span> <span class="n">p1</span> <span class="o">!=</span> <span class="n">p2</span><span class="p">:</span>
+                <span class="n">parties_union</span> <span class="o">=</span> <span class="n">p1</span><span class="o">.</span><span class="n">union</span><span class="p">(</span><span class="n">p2</span><span class="p">)</span>
+                <span class="n">mpc_tensor</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">MPCTensor</span><span class="o">.</span><span class="n">reshare</span><span class="p">(</span><span class="n">mpc_tensor</span><span class="p">,</span> <span class="n">parties_union</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">p1</span> <span class="o">!=</span> <span class="n">parties_union</span>
+                    <span class="k">else</span> <span class="n">mpc_tensor</span>
+                <span class="p">)</span>
+                <span class="n">other</span> <span class="o">=</span> <span class="p">(</span>
+                    <span class="n">MPCTensor</span><span class="o">.</span><span class="n">reshare</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">parties_union</span><span class="p">)</span>
+                    <span class="k">if</span> <span class="n">p2</span> <span class="o">!=</span> <span class="n">parties_union</span>
+                    <span class="k">else</span> <span class="n">other</span>
+                <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">mpc_tensor</span><span class="p">,</span> <span class="n">other</span></div>
+
+    <span class="k">def</span> <span class="nf">__apply_private_op</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">,</span> <span class="n">op_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">]:</span>
+        <span class="c1"># relative</span>
+        <span class="kn">from</span> <span class="nn">..tensor</span> <span class="kn">import</span> <span class="n">TensorPointer</span>
+
+        <span class="n">op_method</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">op_str</span><span class="si">}</span><span class="s2">__&quot;</span>
+        <span class="k">if</span> <span class="n">op_str</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="s2">&quot;sub&quot;</span><span class="p">}:</span>
+            <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span> <span class="o">!=</span> <span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                    <span class="s2">&quot;Zipping two different lengths will drop data. &quot;</span>
+                    <span class="o">+</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2"> vs </span><span class="si">{</span><span class="nb">len</span><span class="p">(</span><span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+                <span class="p">)</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">TensorPointer</span><span class="p">):</span>
+                <span class="n">res_shares</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">op_method</span><span class="p">)(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">)</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">res_shares</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">attr_path_and_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">path_and_name</span><span class="si">}</span><span class="s2">.__</span><span class="si">{</span><span class="n">op_str</span><span class="si">}</span><span class="s2">__&quot;</span>
+                <span class="n">op</span> <span class="o">=</span> <span class="n">get_run_class_method</span><span class="p">(</span><span class="n">attr_path_and_name</span><span class="p">,</span> <span class="n">SMPC</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">other</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+                    <span class="n">res_shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">(</span><span class="n">x</span><span class="p">,</span> <span class="n">x</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MPCTensor Private </span><span class="si">{</span><span class="n">op_str</span><span class="si">}</span><span class="s2"> not supported&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res_shares</span>
+
+    <span class="k">def</span> <span class="nf">__apply_public_op</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">op_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="n">ShareTensor</span><span class="p">]:</span>
+        <span class="c1"># relative</span>
+        <span class="kn">from</span> <span class="nn">..tensor</span> <span class="kn">import</span> <span class="n">TensorPointer</span>
+
+        <span class="n">op_method</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;__</span><span class="si">{</span><span class="n">op_str</span><span class="si">}</span><span class="s2">__&quot;</span>
+        <span class="k">if</span> <span class="n">op_str</span> <span class="ow">in</span> <span class="p">{</span><span class="s2">&quot;mul&quot;</span><span class="p">,</span> <span class="s2">&quot;matmul&quot;</span><span class="p">,</span> <span class="s2">&quot;add&quot;</span><span class="p">,</span> <span class="s2">&quot;sub&quot;</span><span class="p">}:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">TensorPointer</span><span class="p">):</span>
+                <span class="n">res_shares</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="n">share</span><span class="p">,</span> <span class="n">op_method</span><span class="p">)(</span><span class="n">share</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+                    <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">res_shares</span> <span class="o">=</span> <span class="p">[]</span>
+                <span class="n">attr_path_and_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">path_and_name</span><span class="si">}</span><span class="s2">.__</span><span class="si">{</span><span class="n">op_str</span><span class="si">}</span><span class="s2">__&quot;</span>
+                <span class="n">op</span> <span class="o">=</span> <span class="n">get_run_class_method</span><span class="p">(</span><span class="n">attr_path_and_name</span><span class="p">,</span> <span class="n">SMPC</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                    <span class="n">res_shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">op</span><span class="p">(</span><span class="n">share</span><span class="p">,</span> <span class="n">share</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;MPCTensor Public </span><span class="si">{</span><span class="n">op_str</span><span class="si">}</span><span class="s2"> not supported&quot;</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">res_shares</span>
+
+    <span class="k">def</span> <span class="nf">__apply_op</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">Tensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">],</span>
+        <span class="n">op_str</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply an operation on &quot;self&quot; which is a MPCTensor &quot;y&quot;.</span>
+
+<span class="sd">         This function checks if &quot;y&quot; is private or public value.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[int, float, torch.Tensor, np.ndarray, MPCTensor]: tensor to apply the operation.</span>
+<span class="sd">            op_str (str): the operation.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            MPCTensor. the operation &quot;op_str&quot; applied on &quot;self&quot; and &quot;y&quot;</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+
+        <span class="n">x</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">sanity_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;seed_id_locations&quot;</span><span class="p">:</span> <span class="n">secrets</span><span class="o">.</span><span class="n">randbits</span><span class="p">(</span><span class="mi">64</span><span class="p">)}</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">):</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">__apply_private_op</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">op_str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">y_ring_size</span> <span class="o">=</span> <span class="n">y</span><span class="o">.</span><span class="n">ring_size</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">result</span> <span class="o">=</span> <span class="n">x</span><span class="o">.</span><span class="n">__apply_public_op</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">op_str</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+            <span class="n">y_ring_size</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">get_ring_size_from_secret</span><span class="p">(</span><span class="n">y</span><span class="p">)</span>
+
+        <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span> <span class="o">!=</span> <span class="n">y_ring_size</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+                <span class="sa">f</span><span class="s2">&quot;Ring size mismatch between self </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="si">}</span><span class="s2"> and other </span><span class="si">{</span><span class="n">y_ring_size</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="p">)</span>
+
+        <span class="n">y_shape</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
+
+        <span class="n">shape</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_shape</span><span class="p">(</span><span class="n">op_str</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">y_shape</span><span class="p">)</span>
+
+        <span class="n">ring_size</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_ring_size</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span> <span class="n">y_ring_size</span><span class="p">)</span>
+
+        <span class="n">result</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="p">(</span>
+            <span class="n">shares</span><span class="o">=</span><span class="n">result</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="n">shape</span><span class="p">,</span> <span class="n">ring_size</span><span class="o">=</span><span class="n">ring_size</span><span class="p">,</span> <span class="n">parties</span><span class="o">=</span><span class="n">x</span><span class="o">.</span><span class="n">parties</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+<div class="viewcode-block" id="MPCTensor.add"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.mpc_tensor.html#syft.core.tensor.smpc.mpc_tensor.MPCTensor.add">[docs]</a>    <span class="k">def</span> <span class="nf">add</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;add&quot; operation between &quot;self&quot; and &quot;y&quot;.</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[MPCTensor, torch.Tensor, float, int]): self + y</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            MPCTensor. Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__apply_op</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;add&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+    <span class="k">def</span> <span class="nf">sub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__apply_op</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;sub&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="nf">rsub</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="n">new_self</span> <span class="o">=</span> <span class="bp">self</span> <span class="o">*</span> <span class="p">(</span><span class="o">-</span><span class="mi">1</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">new_self</span><span class="o">.</span><span class="n">__apply_op</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;add&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="nf">mul</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="c1"># relative</span>
+        <span class="kn">from</span> <span class="nn">..tensor</span> <span class="kn">import</span> <span class="n">TensorPointer</span>
+
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">sanity_checks</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+        <span class="n">kwargs</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;seed_id_locations&quot;</span><span class="p">:</span> <span class="n">secrets</span><span class="o">.</span><span class="n">randbits</span><span class="p">(</span><span class="mi">64</span><span class="p">)}</span>
+        <span class="n">op</span> <span class="o">=</span> <span class="s2">&quot;__mul__&quot;</span>
+        <span class="n">res_shares</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="n">Any</span><span class="p">]</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">):</span>
+            <span class="n">res_shares</span> <span class="o">=</span> <span class="n">spdz</span><span class="o">.</span><span class="n">mul_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s2">&quot;mul&quot;</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="nb">isinstance</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">],</span> <span class="n">TensorPointer</span><span class="p">):</span>
+                <span class="n">res_shares</span> <span class="o">=</span> <span class="p">[</span>
+                    <span class="nb">getattr</span><span class="p">(</span><span class="n">a</span><span class="p">,</span> <span class="n">op</span><span class="p">)(</span><span class="n">a</span><span class="p">,</span> <span class="n">b</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span> <span class="k">for</span> <span class="n">a</span><span class="p">,</span> <span class="n">b</span> <span class="ow">in</span> <span class="nb">zip</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">,</span> <span class="n">itertools</span><span class="o">.</span><span class="n">repeat</span><span class="p">(</span><span class="n">y</span><span class="p">))</span>  <span class="c1"># type: ignore</span>
+                <span class="p">]</span>
+            <span class="k">else</span><span class="p">:</span>
+
+                <span class="n">attr_path_and_name</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">path_and_name</span><span class="si">}</span><span class="s2">.__mul__&quot;</span>
+                <span class="n">tensor_op</span> <span class="o">=</span> <span class="n">get_run_class_method</span><span class="p">(</span><span class="n">attr_path_and_name</span><span class="p">,</span> <span class="n">SMPC</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+                <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+                    <span class="n">res_shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">tensor_op</span><span class="p">(</span><span class="n">share</span><span class="p">,</span> <span class="n">share</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">))</span>
+
+        <span class="n">y_shape</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;shape&quot;</span><span class="p">,</span> <span class="p">(</span><span class="mi">1</span><span class="p">,))</span>
+        <span class="n">new_shape</span> <span class="o">=</span> <span class="n">utils</span><span class="o">.</span><span class="n">get_shape</span><span class="p">(</span><span class="s2">&quot;mul&quot;</span><span class="p">,</span> <span class="bp">self</span><span class="o">.</span><span class="n">mpc_shape</span><span class="p">,</span> <span class="n">y_shape</span><span class="p">)</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="p">(</span>
+            <span class="n">parties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parties</span><span class="p">,</span>
+            <span class="n">shares</span><span class="o">=</span><span class="n">res_shares</span><span class="p">,</span>
+            <span class="n">shape</span><span class="o">=</span><span class="n">new_shape</span><span class="p">,</span>
+            <span class="n">ring_size</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">ring_size</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="nf">lt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="n">mpc_res</span> <span class="o">=</span> <span class="n">spdz</span><span class="o">.</span><span class="n">lt_master</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">,</span> <span class="s2">&quot;mul&quot;</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="k">return</span> <span class="n">mpc_res</span>
+
+    <span class="k">def</span> <span class="nf">gt</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="n">mpc_res</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">lt</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="k">return</span> <span class="n">mpc_res</span>
+
+    <span class="k">def</span> <span class="nf">ge</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+
+        <span class="n">mpc_res</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">lt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">mpc_res</span>  <span class="c1"># type: ignore</span>
+
+    <span class="k">def</span> <span class="nf">le</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="n">mpc_res</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">lt</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+
+        <span class="k">return</span> <span class="n">mpc_res</span>  <span class="c1"># type: ignore</span>
+
+    <span class="k">def</span> <span class="nf">eq</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="c1"># TODO: Should make two comparisons parallel</span>
+        <span class="n">mpc_res</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">le</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span> <span class="o">-</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">lt</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">mpc_res</span>
+
+    <span class="k">def</span> <span class="nf">ne</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span> <span class="n">MPCTensor</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="n">mpc_res</span> <span class="o">=</span> <span class="mi">1</span> <span class="o">-</span> <span class="n">MPCTensor</span><span class="o">.</span><span class="n">eq</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">mpc_res</span>  <span class="c1"># type: ignore</span>
+
+<div class="viewcode-block" id="MPCTensor.matmul"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.mpc_tensor.html#syft.core.tensor.smpc.mpc_tensor.MPCTensor.matmul">[docs]</a>    <span class="k">def</span> <span class="nf">matmul</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">int</span><span class="p">,</span> <span class="nb">float</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">torch</span><span class="o">.</span><span class="n">tensor</span><span class="p">,</span> <span class="s2">&quot;MPCTensor&quot;</span><span class="p">]</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Apply the &quot;matmul&quot; operation between &quot;self&quot; and &quot;y&quot;</span>
+<span class="sd">        Args:</span>
+<span class="sd">            y (Union[int, float, np.ndarray, torch.tensor, &quot;MPCTensor&quot;]): self @ y</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            MPCTensor: Result of the opeartion.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="n">ShareTensor</span><span class="p">):</span>
+            <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span><span class="s2">&quot;Private matmul not supported yet&quot;</span><span class="p">)</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__apply_op</span><span class="p">(</span><span class="n">y</span><span class="p">,</span> <span class="s2">&quot;matmul&quot;</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="MPCTensor.put"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.mpc_tensor.html#syft.core.tensor.smpc.mpc_tensor.MPCTensor.put">[docs]</a>    <span class="k">def</span> <span class="nf">put</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">indices</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">values</span><span class="p">:</span> <span class="n">npt</span><span class="o">.</span><span class="n">ArrayLike</span><span class="p">,</span>
+        <span class="n">mode</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="s2">&quot;raise&quot;</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Performs Numpy put operation on the underlying ShareTensors.</span>
+<span class="sd">        Args:</span>
+<span class="sd">            indices (npt.ArrayLike): Target indices, interpreted as integers.</span>
+<span class="sd">            values (npt.ArrayLike): Values to place at target indices.</span>
+<span class="sd">            mode (Optional[str]): Specifies how out-of-bounds indices will behave.</span>
+<span class="sd">        Returns:</span>
+<span class="sd">            res (MPCTensor): Result of the operation.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">shares</span> <span class="o">=</span> <span class="p">[]</span>
+        <span class="n">shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">values</span><span class="p">,</span> <span class="n">mode</span><span class="p">))</span>
+        <span class="c1"># since the value is public we assign directly to prevent overhead of random share creation.</span>
+        <span class="n">zero</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">zeros_like</span><span class="p">(</span><span class="n">values</span><span class="p">)</span>
+        <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">[</span><span class="mi">1</span><span class="p">::]:</span>
+            <span class="n">shares</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">share</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">indices</span><span class="p">,</span> <span class="n">zero</span><span class="o">.</span><span class="n">copy</span><span class="p">(),</span> <span class="n">mode</span><span class="p">))</span>
+
+        <span class="n">res</span> <span class="o">=</span> <span class="n">MPCTensor</span><span class="p">(</span><span class="n">shares</span><span class="o">=</span><span class="n">shares</span><span class="p">,</span> <span class="n">parties</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">parties</span><span class="p">,</span> <span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="MPCTensor.sign"><a class="viewcode-back" href="../../../../../api_reference/syft.core.tensor.smpc.mpc_tensor.html#syft.core.tensor.smpc.mpc_tensor.MPCTensor.sign">[docs]</a>    <span class="k">def</span> <span class="nf">sign</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Calculate sign of given tensor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            MPCTensor: with computed sign.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="n">res</span><span class="p">:</span> <span class="n">MPCTensor</span> <span class="o">=</span> <span class="mi">2</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span>  <span class="c1"># type: ignore</span>
+        <span class="k">return</span> <span class="n">res</span></div>
+
+    <span class="k">def</span> <span class="fm">__abs__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Calculates absolute value of MPCTensor.</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">            MPCTensor: computed absolute values of underlying tensor.</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span> <span class="o">*</span> <span class="bp">self</span><span class="o">.</span><span class="n">sign</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__pow__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">power</span><span class="p">:</span> <span class="nb">int</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">MPCTensor</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Compute integer power of a number iteratively using mul.</span>
+
+<span class="sd">        - Divide power by 2 and multiply base to itself (if the power is even)</span>
+<span class="sd">        - Decrement power by 1 to make it even and then follow the first step</span>
+
+<span class="sd">        Args:</span>
+<span class="sd">            power (int): integer value to apply the</span>
+
+<span class="sd">        Returns:</span>
+<span class="sd">             MPCTensor: Result of the pow operation</span>
+
+<span class="sd">        Raises:</span>
+<span class="sd">            RuntimeError: if negative power is given</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="c1"># TODO: Implement after we have reciprocal function.</span>
+        <span class="k">if</span> <span class="n">power</span> <span class="o">&lt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="ne">RuntimeError</span><span class="p">(</span><span class="s2">&quot;Negative integer powers not supported yet.&quot;</span><span class="p">)</span>
+
+        <span class="n">base</span> <span class="o">=</span> <span class="bp">self</span>
+
+        <span class="c1"># TODO: should modify for general ring sizes.</span>
+        <span class="n">result</span> <span class="o">=</span> <span class="n">np</span><span class="o">.</span><span class="n">ones</span><span class="p">(</span><span class="n">shape</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">,</span> <span class="n">dtype</span><span class="o">=</span><span class="n">np</span><span class="o">.</span><span class="n">int32</span><span class="p">)</span>
+
+        <span class="k">while</span> <span class="n">power</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="c1"># If power is odd</span>
+            <span class="k">if</span> <span class="n">power</span> <span class="o">%</span> <span class="mi">2</span> <span class="o">==</span> <span class="mi">1</span><span class="p">:</span>
+                <span class="n">result</span> <span class="o">=</span> <span class="n">base</span> <span class="o">*</span> <span class="n">result</span>
+                <span class="n">result</span><span class="o">.</span><span class="n">block</span>
+
+            <span class="c1"># Divide the power by 2</span>
+            <span class="n">power</span> <span class="o">=</span> <span class="n">power</span> <span class="o">//</span> <span class="mi">2</span>
+            <span class="c1"># Multiply base to itself</span>
+            <span class="n">base</span> <span class="o">=</span> <span class="n">base</span> <span class="o">*</span> <span class="n">base</span>
+            <span class="n">base</span><span class="o">.</span><span class="n">block</span>
+
+        <span class="k">return</span> <span class="n">result</span>
+
+    <span class="k">def</span> <span class="fm">__str__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="s2">&quot;MPCTensor&quot;</span>
+        <span class="k">for</span> <span class="n">share</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">:</span>
+            <span class="n">res</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">res</span><span class="si">}</span><span class="se">\n\t</span><span class="si">{</span><span class="n">share</span><span class="si">}</span><span class="s2">&quot;</span>
+
+        <span class="k">return</span> <span class="n">res</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">synthetic</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">:</span>
+        <span class="c1"># TODO finish. max_vals and min_vals not available at present.</span>
+        <span class="k">return</span> <span class="p">(</span>
+            <span class="n">np</span><span class="o">.</span><span class="n">random</span><span class="o">.</span><span class="n">rand</span><span class="p">(</span><span class="o">*</span><span class="nb">list</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">))</span> <span class="o">*</span> <span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">max_vals</span> <span class="o">-</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_vals</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="o">+</span> <span class="bp">self</span><span class="o">.</span><span class="n">min_vals</span>
+        <span class="p">)</span><span class="o">.</span><span class="n">astype</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">public_dtype</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__repr__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+
+        <span class="c1"># out = self.synthetic.__repr__()</span>
+        <span class="c1"># out += &quot;\n\n (The data printed above is synthetic - it&#39;s an imitation of the real data.)&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="s2">&quot;&quot;</span>
+        <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">MPCTensor&quot;</span>
+        <span class="n">out</span> <span class="o">+=</span> <span class="s2">&quot;.shape=&quot;</span> <span class="o">+</span> <span class="nb">str</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">shape</span><span class="p">)</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="k">for</span> <span class="n">i</span><span class="p">,</span> <span class="n">child</span> <span class="ow">in</span> <span class="nb">enumerate</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">child</span><span class="p">):</span>
+            <span class="n">out</span> <span class="o">+=</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="se">\t</span><span class="s2"> .child[</span><span class="si">{</span><span class="n">i</span><span class="si">}</span><span class="s2">] = &quot;</span> <span class="o">+</span> <span class="n">child</span><span class="o">.</span><span class="fm">__repr__</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="n">out</span> <span class="o">=</span> <span class="n">out</span><span class="p">[:</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">+</span> <span class="s2">&quot;&quot;</span>
+
+        <span class="k">return</span> <span class="n">out</span>
+
+    <span class="fm">__add__</span> <span class="o">=</span> <span class="n">add</span>
+    <span class="fm">__radd__</span> <span class="o">=</span> <span class="n">add</span>
+    <span class="fm">__sub__</span> <span class="o">=</span> <span class="n">sub</span>
+    <span class="fm">__rsub__</span> <span class="o">=</span> <span class="n">rsub</span>
+    <span class="fm">__mul__</span> <span class="o">=</span> <span class="n">mul</span>
+    <span class="fm">__rmul__</span> <span class="o">=</span> <span class="n">mul</span>
+    <span class="fm">__matmul__</span> <span class="o">=</span> <span class="n">matmul</span>
+    <span class="fm">__lt__</span> <span class="o">=</span> <span class="n">lt</span>
+    <span class="fm">__gt__</span> <span class="o">=</span> <span class="n">gt</span>
+    <span class="fm">__ge__</span> <span class="o">=</span> <span class="n">ge</span>
+    <span class="fm">__le__</span> <span class="o">=</span> <span class="n">le</span>
+    <span class="fm">__eq__</span> <span class="o">=</span> <span class="n">eq</span>
+    <span class="fm">__ne__</span> <span class="o">=</span> <span class="n">ne</span></div>
+
+
+<span class="nd">@implements</span><span class="p">(</span><span class="n">MPCTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">add</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">add</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SupportedChainType</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">y</span><span class="o">.</span><span class="n">add</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="nd">@implements</span><span class="p">(</span><span class="n">MPCTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">subtract</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">sub</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SupportedChainType</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">y</span><span class="o">.</span><span class="n">rsub</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="nd">@implements</span><span class="p">(</span><span class="n">MPCTensor</span><span class="p">,</span> <span class="n">np</span><span class="o">.</span><span class="n">multiply</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">mul</span><span class="p">(</span><span class="n">x</span><span class="p">:</span> <span class="n">np</span><span class="o">.</span><span class="n">ndarray</span><span class="p">,</span> <span class="n">y</span><span class="p">:</span> <span class="n">MPCTensor</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SupportedChainType</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">y</span><span class="o">.</span><span class="n">mul</span><span class="p">(</span><span class="n">x</span><span class="p">)</span>
+
+
+<span class="c1"># @implements(MPCTensor, np.greater)</span>
+<span class="c1"># def mul(x: np.ndarray, y: MPCTensor) -&gt; SupportedChainType:</span>
+<span class="c1">#     return y.gt(x)</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+    <script src="../../../../../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.4.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>
