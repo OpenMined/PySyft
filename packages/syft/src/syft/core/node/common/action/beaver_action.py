@@ -78,6 +78,7 @@ class BeaverAction(ImmediateActionWithoutReply):
             node.store[id_at_location] = result  # type: ignore
         else:
             raise Exception(f"Object at {id_at_location} should be a List or None")
+        print(f"Value after Beaver Execution: {node.store.get_object(key=id_at_location)}")
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         eps = self.eps

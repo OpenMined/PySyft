@@ -313,6 +313,7 @@ class RedisStore(ObjectStore):
         return obj_dataset_relation
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
+        print(f"🟨🟨🟨 Value:{value}")
 
         bin = syft.serialize(value.data, to_bytes=True)
         self.redis.set(str(key.value), bin)
