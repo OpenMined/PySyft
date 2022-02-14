@@ -60,7 +60,7 @@ def test_train_mnist() -> None:
 
     weights = Tensor(np.random.rand(28 * 28, 10)).autograd(requires_grad=True)
 
-    for i in range(10):
+    for _ in range(10):
         pred = data.dot(weights)
         diff = target - pred
         pre_loss = np.square(diff)
@@ -255,7 +255,7 @@ def test_train_publish_entities_event() -> None:
     weights = Tensor(np.random.rand(3, 3)).autograd(requires_grad=True)
     weights_ptr = weights.send(client)
 
-    for i in range(1):
+    for _ in range(1):
         pred = data_ptr.dot(weights_ptr)
         diff = target_ptr - pred
 

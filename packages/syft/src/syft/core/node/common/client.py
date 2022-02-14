@@ -144,9 +144,9 @@ class Client(AbstractNodeClient):
 
                 if lib_attr is not None:
                     python_attr = getattr(lib_attr, "python", None)
-                    setattr(self, "python", python_attr)
+                    self.python = python_attr
                     python_attr = getattr(lib_attr, "adp", None)
-                    setattr(self, "adp", python_attr)
+                    self.adp = python_attr
 
             except Exception as e:
                 critical(f"Failed to set python attribute on client. {e}")
@@ -442,7 +442,7 @@ class StoreClient:
     #     else:
     #         traceback_and_raise(KeyError("Please pass in a string or int key"))
 
-    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
+    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:  # noqa: C901
         if isinstance(key, str):
 
             try:

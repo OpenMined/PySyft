@@ -68,7 +68,7 @@ class UpdateRequestHandlerService(ImmediateNodeServiceWithoutReply):
                 else:
                     debug(f"> Removing a Request Handler with: {msg.handler}")
 
-                setattr(node, "request_handlers", replacement_handlers)
+                setattr(node, "request_handlers", replacement_handlers)  # noqa: B010
                 debug(f"> Finished Updating Request Handlers with: {existing_handlers}")
             else:
                 error(f"> Node has no Request Handlers attribute: {type(node)}")

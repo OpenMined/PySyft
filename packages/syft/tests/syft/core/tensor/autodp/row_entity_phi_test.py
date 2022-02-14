@@ -249,7 +249,7 @@ def test_eq_values(
         ), f"REPT + 1 == REPT failed at child {i}"
 
     # comparison_result = tensor1 == tensor2
-    tensor1 == tensor2
+    assert all(tensor1 == tensor2) is True
     # assert not comparison_result  # This will work as soon as the .all() or .any() methods are implemented.
     # Would this be more user-friendly if SEPT == SEPT -> singular T/F instead of array of T/F?
 

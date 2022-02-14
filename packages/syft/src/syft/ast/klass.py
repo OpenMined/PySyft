@@ -347,7 +347,7 @@ def _set_request_config(self: Any, request_config: Dict[str, Any]) -> None:
         self: object.
         request_config: new config.
     """
-    setattr(self, "get_request_config", lambda: request_config)
+    self.get_request_config = lambda: request_config
 
 
 def wrap_iterator(attrs: Dict[str, Union[str, CallableT, property]]) -> None:
@@ -551,6 +551,7 @@ class Class(Callable):
         """
         return getattr(self, self.pointer_name)
 
+    # flake8: noqa: C901
     def create_pointer_class(self) -> None:
         """Create pointer type for object."""
         attrs: Dict[str, Union[str, CallableT, property]] = {}

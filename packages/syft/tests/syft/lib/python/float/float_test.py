@@ -292,7 +292,7 @@ def test_Float_with_comma():
     assert Float("  25.e-1  ") == 2.5
 
 
-def test_Floatconversion():
+def test_Floatconversion():  # noqa: C901
     # Make sure that calls to __Float__() work properly
     class Foo1(object):
         def __float__(self):
@@ -378,7 +378,7 @@ def test_Floatasratio():
     ]:
         assert f.as_integer_ratio() == ratio
 
-    for i in range(10000):
+    for _ in range(10000):
         f = random.random()
         f *= 10 ** random.randint(-100, 100)
         n, d = f.as_integer_ratio()
@@ -755,7 +755,7 @@ def test_matches_Float_format():
         assert Float(format(x, ".2f")) == round(x, 2)
         assert Float(format(x, ".3f")) == round(x, 3)
 
-    for i in range(500):
+    for _ in range(500):
         x = random.random()
         assert Float(format(x, ".0f")) == round(x, 0)
         assert Float(format(x, ".1f")) == round(x, 1)

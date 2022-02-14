@@ -218,7 +218,7 @@ if os.path.exists(SUPPORT_FILE_PATH):
         diff = time.time() - file_stat.st_mtime
         if diff > 0.1:
             # only delete on the first run
-            for retry in range(5):
+            for _ in range(5):
                 try:
                     os.unlink(SUPPORT_FILE_PATH)
                     break
@@ -250,7 +250,7 @@ def write_support_result(test_details: Dict[str, Any]) -> None:
 
 TEST_DATA = []
 # we iterate over the allowlist and only override where explicitly defined
-for op in BASIC_OPS:
+for op in BASIC_OPS:  # noqa: C901
     skip = []
     not_available = []
     deterministic = True
@@ -401,7 +401,7 @@ for op in BASIC_OPS:
     "tensor_type, op_name, self_tensor, _args, is_property, return_type, deterministic",
     TEST_DATA,
 )
-def test_all_allowlisted_tensor_methods(
+def test_all_allowlisted_tensor_methods(  # noqa: C901
     arrow_backend: bool,
     tensor_type: str,
     op_name: str,

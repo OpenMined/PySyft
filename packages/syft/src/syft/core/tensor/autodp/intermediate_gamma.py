@@ -604,6 +604,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
+    # flake8: noqa: C901
     def __mul__(self, other: Any) -> IntermediateGammaTensor:
 
         # EXPLAIN A: if our polynomial is y = mx
@@ -650,7 +651,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 new_term = np.expand_dims(self.term_tensor[..., self_dim], -1)  # type: ignore
                 terms.append(new_term)
 
-            for other_dim in range(self.term_tensor.shape[-1]):
+            for _ in range(self.term_tensor.shape[-1]):
                 new_term = np.expand_dims(other.term_tensor[..., self_dim], -1)  # type: ignore
                 terms.append(new_term)
 
@@ -672,7 +673,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 )
                 coeffs.append(new_coeff)
 
-            for other_dim in range(self.coeff_tensor.shape[-1]):
+            for _ in range(self.coeff_tensor.shape[-1]):
                 new_coeff = np.expand_dims(  # type: ignore
                     other.coeff_tensor[..., self_dim] * self.bias_tensor, -1
                 )
@@ -1050,8 +1051,6 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 max_vals=self._max_values(),
                 scalar_manager=self.scalar_manager,
             )
-
-            self.__dict__ == output_tensor.__dict__
 
         else:
             raise NotImplementedError

@@ -454,7 +454,7 @@ def test_tensor_creation(sept_ishan, sept_traskmaster) -> None:
 
     print(igt.shape)
     print(sept_ishan.shape)
-    assert False
+    raise AssertionError()
 
 
 def test_transpose(non_square_gamma_tensor: IGT) -> None:

@@ -194,7 +194,7 @@ def spdz_mask(
         address=curr_client.address,
     )
     beaver_action.execute_action(node, None)
-    for rank, client in enumerate(clients):
+    for _, client in enumerate(clients):
 
         if client != curr_client:
             beaver_action.address = client.address

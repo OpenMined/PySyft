@@ -404,7 +404,7 @@ for py_type in test_dict:
 @pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize("py_type,test_object,func", parameters_pointer_objectives)
-def test_pointer_objectives(
+def test_pointer_objectives(  # noqa: C901
     py_type: str,
     test_object: Any,
     func: str,
@@ -541,7 +541,7 @@ def test_list_iterator(
     remote_sy_obj.set_request_config({})
     rsy_iter = iter(remote_sy_obj)
 
-    for i in range(len(py_obj)):
+    for _ in range(len(py_obj)):
         py_elem = next(py_iter)
         sy_elem = next(sy_iter)
         rsy_elem = next(rsy_iter)
@@ -566,7 +566,7 @@ def test_dict_iterator(test_object: List, client: sy.VirtualMachineClient) -> No
     remote_sy_obj.set_request_config({})
     rsy_iter = iter(remote_sy_obj)
 
-    for i in range(len(py_obj)):
+    for _ in range(len(py_obj)):
         py_elem = next(py_iter)
         sy_elem = next(sy_iter)
         rsy_elem = next(rsy_iter)
@@ -591,7 +591,7 @@ def test_reversed_iterator(
     sy_iter = reversed(sy_obj)
     rsy_iter = reversed(remote_sy_obj)
 
-    for i in range(len(py_obj)):
+    for _ in range(len(py_obj)):
         py_elem = next(py_iter)
         sy_elem = next(sy_iter)
         rsy_elem = next(rsy_iter)

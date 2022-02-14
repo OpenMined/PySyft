@@ -426,7 +426,7 @@ class DomainClient(Client):
     def get_setup(self, **kwargs: Any) -> Any:
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
-    def apply_to_network(
+    def apply_to_network(  # noqa: C901
         self,
         client: Optional[AbstractNodeClient] = None,
         **metadata: str,
@@ -634,7 +634,7 @@ class DomainClient(Client):
         from ....lib.python.util import downcast
 
         if not skip_checks:
-            for asset_name, asset in assets.items():
+            for _, asset in assets.items():
 
                 if not isinstance(asset, Tensor) or not isinstance(
                     getattr(asset, "child", None), ADPTensor

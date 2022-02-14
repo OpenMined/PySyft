@@ -97,7 +97,7 @@ class Dataset:
     def __delitem__(self, _id: UID) -> None:
         self.data = [el for el in self.data if el.id != _id]
 
-    def _object2proto(self) -> Dataset_PB:
+    def _object2proto(self) -> Dataset_PB:  # noqa: C901
         proto = Dataset_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf

@@ -109,7 +109,7 @@ def accept_or_deny_candidate(
     )
 
 
-def update_user_msg(
+def update_user_msg(  # noqa: C901
     msg: UpdateUserMessage,
     node: DomainInterface,
     verify_key: VerifyKey,

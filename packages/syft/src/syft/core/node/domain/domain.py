@@ -348,7 +348,7 @@ class Domain(Node):
 
         return False
 
-    def check_handler(
+    def check_handler(  # noqa: C901
         self, handler: Dict[Union[str, String], Any], request: RequestMessage
     ) -> bool:
         debug(f"HANDLER Check handler {handler} against {request.request_id}")

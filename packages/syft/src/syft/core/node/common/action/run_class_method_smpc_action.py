@@ -95,7 +95,9 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         )
         return f"RunClassMethodSMPCAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
 
-    def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+    def execute_action(  # noqa: C901
+        self, node: AbstractNode, verify_key: VerifyKey
+    ) -> None:
         # relative
         from . import smpc_action_functions
         from ..... import Tensor
@@ -183,7 +185,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
                 del msg.smpc_actions[0]
 
     @staticmethod
-    def execute_smpc_action(
+    def execute_smpc_action(  # noqa: C901
         node: AbstractNode, msg: "SMPCActionMessage", verify_key: VerifyKey
     ) -> None:
         # relative

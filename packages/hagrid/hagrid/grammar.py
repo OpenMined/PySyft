@@ -79,7 +79,7 @@ class GrammarTerm:
         type: str,
         name: str,
         default: Optional[Union[str, Callable]] = None,
-        options: TypeList = [],
+        options: TypeList = None,
         example: Optional[str] = None,
         **kwargs: TypeDict[str, Any],
     ) -> None:
@@ -88,7 +88,7 @@ class GrammarTerm:
         self.type = type
         self.name = name
         self.default = default
-        self.options = options
+        self.options = options if options else []
         self.example = example
 
     @property
@@ -273,6 +273,7 @@ def validate_arg_count(arg_count: int, verb: GrammarVerb) -> bool:
     return valid
 
 
+# flake8: noqa: C901
 def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
     """When launching, we want to be able to default to 'domain' if it's not provided, to launch
     nodes when no name is provided, and to support node names which have multiple words.

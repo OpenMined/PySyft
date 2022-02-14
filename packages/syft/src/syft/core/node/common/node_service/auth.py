@@ -16,7 +16,7 @@ class AuthorizationException(Exception):
     pass
 
 
-def service_auth(
+def service_auth(  # noqa: C901
     root_only: bool = False,
     admin_only: bool = False,
     cpl_ofcr_only: bool = False,

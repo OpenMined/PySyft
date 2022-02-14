@@ -261,7 +261,7 @@ def test_ne_shapes(
     )
 
     with pytest.raises(Exception):
-        reference_tensor != comparison_tensor
+        assert reference_tensor != comparison_tensor
     return None
 
 
