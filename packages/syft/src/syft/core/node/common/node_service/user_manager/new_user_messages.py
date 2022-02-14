@@ -22,7 +22,7 @@ from ...exceptions import UserNotFoundError
 from ...node_table.utils import model_to_json
 from ...permissions.permissions import BasePermission
 from ...permissions.permissions import BinaryOperation
-from ...permissions.permissions import Operation
+from ...permissions.permissions import UnaryOperation
 from ...permissions.user_permissions import IsNodeDaaEnabled
 from ...permissions.user_permissions import UserCanCreateUsers
 from ...permissions.user_permissions import UserCanTriageRequest
@@ -217,7 +217,7 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
 
         return DeleteUserMessage.Reply()
 
-    def get_permissions(self) -> List[Union[Type[BasePermission], BinaryOperation]]:
+    def get_permissions(self) -> List[Union[Type[BasePermission], UnaryOperation]]:
         return [UserCanCreateUsers, ~UserIsOwner]
 
 
@@ -322,5 +322,5 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
 
         return UpdateUserMessage.Reply()
 
-    def get_permissions(self) -> List[Union[Type[BasePermission], Operation]]:
+    def get_permissions(self) -> List[Union[Type[BasePermission], BinaryOperation]]:
         return [UserCanCreateUsers | UserIsOwner]

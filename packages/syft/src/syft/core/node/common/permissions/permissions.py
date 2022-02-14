@@ -11,7 +11,7 @@ from ...abstract.node_service_interface import NodeServiceInterface
 from ..node_service.generic_payload.syft_message import NewSyftMessage as SyftMessage
 
 
-class Operation:
+class BinaryOperation:
     """Executes an operation between two operands."""
 
     def __init__(self, op1: Any, op2: Any, operator: Any) -> None:
@@ -25,7 +25,7 @@ class Operation:
         return self.operator(op1, op2)
 
 
-class BinaryOperation:
+class UnaryOperation:
     """Executes an operation on a single operand."""
 
     def __init__(self, op1: Any, operator: Any) -> None:
@@ -76,20 +76,20 @@ class NOT:
 class BasePermissionMetaclass(type):
     """A metaclass to allow composition between different permission classes."""
 
-    def __and__(self, other: Type["BasePermission"]) -> Operation:
-        return Operation(self, other, AND)
+    def __and__(self, other: Type["BasePermission"]) -> BinaryOperation:
+        return BinaryOperation(self, other, AND)
 
-    def __or__(self, other: Type["BasePermission"]) -> Operation:
-        return Operation(self, other, OR)
+    def __or__(self, other: Type["BasePermission"]) -> BinaryOperation:
+        return BinaryOperation(self, other, OR)
 
-    def __rand__(self, other: Type["BasePermission"]) -> Operation:
-        return Operation(other, self, AND)
+    def __rand__(self, other: Type["BasePermission"]) -> BinaryOperation:
+        return BinaryOperation(other, self, AND)
 
-    def __ror__(self, other: Type["BasePermission"]) -> Operation:
-        return Operation(other, self, OR)
+    def __ror__(self, other: Type["BasePermission"]) -> BinaryOperation:
+        return BinaryOperation(other, self, OR)
 
-    def __invert__(self) -> BinaryOperation:
-        return BinaryOperation(self, NOT)
+    def __invert__(self) -> UnaryOperation:
+        return UnaryOperation(self, NOT)
 
 
 class BasePermission(metaclass=BasePermissionMetaclass):
