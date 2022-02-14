@@ -10,7 +10,6 @@ This documentation is to help you install and be able to deploy a Domain Node on
 
    For more advanced tutorials, such as cloud deployment, ansible, vagrant, kubernetes, or virtualbox deployment, please check
    `advanced deployment documentation <https://openmined.github.io/PySyft/deployment/index.html#>`__.
-.. seealso::
 
 We will use the Linux Terminal to install all the prerequisites and launch the domain. A quick way to launch the terminal is by pressing ``Ctrl+Alt+T``. Let's go!
 
@@ -20,17 +19,15 @@ We'll be working with Python 3.9 or newer. To check if you have it installed, yo
 
 .. code-block:: bash
 
-   $ python3 --version
-   Python 3.9.0
+   python3 --version
 
 If you don't have the correct version of Python, installing it is as easy as running the following:
 
 .. code-block:: bash
 
-   $ sudo apt update
-   $ sudo apt install python3.9
-   $ python3 --version
-   Python 3.9.0
+   sudo apt update
+   sudo apt install python3.9
+   python3 --version
 
 2. **Installing and using Pip**
 
@@ -39,13 +36,13 @@ You can install it by running the following:
 
 .. code-block:: bash
 
-   $ python -m ensurepip --upgrade
+   python -m ensurepip --upgrade
 
 If you already have it installed, you can check to make sure it's the latest version by running:
 
 .. code-block:: bash
 
-   $ python -m pip install --upgrade pip
+   python -m pip install --upgrade pip
 
 
 3. **Conda and setting up a virtual environment**
@@ -59,7 +56,7 @@ To install Conda, you can:
 
         .. code-block:: bash
 
-           $ bash ~/Downloads/Anaconda3-2020.02-Linux-x86_64.sh
+           bash ~/Downloads/Anaconda3-2020.02-Linux-x86_64.sh
 
         .. note::
 
@@ -69,9 +66,15 @@ To install Conda, you can:
 
         .. code-block:: bash
 
-           $ conda create -n myenv python=3.9
-           $ conda activate myenv
-           (to exit): conda deactivate
+           conda create -n syft_env python=3.9
+           conda activate syft_env
+
+
+    d. To exit, you might run:
+
+        .. code-block:: bash
+
+           conda deactivate
 
 4. **Install Jupyter Notebook**
 
@@ -79,19 +82,19 @@ A very convenient way to interact with a deployed node is via Python, using a Ju
 
 .. code-block:: bash
 
-  $ pip install jupyter-notebook
+  pip install jupyter-notebook
 
 If you encounter issues, you can also install it using Conda:
 
 .. code-block:: bash
 
-  $ conda install -c conda-forge notebook
+  conda install -c conda-forge notebook
 
 To launch the Jupyter Notebook, you can run the following in your terminal:
 
 .. code-block:: bash
 
-  $ jupyter notebook
+  jupyter notebook
 
 5. **Installing and configuring Docker**
 
@@ -104,7 +107,7 @@ a. Install **Docker**:
 
     .. code-block:: bash
 
-       $ sudo apt-get upgrade docker & docker run hello-world
+       sudo apt-get upgrade docker & docker run hello-world
 
 b. Install **Docker Composite V2** as described `here <https://docs.docker.com/compose/cli-command/#installing-compose-v2>`__.
 
@@ -112,23 +115,23 @@ c. You should see ‘Docker Compose version v2’ when running:
 
     .. code-block:: bash
 
-       $ docker compose version
+       docker compose version
        Docker Compose version v2
 
 d. If not, go through the `instructions here <https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/>`__ or if you are using Linux, you can try to do:
 
     .. code-block:: bash
 
-       $ mkdir -p ~/.docker/cli-plugins
-       $ curl -sSL https://github.com/docker/compose-cli/releases/download/v2.0.0-beta.5/docker-compose-linux-amd64 -o ~/.docker/cli-plugins/docker-compose
-       $ chmod +x ~/.docker/cli-plugins/docker-compose
+       mkdir -p ~/.docker/cli-plugins
+       curl -sSL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+       chmod +x ~/.docker/cli-plugins/docker-compose
 
 e. Also, make sure you can run without sudo:
 
     .. code-block:: bash
 
-       $ echo $USER //(should return your username)
-       $ sudo usermod -aG docker $USER
+       echo $USER //(should return your username)
+       sudo usermod -aG docker $USER
 
 6. **Install PySyft and PyGrid**
 
@@ -136,8 +139,8 @@ The hardest part is done! To install the OpenMined stack that you need in order 
 
 .. code-block:: bash
 
-   $ pip install --pre syft
-   $ pip install hagrid==0.1.9
+   $ pip install syft
+   $ pip install hagrid
 
 PySyft is a library which contains the tools to run privacy preserving machine learning.
 Hagrid is a commandline tool that speeds up the deployment of PyGrid, the provider of a peer-to-peer network of
@@ -150,13 +153,13 @@ The final step is to launch a domain node, which is as easy as:
 
 .. code-block:: bash
 
-   $ hagrid launch domain to docker:8081
+   hagrid launch test_domain
 
 To stop the running node, you can run:
 
 .. code-block:: bash
 
-   $ hagrid land
+   hagrid land test_domain
 
 But before stopping it, you can go to ```localhost:8081`` in your `browser <localhost:8081>`_ to actually interact with the PyGrid Admin UI, where you can manage as a Data Owner your datasets, as well as incoming requests from data scientist.
 You can log in using the following credentials:
