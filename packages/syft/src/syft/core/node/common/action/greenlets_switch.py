@@ -6,7 +6,6 @@ from .....logger import critical
 from ....common.uid import UID
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
-from .beaver_action import BEAVER_CACHE
 
 
 def retrieve_object(
@@ -32,6 +31,8 @@ def retrieve_object(
 def beaver_retrieve_object(
     node: AbstractNode, id_at_location: UID, nr_parties: int
 ) -> StorableObject:
+    from .beaver_action import BEAVER_CACHE
+
     # A hard time limit is set on celery worker which prevents infinite execution.
     ctr = 0
     while True:
