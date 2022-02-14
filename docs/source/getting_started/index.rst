@@ -18,10 +18,6 @@ and Encrypted Computation (like
 and `Homomorphic Encryption (HE) <https://en.wikipedia.org/wiki/Homomorphic_encryption>`_
 within the main Deep Learning frameworks like PyTorch and TensorFlow.
 
-Most software libraries let you compute over the information you own and see inside of machines you control. However, this means that you cannot compute on information without first obtaining (at least partial) ownership of that information. It also means that you cannot compute using machines without first obtaining control over those machines. This is very limiting to human collaboration and systematically drives the centralization of data, because you cannot work with a bunch of data without first putting it all in one (central) place.
-
-The Syft ecosystem seeks to change this system, allowing you to write software which can compute over information you do not own on machines you do not have (total) control over. This not only includes servers in the cloud, but also personal desktops, laptops, mobile phones, websites, and edge devices. Wherever your data wants to live in your ownership, the Syft ecosystem exists to help keep it there while allowing it to be used privately for computation.
-
 Beginner-level PySyft & PyGrid Installation
 ###########################################
 
