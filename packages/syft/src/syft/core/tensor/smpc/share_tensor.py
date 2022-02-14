@@ -441,6 +441,7 @@ class ShareTensor(PassthroughTensor):
 
         res = self.copy_tensor()
         res.child = value
+
         return res
 
     def add(
