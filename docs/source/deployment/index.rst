@@ -178,7 +178,7 @@ Local deployment using Docker
 
    .. code-block:: bash
 
-      $ pip install hagrid==0.1.7
+      $ pip install hagrid
 
 2. Launch a Domain Node:
 
@@ -199,7 +199,7 @@ Local deployment using Docker
          - NAME: mystifying_wolf
          - TAG: 035c3b6a378a50f78cd74fc641d863c7
          - PORT: 8081
-         - DOCKER: v2.0.0-beta.5
+         - DOCKER: v2.2.3
 
    Optionally, you can provide here additional args to use a certain repository and branch, as:
 
