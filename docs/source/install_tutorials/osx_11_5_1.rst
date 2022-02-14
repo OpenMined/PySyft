@@ -200,35 +200,8 @@ Step 5: Install Necessary Python Packages
 
   .. code-block:: bash
 
-      pip install hagrid==0.1.8
+      pip install hagrid
 
-* Step 5.5: If you are using Apple MacOS M1 device, install SciPy from a prelease channel in Conda
-
-  .. code-block:: bash
-
-      pip install --pre -i https://pypi.anaconda.org/scipy-wheels-nightly/simple scipy
-
-* Step 5.6: Install the latest version of PySyft (latest pre-release)
-
-  .. code-block:: bash
-
-      pip install syft --pre* Step 5.4: Install Hagrid
-
-  .. code-block:: bash
-
-      $ pip install hagrid==0.1.9
-
-* Step 5.5: If you are using Apple MacOS M1 device, install SciPy from a prelease channel in Conda
-
-  .. code-block:: bash
-
-      pip install --pre -i https://pypi.anaconda.org/scipy-wheels-nightly/simple scipy
-
-* Step 5.6: Install the latest version of PySyft (latest pre-release)
-
-  .. code-block:: bash
-
-      pip install syft --pre
 
 Step 6: Install Docker
 ======================

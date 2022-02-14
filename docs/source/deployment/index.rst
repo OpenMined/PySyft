@@ -178,7 +178,7 @@ Local deployment using Docker
 
    .. code-block:: bash
 
-      $ pip install hagrid==0.1.7
+      $ pip install hagrid
 
 2. Launch a Domain Node:
 
