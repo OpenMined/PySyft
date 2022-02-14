@@ -34,7 +34,7 @@ DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
-    credentials: Dict = None,
+    credentials: Optional[Dict] = None,
     user_key: Optional[SigningKey] = None,
     timeout: Optional[float] = None,
 ) -> Client:

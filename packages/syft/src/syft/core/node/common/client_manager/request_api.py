@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import logging
 from typing import Any
@@ -11,33 +14,23 @@ from pandas import DataFrame
 
 # relative
 from .....experimental_flags import flags
-from ..node_service.generic_payload.syft_message import NewSyftMessage
-
-if flags.USE_NEW_SERVICE:
-    # relative
-    from ..node_service.generic_payload.syft_message import (
-        NewSyftMessage as SyftMessage,
-    )
-else:
-    from ....common.message import SyftMessage  # type: ignore
-
-# relative
+from ....common.message import SyftMessage  # type: ignore
 from ...abstract.node import AbstractNodeClient
 from ...domain.enums import RequestAPIFields
 from ..action.exception_action import ExceptionMessage
-
-# from ..node_service.generic_payload.messages import GenericPayloadMessageWithReply
+from ..node_service.generic_payload.messages import GenericPayloadMessageWithReply
+from ..node_service.generic_payload.syft_message import NewSyftMessage
 
 
 class RequestAPI:
     def __init__(
         self,
         client: AbstractNodeClient,
-        create_msg: Optional[Type[SyftMessage]] = None,
-        get_msg: Optional[Type[SyftMessage]] = None,
-        get_all_msg: Optional[Type[SyftMessage]] = None,
-        update_msg: Optional[Type[SyftMessage]] = None,
-        delete_msg: Optional[Type[SyftMessage]] = None,
+        create_msg: Optional[Type[SyftMessage] | Type[NewSyftMessage]] = None,
+        get_msg: Optional[Type[SyftMessage] | Type[NewSyftMessage]] = None,
+        get_all_msg: Optional[Type[SyftMessage] | Type[NewSyftMessage]] = None,
+        update_msg: Optional[Type[SyftMessage] | Type[NewSyftMessage]] = None,
+        delete_msg: Optional[Type[SyftMessage] | Type[NewSyftMessage]] = None,
         response_key: str = "",
     ):
         self._create_message = create_msg
@@ -51,19 +44,19 @@ class RequestAPI:
 
     def create(self, **kwargs: Any) -> None:
         if isinstance(self._delete_message, NewSyftMessage):
-            response = self.perform_request(
-                syft_msg=self._create_message, content=kwargs  # type: ignore
+            response = self.perform_request(  # type: ignore
+                syft_msg=self._create_message, content=kwargs
             )
             logging.info(response.message)
         else:
-            response = self.perform_api_request(
-                syft_msg=self._create_message, content=kwargs  # type: ignore
+            response = self.perform_api_request(  # type: ignore
+                syft_msg=self._create_message, content=kwargs
             )
             logging.info(response.resp_msg)
 
     def get(self, **kwargs: Any) -> Any:
         if isinstance(self._delete_message, NewSyftMessage):
-            return self.to_obj(
+            return self.to_obj(  # type: ignore
                 self.perform_request(syft_msg=self._get_message, content=kwargs)
             )
         else:
@@ -73,7 +66,7 @@ class RequestAPI:
 
     def all(self) -> List[Any]:
         if isinstance(self._delete_message, NewSyftMessage):
-            result = list(
+            result = list(  # type: ignore
                 self.perform_request(syft_msg=self._get_all_message).dict().values()
             )
         else:
@@ -91,7 +84,7 @@ class RequestAPI:
 
     def update(self, **kwargs: Any) -> None:
         if isinstance(self._delete_message, NewSyftMessage):
-            response = self.perform_request(
+            response = self.perform_request(  # type: ignore
                 syft_msg=self._update_message, content=kwargs
             )
             logging.info(response.message)
@@ -103,7 +96,7 @@ class RequestAPI:
 
     def delete(self, **kwargs: Any) -> None:
         if isinstance(self._delete_message, NewSyftMessage):
-            response = self.perform_request(
+            response = self.perform_request(  # type: ignore
                 syft_msg=self._delete_message, content=kwargs
             )
             logging.info(response.message)
@@ -150,7 +143,7 @@ class RequestAPI:
 
     def perform_api_request_generic(
         self,
-        syft_msg: Optional[Type[SyftMessage]],  # type: ignore
+        syft_msg: Optional[Type[GenericPayloadMessageWithReply] | Type[NewSyftMessage]],  # type: ignore
         content: Optional[Dict[Any, Any]] = None,
     ) -> Any:
         if syft_msg is None:
@@ -164,14 +157,14 @@ class RequestAPI:
             content = {}
 
         if isinstance(syft_msg, NewSyftMessage):
-            signed_msg = syft_msg_constructor(
+            signed_msg = syft_msg_constructor(  # type: ignore
                 address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
-            ).sign(
+            ).sign(  # type: ignore
                 signing_key=self.client.signing_key
-            )  # type: ignore
+            )
         else:
             signed_msg = (
-                syft_msg_constructor(kwargs=content)
+                syft_msg_constructor(kwargs=content)  # type: ignore
                 .to(  # type: ignore
                     address=self.client.address, reply_to=self.client.address
                 )
@@ -182,7 +175,7 @@ class RequestAPI:
             raise response.exception_type
         else:
             if isinstance(syft_msg, NewSyftMessage):
-                return response.payload
+                return response.payload  # type: ignore
             return response
 
     def _repr_html_(self) -> str:

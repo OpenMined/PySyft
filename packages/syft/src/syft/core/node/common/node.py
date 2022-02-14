@@ -337,7 +337,11 @@ class Node(AbstractNode):
             conn_client = create_virtual_connection(node=self)
             solo = SoloRoute(destination=self.target_id, connection=conn_client)
             # inject name
-            solo.name = f"Route ({self.name} <-> {self.name} Client)"
+            setattr(  # noqa: B010
+                solo,
+                "name",
+                f"Route ({self.name} <-> {self.name} Client)",
+            )
             routes = [solo]
 
         return self.client_type(  # type: ignore

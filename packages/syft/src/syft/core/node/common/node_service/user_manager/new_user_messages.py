@@ -62,7 +62,7 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         Reply  # Creates a proper Reply payload message structure as a response.
     )
 
-    def run(
+    def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
 

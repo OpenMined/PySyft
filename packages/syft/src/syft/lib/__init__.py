@@ -165,8 +165,8 @@ def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> 
 
 def load(
     *libs: TypeUnion[TypeList[str], TypeTuple[str], TypeSet[str], str],
-    options: TypeDict[str, TypeAny] = None,
     ignore_warning: bool = False,
+    options: Optional[TypeDict[str, TypeAny]] = None,
     **kwargs: str,
 ) -> None:
     """
@@ -211,7 +211,7 @@ def load(
         )
 
 
-def load_lib(lib: str, options: TypeDict[str, TypeAny] = None) -> None:
+def load_lib(lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> None:
     """
     Load and Update Node with given library module
     _load_lib() is deprecated please use load() in the future

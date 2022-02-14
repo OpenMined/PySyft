@@ -306,7 +306,7 @@ class Dataset:
         id: UID,
         key: int,
         data: Any,
-        tags: List[str] = None,
+        tags: Optional[List[str]] = None,
     ) -> None:
         self.raw = raw
         self.description = description

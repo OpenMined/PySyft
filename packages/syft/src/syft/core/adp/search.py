@@ -164,8 +164,8 @@ def create_lookup_tables_for_symbol(
 def minimize_function(
     f: Any,
     rranges: Any,
-    constraints: TypeList[TypeDict[str, Any]] = None,
     force_all_searches: bool = False,
+    constraints: Optional[TypeList[TypeDict[str, Any]]] = None,
 ) -> TypeList[optimize.OptimizeResult]:
     results = list()
     constraints = constraints if constraints else []
