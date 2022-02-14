@@ -1093,7 +1093,7 @@ def test_compress(
 
 
 # @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
-@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
+@pytest.mark.skip(reason="Not supporting for this release")
 def test_partition(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1113,7 +1113,7 @@ def test_partition(
 
 
 # @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
-@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
+@pytest.mark.skip(reason="Not supporting for this release")
 def test_partition_axis(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1419,7 +1419,7 @@ def test_max_args(
     assert (output.max_vals == upper_bound.max(initial=-highest)).all()
 
 
-@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
+@pytest.mark.skip(reason="Not supporting for this release")
 def test_mod_array(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1454,7 +1454,7 @@ def test_mod_array(
     assert (output.min_vals == lower_bound % 4).all()
 
 
-@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
+@pytest.mark.skip(reason="Not supporting for this release")
 def test_mod_sept(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1505,7 +1505,7 @@ def test_mod_sept(
     ).all()  # Beware of division by 0 error
 
 
-@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
+@pytest.mark.skip(reason="Not supporting for this release")
 def test_divmod_array(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -1536,7 +1536,7 @@ def test_divmod_array(
     assert (remainder.min_vals == lower_bound % 4).all()
 
 
-@pytest.mark.skip(reason="Not supporting for 0.6.0 release")
+@pytest.mark.skip(reason="Not supporting for this release")
 def test_divmod_sept(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
