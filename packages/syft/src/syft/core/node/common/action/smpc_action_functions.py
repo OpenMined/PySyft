@@ -203,7 +203,7 @@ def spdz_mask(
 
         if client != curr_client:
             print(
-                f"🚒 Sending Beaver Values to {client} ,EPS Value: {eps}-{delta_id} ,DELTA Value: {delta}-{delta_id}"
+                f"📙 Sending Beaver Values to {client} ,EPS Value: {eps}-{eps_id} ,DELTA Value: {delta}-{delta_id}"
             )
             beaver_action.address = client.address
             client.send_immediate_msg_without_reply(msg=beaver_action)
