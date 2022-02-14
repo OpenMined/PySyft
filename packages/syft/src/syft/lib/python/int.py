@@ -2,9 +2,12 @@
 import sys
 from typing import Any
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from typing_extensions import Literal
+from typing_extensions import SupportsIndex
 
 # syft absolute
 import syft as sy
@@ -304,14 +307,16 @@ class Int(int, PyPrimitive):
 
     def to_bytes(
         self,
-        length: int,
-        byteorder: str,
+        length: Union[int, SupportsIndex],
+        byteorder: Literal["little", "big"],
         signed: bool = False,
     ) -> bytes:
         return int.to_bytes(self, length=length, byteorder=byteorder, signed=signed)
 
     @staticmethod
-    def from_bytes(bytes: Any, byteorder: str, *, signed: Any = True) -> SyPrimitiveRet:
+    def from_bytes(
+        bytes: Any, byteorder: Literal["little", "big"], *, signed: Any = True
+    ) -> SyPrimitiveRet:
         res = int.from_bytes(bytes, byteorder, signed=signed)
         return PrimitiveFactory.generate_primitive(value=res)
 
