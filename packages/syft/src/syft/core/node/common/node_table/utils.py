@@ -39,7 +39,7 @@ def model_to_json(model: Base) -> Dict[str, Any]:
 
 
 def seed_db(db: Session) -> None:
-    """ Creates the standard PyGrid roles and seeds it into the database.
+    """Creates the standard PyGrid roles and seeds it into the database.
 
     Args:
         db (Session): Database Session object used to handle database operations.
