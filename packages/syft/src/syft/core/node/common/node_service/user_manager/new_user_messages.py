@@ -65,6 +65,19 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
+        """Validates the request parameters and creates a new user.
+
+        Args:
+            node (DomainInterface): Domain interface node.
+            verify_key (Optional[VerifyKey], optional): User signed verification key. Defaults to None.
+
+        Raises:
+            MissingRequestKeyError: If the required request fields are missing.
+            AuthorizationError: If user already exists for given email address.
+
+        Returns:
+            ReplyPayload: Message on successful user creation.
+        """
 
         # Check if email/password fields are empty
         if not getattr(self.payload, "email", "") or not getattr(
@@ -102,6 +115,7 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
         return CreateUserMessage.Reply()
 
     def get_permissions(self) -> List[Type[BasePermission]]:
+        """Returns the list of permission classes."""
         return [UserCanCreateUsers, IsNodeDaaEnabled]
 
 
@@ -132,6 +146,15 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:
+        """Returns the user for given user id.
+
+        Args:
+            node (NodeServiceInterface): domain/network interface node.
+            verify_key (Optional[VerifyKey], optional): user signed verification key. Defaults to None.
+
+        Returns:
+            ReplyPayload: Details of the user.
+        """
         # Retrieve User Model
         user = node.users.first(id=self.payload.user_id)  # type: ignore
 
@@ -148,6 +171,7 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
         return reply
 
     def get_permissions(self) -> List[Type[BasePermission]]:
+        """Returns the list of permission classes."""
         return [UserCanTriageRequest]
 
 
@@ -169,6 +193,15 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:
+        """Returns the list of all users registered to the node.
+
+        Args:
+            node (NodeServiceInterface): domain or network interface node.
+            verify_key (Optional[VerifyKey], optional): user signed verification key. Defaults to None.
+
+        Returns:
+            ReplyPayload: details of all users registered to the node as a list.
+        """
         # Get All Users
         users = node.users.all()
         users_list = list()
@@ -212,12 +245,22 @@ class DeleteUserMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:
+        """Delete a user with given user id.
+
+        Args:
+            node (NodeServiceInterface): domain or network node interface.
+            verify_key (Optional[VerifyKey], optional): user signed verification key. Defaults to None.
+
+        Returns:
+            ReplyPayload: message on successful user deletion.
+        """
 
         node.users.delete(id=self.payload.user_id)
 
         return DeleteUserMessage.Reply()
 
     def get_permissions(self) -> List[Union[Type[BasePermission], UnaryOperation]]:
+        """Returns the list of permission classes applicable to this message."""
         return [UserCanCreateUsers, ~UserIsOwner]
 
 
@@ -245,6 +288,20 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
     def run(  # type: ignore
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:
+        """Updates the information for the given user id.
+
+        Args:
+            node (NodeServiceInterface): domain or network node interface.
+            verify_key (Optional[VerifyKey], optional): user signed verification key. Defaults to None.
+
+        Raises:
+            MissingRequestKeyError: If the request parameters are not valid.
+            UserNotFoundError: If user with given user id is not present in the database.
+            AuthorizationError: If user does not have permission to update their role.
+
+        Returns:
+            ReplyPayload: success message on updating the user information.
+        """
 
         _valid_parameters = (
             self.payload.email
@@ -323,4 +380,5 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
         return UpdateUserMessage.Reply()
 
     def get_permissions(self) -> List[Union[Type[BasePermission], BinaryOperation]]:
+        """Returns the list of permission classes applicable to this message."""
         return [UserCanCreateUsers | UserIsOwner]
