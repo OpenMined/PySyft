@@ -31,8 +31,6 @@ from ..accept_or_deny_request.accept_or_deny_request_messages import (
     AcceptOrDenyRequestMessage,
 )
 from ..auth import service_auth
-from ..get_all_requests.get_all_requests_messages import GetAllRequestsMessage
-from ..get_all_requests.get_all_requests_messages import GetAllRequestsResponseMessage
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import ImmediateNodeServiceWithoutReply
 from ..request_answer.request_answer_messages import RequestAnswerMessage
@@ -49,6 +47,8 @@ from .object_request_messages import CreateRequestMessage
 from .object_request_messages import CreateRequestResponse
 from .object_request_messages import DeleteRequestMessage
 from .object_request_messages import DeleteRequestResponse
+from .object_request_messages import GetAllRequestsMessage
+from .object_request_messages import GetAllRequestsResponseMessage
 from .object_request_messages import GetBudgetRequestsMessage
 from .object_request_messages import GetBudgetRequestsResponse
 from .object_request_messages import GetRequestMessage
@@ -303,7 +303,7 @@ def update_request_msg(
     _req = node.data_requests.first(id=request_id)
 
     if not _req:
-        raise RequestError
+        raise RequestError(message=f"Request ID: {request_id} not found.")
 
     if status not in ["accepted", "denied"]:
         raise InvalidParameterValueError(
@@ -401,8 +401,6 @@ def get_all_requests(
         )
 
     _can_triage_request = node.users.can_triage_requests(verify_key=verify_key)
-
-    _requests = node.data_requests.all()
 
     if _can_triage_request:
         _requests = node.data_requests.all()

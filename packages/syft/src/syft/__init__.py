@@ -26,6 +26,8 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
+__version__ = "0.6.0"
+
 # stdlib
 from pathlib import Path
 import sys
@@ -75,31 +77,9 @@ from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 
-if sys.version_info[:2] >= (3, 8):
-    # TODO: Import directly (no need for conditional) when `python_requires = >= 3.8`
-    # stdlib
-    from importlib.metadata import PackageNotFoundError  # pragma: no cover
-    from importlib.metadata import version
-else:
-    # third party
-    from importlib_metadata import PackageNotFoundError  # pragma: no cover
-    from importlib_metadata import version
-
-try:
-    # Change here if project is renamed and does not equal the package name
-    dist_name = __name__
-    __version__ = version(dist_name)
-except PackageNotFoundError:  # pragma: no cover
-    __version__ = "unknown"
-finally:
-    del version, PackageNotFoundError
-
 sys.path.append(str(Path(__file__)))
 
 logger.start()
-
-# TODO: https://github.com/OpenMined/PySyft/issues/5930
-flags._APACHE_ARROW_TENSOR_SERDE = False
 
 
 def module_property(func: Any) -> None:

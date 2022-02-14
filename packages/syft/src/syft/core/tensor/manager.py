@@ -4,7 +4,7 @@ from typing import Dict
 from typing import List
 
 # relative
-from .types import SupportedChainType
+from .passthrough import SupportedChainType  # type: ignore
 
 
 class ScalarChainManagerTensor:

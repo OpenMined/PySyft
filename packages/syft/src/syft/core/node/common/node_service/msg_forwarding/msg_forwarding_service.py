@@ -91,7 +91,8 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
                     error(
                         f"{addr} in store does not have method send_immediate_msg_with_reply"
                     )
-                return func(msg=msg)
+                else:
+                    return func(msg=msg)
 
         try:
             for scope_id in [
