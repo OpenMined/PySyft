@@ -104,7 +104,7 @@ def test__rand__() -> None:
     with pytest.raises(
         ValueError, match="operands could not be broadcast together with shapes"
     ):
-        (tensor_c.__rand__(tensor_b))
+        tensor_c.__rand__(tensor_b)
 
 
 def test__abs__() -> None:
