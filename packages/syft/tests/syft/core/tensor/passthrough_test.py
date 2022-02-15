@@ -67,7 +67,7 @@ def test_dtype() -> None:
     assert tensor.dtype == np.int32
 
 
-def test_logical_and() -> None:
+def test__and__() -> None:
     data_a = np.array([True, False, True])
     data_b = np.array([False, False, True])
     data_c = np.array([False, False])
@@ -75,14 +75,14 @@ def test_logical_and() -> None:
     tensor_b = PassthroughTensor(child=data_b)
     tensor_c = PassthroughTensor(child=data_c)
     expected = tensor_b
-    result = tensor_a.logical_and(tensor_b)
+    result = tensor_a & tensor_b
 
     assert result == expected
 
     with pytest.raises(
-        Exception, match="Tensor shapes do not match for __eq__: [0-9]+ != [0-9]+"
+        ValueError, match="operands could not be broadcast together with shapes"
     ):
-        tensor_b.logical_and(tensor_c)
+        tensor_b & tensor_c
 
 
 def test__abs__() -> None:
