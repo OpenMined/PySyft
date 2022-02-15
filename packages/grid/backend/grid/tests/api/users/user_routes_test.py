@@ -42,6 +42,41 @@ class TestUsersRoutes:
     """
 
     @pytest.mark.asyncio
+    async def test_successfully_update_user(
+        self, app: FastAPI, client: AsyncClient
+    ) -> None:
+        # user = create_user()
+        headers = await authenticate_owner(app, client)
+        data = {
+            "name": "New Name",
+            "budget": 100.0,
+            "institution": "New Institution",
+            "website": "www.openmined.org",
+        }
+
+        # Update the information for the given user
+        res = await client.patch(
+            app.url_path_for("users:update", **{"user_id": 1}),
+            json=data,
+            headers=headers,
+        )
+
+        # Check if the request was successful
+        assert res.status_code == status.HTTP_204_NO_CONTENT
+
+        # Get the details of the update user
+        res = await client.get(
+            app.url_path_for("users:read_one", **{"user_id": 1}), headers=headers
+        )
+
+        assert res.status_code == status.HTTP_200_OK
+        res_json = res.json()
+
+        # Check if the user details were updated correctly
+        for key, val in data.items():
+            assert res_json.get(key) == val
+
+    @pytest.mark.asyncio
     async def test_list_users(self, app: FastAPI, client: AsyncClient) -> None:
         headers = await authenticate_owner(app, client)
         res = await client.get(app.url_path_for("users:read_all"), headers=headers)
