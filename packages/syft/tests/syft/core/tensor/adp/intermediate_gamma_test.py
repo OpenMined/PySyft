@@ -53,19 +53,20 @@ def non_square_gamma_tensor(
     ref_data: np.ndarray, ishan: Entity, traskmaster: Entity, vsm: ScalarManager
 ) -> IGT:
     assert ref_data.shape[0] != ref_data.shape[1]
-    return SEPT(
+    return convert_to_gamma_tensor(SEPT(
         child=ref_data,
         min_vals=np.ones_like(ref_data),
         max_vals=np.ones_like(ref_data) * 50,
-        entity=ishan,
+        entity=ishan + traskmaster,
         scalar_manager=vsm,
-    ) + SEPT(
-        child=ref_data,
-        min_vals=np.ones_like(ref_data),
-        max_vals=np.ones_like(ref_data) * 50,
-        entity=traskmaster,
-        scalar_manager=vsm,
-    )
+    ))
+           # + convert_to_gamma_tensor(SEPT(
+        # child=ref_data,
+        # min_vals=np.ones_like(ref_data),
+        # max_vals=np.ones_like(ref_data) * 50,
+        # entity=traskmaster,
+        # scalar_manager=vsm,
+    # ))
 
 
 @pytest.fixture
