@@ -774,11 +774,12 @@ def test_sum_copy() -> None:
     def copy_tensor(self) -> None:  # type: ignore
         return DummyTensor(child=self.child)
 
-    tensor.copy_tensor = copy_tensor(tensor)
+    tensor.copy_tensor = copy_tensor.__get__(tensor)  # bind obj as self for method
     result = tensor.sum()
 
     assert result.child == 28
     assert isinstance(result, (DummyTensor))
+    assert id(result) != id(tensor)
     assert id(result.child) != id(tensor.child)
 
 

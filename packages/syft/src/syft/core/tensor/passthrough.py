@@ -540,7 +540,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     ) -> PassthroughTensor:
         result = self.child.sum(axis=axis)
         if hasattr(self, "copy_tensor"):
-            tensor = self.copy_tensor
+            tensor = self.copy_tensor()
             tensor.child = result
             return tensor
         return self.__class__(result)
