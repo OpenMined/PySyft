@@ -75,14 +75,36 @@ def test__and__() -> None:
     tensor_b = PassthroughTensor(child=data_b)
     tensor_c = PassthroughTensor(child=data_c)
     expected = tensor_b
-    result = tensor_a & tensor_b
+    result_a = tensor_a & tensor_b
+    result_b = tensor_a & data_b
 
-    assert result == expected
+    assert result_a == expected
+    assert result_b == expected
 
     with pytest.raises(
         ValueError, match="operands could not be broadcast together with shapes"
     ):
         tensor_b & tensor_c
+
+
+def test__rand__() -> None:
+    data_a = np.array([True, False, True])
+    data_b = torch.tensor([False, False, True])
+    data_c = np.array([False, False])
+    tensor_a = PassthroughTensor(child=data_a)
+    tensor_b = PassthroughTensor(child=data_b)
+    tensor_c = PassthroughTensor(child=data_c)
+    expected = tensor_b
+    result_a = tensor_a.__rand__(tensor_b)
+    result_b = tensor_a.__rand__(data_b)
+
+    assert result_a == expected
+    assert result_b == expected 
+
+    with pytest.raises(
+        ValueError, match="operands could not be broadcast together with shapes"
+    ):
+        (tensor_c.__rand__(tensor_b))
 
 
 def test__abs__() -> None:
