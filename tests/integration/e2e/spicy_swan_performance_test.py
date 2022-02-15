@@ -235,6 +235,6 @@ def test_benchmark_datasets() -> None:
     content = {"user_id": 1, "budget": 5.55}
     domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
 
-    assert benchmark_report[key_size]["upload_secs"] <= 70
+    assert benchmark_report[key_size]["upload_secs"] <= 120
     assert benchmark_report[key_size]["sum_secs"] <= 1
     assert benchmark_report[key_size]["publish_secs"] <= 10
