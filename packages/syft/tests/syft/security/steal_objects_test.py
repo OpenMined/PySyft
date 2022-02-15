@@ -7,8 +7,7 @@ import syft as sy
 
 
 def test_steal_data_through_mutation(
-    client: sy.VirtualMachineClient,
-    root_client: sy.VirtualMachineClient,
+    client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
 ) -> None:
     secret = th.Tensor([1, 2, 3])
     secret.send(root_client, tags=["secret"])
@@ -27,7 +26,6 @@ def test_steal_data_through_mutation(
     assert bag[0] == 1
 
     # and then mutate it with someone elses secret data
-    # stdlib
     list_obj_ptr.append(secret_ptr)
 
     with pytest.raises(Exception):

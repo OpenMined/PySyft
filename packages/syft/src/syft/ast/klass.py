@@ -763,7 +763,6 @@ class Class(Callable):
                 tags=tags,
                 description=description,
                 search_permissions={VERIFYALL: None} if pointable else {},
-                write_permissions={client.verify_key: client.id} if pointable else {},
             )
             obj_msg = SaveObjectAction(obj=storable, address=client.address)
 
