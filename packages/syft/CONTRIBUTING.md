@@ -81,7 +81,7 @@ If you are new to the project and want to get into the code, we recommend pickin
 Before you get started you will need a few things installed depending on your operating system.
 
 - OS Package Manager
-- Python 3.7+
+- Python 3.8+
 - git
 - protobuf (protoc)
 
@@ -150,7 +150,7 @@ $ sudo apt install protobuf-compiler
 
 ## Python Versions
 
-This project supports Python 3.7+, however, if you are contributing it can help to be able to switch between python versions to fix issues or bugs that relate to a specific python version. Depending on your operating system there are a number of ways to install different versions of python however one of the easiest is with the `pyenv` tool. Additionally, as we will be frequently be installing and changing python packages for this project we should isolate it from your system python and other projects you have using a virtualenv.
+This project supports Python 3.8+, however, if you are contributing it can help to be able to switch between python versions to fix issues or bugs that relate to a specific python version. Depending on your operating system there are a number of ways to install different versions of python however one of the easiest is with the `pyenv` tool. Additionally, as we will be frequently be installing and changing python packages for this project we should isolate it from your system python and other projects you have using a virtualenv.
 
 ### MacOS
 
