@@ -2,7 +2,7 @@ name: Continuous Delivery
 
 on:
   schedule:
-    - cron: "30 01 * * 4" # Thursday
+    - cron: "45 4 16 * *" # Thursday
 
 jobs:
   deploy-syft-beta:
