@@ -12,6 +12,8 @@ from . import Base
 class ObjectMetadata(Base):
     __tablename__ = "obj_metadata"
 
+    __mapper_args__ = {"confirm_deleted_rows": False}
+
     id = Column(Integer(), primary_key=True, autoincrement=True)
     obj = Column(String(256), ForeignKey("bin_object.id", ondelete="CASCADE"))
     tags = Column(JSON())
@@ -19,3 +21,4 @@ class ObjectMetadata(Base):
     name = Column(String())
     read_permissions = Column(JSON())
     search_permissions = Column(JSON())
+    write_permissions = Column(JSON())
