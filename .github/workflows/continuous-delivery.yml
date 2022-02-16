@@ -38,7 +38,7 @@ jobs:
           author_name: Madhava Jay
           author_email: madhava@openmined.org
           message: "bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/backend/pyproject.toml', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx']"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/backend/pyproject.toml', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
 
       - name: Build and publish
         env:
