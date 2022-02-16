@@ -94,6 +94,18 @@ class TestUsersRoutes:
         )
         assert res.status_code == status.HTTP_200_OK
 
+    @pytest.mark.asyncio
+    async def test_user_cannot_delete_itself(
+        self, app: FastAPI, client: AsyncClient
+    ) -> None:
+        headers = await authenticate_owner(app, client)
+
+        res = await client.delete(
+            app.url_path_for("users:delete", **{"user_id": 1}), headers=headers
+        )
+        assert res.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+        assert res.json() == {"detail": "There was an error processing your request."}
+
     """
     @pytest.mark.asyncio
     async def test_invalid_user_raises_errors(
