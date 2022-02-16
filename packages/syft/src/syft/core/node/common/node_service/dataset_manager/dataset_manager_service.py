@@ -75,6 +75,7 @@ def _handle_dataset_creation_grid_ui(
                 tags=["#" + item.name.split("/")[-1]],
                 search_permissions={VERIFYALL: None},
                 read_permissions={node.verify_key: node.id, verify_key: None},
+                write_permissions={node.verify_key: node.id, verify_key: None},
             )
             node.store[storable.id] = storable
 
@@ -105,6 +106,7 @@ def _handle_dataset_creation_syft(
                 tags=[f"#{table_name}"],
                 search_permissions={VERIFYALL: None},
                 read_permissions={node.verify_key: node.id, verify_key: None},
+                write_permissions={node.verify_key: node.id, verify_key: None},
             )
             with tracer.start_as_current_span("save to DB"):
                 node.store[storable.id] = storable
