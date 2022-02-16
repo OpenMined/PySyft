@@ -119,6 +119,7 @@ class StorableObject(AbstractStorableObject):
     def description(self, description: Optional[str]) -> None:
         self._description = description if description else ""
 
+    # flake8: noqa: C901
     def _object2proto(self) -> StorableObject_PB:
         proto = StorableObject_PB()
 
