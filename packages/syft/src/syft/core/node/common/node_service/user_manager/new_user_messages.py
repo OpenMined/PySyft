@@ -272,11 +272,12 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
     class Request(RequestPayload):
         user_id: int
         name: Optional[str] = ""
-        email: Optional[EmailStr] = ""
+        email: Optional[EmailStr] = None
         institution: Optional[str] = ""
         website: Optional[str] = ""
         password: Optional[str] = ""
         role: Optional[str] = ""
+        budget: Optional[float] = None
 
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):

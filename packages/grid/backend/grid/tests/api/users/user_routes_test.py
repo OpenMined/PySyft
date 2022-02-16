@@ -1,3 +1,6 @@
+# stdlib
+from random import random
+
 # third party
 from fastapi import FastAPI
 from httpx import AsyncClient
@@ -45,13 +48,13 @@ class TestUsersRoutes:
     async def test_successfully_update_user(
         self, app: FastAPI, client: AsyncClient
     ) -> None:
-        # user = create_user()
+        user = create_user(budget=random() * 100)
         headers = await authenticate_owner(app, client)
         data = {
-            "name": "New Name",
-            "budget": 100.0,
-            "institution": "New Institution",
-            "website": "www.openmined.org",
+            "name": user.name,
+            "budget": user.budget,
+            "institution": user.institution,
+            "website": f"www.{user.institution}.com",
         }
 
         # Update the information for the given user
