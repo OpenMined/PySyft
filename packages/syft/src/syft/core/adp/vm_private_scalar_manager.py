@@ -24,6 +24,15 @@ from ..common.serde.serialize import _serialize as serialize
 from .entity import Entity
 from .scalar.gamma_scalar import GammaScalar
 
+prime_exp_cache = {}
+
+
+def get_cached_primes(total: int) -> list:
+    global prime_exp_cache
+    if total not in prime_exp_cache:
+        prime_exp_cache[total] = primes(total)
+    return prime_exp_cache[total]
+
 
 @serializable()
 class PrimeFactory:
@@ -36,22 +45,21 @@ class PrimeFactory:
     security leaks wherein two tensors think two different symbols in fact are the
     same symbol."""
 
-    def __init__(
-        self, prime_index: int = 0, init_highest_prime: int = 15485867
-    ) -> None:
-        # self.prev_prime_index = prime_index
+    def __init__(self) -> None:
         self.exp = 2
-        self.prime_numbers: list = primes(10**self.exp)
+        self.prime_numbers: list = get_cached_primes(total=10 ** self.exp)
 
     def get(self, index: int) -> int:
         while index > len(self.prime_numbers) - 1:
             self.exp += 1
-            self.prime_numbers = primes(10**self.exp)
+            self.prime_numbers = get_cached_primes(total=10 ** self.exp)
         return self.prime_numbers[index]
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, PrimeFactory):
-            return self.prime_numbers[-1] == other.prime_numbers[-1]  # Since the list is sorted, we can just compare the last value
+            return (
+                self.prime_numbers[-1] == other.prime_numbers[-1]
+            )  # Since the list is sorted, we can just compare the last value
             # return self.prev_prime_index == other.prev_prime_index
         return self == other
 
@@ -76,8 +84,9 @@ class VirtualMachinePrivateScalarManager:
         prime_factory: Optional[PrimeFactory] = None,
         prime2symbol: Optional[Dict[Any, Any]] = None,
     ) -> None:
-
-        self.prime_factory = PrimeFactory()
+        self.prime_factory = (
+            prime_factory if prime_factory is not None else PrimeFactory()
+        )
 
         if prime2symbol is None:
             prime2symbol = {}

@@ -1,7 +1,9 @@
+# stdlib
+from copy import deepcopy
+
 # third party
 import numpy as np
 import pytest
-from copy import deepcopy
 
 # syft absolute
 from syft.core.adp.entity import DataSubjectGroup as DSG

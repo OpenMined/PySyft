@@ -195,13 +195,14 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # TODO: Recalculate term tensor using an optimized slice method
 
         # index_number = self._entities()  # TODO: Check if this works!!
-        prime_numbers = np.array(list(self.scalar_manager.prime2symbol.keys()), dtype=np.int32)
+        prime_numbers = np.array(
+            list(self.scalar_manager.prime2symbol.keys()), dtype=np.int32
+        )
         print(prime_numbers, prime_numbers.shape)
         print(self.term_tensor.shape)
         print(self.shape)
         self.term_tensor = prime_numbers.reshape(self.term_tensor.shape)
         # self.term_tensor.flatten().reshape(-1, 2)[:, -1] = prime_numbers
-
 
     def _values(self) -> np.array:
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
