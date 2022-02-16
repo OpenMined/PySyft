@@ -39,7 +39,7 @@ class PrimeFactory:
     def __init__(
         self, prime_index: int = 0, init_highest_prime: int = 15485867
     ) -> None:
-        self.prev_prime_index = prime_index
+        # self.prev_prime_index = prime_index
         self.exp = 2
         self.prime_numbers: list = primes(10**self.exp)
 
@@ -51,7 +51,8 @@ class PrimeFactory:
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, PrimeFactory):
-            return self.prev_prime_index == other.prev_prime_index
+            return self.prime_numbers[-1] == other.prime_numbers[-1]  # Since the list is sorted, we can just compare the last value
+            # return self.prev_prime_index == other.prev_prime_index
         return self == other
 
     def _object2proto(self) -> PrimeFactory_PB:
@@ -163,18 +164,16 @@ class VirtualMachinePrivateScalarManager:
         """
 
         if id(self.prime2symbol) != id(vsm2.prime2symbol):
-
-            for prime_number, gs in vsm2.prime2symbol.items():
+            copy_dict = vsm2.prime2symbol.copy()
+            length = len(self.prime_factory.prime_numbers)
+            for prime_number, gs in copy_dict.items():
                 if prime_number in self.prime2symbol:  # If there's a collision
-                    index = 0
-                    length = len(self.prime_factory.prime_numbers)
-                    while prime_number >= self.prime_factory.prime_numbers[index]:
-                        if index >= length:
-                            break
-                        index += 1
-                    new_prime = self.prime_factory.get(prime_number)
+                    new_prime = self.prime_factory.get(length)
                     gs.prime = new_prime
                     self.prime2symbol[new_prime] = gs
+                    del vsm2.prime2symbol[prime_number]
+                    vsm2.prime2symbol[new_prime] = gs
+                    length += 1
                 else:
                     self.prime2symbol[gs.prime] = gs
         else:

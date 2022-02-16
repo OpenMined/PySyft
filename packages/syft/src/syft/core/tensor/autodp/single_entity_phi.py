@@ -518,7 +518,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         entity: Entity,
         min_vals: np.ndarray,
         max_vals: np.ndarray,
-        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = ScalarManager,
+        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
 
         # child = the actual private data
@@ -680,10 +680,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         # Make use of the equal operator we just implemented, and invert the result
         opposite_result = self.__eq__(other)
+        print(opposite_result)
 
         if isinstance(opposite_result, SingleEntityPhiTensor):
             return SingleEntityPhiTensor(
-                child=np.invert(opposite_result.child),
+                child=opposite_result.child ^ 1,
                 entity=opposite_result.entity,
                 min_vals=opposite_result.min_vals,
                 max_vals=opposite_result.max_vals,
@@ -691,7 +692,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             )
         elif isinstance(opposite_result, InitialGammaTensor):
             return InitialGammaTensor(
-                values=opposite_result.values,
+                values=opposite_result.values ^ 1,
                 entities=opposite_result.entities,
                 min_vals=opposite_result.min_vals,
                 max_vals=opposite_result.max_vals,

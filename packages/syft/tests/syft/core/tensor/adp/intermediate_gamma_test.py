@@ -1,6 +1,7 @@
 # third party
 import numpy as np
 import pytest
+from copy import deepcopy
 
 # syft absolute
 from syft.core.adp.entity import DataSubjectGroup as DSG
@@ -114,18 +115,24 @@ def sept_traskmaster(
 
 
 @pytest.fixture
-def gamma_tensor_min(sept_ishan, sept_traskmaster) -> IGT:
-    return sept_ishan + sept_traskmaster
+def gamma_tensor_min(sept_ishan, dsg) -> IGT:
+    sept = deepcopy(sept_ishan)
+    sept.entity = dsg
+    return convert_to_gamma_tensor(sept)
 
 
 @pytest.fixture
-def gamma_tensor_ref(sept_ishan, sept_traskmaster) -> IGT:
-    return sept_ishan + sept_traskmaster * 2
+def gamma_tensor_ref(sept_ishan, dsg) -> IGT:
+    sept = deepcopy(sept_ishan)
+    sept.entity = dsg
+    return convert_to_gamma_tensor(sept) * 2
 
 
 @pytest.fixture
-def gamma_tensor_max(sept_ishan, sept_traskmaster) -> IGT:
-    return sept_ishan + sept_traskmaster * 4
+def gamma_tensor_max(sept_ishan, dsg) -> IGT:
+    sept = deepcopy(sept_ishan)
+    sept.entity = dsg
+    return convert_to_gamma_tensor(sept) * 4
 
 
 def test_values(sept_ishan, sept_traskmaster, gamma_tensor_min) -> None:

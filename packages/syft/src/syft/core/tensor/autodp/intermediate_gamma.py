@@ -191,6 +191,18 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
         return scalars
 
+    def update(self) -> None:
+        # TODO: Recalculate term tensor using an optimized slice method
+
+        # index_number = self._entities()  # TODO: Check if this works!!
+        prime_numbers = np.array(list(self.scalar_manager.prime2symbol.keys()), dtype=np.int32)
+        print(prime_numbers, prime_numbers.shape)
+        print(self.term_tensor.shape)
+        print(self.shape)
+        self.term_tensor = prime_numbers.reshape(self.term_tensor.shape)
+        # self.term_tensor.flatten().reshape(-1, 2)[:, -1] = prime_numbers
+
+
     def _values(self) -> np.array:
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
         DO NOT ADD THIS METHOD TO THE AST!!!
@@ -361,7 +373,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
                 vals = self._values()
                 tensor = InitialGammaTensor(
-                    values=not (vals < other) and not (vals > other),
+                    values=vals == other,
                     max_vals=np.ones_like(vals),
                     min_vals=np.zeros_like(vals),
                     entities=self._entities(),
@@ -377,12 +389,15 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
                 self_vals = self._values()
                 other_vals = other._values()
+                # output_scalar = self.scalar_manager.copy()
+                # output_scalar.combine_(other.scalar_manager)
+                # other.update()
                 tensor = InitialGammaTensor(
                     values=self_vals == other_vals,
-                    # values= not (self_vals < other_vals) and not (self_vals > other_vals),
                     min_vals=np.zeros_like(self_vals),
                     max_vals=np.ones_like(self_vals),
                     entities=self._entities() + other._entities(),
+                    # scalar_manager=output_scalar
                 )
             else:
                 raise Exception(
@@ -400,7 +415,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
                 vals = self._values()
                 tensor = InitialGammaTensor(
-                    values=(vals < other) or (vals > other),
+                    values=vals != other,
                     max_vals=np.ones_like(vals),
                     min_vals=np.zeros_like(vals),
                     entities=self._entities(),
@@ -416,12 +431,16 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
                 self_vals = self._values()
                 other_vals = other._values()
+                # output_scalar = self.scalar_manager.copy()
+                # output_scalar.combine_(other.scalar_manager)
+                # other.update()
                 tensor = InitialGammaTensor(
                     values=self_vals != other_vals,
                     # values= not (self_vals < other_vals) and not (self_vals > other_vals),
                     min_vals=np.zeros_like(self_vals),
                     max_vals=np.ones_like(self_vals),
                     entities=self._entities() + other._entities(),
+                    # scalar_manager=output_scalar
                 )
             else:
                 raise Exception(
@@ -613,6 +632,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             # )
 
             output_scalar_manager.combine_(other.scalar_manager)
+            other.update()  # change term tensor after combining scalar managers
 
             # Step 1: Concatenate
             term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)  # type: ignore

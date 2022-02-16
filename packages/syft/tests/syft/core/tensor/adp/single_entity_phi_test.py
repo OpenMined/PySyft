@@ -308,6 +308,12 @@ def test_ne_diff_entities(
     assert (reference_tensor.child != comparison_tensor.child).all()
 
     result = reference_tensor != comparison_tensor
+    print(reference_tensor.child)
+    print(comparison_tensor.child)
+
+    assert (reference_tensor.child == reference_data).all()
+    assert (comparison_tensor.child == reference_data + 1).all()
+
     assert isinstance(result, IGT)
     assert (
         result._values().all()
