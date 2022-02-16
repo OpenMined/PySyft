@@ -31,6 +31,7 @@ def retrieve_object(
 def beaver_retrieve_object(
     node: AbstractNode, id_at_location: UID, nr_parties: int
 ) -> StorableObject:
+    # relative
     from .beaver_action import BEAVER_CACHE
 
     # A hard time limit is set on celery worker which prevents infinite execution.

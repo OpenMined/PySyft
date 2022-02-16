@@ -646,7 +646,6 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
             if hasattr(other, "unique_entities"):
                 unique_entities = self.unique_entities.union(other.unique_entities)
-                
 
         # EXPLAIN B: NEW OUTPUT becomes a 5x10x2
         # TODO: Step 2: Reduce dimensionality if possible (look for duplicates)
