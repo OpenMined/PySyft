@@ -12,7 +12,7 @@ from typing import cast
 import numpy as np
 
 RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
-    2 ** 32: np.dtype("int32"),
+    2**32: np.dtype("int32"),
     2: np.dtype("bool"),  # Special case: need to do reconstruct and share with XOR
 }
 

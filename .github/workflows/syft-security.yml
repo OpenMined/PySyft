@@ -68,7 +68,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           bandit -r src
-          safety check
+          safety check -i 44715 -i 44716 -i 44717
 
       - name: Generate requirements.txt for snyk
         if: steps.changes.outputs.syft == 'true'
