@@ -3,6 +3,11 @@ name: Continuous Delivery
 on:
   schedule:
     - cron: "45 4 16 * *" # Thursday
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Nightlies Tests Manually"
+        required: false
 
 jobs:
   deploy-syft-beta:
