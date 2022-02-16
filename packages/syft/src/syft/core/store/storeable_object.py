@@ -59,6 +59,7 @@ class StorableObject(AbstractStorableObject):
         tags: Optional[List[str]] = None,
         read_permissions: Optional[dict] = None,
         search_permissions: Optional[dict] = None,
+        write_permissions: Optional[dict] = None,
     ):
         self.id = id
         self.data = data
@@ -74,6 +75,7 @@ class StorableObject(AbstractStorableObject):
         # the value is the original request_id to allow lookup later
         # who are allowed to know that the tensor exists (via search or other means)
         self.search_permissions: dict = search_permissions if search_permissions else {}
+        self.write_permissions: dict = write_permissions if write_permissions else {}
 
     @property
     def object_type(self) -> str:
@@ -164,6 +166,13 @@ class StorableObject(AbstractStorableObject):
                 permission_data[k] = v
             proto.search_permissions = sy.serialize(permission_data, to_bytes=True)
 
+        # Step 8: save write permissions
+        if len(self.write_permissions.keys()) > 0:
+            permission_data = sy.lib.python.Dict()
+            for k, v in self.write_permissions.items():
+                permission_data[k] = v
+            proto.write_permissions = sy.serialize(permission_data, to_bytes=True)
+
         return proto
 
     @staticmethod
@@ -209,6 +218,13 @@ class StorableObject(AbstractStorableObject):
                 blob=proto.search_permissions, from_bytes=True
             )
 
+        # Step 9: get the write permissions
+        write_permissions = None
+        if proto.write_permissions is not None and len(proto.write_permissions) > 0:
+            write_permissions = _deserialize(
+                blob=proto.write_permissions, from_bytes=True
+            )
+
         result = StorableObject(
             id=id,
             data=data,
@@ -216,6 +232,7 @@ class StorableObject(AbstractStorableObject):
             tags=tags,
             read_permissions=read_permissions,
             search_permissions=search_permissions,
+            write_permissions=write_permissions,
         )
 
         return result
@@ -273,6 +290,11 @@ class StorableObject(AbstractStorableObject):
             output += (
                 " can_search: "
                 + f"{[key_emoji(key=key) for key in self.search_permissions.keys()]}"
+            )
+        if len(self.write_permissions.keys()) > 0:
+            output += (
+                " can_write: "
+                + f"{[key_emoji(key=key) for key in self.write_permissions.keys()]}"
             )
 
         output += ")"
