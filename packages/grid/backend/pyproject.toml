@@ -1,11 +1,11 @@
 [tool.poetry]
 name = "PyGrid"
-version = "0.7.0-beta.0"
+version = "0.7.0-beta.2"
 description = ""
 authors = ["OpenMined <info@openmined.org>"]
 
 [tool.poetry.dependencies]
-python = "^3.7"
+python = "^3.8"
 uvicorn = "^0.15.0"
 fastapi = "^0.68.0"
 python-multipart = "^0.0.5"
