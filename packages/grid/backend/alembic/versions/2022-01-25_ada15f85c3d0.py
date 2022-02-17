@@ -1,17 +1,18 @@
 """store write permissions as meta information
 
 Revision ID: ada15f85c3d0
-Revises: 6ebc05b27174
+Revises: 07fb4c284883
 Create Date: 2022-01-25 10:30:07.890360
 
 """
+import sqlalchemy as sa
+
 # third party
 from alembic import op  # type: ignore
-import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision = "ada15f85c3d0"
-down_revision = "6ebc05b27174"
+down_revision = "07fb4c284883"
 branch_labels = None
 depends_on = None
 

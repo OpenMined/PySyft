@@ -23,6 +23,8 @@ services:
   frontend:
     build:
       target: "grid-ui-development"
+    volumes:
+      - ./backend/grid/frontend:/app
 
   db:
     ports:
