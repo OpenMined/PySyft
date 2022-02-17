@@ -74,12 +74,18 @@ jobs:
           export DOCKER_URI_LATEST=$IMAGE_URI:latest
 
       - name: Build and push `grid-backend` image to DockerHub
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: grid/backend/backend.dockerfile
-          push: true
-          tags: $DOCKER_URI,$DOCKER_URI_LATEST
+        env: |
+          DOCKER_URI: $DOCKER_URI
+          DOCKER_URI_LATEST: $DOCKER_URI_LATEST
+        run: |
+          echo $DOCKER_URI
+          echo $DOCKER_URI_LATEST
+        # uses: docker/build-push-action@v2  
+        # with:
+        #   context: .
+        #   file: grid/backend/backend.dockerfile
+        #   push: true
+        #   tags: $DOCKER_URI,$DOCKER_URI_LATEST
 
       # - name: Build and push `grid-backend` image to DockerHub
       #   working-directory: ./packages
