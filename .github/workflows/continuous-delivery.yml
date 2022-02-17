@@ -94,7 +94,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./packages
-          file: ./grid/backend/backend.dockerfile
+          file: packages/grid/backend/backend.dockerfile
           push: false
           tags: ${{env.DOCKER_URI}}, ${{env.DOCKER_URI_LATEST}}
 
