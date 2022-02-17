@@ -71,8 +71,8 @@ jobs:
         run: |
           export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
           export DOCKER_URI_LATEST=$IMAGE_URI:latest
-          echo "$DOCKER_URI" >> $GITHUB_ENV
-          echo "$DOCKER_URI_LATEST" >> $GITHUB_ENV
+          echo "DOCKER_URI=$DOCKER_URI" >> $GITHUB_ENV
+          echo "DOCKER_URI_LATEST=$DOCKER_URI_LATEST" >> $GITHUB_ENV
 
       - name: check URI
         run: |
