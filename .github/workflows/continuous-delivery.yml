@@ -95,7 +95,7 @@ jobs:
         with:
           context: ./packages
           file: grid/backend/backend.dockerfile
-          push: true
+          push: false
           tags: ${{env.DOCKER_URI}}, ${{env.DOCKER_URI_LATEST}}
 
       # - name: Build and push `grid-backend` image to DockerHub
