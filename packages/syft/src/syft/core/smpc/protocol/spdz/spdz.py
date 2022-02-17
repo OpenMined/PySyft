@@ -50,10 +50,9 @@ def mul_master(
     parties = x.parties
     parties_info = x.parties_info
 
+    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
     shape_x = tuple(x.shape)  # type: ignore
     shape_y = tuple(y.shape)  # type: ignore
-
-    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
 
     if ring_size != 2:
         # For ring_size 2 we generate those before hand
@@ -72,15 +71,14 @@ def mul_master(
     # TODO: Should modify to parallel execution.
     if not isinstance(x.child[0], TensorPointer):
         res_shares = [
-            getattr(a, "__mul__")(a, b, shape_x, shape_y, **kwargs)
-            for a, b in zip(x.child, y.child)
+            getattr(a, "__mul__")(a, b, **kwargs) for a, b in zip(x.child, y.child)
         ]
     else:
         res_shares = []
         attr_path_and_name = f"{x.child[0].path_and_name}.__{op_str}__"
         op = get_run_class_method(attr_path_and_name, SMPC=True)
         for a, b in zip(x.child, y.child):
-            res_shares.append(op(a, a, b, shape_x, shape_y, **kwargs))
+            res_shares.append(op(a, a, b, **kwargs))
 
     return res_shares  # type: ignore
 
