@@ -1,5 +1,4 @@
 {
-  "baseUrl": "http://localhost:3000",
   "video": false,
   "screenshotOnRunFailure": false,
   "fixturesFolder": "tests/fixtures",

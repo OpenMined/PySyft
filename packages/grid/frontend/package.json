@@ -10,8 +10,8 @@
     "lint": "next lint",
     "test": "jest --watch",
     "test:ci": "jest --ci",
-    "cypress:open": "cypress open",
-    "cypress:run": "cypress run",
+    "cypress:open": "export NEXT_PUBLIC_HOST=\"http://localhost:${HTTP_PORT-8081}\" && cypress open",
+    "cypress:run": "export NEXT_PUBLIC_HOST=\"http://localhost:${HTTP_PORT-8081}\" && cypress run",
     "e2e": "start-server-and-test start http://localhost:3000 cypress",
     "e2e:headless": "start-server-and-test start http://localhost:3000 cypress:headless"
   },
