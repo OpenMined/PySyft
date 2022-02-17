@@ -73,19 +73,22 @@ jobs:
           export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
           export DOCKER_URI_LATEST=$IMAGE_URI:latest
 
+      - name: Docker meta
+        id: meta_grid_backend
+        uses: docker/metadata-action@v3
+        with:
+          images: openmined/grid-backend
+        tags: |
+          type=raw,value=$GRID_VERSION
+          type=raw,value=latest
+
       - name: Build and push `grid-backend` image to DockerHub
-        env: |
-          DOCKER_URI: $DOCKER_URI
-          DOCKER_URI_LATEST: $DOCKER_URI_LATEST
-        run: |
-          echo $DOCKER_URI
-          echo $DOCKER_URI_LATEST
-        # uses: docker/build-push-action@v2  
-        # with:
-        #   context: .
-        #   file: grid/backend/backend.dockerfile
-        #   push: true
-        #   tags: $DOCKER_URI,$DOCKER_URI_LATEST
+        uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: grid/backend/backend.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_backend.outputs.tags }}
 
       # - name: Build and push `grid-backend` image to DockerHub
       #   working-directory: ./packages
