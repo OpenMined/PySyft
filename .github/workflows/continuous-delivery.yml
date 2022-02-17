@@ -24,32 +24,33 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade setuptools wheel twine tox bump2version
-      - name: Bump the Version
-        run: |
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-          bump2version prenum --allow-dirty --no-commit
-          tox -e lint || true
-          ls **/VERSION | xargs -I {} python {}
-          cat packages/grid/devspace.yaml | grep '0\.'
-      - name: Commit changes
-        uses: EndBug/add-and-commit@v7
-        with:
-          author_name: Madhava Jay
-          author_email: madhava@openmined.org
-          message: "bump version"
-          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/backend/pyproject.toml', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
+#       - name: Bump the Version
+#         run: |
+#           ls **/VERSION | xargs -I {} python {}
+#           cat packages/grid/devspace.yaml | grep '0\.'
+#           bump2version prenum --allow-dirty --no-commit
+#           tox -e lint || true
+#           ls **/VERSION | xargs -I {} python {}
+#           cat packages/grid/devspace.yaml | grep '0\.'
+#       - name: Commit changes
+#         uses: EndBug/add-and-commit@v7
+#         with:
+#           author_name: Madhava Jay
+#           author_email: madhava@openmined.org
+#           message: "bump version"
+#           add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/backend/pyproject.toml', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
 
-      - name: Build and publish
-        env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-        run: |
-          tox -e syft.publish
-          twine upload packages/syft/dist/*
+#       - name: Build and publish
+#         env:
+#           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+#           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+#         run: |
+#           tox -e syft.publish
+#           twine upload packages/syft/dist/*
 
       - name: Set Grid package version
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
+      
       - name: Build and push `grid-backend` image to DockerHub
         working-directory: ./packages
         env:
