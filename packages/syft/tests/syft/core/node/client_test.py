@@ -17,7 +17,7 @@ async def test_client_from_metadata(domain: sy.Domain) -> None:
     )
 
     assert domain.domain == spec_location
-    assert name == "duet"
+    assert name == "Alice"
     assert id == domain.id
 
 

@@ -17,7 +17,7 @@ from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.node import Node
-from ..common.node_manager.bin_obj_manager import DictStore
+from ..common.node_manager.dict_store import DictStore
 from .client import VirtualMachineClient
 
 

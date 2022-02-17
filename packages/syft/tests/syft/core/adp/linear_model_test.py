@@ -9,7 +9,7 @@ import syft as sy
 from syft.core.adp.adversarial_accountant import AdversarialAccountant
 from syft.core.adp.entity import Entity
 from syft.core.adp.scalar.phi_scalar import PhiScalar
-from syft.core.node.common.node_manager.bin_obj_manager import DictStore
+from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.tensor.tensor import Tensor
 
 

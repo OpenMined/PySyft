@@ -13,7 +13,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import logger
-from syft.core.node.common.node_manager.bin_obj_manager import DictStore
+from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available

@@ -53,7 +53,7 @@ from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
-from .node_manager.bin_obj_manager import RedisStore
+from .node_manager.redis_store import RedisStore
 from .node_manager.setup_manager import SetupManager
 from .node_service.auth import AuthorizationException
 from .node_service.child_node_lifecycle.child_node_lifecycle_service import (

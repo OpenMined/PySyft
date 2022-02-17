@@ -7,7 +7,7 @@ import torch as th
 import syft as sy
 from syft.core.common.message import SyftMessage
 from syft.core.common.uid import UID
-from syft.core.node.common.node_manager.bin_obj_manager import DictStore
+from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.node.common.node_service.request_receiver.request_receiver_messages import (
     RequestStatus,
 )

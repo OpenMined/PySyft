@@ -35,11 +35,11 @@ from ..common.action.get_object_action import GetObjectAction
 from ..common.client import Client
 from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
-from ..common.node_manager.bin_obj_manager import RedisStore
 from ..common.node_manager.dataset_manager import DatasetManager
 from ..common.node_manager.environment_manager import EnvironmentManager
 from ..common.node_manager.node_manager import NodeManager
 from ..common.node_manager.node_route_manager import NodeRouteManager
+from ..common.node_manager.redis_store import RedisStore
 from ..common.node_manager.request_manager import RequestManager
 from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
