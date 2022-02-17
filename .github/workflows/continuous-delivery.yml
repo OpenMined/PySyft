@@ -78,9 +78,9 @@ jobs:
         uses: docker/metadata-action@v3
         with:
           images: openmined/grid-backend
-        tags: |
-          type=raw,value=$GRID_VERSION
-          type=raw,value=latest
+          tags: |
+            type=raw,value=$GRID_VERSION
+            type=raw,value=latest
 
       - name: Build and push `grid-backend` image to DockerHub
         uses: docker/build-push-action@v2
