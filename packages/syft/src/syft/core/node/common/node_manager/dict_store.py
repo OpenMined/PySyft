@@ -1,4 +1,5 @@
 # stdlib
+from copy import deepcopy
 from typing import Any
 from typing import Collection
 from typing import Iterable
@@ -12,7 +13,7 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
 # syft absolute
-import syft
+import syft as sy
 
 # relative
 from ....common.uid import UID
@@ -76,7 +77,27 @@ class DictStore(ObjectStore):
                 key_str = key
                 key_uid = UID.from_string(key_str)
 
-            obj = self.kv_store[key_uid]
+            store_obj = self.kv_store[key_uid]
+
+            # serialized contents
+            if isinstance(store_obj, bytes):
+                try:
+                    de = sy.deserialize(store_obj, from_bytes=True)
+                    obj = de
+                except Exception as e:
+                    raise Exception(f"Failed to deserialize obj at key {key_str}. {e}")
+            else:
+                # not serialized
+                try:
+                    obj = deepcopy(store_obj)
+                except Exception as e:
+                    raise Exception(
+                        f"DictStore should not contain unpickleable objects. {e}"
+                    )
+
+            if id(obj) == id(store_obj):
+                raise Exception("Objects must use deepcopy or mutation can occur")
+
             obj_metadata = (
                 local_session.query(ObjectMetadata).filter_by(obj=key_str).all()[-1]
             )
@@ -90,17 +111,17 @@ class DictStore(ObjectStore):
                 description=obj_metadata.description,
                 tags=obj_metadata.tags,
                 read_permissions=dict(
-                    syft.deserialize(
+                    sy.deserialize(
                         bytes.fromhex(obj_metadata.read_permissions), from_bytes=True
                     )
                 ),
                 search_permissions=dict(
-                    syft.deserialize(
+                    sy.deserialize(
                         bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
                     )
                 ),
                 write_permissions=dict(
-                    syft.deserialize(
+                    sy.deserialize(
                         bytes.fromhex(obj_metadata.write_permissions), from_bytes=True
                     )
                 ),
@@ -108,7 +129,7 @@ class DictStore(ObjectStore):
             local_session.close()
             return obj
         except Exception as e:
-            print(f"Cant store object {str(key)}", e)
+            print(f"Cant get object {str(key)}", e)
             raise KeyError(f"Object not found! for UID: {str(key)}")
 
     def is_dataset(self, key: UID) -> bool:
@@ -129,12 +150,25 @@ class DictStore(ObjectStore):
         return obj_dataset_relation
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        try:
-            self.kv_store[key] = value
-        except Exception as e:
-            print(f"failed to add {key} and value to dict", e)
-
         key_str = str(key.value)
+        try:
+            store_obj = deepcopy(value)
+            self.kv_store[key] = store_obj
+            if id(value) == id(store_obj):
+                raise Exception("Objects must use deepcopy or mutation can occur")
+        except Exception as e:
+            # if we get a pickling error from deepcopy we can juse use sy.serialize
+            # in theory not having to do this unless necessary means it should be a
+            # little faster and less memory intensive
+            if "Pickling" in str(e):
+                try:
+                    # deepcopy falls back to pickle and some objects can't be pickled
+                    self.kv_store[key] = sy.serialize(value, to_bytes=True)
+                except Exception as ex:
+                    raise Exception(f"Failed to serialize object {type(value)}. {ex}")
+            else:
+                raise Exception(f"Failed to save object {type(value)}. {e}")
+
         create_metadata = True
         local_session = sessionmaker(bind=self.db)()
         try:
@@ -153,19 +187,15 @@ class DictStore(ObjectStore):
         metadata_obj.description = value.description
         metadata_obj.read_permissions = cast(
             bytes,
-            syft.serialize(syft.lib.python.Dict(value.read_permissions), to_bytes=True),
+            sy.serialize(sy.lib.python.Dict(value.read_permissions), to_bytes=True),
         ).hex()
         metadata_obj.search_permissions = cast(
             bytes,
-            syft.serialize(
-                syft.lib.python.Dict(value.search_permissions), to_bytes=True
-            ),
+            sy.serialize(sy.lib.python.Dict(value.search_permissions), to_bytes=True),
         ).hex()
         metadata_obj.write_permissions = cast(
             bytes,
-            syft.serialize(
-                syft.lib.python.Dict(value.write_permissions), to_bytes=True
-            ),
+            sy.serialize(sy.lib.python.Dict(value.write_permissions), to_bytes=True),
         ).hex()
 
         obj_dataset_relation = self._get_obj_dataset_relation(key)

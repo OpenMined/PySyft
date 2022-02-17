@@ -5,6 +5,7 @@ from typing import Any
 # third party
 import numpy as np
 from pympler.asizeof import asizeof
+import pytest
 
 # syft absolute
 import syft as sy
@@ -63,6 +64,7 @@ def test_numpy_child() -> None:
     assert tensor == de
 
 
+@pytest.mark.slow
 def test_sept_child() -> None:
     """We need to benchmark both the size and time to serialize and deserialize SEPTs"""
     rows = 10_000
@@ -119,6 +121,7 @@ def test_sept_child() -> None:
     # assert (time_de - macbook_pro_2019_de_time) < 2e-1
 
 
+@pytest.mark.slow
 def test_rept_child() -> None:
     """We need to benchmark both the size and time to serialize and deserialize REPTs"""
     rows = 10_000
@@ -206,6 +209,7 @@ def time_and_size_serde(obj: Any) -> np.array:
     return np.array([mem_size, ser_size, time_ser, time_de])
 
 
+@pytest.mark.slow
 def test_big_sept_vs_rept_child() -> None:
     """Compare REPT of 50_000x1x7 vs SEPT of 50_000x7 to check overhead of REPT"""
     rows = 1

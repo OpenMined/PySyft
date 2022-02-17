@@ -14,6 +14,7 @@ from syft.core.adp.vm_private_scalar_manager import (
 from syft.core.tensor.autodp.dp_tensor_converter import convert_to_gamma_tensor
 from syft.core.tensor.autodp.intermediate_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
+from syft.util import concurrency_override
 
 
 @pytest.fixture
@@ -127,16 +128,18 @@ def gamma_tensor_min(sept_ishan, dsg) -> IGT:
 
 @pytest.fixture
 def gamma_tensor_ref(sept_ishan, dsg) -> IGT:
-    sept = deepcopy(sept_ishan)
-    sept.entity = dsg
-    return convert_to_gamma_tensor(sept) * 2
+    with concurrency_override(count=1):
+        sept = deepcopy(sept_ishan)
+        sept.entity = dsg
+        return convert_to_gamma_tensor(sept) * 2
 
 
 @pytest.fixture
 def gamma_tensor_max(sept_ishan, dsg) -> IGT:
-    sept = deepcopy(sept_ishan)
-    sept.entity = dsg
-    return convert_to_gamma_tensor(sept) * 4
+    with concurrency_override(count=1):
+        sept = deepcopy(sept_ishan)
+        sept.entity = dsg
+        return convert_to_gamma_tensor(sept) * 4
 
 
 def test_values(sept_ishan, sept_traskmaster, gamma_tensor_min) -> None:
@@ -181,32 +184,32 @@ def test_gt(
     sept_traskmaster: SEPT,
     dsg: DSG,
 ) -> None:
+    with concurrency_override(count=1):
+        # Private - Public
+        assert isinstance(gamma_tensor_min, IGT)
+        assert isinstance(gamma_tensor_ref, IGT)
+        assert isinstance(gamma_tensor_max, IGT)
 
-    # Private - Public
-    assert isinstance(gamma_tensor_min, IGT)
-    assert isinstance(gamma_tensor_ref, IGT)
-    assert isinstance(gamma_tensor_max, IGT)
+        assert (gamma_tensor_max > gamma_tensor_min).values.all()
+        assert (gamma_tensor_ref > gamma_tensor_min).values.all()
 
-    assert (gamma_tensor_max > gamma_tensor_min).values.all()
-    assert (gamma_tensor_ref > gamma_tensor_min).values.all()
+        # Uncomment this line to ensure that the check is working properly, as
+        # assert (gamma_tensor_min > gamma_tensor_ref).values.all()
 
-    # Uncomment this line to ensure that the check is working properly, as
-    # assert (gamma_tensor_min > gamma_tensor_ref).values.all()
+        # Private - Private
+        gamma_ishan = convert_to_gamma_tensor(sept_ishan)
+        gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
 
-    # Private - Private
-    gamma_ishan = convert_to_gamma_tensor(sept_ishan)
-    gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
-
-    output = gamma_ishan + 1 > gamma_trask
-    assert output.values.all()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
-    output = gamma_ishan > gamma_trask
-    assert not output.values.any()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
+        output = gamma_ishan + 1 > gamma_trask
+        assert output.values.all()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
+        output = gamma_ishan > gamma_trask
+        assert not output.values.any()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
 
 
 def test_lt(
@@ -217,32 +220,32 @@ def test_lt(
     sept_traskmaster: SEPT,
     dsg: DSG,
 ) -> None:
+    with concurrency_override(count=1):
+        # Private - Public
+        assert isinstance(gamma_tensor_min, IGT)
+        assert isinstance(gamma_tensor_ref, IGT)
+        assert isinstance(gamma_tensor_max, IGT)
 
-    # Private - Public
-    assert isinstance(gamma_tensor_min, IGT)
-    assert isinstance(gamma_tensor_ref, IGT)
-    assert isinstance(gamma_tensor_max, IGT)
+        assert (gamma_tensor_min < gamma_tensor_max).values.all()
+        assert (gamma_tensor_min < gamma_tensor_ref).values.all()
 
-    assert (gamma_tensor_min < gamma_tensor_max).values.all()
-    assert (gamma_tensor_min < gamma_tensor_ref).values.all()
+        # Uncomment this line to ensure that the check is working properly, as
+        # assert (gamma_tensor_ref < gamma_tensor_min).values.all()
 
-    # Uncomment this line to ensure that the check is working properly, as
-    # assert (gamma_tensor_ref < gamma_tensor_min).values.all()
+        # Private - Private
+        gamma_ishan = convert_to_gamma_tensor(sept_ishan)
+        gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
 
-    # Private - Private
-    gamma_ishan = convert_to_gamma_tensor(sept_ishan)
-    gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
-
-    output = gamma_ishan < gamma_trask + 1
-    assert output.values.all()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
-    output = gamma_ishan < gamma_trask
-    assert not output.values.any()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
+        output = gamma_ishan < gamma_trask + 1
+        assert output.values.all()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
+        output = gamma_ishan < gamma_trask
+        assert not output.values.any()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
 
 
 def test_pos(
@@ -251,19 +254,19 @@ def test_pos(
     gamma_tensor_max: IGT,
     dsg: DSG,
 ) -> None:
+    with concurrency_override(count=1):
+        assert isinstance(gamma_tensor_min, IGT)
+        assert isinstance(gamma_tensor_ref, IGT)
+        assert isinstance(gamma_tensor_max, IGT)
 
-    assert isinstance(gamma_tensor_min, IGT)
-    assert isinstance(gamma_tensor_ref, IGT)
-    assert isinstance(gamma_tensor_max, IGT)
+        assert (gamma_tensor_max == +gamma_tensor_max).values.all()
+        assert (gamma_tensor_ref == +gamma_tensor_ref).values.all()
+        assert (gamma_tensor_min == +gamma_tensor_min).values.all()
 
-    assert (gamma_tensor_max == +gamma_tensor_max).values.all()
-    assert (gamma_tensor_ref == +gamma_tensor_ref).values.all()
-    assert (gamma_tensor_min == +gamma_tensor_min).values.all()
-
-    output = +gamma_tensor_min
-    for entity in output._entities().flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
+        output = +gamma_tensor_min
+        for entity in output._entities().flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
 
 
 def test_neg(
@@ -272,19 +275,19 @@ def test_neg(
     gamma_tensor_max: IGT,
     dsg: DSG,
 ) -> None:
+    with concurrency_override(count=1):
+        assert isinstance(gamma_tensor_min, IGT)
+        assert isinstance(gamma_tensor_ref, IGT)
+        assert isinstance(gamma_tensor_max, IGT)
 
-    assert isinstance(gamma_tensor_min, IGT)
-    assert isinstance(gamma_tensor_ref, IGT)
-    assert isinstance(gamma_tensor_max, IGT)
+        assert (gamma_tensor_max * -1 == -gamma_tensor_max).values.all()
+        assert (gamma_tensor_ref * -1 == -gamma_tensor_ref).values.all()
+        assert (gamma_tensor_min * -1 == -gamma_tensor_min).values.all()
 
-    assert (gamma_tensor_max * -1 == -gamma_tensor_max).values.all()
-    assert (gamma_tensor_ref * -1 == -gamma_tensor_ref).values.all()
-    assert (gamma_tensor_min * -1 == -gamma_tensor_min).values.all()
-
-    output = -gamma_tensor_min
-    for entity in output._entities().flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
+        output = -gamma_tensor_min
+        for entity in output._entities().flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
 
 
 def test_copy(
@@ -293,17 +296,17 @@ def test_copy(
     gamma_tensor_max: IGT,
     dsg: DSG,
 ) -> None:
+    with concurrency_override(count=1):
+        output = gamma_tensor_min.copy()
 
-    output = gamma_tensor_min.copy()
+        assert isinstance(gamma_tensor_min, IGT)
+        assert isinstance(output, IGT)
 
-    assert isinstance(gamma_tensor_min, IGT)
-    assert isinstance(output, IGT)
+        assert (output == gamma_tensor_min).values.all()
 
-    assert (output == gamma_tensor_min).values.all()
-
-    for entity in output._entities().flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
+        for entity in output._entities().flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
 
 
 def test_eq(
@@ -314,33 +317,33 @@ def test_eq(
     sept_traskmaster: SEPT,
     dsg: DSG,
 ) -> None:
+    with concurrency_override(count=1):
+        # Private - Public
+        assert isinstance(gamma_tensor_min, IGT)
+        assert isinstance(gamma_tensor_ref, IGT)
+        assert isinstance(gamma_tensor_max, IGT)
 
-    # Private - Public
-    assert isinstance(gamma_tensor_min, IGT)
-    assert isinstance(gamma_tensor_ref, IGT)
-    assert isinstance(gamma_tensor_max, IGT)
+        assert (gamma_tensor_max == gamma_tensor_max).values.all()
+        assert (gamma_tensor_ref == gamma_tensor_ref).values.all()
+        assert (gamma_tensor_min == gamma_tensor_min).values.all()
 
-    assert (gamma_tensor_max == gamma_tensor_max).values.all()
-    assert (gamma_tensor_ref == gamma_tensor_ref).values.all()
-    assert (gamma_tensor_min == gamma_tensor_min).values.all()
+        # Uncomment this line to ensure that the check is working properly, as
+        # assert (gamma_tensor_min == gamma_tensor_ref).values.any()
 
-    # Uncomment this line to ensure that the check is working properly, as
-    # assert (gamma_tensor_min == gamma_tensor_ref).values.any()
+        # Private - Private
+        gamma_ishan = convert_to_gamma_tensor(sept_ishan)
+        gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
 
-    # Private - Private
-    gamma_ishan = convert_to_gamma_tensor(sept_ishan)
-    gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
-
-    output = gamma_ishan == gamma_trask
-    assert output.values.all()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
-    output = gamma_ishan == gamma_trask + 1
-    assert not output.values.any()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
+        output = gamma_ishan == gamma_trask
+        assert output.values.all()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
+        output = gamma_ishan == gamma_trask + 1
+        assert not output.values.any()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
 
 
 def test_ge(
@@ -351,33 +354,33 @@ def test_ge(
     sept_traskmaster: SEPT,
     dsg: DSG,
 ) -> None:
+    with concurrency_override(count=1):
+        # Private - Public
+        assert isinstance(gamma_tensor_min, IGT)
+        assert isinstance(gamma_tensor_ref, IGT)
+        assert isinstance(gamma_tensor_max, IGT)
 
-    # Private - Public
-    assert isinstance(gamma_tensor_min, IGT)
-    assert isinstance(gamma_tensor_ref, IGT)
-    assert isinstance(gamma_tensor_max, IGT)
+        assert (gamma_tensor_max >= gamma_tensor_max).values.all()
+        assert (gamma_tensor_max >= gamma_tensor_ref).values.all()
+        assert (gamma_tensor_min >= gamma_tensor_min).values.all()
 
-    assert (gamma_tensor_max >= gamma_tensor_max).values.all()
-    assert (gamma_tensor_max >= gamma_tensor_ref).values.all()
-    assert (gamma_tensor_min >= gamma_tensor_min).values.all()
+        # Uncomment this line to ensure that the check is working properly, as
+        # assert (gamma_tensor_min == gamma_tensor_ref).values.any()
 
-    # Uncomment this line to ensure that the check is working properly, as
-    # assert (gamma_tensor_min == gamma_tensor_ref).values.any()
+        # Private - Private
+        gamma_ishan = convert_to_gamma_tensor(sept_ishan)
+        gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
 
-    # Private - Private
-    gamma_ishan = convert_to_gamma_tensor(sept_ishan)
-    gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
-
-    output = gamma_ishan >= gamma_trask
-    assert output.values.all()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
-    output = gamma_ishan >= gamma_trask + 1
-    assert not output.values.any()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
+        output = gamma_ishan >= gamma_trask
+        assert output.values.all()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
+        output = gamma_ishan >= gamma_trask + 1
+        assert not output.values.any()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
 
 
 def test_le(
@@ -388,33 +391,33 @@ def test_le(
     sept_traskmaster: SEPT,
     dsg: DSG,
 ) -> None:
+    with concurrency_override(count=1):
+        # Private - Public
+        assert isinstance(gamma_tensor_min, IGT)
+        assert isinstance(gamma_tensor_ref, IGT)
+        assert isinstance(gamma_tensor_max, IGT)
 
-    # Private - Public
-    assert isinstance(gamma_tensor_min, IGT)
-    assert isinstance(gamma_tensor_ref, IGT)
-    assert isinstance(gamma_tensor_max, IGT)
+        assert (gamma_tensor_max <= gamma_tensor_max).values.all()
+        assert (gamma_tensor_min <= gamma_tensor_ref).values.all()
+        assert (gamma_tensor_min <= gamma_tensor_max).values.all()
 
-    assert (gamma_tensor_max <= gamma_tensor_max).values.all()
-    assert (gamma_tensor_min <= gamma_tensor_ref).values.all()
-    assert (gamma_tensor_min <= gamma_tensor_max).values.all()
+        # Uncomment this line to ensure that the check is working properly, as
+        # assert (gamma_tensor_min == gamma_tensor_ref).values.any()
 
-    # Uncomment this line to ensure that the check is working properly, as
-    # assert (gamma_tensor_min == gamma_tensor_ref).values.any()
+        # Private - Private
+        gamma_ishan = convert_to_gamma_tensor(sept_ishan)
+        gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
 
-    # Private - Private
-    gamma_ishan = convert_to_gamma_tensor(sept_ishan)
-    gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
-
-    output = gamma_ishan <= gamma_trask
-    assert output.values.all()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
-    output = gamma_ishan + 1 <= gamma_trask
-    assert not output.values.any()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
+        output = gamma_ishan <= gamma_trask
+        assert output.values.all()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
+        output = gamma_ishan + 1 <= gamma_trask
+        assert not output.values.any()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
 
 
 def test_ne(
@@ -425,33 +428,33 @@ def test_ne(
     sept_traskmaster: SEPT,
     dsg: DSG,
 ) -> None:
+    with concurrency_override(count=1):
+        # Private - Public
+        assert isinstance(gamma_tensor_min, IGT)
+        assert isinstance(gamma_tensor_ref, IGT)
+        assert isinstance(gamma_tensor_max, IGT)
 
-    # Private - Public
-    assert isinstance(gamma_tensor_min, IGT)
-    assert isinstance(gamma_tensor_ref, IGT)
-    assert isinstance(gamma_tensor_max, IGT)
+        assert (gamma_tensor_max != gamma_tensor_min).values.all()
+        assert (gamma_tensor_min != gamma_tensor_ref).values.all()
+        assert not (gamma_tensor_max != gamma_tensor_max).values.all()
 
-    assert (gamma_tensor_max != gamma_tensor_min).values.all()
-    assert (gamma_tensor_min != gamma_tensor_ref).values.all()
-    assert not (gamma_tensor_max != gamma_tensor_max).values.all()
+        # Uncomment this line to ensure that the check is working properly, as
+        # assert (gamma_tensor_min == gamma_tensor_ref).values.any()
 
-    # Uncomment this line to ensure that the check is working properly, as
-    # assert (gamma_tensor_min == gamma_tensor_ref).values.any()
+        # Private - Private
+        gamma_ishan = convert_to_gamma_tensor(sept_ishan)
+        gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
 
-    # Private - Private
-    gamma_ishan = convert_to_gamma_tensor(sept_ishan)
-    gamma_trask = convert_to_gamma_tensor(sept_traskmaster)
-
-    output = gamma_ishan + 5 != gamma_trask
-    assert output.values.all()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
-    output = gamma_ishan != gamma_trask
-    assert not output.values.any()
-    for entity in output.entities.flatten():
-        assert isinstance(entity, DSG)
-        assert entity == dsg
+        output = gamma_ishan + 5 != gamma_trask
+        assert output.values.all()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
+        output = gamma_ishan != gamma_trask
+        assert not output.values.any()
+        for entity in output.entities.flatten():
+            assert isinstance(entity, DSG)
+            assert entity == dsg
 
 
 @pytest.mark.skip(reason="This doesn't actually test anything")
@@ -470,242 +473,250 @@ def test_tensor_creation(sept_ishan, sept_traskmaster) -> None:
 
 
 def test_transpose(non_square_gamma_tensor: IGT) -> None:
-    """Test the transpose operator default behaviour (no args)"""
-    output = non_square_gamma_tensor.transpose()
-    original_values = non_square_gamma_tensor._values()
+    with concurrency_override(count=1):
+        """Test the transpose operator default behaviour (no args)"""
+        output = non_square_gamma_tensor.transpose()
+        original_values = non_square_gamma_tensor._values()
 
-    # Ensure both of these have the same shapes to begin with
-    assert non_square_gamma_tensor.shape == original_values.shape
+        # Ensure both of these have the same shapes to begin with
+        assert non_square_gamma_tensor.shape == original_values.shape
 
-    # Ensure resultant shapes are correct
-    target_values = original_values.transpose()
-    print(f"original shape = {non_square_gamma_tensor.shape}")
-    print(f"target shape = {target_values.shape}")
-    print(f"output shape = {output.shape}")
-    assert output.shape == target_values.shape
+        # Ensure resultant shapes are correct
+        target_values = original_values.transpose()
+        print(f"original shape = {non_square_gamma_tensor.shape}")
+        print(f"target shape = {target_values.shape}")
+        print(f"output shape = {output.shape}")
+        assert output.shape == target_values.shape
 
-    # Test to see if _values() constructs a proper shape
-    output_values = output._values()
-    assert output_values.shape != original_values.shape
-    assert output_values.shape == target_values.shape
+        # Test to see if _values() constructs a proper shape
+        output_values = output._values()
+        assert output_values.shape != original_values.shape
+        assert output_values.shape == target_values.shape
 
-    # Check that transposing twice undoes the operation
-    assert output.transpose() == non_square_gamma_tensor
-    assert (output.transpose()._values() == original_values).all()
+        # Check that transposing twice undoes the operation
+        assert output.transpose() == non_square_gamma_tensor
+        assert (output.transpose()._values() == original_values).all()
 
-    # Test to see if the values have been kept the same
-    print(f"Values, {type(original_values)}")
-    print(original_values)
-    print(f"New Values, {type(output_values)}")
-    print(output_values)
-    assert (output_values == target_values).all()
+        # Test to see if the values have been kept the same
+        print(f"Values, {type(original_values)}")
+        print(original_values)
+        print(f"New Values, {type(output_values)}")
+        print(output_values)
+        assert (output_values == target_values).all()
 
-    old_entities = non_square_gamma_tensor._entities()
-    new_entities = output._entities()
-    assert old_entities.shape != new_entities.shape
+        old_entities = non_square_gamma_tensor._entities()
+        new_entities = output._entities()
+        assert old_entities.shape != new_entities.shape
 
 
 def test_flatten(non_square_gamma_tensor: IGT) -> None:
-    """Test the flatten operator default behaviour (no args)"""
-    output = non_square_gamma_tensor.flatten()
-    original_values = non_square_gamma_tensor._values()
+    with concurrency_override(count=1):
+        """Test the flatten operator default behaviour (no args)"""
+        output = non_square_gamma_tensor.flatten()
+        original_values = non_square_gamma_tensor._values()
 
-    # Ensure both of these have the same shapes to begin with
-    assert non_square_gamma_tensor.shape == original_values.shape
+        # Ensure both of these have the same shapes to begin with
+        assert non_square_gamma_tensor.shape == original_values.shape
 
-    # Ensure resultant shapes are correct
-    target_values = original_values.flatten()
-    print(f"original shape = {non_square_gamma_tensor.shape}")
-    print(f"target shape = {target_values.shape}")
-    print(f"output shape = {output.shape}")
-    assert output.shape == target_values.shape
+        # Ensure resultant shapes are correct
+        target_values = original_values.flatten()
+        print(f"original shape = {non_square_gamma_tensor.shape}")
+        print(f"target shape = {target_values.shape}")
+        print(f"output shape = {output.shape}")
+        assert output.shape == target_values.shape
 
-    # Test to see if _values() constructs a proper shape
-    output_values = output._values()
-    assert output_values.shape != original_values.shape
-    assert output_values.shape == target_values.shape
+        # Test to see if _values() constructs a proper shape
+        output_values = output._values()
+        assert output_values.shape != original_values.shape
+        assert output_values.shape == target_values.shape
 
-    # Test to see if the values have been kept the same
-    print(f"Values, {type(original_values)}")
-    print(original_values)
-    print(f"New Values, {type(output_values)}")
-    print(output_values)
-    assert (output_values == target_values).all()
+        # Test to see if the values have been kept the same
+        print(f"Values, {type(original_values)}")
+        print(original_values)
+        print(f"New Values, {type(output_values)}")
+        print(output_values)
+        assert (output_values == target_values).all()
 
-    old_entities = non_square_gamma_tensor._entities()
-    new_entities = output._entities()
-    assert old_entities.shape != new_entities.shape
+        old_entities = non_square_gamma_tensor._entities()
+        new_entities = output._entities()
+        assert old_entities.shape != new_entities.shape
 
 
 def test_ravel(non_square_gamma_tensor: IGT) -> None:
-    """Test the ravel operator default behaviour (no args)"""
-    output = non_square_gamma_tensor.ravel()
-    original_values = non_square_gamma_tensor._values()
+    with concurrency_override(count=1):
+        """Test the ravel operator default behaviour (no args)"""
+        output = non_square_gamma_tensor.ravel()
+        original_values = non_square_gamma_tensor._values()
 
-    # Ensure both of these have the same shapes to begin with
-    assert non_square_gamma_tensor.shape == original_values.shape
+        # Ensure both of these have the same shapes to begin with
+        assert non_square_gamma_tensor.shape == original_values.shape
 
-    # Ensure resultant shapes are correct
-    target_values = original_values.ravel()
-    print(f"original shape = {non_square_gamma_tensor.shape}")
-    print(f"target shape = {target_values.shape}")
-    print(f"output shape = {output.shape}")
-    assert output.shape == target_values.shape
+        # Ensure resultant shapes are correct
+        target_values = original_values.ravel()
+        print(f"original shape = {non_square_gamma_tensor.shape}")
+        print(f"target shape = {target_values.shape}")
+        print(f"output shape = {output.shape}")
+        assert output.shape == target_values.shape
 
-    # Test to see if _values() constructs a proper shape
-    output_values = output._values()
-    assert output_values.shape != original_values.shape
-    assert output_values.shape == target_values.shape
+        # Test to see if _values() constructs a proper shape
+        output_values = output._values()
+        assert output_values.shape != original_values.shape
+        assert output_values.shape == target_values.shape
 
-    # Test to see if the values have been kept the same
-    print(f"Values, {type(original_values)}")
-    print(original_values)
-    print(f"New Values, {type(output_values)}")
-    print(output_values)
-    assert (output_values == target_values).all()
+        # Test to see if the values have been kept the same
+        print(f"Values, {type(original_values)}")
+        print(original_values)
+        print(f"New Values, {type(output_values)}")
+        print(output_values)
+        assert (output_values == target_values).all()
 
-    old_entities = non_square_gamma_tensor._entities()
-    new_entities = output._entities()
-    assert old_entities.shape != new_entities.shape
+        old_entities = non_square_gamma_tensor._entities()
+        new_entities = output._entities()
+        assert old_entities.shape != new_entities.shape
 
 
 def test_cumsum(non_square_gamma_tensor: IGT) -> None:
-    """Test the cumsum operator default behaviour (no args)"""
-    output = non_square_gamma_tensor.cumsum()
-    original_values = non_square_gamma_tensor._values()
+    with concurrency_override(count=1):
+        """Test the cumsum operator default behaviour (no args)"""
+        output = non_square_gamma_tensor.cumsum()
+        original_values = non_square_gamma_tensor._values()
 
-    # Ensure both of these have the same shapes to begin with
-    assert non_square_gamma_tensor.shape == original_values.shape
+        # Ensure both of these have the same shapes to begin with
+        assert non_square_gamma_tensor.shape == original_values.shape
 
-    # Ensure resultant shapes are correct
-    target_values = original_values.cumsum()
-    print(f"original shape = {non_square_gamma_tensor.shape}")
-    print(f"target shape = {target_values.shape}")
-    print(f"output shape = {output.shape}")
-    assert output.shape == target_values.shape
+        # Ensure resultant shapes are correct
+        target_values = original_values.cumsum()
+        print(f"original shape = {non_square_gamma_tensor.shape}")
+        print(f"target shape = {target_values.shape}")
+        print(f"output shape = {output.shape}")
+        assert output.shape == target_values.shape
 
-    # Test to see if _values() constructs a proper shape
-    output_values = output._values()
-    assert output_values.shape != original_values.shape
-    assert output_values.shape == target_values.shape
+        # Test to see if _values() constructs a proper shape
+        output_values = output._values()
+        assert output_values.shape != original_values.shape
+        assert output_values.shape == target_values.shape
 
-    # Test to see if the values have been kept the same
-    print(f"Values, {type(original_values)}")
-    print(original_values)
-    print(f"New Values, {type(output_values)}")
-    print(output_values)
-    assert (output_values == target_values).all()
+        # Test to see if the values have been kept the same
+        print(f"Values, {type(original_values)}")
+        print(original_values)
+        print(f"New Values, {type(output_values)}")
+        print(output_values)
+        assert (output_values == target_values).all()
 
-    old_entities = non_square_gamma_tensor._entities()
-    new_entities = output._entities()
-    assert old_entities.shape != new_entities.shape
+        old_entities = non_square_gamma_tensor._entities()
+        new_entities = output._entities()
+        assert old_entities.shape != new_entities.shape
 
 
 def test_cumprod(non_square_gamma_tensor: IGT) -> None:
-    """Test the cumprod operator default behaviour (no args)"""
-    output = non_square_gamma_tensor.cumprod()
-    original_values = non_square_gamma_tensor._values()
+    with concurrency_override(count=1):
+        """Test the cumprod operator default behaviour (no args)"""
+        output = non_square_gamma_tensor.cumprod()
+        original_values = non_square_gamma_tensor._values()
 
-    # Ensure both of these have the same shapes to begin with
-    assert non_square_gamma_tensor.shape == original_values.shape
+        # Ensure both of these have the same shapes to begin with
+        assert non_square_gamma_tensor.shape == original_values.shape
 
-    # Ensure resultant shapes are correct
-    target_values = original_values.cumprod()
-    print(f"original shape = {non_square_gamma_tensor.shape}")
-    print(f"target shape = {target_values.shape}")
-    print(f"output shape = {output.shape}")
-    assert output.shape == target_values.shape
+        # Ensure resultant shapes are correct
+        target_values = original_values.cumprod()
+        print(f"original shape = {non_square_gamma_tensor.shape}")
+        print(f"target shape = {target_values.shape}")
+        print(f"output shape = {output.shape}")
+        assert output.shape == target_values.shape
 
-    # Test to see if _values() constructs a proper shape
-    output_values = output._values()
-    assert output_values.shape != original_values.shape
-    assert output_values.shape == target_values.shape
+        # Test to see if _values() constructs a proper shape
+        output_values = output._values()
+        assert output_values.shape != original_values.shape
+        assert output_values.shape == target_values.shape
 
-    # Test to see if the values have been kept the same
-    print(f"Values, {type(original_values)}")
-    print(original_values)
-    print(f"New Values, {type(output_values)}")
-    print(output_values)
-    assert (output_values == target_values).all()
+        # Test to see if the values have been kept the same
+        print(f"Values, {type(original_values)}")
+        print(original_values)
+        print(f"New Values, {type(output_values)}")
+        print(output_values)
+        assert (output_values == target_values).all()
 
-    old_entities = non_square_gamma_tensor._entities()
-    new_entities = output._entities()
-    assert old_entities.shape != new_entities.shape
+        old_entities = non_square_gamma_tensor._entities()
+        new_entities = output._entities()
+        assert old_entities.shape != new_entities.shape
 
 
 def test_max(non_square_gamma_tensor: IGT) -> None:
-    """Test the max operator default behaviour (no args)"""
-    output = non_square_gamma_tensor.max()
-    original_values = non_square_gamma_tensor._values()
+    with concurrency_override(count=1):
+        """Test the max operator default behaviour (no args)"""
+        output = non_square_gamma_tensor.max()
+        original_values = non_square_gamma_tensor._values()
 
-    # Ensure both of these have the same shapes to begin with
-    assert non_square_gamma_tensor.shape == original_values.shape
+        # Ensure both of these have the same shapes to begin with
+        assert non_square_gamma_tensor.shape == original_values.shape
 
-    # Ensure resultant shapes are correct
-    target_values = original_values.max()
-    print(f"original shape = {non_square_gamma_tensor.shape}")
-    print(f"target shape = {target_values.shape}")
-    print(f"output shape = {output.shape}")
-    assert output.shape == target_values.shape
+        # Ensure resultant shapes are correct
+        target_values = original_values.max()
+        print(f"original shape = {non_square_gamma_tensor.shape}")
+        print(f"target shape = {target_values.shape}")
+        print(f"output shape = {output.shape}")
+        assert output.shape == target_values.shape
 
-    # Test to see if _values() constructs a proper shape
-    output_values = output._values()
-    assert output_values.shape != original_values.shape
-    assert output_values.shape == target_values.shape
+        # Test to see if _values() constructs a proper shape
+        output_values = output._values()
+        assert output_values.shape != original_values.shape
+        assert output_values.shape == target_values.shape
 
-    # Test to see if the values have been kept the same
-    print(f"Values, {type(original_values)}")
-    print(original_values)
-    print(f"New Values, {type(output_values)}")
-    print(output_values)
-    assert (output_values == target_values).all()
+        # Test to see if the values have been kept the same
+        print(f"Values, {type(original_values)}")
+        print(original_values)
+        print(f"New Values, {type(output_values)}")
+        print(output_values)
+        assert (output_values == target_values).all()
 
-    old_entities = non_square_gamma_tensor._entities()
-    new_entities = output._entities()
-    assert old_entities.shape != new_entities.shape
+        old_entities = non_square_gamma_tensor._entities()
+        new_entities = output._entities()
+        assert old_entities.shape != new_entities.shape
 
 
 def test_min(non_square_gamma_tensor: IGT) -> None:
-    """Test the min operator default behaviour (no args)"""
-    output = non_square_gamma_tensor.min()
-    original_values = non_square_gamma_tensor._values()
+    with concurrency_override(count=1):
+        """Test the min operator default behaviour (no args)"""
+        output = non_square_gamma_tensor.min()
+        original_values = non_square_gamma_tensor._values()
 
-    # Ensure both of these have the same shapes to begin with
-    assert non_square_gamma_tensor.shape == original_values.shape
+        # Ensure both of these have the same shapes to begin with
+        assert non_square_gamma_tensor.shape == original_values.shape
 
-    # Ensure resultant shapes are correct
-    target_values = original_values.min()
-    print(f"original shape = {non_square_gamma_tensor.shape}")
-    print(f"target shape = {target_values.shape}")
-    print(f"output shape = {output.shape}")
-    assert output.shape == target_values.shape
+        # Ensure resultant shapes are correct
+        target_values = original_values.min()
+        print(f"original shape = {non_square_gamma_tensor.shape}")
+        print(f"target shape = {target_values.shape}")
+        print(f"output shape = {output.shape}")
+        assert output.shape == target_values.shape
 
-    # Test to see if _values() constructs a proper shape
-    output_values = output._values()
-    assert output_values.shape != original_values.shape
-    assert output_values.shape == target_values.shape
+        # Test to see if _values() constructs a proper shape
+        output_values = output._values()
+        assert output_values.shape != original_values.shape
+        assert output_values.shape == target_values.shape
 
-    # Test to see if the values have been kept the same
-    print(f"Values, {type(original_values)}")
-    print(original_values)
-    print(f"New Values, {type(output_values)}")
-    print(output_values)
-    assert (output_values == target_values).all()
+        # Test to see if the values have been kept the same
+        print(f"Values, {type(original_values)}")
+        print(original_values)
+        print(f"New Values, {type(output_values)}")
+        print(output_values)
+        assert (output_values == target_values).all()
 
-    old_entities = non_square_gamma_tensor._entities()
-    new_entities = output._entities()
-    assert old_entities.shape != new_entities.shape
+        old_entities = non_square_gamma_tensor._entities()
+        new_entities = output._entities()
+        assert old_entities.shape != new_entities.shape
 
 
 def test_mul_public(gamma_tensor_min: IGT) -> None:
-    """Test public multiplication of IGTs"""
-    target = gamma_tensor_min._values() * 2
-    output = gamma_tensor_min * 2
-    assert isinstance(output, IGT)
-    assert (output._values() == target).all()
-    assert (output._min_values() == gamma_tensor_min._min_values() * 2).all()
-    assert (output._max_values() == gamma_tensor_min._max_values() * 2).all()
-    assert (output._entities() == gamma_tensor_min._entities()).all()
+    with concurrency_override(count=1):
+        """Test public multiplication of IGTs"""
+        target = gamma_tensor_min._values() * 2
+        output = gamma_tensor_min * 2
+        assert isinstance(output, IGT)
+        assert (output._values() == target).all()
+        assert (output._min_values() == gamma_tensor_min._min_values() * 2).all()
+        assert (output._max_values() == gamma_tensor_min._max_values() * 2).all()
+        assert (output._entities() == gamma_tensor_min._entities()).all()
 
 
 @pytest.mark.skip(reason="Still not working for IGT * IGT, or IGT * SEPT :(")
@@ -769,67 +780,76 @@ def test_matmul_private(gamma_tensor_min: IGT, sept_ishan: SEPT) -> None:
 
 
 def test_diagonal(gamma_tensor_min: IGT) -> None:
-    """Test diagonal, without any additional arguments"""
-    target = gamma_tensor_min._values().diagonal()
-    output = gamma_tensor_min.diagonal()
-    assert isinstance(output, IGT)
-    assert (output._values() == target).all()
-    assert (output._min_values() == gamma_tensor_min._min_values().diagonal()).all()
-    assert (output._max_values() == gamma_tensor_min._max_values().diagonal()).all()
-    assert (output._entities() == gamma_tensor_min._entities().diagonal()).all()
+    with concurrency_override(count=1):
+        """Test diagonal, without any additional arguments"""
+        target = gamma_tensor_min._values().diagonal()
+        output = gamma_tensor_min.diagonal()
+        assert isinstance(output, IGT)
+        assert (output._values() == target).all()
+        assert (output._min_values() == gamma_tensor_min._min_values().diagonal()).all()
+        assert (output._max_values() == gamma_tensor_min._max_values().diagonal()).all()
+        assert (output._entities() == gamma_tensor_min._entities().diagonal()).all()
 
 
 def test_reshape(gamma_tensor_min: IGT) -> None:
-    """Note: for now, resize == reshape"""
-    target = gamma_tensor_min._values().flatten()
-    print(target.shape, len(target))
-    output = gamma_tensor_min.reshape(int(len(target)))
-    assert isinstance(output, IGT)
-    assert (output._values() == target).all()
+    with concurrency_override(count=1):
+        """Note: for now, resize == reshape"""
+        target = gamma_tensor_min._values().flatten()
+        print(target.shape, len(target))
+        output = gamma_tensor_min.reshape(int(len(target)))
+        assert isinstance(output, IGT)
+        assert (output._values() == target).all()
 
 
 def test_resize(gamma_tensor_min: IGT) -> None:
-    """Note: for now, resize == reshape"""
-    target = gamma_tensor_min._values().flatten()
-    print(target.shape, len(target))
-    output = gamma_tensor_min.resize(int(len(target)))
-    assert isinstance(output, IGT)
-    assert (output._values() == target).all()
+    with concurrency_override(count=1):
+        """Note: for now, resize == reshape"""
+        target = gamma_tensor_min._values().flatten()
+        print(target.shape, len(target))
+        output = gamma_tensor_min.resize(int(len(target)))
+        assert isinstance(output, IGT)
+        assert (output._values() == target).all()
 
 
 def test_compress(gamma_tensor_min: IGT) -> None:
-    target = gamma_tensor_min._values().compress([False, True], axis=0)
-    output = gamma_tensor_min.compress([False, True], axis=0)
-    assert isinstance(output, IGT)
-    assert (output._values() == target).all()
+    with concurrency_override(count=1):
+        target = gamma_tensor_min._values().compress([False, True], axis=0)
+        output = gamma_tensor_min.compress([False, True], axis=0)
+        assert isinstance(output, IGT)
+        assert (output._values() == target).all()
 
 
 @pytest.mark.skip(reason="Temporary")
 def test_abs(gamma_tensor_min: IGT) -> None:
-    output = abs(gamma_tensor_min)
-    assert isinstance(output, IGT)
-    assert output == gamma_tensor_min
+    with concurrency_override(count=1):
+        output = abs(gamma_tensor_min)
+        assert isinstance(output, IGT)
+        assert output == gamma_tensor_min
 
 
 def test_all(gamma_tensor_min: IGT) -> None:
-    target = True
-    output = gamma_tensor_min.all()
-    assert output == target
+    with concurrency_override(count=1):
+        target = True
+        output = gamma_tensor_min.all()
+        assert output == target
 
 
 def test_any(gamma_tensor_min: IGT) -> None:
-    target = True
-    output = gamma_tensor_min.any()
-    assert output == target
+    with concurrency_override(count=1):
+        target = True
+        output = gamma_tensor_min.any()
+        assert output == target
 
 
 def test_swapaxes(gamma_tensor_min: IGT) -> None:
-    target = gamma_tensor_min._values().swapaxes(0, 1)
-    output = gamma_tensor_min.swapaxes(0, 1)
-    assert (target == output._values()).all()
+    with concurrency_override(count=1):
+        target = gamma_tensor_min._values().swapaxes(0, 1)
+        output = gamma_tensor_min.swapaxes(0, 1)
+        assert (target == output._values()).all()
 
 
 def test_squeeze(gamma_tensor_min: IGT) -> None:
-    target = gamma_tensor_min._values().squeeze()
-    output = gamma_tensor_min.squeeze()
-    assert (target == output._values()).all()
+    with concurrency_override(count=1):
+        target = gamma_tensor_min._values().squeeze()
+        output = gamma_tensor_min.squeeze()
+        assert (target == output._values()).all()

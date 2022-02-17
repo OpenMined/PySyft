@@ -11,6 +11,7 @@ from syft.core.adp.vm_private_scalar_manager import VirtualMachinePrivateScalarM
 from syft.core.tensor.autodp.initial_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.tensor import Tensor
+from syft.util import concurrency_override
 
 
 @pytest.fixture
@@ -109,8 +110,6 @@ def test_eq(
         reference_tensor == also_same_tensor
     ).child.all(), "Equality between identical SEPTs fails"
 
-    return None
-
 
 def test_eq_public_shape(
     reference_data: np.ndarray,
@@ -144,22 +143,26 @@ def test_eq_diff_entities(
     ishan: Entity,
     traskmaster: Entity,
 ) -> None:
-    """Test equality between Private Tensors with different owners."""
-    tensor1 = SEPT(
-        child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
-    )
-    tensor2 = SEPT(
-        child=reference_data,
-        entity=traskmaster,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-    )
+    with concurrency_override(count=1):
+        """Test equality between Private Tensors with different owners."""
+        tensor1 = SEPT(
+            child=reference_data,
+            entity=ishan,
+            max_vals=upper_bound,
+            min_vals=lower_bound,
+        )
+        tensor2 = SEPT(
+            child=reference_data,
+            entity=traskmaster,
+            max_vals=upper_bound,
+            min_vals=lower_bound,
+        )
 
-    result = tensor1 == tensor2
-    assert isinstance(result, IGT), "Equality returns wrong value"
-    assert result._values().all()
-    assert (result._max_values() == np.ones_like(result._max_values())).all()
-    assert (result._min_values() == np.zeros_like(result._min_values())).all()
+        result = tensor1 == tensor2
+        assert isinstance(result, IGT), "Equality returns wrong value"
+        assert result._values().all()
+        assert (result._max_values() == np.ones_like(result._max_values())).all()
+        assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_eq_ndarray(
@@ -176,7 +179,6 @@ def test_eq_ndarray(
     assert (
         reference_tensor == reference_data
     ).child.all(), "SEPT is apparently not equal to its underlying data."
-    return True
 
 
 def test_eq_bool(
@@ -196,7 +198,6 @@ def test_eq_bool(
     assert (reference_tensor == reference_binary_data).child.all(), (
         "SEPT is apparently not equal to its underlying " "data."
     )
-    return True
 
 
 def test_eq_int(
@@ -213,7 +214,6 @@ def test_eq_int(
     assert (
         reference_tensor == reference_data
     ).child.all(), "SEPT is apparently not equal to its underlying data."
-    return True
 
 
 def test_ne_values(
@@ -235,7 +235,6 @@ def test_ne_values(
     assert (
         reference_tensor != comparison_tensor
     ).child.any(), "SEPTs with different values are somehow equal"
-    return None
 
 
 @pytest.mark.skipif(dims == 1, reason="Tensor generated did not have two dimensions")
@@ -262,7 +261,6 @@ def test_ne_shapes(
 
     with pytest.raises(Exception):
         reference_tensor != comparison_tensor
-    return None
 
 
 def test_ne_broadcastability(
@@ -292,34 +290,38 @@ def test_ne_diff_entities(
     ishan: Entity,
     traskmaster: Entity,
 ) -> None:
-    """Test non-equality between SEPTs of different entities"""
-    reference_tensor = SEPT(
-        child=reference_data, entity=ishan, max_vals=upper_bound, min_vals=lower_bound
-    )
+    with concurrency_override(count=1):
+        """Test non-equality between SEPTs of different entities"""
+        reference_tensor = SEPT(
+            child=reference_data,
+            entity=ishan,
+            max_vals=upper_bound,
+            min_vals=lower_bound,
+        )
 
-    comparison_tensor = SEPT(
-        child=reference_data + 1,
-        entity=traskmaster,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-    )
+        comparison_tensor = SEPT(
+            child=reference_data + 1,
+            entity=traskmaster,
+            max_vals=upper_bound,
+            min_vals=lower_bound,
+        )
 
-    # Ensure the raw data in both tensors is not equal
-    assert (reference_tensor.child != comparison_tensor.child).all()
+        # Ensure the raw data in both tensors is not equal
+        assert (reference_tensor.child != comparison_tensor.child).all()
 
-    result = reference_tensor != comparison_tensor
-    print(reference_tensor.child)
-    print(comparison_tensor.child)
+        result = reference_tensor != comparison_tensor
+        print(reference_tensor.child)
+        print(comparison_tensor.child)
 
-    assert (reference_tensor.child == reference_data).all()
-    assert (comparison_tensor.child == reference_data + 1).all()
+        assert (reference_tensor.child == reference_data).all()
+        assert (comparison_tensor.child == reference_data + 1).all()
 
-    assert isinstance(result, IGT)
-    assert (
-        result._values().all()
-    )  # Every single value here should be 1 (True) because the values are not equal
-    assert (result._max_values() == np.ones_like(result._max_values())).all()
-    assert (result._min_values() == np.zeros_like(result._min_values())).all()
+        assert isinstance(result, IGT)
+        assert (
+            result._values().all()
+        )  # Every single value here should be 1 (True) because the values are not equal
+        assert (result._max_values() == np.ones_like(result._max_values())).all()
+        assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_add_wrong_types(
@@ -336,7 +338,6 @@ def test_add_wrong_types(
         reference_tensor + "some string"
         reference_tensor + dict()
         # TODO: Double check how tuples behave during addition/subtraction with np.ndarrays
-    return None
 
 
 def test_add_simple_types(
@@ -377,8 +378,6 @@ def test_add_simple_types(
     # assert (result.max_vals == tensor.max_vals + random_ndarray.max()).all(), "SEPT + np.ndarray: incorrect max_val"
     # assert (result.min_vals == tensor.min_vals + random_ndarray.min()).all(), "SEPT + np.ndarray: incorrect min_val"
 
-    return None
-
 
 def test_add_tensor_types(
     reference_data: np.ndarray,
@@ -410,7 +409,6 @@ def test_add_tensor_types(
         assert (
             result.min_vals == reference_tensor.min_vals + simple_tensor.child.min()
         ), "SEPT + Tensor: incorrect min_val"
-        return None
 
 
 def test_add_single_entities(
@@ -452,7 +450,6 @@ def test_add_single_entities(
     assert (
         result.min_vals == tensor3.min_vals + tensor1.min_vals
     ).all(), "SEPT + SEPT results in incorrect min_val"
-    return None
 
 
 @pytest.mark.skip(reason="GammaTensors have now been implemented")
@@ -479,7 +476,6 @@ def test_add_diff_entities(
 
     with pytest.raises(NotImplementedError):
         tensor2 + tensor1
-    return None
 
 
 def test_add_sub_equivalence(
@@ -504,7 +500,6 @@ def test_add_sub_equivalence(
     assert (
         add_result == sub_result
     ), "Addition of negative values does not give the same result as subtraction"
-    return None
 
 
 def test_add_to_gamma_tensor(
@@ -515,39 +510,39 @@ def test_add_to_gamma_tensor(
     ishan: Entity,
     traskmaster: Entity,
 ) -> None:
-    """Test that SEPTs with different entities create a GammaTensor when added"""
-    # We have to use a reference scalar manager for now because we can't combine scalar factories yet.
+    with concurrency_override(count=1):
+        """Test that SEPTs with different entities create a GammaTensor when added"""
+        # We have to use a reference scalar manager for now because we can't combine scalar factories yet.
 
-    tensor1 = SEPT(
-        child=reference_data,
-        entity=ishan,
-        max_vals=np.ones_like(reference_data),
-        min_vals=np.zeros_like(reference_data),
-        scalar_manager=reference_scalar_manager,
-    )
-    tensor2 = SEPT(
-        child=reference_data,
-        entity=traskmaster,
-        max_vals=np.ones_like(reference_data),
-        min_vals=np.zeros_like(reference_data),
-        scalar_manager=reference_scalar_manager,
-    )
+        tensor1 = SEPT(
+            child=reference_data,
+            entity=ishan,
+            max_vals=np.ones_like(reference_data),
+            min_vals=np.zeros_like(reference_data),
+            scalar_manager=reference_scalar_manager,
+        )
+        tensor2 = SEPT(
+            child=reference_data,
+            entity=traskmaster,
+            max_vals=np.ones_like(reference_data),
+            min_vals=np.zeros_like(reference_data),
+            scalar_manager=reference_scalar_manager,
+        )
 
-    assert tensor2.entity != tensor1.entity, "Entities aren't actually different"
-    result = tensor2 + tensor1
-    assert isinstance(
-        result, IGT
-    ), "Addition of SEPTs with diff entities did not give GammaTensor"
-    assert result.shape == tensor2.shape, "SEPT + SEPT changed shape"
-    assert result.shape == tensor1.shape, "SEPT + SEPT changed shape"
+        assert tensor2.entity != tensor1.entity, "Entities aren't actually different"
+        result = tensor2 + tensor1
+        assert isinstance(
+            result, IGT
+        ), "Addition of SEPTs with diff entities did not give GammaTensor"
+        assert result.shape == tensor2.shape, "SEPT + SEPT changed shape"
+        assert result.shape == tensor1.shape, "SEPT + SEPT changed shape"
 
-    # Check that all values are as expected, and addition was conducted correctly.
-    for i in range(len(result.flat_scalars)):
-        assert (
-            result.flat_scalars[i].value
-            == tensor2.child.flatten()[i] + tensor1.child.flatten()[i]
-        ), "Wrong value."
-    return None
+        # Check that all values are as expected, and addition was conducted correctly.
+        for i in range(len(result.flat_scalars)):
+            assert (
+                result.flat_scalars[i].value
+                == tensor2.child.flatten()[i] + tensor1.child.flatten()[i]
+            ), "Wrong value."
 
 
 def test_sub_to_gamma_tensor(
@@ -558,39 +553,39 @@ def test_sub_to_gamma_tensor(
     ishan: Entity,
     traskmaster: Entity,
 ) -> None:
-    """Test that SEPTs with different entities create a GammaTensor when subtracted"""
-    # We have to use a reference scalar manager for now because we can't combine scalar factories yet.
+    with concurrency_override(count=1):
+        """Test that SEPTs with different entities create a GammaTensor when subtracted"""
+        # We have to use a reference scalar manager for now because we can't combine scalar factories yet.
 
-    tensor1 = SEPT(
-        child=reference_data,
-        entity=ishan,
-        max_vals=np.ones_like(reference_data),
-        min_vals=np.zeros_like(reference_data),
-        scalar_manager=reference_scalar_manager,
-    )
-    tensor2 = SEPT(
-        child=reference_data,
-        entity=traskmaster,
-        max_vals=np.ones_like(reference_data),
-        min_vals=np.zeros_like(reference_data),
-        scalar_manager=reference_scalar_manager,
-    )
+        tensor1 = SEPT(
+            child=reference_data,
+            entity=ishan,
+            max_vals=np.ones_like(reference_data),
+            min_vals=np.zeros_like(reference_data),
+            scalar_manager=reference_scalar_manager,
+        )
+        tensor2 = SEPT(
+            child=reference_data,
+            entity=traskmaster,
+            max_vals=np.ones_like(reference_data),
+            min_vals=np.zeros_like(reference_data),
+            scalar_manager=reference_scalar_manager,
+        )
 
-    assert tensor2.entity != tensor1.entity, "Entities aren't actually different"
-    result = tensor2 - tensor1
-    assert isinstance(
-        result, IGT
-    ), "Addition of SEPTs with diff entities did not give GammaTensor"
-    assert result.shape == tensor2.shape, "SEPT + SEPT changed shape"
-    assert result.shape == tensor1.shape, "SEPT + SEPT changed shape"
+        assert tensor2.entity != tensor1.entity, "Entities aren't actually different"
+        result = tensor2 - tensor1
+        assert isinstance(
+            result, IGT
+        ), "Addition of SEPTs with diff entities did not give GammaTensor"
+        assert result.shape == tensor2.shape, "SEPT + SEPT changed shape"
+        assert result.shape == tensor1.shape, "SEPT + SEPT changed shape"
 
-    # Check that all values are as expected, and addition was conducted correctly.
-    for i in range(len(result.flat_scalars)):
-        assert (
-            result.flat_scalars[i].value
-            == tensor2.child.flatten()[i] - tensor1.child.flatten()[i]
-        ), "Wrong value."
-    return None
+        # Check that all values are as expected, and addition was conducted correctly.
+        for i in range(len(result.flat_scalars)):
+            assert (
+                result.flat_scalars[i].value
+                == tensor2.child.flatten()[i] - tensor1.child.flatten()[i]
+            ), "Wrong value."
 
 
 def test_pos(
@@ -718,7 +713,6 @@ def test_transpose_simple_types(ishan: Entity) -> None:
         bool_tensor_transposed.max_vals == bool_tensor.max_vals
     ), "Transpose: max_values incorrect"
     # assert bool_tensor_transposed == bool_tensor, "Transpose: equality error"
-    return None
 
 
 def test_transpose_square_matrix(
@@ -1183,7 +1177,6 @@ def test_mul(
     assert (sept1.child + sept2.child == values).all()
 
     # assert output.child == sept1.child * sept2.child
-    return None
 
 
 def test_neg(
@@ -1768,19 +1761,23 @@ def test_le_diff_entities(
     ent: Entity,
     ent2: Entity,
 ) -> None:
-    tensor1 = SEPT(
-        child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
-    )
-    # same data, different entity
-    tensor2 = SEPT(
-        child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
-    )
+    with concurrency_override(count=1):
+        tensor1 = SEPT(
+            child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        )
+        # same data, different entity
+        tensor2 = SEPT(
+            child=reference_data,
+            entity=ent2,
+            max_vals=upper_bound,
+            min_vals=lower_bound,
+        )
 
-    result = tensor1 <= tensor2
-    assert isinstance(result, IGT)
-    assert result._values().all()
-    assert (result._max_values() == np.ones_like(result._max_values())).all()
-    assert (result._min_values() == np.zeros_like(result._min_values())).all()
+        result = tensor1 <= tensor2
+        assert isinstance(result, IGT)
+        assert result._values().all()
+        assert (result._max_values() == np.ones_like(result._max_values())).all()
+        assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_ge_same_entities(
@@ -1813,19 +1810,23 @@ def test_ge_diff_entities(
     ent: Entity,
     ent2: Entity,
 ) -> None:
-    tensor1 = SEPT(
-        child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
-    )
-    # same data, different entity
-    tensor2 = SEPT(
-        child=reference_data, entity=ent2, max_vals=upper_bound, min_vals=lower_bound
-    )
+    with concurrency_override(count=1):
+        tensor1 = SEPT(
+            child=reference_data, entity=ent, max_vals=upper_bound, min_vals=lower_bound
+        )
+        # same data, different entity
+        tensor2 = SEPT(
+            child=reference_data,
+            entity=ent2,
+            max_vals=upper_bound,
+            min_vals=lower_bound,
+        )
 
-    result = tensor1 <= tensor2
-    assert isinstance(result, IGT)
-    assert result._values().all()
-    assert (result._max_values() == np.ones_like(result._max_values())).all()
-    assert (result._min_values() == np.zeros_like(result._min_values())).all()
+        result = tensor1 <= tensor2
+        assert isinstance(result, IGT)
+        assert result._values().all()
+        assert (result._max_values() == np.ones_like(result._max_values())).all()
+        assert (result._min_values() == np.zeros_like(result._min_values())).all()
 
 
 def test_lt_same_entities(
@@ -1886,13 +1887,15 @@ def sept_traskmaster(
 
 
 def test_lt_diff_entities_ishan(sept_ishan: SEPT, sept_traskmaster: SEPT) -> None:
-    output = sept_ishan < sept_traskmaster + 1
-    assert output.values.all()
+    with concurrency_override(count=1):
+        output = sept_ishan < sept_traskmaster + 1
+        assert output.values.all()
 
 
 def test_gt_diff_entities_ishan(sept_ishan: SEPT, sept_traskmaster: SEPT) -> None:
-    output = sept_ishan + 1 > sept_traskmaster
-    assert output.values.all()
+    with concurrency_override(count=1):
+        output = sept_ishan + 1 > sept_traskmaster
+        assert output.values.all()
 
 
 @pytest.mark.skip(
