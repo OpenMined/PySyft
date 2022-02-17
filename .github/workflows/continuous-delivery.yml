@@ -65,12 +65,15 @@ jobs:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Build and push `grid-backend` image to DockerHub
+      - name: Set Env for `grid backend`
+        working-directory: ./packages
         env:
           IMAGE_URI: openmined/grid-backend
         run: |
           export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
           export DOCKER_URI_LATEST=$IMAGE_URI:latest
+
+      - name: Build and push `grid-backend` image to DockerHub
         uses: docker/build-push-action@v2
         with:
           context: .
