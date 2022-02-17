@@ -53,7 +53,10 @@ class TestUsersRoutes:
         }
         data = {"new_user": json.dumps(new_user)}
         files = [("file", b"")]
-        url = f"http://{client.base_url.host}{app.url_path_for('users:create')}"
+        if not client.base_url.port:
+            url = f"http://{client.base_url.host}{app.url_path_for('users:create')}"
+        else:
+            url = f"http://{client.base_url.host}:{client.base_url.port}{app.url_path_for('users:create')}"
         res = requests.post(url=url, headers=headers, data=data, files=files)
 
         # Note: This doesn't work with httpx client
