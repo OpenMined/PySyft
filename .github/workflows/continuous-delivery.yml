@@ -66,31 +66,31 @@ jobs:
           username: ${{ secrets.DOCKER_LOGIN }}
           password: ${{ secrets.DOCKER_PASSWORD }}
 
-      - name: Set Env for `grid backend`
-        working-directory: ./packages
-        env:
-          IMAGE_URI: openmined/grid-backend
-        run: |
-          export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
-          export DOCKER_URI_LATEST=$IMAGE_URI:latest
-          echo "DOCKER_URI=$DOCKER_URI" >> $GITHUB_ENV
-          echo "DOCKER_URI_LATEST=$DOCKER_URI_LATEST" >> $GITHUB_ENV
+      # - name: Set Env for `grid backend`
+      #   working-directory: ./packages
+      #   env:
+      #     IMAGE_URI: openmined/grid-backend
+      #   run: |
+      #     export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
+      #     export DOCKER_URI_LATEST=$IMAGE_URI:latest
+      #     echo "DOCKER_URI=$DOCKER_URI" >> $GITHUB_ENV
+      #     echo "DOCKER_URI_LATEST=$DOCKER_URI_LATEST" >> $GITHUB_ENV
 
-      - name: check URI
-        run: |
-          echo ${{env.DOCKER_URI}}
-          echo ${{env.DOCKER_URI_LATEST}}
+      # - name: check URI
+      #   run: |
+      #     echo ${{env.DOCKER_URI}}
+      #     echo ${{env.DOCKER_URI_LATEST}}
 
 
 
-      # - name: Docker meta
-      #   id: meta_grid_backend
-      #   uses: docker/metadata-action@v3
-      #   with:
-      #     images: openmined/grid-backend
-      #     tags: |
-      #       type=raw,value=${{ env.GRID_VERSION }}
-      #       type=raw,value=latest
+      - name: Docker meta for Grid Backend
+        id: meta_grid_backend
+        uses: docker/metadata-action@v3
+        with:
+          images: openmined/grid-backend
+          tags: |
+            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=latest
 
       - name: Build and push `grid-backend` image to DockerHub
         uses: docker/build-push-action@v2
@@ -98,7 +98,7 @@ jobs:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
           push: false
-          tags: ${{env.DOCKER_URI}}, ${{env.DOCKER_URI_LATEST}}
+          tags: ${{ steps.meta_grid_backend.outputs.tags }}
 
       # - name: Build and push `grid-backend` image to DockerHub
       #   working-directory: ./packages
