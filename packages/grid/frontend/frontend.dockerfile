@@ -21,6 +21,7 @@ WORKDIR /app
 COPY --from=init-stage /app .
 ENV NODE_TYPE $NODE_TYPE
 ENV NEXT_TELEMETRY_DISABLED 1
+ENV CYPRESS_CRASH_REPORTS 0
 RUN yarn build
 RUN yarn export
 
@@ -29,6 +30,8 @@ FROM nginx:stable-alpine as grid-ui-production
 ENV NEXT_PUBLIC_ENVIRONMENT production
 ENV NEXT_PUBLIC_API_URL /api/v1
 ENV NODE_TYPE $NODE_TYPE
+ENV NEXT_TELEMETRY_DISABLED 1
+ENV CYPRESS_CRASH_REPORTS 0
 
 COPY --from=build-stage /app/out /usr/share/nginx/html
 COPY --from=build-stage /app/docker/nginx.conf /etc/nginx/conf.d/default.conf

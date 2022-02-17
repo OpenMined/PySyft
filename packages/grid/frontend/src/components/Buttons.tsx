@@ -2,23 +2,24 @@ import tw, { css, styled } from 'twin.macro'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import type { IconName } from '@fortawesome/fontawesome-svg-core'
 import type { ThemeMode } from '$types'
+import type { ReactNode } from 'react'
 
 export interface ButtonProps {
   size?: 'xsmall' | 'small' | 'medium' | 'large'
   variant?:
-    | 'solid-gray'
-    | 'solid-primary'
-    | 'solid-danger'
-    | 'solid-success'
-    | 'outline'
-    | 'ghost'
-    | 'link'
+  | 'solid-gray'
+  | 'solid-primary'
+  | 'solid-danger'
+  | 'solid-success'
+  | 'outline'
+  | 'ghost'
+  | 'link'
   mode?: ThemeMode
   container?: 'round' | 'square'
   leftIcon?: IconName
   rightIcon?: IconName
-  copy?: string
   disabled?: boolean
+  children: ReactNode
 }
 
 const StyledButton = styled.button(
@@ -28,23 +29,23 @@ const StyledButton = styled.button(
     size = 'medium',
     container = 'square',
   }: Partial<ButtonProps>) => [
-    tw`flex items-center flex-grow-0 flex-shrink-0`,
-    tw`font-bold capitalize`,
-    tw`disabled:opacity-40`,
-    tw`transition`,
-    container === 'round' && tw`rounded-full`,
-    container === 'square' && tw`rounded`,
-    mode === 'dark' && colors.dark[variant],
-    mode === 'light' && colors.light[variant],
-    sizes[size],
-    variant === 'outline' && ['small', 'xsmall'].includes(size) && tw`border-1.5`,
-  ]
+      tw`flex items-center flex-grow-0 flex-shrink-0`,
+      tw`font-bold capitalize`,
+      tw`disabled:opacity-40`,
+      tw`transition`,
+      container === 'round' && tw`rounded-full`,
+      container === 'square' && tw`rounded`,
+      mode === 'dark' && colors.dark[variant],
+      mode === 'light' && colors.light[variant],
+      sizes[size],
+      variant === 'outline' && ['small', 'xsmall'].includes(size) && tw`border-1.5`,
+    ]
 )
 
-export const Button = ({ leftIcon, rightIcon, copy, ...props }: ButtonProps) => (
+export const Button = ({ leftIcon, rightIcon, children, ...props }: ButtonProps) => (
   <StyledButton {...props}>
     {leftIcon && <FontAwesomeIcon icon={leftIcon} />}
-    {copy}
+    {children}
     {rightIcon && <FontAwesomeIcon icon={rightIcon} />}
   </StyledButton>
 )

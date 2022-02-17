@@ -27,7 +27,7 @@ const Login = () => {
       <div tw="shadow-card-neutral-1 bg-layout-white bg-scrim-layout-white px-2.5 pt-2 pb-4">
         <div tw="p-6 text-center">
           <span tw="text-2xl font-rubik">Welcome Back</span>
-          <div tw="text-sm">
+          <div data-cy="domain-status" tw="text-sm">
             <DomainStatus status="online" />
           </div>
         </div>
@@ -60,12 +60,16 @@ const LoginForm = () => {
 
   const login = useCallback(async (data: any) => {
     // @ts-ignore
-    const loginToast = toast('Logging in...', { toastType: 'info', variant: 'dark' })
+    const loginToast = toast('Logging in...', {
+      toastType: 'info',
+      variant: 'dark',
+      position: 'top-left',
+    })
     try {
       const res = await api.post('login', {
         json: data,
       })
-      return res.json()
+      return res.json() // ok
     } catch (e) {
       toast('Invalid credentials', {
         // @ts-ignore
@@ -74,6 +78,7 @@ const LoginForm = () => {
         id: loginToast,
         message: 'Invalid credentials',
         title: 'Login error',
+        position: 'top-left',
       })
     }
   }, [])
@@ -92,15 +97,17 @@ const LoginForm = () => {
             error={errors?.[item.name]?.message}
           />
         ))}
-        <p tw="text-center mt-2">
-          Don’t have an account yet?{' '}
+        <p data-cy="redirect-sign-up" tw="text-center mt-2">
+          Don't have an account yet?{' '}
           <Link href="/register">
             <a>Apply for an account here.</a>
           </Link>
         </p>
       </div>
       <div tw="flex justify-center p-6 pb-4">
-        <Button copy="Login" disabled={!isFormValid} />
+        <Button data-cy="login-button" disabled={!isFormValid}>
+          Login
+        </Button>
       </div>
     </form>
   )

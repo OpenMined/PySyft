@@ -1,0 +1,9 @@
+{
+  "baseUrl": "http://localhost:3000",
+  "video": false,
+  "screenshotOnRunFailure": false,
+  "fixturesFolder": "tests/fixtures",
+  "integrationFolder": "tests/integration",
+  "pluginsFile": "tests/plugins/index.ts",
+  "supportFile": "tests/support/index.ts"
+}

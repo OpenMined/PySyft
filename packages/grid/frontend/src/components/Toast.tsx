@@ -1,4 +1,4 @@
-import tw, { styled  } from 'twin.macro'
+import tw, { styled } from 'twin.macro'
 import toast, { useToaster } from 'react-hot-toast'
 import CloseIcon from '$icons/CloseIonicons'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -8,7 +8,7 @@ type ToastType = 'success' | 'danger' | 'info' | 'warning'
 
 type ToastVariant = 'subtle' | 'solid' | 'dark' | 'accent'
 
-type ExtendedToastProps = {
+export type ExtendedToastProps = {
   id: string
   toastType: ToastType
   variant: ToastVariant
@@ -20,14 +20,22 @@ export const Toast = () => {
 
   return (
     <div tw="top-2 right-2 z-40 fixed flex flex-col gap-3">
-      {toasts.map((t) => {
-        const { id, title, message, visible, variant = 'subtle', toastType: type = 'info' } = t as typeof t & ExtendedToastProps
+      {toasts.map(t => {
+        const {
+          id,
+          title,
+          message,
+          visible,
+          variant = 'subtle',
+          toastType: type = 'info',
+        } = t as typeof t & ExtendedToastProps
         const containerProps = { variant, type, visible }
         return (
           <ToastContainer
             key={`toast-${id}`}
             role="alert"
             aria-label="notification"
+            data-cy="toast"
             {...containerProps}
           >
             <div tw="p-2 flex-grow flex items-start gap-3">

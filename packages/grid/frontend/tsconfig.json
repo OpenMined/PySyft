@@ -15,6 +15,7 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "baseUrl": "./src",
+    "types": ["cypress", "@testing-library/cypress"],
     "paths": {
       "$components/*": ["./components/*"],
       "$icons/*": ["./icons/*"],

@@ -78,7 +78,7 @@ export const FormControl = forwardRef<HTMLInputElement, PropsWithRef<FormControl
             {optional && <span tw="font-normal italic text-primary-600 text-xs"> (optional)</span>}
           </Label>
         )}
-        <Input {...inputProps} />
+        <Input id={name} {...inputProps} />
         {!error && hint && <Hint>{hint}</Hint>}
         {error && <Error>{error}</Error>}
       </div>

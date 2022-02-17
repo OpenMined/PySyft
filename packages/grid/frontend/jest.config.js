@@ -1,7 +1,7 @@
 module.exports = {
   roots: ['<rootDir>/src'],
   testMatch: ['**/__tests__/**/*.js'],
-  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/'],
+  testPathIgnorePatterns: ['<rootDir>/.next/', '<rootDir>/node_modules/', '<rootDir>/scripts/'],
   setupFilesAfterEnv: ['<rootDir>/setupTests.js'],
   bail: 1,
   collectCoverage: true,

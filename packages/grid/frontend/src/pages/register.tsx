@@ -1,11 +1,13 @@
 import { useCallback } from 'react'
 import tw from 'twin.macro'
 import Link from 'next/link'
+import toast from 'react-hot-toast'
 import { useForm } from 'react-hook-form'
 import { Button } from '$components/Buttons'
 import { FormControl } from '$components/FormControl'
 import { AuthLayout } from '$components/AuthLayout'
 import { api } from '$lib/api'
+import { useRouter } from 'next/router'
 
 const registerForm = [
   {
@@ -55,11 +57,25 @@ const registerForm = [
 ]
 
 const Register = () => {
+  const { router } = useRouter()
   const { register, handleSubmit } = useForm({ mode: 'onChange' })
 
   const signup = useCallback(async data => {
     const { email, password, full_name, company, website } = data
-    await api.post('/register', { email, password, full_name, company, website })
+    try {
+      const res = await api.post('register', {
+        json: { email, password, full_name, company, website },
+      })
+      router.push('/login')
+    } catch (err) {
+      toast('User already registered', {
+        toastType: 'danger',
+        variant: 'accent',
+        id: 'signup-error',
+        title: 'Sign up error',
+        position: 'top-left',
+      })
+    }
   }, [])
 
   return (
@@ -76,16 +92,16 @@ const Register = () => {
               </div>
             ))}
           </div>
+          <footer tw="flex flex-col text-center p-6 py-4">
+            <Button data-cy="register-button">Submit Application</Button>
+            <p tw="text-center mt-6">
+              Have an account already?{' '}
+              <Link href="/login">
+                <a>Login here</a>
+              </Link>
+            </p>
+          </footer>
         </form>
-        <footer tw="flex flex-col text-center p-6 py-4">
-          <Button copy="Submit Application" />
-          <p tw="text-center mt-6">
-            Have an account already?{' '}
-            <Link href="/login">
-              <a>Login here</a>
-            </Link>
-          </p>
-        </footer>
       </div>
     </AuthLayout>
   )

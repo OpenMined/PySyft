@@ -45,25 +45,26 @@ export const AuthLayout = ({ children }) => {
           <section tw="(col-start-2 col-span-4)!">
             <div tw="flex flex-col">
               {tags?.length > 0 && (
-                <div tw="flex flex-wrap items-center gap-2 mb-2">
+                <div data-cy="meta-domain-tags" tw="flex flex-wrap items-center gap-2 mb-2">
                   <TagList tags={tags} />
                 </div>
               )}
               <header>
-                <h1>{domain_name}</h1>
-                <p tw="mt-6">{description}</p>
+                <h1 data-cy="meta-domain-name">{domain_name}</h1>
+                <p data-cy="meta-domain-description" tw="mt-6">
+                  {description}
+                </p>
               </header>
               <ul tw="flex flex-col gap-4 mt-10 text-sm">
                 <li>
-                  <span tw="text-sm font-bold">ID#:</span> <Id id={id} />
-                </li>
-                <li>
                   <span tw="text-sm font-bold">Owner:</span>{' '}
-                  <span tw="font-mono text-sm uppercase">{owner}</span>
+                  <span data-cy="meta-domain-owner" tw="font-mono text-sm uppercase">
+                    {owner}
+                  </span>
                 </li>
               </ul>
               <hr tw="mt-10" />
-              <p tw="mt-8">
+              <p data-cy="meta-domain-support-email" tw="mt-8">
                 For further assistance please email: <MailLink email={support_email} />
               </p>
             </div>
