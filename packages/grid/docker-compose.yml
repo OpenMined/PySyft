@@ -52,7 +52,7 @@ services:
       # Enable the Traefik log, for configurations and errors
       - "--log"
 
-  frontend:  
+  frontend:
     restart: always
     image: "${DOCKER_IMAGE_FRONTEND?Variable not set}-${NODE_TYPE}:${VERSION-latest}"
     profiles:
