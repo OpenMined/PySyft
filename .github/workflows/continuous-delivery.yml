@@ -51,6 +51,9 @@ jobs:
       - name: Set Grid package version
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
 
+      - name: check Grid version
+        run: echo ${{env.GRID_VERSION}}
+
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -72,14 +75,25 @@ jobs:
         run: |
           export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
           export DOCKER_URI_LATEST=$IMAGE_URI:latest
+          echo $DOCKER_URI
+          echo $DOCKER_URI_LATEST
 
-      - name: Build and push `grid-backend` image to DockerHub
-        uses: docker/build-push-action@v2
-        with:
-          context: .
-          file: grid/backend/backend.dockerfile
-          push: true
-          tags: $DOCKER_URI,$DOCKER_URI_LATEST
+      # - name: Docker meta
+      #   id: meta_grid_backend
+      #   uses: docker/metadata-action@v3
+      #   with:
+      #     images: openmined/grid-backend
+      #     tags: |
+      #       type=raw,value=${{ env.GRID_VERSION }}
+      #       type=raw,value=latest
+
+      # - name: Build and push `grid-backend` image to DockerHub
+      #   uses: docker/build-push-action@v2
+      #   with:
+      #     context: .
+      #     file: grid/backend/backend.dockerfile
+      #     push: true
+      #     tags: ${{ steps.meta_grid_backend.outputs.tags }}
 
       # - name: Build and push `grid-backend` image to DockerHub
       #   working-directory: ./packages
