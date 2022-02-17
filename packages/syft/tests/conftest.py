@@ -138,6 +138,11 @@ def domain() -> sy.VirtualMachine:
 
 
 @pytest.fixture(autouse=True)
+def domain_store(domain: sy.Domain) -> None:
+    domain.store.clear()
+
+
+@pytest.fixture(autouse=True)
 def node_store(node: sy.VirtualMachine) -> None:
     node.store.clear()
 

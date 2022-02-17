@@ -9,10 +9,13 @@ import syft as sy
 from syft.core.adp.adversarial_accountant import AdversarialAccountant
 from syft.core.adp.entity import Entity
 from syft.core.adp.scalar.phi_scalar import PhiScalar
+from syft.core.node.common.node_manager.bin_obj_manager import DictStore
 from syft.core.tensor.tensor import Tensor
 
 
-def test_autodp_phiscalar_can_publish(domain: sy.Domain) -> None:
+def test_autodp_phiscalar_can_publish() -> None:
+    domain = sy.Domain("Alice", store_type=DictStore)
+
     def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")
 
@@ -40,7 +43,9 @@ def test_autodp_phiscalar_can_publish(domain: sy.Domain) -> None:
     assert len(domain.acc.entities) == 3
 
 
-def test_autodp_phiscalar_cannot_publish(domain: sy.Domain) -> None:
+def test_autodp_phiscalar_cannot_publish() -> None:
+    domain = sy.Domain("Alice", store_type=DictStore)
+
     def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")
 
