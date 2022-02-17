@@ -1,11 +1,17 @@
 # stdlib
+import json
 from random import random
 
 # third party
 from fastapi import FastAPI
 from httpx import AsyncClient
 import pytest
+import requests
+from sqlalchemy.orm import Session
 from starlette import status
+
+# syft absolute
+from syft.core.node.common.node_manager.user_manager import UserManager
 
 # grid absolute
 from grid.tests.utils.auth import authenticate_owner
@@ -31,18 +37,30 @@ class TestUsersRoutes:
         assert "Authorization" not in res.request.headers.keys()
         assert res.status_code == status.HTTP_401_UNAUTHORIZED
 
-    """
     @pytest.mark.asyncio
     async def test_successfully_create_user(
         self, app: FastAPI, client: AsyncClient
     ) -> None:
-        user = create_user()
+        user = create_user(budget=random() * 100)
         headers = await authenticate_owner(app, client)
-        res = await client.post(
-            app.url_path_for("users:create"), json=dict(user), headers=headers
-        )
+        new_user = {
+            "name": user.name,
+            "email": user.email,
+            "password": user.password,
+            "confirm_password": user.password,
+            "role": 1,
+            "budget": user.budget,
+        }
+        data = {"new_user": json.dumps(new_user)}
+        files = [("file", b"")]
+        url = f"http://{client.base_url.host}{app.url_path_for('users:create')}"
+        res = requests.post(url=url, headers=headers, data=data, files=files)
+
+        # Note: This doesn't work with httpx client
+        # res = await client.post(
+        #     app.url_path_for("users:create"), headers=headers, data=data, files=files
+        # )
         assert res.status_code == status.HTTP_201_CREATED
-    """
 
     @pytest.mark.asyncio
     async def test_successfully_update_user(
@@ -105,6 +123,39 @@ class TestUsersRoutes:
         )
         assert res.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
         assert res.json() == {"detail": "There was an error processing your request."}
+
+    @pytest.mark.asyncio
+    async def test_delete_user(
+        self, app: FastAPI, client: AsyncClient, db: Session
+    ) -> None:
+        # Create a data for dummy user
+        user = create_user(budget=random() * 100)
+        headers = await authenticate_owner(app, client)
+
+        db_engine = db.get_bind()
+        user_manager = UserManager(db_engine)
+
+        # create new user
+        user_manager.signup(
+            name=user.name,
+            email=user.email,
+            password=user.password,
+            budget=user.budget,
+            role=1,  # Assign Data Scientist as Role
+            verify_key="",
+            private_key="",
+        )
+
+        # retrieve the new user
+        new_user = user_manager.last(**{"email": user.email})
+        assert new_user is not None
+
+        # Deleting the new user
+        res = await client.delete(
+            app.url_path_for("users:delete", **{"user_id": int(new_user.id)}),
+            headers=headers,
+        )
+        assert res.status_code == status.HTTP_204_NO_CONTENT
 
     """
     @pytest.mark.asyncio
