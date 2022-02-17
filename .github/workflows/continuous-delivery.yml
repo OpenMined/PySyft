@@ -64,6 +64,7 @@ jobs:
         run: |
           export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
           export DOCKER_URI_LATEST=$IMAGE_URI:latest
+          DOCKER_BUILDKIT=1
           docker build \
               -t $DOCKER_URI \
               -t $DOCKER_URI_LATEST \
