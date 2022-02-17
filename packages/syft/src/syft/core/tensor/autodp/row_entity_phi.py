@@ -1068,7 +1068,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         if len(row_scalar_manager_index) != len(self.child):
             raise Exception("Length of scalar manager index must match row length")
 
-        if self.serde_concurrency > 0:
+        if self.serde_concurrency > 0 and concurrency_count() > 1:
             # serde_concurrency == 0 means off
             # serde_concurrency == 1 means auto detect cpu count
             # serde_concurrency >= 2 means manually set process count
@@ -1114,7 +1114,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         row_entity_index = deserialize(proto.row_entity_index)
         row_scalar_manager_index = deserialize(proto.row_scalar_manager_index)
 
-        if proto.serde_concurrency > 0:
+        if proto.serde_concurrency > 0 and concurrency_count() > 1:
             # serde_concurrency == 0 means off
             # serde_concurrency == 1 means auto detect cpu count
             # serde_concurrency >= 2 means manually set process count
@@ -1124,7 +1124,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 else concurrency_count()
             )
             print(
-                "Serializing with proto.serde_concurrency == ",
+                "Deserializing with proto.serde_concurrency == ",
                 proto.serde_concurrency,
                 "cpu_count",
                 cpu_count,

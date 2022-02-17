@@ -165,10 +165,12 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     input_mp.append(right)
 
             num_process = min(concurrency_count(), len(input_mp))
-            args = split_rows(input_mp, cpu_count=num_process)
-            # print(args)
-            output = parallel_execution(list_sum, cpu_bound=True)(args)
-            scalar: IntermediateGammaScalar = sum(output)  # type: ignore
+            if num_process > 1:
+                args = split_rows(input_mp, cpu_count=num_process)
+                output = parallel_execution(list_sum, cpu_bound=True)(args)
+                scalar: IntermediateGammaScalar = sum(output)  # type: ignore
+            else:
+                scalar: IntermediateGammaScalar = sum(input_mp)  # type: ignore
 
             # print("Known Primes in List:" + str(len(known_primes)))
             # to optimize down stream we can prevent search on linear queries if we

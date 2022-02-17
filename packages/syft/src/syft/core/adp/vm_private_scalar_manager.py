@@ -60,11 +60,10 @@ class PrimeFactory:
             return (
                 self.prime_numbers[-1] == other.prime_numbers[-1]
             )  # Since the list is sorted, we can just compare the last value
-            # return self.prev_prime_index == other.prev_prime_index
         return self == other
 
     def _object2proto(self) -> PrimeFactory_PB:
-        return PrimeFactory_PB(prime=self.prev_prime_index)
+        return PrimeFactory_PB()
 
     @staticmethod
     def _proto2object(
@@ -121,9 +120,7 @@ class VirtualMachinePrivateScalarManager:
     def __hash__(self) -> int:
         if self.hash_cache is None:
             prime2symbol = frozenset(self.prime2symbol.items())
-            self.hash_cache = hash(self.prime_factory.prev_prime_index) + hash(
-                prime2symbol
-            )
+            self.hash_cache = hash(self.prime_factory.exp) + hash(prime2symbol)
         return self.hash_cache
 
     def __eq__(self, other: Any) -> bool:

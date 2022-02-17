@@ -35,6 +35,7 @@ from ..common.action.get_object_action import GetObjectAction
 from ..common.client import Client
 from ..common.node import Node
 from ..common.node_manager.association_request_manager import AssociationRequestManager
+from ..common.node_manager.bin_obj_manager import RedisStore
 from ..common.node_manager.dataset_manager import DatasetManager
 from ..common.node_manager.environment_manager import EnvironmentManager
 from ..common.node_manager.node_manager import NodeManager
@@ -104,6 +105,7 @@ class Domain(Node):
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
         settings: BaseSettings = BaseSettings(),
+        store_type: type = RedisStore,
     ):
 
         if db_engine is None:
@@ -118,6 +120,7 @@ class Domain(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_engine=db_engine,
+            store_type=store_type,
         )
 
         # share settings with the FastAPI application level

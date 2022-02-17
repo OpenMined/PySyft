@@ -18,7 +18,7 @@ _sym_db = _symbol_database.Default()
 from syft.proto.lib.python import dict_pb2 as proto_dot_lib_dot_python_dot_dict__pb2
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n#proto/core/adp/scalar_manager.proto\x12\rsyft.core.adp\x1a\x1bproto/lib/python/dict.proto"\x1d\n\x0cPrimeFactory\x12\r\n\x05prime\x18\x01 \x01(\x03"\x85\x01\n"VirtualMachinePrivateScalarManager\x12\x32\n\rprime_factory\x18\x01 \x01(\x0b\x32\x1b.syft.core.adp.PrimeFactory\x12+\n\x0cprime2symbol\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dictb\x06proto3'
+    b'\n#proto/core/adp/scalar_manager.proto\x12\rsyft.core.adp\x1a\x1bproto/lib/python/dict.proto"\x0e\n\x0cPrimeFactory"\x85\x01\n"VirtualMachinePrivateScalarManager\x12\x32\n\rprime_factory\x18\x01 \x01(\x0b\x32\x1b.syft.core.adp.PrimeFactory\x12+\n\x0cprime2symbol\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dictb\x06proto3'
 )
 
 
@@ -52,7 +52,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
     _PRIMEFACTORY._serialized_start = 83
-    _PRIMEFACTORY._serialized_end = 112
-    _VIRTUALMACHINEPRIVATESCALARMANAGER._serialized_start = 115
-    _VIRTUALMACHINEPRIVATESCALARMANAGER._serialized_end = 248
+    _PRIMEFACTORY._serialized_end = 97
+    _VIRTUALMACHINEPRIVATESCALARMANAGER._serialized_start = 100
+    _VIRTUALMACHINEPRIVATESCALARMANAGER._serialized_end = 233
 # @@protoc_insertion_point(module_scope)

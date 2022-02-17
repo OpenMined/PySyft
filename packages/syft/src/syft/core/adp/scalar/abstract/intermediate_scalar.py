@@ -35,9 +35,13 @@ class IntermediateScalar(Scalar):
     def __init__(self, poly: BasicSymbol, id: Optional[UID] = None) -> None:
         self.poly = poly
         self.id = id if id else UID()
-        self._min_val: Optional[float] = None
-        self._max_val: Optional[float] = None
         self._sympoly: Optional[BasicSymbol] = None
+
+        # only initialize these if they aren't already set
+        if not hasattr(self, "_min_val"):
+            self._min_val: Optional[float] = None
+        if not hasattr(self, "_max_val"):
+            self._max_val: Optional[float] = None
 
     @property
     def sympoly(self) -> BasicSymbol:

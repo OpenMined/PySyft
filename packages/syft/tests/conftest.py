@@ -13,6 +13,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import logger
+from syft.core.node.common.node_manager.bin_obj_manager import DictStore
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
 from syft.lib import vendor_requirements_available
@@ -129,6 +130,11 @@ def pytest_collection_modifyitems(
 @pytest.fixture(scope="session")
 def node() -> sy.VirtualMachine:
     return sy.VirtualMachine(name="Bob")
+
+
+@pytest.fixture(scope="session")
+def domain() -> sy.VirtualMachine:
+    return sy.Domain(name="Alice", store_type=DictStore)
 
 
 @pytest.fixture(autouse=True)

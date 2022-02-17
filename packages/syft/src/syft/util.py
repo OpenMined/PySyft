@@ -14,6 +14,7 @@ from secrets import randbelow
 from typing import Any
 from typing import Callable
 from typing import Dict
+from typing import Iterator
 from typing import List
 from typing import Optional
 from typing import Sequence
@@ -636,4 +637,16 @@ def list_sum(*inp_lst: List[Any]) -> Any:
 
 
 def concurrency_count(factor: float = 0.8) -> int:
-    return int(mp.cpu_count() * factor)
+    force_count = int(os.environ.get("FORCE_CONCURRENCY_COUNT", 0))
+    mp_count = force_count if force_count >= 1 else int(mp.cpu_count() * factor)
+    return mp_count
+
+
+@contextmanager
+def concurrency_override(count: int = 1) -> Iterator:
+    # this only effects local code so its best to use in unit tests
+    try:
+        os.environ["FORCE_CONCURRENCY_COUNT"] = f"{count}"
+        yield None
+    finally:
+        os.environ["FORCE_CONCURRENCY_COUNT"] = "0"
