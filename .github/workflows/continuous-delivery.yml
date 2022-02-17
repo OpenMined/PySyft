@@ -51,10 +51,6 @@ jobs:
       - name: Set Grid package version
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
 
-      - name: check Grid version
-        run: echo ${{env.GRID_VERSION}}
-
-
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
 
@@ -75,8 +71,15 @@ jobs:
         run: |
           export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
           export DOCKER_URI_LATEST=$IMAGE_URI:latest
-          echo $DOCKER_URI
-          echo $DOCKER_URI_LATEST
+          echo "$DOCKER_URI" >> $GITHUB_ENV
+          echo "$DOCKER_URI_LATEST" >> $GITHUB_ENV
+
+      - name: check URI
+        run: |
+          echo ${{env.DOCKER_URI}}
+          echo ${{env.DOCKER_URI_LATEST}}
+
+
 
       # - name: Docker meta
       #   id: meta_grid_backend
