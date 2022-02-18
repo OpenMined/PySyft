@@ -89,12 +89,12 @@ jobs:
           npx cypress version --component node
 
       - name: Setup NodeJS
-        working-directory: ./packages/grid/frontend
         uses: actions/setup-node@v2
         if: steps.changes.outputs.frontend == 'true'
         with:
           node-version: "16"
           cache: "yarn"
+          cache-dependency-path: "packages/grid/frontend/yarn.lock"
 
       - name: Run Frontend API tests
         shell: bash
