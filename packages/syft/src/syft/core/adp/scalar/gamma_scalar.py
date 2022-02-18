@@ -106,7 +106,6 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
                 and self.value == other.value
                 and self.entity == other.entity
                 and self.prime == other.prime
-                and self.id == other.id
             )
         return self == other
 
@@ -117,5 +116,4 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
             + hash(self.prime)
             + hash(self.entity)
             + hash(self.value)
-            + hash(self.id)
         )
