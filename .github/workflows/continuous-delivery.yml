@@ -78,7 +78,7 @@ jobs:
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
-          push: false
+          push: true
           tags: ${{ steps.meta_grid_backend.outputs.tags }}
 
 
@@ -96,7 +96,7 @@ jobs:
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
-          push: false
+          push: true
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
 
       - name: Docker meta for Grid-Headscale
@@ -113,7 +113,7 @@ jobs:
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/headscale.dockerfile
-          push: false
+          push: true
           tags: ${{ steps.meta_grid_headscale.outputs.tags }}
 
       - name: Docker meta for Grid-Tailscale
@@ -130,5 +130,5 @@ jobs:
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/tailscale.dockerfile
-          push: false
+          push: true
           tags: ${{ steps.meta_grid_tailscale.outputs.tags }}
