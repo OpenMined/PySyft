@@ -47,7 +47,7 @@ class PrimeFactory:
 
     def __init__(self) -> None:
         self.exp = 2
-        self.prime_numbers: list = []  # get_cached_primes(total=10**self.exp)
+        self.prime_numbers: list = get_cached_primes(total=10**self.exp)  # []
 
     def get(self, index: int) -> int:
         while index > len(self.prime_numbers) - 1:
