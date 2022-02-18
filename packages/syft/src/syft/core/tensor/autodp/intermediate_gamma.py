@@ -204,7 +204,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # print(self.term_tensor.shape)
         # print(self.shape)
         # print(self.term_tensor)
-        self.term_tensor = prime_numbers.reshape(self.term_tensor.shape)
+
+        # TODO: See if this fails for addition of more than 2 IGTs
+        self.term_tensor = prime_numbers[np.prod(self.term_tensor.shape):].reshape(self.term_tensor.shape)
         # self.term_tensor.flatten().reshape(-1, 2)[:, -1] = prime_numbers
 
     def _values(self) -> np.array:
