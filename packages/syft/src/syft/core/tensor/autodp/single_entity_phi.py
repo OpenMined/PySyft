@@ -759,7 +759,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
-            if self.entity.name != other.entity.name:
+            if self.entity != other.entity:
                 left = convert_to_gamma_tensor(self)
                 right = convert_to_gamma_tensor(other)
                 return left + right

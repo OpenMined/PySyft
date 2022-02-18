@@ -47,7 +47,7 @@ class PrimeFactory:
 
     def __init__(self) -> None:
         self.exp = 2
-        self.prime_numbers: list = get_cached_primes(total=10**self.exp)
+        self.prime_numbers: list = []  # get_cached_primes(total=10**self.exp)
 
     def get(self, index: int) -> int:
         while index > len(self.prime_numbers) - 1:
@@ -169,9 +169,14 @@ class VirtualMachinePrivateScalarManager:
         ASSUME: vsm1 is the source of truth; we won't be changing its prime numbers
         """
 
+        # To check: vsm2.prime2symbol size doesn't change
+
+        # initial_set = vsm2.primes_allocated
+        # initial_size = len(initial_set)
+
         if id(self.prime2symbol) != id(vsm2.prime2symbol):
             copy_dict = vsm2.prime2symbol.copy()
-            length = len(self.prime_factory.prime_numbers)
+            length = len(self.primes_allocated)
             for prime_number, gs in copy_dict.items():
                 if prime_number in self.prime2symbol:  # If there's a collision
                     new_prime = self.prime_factory.get(length)
@@ -180,7 +185,14 @@ class VirtualMachinePrivateScalarManager:
                     del vsm2.prime2symbol[prime_number]
                     vsm2.prime2symbol[new_prime] = gs
                     length += 1
+                    # print(f"Replacing {prime_number} with {new_prime}")
                 else:
                     self.prime2symbol[gs.prime] = gs
         else:
             warning("Detected prime2symbol where two tensors were using the same dict")
+
+        # final_set = vsm2.primes_allocated
+        # final_size = len(final_set)
+        # print(f'initial = {initial_size} {initial_set}')
+        # print(f'final = {final_size} {final_set}')
+        # assert initial_size == final_size, "Somehow a prime number was lost or gained during combine_"
