@@ -267,7 +267,7 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         contact: str,
         reply_to: Address,
         daa_document: Optional[bytes] = b"",
-        tags: Optional[TypeList] = [],
+        tags: Optional[TypeList] = None,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
@@ -276,7 +276,7 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         self.description = description
         self.domain_name = domain_name
         self.daa_document = daa_document
-        self.tags = tags
+        self.tags = tags if tags is not None else []
 
     def _object2proto(self) -> UpdateSetupMessage_PB:
         """Returns a protobuf serialization of self.

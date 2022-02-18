@@ -16,6 +16,7 @@ from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.broadcastable import is_broadcastable
 from syft.core.tensor.tensor import Tensor
+from syft.util import concurrency_override
 
 
 @pytest.fixture
@@ -203,25 +204,30 @@ def test_eq_diff_entities(
     ishan: Entity,
     traskmaster: Entity,
 ) -> None:
-    """Test equality between REPTs with different owners"""
-    data1 = SEPT(
-        child=reference_data, max_vals=upper_bound, min_vals=lower_bound, entity=ishan
-    )
-    data2 = SEPT(
-        child=reference_data,
-        max_vals=upper_bound,
-        min_vals=lower_bound,
-        entity=traskmaster,
-    )
-    tensor1 = REPT(rows=[data1, data2])
-    tensor2 = REPT(rows=[data2, data1])
-    output = tensor2 == tensor1
-    assert isinstance(output, IGT)
-    assert output._entities().shape == output.shape
-    assert (output._values() == np.ones_like(reference_data)).all()
+    with concurrency_override(count=1):
+        """Test equality between REPTs with different owners"""
+        data1 = SEPT(
+            child=reference_data,
+            max_vals=upper_bound,
+            min_vals=lower_bound,
+            entity=ishan,
+        )
+        data2 = SEPT(
+            child=reference_data,
+            max_vals=upper_bound,
+            min_vals=lower_bound,
+            entity=traskmaster,
+        )
+        tensor1 = REPT(rows=[data1, data2])
+        tensor2 = REPT(rows=[data2, data1])
+        output = tensor2 == tensor1
+        assert isinstance(output, IGT)
+        assert output._entities().shape == output.shape
+        assert (output._values() == np.ones_like(reference_data)).all()
 
 
-# TODO: Update this test after REPT.all() and .any() are implemented, and check `assert not comparison_result`
+# TODO: Update this test after REPT.all() and .any() are implemented, and check
+# `assert not comparison_result`
 def test_eq_values(
     row_data_ishan: List,
     reference_data: np.ndarray,
@@ -982,12 +988,13 @@ def test_le_same_entities(row_data_trask: List) -> None:
 
 
 def test_le_diff_entities(row_data_trask: List, row_data_kritika: List) -> None:
-    tensor = REPT(rows=row_data_trask)
-    second_tensor = REPT(rows=row_data_kritika)
-    assert tensor.shape == second_tensor.shape
-    output = tensor <= second_tensor
-    assert isinstance(output, IGT)
-    assert (output._values() == np.ones_like(output._values())).all()
+    with concurrency_override(count=1):
+        tensor = REPT(rows=row_data_trask)
+        second_tensor = REPT(rows=row_data_kritika)
+        assert tensor.shape == second_tensor.shape
+        output = tensor <= second_tensor
+        assert isinstance(output, IGT)
+        assert (output._values() == np.ones_like(output._values())).all()
 
 
 def test_ge_same_entities(row_data_trask: List) -> None:
@@ -1005,12 +1012,13 @@ def test_ge_same_entities(row_data_trask: List) -> None:
 
 
 def test_ge_diff_entities(row_data_trask: List, row_data_kritika: List) -> None:
-    tensor = REPT(rows=row_data_trask)
-    second_tensor = REPT(rows=row_data_kritika)
-    assert tensor.shape == second_tensor.shape
-    output = tensor >= second_tensor
-    assert isinstance(output, IGT)
-    assert (output._values() == np.ones_like(output._values())).all()
+    with concurrency_override(count=1):
+        tensor = REPT(rows=row_data_trask)
+        second_tensor = REPT(rows=row_data_kritika)
+        assert tensor.shape == second_tensor.shape
+        output = tensor >= second_tensor
+        assert isinstance(output, IGT)
+        assert (output._values() == np.ones_like(output._values())).all()
 
 
 def test_lt_same_entities(row_data_trask: List) -> None:
@@ -1028,12 +1036,13 @@ def test_lt_same_entities(row_data_trask: List) -> None:
 
 
 def test_lt_diff_entities(row_data_trask: List, row_data_kritika: List) -> None:
-    tensor = REPT(rows=row_data_trask)
-    second_tensor = REPT(rows=row_data_kritika)
-    assert tensor.shape == second_tensor.shape
-    output = tensor < second_tensor
-    assert isinstance(output, IGT)
-    assert (output._values() == np.zeros_like(output._values())).all()
+    with concurrency_override(count=1):
+        tensor = REPT(rows=row_data_trask)
+        second_tensor = REPT(rows=row_data_kritika)
+        assert tensor.shape == second_tensor.shape
+        output = tensor < second_tensor
+        assert isinstance(output, IGT)
+        assert (output._values() == np.zeros_like(output._values())).all()
 
 
 def test_gt_same_entities(row_data_trask: List) -> None:
@@ -1051,12 +1060,13 @@ def test_gt_same_entities(row_data_trask: List) -> None:
 
 
 def test_gt_diff_entities(row_data_trask: List, row_data_kritika: List) -> None:
-    tensor = REPT(rows=row_data_trask)
-    second_tensor = REPT(rows=row_data_kritika)
-    assert tensor.shape == second_tensor.shape
-    output = tensor > second_tensor
-    assert isinstance(output, IGT)
-    assert (output._values() == np.zeros_like(output._values())).all()
+    with concurrency_override(count=1):
+        tensor = REPT(rows=row_data_trask)
+        second_tensor = REPT(rows=row_data_kritika)
+        assert tensor.shape == second_tensor.shape
+        output = tensor > second_tensor
+        assert isinstance(output, IGT)
+        assert (output._values() == np.zeros_like(output._values())).all()
 
 
 def test_clip(row_data_trask: List, highest: int) -> None:
@@ -1133,6 +1143,10 @@ def test_pow(row_data_trask: List) -> None:
         assert (pow_tensor.child[i].child == tensor.child[i].child ** rand_pow).all()
 
 
+# BROKEN
+@pytest.mark.skip(
+    reason="This wouldn't work because it attempts to call .child on an IGT to get the values."
+)
 def test_sum(
     row_data_trask: List,
     dims: int,
@@ -1172,6 +1186,7 @@ def test_diagonal(row_data_trask: List, dims: int) -> None:
             ).all()
 
 
+# BROKEN
 def test_converter(
     row_data_ishan: List,
     traskmaster: Entity,
@@ -1179,34 +1194,50 @@ def test_converter(
     highest: int,
     scalar_manager: ScalarManager,
 ) -> None:
-    # Test that SEPTs can be converted
-    output = REPT.convert_to_gamma(row_data_ishan)
-    assert isinstance(output, IGT)
-    assert output._entities().shape == output.shape
+    with concurrency_override(count=1):
+        # Test that SEPTs can be converted
+        output = REPT.convert_to_gamma(row_data_ishan)
+        assert isinstance(output, IGT)
+        assert output._entities().shape == output.shape
 
-    new_data = row_data_ishan[0].child
+        new_data = row_data_ishan[0].child
 
-    # Test with just a list of IGTs
-    igt1 = SEPT(
-        child=new_data,
-        entity=traskmaster,
-        min_vals=np.ones_like(new_data) * -highest,
-        max_vals=np.ones_like(new_data) * highest,
-        scalar_manager=scalar_manager,
-    ) + SEPT(
-        child=new_data,
-        entity=ishan,
-        min_vals=np.ones_like(new_data) * -highest,
-        max_vals=np.ones_like(new_data) * highest,
-        scalar_manager=scalar_manager,
-    )
-    igt2 = igt1 + 1
-    assert isinstance(igt1, IGT)
-    output = REPT.convert_to_gamma([igt1, igt2])
-    assert isinstance(output, IGT)
+        sept1 = SEPT(
+            child=new_data,
+            entity=traskmaster,
+            min_vals=np.ones_like(new_data) * -highest,
+            max_vals=np.ones_like(new_data) * highest,
+            # scalar_manager=scalar_manager,
+        )
 
-    # Test hybrid
-    assert new_data.shape == igt1.shape
-    output = REPT.convert_to_gamma([igt1, row_data_ishan[0]])
-    assert isinstance(output, IGT)
-    assert output._entities().shape == output.shape
+        # Test with just a list of IGTs
+        sept2 = SEPT(
+            child=new_data,
+            entity=ishan,
+            min_vals=np.ones_like(new_data) * -highest,
+            max_vals=np.ones_like(new_data) * highest,
+            # scalar_manager=scalar_manager,
+        )
+        assert isinstance(sept1, SEPT)
+        assert isinstance(sept2, SEPT)
+
+        # igt1 = convert_to_gamma_tensor(sept1)
+        # igt2 = convert_to_gamma_tensor(sept2)
+
+        # print(igt1.scalar_manager.primes_allocated)
+        # print(len(igt1.scalar_manager.prime_factory.prime_numbers))
+        # print(igt2.scalar_manager.primes_allocated)
+        # print(len(igt2.scalar_manager.prime_factory.prime_numbers))
+
+        igt3 = sept1 + sept2
+        assert isinstance(igt3, IGT)
+        igt4 = igt3 + 1
+        assert isinstance(igt4, IGT)
+        output = REPT.convert_to_gamma([igt3, igt4])
+        assert isinstance(output, IGT)
+
+        # Test hybrid
+        assert new_data.shape == igt3.shape
+        output = REPT.convert_to_gamma([igt3, row_data_ishan[0]])
+        assert isinstance(output, IGT)
+        assert output._entities().shape == output.shape

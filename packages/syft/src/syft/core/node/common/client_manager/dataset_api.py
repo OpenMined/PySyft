@@ -306,13 +306,13 @@ class Dataset:
         id: UID,
         key: int,
         data: Any,
-        tags: List[str] = [],
+        tags: Optional[List[str]] = None,
     ) -> None:
         self.raw = raw
         self.description = description
         self.name = name
         self.id = id
-        self.tags = tags
+        self.tags = tags if tags is not None else []
         self.data = data
         self.client = client
         self.key = key

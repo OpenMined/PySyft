@@ -161,7 +161,7 @@ def _load_lib(*, lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> 
 
 def load(
     *libs: TypeUnion[TypeList[str], TypeTuple[str], TypeSet[str], str],
-    options: TypeDict[str, TypeAny] = {},
+    options: Optional[TypeDict[str, TypeAny]] = None,
     ignore_warning: bool = False,
     **kwargs: str,
 ) -> None:
@@ -175,6 +175,7 @@ def load(
     """
     # For backward compatibility with calls like `syft.load(lib = "opacus")`
     # Note: syft.load(lib = "opacus") doesnot work as it iterates the string, syft.load('opacus') works
+    options = options if options is not None else {}
 
     if not ignore_warning:
         msg = "sy.load() is deprecated and not needed anymore"
@@ -205,7 +206,7 @@ def load(
         )
 
 
-def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
+def load_lib(lib: str, options: Optional[TypeDict[str, TypeAny]] = None) -> None:
     """
     Load and Update Node with given library module
     _load_lib() is deprecated please use load() in the future
@@ -215,6 +216,7 @@ def load_lib(lib: str, options: TypeDict[str, TypeAny] = {}) -> None:
         options: external requirements for loading library successfully
 
     """
+    options = options if options is not None else {}
     msg = "sy._load_lib() is deprecated and not needed anymore"
     warning(msg, print=True)
     warnings.warn(msg, DeprecationWarning)
