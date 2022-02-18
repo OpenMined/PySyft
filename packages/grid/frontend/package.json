@@ -37,7 +37,7 @@
     "ky-universal": "^0.9.1",
     "lodash.clonedeep": "^4.5.0",
     "lodash.get": "^4.4.2",
-    "next": "11.1.3",
+    "next": "12.1.0",
     "nookies": "^2.5.2",
     "react": "17.0.2",
     "react-animate-height": "^2.0.23",
