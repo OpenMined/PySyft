@@ -143,37 +143,39 @@ def gamma_tensor_max(sept_ishan, dsg) -> IGT:
 
 
 def test_values(sept_ishan, sept_traskmaster, gamma_tensor_min) -> None:
-    """Test that the _values() method correctly returns the np array"""
-    gamma_tensor = sept_ishan + sept_traskmaster
-    assert isinstance(gamma_tensor, IGT)
-    target = sept_ishan.child + sept_traskmaster.child
-    output = gamma_tensor._values()
-    assert output.shape == gamma_tensor.shape
-    assert (output == target).all()
+    with concurrency_override(count=1):
+        """Test that the _values() method correctly returns the np array"""
+        gamma_tensor = sept_ishan + sept_traskmaster
+        assert isinstance(gamma_tensor, IGT)
+        target = sept_ishan.child + sept_traskmaster.child
+        output = gamma_tensor._values()
+        assert output.shape == gamma_tensor.shape
+        assert (output == target).all()
 
-    assert gamma_tensor == gamma_tensor_min
-    output = gamma_tensor_min._values()
-    assert isinstance(output, np.ndarray)
-    assert output.shape == target.shape
-    assert (gamma_tensor._values() == target).all()
+        assert gamma_tensor == gamma_tensor_min
+        output = gamma_tensor_min._values()
+        assert isinstance(output, np.ndarray)
+        assert output.shape == target.shape
+        assert (gamma_tensor._values() == target).all()
 
 
 def test_entities(sept_ishan, sept_traskmaster) -> None:
-    tensor = sept_ishan + sept_traskmaster
-    output = tensor._entities()
-    assert isinstance(tensor, IGT)
-    assert isinstance(sept_ishan.entity, Entity)
-    assert isinstance(sept_traskmaster.entity, Entity)
+    with concurrency_override(count=1):
+        tensor = sept_ishan + sept_traskmaster
+        output = tensor._entities()
+        assert isinstance(tensor, IGT)
+        assert isinstance(sept_ishan.entity, Entity)
+        assert isinstance(sept_traskmaster.entity, Entity)
 
-    assert tensor.n_entities == 2
-    for ent in tensor.unique_entities:
-        assert isinstance(ent, Entity)
-        assert ent == sept_ishan.entity or ent == sept_traskmaster.entity
+        assert tensor.n_entities == 2
+        for ent in tensor.unique_entities:
+            assert isinstance(ent, Entity)
+            assert ent == sept_ishan.entity or ent == sept_traskmaster.entity
 
-    target = sept_ishan.entity + sept_traskmaster.entity
-    for j in output.flatten():
-        assert isinstance(j, DSG)
-        assert j == target
+        target = sept_ishan.entity + sept_traskmaster.entity
+        for j in output.flatten():
+            assert isinstance(j, DSG)
+            assert j == target
 
 
 def test_gt(
