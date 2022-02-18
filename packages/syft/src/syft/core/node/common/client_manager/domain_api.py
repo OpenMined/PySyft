@@ -63,8 +63,10 @@ class DomainRequestAPI(RequestAPI):
                         if self.get(domain_metadata["id"]).ping:
                             data.append(domain_metadata)
                         syft.logger.start()
-                    except Exception:
-                        """"""
+                    except Exception:  # nosec
+                        # if pinging the domain causes an exception we just wont
+                        # include it in the array
+                        pass
                 sys.stdout.write("\r                                             ")
 
                 self.cache = data

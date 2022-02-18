@@ -79,7 +79,7 @@ class GrammarTerm:
         type: str,
         name: str,
         default: Optional[Union[str, Callable]] = None,
-        options: TypeList = [],
+        options: Optional[TypeList] = None,
         example: Optional[str] = None,
         **kwargs: TypeDict[str, Any],
     ) -> None:
@@ -88,7 +88,7 @@ class GrammarTerm:
         self.type = type
         self.name = name
         self.default = default
-        self.options = options
+        self.options = options if options is not None else []
         self.example = example
 
     @property

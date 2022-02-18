@@ -1,6 +1,3 @@
-# stdlib
-from typing import Union
-
 # third party
 from google.protobuf.message import Message
 
@@ -9,13 +6,14 @@ from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import validate_type
+from .types import Deserializeable
 
 
 def _serialize(
     obj: object,
     to_proto: bool = True,
     to_bytes: bool = False,
-) -> Union[str, bytes, Message]:
+) -> Deserializeable:
     """Serialize the object according to the parameters.
 
     This method can be called directly on the syft module::

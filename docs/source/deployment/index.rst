@@ -39,7 +39,7 @@ The following operating systems are currently supported: Linux, Windows, MacOS. 
 Setting up virtual environment using Python 3.9
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Ensure using **Python3.7+**, which should be first installed in your system. To easily handle further dependencies, we suggest using conda:
+1. Ensure using **Python3.8+**, which should be first installed in your system. To easily handle further dependencies, we suggest using conda:
 
    a. Install conda `following these instructions <https://docs.anaconda.com/anaconda/install/index.html/>`_  depending on your OS.
 
