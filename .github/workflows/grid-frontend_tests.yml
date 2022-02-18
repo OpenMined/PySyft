@@ -72,8 +72,8 @@ jobs:
             cypress-${{ runner.os }}-cypress-
 
       - name: Install dependencies and verify Cypress
-        if: steps.changes.outputs.frontend == 'true'
         working-directory: ./packages/grid/frontend
+        if: steps.changes.outputs.frontend == 'true'
         env:
           # make sure every Cypress install prints minimal information
           CI: 1
@@ -89,9 +89,9 @@ jobs:
           npx cypress version --component node
 
       - name: Setup NodeJS
+        working-directory: ./packages/grid/frontend
         uses: actions/setup-node@v2
         if: steps.changes.outputs.frontend == 'true'
-        working-directory: ./packages/grid/frontend
         with:
           node-version: "16"
           cache: "yarn"
