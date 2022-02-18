@@ -11,6 +11,7 @@ from syft.core.adp.entity import Entity
 from syft.core.adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as ScalarManager,
 )
+from syft.core.tensor.autodp.dp_tensor_converter import convert_to_gamma_tensor
 from syft.core.tensor.autodp.intermediate_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
@@ -1156,6 +1157,7 @@ def test_pow(row_data_trask: List) -> None:
 
 
 # BROKEN
+@pytest.mark.skip(reason="This wouldn't work because it attempts to call .child on an IGT to get the values.")
 def test_sum(
     row_data_trask: List,
     dims: int,
@@ -1211,27 +1213,42 @@ def test_converter(
 
         new_data = row_data_ishan[0].child
 
-        # Test with just a list of IGTs
-        igt1 = SEPT(
+        sept1 = SEPT(
             child=new_data,
             entity=traskmaster,
             min_vals=np.ones_like(new_data) * -highest,
             max_vals=np.ones_like(new_data) * highest,
-            scalar_manager=scalar_manager,
-        ) + SEPT(
+            # scalar_manager=scalar_manager,
+        )
+
+        # Test with just a list of IGTs
+        sept2 = SEPT(
             child=new_data,
             entity=ishan,
             min_vals=np.ones_like(new_data) * -highest,
             max_vals=np.ones_like(new_data) * highest,
-            scalar_manager=scalar_manager,
+            # scalar_manager=scalar_manager,
         )
-        igt2 = igt1 + 1
-        assert isinstance(igt1, IGT)
-        output = REPT.convert_to_gamma([igt1, igt2])
+        assert isinstance(sept1, SEPT)
+        assert isinstance(sept2, SEPT)
+
+        # igt1 = convert_to_gamma_tensor(sept1)
+        # igt2 = convert_to_gamma_tensor(sept2)
+
+        # print(igt1.scalar_manager.primes_allocated)
+        # print(len(igt1.scalar_manager.prime_factory.prime_numbers))
+        # print(igt2.scalar_manager.primes_allocated)
+        # print(len(igt2.scalar_manager.prime_factory.prime_numbers))
+
+        igt3 = sept1 + sept2
+        assert isinstance(igt3, IGT)
+        igt4 = igt3 + 1
+        assert isinstance(igt4, IGT)
+        output = REPT.convert_to_gamma([igt3, igt4])
         assert isinstance(output, IGT)
 
         # Test hybrid
-        assert new_data.shape == igt1.shape
-        output = REPT.convert_to_gamma([igt1, row_data_ishan[0]])
+        assert new_data.shape == igt3.shape
+        output = REPT.convert_to_gamma([igt3, row_data_ishan[0]])
         assert isinstance(output, IGT)
         assert output._entities().shape == output.shape

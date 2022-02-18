@@ -200,13 +200,17 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         prime_numbers = np.array(
             self.scalar_manager.primes_allocated, dtype=np.int32
         )
-        # print(prime_numbers, prime_numbers.shape)
-        # print(self.term_tensor.shape)
-        # print(self.shape)
-        # print(self.term_tensor)
 
         # TODO: See if this fails for addition of more than 2 IGTs
-        self.term_tensor = prime_numbers[np.prod(self.term_tensor.shape):].reshape(self.term_tensor.shape)
+        length = len(prime_numbers)
+        tensor_shape_count = np.prod(self.term_tensor.shape)
+        if length == tensor_shape_count:
+            self.term_tensor = prime_numbers.reshape(self.term_tensor.shape)
+        elif length > tensor_shape_count:
+            self.term_tensor = prime_numbers[-tensor_shape_count:].reshape(self.term_tensor.shape)
+        else:
+            raise Exception("WHAT IS GOING ONNNNNNNN")
+
         # self.term_tensor.flatten().reshape(-1, 2)[:, -1] = prime_numbers
 
     def _values(self) -> np.array:
