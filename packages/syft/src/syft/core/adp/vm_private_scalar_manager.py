@@ -119,8 +119,9 @@ class VirtualMachinePrivateScalarManager:
 
     def __hash__(self) -> int:
         # TODO: safely invalidate the hash_cache when prime2symbol is mutated
-        prime2symbol = frozenset(self.prime2symbol.items())
-        self.hash_cache = hash(self.prime_factory.exp) + hash(prime2symbol)
+        if self.hash_cache is None:
+            prime2symbol = frozenset(self.prime2symbol.items())
+            self.hash_cache = hash(self.prime_factory.exp) + hash(prime2symbol)
         return self.hash_cache
 
     def __eq__(self, other: Any) -> bool:
