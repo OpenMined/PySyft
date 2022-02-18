@@ -202,6 +202,7 @@ class DictStore(ObjectStore):
         if obj_dataset_relation:
             # Create a object dataset relationship for the new object
             obj_dataset_relation = BinObjDataset(
+                # id=obj_dataset_relation.id,  NOTE: Commented temporarily
                 name=obj_dataset_relation.name,
                 obj=str(key.value),
                 dataset=obj_dataset_relation.dataset,
@@ -211,8 +212,7 @@ class DictStore(ObjectStore):
 
         if create_metadata:
             local_session.add(metadata_obj)
-        if obj_dataset_relation:
-            local_session.add(obj_dataset_relation)
+        local_session.add(obj_dataset_relation) if obj_dataset_relation else None
         local_session.commit()
         local_session.close()
 
