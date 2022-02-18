@@ -99,49 +99,36 @@ jobs:
           push: false
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
 
+      - name: Docker meta for Grid-Headscale
+        id: meta_grid_headscale
+        uses: docker/metadata-action@v3
+        with:
+          images: openmined/grid-vpn-headscale
+          tags: |
+            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=latest
 
+      - name: Build and push `grid-headscale` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages/grid/vpn
+          file: ./packages/grid/vpn/headscale.dockerfile
+          push: false
+          tags: ${{ steps.meta_grid_headscale.outputs.tags }}
 
-      # - name: Build and push `grid-frontend` image to DockerHub
-      #   working-directory: ./packages/grid/frontend
-      #   env:
-      #     IMAGE_URI: openmined/grid-frontend
-      #   run: |
-      #     export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
-      #     export DOCKER_URI_LATEST=$IMAGE_URI:latest
-      #     eval $(echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin)
-      #     docker build \
-      #         -t $DOCKER_URI \
-      #         -t $DOCKER_URI_LATEST \
-      #         -f grid/frontend/frontend.dockerfile .
-      #     docker push $DOCKER_URI
-      #     docker push $DOCKER_URI_LATEST
+      - name: Docker meta for Grid-Tailscale
+        id: meta_grid_tailscale
+        uses: docker/metadata-action@v3
+        with:
+          images: openmined/grid-vpn-tailscale
+          tags: |
+            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=latest
 
-      # - name: Build and push `grid-headscale` image to DockerHub
-      #   working-directory: ./packages/grid/vpn
-      #   env:
-      #     IMAGE_URI: openmined/grid-vpn-headscale
-      #   run: |
-      #     export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
-      #     export DOCKER_URI_LATEST=$IMAGE_URI:latest
-      #     eval $(echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin)
-      #     docker build \
-      #         -t $DOCKER_URI \
-      #         -t $DOCKER_URI_LATEST \
-      #         -f grid/vpn/headscale.dockerfile .
-      #     docker push $DOCKER_URI
-      #     docker push $DOCKER_URI_LATEST
-
-      # - name: Build and push `grid-tailscale` image to DockerHub
-      #   working-directory: ./packages/grid/vpn
-      #   env:
-      #     IMAGE_URI: openmined/grid-vpn-tailscale
-      #   run: |
-      #     export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
-      #     export DOCKER_URI_LATEST=$IMAGE_URI:latest
-      #     eval $(echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin)
-      #     docker build \
-      #         -t $DOCKER_URI \
-      #         -t $DOCKER_URI_LATEST \
-      #         -f grid/vpn/tailscale.dockerfile .
-      #     docker push $DOCKER_URI
-      #     docker push $DOCKER_URI_LATEST
+      - name: Build and push `grid-tailscale` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages/grid/vpn
+          file: ./packages/grid/vpn/tailscale.dockerfile
+          push: false
+          tags: ${{ steps.meta_grid_tailscale.outputs.tags }}
