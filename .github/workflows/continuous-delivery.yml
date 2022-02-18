@@ -95,7 +95,7 @@ jobs:
         uses: docker/build-push-action@v2
         with:
           context: ./packages/grid/frontend
-          file: ./packages/grid/backend/frontend.dockerfile
+          file: ./packages/grid/frontend/frontend.dockerfile
           push: false
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
 
