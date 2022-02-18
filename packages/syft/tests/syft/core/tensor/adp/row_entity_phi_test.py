@@ -47,7 +47,7 @@ def dims() -> int:
 
 @pytest.fixture
 def row_count() -> int:
-    return np.random.randint(7) + 1
+    return np.random.randint(7) + 3
 
 
 @pytest.fixture
