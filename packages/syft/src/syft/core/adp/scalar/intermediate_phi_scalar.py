@@ -1,5 +1,6 @@
 # stdlib
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -14,6 +15,7 @@ from ....proto.core.adp.scalar_pb2 import (
 )
 from ...common import UID
 from ...common.serde.serializable import serializable
+from ..entity import DataSubjectGroup
 from ..entity import Entity
 from .abstract.intermediate_scalar import IntermediateScalar
 from .gamma_scalar import GammaScalar
@@ -28,7 +30,10 @@ class IntermediatePhiScalar(IntermediateScalar):
     """
 
     def __init__(
-        self, poly: BasicSymbol, entity: Entity, id: Optional[UID] = None
+        self,
+        poly: BasicSymbol,
+        entity: Union[Entity, DataSubjectGroup],
+        id: Optional[UID] = None,
     ) -> None:
         super().__init__(poly=poly, id=id)
         self._gamma: Optional[GammaScalar] = None

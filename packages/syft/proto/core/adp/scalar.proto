@@ -27,8 +27,11 @@ message GammaScalar {
   optional double min_val = 2;
   optional double value = 3;
   optional double max_val = 4;
-  syft.core.adp.Entity entity = 5;
-  int64 prime = 6;
+  oneof entity_data {
+    syft.core.adp.Entity entity = 5;
+    syft.core.adp.DataSubjectGroup dsg = 6;
+  }
+  int64 prime = 7;
   // poly
 }
 

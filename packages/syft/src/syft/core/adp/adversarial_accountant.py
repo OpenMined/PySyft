@@ -5,12 +5,15 @@
 # - add a unit test for each method (at least)
 
 # stdlib
+from functools import lru_cache
 import math
 from typing import Dict as TypeDict
+from typing import Iterable
 from typing import KeysView as TypeKeysView
 from typing import List as TypeList
 from typing import Optional
 from typing import Set as TypeSet
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -20,10 +23,66 @@ from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
 # relative
-from ..node.common.node_manager.ledger_manager import LedgerManager
+from ..node.common.node_manager.ledger_manager import AbstractLedger
+from ..node.common.node_manager.ledger_manager import DatabaseLedger
+from ..node.common.node_manager.ledger_manager import DictLedger
 from .entity import DataSubjectGroup
 from .entity import Entity
 from .idp_gaussian_mechanism import iDPGaussianMechanism
+
+
+def compose_mechanisms(
+    mechanisms: Iterable[iDPGaussianMechanism], delta: float
+) -> float:
+    sigmas = list()
+    squared_l2_norms = list()
+    squared_l2_norm_upper_bounds = list()
+    Ls = list()
+    values = list()
+
+    for m in mechanisms:
+        sigmas.append(m.params["sigma"])
+        squared_l2_norms.append(m.params["private_value"])
+        squared_l2_norm_upper_bounds.append(m.params["public_value"])
+        Ls.append(m.params["L"])
+        values.append(m.params["value"])
+
+    return compose_mechanisms_via_simplified_args_for_lru_cache(
+        tuple(sigmas),
+        tuple(squared_l2_norms),
+        tuple(squared_l2_norm_upper_bounds),
+        tuple(Ls),
+        tuple(values),
+        delta,
+    )
+
+
+@lru_cache(maxsize=None)
+def compose_mechanisms_via_simplified_args_for_lru_cache(
+    sigmas: Tuple[float],
+    squared_l2_norms: Tuple[float],
+    squared_l2_norm_upper_bounds: Tuple[float],
+    Ls: Tuple[float],
+    values: Tuple[float],
+    delta: float,
+) -> float:
+    mechanisms = list()
+    for i in range(len(sigmas)):
+
+        m = iDPGaussianMechanism(
+            sigma=sigmas[i],
+            squared_l2_norm=squared_l2_norms[i],
+            squared_l2_norm_upper_bound=squared_l2_norm_upper_bounds[i],
+            L=Ls[i],
+            entity_name="",
+        )
+        m.params["value"] = values[i]
+        mechanisms.append(m)
+    # compose them with the transformation: compose
+    compose = Composition()
+    composed_mech = compose(mechanisms, [1] * len(mechanisms))
+    eps = composed_mech.get_approxDP(delta)
+    return eps
 
 
 class AdversarialAccountant:
@@ -36,9 +95,9 @@ class AdversarialAccountant:
         if db_engine is not None:
             # this is a database-backed lookup table
             # maps an entity to an actual budget
-            self.entity2ledger = LedgerManager(db_engine)
+            self.entity2ledger: AbstractLedger = DatabaseLedger(db_engine)
         else:
-            self.entity2ledger = {}  # type: ignore
+            self.entity2ledger: AbstractLedger = DictLedger()  # type: ignore
 
         # this is a temporary lookup table for mechanisms we're not sure
         # we're going to keep (See publish.py for how this is used)
@@ -76,9 +135,6 @@ class AdversarialAccountant:
         user_key: Optional[VerifyKey] = None,
         returned_epsilon_is_private: bool = False,
     ) -> float:
-
-        # compose them with the transformation: compose
-        compose = Composition()
 
         # fetch mechanisms from the database
         table_mechanisms = self.entity2ledger.query(entity_name=entity.name)  # type: ignore
@@ -130,8 +186,7 @@ class AdversarialAccountant:
 
         # map dataset
         if len(mechanisms) > 0:
-            composed_mech = compose(mechanisms, [1] * len(mechanisms))
-            eps = composed_mech.get_approxDP(self.delta)
+            eps = compose_mechanisms(tuple(mechanisms), self.delta)
 
             # if we have a user key, get the budget and clamp the epsilon
             # if user_key is not None:
@@ -173,10 +228,9 @@ class AdversarialAccountant:
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
         # @Andrew can we use <= or does it have to be <
         has_budget = spent <= user_budget
-        # print(f"has_budget = {spend} < {user_budget}")
-        print("\n\nHas Budget:" + str(has_budget))
-        print("YOU'VE SPENT:" + str(spent))
-        print("USER BUDGET:" + str(user_budget))
+        # print("\n\nHas Budget:" + str(has_budget))
+        # print("YOU'VE SPENT:" + str(spent))
+        # print("USER BUDGET:" + str(user_budget))
         return has_budget
 
     # returns maximum entity epsilon

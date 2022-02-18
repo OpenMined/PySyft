@@ -245,14 +245,14 @@ class Question:
         kind: str,
         default: Optional[str] = None,
         cache: bool = False,
-        options: TypeList[str] = [],
+        options: Optional[TypeList[str]] = None,
     ) -> None:
         self.var_name = var_name
         self.question = question
         self.default = default
         self.kind = kind
         self.cache = cache
-        self.options = options
+        self.options = options if options is not None else []
 
     def validate(self, value: str) -> str:
         value = value.strip()
