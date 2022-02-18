@@ -166,10 +166,16 @@ def recv_association_request_msg(
         info(
             f"Node {node} - recv_association_request_msg: creating a new association request."
         )
+
+        if node.settings.DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED:
+            status = AssociationRequestResponses.ACCEPT
+        else:
+            status = AssociationRequestResponses.PENDING
+
         node.association_requests.create_association_request(
             node_name=msg.metadata["node_name"],
             node_address=msg.reply_to.target_id.id.no_dash,
-            status=AssociationRequestResponses.PENDING,
+            status=status,
             source=msg.source,
             target=msg.target,
         )

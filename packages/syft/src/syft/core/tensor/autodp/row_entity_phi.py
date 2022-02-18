@@ -21,10 +21,10 @@ from ...adp.vm_private_scalar_manager import (
 )
 from ...common.serde.serializable import serializable
 from ..broadcastable import is_broadcastable
+from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
-from ..types import AcceptableSimpleType
 from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 from .intermediate_gamma import IntermediateGammaTensor as IGT

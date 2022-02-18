@@ -110,6 +110,11 @@ class BinObjectManager(ObjectStore):
                     bytes.fromhex(obj_metadata.search_permissions), from_bytes=True
                 )
             ),
+            write_permissions=dict(
+                syft.deserialize(
+                    bytes.fromhex(obj_metadata.write_permissions), from_bytes=True
+                )
+            ),
             # name=obj_metadata.name,
         )
         local_session.close()
@@ -151,6 +156,12 @@ class BinObjectManager(ObjectStore):
                     syft.lib.python.Dict(value.search_permissions), to_bytes=True
                 ),
             ).hex(),
+            write_permissions=cast(
+                bytes,
+                syft.serialize(
+                    syft.lib.python.Dict(value.write_permissions), to_bytes=True
+                ),
+            ).hex()
             # name=metadata_dict["name"],
         )
 

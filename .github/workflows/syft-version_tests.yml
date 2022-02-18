@@ -7,6 +7,8 @@
 name: Syft Version Tests
 
 on:
+  workflow_call:
+
   schedule:
     - cron: "0 22 * * *" # 7pm Brazil, 10pm UTC, 8am AEST
   pull_request:
@@ -33,7 +35,7 @@ jobs:
       matrix:
         branches: ["dev"]
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.7, 3.8, 3.9]
+        python-version: [3.8, 3.9]
         torch-version: [1.8.1, 1.9.1, 1.10.0]
 
     runs-on: ${{ matrix.os }}

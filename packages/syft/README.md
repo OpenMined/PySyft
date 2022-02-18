@@ -118,7 +118,6 @@ Older versions may work, however we have stopped testing and supporting them.
 
 | Py / Torch | 1.6 | 1.7 | 1.8 |
 | ---------- | --- | --- | --- |
-| 3.7        | ✅  | ✅  | ✅  |
 | 3.8        | ✅  | ✅  | ✅  |
 | 3.9        | ➖  | ✅  | ✅  |
 

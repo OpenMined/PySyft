@@ -16,7 +16,7 @@
 - name: PySyft Repo Update Cron Job
   ansible.builtin.cron:
     name: "Update PySyft Repo"
-    job: "{{ syft_dir }}/packages/grid/scripts/cron.sh {{ syft_dir }} {{ github_repo }} {{ repo_branch }} {{ om_user }} {{ om_group }} {{ node_type }} {{ node_name }} {{ build_dir }} 2>&1 | logger -t cron"
+    job: "{{ syft_dir }}/packages/grid/scripts/cron.sh {{ syft_dir }} {{ github_repo }} {{ repo_branch }} {{ om_user }} {{ om_group }} {{ node_type }} {{ node_name }} {{ build_dir }} {{ tls }} {{ cert_store_path }} {{ release }} 2>&1 | logger -t cron"
   become: yes
   when: vagrant is not defined
 
@@ -56,4 +56,5 @@
     owner: "{{ om_user }}"
     group: "{{ om_user }}"
   become_user: "{{ om_user }}"
+  ignore_errors: yes
   when: build_dir_exists.stat.exists == False and vagrant is not defined

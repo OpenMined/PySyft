@@ -24,7 +24,7 @@ And that's it! It'll start installing all the dependencies and getting things in
 If you run into any issues here, please refer to `this link <https://docs.microsoft.com/en-us/windows/wsl/troubleshooting#installation-issues>`_, which covers common WSL installation issues.
 
 Step 2: Setting up Linux User Info
-=====================
+==================================
 
 Well done! You've *almost* got an entire Linux kernel and distribution on your machine, and you did this with **barely one line of code!**
 There's just one last step needed. And luckily for us, it's an easy one...
@@ -37,7 +37,7 @@ Once you provide a username and password, **congratulations!** You have a fully 
 a whole new universe of possibilities and interesting tools.
 
 Step 3: Updating & Upgrading
-======================
+============================
 
 Now that you have a shiny new copy of Linux, your next step will be to update and upgrade it.
 This is pretty easy to do in Linux, and it's something we can do with *just one command!*
@@ -52,7 +52,7 @@ But you're on a roll- nothing will stop you from getting the most up-to-date, an
 Note: We'd actually recommend doing this reasonably often (once every few days) to maintain a safe and up-to-date distro.
 
 Optional: Installing Windows Terminal
-=============================
+=====================================
 
 We'd recommend installing the Windows Terminal, and using that to launch your Linux Distribution instead of PowerShell, Command Prompt, or the default
 Ubuntu shell that comes bundled in.
@@ -62,7 +62,7 @@ This isn't strictly necessary, but it doesn't take too long, improves the comman
 Please go `here <https://docs.microsoft.com/en-us/windows/terminal/install>`_ if you're interested.
 
 Step 4: Installing Conda
-=====================
+========================
 
 Wow! We've made it pretty far together in a pretty short amount of time.
 
@@ -85,10 +85,6 @@ To install Anaconda, please follow the yellow brick road I lay down here below:
 
     conda env list
 
-- The output should be something similar to the image below:
-
-|conda_env|
-
 Wait wait wait wait just a second.
 Do you realize what just happened?
 
@@ -96,17 +92,17 @@ You've just successfully installed Anaconda!! Hooray!
 Trust me, your life is about to become a LOT easier.
 
 
-- Let's now tap into your newfound powers with Anaconda and create a new virtual environment called "playground" by running the following in your WSL shell::
+- Let's now tap into your newfound powers with Anaconda and create a new virtual environment called "syft_env" by running the following in your WSL shell::
 
-    conda create -n playground python=3.9 --y
+    conda create -n syft_env python=3.9 --y
 
-- Let's verify that we created our "playground" successfully with the following command (Deja Vu, anyone?)::
+- Let's verify that we created our "syft_env" successfully with the following command (Deja Vu, anyone?)::
 
     conda env list
 
-- You should see two environments in the output. Hooray! Now let's activate your playground, and let the fun *really* begin::
+- You should see two environments in the output. Hooray! Now let's activate the syft virtual env, and let the fun *really* begin::
 
-    conda activate playground
+    conda activate syft_env
 
 - Now let's use it to conveniently install a few packages::
 
@@ -120,7 +116,7 @@ Trust me, your life is about to become a LOT easier.
 
 
 Step 5: Become the Docker Doctor
-====================
+================================
 
 The last tool needed to complete your arsenal is called Docker.
 You can install it by following the instructions `here <https://docs.docker.com/desktop/windows/install/>`_.
@@ -135,7 +131,7 @@ Note that your ultimate test is **optional**- you can do this part later.
 
 
 Step 6: Install Hagrid and PySyft
-====================
+=================================
 
 - With the power of WSL and Anaconda, installing our software is as easy as::
 
@@ -144,13 +140,13 @@ Step 6: Install Hagrid and PySyft
 
 
 Optional: Deploy a Domain Node!
-====================
+===============================
 
 Everything we've done so far has been to make this next part as easy as possible. This is the moment we've all been waiting for.
 
-To launch a domain node called "my_domain", ensure your Virtual Environment ("playground" in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal::
+To launch a domain node called "test_domain", ensure your Virtual Environment ("syft_env" in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal::
 
-    hagrid launch my_domain
+    hagrid launch test_domain
 
 You should see the containers begin to appear on Docker!
 
@@ -158,7 +154,3 @@ You should see the containers begin to appear on Docker!
 
 You have reached the promise land. You're ready to begin remote data science.
 It was a pleasure walking you through the installation process. Now be sure to use your newfound powers and abilities for good!
-
-
-.. |conda_env| image:: ../_static/deployment/conda_env.png
-   :width: 50%

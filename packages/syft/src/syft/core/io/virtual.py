@@ -4,6 +4,9 @@ Replacing this object with an actual network connection object
 (such as one powered by P2P tech, web sockets, or HTTP) should
 execute the exact same functionality but do so over a network"""
 
+# stdlib
+from typing import Optional
+
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
@@ -65,17 +68,21 @@ class VirtualClientConnection(ClientConnection):
         self.server = server
 
     def send_immediate_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithoutReply
+        self,
+        msg: SignedImmediateSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         self.server.recv_immediate_msg_without_reply(msg=msg)
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
+        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
     ) -> SignedImmediateSyftMessageWithoutReply:
         return self.server.recv_immediate_msg_with_reply(msg=msg)
 
     def send_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
+        self,
+        msg: SignedEventualSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         return self.server.recv_eventual_msg_without_reply(msg=msg)
 

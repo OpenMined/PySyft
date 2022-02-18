@@ -3,6 +3,7 @@ import io
 import json
 from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -10,6 +11,8 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import requests
 from requests.adapters import HTTPAdapter
+
+# from requests.adapters import TimeoutHTTPAdapter
 from requests.packages.urllib3.util.retry import Retry
 from requests_toolbelt.multipart.encoder import MultipartEncoder
 
@@ -30,6 +33,23 @@ from ...proto.grid.connections.http_connection_pb2 import (
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
+DEFAULT_TIMEOUT = 5  # seconds
+
+
+class TimeoutHTTPAdapter(HTTPAdapter):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
+        self.timeout = DEFAULT_TIMEOUT
+        if "timeout" in kwargs:
+            self.timeout = kwargs["timeout"]
+            del kwargs["timeout"]
+        super().__init__(*args, **kwargs)
+
+    def send(self, request: Any, **kwargs: Any) -> Any:  # type:ignore
+        timeout = kwargs.get("timeout")
+        if timeout is None:
+            kwargs["timeout"] = self.timeout
+        return super().send(request, **kwargs)
+
 
 @serializable()
 class GridHTTPConnection(HTTPConnection):
@@ -47,19 +67,13 @@ class GridHTTPConnection(HTTPConnection):
         self.session_token: str = ""
         self.token_type: str = "'"
 
-    def _send_msg(self, msg: SyftMessage) -> requests.Response:
-        """
-        Serializes Syft messages in json format and send it using HTTP protocol.
-        NOTE: Auxiliary method to avoid code duplication and modularity.
-        :return: returns requests.Response object containing a JSON serialized
-        SyftMessage
-        :rtype: requests.Response
-        """
+    @property
+    def header(self) -> Dict[str, str]:
 
-        header = {}
+        _header = {}
 
         if self.session_token and self.token_type:
-            header = dict(
+            _header = dict(
                 Authorization="Bearer "
                 + json.loads(
                     '{"auth_token":"'
@@ -70,7 +84,21 @@ class GridHTTPConnection(HTTPConnection):
                 )["auth_token"]
             )
 
-        header["Content-Type"] = "application/octet-stream"
+        _header["Content-Type"] = "application/octet-stream"
+        return _header
+
+    def _send_msg(
+        self, msg: SyftMessage, timeout: Optional[float] = 10
+    ) -> requests.Response:
+        """
+        Serializes Syft messages in json format and send it using HTTP protocol.
+        NOTE: Auxiliary method to avoid code duplication and modularity.
+        :return: returns requests.Response object containing a JSON serialized
+        SyftMessage
+        :rtype: requests.Response
+        """
+
+        header = self.header
 
         route = GridHTTPConnection.SYFT_ROUTE
         # if the message has no reply lets use the streaming endpoint
@@ -91,6 +119,8 @@ class GridHTTPConnection(HTTPConnection):
             data=msg_bytes,
             headers=header,
             verify=verify_tls(),
+            timeout=timeout,
+            proxies=HTTPConnection.proxies,
         )
         # else:
         #     r = self.send_streamed_messages(blob_message=msg_bytes)
@@ -104,6 +134,8 @@ class GridHTTPConnection(HTTPConnection):
             url=str(self.base_url) + GridHTTPConnection.LOGIN_ROUTE,
             json=credentials,
             verify=verify_tls(),
+            timeout=2,
+            proxies=HTTPConnection.proxies,
         )
 
         # Response
@@ -124,15 +156,18 @@ class GridHTTPConnection(HTTPConnection):
         # Return node metadata / user private key
         return (metadata_pb, content["key"])
 
-    def _get_metadata(self) -> Tuple:
+    def _get_metadata(self, timeout: Optional[float] = 2) -> Tuple:
         """Request Node's metadata
         :return: returns node metadata
         :rtype: str of bytes
         """
         # allow retry when connecting in CI
         session = requests.Session()
-        retry = Retry(connect=3, backoff_factor=0.5)
-        adapter = HTTPAdapter(max_retries=retry)
+        retry = Retry(connect=1, backoff_factor=0.5)
+        if timeout is None:
+            adapter = HTTPAdapter(max_retries=retry)
+        else:
+            adapter = TimeoutHTTPAdapter(max_retries=retry, timeout=timeout)
         session.mount("http://", adapter)
         session.mount("https://", adapter)
 
@@ -158,7 +193,11 @@ class GridHTTPConnection(HTTPConnection):
     def setup(self, **content: Dict[str, Any]) -> Any:
         response = json.loads(
             requests.post(
-                str(self.base_url) + "/setup", json=content, verify=verify_tls()
+                str(self.base_url) + "/setup",
+                json=content,
+                verify=verify_tls(),
+                timeout=2,
+                proxies=HTTPConnection.proxies,
             ).text
         )
         if response.get(RequestAPIFields.MESSAGE, None):
@@ -186,9 +225,10 @@ class GridHTTPConnection(HTTPConnection):
                 str(self.base_url) + GridHTTPConnection.SYFT_ROUTE,
                 headers=header,
                 verify=verify_tls(),
+                proxies=HTTPConnection.proxies,
             ).text
         )
-        if response.get(RequestAPIFields.MESSAGE, None):
+        if response.get(RequestAPIFields.MESSAGE, None, timeout=2):
             return response
         else:
             raise RequestAPIException(response.get(RequestAPIFields.ERROR))
@@ -216,7 +256,11 @@ class GridHTTPConnection(HTTPConnection):
         }
 
         resp = requests.post(
-            str(self.base_url) + route, files=files, headers=header, verify=verify_tls()
+            str(self.base_url) + route,
+            files=files,
+            headers=header,
+            verify=verify_tls(),
+            proxies=HTTPConnection.proxies,
         )
 
         return json.loads(resp.content)
@@ -240,6 +284,7 @@ class GridHTTPConnection(HTTPConnection):
                 headers=headers,
                 data=form,
                 verify=verify_tls(),
+                proxies=HTTPConnection.proxies,
             )
 
         session.close()

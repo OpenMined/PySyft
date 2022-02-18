@@ -1,5 +1,7 @@
 # stdlib
 import json
+from typing import Dict as TypeDict
+from typing import Optional
 from typing import Union
 
 # third party
@@ -20,13 +22,15 @@ from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 
 
 class HTTPConnection(ClientConnection):
+    proxies: TypeDict[str, str] = {}
+
     def __init__(self, url: Union[str, GridURL]) -> None:
         self.base_url = GridURL.from_url(url) if isinstance(url, str) else url
         if self.base_url is None:
             raise Exception(f"Invalid GridURL. {self.base_url}")
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply
+        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
     ) -> SignedImmediateSyftMessageWithoutReply:
         """
         Sends high priority messages and wait for their responses.
@@ -40,7 +44,7 @@ class HTTPConnection(ClientConnection):
 
         # Serializes SignedImmediateSyftMessageWithReply
         # and send it using HTTP protocol
-        response = self._send_msg(msg=msg)
+        response = self._send_msg(msg=msg, timeout=timeout)
 
         # Deserialize node's response
         if response.status_code == requests.codes.ok:
@@ -55,7 +59,9 @@ class HTTPConnection(ClientConnection):
             raise e
 
     def send_immediate_msg_without_reply(
-        self, msg: SignedImmediateSyftMessageWithoutReply
+        self,
+        msg: SignedImmediateSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         """
         Sends high priority messages without waiting for their reply.
@@ -66,10 +72,12 @@ class HTTPConnection(ClientConnection):
         """
         # Serializes SignedImmediateSyftMessageWithoutReply
         # and send it using HTTP protocol
-        self._send_msg(msg=msg)
+        self._send_msg(msg=msg, timeout=timeout)
 
     def send_eventual_msg_without_reply(
-        self, msg: SignedEventualSyftMessageWithoutReply
+        self,
+        msg: SignedEventualSyftMessageWithoutReply,
+        timeout: Optional[float] = None,
     ) -> None:
         """
         Sends low priority messages without waiting for their reply.
@@ -79,9 +87,11 @@ class HTTPConnection(ClientConnection):
         """
         # Serializes SignedEventualSyftMessageWithoutReply in json format
         # and send it using HTTP protocol
-        self._send_msg(msg=msg)
+        self._send_msg(msg=msg, timeout=timeout)
 
-    def _send_msg(self, msg: SyftMessage) -> requests.Response:
+    def _send_msg(
+        self, msg: SyftMessage, timeout: Optional[float] = None
+    ) -> requests.Response:
         """
         Serializes Syft messages in json format and send it using HTTP protocol.
 
@@ -98,6 +108,8 @@ class HTTPConnection(ClientConnection):
             url=str(self.base_url),
             data=data_bytes,
             headers={"Content-Type": "application/octet-stream"},
+            timeout=timeout,
+            proxies=HTTPConnection.proxies,
         )
 
         # Return request's response object
@@ -111,7 +123,9 @@ class HTTPConnection(ClientConnection):
         :return: returns node metadata
         :rtype: str of bytes
         """
-        data: bytes = requests.get(str(self.base_url) + "/metadata").content
+        data: bytes = requests.get(
+            str(self.base_url) + "/metadata", timeout=1, proxies=HTTPConnection.proxies
+        ).content
         metadata_pb = Metadata_PB()
         metadata_pb.ParseFromString(data)
         return metadata_pb

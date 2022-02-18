@@ -8,3 +8,7 @@
   shell: "runuser -l {{ om_user }} -c 'pip install -e {{ syft_dir }}/packages/hagrid'"
   become: yes
   when: vagrant is defined
+
+- name: Install ansible
+  shell: "runuser -l {{ om_user }} -c 'pip install ansible ansible-core'"
+  become: yes
