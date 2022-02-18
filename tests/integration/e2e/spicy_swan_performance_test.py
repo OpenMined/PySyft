@@ -132,7 +132,7 @@ def time_upload(
 
 
 def time_sum(
-    domain: Domain, chunk_indexes: List[int], size_name: str, timeout: int = 999
+    domain: Domain, chunk_indexes: List[int], size_name: str, timeout: int = 300
 ) -> Tuple[float, Any]:
     total_time = 0
 
@@ -185,7 +185,7 @@ def test_benchmark_datasets() -> None:
 
     benchmark_report = {}
     for size_name in reversed(ordered_sizes):
-        timeout = 999
+        timeout = 300
         unique_key = str(hash(time.time()))
         benchmark_report[size_name] = {}
         df = pd.read_parquet(files[size_name])
