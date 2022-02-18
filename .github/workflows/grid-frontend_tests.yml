@@ -63,6 +63,7 @@ jobs:
           pip install tox --upgrade
 
       - name: Cache Cypress binary
+        if: steps.changes.outputs.frontend == 'true'
         uses: actions/cache@v1
         with:
           path: ~/.cache/Cypress
@@ -70,7 +71,8 @@ jobs:
           restore-keys: |
             cypress-${{ runner.os }}-cypress-
 
-      - name: install dependencies and verify Cypress
+      - name: Install dependencies and verify Cypress
+        if: steps.changes.outputs.frontend == 'true'
         working-directory: ./packages/grid/frontend
         env:
           # make sure every Cypress install prints minimal information
@@ -89,6 +91,7 @@ jobs:
       - name: Setup NodeJS
         uses: actions/setup-node@v2
         if: steps.changes.outputs.frontend == 'true'
+        working-directory: ./packages/grid/frontend
         with:
           node-version: "16"
           cache: "yarn"
