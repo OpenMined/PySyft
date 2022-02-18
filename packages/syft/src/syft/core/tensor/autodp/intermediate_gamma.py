@@ -197,9 +197,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # TODO: Recalculate term tensor using an optimized slice method
 
         # index_number = self._entities()  # TODO: Check if this works!!
-        prime_numbers = np.array(
-            self.scalar_manager.primes_allocated, dtype=np.int32
-        )
+        prime_numbers = np.array(self.scalar_manager.primes_allocated, dtype=np.int32)
 
         # TODO: See if this fails for addition of more than 2 IGTs
         length = len(prime_numbers)
@@ -207,7 +205,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         if length == tensor_shape_count:
             self.term_tensor = prime_numbers.reshape(self.term_tensor.shape)
         elif length > tensor_shape_count:
-            self.term_tensor = prime_numbers[-tensor_shape_count:].reshape(self.term_tensor.shape)
+            self.term_tensor = prime_numbers[-tensor_shape_count:].reshape(
+                self.term_tensor.shape
+            )
         else:
             raise Exception("WHAT IS GOING ONNNNNNNN")
 

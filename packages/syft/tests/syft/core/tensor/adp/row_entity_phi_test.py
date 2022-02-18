@@ -11,7 +11,6 @@ from syft.core.adp.entity import Entity
 from syft.core.adp.vm_private_scalar_manager import (
     VirtualMachinePrivateScalarManager as ScalarManager,
 )
-from syft.core.tensor.autodp.dp_tensor_converter import convert_to_gamma_tensor
 from syft.core.tensor.autodp.intermediate_gamma import IntermediateGammaTensor as IGT
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
@@ -1157,7 +1156,9 @@ def test_pow(row_data_trask: List) -> None:
 
 
 # BROKEN
-@pytest.mark.skip(reason="This wouldn't work because it attempts to call .child on an IGT to get the values.")
+@pytest.mark.skip(
+    reason="This wouldn't work because it attempts to call .child on an IGT to get the values."
+)
 def test_sum(
     row_data_trask: List,
     dims: int,
