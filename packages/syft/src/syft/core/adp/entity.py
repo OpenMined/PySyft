@@ -122,7 +122,7 @@ class DataSubjectGroup:
 
     def __init__(
         self,
-        list_of_entities: Optional[Union[list, set]] = None,
+        list_of_entities: Optional[Union[list, set, Entity]] = None,
         id: Optional[UID] = None,
     ):
         self.entity_set: set = set()
@@ -131,7 +131,7 @@ class DataSubjectGroup:
             self.entity_set = self.entity_set.union(list_of_entities)
         elif isinstance(list_of_entities, Entity):
             self.entity_set.add(list_of_entities)  # type: ignore
-        elif not list_of_entities:  # Don't need to do anything if is NoneType
+        elif list_of_entities is None:  # Don't need to do anything if is NoneType
             pass
         else:
             raise Exception(

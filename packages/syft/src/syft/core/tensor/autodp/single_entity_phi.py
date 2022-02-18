@@ -679,7 +679,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     ) -> Union[SingleEntityPhiTensor, IntermediateGammaTensor]:
         # Make use of the equal operator we just implemented, and invert the result
         opposite_result = self.__eq__(other)
-        print(opposite_result)
 
         if isinstance(opposite_result, SingleEntityPhiTensor):
             return SingleEntityPhiTensor(

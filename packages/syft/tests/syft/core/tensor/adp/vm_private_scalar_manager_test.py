@@ -22,20 +22,7 @@ def test_private_manager_serde() -> None:
 
     manager_ser = sy.serialize(manager_one, to_bytes=True)
     manager_de = sy.deserialize(manager_ser, from_bytes=True)
-    #
-    # print(manager_one.prime_factory.prime_numbers)
-    # print(manager_de.prime_factory.prime_numbers)
-    # print(manager_de)
 
-    # manager_de_prime = manager_de.get_symbol(
-    #     min_val=float(0.0),
-    #     value=float(10.0),
-    #     max_val=float(100.0),
-    #     entity=Entity("Phishan"),
-    # )
-    # print(manager_one.prime_factory.prime_numbers)
-    # print(manager_de.prime_factory.prime_numbers)
-    # print(manager_de)
     assert manager_one.prime_factory == manager_de.prime_factory
     assert manager_one.prime2symbol == manager_de.prime2symbol
 

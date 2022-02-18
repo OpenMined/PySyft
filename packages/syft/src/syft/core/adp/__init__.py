@@ -11,7 +11,6 @@ from .scalar.abstract.scalar import Scalar  # noqa: 401
 from .scalar.gamma_scalar import GammaScalar  # noqa: 401
 from .scalar.intermediate_phi_scalar import IntermediatePhiScalar  # noqa: 401
 from .scalar.phi_scalar import PhiScalar  # noqa: 401
-from .vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 
 
 def create_adp_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
@@ -117,6 +116,3 @@ def create_adp_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         klass.create_storable_object_attr_convenience_methods()
 
     return ast
-
-
-ScalarManager = VirtualMachinePrivateScalarManager()

@@ -83,9 +83,6 @@ class BeaverAction(ImmediateActionWithoutReply):
             BEAVER_CACHE[id_at_location] = result  # type: ignore
         else:
             raise Exception(f"Object at {id_at_location} should be a List or None")
-        # print(
-        #     f"Value after Beaver Execution: {id_at_location}-{node.store.get_object(key=id_at_location)}"
-        # )
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         eps = self.eps
@@ -94,10 +91,6 @@ class BeaverAction(ImmediateActionWithoutReply):
         delta_id = self.delta_id
         BeaverAction.beaver_populate(eps, eps_id, node)
         BeaverAction.beaver_populate(delta, delta_id, node)
-
-        # print(
-        #     f"🏪 Beaver Populate on {node} ,EPS Value: {eps}-{eps_id} ,Delta Value: {delta}-{delta_id}"
-        # )
 
     def _object2proto(self) -> BeaverAction_PB:
         eps = sy.serialize(self.eps)

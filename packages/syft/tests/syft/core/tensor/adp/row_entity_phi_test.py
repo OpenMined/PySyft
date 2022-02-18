@@ -47,7 +47,7 @@ def dims() -> int:
 
 @pytest.fixture
 def row_count() -> int:
-    return np.random.randint(7) + 3
+    return np.random.randint(7) + 1
 
 
 @pytest.fixture
@@ -226,10 +226,6 @@ def test_eq_diff_entities(
         assert (output._values() == np.ones_like(reference_data)).all()
 
 
-# FLAPPING:
-# for i in {1..10}; \
-# do  pytest tests/syft/core/tensor/adp/row_entity_phi_test.py \
-# -n 1 -p no:randomly -k test_eq_values; done
 # TODO: Update this test after REPT.all() and .any() are implemented, and check
 # `assert not comparison_result`
 def test_eq_values(
@@ -306,10 +302,6 @@ def test_add_wrong_types(row_data_ishan: List) -> None:
         # TODO: Double check how tuples behave during addition/subtraction with np.ndarrays
 
 
-# FLAPPING
-# for i in {1..10}; \
-# do  pytest tests/syft/core/tensor/adp/row_entity_phi_test.py \
-# -n 1 -p no:randomly -k test_add_simple_types; done
 def test_add_simple_types(row_data_ishan: List, dims: int) -> None:
     """Test addition of a REPT with simple types (float, ints, bools, etc)"""
     tensor = REPT(rows=row_data_ishan)
@@ -419,10 +411,6 @@ def test_add_row_entities(row_data_ishan: List) -> None:
     return None
 
 
-# FLAPPING, fails under certain conditions:
-# for i in {1..10}; \
-# do  pytest tests/syft/core/tensor/adp/row_entity_phi_test.py \
-# -n 1 -p no:randomly -k test_add_sub_equivalence; done
 def test_add_sub_equivalence(row_data_ishan: List) -> None:
     """Test to see if addition of -ve and subtraction of +ve produce the same results"""
     tensor1 = REPT(rows=row_data_ishan)

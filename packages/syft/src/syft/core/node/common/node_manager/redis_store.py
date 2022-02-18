@@ -25,8 +25,8 @@ from ..node_table.bin_obj_metadata import ObjectMetadata
 class RedisStore(ObjectStore):
     def __init__(self, db: Session) -> None:
         self.db = db
-        print("connecting to redis")
         try:
+            # TODO: refactor hard coded host and port to configuration
             self.redis: redis.client.Redis = redis.Redis(host="redis", port=6379)
         except Exception as e:
             print("failed to load redis", e)
@@ -175,7 +175,6 @@ class RedisStore(ObjectStore):
         if obj_dataset_relation:
             # Create a object dataset relationship for the new object
             obj_dataset_relation = BinObjDataset(
-                # id=obj_dataset_relation.id,  NOTE: Commented temporarily
                 name=obj_dataset_relation.name,
                 obj=str(key.value),
                 dataset=obj_dataset_relation.dataset,
@@ -186,7 +185,8 @@ class RedisStore(ObjectStore):
         local_session = sessionmaker(bind=self.db)()
         if create_metadata:
             local_session.add(metadata_obj)
-        local_session.add(obj_dataset_relation) if obj_dataset_relation else None
+        if obj_dataset_relation:
+            local_session.add(obj_dataset_relation)
         local_session.commit()
         local_session.close()
 

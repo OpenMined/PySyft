@@ -47,7 +47,7 @@ class PrimeFactory:
 
     def __init__(self) -> None:
         self.exp = 2
-        self.prime_numbers: list = get_cached_primes(total=10**self.exp)  # []
+        self.prime_numbers: list = get_cached_primes(total=10**self.exp)
 
     def get(self, index: int) -> int:
         while index > len(self.prime_numbers) - 1:
@@ -58,7 +58,7 @@ class PrimeFactory:
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, PrimeFactory):
             return (
-                self.prime_numbers[-1] == other.prime_numbers[-1]
+                self.exp == other.exp
             )  # Since the list is sorted, we can just compare the last value
         return self == other
 
@@ -118,9 +118,9 @@ class VirtualMachinePrivateScalarManager:
         return gs.prime
 
     def __hash__(self) -> int:
-        if self.hash_cache is None:
-            prime2symbol = frozenset(self.prime2symbol.items())
-            self.hash_cache = hash(self.prime_factory.exp) + hash(prime2symbol)
+        # TODO: safely invalidate the hash_cache when prime2symbol is mutated
+        prime2symbol = frozenset(self.prime2symbol.items())
+        self.hash_cache = hash(self.prime_factory.exp) + hash(prime2symbol)
         return self.hash_cache
 
     def __eq__(self, other: Any) -> bool:
@@ -170,10 +170,6 @@ class VirtualMachinePrivateScalarManager:
         """
 
         # To check: vsm2.prime2symbol size doesn't change
-
-        # initial_set = vsm2.primes_allocated
-        # initial_size = len(initial_set)
-
         if id(self.prime2symbol) != id(vsm2.prime2symbol):
             copy_dict = vsm2.prime2symbol.copy()
             length = len(self.primes_allocated)
@@ -185,14 +181,7 @@ class VirtualMachinePrivateScalarManager:
                     del vsm2.prime2symbol[prime_number]
                     vsm2.prime2symbol[new_prime] = gs
                     length += 1
-                    # print(f"Replacing {prime_number} with {new_prime}")
                 else:
                     self.prime2symbol[gs.prime] = gs
         else:
             warning("Detected prime2symbol where two tensors were using the same dict")
-
-        # final_set = vsm2.primes_allocated
-        # final_size = len(final_set)
-        # print(f'initial = {initial_size} {initial_set}')
-        # print(f'final = {final_size} {final_set}')
-        # assert initial_size == final_size, "Somehow a prime number was lost or gained during combine_"

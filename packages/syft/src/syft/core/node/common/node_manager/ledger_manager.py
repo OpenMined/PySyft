@@ -119,7 +119,11 @@ class DictLedger(AbstractLedger):
         return self._entity_dict.keys()
 
     def get_user_budget(self, user_key: VerifyKey) -> float:
-        return float(999999999)
+        if user_key in self._user_budget:
+            return self._user_budget[user_key]
+        default_budget = 999999999
+        print(f"Warning, no user found returning default budget. {default_budget}")
+        return float(default_budget)
 
 
 class DatabaseLedger(DatabaseManager, AbstractLedger):

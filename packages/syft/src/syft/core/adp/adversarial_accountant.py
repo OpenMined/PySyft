@@ -186,8 +186,6 @@ class AdversarialAccountant:
 
         # map dataset
         if len(mechanisms) > 0:
-            # composed_mech = compose(mechanisms, [1] * len(mechanisms))
-            # eps = composed_mech.get_approxDP(self.delta)
             eps = compose_mechanisms(tuple(mechanisms), self.delta)
 
             # if we have a user key, get the budget and clamp the epsilon
@@ -230,7 +228,6 @@ class AdversarialAccountant:
         # print("ACCOUNTANT MAX BUDGET", self.max_budget)
         # @Andrew can we use <= or does it have to be <
         has_budget = spent <= user_budget
-        # print(f"has_budget = {spend} < {user_budget}")
         # print("\n\nHas Budget:" + str(has_budget))
         # print("YOU'VE SPENT:" + str(spent))
         # print("USER BUDGET:" + str(user_budget))

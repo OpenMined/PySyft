@@ -167,7 +167,6 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        # self.store = BinObjectManager(db=self.db_engine)
         self.store = store_type(db=self.db_engine)
         self.setup = SetupManager(database=self.db_engine)
 

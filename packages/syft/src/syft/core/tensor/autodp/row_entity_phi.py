@@ -4,8 +4,6 @@ from __future__ import annotations
 # stdlib
 from collections.abc import Sequence
 from functools import reduce
-
-# from functools import reduce
 from typing import Any
 from typing import Dict
 from typing import List
@@ -555,10 +553,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def pre_sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
-        # new_list = list()
-        # for row in self.child:
-        #     result = row.sum(*args, **kwargs)
-        #     new_list.append(result.astype(self.dtype))
         split_lst = []  # contains the different entities
         d = {}  # mapping of entities to list index
         c = 0  # to keep track of index count
@@ -570,6 +564,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             else:
                 split_lst[d[i.entity]].append(i)
 
+        # move to utils
         def list_sum(
             a: SingleEntityPhiTensor, b: SingleEntityPhiTensor
         ) -> SingleEntityPhiTensor:
@@ -580,10 +575,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             final_lst.append(reduce(list_sum, i))
 
         return RowEntityPhiTensor(final_lst)
-
-        # result_tensor = reduce(list_sum, final_lst)
-
-        # return result_tensor.astype(self.dtype)
 
     def sum(self, *args: Any, **kwargs: Any) -> IGT:
         # pre-sum sums all of the rows which are SEPT with the same

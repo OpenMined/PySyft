@@ -207,17 +207,6 @@ def obj2pointer_type(obj: object) -> type:
     return ref.pointer_type  # type: ignore
 
 
-def fqn2pointer_type(fqn: str) -> type:
-    try:
-        ref = syft.lib_ast.query(fqn)
-    except Exception as e:
-        log = f"Cannot find {fqn} in lib_ast. {e}"
-        critical(log)
-        raise Exception(log)
-
-    return ref.pointer_type  # type: ignore
-
-
 def key_emoji(key: object) -> str:
     try:
         if isinstance(key, (bytes, SigningKey, VerifyKey)):
@@ -456,7 +445,6 @@ def get_root_data_path() -> Path:
 
 def download_file(url: str, full_path: Union[str, Path]) -> Path:
     if not os.path.exists(full_path):
-        # TODO: Rasswanth fix the SSL Error.
         r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
         path = os.path.dirname(full_path)
         os.makedirs(path, exist_ok=True)

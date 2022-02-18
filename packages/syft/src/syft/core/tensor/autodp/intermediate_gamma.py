@@ -172,7 +172,6 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             else:
                 scalar: IntermediateGammaScalar = sum(input_mp)  # type: ignore
 
-            # print("Known Primes in List:" + str(len(known_primes)))
             # to optimize down stream we can prevent search on linear queries if we
             # know that all single_poly_terms are prime therefore the query is linear
             scalar.is_linear = True
@@ -209,7 +208,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 self.term_tensor.shape
             )
         else:
-            raise Exception("WHAT IS GOING ONNNNNNNN")
+            raise Exception(f"Failed to update IGT with {length} {tensor_shape_count}")
 
         # self.term_tensor.flatten().reshape(-1, 2)[:, -1] = prime_numbers
 

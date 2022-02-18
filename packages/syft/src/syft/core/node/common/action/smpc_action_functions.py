@@ -195,15 +195,8 @@ def spdz_mask(
     )
     beaver_action.execute_action(node, None)
 
-    # print(
-    #     f"🚒 Executing Beaver Action on {node} ,EPS Value: {eps}-{eps_id} ,DELTA Value: {delta}-{delta_id}"
-    # )
     for rank, client in enumerate(clients):
-
         if client != curr_client:
-            # print(
-            #     f"📙 Sending Beaver Values to {client} ,EPS Value: {eps}-{eps_id} ,DELTA Value: {delta}-{delta_id}"
-            # )
             beaver_action.address = client.address
             client.send_immediate_msg_without_reply(msg=beaver_action)
 
