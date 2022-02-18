@@ -1,5 +1,4 @@
 # stdlib
-import sys
 from typing import Any
 from typing import Optional
 
@@ -234,11 +233,8 @@ class Bool(int, PyPrimitive):
         return PrimitiveFactory.generate_primitive(value=self.value.__xor__(other))
 
     def as_integer_ratio(self) -> SyPrimitiveRet:
-        if sys.version_info < (3, 8):
-            raise NotImplementedError
-        else:
-            res = self.value.as_integer_ratio()
-            return PrimitiveFactory.generate_primitive(value=res)
+        res = self.value.as_integer_ratio()
+        return PrimitiveFactory.generate_primitive(value=res)
 
     def bit_length(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=self.value.bit_length())

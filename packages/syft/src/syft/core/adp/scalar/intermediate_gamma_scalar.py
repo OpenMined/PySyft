@@ -35,10 +35,12 @@ class IntermediateGammaScalar(IntermediateScalar):
         max_val: float,
         id: Optional[UID] = None,
     ) -> None:
-        self.poly = poly
-        self.id = id if id else UID()
-        self._min_val = min_val
-        self._max_val = max_val
+        super().__init__(poly=poly, id=id)
+        self._min_val = float(min_val)
+        self._max_val = float(max_val)
+        self.is_linear: Optional[
+            bool
+        ] = None  # None means skip performance optimization
 
     # GammaScalar +/-/*/div other ---> GammaScalar
     def __add__(self, other: Any) -> IntermediateScalar:

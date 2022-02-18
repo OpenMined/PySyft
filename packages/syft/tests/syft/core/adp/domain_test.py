@@ -8,9 +8,8 @@ from syft.core.adp.scalar.phi_scalar import PhiScalar
 
 # TODO @Tudor fix
 @pytest.mark.xfail
-def test_autodp_phiscalar_publish_domain() -> None:
-    bob_domain = sy.Domain(name="Bob's Domain")
-    client = bob_domain.get_root_client()
+def test_autodp_phiscalar_publish_domain(domain: sy.Domain) -> None:
+    client = domain.get_root_client()
 
     x = PhiScalar(0, 0.01, 1).send(client, tags=["x"])
     y = PhiScalar(0, 0.02, 1).send(client, tags=["y"])
