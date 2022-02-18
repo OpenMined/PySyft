@@ -2,105 +2,128 @@ name: Continuous Delivery
 
 on:
   schedule:
-    - cron: "30 01 * * 4" # Thursday
+    - cron: "00 03 * * 5" # Thursday
 
 jobs:
-  deploy-syft-alpha:
+  deploy-syft-beta:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
         with:
           token: ${{ secrets.SYFT_BUMP_TOKEN }}
-      # - name: Set up Python
-      #   uses: actions/setup-python@v2
-      #   with:
-      #     python-version: "3.x"
-      # - name: Install dependencies
-      #   run: |
-      #     python -m pip install --upgrade pip
-      #     pip install --upgrade setuptools wheel twine tox bump2version
-      # - name: Bump the Version
-      #   run: |
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
-      #     bump2version prenum --allow-dirty --no-commit
-      #     tox -e lint || true
-      #     ls **/VERSION | xargs -I {} python {}
-      #     cat packages/grid/devspace.yaml | grep '0\.'
-      # - name: Commit changes
-      #   uses: EndBug/add-and-commit@v7
-      #   with:
-      #     author_name: Madhava Jay
-      #     author_email: madhava@openmined.org
-      #     message: "bump version"
-      #     add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION']"
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools wheel twine tox bump2version
+      - name: Bump the Version
+        run: |
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          bump2version prenum --allow-dirty --no-commit
+          tox -e lint || true
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          author_name: Madhava Jay
+          author_email: madhava@openmined.org
+          message: "bump version"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/backend/pyproject.toml', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
 
-      # - name: Build and publish
-      #   env:
-      #     TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-      #     TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      #   run: |
-      #     tox -e syft.publish
-      #     twine upload packages/syft/dist/*
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          tox -e syft.publish
+          twine upload packages/syft/dist/*
 
-      # - name: Set Grid package version
-      #   run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
-      # - name: Build and push `grid-backend` image to DockerHub
-      #   working-directory: ./packages
-      #   env:
-      #     IMAGE_URI: openmined/grid-backend
-      #   run: |
-      #     export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
-      #     export DOCKER_URI_LATEST=$IMAGE_URI:latest
-      #     eval $(echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin)
-      #     docker build \
-      #         -t $DOCKER_URI \
-      #         -t $DOCKER_URI_LATEST \
-      #         -f grid/backend/backend.dockerfile .
-      #     docker push $DOCKER_URI
-      #     docker push $DOCKER_URI_LATEST
+      - name: Set Grid package version
+        run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
 
-      # - name: Build and push `grid-frontend` image to DockerHub
-      #   working-directory: ./packages/grid/frontend
-      #   env:
-      #     IMAGE_URI: openmined/grid-frontend
-      #   run: |
-      #     export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
-      #     export DOCKER_URI_LATEST=$IMAGE_URI:latest
-      #     eval $(echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin)
-      #     docker build \
-      #         -t $DOCKER_URI \
-      #         -t $DOCKER_URI_LATEST \
-      #         -f grid/frontend/frontend.dockerfile .
-      #     docker push $DOCKER_URI
-      #     docker push $DOCKER_URI_LATEST
+      - name: Set up QEMU
+        uses: docker/setup-qemu-action@v1
 
-      # - name: Build and push `grid-headscale` image to DockerHub
-      #   working-directory: ./packages/grid/vpn
-      #   env:
-      #     IMAGE_URI: openmined/grid-vpn-headscale
-      #   run: |
-      #     export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
-      #     export DOCKER_URI_LATEST=$IMAGE_URI:latest
-      #     eval $(echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin)
-      #     docker build \
-      #         -t $DOCKER_URI \
-      #         -t $DOCKER_URI_LATEST \
-      #         -f grid/vpn/headscale.dockerfile .
-      #     docker push $DOCKER_URI
-      #     docker push $DOCKER_URI_LATEST
+      - name: Set up Docker Buildx
+        id: buildx
+        uses: docker/setup-buildx-action@v1
 
-      # - name: Build and push `grid-tailscale` image to DockerHub
-      #   working-directory: ./packages/grid/vpn
-      #   env:
-      #     IMAGE_URI: openmined/grid-vpn-tailscale
-      #   run: |
-      #     export DOCKER_URI=$IMAGE_URI:$GRID_VERSION
-      #     export DOCKER_URI_LATEST=$IMAGE_URI:latest
-      #     eval $(echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u ${{ secrets.DOCKER_LOGIN }} --password-stdin)
-      #     docker build \
-      #         -t $DOCKER_URI \
-      #         -t $DOCKER_URI_LATEST \
-      #         -f grid/vpn/tailscale.dockerfile .
-      #     docker push $DOCKER_URI
-      #     docker push $DOCKER_URI_LATEST
+      - name: Login to Docker
+        uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKER_LOGIN }}
+          password: ${{ secrets.DOCKER_PASSWORD }}
+
+      - name: Docker meta for Grid-Backend
+        id: meta_grid_backend
+        uses: docker/metadata-action@v3
+        with:
+          images: openmined/grid-backend
+          tags: |
+            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=latest
+
+      - name: Build and push `grid-backend` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages
+          file: ./packages/grid/backend/backend.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_backend.outputs.tags }}
+
+
+      - name: Docker meta for Grid-Frontend
+        id: meta_grid_frontend
+        uses: docker/metadata-action@v3
+        with:
+          images: openmined/grid-frontend
+          tags: |
+            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=latest
+
+      - name: Build and push `grid-frontend` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages/grid/frontend
+          file: ./packages/grid/frontend/frontend.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_frontend.outputs.tags }}
+
+      - name: Docker meta for Grid-Headscale
+        id: meta_grid_headscale
+        uses: docker/metadata-action@v3
+        with:
+          images: openmined/grid-vpn-headscale
+          tags: |
+            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=latest
+
+      - name: Build and push `grid-headscale` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages/grid/vpn
+          file: ./packages/grid/vpn/headscale.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_headscale.outputs.tags }}
+
+      - name: Docker meta for Grid-Tailscale
+        id: meta_grid_tailscale
+        uses: docker/metadata-action@v3
+        with:
+          images: openmined/grid-vpn-tailscale
+          tags: |
+            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=latest
+
+      - name: Build and push `grid-tailscale` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages/grid/vpn
+          file: ./packages/grid/vpn/tailscale.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_tailscale.outputs.tags }}

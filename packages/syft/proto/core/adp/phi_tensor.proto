@@ -1,0 +1,29 @@
+syntax = "proto3";
+
+package syft.core.adp;
+import "proto/core/adp/entity.proto";
+import "proto/lib/numpy/array.proto";
+import "proto/core/adp/scalar_manager.proto";
+import "proto/core/tensor/share_tensor.proto";
+import "proto/lib/python/none.proto";
+
+message SingleEntityPhiTensor {
+  oneof child {
+    syft.core.tensor.ShareTensor tensor = 1;
+    syft.lib.numpy.NumpyProto array = 2;
+    syft.lib.python.SyNone none = 3;
+  }
+  syft.lib.numpy.NumpyProto min_vals = 4;
+  syft.lib.numpy.NumpyProto max_vals = 5;
+  syft.core.adp.Entity entity = 6;
+  VirtualMachinePrivateScalarManager scalar_manager = 7;
+}
+
+message RowEntityPhiTensor {
+  uint32 serde_concurrency = 1;
+  repeated bytes rows = 2;
+  repeated syft.core.adp.Entity unique_entities = 3;
+  repeated VirtualMachinePrivateScalarManager unique_scalar_managers = 4;
+  syft.lib.numpy.NumpyProto row_entity_index = 5;
+  syft.lib.numpy.NumpyProto row_scalar_manager_index = 6;
+}

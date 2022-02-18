@@ -26,16 +26,29 @@ from .scalar import Scalar
 
 @serializable()
 class IntermediateScalar(Scalar):
-    """Serializable Scalar class that supports polynomial representations of data."""
+    """
+    Serializable Scalar class that supports polynomial representations of data.
+    It is assumed that IntermediateScalar is immutable and therefore we will cache
+    the sympoly creation because poly wont change
+    """
 
     def __init__(self, poly: BasicSymbol, id: Optional[UID] = None) -> None:
         self.poly = poly
         self.id = id if id else UID()
+        self._sympoly: Optional[BasicSymbol] = None
+
+        # only initialize these if they aren't already set
+        if not hasattr(self, "_min_val"):
+            self._min_val: Optional[float] = None
+        if not hasattr(self, "_max_val"):
+            self._max_val: Optional[float] = None
 
     @property
     def sympoly(self) -> BasicSymbol:
         """Sympy version of self.poly"""
-        return PymbolicToSympyMapper()(self.poly)
+        if self._sympoly is None:
+            self._sympoly = PymbolicToSympyMapper()(self.poly)
+        return self._sympoly
 
     def __mul__(self, other: IntermediateScalar) -> IntermediateScalar:
         raise NotImplementedError
@@ -78,22 +91,36 @@ class IntermediateScalar(Scalar):
 
     @property
     def max_val(self) -> Optional[float]:
+        # TODO: Verify that his doesnt change anything with budget spend
+        if self._max_val is not None:
+            return self._max_val
+
         if self.poly is not None:
             results = flatten_and_maximize_poly(-self.poly)
             if len(results) >= 1:
-                return float(-results[-1].fun)
+                self._max_val = float(-results[-1].fun)
+                return self._max_val
         return None
 
     @property
     def min_val(self) -> Optional[float]:
+        # TODO: Verify that his doesnt change anything with budget spend
+        if self._min_val is not None:
+            return self._min_val
+
         if self.poly is not None:
             results = flatten_and_maximize_poly(self.poly)
             if len(results) >= 1:
-                return float(results[-1].fun)
+                self._min_val = float(results[-1].fun)
+                return self._min_val
         return None
 
     @property
     def value(self) -> Optional[float]:
+
+        if hasattr(self, "_value_cache"):
+            return self._value_cache  # type: ignore
+
         if self.poly is not None:
             result = EM(
                 context={obj.poly.name: obj.value for obj in self.input_scalars}  # type: ignore

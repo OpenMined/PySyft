@@ -59,12 +59,15 @@ function RequestsAccordion({budgets}) {
                 <div className="flex justify-between w-full items-center">
                   <div className="items-center flex space-x-2">
                     <Text>{item.user?.name}</Text>
-                    <Badge variant="gray" type="subtle">
-                      {item.user.current_budget}
+                    <Text size="xs">
+                      (<a href={`mailto:${item.user.email}`}>{item.user.email}</a>)
+                    </Text>
+                    <Badge size="sm" variant="primary" type="subtle" truncate>
+                      {item.user.role}
                     </Badge>
-                    <Text>+</Text>
                     <Badge variant="primary" type="subtle">
                       {item.req.requested_budget} ε
+                      <FontAwesomeIcon icon={faCaretUp} className="pl-1" />
                     </Badge>
                   </div>
                   <div className="flex space-x-2 items-center">
@@ -81,31 +84,11 @@ function RequestsAccordion({budgets}) {
                 <div className="flex space-x-6 w-full">
                   {/* upgrade-card */}
                   <div
-                    className="w-1/2 flex-shrink-0 bg-gray-50 border border-gray-100 px-6 py-4 items-center"
+                    className="flex-shrink-0 bg-gray-50 border border-gray-100 px-4 py-0 items-center"
                     style={{
                       background:
                         'linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%), #F1F0F4'
                     }}>
-                    <div className="flex space-x-6 items-start">
-                      <div className="flex-shrink-0">
-                        <div className="flex items-center space-x-2 text-error-500">
-                          <Text size="xl">{item.user.current_budget.toFixed(2)}</Text>
-                          <Text size="lg">ε</Text>
-                        </div>
-                        <Text size="sm">Current Balance</Text>
-                      </div>
-                      <div className="self-stretch">
-                        <Divider orientation="vertical" color="light" />
-                      </div>
-                      <div className="flex-shrink-0">
-                        <div className="flex items-center space-x-2">
-                          <Text size="xl">{item.user.current_budget.toFixed(2)}</Text>
-                          <Text size="lg">ε</Text>
-                        </div>
-                        <Text size="sm">Current Balance</Text>
-                      </div>
-                    </div>
-                    <Divider color="light" className="mt-8" />
                     <div className="flex space-x-4 items-start mt-4">
                       <div className="flex-shrink-0">
                         <div className="flex space-x-2">
@@ -118,7 +101,7 @@ function RequestsAccordion({budgets}) {
                               +
                             </Text>
                             <Badge variant="primary" type="subtle">
-                              {item.req.requested_budget - item.user.current_budget} ε
+                              {item.req.requested_budget} ε
                             </Badge>
                           </div>
                         </div>
@@ -129,24 +112,24 @@ function RequestsAccordion({budgets}) {
                       </div>
                       <div className="flex-shrink-0">
                         <div className="flex space-x-2">
-                          <div flex="flex items-center justify-between">
-                            <Text size="xl">{item.req.requested_budget.toFixed(2)}</Text>
+                          <div className="flex items-center justify-between text-error-500">
+                            <Text size="xl">{(item.req.requested_budget + item.user.current_budget).toFixed(2)}</Text>
                             <Text size="lg">ε</Text>
                           </div>
-                          <div flex="flex items-center justify-between">
+                          <div className="flex items-center justify-between">
                             <Badge variant="primary" type="subtle">
-                              {item.req.requested_budget - item.user.current_budget}
+                              {item.req.requested_budget} ε
                               <FontAwesomeIcon icon={faCaretUp} className="pl-1" />
                             </Badge>
                           </div>
                         </div>
-                        <Text size="sm">Requested Budget</Text>
+                        <Text size="sm">New Budget</Text>
                       </div>
                     </div>
                   </div>
-                  <div className="flex justify-between space-x-2 truncate">
+                  <div className="flex space-x-2 truncate w-full">
                     {/* request details card */}
-                    <div className="w-full border border-gray-100 p-6 space-y-4">
+                    <div className="w-full p-6 space-y-4">
                       {() => {
                         const info = buildUserInfo(item)
                         return (
@@ -344,7 +327,7 @@ export default function UpgradeRequests() {
               <Text className="text-gray-800">
                 Upgrade requests are requests made by Data Scientists on your node to get a larger amount of privacy
                 budget allocated to them. You can think of privacy budget as credits you give to a user to perform
-                computations from. These credits of{' '}
+                computations with. These credits of{' '}
                 <Text mono className="text-gray-600">
                   Epsilon(ɛ)
                 </Text>{' '}
