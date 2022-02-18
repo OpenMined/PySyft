@@ -99,7 +99,7 @@ class DictStore(ObjectStore):
                 raise Exception("Objects must use deepcopy or mutation can occur")
 
             obj_metadata = (
-                local_session.query(ObjectMetadata).filter_by(obj=key_str).all()[-1]
+                local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
             )
 
             if obj is None or obj_metadata is None:

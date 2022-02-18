@@ -84,7 +84,7 @@ class RedisStore(ObjectStore):
 
         obj = self.redis.get(key_str)
         obj_metadata = (
-            local_session.query(ObjectMetadata).filter_by(obj=key_str).all()[-1]
+            local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
         )
         if obj is None or obj_metadata is None:
             raise KeyError(f"Object not found! for UID: {key_str}")
