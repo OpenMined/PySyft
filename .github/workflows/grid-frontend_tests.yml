@@ -1,0 +1,100 @@
+# Grid Frontend Tests
+name: Syft + Grid Frontend Tests
+
+on:
+  workflow_call:
+
+  pull_request:
+    branches:
+      - dev
+      - main
+      - "0.6.0"
+
+jobs:
+  grid-frontend-tests:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: [3.9]
+
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: steps.changes.outputs.frontend == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        id: pip-cache
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.frontend == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install tox
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          pip install tox --upgrade
+
+      - name: Cache Cypress binary
+        uses: actions/cache@v1
+        with:
+          path: ~/.cache/Cypress
+          key: cypress-${{ runner.os }}-cypress-${{ hashFiles('**/package.json') }}
+          restore-keys: |
+            cypress-${{ runner.os }}-cypress-
+
+      - name: install dependencies and verify Cypress
+        working-directory: ./packages/grid/frontend
+        env:
+          # make sure every Cypress install prints minimal information
+          CI: 1
+        # print Cypress and OS info
+        run: |
+          yarn install
+          npx cypress verify
+          npx cypress info
+          npx cypress version
+          npx cypress version --component package
+          npx cypress version --component binary
+          npx cypress version --component electron
+          npx cypress version --component node
+
+      - name: Setup NodeJS
+        uses: actions/setup-node@v2
+        if: steps.changes.outputs.frontend == 'true'
+        with:
+          node-version: "16"
+          cache: "yarn"
+
+      - name: Run Frontend API tests
+        shell: bash
+        if: steps.changes.outputs.frontend == 'true'
+        run: |
+          tox -e grid.test.frontend
