@@ -6,7 +6,6 @@ from random import random
 from fastapi import FastAPI
 from httpx import AsyncClient
 import pytest
-import requests
 from sqlalchemy.orm import Session
 from starlette import status
 
@@ -41,6 +40,8 @@ class TestUsersRoutes:
     async def test_successfully_create_user(
         self, app: FastAPI, client: AsyncClient
     ) -> None:
+
+        # Create dummy user
         user = create_user(budget=random() * 100)
         headers = await authenticate_owner(app, client)
         new_user = {
@@ -51,19 +52,15 @@ class TestUsersRoutes:
             "role": 1,
             "budget": user.budget,
         }
-        data = {"new_user": json.dumps(new_user)}
-        files = [("file", b"")]
-        if not client.base_url.port:
-            url = f"http://{client.base_url.host}{app.url_path_for('users:create')}"
-        else:
-            url = f"http://{client.base_url.host}:{client.base_url.port}{app.url_path_for('users:create')}"
-        res = requests.post(url=url, headers=headers, data=data, files=files)
+        headers["Content-Type"] = "application/x-www-form-urlencoded"
+        data = {"new_user": json.dumps(new_user), "file": None}
 
-        # Note: This doesn't work with httpx client
-        # res = await client.post(
-        #     app.url_path_for("users:create"), headers=headers, data=data, files=files
-        # )
+        res = await client.post(
+            app.url_path_for("users:create"), headers=headers, data=data
+        )
+
         assert res.status_code == status.HTTP_201_CREATED
+        assert res.json() == "User created successfully!"
 
     @pytest.mark.asyncio
     async def test_successfully_update_user(
