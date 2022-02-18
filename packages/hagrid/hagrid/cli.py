@@ -252,7 +252,7 @@ class Question:
         self.default = default
         self.kind = kind
         self.cache = cache
-        self.options = options if options else []
+        self.options = options if options is not None else []
 
     # flake8: noqa: C901
     def validate(self, value: str) -> str:

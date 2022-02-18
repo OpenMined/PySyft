@@ -53,7 +53,7 @@ from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
-from .node_manager.bin_obj_manager import BinObjectManager
+from .node_manager.redis_store import RedisStore
 from .node_manager.setup_manager import SetupManager
 from .node_service.auth import AuthorizationException
 from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
@@ -128,6 +128,7 @@ class Node(AbstractNode):
         verify_key: Optional[VerifyKey] = None,
         TableBase: Any = None,
         db_engine: Any = None,
+        store_type: type = RedisStore,
     ):
 
         # The node has a name - it exists purely to help the
@@ -166,7 +167,7 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        self.store = BinObjectManager(db=self.db_engine)
+        self.store = store_type(db=self.db_engine)
         self.setup = SetupManager(database=self.db_engine)
 
         # We need to register all the services once a node is created

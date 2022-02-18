@@ -88,7 +88,7 @@ class GrammarTerm:
         self.type = type
         self.name = name
         self.default = default
-        self.options = options if options else []
+        self.options = options if options is not None else []
         self.example = example
 
     @property

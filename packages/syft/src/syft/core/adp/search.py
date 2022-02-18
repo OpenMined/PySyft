@@ -164,11 +164,12 @@ def create_lookup_tables_for_symbol(
 def minimize_function(
     f: Any,
     rranges: Any,
-    force_all_searches: bool = False,
     constraints: Optional[TypeList[TypeDict[str, Any]]] = None,
+    force_all_searches: bool = False,
 ) -> TypeList[optimize.OptimizeResult]:
+    constraints = constraints if constraints is not None else []
+
     results = list()
-    constraints = constraints if constraints else []
 
     # Step 1: try simplicial
     shgo_results = optimize.shgo(
@@ -184,14 +185,22 @@ def minimize_function(
         )
         results.append(shgo_results)
 
-    # if not shgo_results.success:
-    #     raise Exception("Search algorithm wasn't solvable... abort")
-    print("Search algorithm wasn't solvable... abort")
+    if not shgo_results.success:
+        raise Exception("Search algorithm wasn't solvable... abort")
 
     return results
 
 
 def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
+    # if all scalars have is_linear = True, we will skip the search below
+    can_skip = True
+    for i in scalars:
+        if getattr(i, "is_linear", None) is not True:
+            can_skip = False
+            break
+    if can_skip:
+        return 1.0
+
     result: Union[float, optimize.OptimizeResult] = max_lipschitz_via_jacobian(
         scalars, input_entity=entity
     )[0][-1]
@@ -199,11 +208,6 @@ def max_lipschitz_wrt_entity(scalars: Any, entity: Entity) -> float:
         return -float(result.fun)
     else:
         return -result
-
-    # if isinstance(result, float):
-    #     return -result
-    # else:
-    #     return -float(result.fun)
 
 
 def max_lipschitz_via_jacobian(
@@ -263,6 +267,54 @@ def max_lipschitz_via_jacobian(
         if data_dependent:
             j = j.subs({x.sympoly: x.value for x in relevant_scalars})
 
+    # WARNING: in the Feldman paper (https://arxiv.org/pdf/2008.11193.pdf) in
+    # Example 2.8, which is the basis for this logic, the paper says the following,
+    # "Suppose that g : (Rd)n → Rd` is Li-Lipschitz in coordinate i (in L2-norm)."
+    # This is a somewhat ambiguous statement. After much thought, we are confident
+    # that 'i' refers to the index of a specific entity, but it's unclear exactly
+    # what is being L2-normed. There are two plausible options.
+
+    # - Option A: each output value is L2 normed before the derivative is taken, meaning
+    # that Li-Lipschitz is a bound the absolute value of the derivative of g wrt each input
+    # from entity i. Note that this means that we took a vector of polynomials, L2normed htem,
+    # took the derivative, and then the Li-lipschiktz bound is wrt each of these derivatives.
+    # This seems a bit odd... because why L2 norm something when Lipschitz is going to calculate
+    # the absolute value anyway (it's an identical operation... although absolute value isn't
+    # technically continuous and differentiable in all places, so it could be that this is
+    # express as L2 norm because that's the mathematically elegant way to do it. Also it makes more
+    # sense why it would be a paranthetical given that it's just a small explanation as to why
+    # the derivaitve of the L-Lipschitz bound can be taken). Perhaps this paraenthetical was
+    # just a throwaway.
+
+    # - Option B: more likely, because the Li-lipschitz constraint is referring to a vector
+    # of derivatives corresponding to the input->output relationship between a single output
+    # scalar and all of the inputs from that entity, the L2 norm is being used to compress
+    # all of these derivatives into one scalar, which is bounded. That is to say, Option A
+    # is bound on the derivative of the L2 norm of each value, whereas Option B is a bound
+    # on the L2 norm of the derivatives, which is a scalar. We think that it's the latter
+    # because it makes sense why the L2 norm is being applied (not redundant). The bigger reason
+    # why Option B makes more sense is that with option A, if we publish an out value with
+    # multiple inputs coming from one entity, the privacy budget is only scaled WRT the sharpest
+    # derivative of one input as opposed to the combined effect of all of them. This follows
+    # the differential privacy intuition that we care about the overall effect of removing
+    # all inputs toa  function from entity, not just the max effect of any one of htose inputs.
+    # Thus, Option B *should* be the right answer, and if it's not, then we probably end
+    # up writing a paper for why Vitaly Feldman's paper is broken.
+
+    # ON THE CONTRARY: in Example 2.8, the L term is just supposed to be a worst case scalar
+    # on the function, which gets multipled by a (separate) L2 norm of the underlying data
+    # values, so it makes sense that we wouldn't scale by the combined factor of all inputs, but
+    # instead scale by the "worst case relationship" between any input and any output.
+
+    # ON THE CONTRARY (Again): L_i is supposed to be the maximum slope WRT all contributions
+    # from this entity, meaning the worst case bound of removing all inputs to this function.
+    # thus it follows that the combined inputs could be worse than any particular input?...
+
+    # CONSERVATIVE VIEW (and interim conclusion): Option B will always be higher than option A,
+    # because after ensuring
+    # that everything is positive value (by squaring it), Option A calculates an max across values
+    # whereas option B sums them. This means that Option B will always generate at least the same
+    # if not higher value than Option A, so given the uncertainty we're going with Option B.
     neg_l2_j = -((np.sum(np.square(j))) ** 0.5)
 
     # if the L2 norm is a constant (flat derivative) - just return it

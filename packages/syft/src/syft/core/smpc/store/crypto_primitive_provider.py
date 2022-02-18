@@ -23,11 +23,13 @@ class CryptoPrimitiveProvider:
     def generate_primitives(
         op_str: str,
         parties: List[Any],
-        nr_instances: int = 1,
-        ring_size: int = 2**32,
         g_kwargs: Optional[Dict[str, Any]] = None,
         p_kwargs: Optional[Dict[str, Any]] = None,
+        nr_instances: int = 1,
+        ring_size: int = 2**32,
     ) -> List[Any]:
+        g_kwargs = g_kwargs if g_kwargs is not None else {}
+        p_kwargs = p_kwargs if p_kwargs is not None else {}
         """Generate "op_str" primitives.
 
         Args:
@@ -43,9 +45,6 @@ class CryptoPrimitiveProvider:
             ValueError: If op_str is not registered.
 
         """
-        g_kwargs = g_kwargs if g_kwargs else {}
-        p_kwargs = p_kwargs if p_kwargs else {}
-
         if op_str not in CryptoPrimitiveProvider._func_providers:
             raise ValueError(f"{op_str} not registered")
 

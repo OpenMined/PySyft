@@ -3,23 +3,33 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
+from functools import reduce
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 # third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import numpy.typing as npt
 
 # relative
 from ....core.adp.entity import DataSubjectGroup as DSG
 from ....core.adp.entity import Entity
-from ...adp.vm_private_scalar_manager import (
-    VirtualMachinePrivateScalarManager as TypeScalarManager,
+from ....proto.core.adp.phi_tensor_pb2 import (
+    RowEntityPhiTensor as RowEntityPhiTensor_PB,
 )
+from ....util import concurrency_count
+from ....util import parallel_execution
+from ....util import split_rows
+from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
+from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
+from ...common.serde.types import Deserializeable
 from ..broadcastable import is_broadcastable
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -31,7 +41,18 @@ from .intermediate_gamma import IntermediateGammaTensor as IGT
 from .single_entity_phi import SingleEntityPhiTensor
 
 
-@serializable(recursive_serde=True)
+def row_serialize(*rows: Any) -> List[Deserializeable]:
+    return [serialize(row, to_bytes=True) for row in rows]
+
+
+def row_deserialize(*rows: Deserializeable) -> List[Any]:
+    output = []
+    for row in rows:
+        output.append(deserialize(row, from_bytes=True))
+    return output
+
+
+@serializable()
 class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     """This tensor is one of several tensors whose purpose is to carry metadata
     relevant to automatically tracking the privacy budgets of tensor operations. This
@@ -45,9 +66,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     we refer to the number of 'rows' we simply refer to the length of the first dimension. This
     tensor can have an arbitrary number of dimensions."""
 
-    # a list of attributes needed for serialization using RecursiveSerde
-    __attr_allowlist__ = ["child", "n_entities", "unique_entities"]
-
     def __init__(self, rows: Sequence, check_shape: bool = True):
         """Initialize a RowEntityPhiTensor
 
@@ -60,6 +78,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         self.child: Sequence
         super().__init__(rows)
 
+        self.serde_concurrency: int = 0
         # include this check because it's expensive to check and sometimes we can skip it when
         # we already know the rows are identically shaped.
         if check_shape:
@@ -95,7 +114,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 raise Exception(f"{type(entity)}")
 
     @property
-    def scalar_manager(self) -> TypeScalarManager:
+    def scalar_manager(self) -> VirtualMachinePrivateScalarManager:
         return self.child[0].scalar_manager
 
     @property
@@ -122,6 +141,22 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     @property
     def gamma(self) -> InitialGammaTensor:
         return self.create_gamma()
+
+    @property
+    def dtype(self) -> np.dtype:
+        # REPT child is a python List which does not have a np.dtype so we will return
+        # the np.dtype of the first child in the row
+
+        # TODO: We should decide what dtype an empty list has, numpy is float64
+        if len(self.child) == 0:
+            # we need to default to something
+            return np.int32
+
+        return self.child[0].dtype
+
+    def astype(self, np_type: np.dtype) -> RowEntityPhiTensor:
+        # RowEntityPhiTensor has a python List for its child
+        return self.__class__(rows=[x.astype(np_type) for x in self.child])
 
     @staticmethod
     def convert_to_gamma(input_list: List) -> IGT:
@@ -162,7 +197,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def create_gamma(
-        self, scalar_manager: Optional[TypeScalarManager] = None
+        self, scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None
     ) -> InitialGammaTensor:
 
         if scalar_manager is None:
@@ -236,7 +271,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 else:
                     # Private/Public and Private/Private are handled by the underlying SEPT self.child objects.
                     new_list.append(self.child[i] + other.child[i])
-            return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            if len(new_list) != 1:
+                return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            else:
+                return new_list[0]
+
         else:
             # Broadcasting is possible, but we're skipping that for now.
             raise Exception(
@@ -513,13 +552,94 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
-    def sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
+    def pre_sum(self, *args: Any, **kwargs: Any) -> RowEntityPhiTensor:
+        split_lst = []  # contains the different entities
+        d = {}  # mapping of entities to list index
+        c = 0  # to keep track of index count
+        for i in self.child:
+            if i.entity not in d:
+                d[i.entity] = c
+                split_lst.append([i])
+                c += 1
+            else:
+                split_lst[d[i.entity]].append(i)
 
-        new_list = list()
+        # move to utils
+        def list_sum(
+            a: SingleEntityPhiTensor, b: SingleEntityPhiTensor
+        ) -> SingleEntityPhiTensor:
+            return a + b
+
+        final_lst = []
+        for i in split_lst:
+            final_lst.append(reduce(list_sum, i))
+
+        return RowEntityPhiTensor(final_lst)
+
+    def sum(self, *args: Any, **kwargs: Any) -> IGT:
+        # pre-sum sums all of the rows which are SEPT with the same
+        # entity, this will reduce the number of input scalars for
+        # the gamma tensor dramatically if there are any shared
+        # entities. Final sum completes the sum, usually
+        # returning a gammatensor.
+        return self.pre_sum(*args, **kwargs).final_sum(*args, **kwargs)
+
+    # Since this is being used differently compared to supertype, ignoring type annotation errors
+    def final_sum(self, *args: Any, **kwargs: Any) -> IGT:
+        # TODO: Check if this works if the number of dimensions/axes are passed as args/kwargs
+
+        # pre-initialize result
+        # target_shape = self.child[0].shape
+        if len(args) > 0 or kwargs.get("axis", None) is not None:
+            print(args)
+            print(kwargs)
+            raise NotImplementedError
+
+        flat_symbols = []
+        flat_values = []
+        min_val_sum = 0
+        max_val_sum = 0
+        unique_entities = set()
         for row in self.child:
-            new_list.append(row.sum(*args, **kwargs))
+            if not isinstance(row, SingleEntityPhiTensor):
+                raise NotImplementedError
+            flat_child = row.child.flatten()
+            flat_min = row.min_vals.flatten()
+            flat_max = row.max_vals.flatten()
 
-        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+            flat_values.append(flat_child)
+
+            min_val_sum += flat_min.sum()
+            max_val_sum += flat_max.sum()
+            for i in range(len(flat_child)):
+                prime = self.scalar_manager.get_symbol(
+                    min_val=flat_min[i],
+                    value=flat_child[i],
+                    max_val=flat_max[i],
+                    entity=row.entity,
+                )
+                flat_symbols.append(prime)
+            unique_entities.add(row.entity)
+
+        term_tensor = (
+            np.array(flat_symbols).reshape([1, len(flat_symbols)]).astype(np.int32)
+        )
+        coeff_tensor = np.ones_like(term_tensor)
+        bias_tensor = np.zeros((1,), dtype=np.int32)
+        value_tensor = np.sum(flat_values, axis=0)
+
+        result = IGT(
+            value_tensor=value_tensor,
+            term_tensor=term_tensor,
+            coeff_tensor=coeff_tensor,
+            bias_tensor=bias_tensor,
+            scalar_manager=self.scalar_manager,
+            unique_entities=unique_entities,
+        )
+        result._min_vals_cache = min_val_sum
+        result._max_vals_cache = max_val_sum
+
+        return result
 
     # Since this is being used differently compared to supertype, ignoring type annotation errors
     def transpose(self, *dims: Optional[Any]) -> RowEntityPhiTensor:
@@ -902,6 +1022,132 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             new_list.append(tensor.round(decimals))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def _object2proto(self) -> RowEntityPhiTensor:
+        entity_list = []
+        entity_dict_index: Dict[Entity, int] = {}
+        row_entity_index = []
+
+        scalar_manager_list = []
+        scalar_manager_dict_index: Dict[VirtualMachinePrivateScalarManager, int] = {}
+        row_scalar_manager_index = []
+
+        for i in self.child:
+            entity = i.entity
+            scalar_manager = i.scalar_manager
+
+            if entity in entity_dict_index:
+                index = entity_dict_index[entity]
+            else:
+                entity_list.append(entity)
+                index = len(entity_list) - 1
+                entity_dict_index[entity] = index
+            row_entity_index.append(index)
+
+            if scalar_manager in scalar_manager_dict_index:
+                vm_index = scalar_manager_dict_index[scalar_manager]
+            else:
+                scalar_manager_list.append(scalar_manager)
+                vm_index = len(scalar_manager_list) - 1
+                scalar_manager_dict_index[scalar_manager] = vm_index
+            row_scalar_manager_index.append(vm_index)
+            i._remove_entity_scalar_manager = True
+
+        if len(row_entity_index) != len(self.child):
+            raise Exception("Length of entity index must match row length")
+
+        if len(row_scalar_manager_index) != len(self.child):
+            raise Exception("Length of scalar manager index must match row length")
+
+        if self.serde_concurrency > 0 and concurrency_count() > 1:
+            # serde_concurrency == 0 means off
+            # serde_concurrency == 1 means auto detect cpu count
+            # serde_concurrency >= 2 means manually set process count
+            cpu_count = (
+                self.serde_concurrency
+                if self.serde_concurrency > 1
+                else concurrency_count()
+            )
+            print(
+                "Serializing with proto.serde_concurrency == ",
+                self.serde_concurrency,
+                "cpu_count",
+                cpu_count,
+            )
+            args = split_rows(self.child, cpu_count=cpu_count)
+            rows = parallel_execution(row_serialize, cpu_bound=bool(cpu_count))(args)
+            output_rows = []
+            for row in rows:
+                output_rows.extend(row)
+        else:
+            output_rows = [serialize(row, to_bytes=True) for row in self.child]
+
+        rept_pb = RowEntityPhiTensor_PB(
+            serde_concurrency=int(self.serde_concurrency),
+            rows=output_rows,
+            unique_entities=[serialize(x) for x in entity_list],
+            unique_scalar_managers=[serialize(x) for x in scalar_manager_list],
+            row_entity_index=serialize(np.array(row_entity_index)),
+            row_scalar_manager_index=serialize(np.array(row_scalar_manager_index)),
+        )
+
+        for child in self.child:
+            del child._remove_entity_scalar_manager
+
+        return rept_pb
+
+    @staticmethod
+    def _proto2object(proto: RowEntityPhiTensor_PB) -> RowEntityPhiTensor:
+        # get back our entities and scalar managers
+        unique_entities = [deserialize(x) for x in proto.unique_entities]
+        unique_scalar_managers = [deserialize(x) for x in proto.unique_scalar_managers]
+
+        row_entity_index = deserialize(proto.row_entity_index)
+        row_scalar_manager_index = deserialize(proto.row_scalar_manager_index)
+
+        if proto.serde_concurrency > 0 and concurrency_count() > 1:
+            # serde_concurrency == 0 means off
+            # serde_concurrency == 1 means auto detect cpu count
+            # serde_concurrency >= 2 means manually set process count
+            cpu_count = (
+                proto.serde_concurrency
+                if proto.serde_concurrency > 1
+                else concurrency_count()
+            )
+            print(
+                "Deserializing with proto.serde_concurrency == ",
+                proto.serde_concurrency,
+                "cpu_count",
+                cpu_count,
+            )
+            args = split_rows(proto.rows, cpu_count)
+            rows = parallel_execution(row_deserialize, cpu_bound=bool(cpu_count))(args)
+            output_rows = []
+            for row in rows:
+                output_rows.extend(row)
+        else:
+            output_rows = [deserialize(row, from_bytes=True) for row in proto.rows]
+
+        rows = []
+        for i, row in enumerate(output_rows):
+            row_index = row_entity_index[i]
+            entity = unique_entities[row_index]
+            scalar_manager_index = row_scalar_manager_index[i]
+            scalar_manager = unique_scalar_managers[scalar_manager_index]
+
+            # re-attach the original de-duplicated data before deserializing
+            row.entity = entity
+            row.scalar_manager = scalar_manager
+
+            rows.append(row)
+
+        rept = RowEntityPhiTensor(rows=rows)
+        rept.serde_concurrency = proto.serde_concurrency
+        return rept
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return RowEntityPhiTensor_PB
 
 
 @implements(RowEntityPhiTensor, np.expand_dims)

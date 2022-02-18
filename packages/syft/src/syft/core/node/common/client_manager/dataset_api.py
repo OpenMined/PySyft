@@ -312,7 +312,7 @@ class Dataset:
         self.description = description
         self.name = name
         self.id = id
-        self.tags = tags if tags else []
+        self.tags = tags if tags is not None else []
         self.data = data
         self.client = client
         self.key = key

@@ -13,6 +13,7 @@ from syft import deserialize
 from syft import serialize
 from syft.core.common import UID
 from syft.core.io.address import Address
+from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.node.common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
@@ -52,7 +53,7 @@ def test_request_message() -> None:
 @pytest.mark.asyncio
 @mark.parametrize("method_name", ["accept", "approve"])
 def test_accept(method_name: str) -> None:
-    node = Domain(name="remote domain")
+    node = Domain(name="remote domain", store_type=DictStore)
     node_client = node.get_root_client()
 
     addr = Address()
@@ -76,7 +77,7 @@ def test_accept(method_name: str) -> None:
 @pytest.mark.asyncio
 @mark.parametrize("method_name", ["deny", "reject", "withdraw"])
 def test_deny(method_name: str) -> None:
-    node = Domain(name="remote domain")
+    node = Domain(name="remote domain", store_type=DictStore)
     node_client = node.get_root_client()
 
     addr = Address()

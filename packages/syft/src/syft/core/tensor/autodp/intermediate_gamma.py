@@ -7,6 +7,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Sequence
+from typing import Set
 from typing import Tuple
 from typing import Union
 
@@ -18,6 +19,11 @@ from sympy.ntheory.factor_ import factorint
 # relative
 from ....core.adp.entity import DataSubjectGroup
 from ....core.adp.entity import Entity
+from ....core.adp.scalar.intermediate_gamma_scalar import IntermediateGammaScalar
+from ....util import concurrency_count
+from ....util import list_sum
+from ....util import parallel_execution
+from ....util import split_rows
 from ...adp.publish import publish
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import serializable
@@ -45,6 +51,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         "term_tensor",
         "coeff_tensor",
         "bias_tensor",
+        "value_tensor",
         "scalar_manager",
         "child",
         "unique_entities",
@@ -56,9 +63,11 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         term_tensor: np.ndarray,
         coeff_tensor: np.ndarray,
         bias_tensor: np.ndarray,
+        value_tensor: Optional[np.ndarray] = None,
         # min_vals: np.ndarray,
         # max_vals: np.ndarray,
-        scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
+        scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
+        unique_entities: Optional[Set[Entity]] = None,
     ) -> None:
         super().__init__(term_tensor)
 
@@ -77,6 +86,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # EXPLAIN B: this is a 5x10
         self.bias_tensor = bias_tensor
 
+        # optional cache of values
+        self.value_tensor = value_tensor
+
         # EXPLAIN A: this is "min_vals"
         # EXPLAIN B: this is a 5x10
         # self.min_vals = min_vals
@@ -85,56 +97,120 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         # EXPLAIN B: this is a 5x10
         # self.max_vals = max_vals
 
-        self.scalar_manager = scalar_manager
+        self.scalar_manager = (
+            scalar_manager
+            if scalar_manager is not None
+            else VirtualMachinePrivateScalarManager()
+        )
 
-        # Unique entities
-        self.unique_entities: set[Entity] = set()
-        self.n_entities = 0
+        if not hasattr(self, "_min_vals_cache"):
+            self._min_vals_cache: Optional[np.array] = None
+        if not hasattr(self, "_max_vals_cache"):
+            self._max_vals_cache: Optional[np.array] = None
 
-        for entity in set(self._entities_list()):
-            if isinstance(entity, Entity):
-                if entity not in self.unique_entities:
-                    self.unique_entities.add(entity)
-                    self.n_entities += 1
-            elif isinstance(entity, DataSubjectGroup):
-                for e in entity.entity_set:
-                    if e not in self.unique_entities:
-                        self.unique_entities.add(e)
+        self.unique_entities: set[Entity] = (
+            unique_entities if unique_entities is not None else set()
+        )
+        self.n_entities: int = len(self.unique_entities)
+
+        if self.n_entities == 0:
+            # Unique entities
+
+            for entity in set(self._entities_list()):
+                if isinstance(entity, Entity):
+                    if entity not in self.unique_entities:
+                        self.unique_entities.add(entity)
                         self.n_entities += 1
-            else:
-                raise Exception(f"{type(entity)}")
+                elif isinstance(entity, DataSubjectGroup):
+                    for e in entity.entity_set:
+                        if e not in self.unique_entities:
+                            self.unique_entities.add(e)
+                            self.n_entities += 1
+                else:
+                    raise Exception(f"{type(entity)}")
 
     @property
     def flat_scalars(self) -> List[Any]:
         flattened_terms = self.term_tensor.reshape(-1, self.term_tensor.shape[-1])
         flattened_coeffs = self.coeff_tensor.reshape(-1, self.coeff_tensor.shape[-1])
         flattened_bias = self.bias_tensor.reshape(-1)
-        # flattened_min_vals = self.min_vals.reshape(-1)
-        # flattened_max_vals = self.max_vals.reshape(-1)
+        # flattened_min_vals = self._min_values().reshape(-1)
+        # flattened_max_vals = self._max_values().reshape(-1)
+
+        known_primes: set[int] = set(self.scalar_manager.prime2symbol.keys())
 
         scalars = list()
-
         for i in range(len(flattened_terms)):
+
             single_poly_terms = flattened_terms[i]
             single_poly_coeffs = flattened_coeffs[i]
             single_poly_bias = flattened_bias[i]
             # single_poly_min_val = flattened_min_vals[i]
             # single_poly_max_val = flattened_max_vals[i]
 
-            scalar = single_poly_bias
+            input_mp = [single_poly_bias]
 
             for j in range(len(single_poly_terms)):
                 term = single_poly_terms[j]
                 coeff = single_poly_coeffs[j]
 
-                for prime, n_times in factorint(term).items():
+                if term in known_primes:
+                    prime_list = [(term, 1)]
+                else:
+                    prime_list = factorint(term).items()
+
+                for prime, n_times in prime_list:
                     input_scalar = self.scalar_manager.prime2symbol[prime]
                     right = input_scalar * n_times * coeff
-                    scalar = scalar + right
+                    input_mp.append(right)
+
+            num_process = min(concurrency_count(), len(input_mp))
+            if num_process > 1:
+                args = split_rows(input_mp, cpu_count=num_process)
+                output = parallel_execution(list_sum, cpu_bound=True)(args)
+                scalar: IntermediateGammaScalar = sum(output)  # type: ignore
+            else:
+                scalar: IntermediateGammaScalar = sum(input_mp)  # type: ignore
+
+            # to optimize down stream we can prevent search on linear queries if we
+            # know that all single_poly_terms are prime therefore the query is linear
+            scalar.is_linear = True
+            if j in single_poly_terms:
+                if (
+                    single_poly_terms[j] not in known_primes
+                    or single_poly_coeffs[j] != 1
+                ):
+                    scalar.is_linear = False
+                    break
 
             scalars.append(scalar)
 
+        if self.value_tensor is not None:
+            flat_value_tensor = self.value_tensor.flatten()
+            for i in range(len(scalars)):
+                scalars[i]._value_cache = flat_value_tensor[i]  # type: ignore
+
         return scalars
+
+    def update(self) -> None:
+        # TODO: Recalculate term tensor using an optimized slice method
+
+        # index_number = self._entities()  # TODO: Check if this works!!
+        prime_numbers = np.array(self.scalar_manager.primes_allocated, dtype=np.int32)
+
+        # TODO: See if this fails for addition of more than 2 IGTs
+        length = len(prime_numbers)
+        tensor_shape_count = np.prod(self.term_tensor.shape)
+        if length == tensor_shape_count:
+            self.term_tensor = prime_numbers.reshape(self.term_tensor.shape)
+        elif length > tensor_shape_count:
+            self.term_tensor = prime_numbers[-tensor_shape_count:].reshape(
+                self.term_tensor.shape
+            )
+        else:
+            raise Exception(f"Failed to update IGT with {length} {tensor_shape_count}")
+
+        # self.term_tensor.flatten().reshape(-1, 2)[:, -1] = prime_numbers
 
     def _values(self) -> np.array:
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
@@ -148,6 +224,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
+        if self._max_vals_cache is not None:
+            return self._max_vals_cache
+
         return np.array(list(map(lambda x: x.max_val, self.flat_scalars))).reshape(
             self.shape
         )
@@ -156,6 +235,10 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         """WARNING: DO NOT MAKE THIS AVAILABLE TO THE POINTER!!!
         DO NOT ADD THIS METHOD TO THE AST!!!
         """
+
+        if self._min_vals_cache is not None:
+            return self._min_vals_cache
+
         return np.array(list(map(lambda x: x.min_val, self.flat_scalars))).reshape(
             self.shape
         )
@@ -205,6 +288,15 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     raise Exception(f"No plans for row type:{type(row)}")
             output_entities.append(combined_entities)
         return np.array(output_entities).reshape(self.shape)
+
+    def astype(self, np_type: np.dtype = np.int32) -> IntermediateGammaTensor:
+        return self.__class__(
+            term_tensor=self.term_tensor.astype(np_type),
+            coeff_tensor=self.coeff_tensor.astype(np_type),
+            bias_tensor=self.bias_tensor.astype(np_type),
+            scalar_manager=self.scalar_manager,
+            unique_entities=self.unique_entities,
+        )
 
     def __gt__(self, other: Union[np.ndarray, IntermediateGammaTensor]) -> Any:
         if isinstance(other, np.ndarray):
@@ -290,7 +382,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
                 vals = self._values()
                 tensor = InitialGammaTensor(
-                    values=not (vals < other) and not (vals > other),
+                    values=vals == other,
                     max_vals=np.ones_like(vals),
                     min_vals=np.zeros_like(vals),
                     entities=self._entities(),
@@ -306,12 +398,15 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
                 self_vals = self._values()
                 other_vals = other._values()
+                # output_scalar = self.scalar_manager.copy()
+                # output_scalar.combine_(other.scalar_manager)
+                # other.update()
                 tensor = InitialGammaTensor(
                     values=self_vals == other_vals,
-                    # values= not (self_vals < other_vals) and not (self_vals > other_vals),
                     min_vals=np.zeros_like(self_vals),
                     max_vals=np.ones_like(self_vals),
                     entities=self._entities() + other._entities(),
+                    # scalar_manager=output_scalar
                 )
             else:
                 raise Exception(
@@ -329,7 +424,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
                 vals = self._values()
                 tensor = InitialGammaTensor(
-                    values=(vals < other) or (vals > other),
+                    values=vals != other,
                     max_vals=np.ones_like(vals),
                     min_vals=np.zeros_like(vals),
                     entities=self._entities(),
@@ -345,12 +440,16 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
                 self_vals = self._values()
                 other_vals = other._values()
+                # output_scalar = self.scalar_manager.copy()
+                # output_scalar.combine_(other.scalar_manager)
+                # other.update()
                 tensor = InitialGammaTensor(
                     values=self_vals != other_vals,
                     # values= not (self_vals < other_vals) and not (self_vals > other_vals),
                     min_vals=np.zeros_like(self_vals),
                     max_vals=np.ones_like(self_vals),
                     entities=self._entities() + other._entities(),
+                    # scalar_manager=output_scalar
                 )
             else:
                 raise Exception(
@@ -447,7 +546,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         return self.term_tensor.shape
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
-
+        print("IntermediaGammaTensor:510: TRY: publish(scalars=self.flat_scalars)")
         result = np.array(
             publish(
                 scalars=self.flat_scalars,
@@ -457,17 +556,18 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 public_only=True,
             )
         ).reshape(self.shape)
-
-        if self.sharetensor_values is not None:
+        print("IntermediaGammaTensor:510: SUCCESS: publish(scalars=self.flat_scalars)")
+        sharetensor_values = getattr(self, "sharetensor_values", None)
+        if sharetensor_values is not None:
             # relative
             from ..smpc.share_tensor import ShareTensor
 
             result = ShareTensor(
-                rank=self.sharetensor_values.rank,
-                parties_info=self.sharetensor_values.parties_info,
-                ring_size=self.sharetensor_values.ring_size,
-                seed_przs=self.sharetensor_values.seed_przs,
-                clients=self.sharetensor_values.clients,
+                rank=sharetensor_values.rank,
+                parties_info=sharetensor_values.parties_info,
+                ring_size=sharetensor_values.ring_size,
+                seed_przs=sharetensor_values.seed_przs,
+                clients=sharetensor_values.clients,
                 value=result,
             )
         return result
@@ -499,6 +599,10 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
         )
 
     def __add__(self, other: Any) -> IntermediateGammaTensor:
+        output_scalar_manager = self.scalar_manager.copy()
+        # TODO: add support for SingleEntitiyPhiTensor
+        # this will cause it to generate them using a more computationally intensive
+        unique_entities = None
 
         if is_acceptable_simple_type(other):
 
@@ -517,13 +621,27 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             # EXPLAIN B: this is a 5x10
             bias_tensor = self.bias_tensor + other
 
+            max_vals_cache = self._max_values() + other
+            min_vals_cache = self._min_values() + other
+            unique_entities = self.unique_entities
+
         else:
 
-            if self.scalar_manager != other.scalar_manager:
-                # TODO: come up with a method for combining symbol factories
-                raise Exception(
-                    "Cannot add two tensors with different symbol encodings"
-                )
+            # relative
+            from .dp_tensor_converter import convert_to_gamma_tensor
+            from .single_entity_phi import SingleEntityPhiTensor
+
+            if isinstance(other, SingleEntityPhiTensor):
+                other = convert_to_gamma_tensor(other)
+
+            # if self.scalar_manager != other.scalar_manager:
+            # TODO: come up with a method for combining symbol factories
+            # raise Exception(
+            #     "Cannot add two tensors with different symbol encodings"
+            # )
+
+            output_scalar_manager.combine_(other.scalar_manager)
+            other.update()  # change term tensor after combining scalar managers
 
             # Step 1: Concatenate
             term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)  # type: ignore
@@ -532,14 +650,26 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             )
             bias_tensor = self.bias_tensor + other.bias_tensor
 
+            max_vals_cache = self._max_values() + other._max_values()
+            min_vals_cache = self._min_values() + other._min_values()
+
+            if hasattr(other, "unique_entities"):
+                unique_entities = self.unique_entities.union(other.unique_entities)
+
         # EXPLAIN B: NEW OUTPUT becomes a 5x10x2
         # TODO: Step 2: Reduce dimensionality if possible (look for duplicates)
-        return IntermediateGammaTensor(
+        result = IntermediateGammaTensor(
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
-            scalar_manager=self.scalar_manager,
+            scalar_manager=output_scalar_manager,
+            unique_entities=unique_entities,
         )
+
+        result._min_vals_cache = min_vals_cache
+        result._max_vals_cache = max_vals_cache
+
+        return result
 
     # def clip(self, a_min:int, a_max: int) -> IntermediateGammaTensor:
     #     """Clips the tensor at a certain minimum and maximum. a_min and a_max are
