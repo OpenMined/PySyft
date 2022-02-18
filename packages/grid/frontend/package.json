@@ -14,9 +14,8 @@
     "export": "next export",
     "build:tailwind": "postcss src/styles/globals.css -o src/styles/tailwind.output.css",
     "watch:tailwind": "postcss --verbose --watch src/styles/globals.css -o src/styles/tailwind.output.css",
-    "cy:open": "cypress open",
-    "cy:install": "cypress install",
-    "cy:run": "cypress run",
+    "cypress:open": "export NEXT_PUBLIC_HOST=\"http://localhost:${HTTP_PORT-8081}\" && cypress open",
+    "cypress:run": "export NEXT_PUBLIC_HOST=\"http://localhost:${HTTP_PORT-8081}\" && cypress run",
     "format": "pretty-quick --staged"
   },
   "husky": {
