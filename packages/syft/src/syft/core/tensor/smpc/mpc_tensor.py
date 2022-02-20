@@ -736,6 +736,34 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def truediv(self, y: Union["MPCTensor", torch.Tensor, float, int]) -> "MPCTensor":
+        """Apply the "div" operation between "self" and "y".
+
+        Args:
+            y (Union["MPCTensor", torch.Tensor, float, int]): Denominator.
+
+        Returns:
+            MPCTensor: Result of the operation.
+
+        Raises:
+            ValueError: If parties are more than two.
+        """
+        is_private = isinstance(y, MPCTensor)
+        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
+
+        # TODO: Implement reciprocal approximation or take it from SyMPC
+        if is_private:
+            raise ValueError("Private division is not supported at the moment!")
+
+        shares_divide = spdz.public_divide(self, y, **kwargs)
+        res = MPCTensor(
+            parties=self.parties,
+            shares=shares_divide,
+            shape=self.shape,
+            ring_size=self.ring_size,
+        )
+        return res
+
     def lt(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
@@ -906,6 +934,7 @@ class MPCTensor(PassthroughTensor):
     __radd__ = add
     __sub__ = sub
     __rsub__ = rsub
+    __truediv__ = truediv
     __mul__ = mul
     __rmul__ = mul
     __matmul__ = matmul

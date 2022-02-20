@@ -481,6 +481,24 @@ class ShareTensor(PassthroughTensor):
         new_share = new_self.apply_function(y, "add")
         return new_share
 
+    def truediv(
+        self, y: Union[int, float, torch.Tensor, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "div" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, torch.Tensor, "ShareTensor"]): Denominator.
+
+        Returns:
+            ShareTensor: Result of the operation.
+
+        Raises:
+            ValueError: If y is not an integer or LongTensor.
+        """
+        raise ValueError(
+            "We should not reach this point for division - it should be done inside smpc actions"
+        )
+
     def mul(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
     ) -> "ShareTensor":
@@ -668,29 +686,6 @@ class ShareTensor(PassthroughTensor):
 
         return self.child == other.child
 
-    # TRASK: commenting out because ShareTEnsor doesn't appear to have .session_uuid or .config
-    # def div(
-    #     self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
-    # ) -> "ShareTensor":
-    #     """Apply the "div" operation between "self" and "y".
-    #
-    #     Args:
-    #         y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): Denominator.
-    #
-    #     Returns:
-    #         ShareTensor: Result of the operation.
-    #
-    #     Raises:
-    #         ValueError: If y is not an integer or LongTensor.
-    #     """
-    #     if not isinstance(y, (int, torch.LongTensor)):
-    #         raise ValueError("Div works (for the moment) only with integers!")
-    #
-    #     res = ShareTensor(session_uuid=self.session_uuid, config=self.config)
-    #     # res = self.apply_function(y, "floordiv")
-    #     res.tensor = self.tensor // y
-    #     return res
-
     def bit_extraction(self, pos: int = 0) -> ShareTensor:
         """Extracts the bit at the specified position.
 
@@ -810,6 +805,7 @@ class ShareTensor(PassthroughTensor):
     __sub__ = sub
     __rsub__ = rsub
     __mul__ = mul
+    __truediv__ = truediv
     __rmul__ = mul
     __matmul__ = matmul
     __rmatmul__ = rmatmul

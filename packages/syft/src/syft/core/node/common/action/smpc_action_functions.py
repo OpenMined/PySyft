@@ -399,6 +399,23 @@ def bit_decomposition(
     return actions
 
 
+def public_div(
+    nr_parties: int,
+    self_id: UID,
+    ring_size: UID,
+    bitwise: UID,
+    seed_id_locations: int,
+    node: Any,
+) -> List[SMPCActionMessage]:
+    generator = np.random.default_rng(seed_id_locations)
+    result_id = UID(UUID(bytes=generator.bytes(16)))
+
+    actions = []
+    # TODO: Try to add the operations from public_device from spdz as a simple action here
+
+    return actions
+
+
 # Given an SMPC Action map it to an action constructor
 MAP_FUNC_TO_ACTION: Dict[
     str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
@@ -406,6 +423,7 @@ MAP_FUNC_TO_ACTION: Dict[
     "__add__": functools.partial(smpc_basic_op, "add"),
     "__sub__": functools.partial(smpc_basic_op, "sub"),
     "__mul__": smpc_mul,  # type: ignore
+    "__truediv__": public_div,
     "bit_decomposition": bit_decomposition,  # type: ignore
     # "__gt__": smpc_gt,  # type: ignore TODO: this should be added back when we have only one action
 }
