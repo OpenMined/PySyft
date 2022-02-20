@@ -1,0 +1,48 @@
+name: Hagrid Continuous Delivery
+
+on:
+  schedule:
+    - cron: "00 03 * * 5" # Thursday
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run hagrid cd manually"
+        required: false
+
+jobs:
+  deploy-hagrid-beta:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN }}
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.x"
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools wheel twine tox bump2version
+      - name: Bump the Version
+        working-directory: ./packages/hagrid
+        run: |
+          python3 hagrid/__init__.py
+          bump2version prenum --allow-dirty --no-commit
+          tox -e lint || true
+          python3 hagrid/__init__.py
+      - name: Commit changes
+        uses: EndBug/add-and-commit@v7
+        with:
+          author_name: Madhava Jay
+          author_email: madhava@openmined.org
+          message: "bump version"
+          add: "['.bumpversion.cfg','hagrid/__init__.py']"
+
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          tox -e hagrid.publish
+          twine upload packages/hagrid/dist/*
