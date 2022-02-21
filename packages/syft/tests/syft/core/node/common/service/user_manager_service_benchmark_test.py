@@ -110,6 +110,7 @@ class TestCreateUserMessageBenchmarking:
             "website": faker.hostname(),
             "institution": faker.company(),
             "budget": faker.random.random() * 100,
+            "role": "Data Scientist",
         }
 
         user2 = {
@@ -119,6 +120,7 @@ class TestCreateUserMessageBenchmarking:
             "website": faker.hostname(),
             "institution": faker.company(),
             "budget": faker.random.random() * 100,
+            "role": "Data Scientist",
         }
 
         # Create user message
