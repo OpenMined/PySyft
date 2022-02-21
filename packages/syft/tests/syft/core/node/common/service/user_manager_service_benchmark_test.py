@@ -105,7 +105,7 @@ class TestCreateUserMessageBenchmarking:
         # Create dummy user data
         user1 = {
             "name": faker.name(),
-            "email": faker.email(),
+            "email": f"{faker.random_int()}-{faker.email()}",
             "password": faker.password(),
             "website": faker.hostname(),
             "institution": faker.company(),
@@ -115,7 +115,7 @@ class TestCreateUserMessageBenchmarking:
 
         user2 = {
             "name": faker.name(),
-            "email": faker.email(),
+            "email": f"{faker.random_int()}-{faker.email()}",
             "password": faker.password(),
             "website": faker.hostname(),
             "institution": faker.company(),
