@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from typing import Optional
+from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -15,6 +16,7 @@ import syft as sy
 from ....proto.core.adp.scalar_pb2 import PhiScalar as PhiScalar_PB
 from ...common import UID
 from ...common.serde.serializable import serializable
+from ..entity import DataSubjectGroup
 from ..entity import Entity
 from ..search import ssid2obj
 from .abstract.base_scalar import BaseScalar
@@ -36,7 +38,7 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
         min_val: Optional[float],
         value: Optional[float],
         max_val: Optional[float],
-        entity: Optional[Entity] = None,
+        entity: Optional[Union[Entity, DataSubjectGroup]] = None,
         id: Optional[UID] = None,
         ssid: Optional[str] = None,
     ) -> None:

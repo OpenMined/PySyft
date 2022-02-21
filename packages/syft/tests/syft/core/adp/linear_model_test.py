@@ -5,17 +5,16 @@ import numpy as np
 import pytest
 
 # syft absolute
-from syft import Domain
+import syft as sy
 from syft.core.adp.adversarial_accountant import AdversarialAccountant
 from syft.core.adp.entity import Entity
 from syft.core.adp.scalar.phi_scalar import PhiScalar
-from syft.core.node.common.node_table.utils import create_memory_db_engine
+from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.tensor.tensor import Tensor
 
 
 def test_autodp_phiscalar_can_publish() -> None:
-    db_engine, _ = create_memory_db_engine()
-    domain = Domain(name="Bob", db_engine=db_engine)
+    domain = sy.Domain("Alice", store_type=DictStore)
 
     def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")
@@ -45,8 +44,7 @@ def test_autodp_phiscalar_can_publish() -> None:
 
 
 def test_autodp_phiscalar_cannot_publish() -> None:
-    db_engine, _ = create_memory_db_engine()
-    domain = Domain(name="Bob", db_engine=db_engine)
+    domain = sy.Domain("Alice", store_type=DictStore)
 
     def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")
@@ -76,10 +74,7 @@ def test_autodp_phiscalar_cannot_publish() -> None:
     assert len(domain.acc.entities) == 0
 
 
-# def test_autodp_phiscalar_substitute_publish() -> None:
-#     db_engine, _ = create_memory_db_engine()
-#     domain = Domain(name="Bob", db_engine=db_engine)
-#
+# def test_autodp_phiscalar_substitute_publish(domain: sy.Domain) -> None:
 #     def encode_key(key: SigningKey) -> str:
 #         return key.encode(encoder=HexEncoder).decode("utf-8")
 #

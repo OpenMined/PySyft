@@ -79,7 +79,7 @@ To read more about what Grid is please consult the old [PyGrid README](https://g
 
 - docker
 - tox
-- python 3.7+
+- python 3.8+
 
 ### Docker
 
