@@ -116,7 +116,10 @@ def test_get_roles_message(domain: sy.Domain) -> None:
 
 def test_del_role_manager(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
-    role = domain.roles.last()
+
+    # Create a dummy role to be deleted
+    domain.roles.register(**{"name": "RoleToDelete"})
+    role = domain.roles.first(**{"name": "RoleToDelete"})
 
     msg = DeleteRoleMessage(
         address=domain.address,
