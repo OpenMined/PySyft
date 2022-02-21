@@ -1,0 +1,25 @@
+name: Benchmark Test
+
+on:
+  schedule:
+    - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run Benchmarks Manually"
+        required: false
+jobs:
+  run-benchmark:
+    runs-on: [Benchmark]
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Setup syft
+        run: |
+          pip install -e packages/syft
+
+      - name: Run Benchmark
+        run: |
+#          python3 -m pyperf system tune  'TODO: Fix Requires permission to turn off irqbalance'
+          python3 executor.py
+        working-directory: ./benchmarks
