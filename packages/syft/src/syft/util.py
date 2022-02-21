@@ -1,16 +1,31 @@
 # stdlib
+import asyncio
+from asyncio.selector_events import BaseSelectorEventLoop
+from concurrent.futures import ProcessPoolExecutor
+from concurrent.futures import ThreadPoolExecutor
+from contextlib import contextmanager
+import functools
+from itertools import repeat
+import multiprocessing as mp
+import operator
 import os
 from pathlib import Path
 from secrets import randbelow
 from typing import Any
+from typing import Callable
+from typing import Dict
+from typing import Iterator
 from typing import List
 from typing import Optional
+from typing import Sequence
+from typing import Type
 from typing import Union
 
 # third party
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import requests
 
 # syft absolute
 import syft
@@ -428,6 +443,16 @@ def get_root_data_path() -> Path:
     return data_dir
 
 
+def download_file(url: str, full_path: Union[str, Path]) -> Path:
+    if not os.path.exists(full_path):
+        r = requests.get(url, allow_redirects=True, verify=verify_tls())  # nosec
+        path = os.path.dirname(full_path)
+        os.makedirs(path, exist_ok=True)
+        with open(full_path, "wb") as f:
+            f.write(r.content)
+    return Path(full_path)
+
+
 def str_to_bool(bool_str: Optional[str]) -> bool:
     result = False
     bool_str = str(bool_str).lower()
@@ -442,3 +467,174 @@ def verify_tls() -> bool:
 
 def ssl_test() -> bool:
     return len(os.environ.get("REQUESTS_CA_BUNDLE", "")) > 0
+
+
+_tracer = None
+
+
+def get_tracer(service_name: Optional[str] = None) -> Any:
+    global _tracer
+    if _tracer is not None:  # type: ignore
+        return _tracer  # type: ignore
+
+    PROFILE_MODE = str_to_bool(os.environ.get("PROFILE", "False"))
+    PROFILE_MODE = False
+    if not PROFILE_MODE:
+
+        class NoopTracer:
+            @contextmanager
+            def start_as_current_span(*args: Any, **kwargs: Any) -> Any:
+                yield None
+
+        _tracer = NoopTracer()
+        return _tracer
+
+    print("Profile mode with OpenTelemetry enabled")
+    if service_name is None:
+        service_name = os.environ.get("SERVICE_NAME", "client")
+
+    jaeger_host = os.environ.get("JAEGER_HOST", "localhost")
+    jaeger_port = int(os.environ.get("JAEGER_PORT", "6831"))
+
+    # third party
+    from opentelemetry import trace
+    from opentelemetry.exporter.jaeger.thrift import JaegerExporter
+    from opentelemetry.sdk.resources import Resource
+    from opentelemetry.sdk.resources import SERVICE_NAME
+    from opentelemetry.sdk.trace import TracerProvider
+    from opentelemetry.sdk.trace.export import BatchSpanProcessor
+
+    trace.set_tracer_provider(
+        TracerProvider(resource=Resource.create({SERVICE_NAME: service_name}))
+    )
+
+    jaeger_exporter = JaegerExporter(
+        agent_host_name=jaeger_host,
+        agent_port=jaeger_port,
+    )
+
+    trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
+
+    _tracer = trace.get_tracer(__name__)
+    return _tracer
+
+
+def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
+    """Set the same event loop to other threads/processes.
+    This is needed because there are new threads/processes started with
+    the Executor and they do not have have an event loop set
+    Args:
+        event_loop: The event loop.
+    """
+    if event_loop:
+        asyncio.set_event_loop(event_loop)
+
+
+# local scope functions cant be pickled so this needs to be global
+def parallel_execution(
+    fn: Callable[..., Any],
+    parties: Union[None, List[Any]] = None,
+    cpu_bound: bool = False,
+) -> Callable[..., List[Any]]:
+    """Wrap a function such that it can be run in parallel at multiple parties.
+    Args:
+        fn (Callable): The function to run.
+        parties (Union[None, List[Any]]): Clients from syft. If this is set, then the
+            function should be run remotely. Defaults to None.
+        cpu_bound (bool): Because of the GIL (global interpreter lock) sometimes
+            it makes more sense to use processes than threads if it is set then
+            processes should be used since they really run in parallel if not then
+            it makes sense to use threads since there is no bottleneck on the CPU side
+    Returns:
+        Callable[..., List[Any]]: A Callable that returns a list of results.
+    """
+
+    @functools.wraps(fn)
+    def wrapper(
+        args: List[List[Any]],
+        kwargs: Optional[Dict[Any, Dict[Any, Any]]] = None,
+    ) -> List[Any]:
+        """Wrap sanity checks and checks what executor should be used.
+        Args:
+            args (List[List[Any]]): Args.
+            kwargs (Optional[Dict[Any, Dict[Any, Any]]]): Kwargs. Default to None.
+        Returns:
+            List[Any]: Results from the parties
+        """
+        if args is None or len(args) == 0:
+            raise Exception("Parallel execution requires more than 0 args")
+
+        # _base.Executor
+        executor: Type
+        if cpu_bound:
+            executor = ProcessPoolExecutor
+            # asyncio objects cannot pickled and sent across processes
+            # AttributeError: Can't pickle local object 'WeakSet.__init__.<locals>._remove'
+            loop = None
+        else:
+            executor = ThreadPoolExecutor
+            loop = asyncio.get_event_loop()
+
+        # Each party has a list of args and a dictionary of kwargs
+        nr_parties = len(args)
+
+        if kwargs is None:
+            kwargs = {}
+
+        if parties:
+            func_name = f"{fn.__module__}.{fn.__qualname__}"
+            attr_getter = operator.attrgetter(func_name)
+            funcs = [attr_getter(party) for party in parties]
+        else:
+            funcs = list(repeat(fn, nr_parties))
+
+        futures = []
+
+        with executor(
+            max_workers=nr_parties, initializer=initializer, initargs=(loop,)
+        ) as executor:
+            for i in range(nr_parties):
+                _args = args[i]
+                _kwargs = kwargs
+                futures.append(executor.submit(funcs[i], *_args, **_kwargs))
+
+        local_shares = [f.result() for f in futures]
+
+        return local_shares
+
+    return wrapper
+
+
+def split_rows(rows: Sequence, cpu_count: int) -> List:
+    n = len(rows)
+    a, b = divmod(n, cpu_count)
+    start = 0
+    output = []
+    for i in range(cpu_count):
+        end = start + a + (1 if b - i - 1 >= 0 else 0)
+        output.append(rows[start:end])
+        start = end
+    return output
+
+
+def list_sum(*inp_lst: List[Any]) -> Any:
+    s = inp_lst[0]
+    for i in inp_lst[1:]:
+        s = s + i
+    return s
+
+
+def concurrency_count(factor: float = 0.8) -> int:
+    force_count = int(os.environ.get("FORCE_CONCURRENCY_COUNT", 0))
+    mp_count = force_count if force_count >= 1 else int(mp.cpu_count() * factor)
+    return mp_count
+
+
+@contextmanager
+def concurrency_override(count: int = 1) -> Iterator:
+    # this only effects local code so its best to use in unit tests
+    try:
+        os.environ["FORCE_CONCURRENCY_COUNT"] = f"{count}"
+        yield None
+    finally:
+        os.environ["FORCE_CONCURRENCY_COUNT"] = "0"

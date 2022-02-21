@@ -10,6 +10,7 @@ FROM node:16-alpine as grid-ui-development
 ENV NEXT_PUBLIC_ENVIRONMENT development
 ENV NEXT_PUBLIC_API_URL /api/v1
 ENV NODE_TYPE $NODE_TYPE
+ENV NEXT_TELEMETRY_DISABLED 1
 
 WORKDIR /app
 COPY --from=init-stage /app .

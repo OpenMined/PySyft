@@ -13,6 +13,7 @@ services:
       context: ./vpn
       dockerfile: tailscale.dockerfile
     environment:
+      - SERVICE_NAME=tailscale
       - RELEASE=${RELEASE:-production}
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
       - STACK_API_KEY=$STACK_API_KEY
@@ -39,6 +40,7 @@ services:
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
+      - SERVICE_NAME=proxy
       - RELEASE=${RELEASE:-production}
     command:
       - "--providers.docker"
@@ -64,6 +66,7 @@ services:
       args:
         NODE_TYPE: ${NODE_TYPE}
     environment:
+      - SERVICE_NAME=frontend
       - RELEASE=${RELEASE:-production}
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - VERSION=${VERSION}
@@ -80,13 +83,38 @@ services:
     volumes:
       - app-db-data:/var/lib/postgresql/data
     environment:
+      - SERVICE_NAME=db
       - RELEASE=${RELEASE:-production}
     env_file:
       - .env
+    command:
+      - postgres
+      - --max_connections=1000 # default 100
+      # - --shared_buffers=8GB # 32 MB
+      # - --temp_buffers=8GB # default 8 MB
+      # - --work_mem=8GB # default 4 MB
+      # - --effective_io_concurrency=8 # default 1
+      # - --block_size=16384 # default 8192
+      # - --max_files_per_process=1000 # default 1000
+      # - --segment_size=8GB # default 1GB # cant change
+
+  redis:
+    restart: always
+    image: redis:6.2
+    volumes:
+      - app-redis-data:/data
+      - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
+    environment:
+      - SERVICE_NAME=redis
+      - RELEASE=${RELEASE:-production}
+    env_file:
+      - .env
+
   queue:
     restart: always
     image: rabbitmq:3
     environment:
+      - SERVICE_NAME=queue
       - RELEASE=${RELEASE:-production}
     volumes:
       - ./rabbitmq/rabbitmq.conf:/etc/rabbitmq/rabbitmq.conf
@@ -99,6 +127,7 @@ services:
     env_file:
       - .env
     environment:
+      - SERVICE_NAME=backend
       - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
@@ -128,6 +157,7 @@ services:
     env_file:
       - .env
     environment:
+      - SERVICE_NAME=backend_stream
       - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
@@ -158,6 +188,7 @@ services:
     env_file:
       - .env
     environment:
+      - SERVICE_NAME=celeryworker
       - RELEASE=${RELEASE:-production}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
@@ -202,6 +233,7 @@ volumes:
   app-db-data:
   tailscale-data:
   headscale-data:
+  app-redis-data:
 
 networks:
   traefik-public:

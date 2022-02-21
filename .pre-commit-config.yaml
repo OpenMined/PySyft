@@ -63,14 +63,13 @@ repos:
         always_run: true
         exclude: ^(packages/syft/src/syft/proto)
   - repo: https://gitlab.com/pycqa/flake8
-    rev: 3.9.2
+    rev: 4.0.1
     hooks:
       - id: flake8
         always_run: true
         args: ["--config=packages/syft/setup.cfg"]
-        #       additional_dependencies:
-        #         - flake8-kwarger
-        #         - darglint
+        additional_dependencies:
+          - flake8-bugbear
         exclude: ^(packages/syft/src/syft/proto|packages/grid/ansible/)
 
   - repo: https://github.com/pre-commit/mirrors-mypy

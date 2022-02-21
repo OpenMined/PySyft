@@ -49,10 +49,10 @@ class GenericPayloadMessageWithReply:
     message_type = GenericPayloadMessage
     message_reply_type = GenericPayloadReplyMessage
 
-    def __init__(self, kwargs: Dict[str, Any] = {}) -> None:
+    def __init__(self, kwargs: Optional[Dict[str, Any]] = None) -> None:
         if hasattr(kwargs, "upcast"):
             kwargs = kwargs.upcast()  # type: ignore
-        self.kwargs = kwargs
+        self.kwargs: Dict[str, Any] = kwargs if kwargs is not None else {}
 
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
