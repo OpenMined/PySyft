@@ -68,18 +68,17 @@ def test_dtype() -> None:
 
 
 def test__and__() -> None:
-    data_a = np.array([True, False, True])
-    data_b = np.array([False, False, True])
+    data_a = np.array([True, False, False])
+    data_b = np.array([True, True, False])
     data_c = np.array([False, False])
     tensor_a = PassthroughTensor(child=data_a)
     tensor_b = PassthroughTensor(child=data_b)
     tensor_c = PassthroughTensor(child=data_c)
-    expected = tensor_b
-    result_a = tensor_a & tensor_b
-    result_b = tensor_a & data_b
+    result_a = data_a & data_b
+    result_b = tensor_a & tensor_b
 
-    assert result_a == expected
-    assert result_b == expected
+    assert result_a == data_a
+    assert result_b == tensor_a
 
     with pytest.raises(
         ValueError, match="operands could not be broadcast together with shapes"
@@ -398,10 +397,10 @@ def test__invert__() -> None:
 
 
 def test__index__() -> None:
-    data_a = np.array([1, 2, 3], dtype=np.int32)
+    data_a = np.array(1)
     tensor_a = PassthroughTensor(child=data_a)
 
-    assert tensor_a[2].__index__() == 3
+    assert tensor_a.__index__() == 1
 
 
 def test_copy() -> None:
@@ -409,6 +408,7 @@ def test_copy() -> None:
     tensor_a = PassthroughTensor(child=data_a)
 
     assert tensor_a.copy() == tensor_a
+    assert id(tensor_a.copy()) != id(tensor_a)
 
 
 def test__mul__() -> None:
@@ -666,7 +666,7 @@ def test_tolist() -> None:
     result = tensor_a.tolist()
 
     assert result == tensor_b
-    assert type(result.child) == list
+    assert isinstance(result.child, list)
 
 
 def test_flatten() -> None:
