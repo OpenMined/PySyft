@@ -12,4 +12,4 @@ def create_bench_constructor(runner: pyperf.Runner, rept_length: int, rows:int, 
         rept_rows.append(sept)
 
     partial_function_evaluation = functools.partial(REPT, rept_rows)
-    runner.bench_func("rept_creation_rept_length_{rept_length}_rows_{rows}_cols_{cols}", partial_function_evaluation)
+    runner.bench_func(f"constructor_rept_rept_length_{rept_length}_rows_{rows}_cols_{cols}", partial_function_evaluation)
