@@ -20,6 +20,5 @@ jobs:
 
       - name: Run Benchmark
         run: |
-#          python3 -m pyperf system tune  'TODO: Fix Requires permission to turn off irqbalance'
-        python executor.py --fast -n 26 -o test.json
+          python executor.py --fast -n 26 -o test.json
         working-directory: ./benchmarks
