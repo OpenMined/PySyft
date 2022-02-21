@@ -166,11 +166,6 @@ class TestCreateUserMessageBenchmarking:
         print(f"Serializing took {new_msg_ser_time} secs")
         print(f"Deserializing took {new_msg_deser_time} secs")
 
-        print("Roles in the database")
-        roles = domain.roles.all()
-        roles = [{"name": role.name, "id": role.id} for role in roles]
-        print("Roles\n: ", roles)
-
         # Benchmark service execution time
         start = timeit.default_timer()
         ums = UserManagerService()
