@@ -77,7 +77,7 @@ def test__and__() -> None:
     result_a = data_a & data_b
     result_b = tensor_a & tensor_b
 
-    assert result_a == data_a
+    assert all(result_a == data_a)
     assert result_b == tensor_a
 
     with pytest.raises(
