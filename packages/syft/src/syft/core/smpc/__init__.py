@@ -18,6 +18,17 @@ from .protocol import beaver  # noqa: 401 isort: skip
 
 
 def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
+    """Creates SMPC Abstract Syntax Tree (AST).
+        Define a set of modules, classes and methods which are used for the creation of the SMPC AST.
+
+    Args:
+        client (Optional[AbstractNodeClient]):  Input client object for AST operations.
+
+    Returns:
+        The constructed SMPC AST.
+
+    """
+
     ast = Globals(client)
 
     modules = [

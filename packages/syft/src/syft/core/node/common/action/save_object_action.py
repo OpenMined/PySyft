@@ -47,6 +47,10 @@ class SaveObjectAction(ImmediateActionWithoutReply):
             node.verify_key: node.id,
             verify_key: None,  # we dont have the passed in sender's UID
         }
+        self.obj.write_permissions = {
+            node.verify_key: node.id,
+            verify_key: None,  # we dont have the passed in sender's UID
+        }
         node.store[self.obj.id] = self.obj
 
     def _object2proto(self) -> SaveObjectAction_PB:

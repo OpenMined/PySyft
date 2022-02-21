@@ -37,7 +37,7 @@ def listtonumpy64(value: List) -> np.int64:
 def _individual_RDP_gaussian(
     sigma: float, value: float, L: float, alpha: float
 ) -> float:
-    return (alpha * (L ** 2) * (value ** 2)) / (2 * (sigma ** 2))
+    return (alpha * (L**2) * (value**2)) / (2 * (sigma**2))
 
 
 def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
@@ -111,6 +111,7 @@ class iDPGaussianMechanism(Mechanism):
             "public_value": float(squared_l2_norm_upper_bound),
             "L": float(L),
         }  # This will be useful for the Calibrator
+
         self.entity_name = entity_name
         # TODO: should a generic unspecified mechanism have a name and a param dictionary?
 

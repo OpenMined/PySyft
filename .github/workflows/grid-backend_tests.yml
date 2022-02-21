@@ -1,8 +1,6 @@
 # Grid Backend Tests
 name: Syft + Grid Backend Tests
 
-
-
 on:
   workflow_call:
 

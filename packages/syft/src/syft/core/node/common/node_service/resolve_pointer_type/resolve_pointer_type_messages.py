@@ -9,9 +9,13 @@ import syft as sy
 
 # relative
 from ......proto.core.node.common.service.resolve_pointer_type_service_pb2 import (
+    ResolvePointerTypeAnswerMessage as ResolvePointerTypeAnswerMessage_PB,
+)
+from ......proto.core.node.common.service.resolve_pointer_type_service_pb2 import (
     ResolvePointerTypeMessage as ResolvePointerTypeMessage_PB,
 )
 from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
@@ -51,3 +55,36 @@ class ResolvePointerTypeMessage(ImmediateSyftMessageWithReply):
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
         return ResolvePointerTypeMessage_PB
+
+
+@serializable()
+class ResolvePointerTypeAnswerMessage(ImmediateSyftMessageWithoutReply):
+    def __init__(
+        self,
+        type_path: str,
+        address: Address,
+        msg_id: Optional[UID] = None,
+    ):
+        super().__init__(address=address, msg_id=msg_id)
+        self.type_path = type_path
+
+    def _object2proto(self) -> ResolvePointerTypeAnswerMessage_PB:
+        return ResolvePointerTypeAnswerMessage_PB(
+            msg_id=sy.serialize(self.id),
+            address=sy.serialize(self.address),
+            type_path=self.type_path,
+        )
+
+    @staticmethod
+    def _proto2object(
+        proto: ResolvePointerTypeAnswerMessage_PB,
+    ) -> "ResolvePointerTypeAnswerMessage":
+        return ResolvePointerTypeAnswerMessage(
+            msg_id=sy.deserialize(blob=proto.msg_id),
+            address=sy.deserialize(blob=proto.address),
+            type_path=proto.type_path,
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return ResolvePointerTypeAnswerMessage_PB

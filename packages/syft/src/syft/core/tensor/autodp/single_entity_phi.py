@@ -20,6 +20,9 @@ import torch
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
+from ....proto.core.adp.phi_tensor_pb2 import (
+    SingleEntityPhiTensor as SingleEntityPhiTensor_PB,
+)
 from ....proto.core.tensor.single_entity_phi_tensor_pb2 import (
     TensorWrappedSingleEntityPhiTensorPointer as TensorWrappedSingleEntityPhiTensorPointer_PB,
 )
@@ -37,6 +40,7 @@ from ..ancestors import AutogradTensorAncestor
 from ..broadcastable import is_broadcastable
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import implements  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
@@ -44,7 +48,6 @@ from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.share_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from ..tensor import Tensor
-from ..types import SupportedChainType  # type: ignore
 from ..util import inputs2child  # type: ignore
 from .adp_tensor import ADPTensor
 from .dp_tensor_converter import convert_to_gamma_tensor
@@ -500,19 +503,13 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         return TensorWrappedSingleEntityPhiTensorPointer_PB
 
 
-@serializable(recursive_serde=True)
+@serializable()
 class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     PointerClassOverride = TensorWrappedSingleEntityPhiTensorPointer
 
-    __attr_allowlist__ = [
-        "child",
-        "_min_vals",
-        "_max_vals",
-        "entity",
-        "scalar_manager",
-        "n_entities",
-    ]
+    # Number of entities in a SEPT is by definition 1
+    n_entities = 1
 
     def __init__(
         self,
@@ -540,9 +537,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             self.scalar_manager = scalar_manager
 
-        # Number of entities in a SEPT is by definition 1
-        self.n_entities = 1
-
     def init_pointer(
         self,
         client: Any,
@@ -567,14 +561,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
     @property
     def gamma(self) -> InitialGammaTensor:
-
         """Property to cast this tensor into a GammaTensor"""
         return self.create_gamma()
 
     def create_gamma(
         self, scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None
     ) -> InitialGammaTensor:
-
         """Return a new Gamma tensor based on this phi tensor"""
 
         if scalar_manager is None:
@@ -602,13 +594,20 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
     @property
     def min_vals(self) -> np.ndarray:
-
         return self._min_vals
 
     @property
     def max_vals(self) -> np.ndarray:
-
         return self._max_vals
+
+    def astype(self, np_type: np.dtype) -> SingleEntityPhiTensor:
+        return self.__class__(
+            child=self.child.astype(np_type),
+            entity=self.entity,
+            min_vals=self.min_vals.astype(np_type),
+            max_vals=self.max_vals.astype(np_type),
+            scalar_manager=self.scalar_manager,
+        )
 
     def __repr__(self) -> str:
 
@@ -683,7 +682,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         if isinstance(opposite_result, SingleEntityPhiTensor):
             return SingleEntityPhiTensor(
-                child=np.invert(opposite_result.child),
+                child=opposite_result.child ^ 1,
                 entity=opposite_result.entity,
                 min_vals=opposite_result.min_vals,
                 max_vals=opposite_result.max_vals,
@@ -691,7 +690,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             )
         elif isinstance(opposite_result, InitialGammaTensor):
             return InitialGammaTensor(
-                values=opposite_result.values,
+                values=opposite_result.values ^ 1,
                 entities=opposite_result.entities,
                 min_vals=opposite_result.min_vals,
                 max_vals=opposite_result.max_vals,
@@ -759,8 +758,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         # if the tensor being added is also private
         if isinstance(other, SingleEntityPhiTensor):
-            if self.entity.name != other.entity.name:
-                return convert_to_gamma_tensor(self) + convert_to_gamma_tensor(other)
+            if self.entity != other.entity:
+                left = convert_to_gamma_tensor(self)
+                right = convert_to_gamma_tensor(other)
+                return left + right
 
             data = self.child + other.child
             min_vals = self.min_vals + other.min_vals
@@ -790,8 +791,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 max_vals=max_vals,
                 scalar_manager=self.scalar_manager,
             )
-
+        elif isinstance(other, IntermediateGammaTensor):
+            return convert_to_gamma_tensor(self) + other
         else:
+            print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
     def __neg__(self) -> SingleEntityPhiTensor:
@@ -1328,6 +1331,10 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         max_vals = self.max_vals.sum(*args, **kwargs)
         entity = self.entity
 
+        data = np.array(data)
+        min_vals = np.array(min_vals)
+        max_vals = np.array(max_vals)
+
         return SingleEntityPhiTensor(
             child=data,
             entity=entity,
@@ -1799,12 +1806,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             if self.entity != value.entity:
                 return NotImplemented
 
-            data = self.child ** value.child
+            data = self.child**value.child
 
-            min_min = self.min_vals ** value.min_vals
-            min_max = self.min_vals ** value.max_vals
-            max_min = self.max_vals ** value.min_vals
-            max_max = self.max_vals ** value.max_vals
+            min_min = self.min_vals**value.min_vals
+            min_max = self.min_vals**value.max_vals
+            max_min = self.max_vals**value.min_vals
+            max_max = self.max_vals**value.max_vals
 
             min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
             max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
@@ -1820,12 +1827,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         elif is_acceptable_simple_type(value):
 
-            data = self.child ** value
+            data = self.child**value
 
-            min_min = self.min_vals ** value
-            min_max = self.min_vals ** value
-            max_min = self.max_vals ** value
-            max_max = self.max_vals ** value
+            min_min = self.min_vals**value
+            min_max = self.min_vals**value
+            max_min = self.max_vals**value
+            max_max = self.max_vals**value
 
             min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
             max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
@@ -2355,6 +2362,54 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         return SingleEntityPhiTensor(
             child=data, min_vals=mins, max_vals=maxes, entity=self.entity
         )
+
+    def _object2proto(self) -> SingleEntityPhiTensor_PB:
+        proto_init_kwargs = {
+            "min_vals": serialize(self._min_vals),
+            "max_vals": serialize(self._max_vals),
+        }
+
+        # to de-duplicate entity and scalar manager at the RowEntityPhiTensor level
+        # we need to allow this to sometimes be None and not store it
+        if not getattr(self, "_remove_entity_scalar_manager", False):
+            proto_init_kwargs["entity"] = serialize(self.entity)
+            proto_init_kwargs["scalar_manager"] = serialize(self.scalar_manager)
+
+        # either numpy array or ShareTensor
+        if self.child is None:
+            proto_init_kwargs["none"] = serialize(self.child)
+        elif isinstance(self.child, np.ndarray):
+            proto_init_kwargs["array"] = serialize(self.child)
+        elif isinstance(self.child, torch.Tensor):
+            proto_init_kwargs["array"] = serialize(np.array(self.child))
+        else:
+            proto_init_kwargs["tensor"] = serialize(self.child)
+
+        return SingleEntityPhiTensor_PB(**proto_init_kwargs)
+
+    @staticmethod
+    def _proto2object(proto: SingleEntityPhiTensor_PB) -> SingleEntityPhiTensor:
+        # either numpy array or ShareTensor
+        if proto.HasField("tensor"):
+            child = deserialize(proto.tensor)
+        elif proto.HasField("array"):
+            child = deserialize(proto.array)
+        else:
+            child = deserialize(proto.none)
+
+        return SingleEntityPhiTensor(
+            child=child,
+            entity=deserialize(proto.entity) if proto.HasField("entity") else None,
+            min_vals=deserialize(proto.min_vals),
+            max_vals=deserialize(proto.max_vals),
+            scalar_manager=deserialize(proto.scalar_manager)
+            if proto.HasField("scalar_manager")
+            else None,
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return SingleEntityPhiTensor_PB
 
 
 @implements(SingleEntityPhiTensor, np.expand_dims)

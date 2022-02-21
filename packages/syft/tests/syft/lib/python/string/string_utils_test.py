@@ -123,7 +123,7 @@ def test_find():
     digits = 4
     base = len(charset)
     teststrings = set()
-    for i in range(base ** digits):
+    for i in range(base**digits):
         entry = []
         for j in range(digits):
             i, m = divmod(i, base)
@@ -172,7 +172,7 @@ def test_rfind():
     digits = 3
     base = len(charset)
     teststrings = set()
-    for i in range(base ** digits):
+    for i in range(base**digits):
         entry = []
         for j in range(digits):
             i, m = divmod(i, base)
@@ -2398,31 +2398,27 @@ def test_isalnum():
 
 
 def test_isascii():
-    if sys.version_info >= (3, 7):
-        checkequal(True, String(""), "isascii")
-        checkequal(True, String("\x00"), "isascii")
-        checkequal(True, String("\x7f"), "isascii")
-        checkequal(True, String("\x00\x7f"), "isascii")
-        checkequal(False, String("\x80"), "isascii")
-        checkequal(False, String("\xe9"), "isascii")
-        # bytes.isascii() and bytearray.isascii() has optimization which
-        # check 4 or 8 bytes at once.  So check some alignments.
-        for p in range(8):
-            checkequal(True, String(" ") * p + String("\x7f"), "isascii")
-            checkequal(False, String(" ") * p + String("\x80"), "isascii")
-            checkequal(
-                True,
-                String(" ") * p + String("\x7f") + String(" ") * 8,
-                "isascii",
-            )
-            checkequal(
-                False,
-                String(" ") * p + String("\x80") + String(" ") * 8,
-                "isascii",
-            )
-    else:
-        with pytest.raises(AttributeError):
-            checkequal(True, String(""), "isascii")
+    checkequal(True, String(""), "isascii")
+    checkequal(True, String("\x00"), "isascii")
+    checkequal(True, String("\x7f"), "isascii")
+    checkequal(True, String("\x00\x7f"), "isascii")
+    checkequal(False, String("\x80"), "isascii")
+    checkequal(False, String("\xe9"), "isascii")
+    # bytes.isascii() and bytearray.isascii() has optimization which
+    # check 4 or 8 bytes at once.  So check some alignments.
+    for p in range(8):
+        checkequal(True, String(" ") * p + String("\x7f"), "isascii")
+        checkequal(False, String(" ") * p + String("\x80"), "isascii")
+        checkequal(
+            True,
+            String(" ") * p + String("\x7f") + String(" ") * 8,
+            "isascii",
+        )
+        checkequal(
+            False,
+            String(" ") * p + String("\x80") + String(" ") * 8,
+            "isascii",
+        )
 
 
 def test_isdigit():
@@ -2557,28 +2553,18 @@ def test_splitlines():
     checkraises(TypeError, String("abc"), "splitlines", 42, 42)
 
 
-# fixes python <= 3.7
 # https://github.com/python/cpython/commit/b015fc86f7b1f35283804bfee788cce0a5495df7
 def test_capitalize_nonascii():
     # check that titlecased chars are lowered correctly
     # \u1ffc is the titlecased char
     # \u03a9\u0399
-    if sys.version_info >= (3, 8):
-        # a, b, capitalize
-        # ῼῳῳῳ, ῳῳῼῼ, capitalize
-        checkequal(
-            String("\u1ffc\u1ff3\u1ff3\u1ff3"),
-            String("\u1ff3\u1ff3\u1ffc\u1ffc"),
-            "capitalize",
-        )
-    else:
-        # a, b, capitalize
-        # ΩΙῳῳῳ, ῳῳῼῼ, capitalize
-        checkequal(
-            String("\u03a9\u0399\u1ff3\u1ff3\u1ff3"),
-            String("\u1ff3\u1ff3\u1ffc\u1ffc"),
-            "capitalize",
-        )
+    # a, b, capitalize
+    # ῼῳῳῳ, ῳῳῼῼ, capitalize
+    checkequal(
+        String("\u1ffc\u1ff3\u1ff3\u1ff3"),
+        String("\u1ff3\u1ff3\u1ffc\u1ffc"),
+        "capitalize",
+    )
     # check with cased non-letter chars
     checkequal(
         String("\u24c5\u24e8\u24e3\u24d7\u24de\u24dd"),
@@ -3025,8 +3011,8 @@ def test_formatting():
     checkraises(ValueError, String("%10"), "__mod__", (42,))
 
     # Outrageously large width or precision should raise ValueError.
-    checkraises(ValueError, String("%%%df") % (2 ** 64), "__mod__", (3.2))
-    checkraises(ValueError, String("%%.%df") % (2 ** 64), "__mod__", (3.2))
+    checkraises(ValueError, String("%%%df") % (2**64), "__mod__", (3.2))
+    checkraises(ValueError, String("%%.%df") % (2**64), "__mod__", (3.2))
     checkraises(
         OverflowError,
         String("%*s"),

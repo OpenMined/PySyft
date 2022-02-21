@@ -42,50 +42,70 @@ def publish(
     # Creates a temporary register (memory) to
     # store entities and their respective mechanisms
     acc.temp_entity2ledger = {}
-
+    print("publish.py:45: TRY: ms = get_all_entity_mechanisms")
     # Recover all entity mechanisms
     ms = get_all_entity_mechanisms(
         scalars=scalars, sigma=sigma, public_only=public_only
     )
+    print("publish.py:50: SUCCESS: ms = get_all_entity_mechanisms")
 
+    print("publish.py:52: TRY: for _, mechs in ms.items():")
     # add the user_key to all of the mechanisms
     for _, mechs in ms.items():
         for m in mechs:
             m.user_key = user_key
+    print("publish.py:57: SUCCESS: for _, mechs in ms.items():")
 
+    print("publish.py:59: TRY: acc.temp_append(ms)")
     # Register the mechanism / entities at the temporary data structure
     # This data structure will be organized as a dictionary of
     # lists, each list will contain a set of mechanisms related to an entity.
     # Example: acc.temp_entity2ledger = {"patient_1": [<iDPGaussianMechanism>, <iDPGaussianMechanism>] }
     acc.temp_append(ms)
+    print("publish.py:65: SUCCESS: acc.temp_append(ms)")
 
+    print("publish.py:67: TRY: overbudgeted_entities = acc.overbudgeted_entities(")
     # Filter entities by searching for the overbudgeted ones.
     overbudgeted_entities = acc.overbudgeted_entities(
         temp_entities=acc.temp_entity2ledger,
         user_key=user_key,
         returned_epsilon_is_private=True,
     )
+    print("publish.py:74: SUCCESS: overbudgeted_entities = acc.overbudgeted_entities(")
 
+    print(
+        "publish.py:76: TRY:  if len(overbudgeted_entities) > 0: scalars = deepcopy(scalars)"
+    )
     # so that we don't modify the original polynomial
     # it might be fine to do so but just playing it safe
     if len(overbudgeted_entities) > 0:
         scalars = deepcopy(scalars)
+    print(
+        "publish.py:81: SUCCESS:  if len(overbudgeted_entities) > 0: scalars = deepcopy(scalars)"
+    )
 
     # If some overbudgeted entity is found, run this.
     iterator = 0
     while len(overbudgeted_entities) > 0 and iterator < 3:
-
+        print(
+            "publish.py:86: INSIDE:  while len(overbudgeted_entities) > 0 and iterator < 3:"
+        )
         iterator += 1
-
+        print(
+            "publish.py:88: len(overbudgeted_entities) == "
+            + str(len(overbudgeted_entities))
+        )
+        print("publish.py:89:  for output_scalar in scalars:")
         input_scalars = set()
         for output_scalar in scalars:
 
+            print("publish.py:93:  for input_scalar in output_scalar.input_scalars:")
             # output_scalar.input_scalars is a @property which determines
             # what inputs are still contributing to the output scalar
             # given that we may have just removed some
             for input_scalar in output_scalar.input_scalars:
                 input_scalars.add(input_scalar)
-
+        print("publish.py:99:  for input_scalar in input_scalars:")
         for input_scalar in input_scalars:
             if input_scalar.entity in overbudgeted_entities:
                 for output_scalar in scalars:
@@ -97,32 +117,51 @@ def publish(
                         make_subst_func({input_scalar.poly.name: 0})
                     )(output_scalar.poly)
 
+        print("publish.py:110:  acc.temp_entity2ledger = {}")
         acc.temp_entity2ledger = {}
 
+        print("publish.py:114:  BEGIN: ms = get_all_entity_mechanisms(")
         # get mechanisms for new publish event
         ms = get_all_entity_mechanisms(
             scalars=scalars, sigma=sigma, public_only=public_only
         )
+        print("publish.py:119:  SUCCESS: ms = get_all_entity_mechanisms(")
 
         for _, mechs in ms.items():
             for m in mechs:
                 m.user_key = user_key
 
+        print("publish.py:127:  TRY: acc.temp_append(ms)")
         # this is when we actually insert into the database
         acc.temp_append(ms)
+        print("publish.py:127:  SUCCESS: acc.temp_append(ms)")
 
+        print(
+            "publish.py:130:  TRY:  overbudgeted_entities = acc.overbudgeted_entities("
+        )
         overbudgeted_entities = acc.overbudgeted_entities(
             temp_entities=acc.temp_entity2ledger,
             user_key=user_key,
             returned_epsilon_is_private=True,
         )
+        print(
+            "publish.py:136:  SUCCESS:  overbudgeted_entities = acc.overbudgeted_entities("
+        )
 
+    print(
+        "publish.py:138:  TRY:  output = [s.value + random.gauss(0, sigma) for s in scalars]"
+    )
     # Add to each scalar a a gaussian noise in an interval between
     # 0 to sigma value.
     output = [s.value + random.gauss(0, sigma) for s in scalars]
+    print(
+        "publish.py:142:  SUCCESS:  output = [s.value + random.gauss(0, sigma) for s in scalars]"
+    )
 
+    print("publish.py:144:  TRY:  acc.save_temp_ledger_to_longterm_ledger()")
     # Persist the temporary ledger into the database.
     acc.save_temp_ledger_to_longterm_ledger()
+    print("publish.py:147:  SUCCESS:  acc.save_temp_ledger_to_longterm_ledger()")
 
     return output
 
@@ -158,6 +197,7 @@ def get_mechanism_for_entity(
 
     if isinstance(entity, DataSubjectGroup):
         mechanisms = []
+
         for e in entity.entity_set:
             mechanisms.append(
                 (

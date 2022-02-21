@@ -35,10 +35,12 @@ class IntermediateGammaScalar(IntermediateScalar):
         max_val: float,
         id: Optional[UID] = None,
     ) -> None:
-        self.poly = poly
-        self.id = id if id else UID()
-        self._min_val = min_val
-        self._max_val = max_val
+        super().__init__(poly=poly, id=id)
+        self._min_val = float(min_val)
+        self._max_val = float(max_val)
+        self.is_linear: Optional[
+            bool
+        ] = None  # None means skip performance optimization
 
     # GammaScalar +/-/*/div other ---> GammaScalar
     def __add__(self, other: Any) -> IntermediateScalar:
@@ -195,7 +197,7 @@ class IntermediateGammaScalar(IntermediateScalar):
                 out += symbol_vector[index] ** 2
             # there's a small bit of rounding error from this constraint - this should
             # only be used as a double check or as a backup!!!
-            return out ** 0.5 - 1 / 2 ** 16
+            return out**0.5 - 1 / 2**16
 
         constraints.append({"type": "ineq", "fun": non_negative_additive_terms})
         results = minimize_function(
