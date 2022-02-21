@@ -17,6 +17,6 @@ def run_suite() -> None:
     runner.parse_args()
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
     run_sept_suite(runner=runner, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max)
-    run_rept_suite(runner=runner, rept_dimension=100, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max)
+    run_rept_suite(runner=runner, rept_dimension=15, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max)
 
 run_suite()
