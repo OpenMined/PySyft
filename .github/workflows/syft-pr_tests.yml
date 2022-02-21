@@ -84,4 +84,4 @@ jobs:
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pytest -m -s 'fast or slow' --cov syft --cov-fail-under 68 -n auto --durations=50
+          pytest -s -m'fast or slow' --cov syft --cov-fail-under 68 -n auto --durations=50
