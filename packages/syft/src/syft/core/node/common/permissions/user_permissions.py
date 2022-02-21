@@ -68,9 +68,9 @@ class IsNodeDaaEnabled(BasePermission):
         node: NodeServiceInterface,
         verify_key: Optional[VerifyKey],
     ) -> bool:
-        msg = type("message", (object,), msg.kwargs.upcast())()  # type: ignore
+        msg_payload = msg.payload  # type: ignore
 
-        if node.setup.first(domain_name=node.name).daa and not hasattr(msg, "daa_pdf"):  # type: ignore
+        if node.setup.first(domain_name=node.name).daa and not msg_payload.daa_pdf:  # type: ignore
             return False
 
         return True
