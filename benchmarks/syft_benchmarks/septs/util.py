@@ -1,10 +1,17 @@
+# third party
 import numpy as np
+
+# syft absolute
 from syft.core.adp.entity import Entity
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 
 
-def generate_data(rows: int, columns: int, lower_bound: int, upper_bound: int) -> np.array:
-    return np.random.randint(lower_bound, upper_bound, size=(rows, columns), dtype=np.int32)
+def generate_data(
+    rows: int, columns: int, lower_bound: int, upper_bound: int
+) -> np.array:
+    return np.random.randint(
+        lower_bound, upper_bound, size=(rows, columns), dtype=np.int32
+    )
 
 
 def generate_entity() -> Entity:

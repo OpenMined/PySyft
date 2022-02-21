@@ -1,9 +1,25 @@
-import pyperf
-from ..septs.util import make_sept, generate_data
-from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
+# stdlib
 import functools
 
-def create_bench_constructor(runner: pyperf.Runner, rept_length: int, rows:int, cols: int, lower_bound: int, upper_bound: int) -> None:
+# third party
+import pyperf
+
+# syft absolute
+from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
+
+# relative
+from ..septs.util import generate_data
+from ..septs.util import make_sept
+
+
+def create_bench_constructor(
+    runner: pyperf.Runner,
+    rept_length: int,
+    rows: int,
+    cols: int,
+    lower_bound: int,
+    upper_bound: int,
+) -> None:
     rept_rows = []
 
     for i in range(rept_length):
@@ -12,4 +28,7 @@ def create_bench_constructor(runner: pyperf.Runner, rept_length: int, rows:int, 
         rept_rows.append(sept)
 
     partial_function_evaluation = functools.partial(REPT, rept_rows)
-    runner.bench_func(f"constructor_rept_rept_length_{rept_length}_rows_{rows}_cols_{cols}", partial_function_evaluation)
+    runner.bench_func(
+        f"constructor_rept_rept_length_{rept_length}_rows_{rows}_cols_{cols}",
+        partial_function_evaluation,
+    )
