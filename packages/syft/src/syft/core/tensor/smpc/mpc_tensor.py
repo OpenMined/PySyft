@@ -136,16 +136,19 @@ class MPCTensor(PassthroughTensor):
     def get_ring_size_from_secret(
         secret: Optional[Any] = None, shares: Optional[List[Any]] = None
     ) -> int:
-        if secret is None:
-            value = shares[0]  # type: ignore
-        else:
-            value = secret
+        value = shares[0] if secret is None else secret  # type: ignore
+
         if utils.ispointer(value):
             dtype = getattr(value, "public_dtype", None)
         else:
             dtype = getattr(value, "dtype", None)
 
-        ring_size = utils.TYPE_TO_RING_SIZE.get(dtype, None)
+        ring_size: Optional[int] = (
+            value.ring_size
+            if isinstance(value, MPCTensor)
+            else utils.TYPE_TO_RING_SIZE.get(dtype, None)
+        )
+
         if ring_size is not None:
             return ring_size
 
@@ -654,22 +657,20 @@ class MPCTensor(PassthroughTensor):
 
         x, y = MPCTensor.sanity_checks(self, y)
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
-        if isinstance(y, MPCTensor):
-            result = x.__apply_private_op(y, op_str, **kwargs)
-            y_ring_size = y.ring_size
-        else:
-            result = x.__apply_public_op(y, op_str, **kwargs)
-            y_ring_size = MPCTensor.get_ring_size_from_secret(y)
 
+        y_ring_size = MPCTensor.get_ring_size_from_secret(y)
         if self.ring_size != y_ring_size:
             raise ValueError(
                 f"Ring size mismatch between self {self.ring_size} and other {y_ring_size}"
             )
 
+        if isinstance(y, MPCTensor):
+            result = x.__apply_private_op(y, op_str, **kwargs)
+        else:
+            result = x.__apply_public_op(y, op_str, **kwargs)
+
         y_shape = getattr(y, "shape", (1,))
-
         shape = utils.get_shape(op_str, self.shape, y_shape)
-
         ring_size = utils.get_ring_size(self.ring_size, y_ring_size)
 
         result = MPCTensor(
