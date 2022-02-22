@@ -5,6 +5,7 @@ from functools import lru_cache
 import operator
 from typing import Any
 from typing import Dict
+from typing import Optional
 from typing import Tuple
 from typing import cast
 
@@ -16,7 +17,9 @@ RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
     2: np.dtype("bool"),  # Special case: need to do reconstruct and share with XOR
 }
 
-TYPE_TO_RING_SIZE: Dict[np.dtype, int] = {v: k for k, v in RING_SIZE_TO_TYPE.items()}
+TYPE_TO_RING_SIZE: Dict[np.dtype, Optional[int]] = {
+    v: k for k, v in RING_SIZE_TO_TYPE.items()
+}
 
 
 def ispointer(obj: Any) -> bool:

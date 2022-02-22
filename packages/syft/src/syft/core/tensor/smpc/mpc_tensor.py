@@ -143,17 +143,17 @@ class MPCTensor(PassthroughTensor):
         else:
             dtype = getattr(value, "dtype", None)
 
-        ring_size = (
+        ring_size: Optional[int] = (
             value.ring_size
             if isinstance(value, MPCTensor)
-            else utils.TYPE_TO_RING_SIZE.get(dtype, None)  # type: ignore
+            else utils.TYPE_TO_RING_SIZE.get(dtype, None)
         )
 
         if ring_size is not None:
             return ring_size
-        else:
-            logger.warning("Ring size was not found! Defaulting to 2**32.")  # type: ignore
-            return 2**32
+
+        logger.warning("Ring size was not found! Defaulting to 2**32.")
+        return 2**32
 
     @staticmethod
     def get_parties_info(parties: Iterable[Any]) -> List[GridURL]:

@@ -8,6 +8,7 @@ from typing import Union
 import numpy as np
 
 # relative
+from ...adp.entity import DataSubjectGroup
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
@@ -65,7 +66,11 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
             self.values = values
 
         self.min_vals = min_vals
+        self._min_vals_cache = min_vals
+
         self.max_vals = max_vals
+        self._max_vals_cache = max_vals
+
         self.entities = entities
         if scalar_manager is None:
             self.scalar_manager = VirtualMachinePrivateScalarManager()
@@ -88,17 +93,29 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
                 min_val=flat_min_vals[i],
                 value=flat_values[i],
                 max_val=flat_max_vals[i],
-                entity=flat_entities[i],
+                entity=flat_entities[i]
+                if not isinstance(flat_entities, DataSubjectGroup)
+                else flat_entities,
             )
             some_symbols.append(prime)
 
-        term_tensor = np.array(some_symbols).reshape(list(self.values.shape) + [1])
+        term_tensor = (
+            np.array(some_symbols)
+            .reshape(list(self.values.shape) + [1])
+            .astype(np.int32)
+        )
         coeff_tensor = (term_tensor * 0) + 1
         bias_tensor = self.values * 0
+
+        if isinstance(entities, np.ndarray):
+            unique_entities = set(list(entities.flatten()))
+        else:
+            unique_entities = set(entities)
 
         super().__init__(
             term_tensor=term_tensor,
             coeff_tensor=coeff_tensor,
             bias_tensor=bias_tensor,
             scalar_manager=self.scalar_manager,
+            unique_entities=unique_entities,
         )
