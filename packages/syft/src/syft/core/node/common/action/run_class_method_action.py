@@ -8,7 +8,6 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
-import gevent
 
 # syft absolute
 import syft as sy
@@ -29,7 +28,7 @@ from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
 
-CONTEXT_LIST = []
+
 @serializable()
 class RunClassMethodAction(ImmediateActionWithoutReply):
     """
@@ -93,13 +92,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         return f"RunClassMethodAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        import  random
-        val = random.ranint(1,100000)
-        for i in range(3):
-            CONTEXT_LIST.append(val)
-            print("------------------",CONTEXT_LIST)
-            gevent.sleep(0)
-
         method = node.lib_ast(self.path)
 
         mutating_internal = False
