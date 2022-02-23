@@ -39,7 +39,7 @@ then
     git remote add origin https://github.com/$2
     git fetch origin
     echo "Checking out branch: ${3}"
-    git reset --hard
+    git reset --hard "origin/${3}"
     git checkout "origin/${3}" --force
     chown -R $4:$5 .
 fi
@@ -49,13 +49,13 @@ then
     echo "Checking out branch: ${3}"
 fi
 
-git reset --hard
 git fetch origin
+git reset --hard "origin/${3}"
 git checkout "origin/${3}" --force
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
-CONTAINER_HASH=$(docker exec $(docker ps --format "{{.Names}}" | grep backend-1) env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
+CONTAINER_HASH=$(docker ps --format "{{.Names}}" | grep backend-1 | xargs -I {} docker exec {} env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
 
 # set a default if its missing
 if [ ! -z ${11} ]; then
