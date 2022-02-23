@@ -16,6 +16,17 @@ jobs:
       - uses: actions/checkout@v2
         with:
           token: ${{ secrets.SYFT_BUMP_TOKEN }}
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: |
+            hagrid:
+              - 'packages/hagrid/**'
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
@@ -24,13 +35,16 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade setuptools wheel twine tox bump2version
+
       - name: Bump the Version
-        working-directory: ./packages/hagrid
+        if: steps.changes.outputs.hagrid == 'true'
         run: |
           python3 hagrid/__init__.py
           bump2version prenum --allow-dirty --no-commit
           tox -e lint || true
           python3 hagrid/__init__.py
+        working-directory: ./packages/hagrid
+
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
