@@ -2364,6 +2364,33 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             child=data, min_vals=mins, max_vals=maxes, entity=self.entity
         )
 
+    def simple_assets_for_serde(self) -> list:
+        assets = [
+            self._min_vals,
+            self._max_vals,
+            self.child,  # assume it is always numpy for now.
+            self.entity.simple_assets_for_serde(),
+            self.scalar_manager.simple_assets_for_serde(),
+        ]
+        return assets
+
+    @staticmethod
+    def deserialize_from_simple_assets(assets: List) -> SingleEntityPhiTensor:
+        min_vals, max_vals, child, entity, scalar_manager = assets
+        entity = Entity.deserialize_from_simple_assets(entity)
+        scalar_manager = (
+            VirtualMachinePrivateScalarManager.deserialize_from_simple_assets(
+                scalar_manager
+            )
+        )
+        return SingleEntityPhiTensor(
+            child=child,
+            entity=entity,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            scalar_manager=scalar_manager,
+        )
+
     def arrow_serialize(self) -> bytes:
         assets = [
             self._min_vals,

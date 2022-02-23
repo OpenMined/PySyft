@@ -15,6 +15,7 @@ from typing import Union
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import numpy.typing as npt
+import pyarrow as pa
 
 # relative
 from ....core.adp.entity import DataSubjectGroup as DSG
@@ -1022,6 +1023,12 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             new_list.append(tensor.round(decimals))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
+
+    def arrow_serialize(self) -> bytes:
+        assets = []
+        for row in self.child:
+            assets.append(row.simple_assets_for_serde())
+        return pa.serialize(assets).to_buffer()
 
     def _object2proto(self) -> RowEntityPhiTensor:
         entity_list = []
