@@ -2,15 +2,16 @@
 from __future__ import annotations
 
 # stdlib
+from collections import deque
 from collections.abc import Sequence
 from functools import reduce
 from typing import Any
+from typing import Deque
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
-from collections import deque
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -1026,7 +1027,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def arrow_serialize(self) -> bytes:
-        assets = deque()
+        assets: Deque = deque()
         for row in self.child:
             assets.append(row.simple_assets_for_serde())
         return pa.serialize(assets).to_buffer()

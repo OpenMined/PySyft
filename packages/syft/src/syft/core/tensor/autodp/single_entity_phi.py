@@ -2365,18 +2365,17 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         )
 
     def simple_assets_for_serde(self) -> list:
-        assets = [
+        return [
             self.child,
             self._min_vals,
             self._max_vals,
             self.entity.simple_assets_for_serde(),
             self.scalar_manager.simple_assets_for_serde(),
         ]
-        return assets
 
     @staticmethod
     def deserialize_from_simple_assets(assets: List) -> SingleEntityPhiTensor:
-        child,min_vals, max_vals, entity, scalar_manager = assets
+        child, min_vals, max_vals, entity, scalar_manager = assets
         entity = Entity.deserialize_from_simple_assets(entity)
         scalar_manager = (
             VirtualMachinePrivateScalarManager.deserialize_from_simple_assets(
