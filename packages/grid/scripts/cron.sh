@@ -57,9 +57,9 @@ chown -R $4:$5 .
 END_HASH=$(git rev-parse HEAD)
 CONTAINER_HASH=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
 
-# set a default if its missing
-if [ ! -z ${11} ]; then
-    RELEASE=${11}
+# see hagrid --release options
+if [[ ${11} = "development" ]]; then
+    RELEASE=development
 else
     RELEASE=production
 fi
