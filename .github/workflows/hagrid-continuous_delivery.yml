@@ -46,6 +46,7 @@ jobs:
         working-directory: ./packages/hagrid
 
       - name: Commit changes
+        if: steps.changes.outputs.hagrid == 'true'
         uses: EndBug/add-and-commit@v7
         with:
           author_name: Madhava Jay
@@ -54,6 +55,7 @@ jobs:
           add: "['./packages/hagrid/.bumpversion.cfg','./packages/hagrid/hagrid/__init__.py']"
 
       - name: Build and publish
+        if: steps.changes.outputs.hagrid == 'true'
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
