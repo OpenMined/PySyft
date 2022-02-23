@@ -9,6 +9,7 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Union
 
@@ -104,6 +105,16 @@ class Entity:
     # converts entity into a protobuf object
     def _object2proto(self) -> Entity_PB:
         return Entity_PB(name=self.name, id=self.id._object2proto())
+
+    def simple_assets_for_serde(self) -> list:
+        assets = list()
+        assets.append(self.name)
+        assets.append(str(self.id.value))
+        return assets
+
+    @staticmethod
+    def deserialize_from_simple_assets(assets: List) -> Entity:
+        return Entity(name=assets[0], id=UID.from_string(assets[1]))
 
     # converts a generated protobuf object into an entity
     @staticmethod

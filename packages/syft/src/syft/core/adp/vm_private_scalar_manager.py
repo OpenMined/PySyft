@@ -5,6 +5,7 @@ from __future__ import annotations
 from copy import deepcopy
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Union
 
@@ -61,6 +62,13 @@ class PrimeFactory:
                 self.exp == other.exp
             )  # Since the list is sorted, we can just compare the last value
         return self == other
+
+    def simple_assets_for_serde(self) -> list:
+        return []
+
+    @staticmethod
+    def deserialize_from_simple_assets(assets: List) -> PrimeFactory:
+        return PrimeFactory()
 
     def _object2proto(self) -> PrimeFactory_PB:
         return PrimeFactory_PB()
@@ -144,6 +152,21 @@ class VirtualMachinePrivateScalarManager:
         )
 
         return new_mgr
+
+    def simple_assets_for_serde(self) -> list:
+        assets = list()
+        assets.append(self.prime_factory.simple_assets_for_serde())
+        assets.append(self.prime2symbol)  # type: ignore
+        return assets
+
+    @staticmethod
+    def deserialize_from_simple_assets(
+        assets: List,
+    ) -> VirtualMachinePrivateScalarManager:
+        prime_factory = PrimeFactory.deserialize_from_simple_assets(assets[0])
+        return VirtualMachinePrivateScalarManager(
+            prime_factory=prime_factory, prime2symbol=assets[1]
+        )
 
     def _object2proto(self) -> VirtualMachinePrivateScalarManager_PB:
         return VirtualMachinePrivateScalarManager_PB(
