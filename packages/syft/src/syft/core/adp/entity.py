@@ -109,7 +109,7 @@ class Entity:
     def simple_assets_for_serde(self) -> list:
         assets = list()
         assets.append(self.name)
-        assets.append(str(self.id.value))
+        assets.append(self.id.value.bytes)  # type: ignore
         return assets
 
     @staticmethod
