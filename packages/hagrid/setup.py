@@ -7,6 +7,8 @@ DATA_FILES = {
     "img": ["hagrid/img/*.png"],
 }
 
+# Pillow binary wheels for Apple Silicon on Python 3.8 don't seem to work well
+# try using Python 3.9+ for HAGrid on Apple Silicon
 setup(
     name="hagrid",
     description="Happy Automation for Grid",
