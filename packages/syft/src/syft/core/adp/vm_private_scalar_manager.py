@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from collections import deque
 from copy import deepcopy
 from typing import Any
 from typing import Dict
@@ -65,7 +64,7 @@ class PrimeFactory:
         return self == other
 
     def simple_assets_for_serde(self) -> list:
-        return deque()
+        return []
 
     @staticmethod
     def deserialize_from_simple_assets(assets: List) -> PrimeFactory:
@@ -155,7 +154,7 @@ class VirtualMachinePrivateScalarManager:
         return new_mgr
 
     def simple_assets_for_serde(self) -> list:
-        assets = deque()
+        assets = list()
         assets.append(self.prime_factory.simple_assets_for_serde())
         assets.append(self.prime2symbol)  # type: ignore
         return assets

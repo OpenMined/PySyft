@@ -7,7 +7,6 @@
 from __future__ import annotations
 
 # stdlib
-from collections import deque
 from typing import Any
 from typing import Dict
 from typing import List
@@ -108,7 +107,7 @@ class Entity:
         return Entity_PB(name=self.name, id=self.id._object2proto())
 
     def simple_assets_for_serde(self) -> list:
-        assets = deque()
+        assets = list()
         assets.append(self.name)
         assets.append(self.id.value.bytes)  # type: ignore
         return assets
