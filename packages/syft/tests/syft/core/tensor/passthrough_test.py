@@ -76,9 +76,13 @@ def test__and__() -> None:
     tensor_c = PassthroughTensor(child=data_c)
     result_a = data_a & data_b
     result_b = tensor_a & tensor_b
+    result_c = tensor_a & data_b
 
-    assert all(result_a == data_a)
+    assert (result_a == data_a).all()
     assert result_b == tensor_a
+    assert result_b != tensor_b
+    assert result_c == tensor_a
+    assert result_c != tensor_b
 
     with pytest.raises(
         ValueError, match="operands could not be broadcast together with shapes"
@@ -98,7 +102,7 @@ def test__rand__() -> None:
     result_b = tensor_a.__rand__(data_b)
 
     assert result_a == expected
-    assert result_b == expected 
+    assert result_b == expected
 
     with pytest.raises(
         ValueError, match="operands could not be broadcast together with shapes"
