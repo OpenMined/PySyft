@@ -109,7 +109,8 @@ class Entity:
     def simple_assets_for_serde(self) -> list:
         assets = list()
         assets.append(self.name)
-        assets.append(self.id.get_bytes)  # type: ignore
+        bytes_value = self.id.get_bytes
+        assets.append(bytes_value)  # type: ignore
         return assets
 
     @staticmethod
