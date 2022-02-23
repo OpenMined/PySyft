@@ -9,6 +9,7 @@ from typing import List
 from typing import Optional
 from typing import Tuple as TypeTuple
 from typing import Union
+from collections import deque
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -2365,13 +2366,15 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         )
 
     def simple_assets_for_serde(self) -> list:
-        assets = [
-            self._min_vals,
-            self._max_vals,
-            self.child,  # assume it is always numpy for now.
-            self.entity.simple_assets_for_serde(),
-            self.scalar_manager.simple_assets_for_serde(),
-        ]
+        assets = deque(
+            [
+                self._min_vals,
+                self._max_vals,
+                self.child,  # assume it is always numpy for now.
+                self.entity.simple_assets_for_serde(),
+                self.scalar_manager.simple_assets_for_serde(),
+            ]
+        )
         return assets
 
     @staticmethod
