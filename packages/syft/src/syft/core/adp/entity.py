@@ -28,7 +28,7 @@ from ..common.serde.serialize import _serialize as serialize
 
 @serializable()
 class Entity:
-    __slots__ = ("name", "id")
+    __slots__ = ("name", "id", "bytes_value")
 
     def __init__(self, name: str = "", id: Optional[UID] = None) -> None:
 
@@ -48,6 +48,7 @@ class Entity:
 
         self.name = name
         self.id = id if id else UID()
+        self.bytes_value = self.id.get_bytes
 
     @property
     def attributes(self) -> Dict[str, str]:
@@ -109,7 +110,7 @@ class Entity:
         return Entity_PB(name=self.name, id=self.id._object2proto())
 
     def simple_assets_for_serde(self) -> tuple[str, bytes]:
-        return (self.name, self.id.get_bytes)
+        return (self.name, self.bytes_value)
 
     @staticmethod
     def deserialize_from_simple_assets(assets: List) -> Entity:
