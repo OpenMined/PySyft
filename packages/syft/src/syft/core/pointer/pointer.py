@@ -448,7 +448,7 @@ class Pointer(AbstractPointer):
 
         return Pointer_PB
 
-    def request(  # noqa: C901
+    def request(
         self,
         reason: str = "",
         block: bool = False,

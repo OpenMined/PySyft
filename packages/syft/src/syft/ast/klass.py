@@ -551,7 +551,6 @@ class Class(Callable):
         """
         return getattr(self, self.pointer_name)
 
-    # flake8: noqa: C901
     def create_pointer_class(self) -> None:
         """Create pointer type for object."""
         attrs: Dict[str, Union[str, CallableT, property]] = {}

@@ -254,7 +254,6 @@ class Question:
         self.cache = cache
         self.options = options if options is not None else []
 
-    # flake8: noqa: C901
     def validate(self, value: str) -> str:
         value = value.strip()
         if self.default is not None and value == "":
@@ -399,7 +398,7 @@ def generate_key_at_path(key_path: str) -> str:
     return key_path
 
 
-def create_launch_cmd(  # noqa: C901
+def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
@@ -736,7 +735,6 @@ def create_launch_cmd(  # noqa: C901
     )
 
 
-# flake8: noqa: C901
 def create_launch_docker_cmd(
     verb: GrammarVerb,
     docker_version: str,
@@ -1015,7 +1013,7 @@ def create_launch_azure_cmd(
     return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
 
 
-def create_launch_custom_cmd(  # noqa: C901
+def create_launch_custom_cmd(
     verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
 ) -> str:
     try:

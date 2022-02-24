@@ -404,7 +404,7 @@ for py_type in test_dict:
 @pytest.mark.xfail
 @pytest.mark.slow
 @pytest.mark.parametrize("py_type,test_object,func", parameters_pointer_objectives)
-def test_pointer_objectives(  # noqa: C901
+def test_pointer_objectives(
     py_type: str,
     test_object: Any,
     func: str,

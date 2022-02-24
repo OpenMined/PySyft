@@ -1,3 +1,6 @@
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import Any
 from typing import Optional
@@ -40,7 +43,7 @@ class UnaryOperation:
 class AND:
     """Implements the `AND` functionality on a set of permission classes."""
 
-    def __init__(self, op1: Type["BasePermission"], op2: Type["BasePermission"]):
+    def __init__(self, op1: Type[BasePermission], op2: Type[BasePermission]):
         self.op1 = op1
         self.op2 = op2
 
@@ -53,7 +56,7 @@ class AND:
 class OR:
     """Implements the `OR` functionality on a set of permission classes."""
 
-    def __init__(self, op1: Type["BasePermission"], op2: Type["BasePermission"]):
+    def __init__(self, op1: Type[BasePermission], op2: Type[BasePermission]):
         self.op1 = op1
         self.op2 = op2
 
@@ -66,7 +69,7 @@ class OR:
 class NOT:
     """Implements the `NOT` functionality on a permission class."""
 
-    def __init__(self, op1: Type["BasePermission"]):
+    def __init__(self, op1: Type[BasePermission]):
         self.op1 = op1
 
     def has_permission(self, *args: Any, **kwargs: Any) -> bool:
@@ -76,16 +79,16 @@ class NOT:
 class BasePermissionMetaclass(type):
     """A metaclass to allow composition between different permission classes."""
 
-    def __and__(self, other: Type["BasePermission"]) -> BinaryOperation:
+    def __and__(self, other: Type[BasePermission]) -> BinaryOperation:
         return BinaryOperation(self, other, AND)
 
-    def __or__(self, other: Type["BasePermission"]) -> BinaryOperation:
+    def __or__(self, other: Type[BasePermission]) -> BinaryOperation:  # type: ignore
         return BinaryOperation(self, other, OR)
 
-    def __rand__(self, other: Type["BasePermission"]) -> BinaryOperation:
+    def __rand__(self, other: Type[BasePermission]) -> BinaryOperation:
         return BinaryOperation(other, self, AND)
 
-    def __ror__(self, other: Type["BasePermission"]) -> BinaryOperation:
+    def __ror__(self, other: Type[BasePermission]) -> BinaryOperation:  # type: ignore
         return BinaryOperation(other, self, OR)
 
     def __invert__(self) -> UnaryOperation:

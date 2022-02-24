@@ -688,7 +688,7 @@ def update_req_handler(
                 print(f"> Removing a Request Handler with: {msg.handler}")
                 # debug(f"> Removing a Request Handler with: {msg.handler}")
 
-            setattr(node, "request_handlers", replacement_handlers)  # noqa: B010
+            setattr(node, "request_handlers", replacement_handlers)
             # debug(f"> Finished Updating Request Handlers with: {existing_handlers}")
         else:
             # TODO: Replace line below

@@ -63,7 +63,6 @@ class DictStore(ObjectStore):
     def __contains__(self, key: UID) -> bool:
         return key in self.kv_store
 
-    # flake8: noqa: C901
     def __getitem__(self, key: Union[UID, str, bytes]) -> StorableObject:
         try:
             local_session = sessionmaker(bind=self.db)()

@@ -61,7 +61,7 @@ def get_allowed_functions(
         # A way to walkaround the problem we can't `import torch.return_types` and
         # get it from `sys.modules`.
         if parts[-2] == "return_types":
-            modu = getattr(sys.modules["torch"], "return_types")  # noqa: B009
+            modu = getattr(sys.modules["torch"], "return_types")
         else:
             modu = sys.modules[".".join(parts[:-1])]
         return set(dir(getattr(modu, klass_name)))
@@ -77,7 +77,7 @@ def get_allowed_functions(
     return allowed_functions
 
 
-def create_union_ast(  # noqa: C901
+def create_union_ast(
     lib_ast: globals.Globals, client: TypeAny = None
 ) -> globals.Globals:
     ast = globals.Globals(client)

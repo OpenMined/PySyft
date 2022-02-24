@@ -214,7 +214,6 @@ def check_all(requirements: List[Requirement]) -> List[Requirement]:
     return missing
 
 
-# flake8: noqa: C901
 def main() -> None:
     print("\nHAGrid Windows Dependency Installer")
     print("===================================\n")

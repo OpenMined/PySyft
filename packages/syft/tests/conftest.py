@@ -51,7 +51,7 @@ def pytest_configure(config: _pytest.config.Config) -> None:
     config.addinivalue_line("markers", "grid: runs grid tests")
 
 
-def pytest_collection_modifyitems(  # noqa: C901
+def pytest_collection_modifyitems(
     config: _pytest.config.Config, items: TypeList[TypeAny]
 ) -> None:
     # $ pytest -m fast for the fast tests

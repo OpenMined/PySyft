@@ -428,7 +428,6 @@ def test_string_float() -> None:
 
 
 @pytest.mark.xfail
-# flake8: noqa: C901
 def test_Intconversion() -> None:
     # Test __Int__()
     class ClassicMissingMethods:

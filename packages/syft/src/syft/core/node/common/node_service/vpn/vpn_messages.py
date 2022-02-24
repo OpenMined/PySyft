@@ -266,7 +266,7 @@ class VPNStatusMessageWithReply(GenericPayloadMessageWithReply):
             return {"status": "error"}
 
 
-def clean_status_output(  # noqa: C901
+def clean_status_output(
     input: str,
 ) -> Tuple[bool, Dict[str, str], List[Dict[str, str]]]:
     # example input

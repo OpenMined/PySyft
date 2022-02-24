@@ -66,7 +66,6 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
     ) -> Dict[VerifyKey, UID]:
         return RunClassMethodAction.intersect_keys(left, right)
 
-    # flake8: noqa: C901
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
 
         ast_node = node.lib_ast.query(self.path)

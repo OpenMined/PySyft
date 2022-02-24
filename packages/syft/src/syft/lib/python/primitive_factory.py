@@ -70,7 +70,7 @@ class PrimitiveFactory(ABC):
         traceback_and_raise(NotImplementedError)
 
     @staticmethod
-    def generate_primitive(  # noqa: C901
+    def generate_primitive(
         value: Union[PrimitiveType, type(NotImplemented), PyPrimitive],  # type: ignore
         id: Optional[UID] = None,
         recurse: bool = False,

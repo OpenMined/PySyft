@@ -426,7 +426,7 @@ class DomainClient(Client):
     def get_setup(self, **kwargs: Any) -> Any:
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
-    def apply_to_network(  # noqa: C901
+    def apply_to_network(
         self,
         client: Optional[AbstractNodeClient] = None,
         **metadata: str,

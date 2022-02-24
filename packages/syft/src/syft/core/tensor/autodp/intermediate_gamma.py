@@ -734,7 +734,6 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             scalar_manager=self.scalar_manager,
         )
 
-    # flake8: noqa: C901
     def __mul__(self, other: Any) -> IntermediateGammaTensor:
 
         # EXPLAIN A: if our polynomial is y = mx
@@ -1174,7 +1173,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             for index, value in zip(indices, values):
                 new_values[index] = value
 
-            output_tensor = InitialGammaTensor(
+            _ = InitialGammaTensor(
                 values=new_values,
                 entities=self._entities(),
                 min_vals=self._min_values(),

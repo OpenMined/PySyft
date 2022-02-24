@@ -148,7 +148,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
 
             self._grad[self.backprop_id] = self._grad[self.backprop_id] + grad
 
-    def backward(  # noqa: C901
+    def backward(
         self,
         grad: Optional[np.ndarray] = None,
         backprop_id: Optional[uuid.UUID] = None,

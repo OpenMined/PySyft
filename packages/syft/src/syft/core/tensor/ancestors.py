@@ -413,7 +413,7 @@ class PhiTensorAncestor(TensorChainManager):
             skip_blocking_checks=skip_blocking_checks,
         )
 
-    def _private(  # noqa: C901
+    def _private(
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,

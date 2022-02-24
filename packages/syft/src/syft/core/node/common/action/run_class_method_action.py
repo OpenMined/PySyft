@@ -91,7 +91,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         )
         return f"RunClassMethodAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
 
-    # flake8: noqa: C901
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
 

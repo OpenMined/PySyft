@@ -250,7 +250,7 @@ def write_support_result(test_details: Dict[str, Any]) -> None:
 
 TEST_DATA = []
 # we iterate over the allowlist and only override where explicitly defined
-for op in BASIC_OPS:  # noqa: C901
+for op in BASIC_OPS:
     skip = []
     not_available = []
     deterministic = True
@@ -401,7 +401,7 @@ for op in BASIC_OPS:  # noqa: C901
     "tensor_type, op_name, self_tensor, _args, is_property, return_type, deterministic",
     TEST_DATA,
 )
-def test_all_allowlisted_tensor_methods(  # noqa: C901
+def test_all_allowlisted_tensor_methods(
     arrow_backend: bool,
     tensor_type: str,
     op_name: str,

@@ -23,19 +23,11 @@ if flags.USE_NEW_SERVICE:
     )
 else:
     from syft.core.node.common.node_service.user_manager.user_manager_service import (
-        GetUserMessage,
-    )
-    from syft.core.node.common.node_service.user_manager.user_manager_service import (
-        GetUsersMessage,
-    )
-    from syft.core.node.common.node_service.user_manager.user_manager_service import (
-        UpdateUserMessage,
-    )
-    from syft.core.node.common.node_service.user_manager.user_manager_service import (
         CreateUserMessage,
-    )
-    from syft.core.node.common.node_service.user_manager.user_manager_service import (
         DeleteUserMessage,
+        GetUserMessage,
+        GetUsersMessage,
+        UpdateUserMessage,
     )
 
 

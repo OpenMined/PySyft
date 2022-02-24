@@ -94,7 +94,7 @@ def connect(
     return node
 
 
-def login(  # noqa: C901
+def login(
     url: Optional[Union[str, GridURL]] = None,
     port: Optional[int] = None,
     email: Optional[str] = None,

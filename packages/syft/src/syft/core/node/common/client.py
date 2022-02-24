@@ -442,7 +442,7 @@ class StoreClient:
     #     else:
     #         traceback_and_raise(KeyError("Please pass in a string or int key"))
 
-    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:  # noqa: C901
+    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
         if isinstance(key, str):
 
             try:

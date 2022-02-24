@@ -27,7 +27,7 @@ from .idp_gaussian_mechanism import iDPGaussianMechanism
 from .search import max_lipschitz_wrt_entity
 
 
-def publish(  # noqa: C901
+def publish(
     scalars: TypeList[Any],
     acc: Any,
     user_key: VerifyKey,

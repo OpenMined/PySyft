@@ -126,7 +126,7 @@ def get_result(json: Dict) -> str:
 # $ python vpn/connect_vpn.py test_network_1_tailscale_1 test_network_1_headscale_1
 # or if they are on different local docker networks
 # $ python vpn/connect_vpn.py test_domain_1_tailscale_1 test_network_1_headscale_1 http://docker-host:8080
-if __name__ == "__main__":  # noqa: C901
+if __name__ == "__main__":
     if len(sys.argv) < 3:
         print("Try: python vpn/connect_vpn.py domain_tailscale_1 network_headscale_1")
         sys.exit(1)

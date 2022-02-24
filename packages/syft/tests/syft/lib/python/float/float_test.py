@@ -292,7 +292,7 @@ def test_Float_with_comma():
     assert Float("  25.e-1  ") == 2.5
 
 
-def test_Floatconversion():  # noqa: C901
+def test_Floatconversion():
     # Make sure that calls to __Float__() work properly
     class Foo1(object):
         def __float__(self):

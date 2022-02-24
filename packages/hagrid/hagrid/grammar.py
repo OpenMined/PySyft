@@ -273,7 +273,6 @@ def validate_arg_count(arg_count: int, verb: GrammarVerb) -> bool:
     return valid
 
 
-# flake8: noqa: C901
 def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
     """When launching, we want to be able to default to 'domain' if it's not provided, to launch
     nodes when no name is provided, and to support node names which have multiple words.

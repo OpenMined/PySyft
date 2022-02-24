@@ -50,7 +50,6 @@ class Iterator(PyPrimitive):
 
         return PrimitiveFactory.generate_primitive(value=res)
 
-    # flake8: noqa: C901
     def __next__(self) -> Any:
         # we need to do lots of getattr / setattr because some times the __next__
         # method gets called with a generator
