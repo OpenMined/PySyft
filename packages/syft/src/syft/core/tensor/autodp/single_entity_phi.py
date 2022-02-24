@@ -9,6 +9,9 @@ from typing import List
 from typing import Optional
 from typing import Tuple as TypeTuple
 from typing import Union
+from dataclasses import dataclass
+from dataclasses import field
+
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -503,7 +506,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
 
         return TensorWrappedSingleEntityPhiTensorPointer_PB
 
-
+@dataclass(frozen=True)
 @serializable()
 class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
@@ -511,16 +514,24 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
     # Number of entities in a SEPT is by definition 1
     n_entities = 1
-    __slots__ = (
-        "child",
-        "_min_vals",
-        "_max_vals",
-        "entity",
-        "scalar_manager",
-        "entity_asset",
-        "scalar_manager_asset",
-        "assets",
-    )
+    # __slots__ = (
+    #     "child",
+    #     "_min_vals",
+    #     "_max_vals",
+    #     "entity",
+    #     "scalar_manager",
+    #     "entity_asset",
+    #     "scalar_manager_asset",
+    #     "assets",
+    # )
+    child: np.ndarray = field()
+    _max_vals: np.ndarray = field()
+    _min_vals: np.ndarray = field()
+    entity: Entity = field()
+    scalar_manager: VirtualMachinePrivateScalarManager = field()
+    entity_asset: tuple = field()
+    scalar_manager_asset: tuple = field()
+    assets: tuple = field()
 
     def __init__(
         self,
@@ -535,7 +546,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         super().__init__(child)
 
         # identically shaped tensor to "child" but making the LOWEST possible value of this private value
-        self._min_vals = min_vals
+        self._min_vals: np.ndarray = min_vals
 
         # identically shaped tensor to "child" but making the HIGHEST possible value of this private value
         self._max_vals = max_vals
