@@ -2387,7 +2387,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         return SingleEntityPhiTensor(
             child=data, min_vals=mins, max_vals=maxes, entity=self.entity
         )
-    
+
     def simple_assets_for_serde(self) -> tuple[Any, ...]:
         return self.assets
 
