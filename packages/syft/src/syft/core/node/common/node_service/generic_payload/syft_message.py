@@ -7,6 +7,7 @@ from typing import Optional
 # third party
 from nacl.signing import VerifyKey
 from pydantic import BaseModel
+from pydantic.error_wrappers import ValidationError as PydanticValidationError
 
 # relative
 from .....common.message import ImmediateSyftMessage
@@ -16,6 +17,7 @@ from .....io.address import Address
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....common.exceptions import AuthorizationError
 from ....common.exceptions import PermissionsNotDefined
+from ....common.exceptions import BadPayloadException
 
 # Inner Payload message using Pydantic.
 class Payload(BaseModel):
@@ -66,12 +68,15 @@ class NewSyftMessage(ImmediateSyftMessage):
         else:
             kwargs_dict = self.kwargs  # type: ignore
 
-        # If it's not a reply message then load kwargs as a proper request payload.
-        if not self.reply:
-            return self.request_payload_type(**kwargs_dict)
-        # If it's a reply message, then load kwargs as a proper reply payload.
-        else:
-            return self.reply_payload_type(**kwargs_dict)
+        try:
+            # If it's not a reply message then load kwargs as a proper request payload.
+            if not self.reply:
+                return self.request_payload_type(**kwargs_dict)
+            # If it's a reply message, then load kwargs as a proper reply payload.
+            else:
+                return self.reply_payload_type(**kwargs_dict)
+        except PydanticValidationError:
+            raise BadPayloadException
 
     def run(
         self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
