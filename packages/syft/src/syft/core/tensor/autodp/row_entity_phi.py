@@ -274,11 +274,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 else:
                     # Private/Public and Private/Private are handled by the underlying SEPT self.child objects.
                     new_list.append(self.child[i] + other.child[i])
-            if len(new_list) != 1:
-                return RowEntityPhiTensor(rows=new_list, check_shape=False)
-            else:
-                return new_list[0]
-
+            return RowEntityPhiTensor(rows=new_list, check_shape=False)
         else:
             # Broadcasting is possible, but we're skipping that for now.
             raise Exception(
