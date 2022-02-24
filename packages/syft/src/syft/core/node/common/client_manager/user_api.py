@@ -10,7 +10,7 @@ from ...domain.enums import ResponseObjectEnum
 from ..exceptions import AuthorizationError
 from ..node_service.user_auth.user_auth_messages import UserLoginMessageWithReply
 
-if flags.USE_NEW_SERVICE is True:
+if flags.USE_NEW_SERVICE:
     # relative
     from ..node_service.user_manager.new_user_messages import CreateUserMessage
     from ..node_service.user_manager.new_user_messages import DeleteUserMessage

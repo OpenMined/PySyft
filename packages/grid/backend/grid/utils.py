@@ -30,8 +30,7 @@ def send_message_with_reply(
     if reply_to is None:
         reply_to = client.address
 
-    use_new_service = flags.USE_NEW_SERVICE
-    if use_new_service:
+    if flags.USE_NEW_SERVICE:
         msg = message_type(address=address, reply_to=reply_to, kwargs=content).sign(
             signing_key=signing_key
         )
