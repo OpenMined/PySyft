@@ -6,12 +6,17 @@ class PyGridError(Exception):
         super().__init__(message)
 
 
+class PermissionsNotDefined(PyGridError):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "This message hasn't permissions defined, Please set up message permissions."
+        super().__init__(message)
+
 class AuthorizationError(PyGridError):
     def __init__(self, message: str = "") -> None:
         if not message:
             message = "User is not authorized for this operation!"
         super().__init__(message)
-
 
 class OwnerAlreadyExistsError(PyGridError):
     def __init__(self, message: str = "") -> None:
