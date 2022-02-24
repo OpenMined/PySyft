@@ -519,6 +519,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         "scalar_manager",
         "entity_asset",
         "scalar_manager_asset",
+        "assets",
     )
 
     def __init__(
@@ -552,6 +553,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             self.entity.bytes_value,
         )
         self.scalar_manager_asset = (self.scalar_manager.prime2symbol,)
+
+        self.assets = (
+            self.child,
+            self._min_vals,
+            self._max_vals,
+            self.entity_asset,
+            self.scalar_manager_asset,
+        )
 
     def init_pointer(
         self,
@@ -2378,15 +2387,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         return SingleEntityPhiTensor(
             child=data, min_vals=mins, max_vals=maxes, entity=self.entity
         )
-
+    
     def simple_assets_for_serde(self) -> tuple[Any, ...]:
-        return (
-            self.child,
-            self._min_vals,
-            self._max_vals,
-            self.entity_asset,
-            self.scalar_manager_asset,
-        )
+        return self.assets
 
     @staticmethod
     def deserialize_from_simple_assets(assets: List) -> SingleEntityPhiTensor:
