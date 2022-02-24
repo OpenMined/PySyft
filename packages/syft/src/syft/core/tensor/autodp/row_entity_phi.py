@@ -1027,9 +1027,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def arrow_serialize(self) -> bytes:
-        assets: Deque = deque()
-        for row in self.child:
-            assets.append(row.simple_assets_for_serde())
+        #assets: Deque = deque()
+        
+        assets = [row.simple_assets_for_serde() for row in self.child]
 
         child, min_vals, max_vals, entity, scalar_manager = zip(*assets)
         child = np.concatenate(child)
