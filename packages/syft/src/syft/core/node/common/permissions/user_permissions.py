@@ -75,6 +75,14 @@ class IsNodeDaaEnabled(BasePermission):
 
         return True
 
+class NoRestriction(BasePermission):
+    def has_permissions(
+        self,
+        msg: SyftMessage,
+        node: NodeServiceInterface,
+        verify_key: Optional[VerifyKey],
+    ) -> bool:
+        return True
 
 class UserIsOwner(BasePermission):
     def has_permission(
