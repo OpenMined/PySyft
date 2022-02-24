@@ -55,7 +55,7 @@ def create_user(new_user: UserCreate, current_user: UserPrivate) -> str:
         **dict(new_user)
     )
     if flags.USE_NEW_SERVICE:
-        return reply
+        return reply.message
     return reply.resp_msg
 
 
@@ -83,7 +83,7 @@ def get_all_users(current_user: UserPrivate) -> List[User]:
         signing_key=current_user.get_signing_key(), message_type=GetUsersMessage
     )
     if flags.USE_NEW_SERVICE:
-        reply = reply
+        reply = reply.users
     else:
         reply = [user.upcast() for user in reply.content]
     return reply
@@ -111,7 +111,7 @@ def update_user(
         **updated_user.dict(exclude_unset=True)
     )
     if flags.USE_NEW_SERVICE:
-        return reply
+        return reply.message
     return reply.resp_msg
 
 
@@ -122,6 +122,6 @@ def delete_user(user_id: int, current_user: UserPrivate) -> str:
         user_id=user_id,
     )
     if flags.USE_NEW_SERVICE:
-        return reply
+        return reply.message
     # return reply.message - if the other one doesn't work try this one? ;)
     return reply.resp_msg
