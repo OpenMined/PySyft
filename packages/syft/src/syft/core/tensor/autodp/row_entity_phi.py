@@ -1030,6 +1030,13 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         assets: Deque = deque()
         for row in self.child:
             assets.append(row.simple_assets_for_serde())
+
+        child, min_vals, max_vals, entity, scalar_manager = zip(*assets)
+        child = np.concatenate(*child)
+        max_vals = np.concatenate(*max_vals)
+        min_vals = np.concatenate(*min_vals)
+        assets = [child, min_vals, max_vals, entity, scalar_manager]
+
         return pa.serialize(assets).to_buffer()
 
     def _object2proto(self) -> RowEntityPhiTensor:
