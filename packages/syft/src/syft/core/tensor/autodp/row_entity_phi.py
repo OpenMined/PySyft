@@ -2,12 +2,10 @@
 from __future__ import annotations
 
 # stdlib
-from collections import deque
 from collections.abc import Sequence
 from functools import reduce
 import pickle
 from typing import Any
-from typing import Deque
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -1032,13 +1030,13 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         min_vals = np.concatenate(min_vals)
         assets = [child, min_vals, max_vals, entity, scalar_manager]
 
-        buffers = []
+        buffers: List[Any] = []
         blob = pickle.dumps(assets, protocol=5, buffer_callback=buffers.append)
         return blob, buffers
 
     def arrow_serialize(self) -> bytes:
-        #assets: Deque = deque()
-        
+        # assets: Deque = deque()
+
         assets = [row.simple_assets_for_serde() for row in self.child]
 
         child, min_vals, max_vals, entity, scalar_manager = zip(*assets)

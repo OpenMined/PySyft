@@ -108,13 +108,8 @@ class Entity:
     def _object2proto(self) -> Entity_PB:
         return Entity_PB(name=self.name, id=self.id._object2proto())
 
-    def simple_assets_for_serde(self) -> list:
-        # assets = list()
-        # assets.append(self.name)
-        # bytes_value = self.id.get_bytes
-        # assets.append(bytes_value)  # type: ignore
-        # return assets
-        return [self.name, self.id.get_bytes]
+    def simple_assets_for_serde(self) -> tuple[str, bytes]:
+        return (self.name, self.id.get_bytes)
 
     @staticmethod
     def deserialize_from_simple_assets(assets: List) -> Entity:

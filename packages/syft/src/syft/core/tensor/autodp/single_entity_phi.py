@@ -2365,14 +2365,14 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             child=data, min_vals=mins, max_vals=maxes, entity=self.entity
         )
 
-    def simple_assets_for_serde(self) -> list:
-        return [
+    def simple_assets_for_serde(self) -> tuple[Any, ...]:
+        return (
             self.child,
             self._min_vals,
             self._max_vals,
             self.entity.simple_assets_for_serde(),
             self.scalar_manager.simple_assets_for_serde(),
-        ]
+        )
 
     @staticmethod
     def deserialize_from_simple_assets(assets: List) -> SingleEntityPhiTensor:

@@ -155,11 +155,8 @@ class VirtualMachinePrivateScalarManager:
 
         return new_mgr
 
-    def simple_assets_for_serde(self) -> list:
-        # assets = list()
-        # assets.append(self.prime2symbol)  # type: ignore
-        # return assets
-        return [self.prime2symbol]
+    def simple_assets_for_serde(self) -> tuple[Optional[Dict[Any, Any]]]:
+        return (self.prime2symbol,)
 
     @staticmethod
     def deserialize_from_simple_assets(

@@ -1,7 +1,7 @@
+# type: ignore
 # stdlib
 from pathlib import Path
 import time
-import timeit
 from typing import Any
 from typing import Dict
 from typing import List
@@ -46,7 +46,6 @@ def get_data():
     df.head()
     print(df.shape[0])
 
-    name = "Tweets- 1_000_000 rows dataset "
     impressions = ((np.array(list(df["impressions"])))).astype(np.int32)
     publication_title = list(df["publication_title"])
 
@@ -64,10 +63,10 @@ def size(obj: Any) -> int:
 def benchmark_arrow(data):
     times = {"method": "arrow"}
     start = time.time()
-    blob = data.child.arrow_serialize()
+    _ = data.child.arrow_serialize()
     end = time.time()
     times["serialize_time"] = end - start
-    times["serialize_size"] = size(blob)
+    # times["serialize_size"] = size(blob)
     return times
 
 
@@ -82,12 +81,15 @@ def benchmark_pickle5(data):
     return times
 
 
-def run():
-    data = get_data()
+data = get_data()
+count = 0
+total = 0
+iters = 10
+for i in range(iters):
+    count += 1
     results = benchmark_arrow(data)
     # results = benchmark_pickle5(data)
     print(results)
+    total += results["serialize_time"]
 
-
-res = timeit.timeit(run, number=10)
-print(res)
+print(f"avg = {total/count}")
