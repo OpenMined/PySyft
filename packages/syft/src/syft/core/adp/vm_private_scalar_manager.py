@@ -86,6 +86,8 @@ class PrimeFactory:
 
 @serializable()
 class VirtualMachinePrivateScalarManager:
+    __slots__ = ("prime_factory", "prime2symbol", "hash_cache", "index")
+
     def __init__(
         self,
         prime_factory: Optional[PrimeFactory] = None,

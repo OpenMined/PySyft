@@ -511,6 +511,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
     # Number of entities in a SEPT is by definition 1
     n_entities = 1
+    __slots__ = ("child", "_min_vals", "_max_vals", "entity", "scalar_manager")
 
     def __init__(
         self,

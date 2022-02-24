@@ -55,6 +55,7 @@ class UID:
 
     """
 
+    __slots__ = "value"
     value: uuid_type
 
     def __init__(self, value: Optional[uuid_type] = None):

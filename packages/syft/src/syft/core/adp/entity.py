@@ -28,6 +28,8 @@ from ..common.serde.serialize import _serialize as serialize
 
 @serializable()
 class Entity:
+    __slots__ = ("name", "id")
+
     def __init__(self, name: str = "", id: Optional[UID] = None) -> None:
 
         # If someone doesn't provide a unique name - make one up!
