@@ -36,10 +36,7 @@ def send_message_with_reply(
             signing_key=signing_key
         )
         reply = client.send_immediate_msg_with_reply(msg=msg)
-        try:
-            reply = reply.kwargs.upcast()
-        except Exception:
-            reply = reply.kwargs
+        reply = reply.payload
     else:
         msg = message_type(address=address, reply_to=reply_to, **content)
         reply = client.send_immediate_msg_with_reply(msg=msg)
