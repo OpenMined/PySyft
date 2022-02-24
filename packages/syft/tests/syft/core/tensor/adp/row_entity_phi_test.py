@@ -1241,3 +1241,25 @@ def test_converter(
         output = REPT.convert_to_gamma([igt3, row_data_ishan[0]])
         assert isinstance(output, IGT)
         assert output._entities().shape == output.shape
+
+
+def test_rept_add_dims() -> None:
+    reference_data = np.array(
+        [[-62, -47, 17], [20, -48, 90], [-4, 97, -47]], dtype=np.int32
+    )
+
+    data = SEPT(
+        entity=Entity("Ishan"),
+        child=reference_data,
+        max_vals=reference_data,
+        min_vals=reference_data,
+    )
+    row_data_ishan = []
+    row_data_ishan.append(data)
+
+    """Test addition to REPT with 1 row still returns a REPT"""
+    tensor1 = REPT(rows=row_data_ishan)
+    tensor2 = REPT(rows=row_data_ishan) + 1
+
+    assert tensor1.shape == tensor2.shape
+    assert type(tensor1) == type(tensor2)
