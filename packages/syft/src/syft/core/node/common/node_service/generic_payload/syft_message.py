@@ -15,7 +15,7 @@ from .....common.uid import UID
 from .....io.address import Address
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....common.exceptions import AuthorizationError
-
+from ....common.exceptions import PermissionsNotDefined
 
 # Inner Payload message using Pydantic.
 class Payload(BaseModel):
@@ -94,6 +94,10 @@ class NewSyftMessage(ImmediateSyftMessage):
         Raises:
             AuthorizationError: Error when one of the permission is denied.
         """
+        
+        if not len(self.get_permissions()): 
+            raise PermissionsNotDefined
+
         for permission_class in self.get_permissions():
             if not permission_class().has_permission(
                 msg=self, node=node, verify_key=verify_key
