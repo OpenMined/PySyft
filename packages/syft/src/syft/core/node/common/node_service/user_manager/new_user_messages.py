@@ -79,14 +79,6 @@ class CreateUserMessage(SyftMessage, DomainMessageRegistry):
             ReplyPayload: Message on successful user creation.
         """
 
-        # Check if email/password fields are empty
-        if not getattr(self.payload, "email", "") or not getattr(
-            self.payload, "password", ""
-        ):
-            raise MissingRequestKeyError(
-                message="Invalid request payload, empty fields (email/password)!"
-            )
-
         # Check if this email was already registered
         try:
             node.users.first(email=self.payload.email)
