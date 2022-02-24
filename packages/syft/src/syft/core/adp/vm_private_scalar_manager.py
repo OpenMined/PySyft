@@ -63,8 +63,8 @@ class PrimeFactory:
             )  # Since the list is sorted, we can just compare the last value
         return self == other
 
-    def simple_assets_for_serde(self) -> list:
-        return []
+    # def simple_assets_for_serde(self) -> list:
+    #     return []
 
     @staticmethod
     def deserialize_from_simple_assets(assets: List) -> PrimeFactory:
@@ -156,16 +156,16 @@ class VirtualMachinePrivateScalarManager:
         return new_mgr
 
     def simple_assets_for_serde(self) -> list:
-        assets = list()
-        assets.append(self.prime_factory.simple_assets_for_serde())
-        assets.append(self.prime2symbol)  # type: ignore
-        return assets
+        # assets = list()
+        # assets.append(self.prime2symbol)  # type: ignore
+        # return assets
+        return [self.prime2symbol]
 
     @staticmethod
     def deserialize_from_simple_assets(
         assets: List,
     ) -> VirtualMachinePrivateScalarManager:
-        prime_factory = PrimeFactory.deserialize_from_simple_assets(assets[0])
+        prime_factory = PrimeFactory()
         return VirtualMachinePrivateScalarManager(
             prime_factory=prime_factory, prime2symbol=assets[1]
         )
