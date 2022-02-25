@@ -113,9 +113,13 @@ def _add_lib(
 
 def _regenerate_unions(*, lib_ast: Globals, client: TypeAny = None) -> None:
     union_misc_ast = getattr(
-        getattr(create_union_ast(lib_ast=lib_ast, client=client), "syft"), "lib"
+        getattr(create_union_ast(lib_ast=lib_ast, client=client), "syft", None),
+        "lib",
+        None,
     )
-    if client is not None:
+    if union_misc_ast is None:
+        return
+    elif client is not None:
         client.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
     else:
         lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
@@ -255,8 +259,11 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
 
     # let the misc creation be always the last, as it needs the full ast solved
     # to properly generated unions
-    union_misc_ast = getattr(getattr(create_union_ast(lib_ast, client), "syft"), "lib")
-    lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
+    union_misc_ast = getattr(
+        getattr(create_union_ast(lib_ast, client), "syft", None), "lib", None
+    )
+    if union_misc_ast:
+        lib_ast.syft.lib.add_attr(attr_name="misc", attr=union_misc_ast.attrs["misc"])
 
     return lib_ast
 
