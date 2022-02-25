@@ -1,8 +1,11 @@
 name: Benchmark Test
 
 on:
-  schedule:
-    - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT
+  pull_request:
+    branches:
+      -dev
+#  schedule:
+#    - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT
   workflow_dispatch:
     inputs:
       none:
