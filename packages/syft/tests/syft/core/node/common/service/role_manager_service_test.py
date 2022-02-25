@@ -55,7 +55,8 @@ def test_create_role_message(domain: sy.Domain) -> None:
 
 
 def test_update_role_message(domain: sy.Domain) -> None:
-    role = domain.roles.first()
+    domain.roles.register(**{"name": "RoleToUpdate"})
+    role = domain.roles.first(**{"name": "RoleToUpdate"})
     new_name = "New Role Name"
     user_key = SigningKey(domain.verify_key.encode())
 
@@ -72,7 +73,7 @@ def test_update_role_message(domain: sy.Domain) -> None:
 
     assert reply is not None
     assert reply.resp_msg == "Role updated successfully!"
-    role_obj = domain.roles.first()
+    role_obj = domain.roles.first(**{"id": role.id})
     assert role_obj.name == new_name
 
 
@@ -116,7 +117,10 @@ def test_get_roles_message(domain: sy.Domain) -> None:
 
 def test_del_role_manager(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
-    role = domain.roles.first()
+
+    # Create a dummy role to be deleted
+    domain.roles.register(**{"name": "RoleToDelete"})
+    role = domain.roles.first(**{"name": "RoleToDelete"})
 
     msg = DeleteRoleMessage(
         address=domain.address,
