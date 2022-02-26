@@ -40,4 +40,5 @@ jobs:
           pwd
           ls -la
           pip list
+          python -m executor
         working-directory: ./benchmarks
