@@ -37,5 +37,5 @@ jobs:
 
       - name: Run Benchmark
         run: |
-         python benchmarks/executor.py -o test.json
+         python3 benchmarks/executor.py -o test.json
         shell: bash
