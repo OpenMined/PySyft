@@ -26,19 +26,14 @@ jobs:
         run: |
           pip install --upgrade --user pip
 
-      - name: Install dependencies
+      - name: Install tox
         run: |
-          pip install --upgrade pyperf
-          pip install -e packages/syft
-
-      - name: Set libpython path
-        run: |
-          export LD_LIBRARY_PATH=/home/azureuser/actions-runner/_work/_tool/Python/3.9.10/x64/lib
+          pip install tox --upgrade
+#
+#      - name: Set libpython path
+#        run: |
+#          export LD_LIBRARY_PATH=/home/azureuser/actions-runner/_work/_tool/Python/3.9.10/x64/lib
 
       - name: Run Benchmark
         run: |
-          pwd
-          ls -la
-          pip list
-          python -m executor
-        working-directory: ./benchmarks
+          tox -e syft.benchmark
