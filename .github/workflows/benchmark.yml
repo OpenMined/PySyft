@@ -38,4 +38,5 @@ jobs:
       - name: Run Benchmark
         run: |
           pwd
+          python
         shell: bash
