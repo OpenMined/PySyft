@@ -38,4 +38,4 @@ jobs:
       - name: Run Benchmark
         run: |
          python benchmarks/executor.py -o test.json
-        shell: shell
+        shell: bash
