@@ -40,7 +40,7 @@ class Op:
                 arg.ops.append(self)
                 self.parent_tensors.append(arg)
 
-        for key, arg in kwargs.items():
+        for _, arg in kwargs.items():
             if isinstance(arg, AutogradTensor):
                 arg.ops.append(self)
                 self.parent_tensors.append(arg)

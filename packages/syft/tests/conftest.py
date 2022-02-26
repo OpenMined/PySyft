@@ -8,6 +8,7 @@ from typing import List as TypeList
 
 # third party
 import _pytest
+from faker import Faker
 import pytest
 
 # syft absolute
@@ -155,6 +156,11 @@ def client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
 @pytest.fixture(scope="session")
 def root_client(node: sy.VirtualMachine) -> sy.VirtualMachineClient:
     return node.get_root_client()
+
+
+@pytest.fixture(scope="session")
+def faker():
+    return Faker()
 
 
 # The unit tests require separate VM's as we have a common crypto store cache.
