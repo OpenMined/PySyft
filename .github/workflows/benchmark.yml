@@ -29,10 +29,10 @@ jobs:
       - name: Install tox
         run: |
           pip install tox --upgrade
-#
-#      - name: Set libpython path
-#        run: |
-#          export LD_LIBRARY_PATH=/home/azureuser/actions-runner/_work/_tool/Python/3.9.10/x64/lib
+
+      - name: Set libpython path
+        run: |
+          export LD_LIBRARY_PATH=/home/azureuser/actions-runner/_work/_tool/Python/3.9.10/x64/lib
 
       - name: Run Benchmark
         run: |
