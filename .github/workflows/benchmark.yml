@@ -31,6 +31,10 @@ jobs:
           pip install --upgrade pyperf
           pip install -e packages/syft
 
+      - name: Set libpython path
+        run: |
+          export LD_LIBRARY_PATH=/actions-runner/_work/_tool/Python/3.9.10/x64/lib
+
       - name: Run Benchmark
         run: |
           ./benchmarks/executor.py --fast -n 26 -o test.json
