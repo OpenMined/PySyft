@@ -37,6 +37,5 @@ jobs:
 
       - name: Run Benchmark
         run: |
-          pwd
-          which python3
-        shell: bash
+          benchmarks/executor.py -o test.json
+        shell: python
