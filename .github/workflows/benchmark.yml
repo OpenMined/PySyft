@@ -37,5 +37,5 @@ jobs:
 
       - name: Run Benchmark
         run: |
-          ./benchmarks/executor.py --fast -n 26 -o test.json
+          benchmarks/executor.py --fast -n 26 -o test.json
         shell: python
