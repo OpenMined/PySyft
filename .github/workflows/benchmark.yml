@@ -26,8 +26,9 @@ jobs:
         run: |
           pip install --upgrade --user pip
 
-      - name: Setup syft
+      - name: Install dependencies
         run: |
+          pip install --upgrade pyperf
           pip install -e packages/syft
 
       - name: Run Benchmark
