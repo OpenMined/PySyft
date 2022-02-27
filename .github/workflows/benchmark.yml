@@ -27,7 +27,7 @@ jobs:
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
-            auto-update-conda: true
+            miniconda-version: "latest"
 
       - name: Conda info
         shell: bash -l {0}
