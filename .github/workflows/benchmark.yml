@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.9 ]
-    runs-on: [Benchmark]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
