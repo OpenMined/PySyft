@@ -42,7 +42,8 @@ jobs:
       - name: Install tox
         run: |
           conda install -c conda-forge tox
-
-      - name: Run Benchmark
-        run: |
           tox -e syft.benchmark
+
+      # - name: Run Benchmark
+      #   run: |
+      #     tox -e syft.benchmark
