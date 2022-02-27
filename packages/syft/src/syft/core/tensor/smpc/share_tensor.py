@@ -676,11 +676,12 @@ class ShareTensor(PassthroughTensor):
         new_share = self.apply_function(y, "ne")
         return new_share
 
-    def bit_decomposition(self) -> "ShareTensor":
+    def bit_decomposition(self,ring_size:int ,bitwise: bool) -> "ShareTensor":
         """Apply the "decomposition" operation on self
 
         Args:
-            None
+            ring_size (int): Ring size to decompose the shares
+            bitwise (bool): Flag for bitwise decomposition.
 
         Returns:
             ShareTensor. Result of the operation.
