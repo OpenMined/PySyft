@@ -24,7 +24,7 @@ jobs:
         uses: actions/setup-python@v2
         with:
           python-version: ${{ matrix.python-version }}
-      
+
       - name: Setup Miniconda
       - uses: conda-incubator/setup-miniconda@v2
         with:
