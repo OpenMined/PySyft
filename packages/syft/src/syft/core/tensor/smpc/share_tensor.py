@@ -514,8 +514,8 @@ class ShareTensor(PassthroughTensor):
             operation_str=method_name, nr_parties=nr_parties
         )
 
-        args_id = deepcopy(context.GLOBAL_ARGS_ID)
-        kwargs = deepcopy(context.GLOBAL_KWARGS)
+        args_id = context.GLOBAL_ARGS_ID
+        kwargs = context.GLOBAL_KWARGS
 
         if args_id is None or kwargs is None:
             raise ValueError(
