@@ -41,7 +41,7 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install tox tox-conda --upgrade
+          conda install -c conda-forge tox
 
       - name: Run Benchmark
         run: |
