@@ -129,6 +129,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             raise ValueError(
                 "There should be a `seed_id_locations` kwargs when doing an operation for MPCTensor"
             )
+        kwargs.pop("seed_id_locations")
 
         op = attr_path_and_name.split(".")[-1]
         id_at_location = smpc_action_functions.get_id_at_location_from_op(
