@@ -436,7 +436,7 @@ class ShareTensor(PassthroughTensor):
                     self.child, np.array(y, numpy_type)
                 )  # TODO: change to np.int64
             else:
-                value = deepcopy(value)
+                value = deepcopy(self.child)
 
         res = self.copy_tensor()
         res.child = value
