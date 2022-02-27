@@ -30,10 +30,10 @@ jobs:
         with:
           auto-update-conda: true
           python-version: ${{ matrix.python-version }}
-      - name: Conda info
-        shell: bash -l {0}
-        run: |
-          conda info -a
+      # - name: Conda info
+      #   shell: bash -l {0}
+      #   run: |
+      #     conda info -a
 
       - name: Upgrade pip
         run: |
