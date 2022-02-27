@@ -28,6 +28,8 @@ jobs:
       - uses: conda-incubator/setup-miniconda@v2
         with:
             miniconda-version: "latest"
+            auto-activate-base: true
+            activate-enviroment: ""
 
       - name: Conda info
         shell: bash -l {0}
@@ -41,6 +43,6 @@ jobs:
         run: |
           pip install tox tox-conda --upgrade
 
-      # - name: Run Benchmark
-      #   run: |
-      #     tox -e syft.benchmark
+      - name: Run Benchmark
+        run: |
+          tox -e syft.benchmark
