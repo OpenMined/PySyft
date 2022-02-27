@@ -1,9 +1,6 @@
 name: Benchmark Test
 
 on:
-  pull_request:
-    branches:
-      -dev
 #  schedule:
 #    - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT #Trigger commit
   workflow_dispatch:
@@ -13,15 +10,30 @@ on:
         required: false
 jobs:
   run-benchmark:
-    runs-on: [Benchmark]
+    strategy:
+      matrix:
+        python-version: [ 3.9 ]
+    runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
 
-      - name: Setup syft
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Upgrade pip
         run: |
-          pip install -e packages/syft
+          pip install --upgrade --user pip
+
+      - name: Install tox
+        run: |
+          pip install tox --upgrade
+
+      - name: Set libpython path
+        run: |
+          export LD_LIBRARY_PATH=/home/azureuser/actions-runner/_work/_tool/Python/3.9.10/x64/lib
 
       - name: Run Benchmark
         run: |
-          python executor.py --fast -n 26 -o test.json
-        working-directory: ./benchmarks
+          tox -e syft.benchmark

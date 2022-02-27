@@ -16,14 +16,18 @@ class PermissionsNotDefined(PyGridError):
 class BadPayloadException(PyGridError):
     def __init__(self, message: str = "") -> None:
         if not message:
-            message = "Missing mandatory message fields or wrong message format and type."
+            message = (
+                "Missing mandatory message fields or wrong message format and type."
+            )
         super().__init__(message)
+
 
 class AuthorizationError(PyGridError):
     def __init__(self, message: str = "") -> None:
         if not message:
             message = "User is not authorized for this operation!"
         super().__init__(message)
+
 
 class OwnerAlreadyExistsError(PyGridError):
     def __init__(self, message: str = "") -> None:
