@@ -26,7 +26,6 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
-from ....tensor.smpc import context
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
@@ -99,6 +98,9 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         return f"RunClassMethodSMPCAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+        # relative
+        from ....tensor.smpc import context
+
         resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
         result_read_permissions = resolved_self.read_permissions
 
