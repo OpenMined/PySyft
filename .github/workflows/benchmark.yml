@@ -12,8 +12,8 @@ jobs:
   run-benchmark:
     strategy:
       matrix:
-        python-version: [ 3.9 ]
-    runs-on: [self-hosted, linux]
+        python-version: [3.9]
+    runs-on: [benchmark]
     steps:
       - name: set permissions on work folder for self-runners
         run: |
