@@ -24,6 +24,7 @@ import torch
 import syft as sy
 
 # relative
+from . import context
 from . import utils
 from .... import logger
 from ....grid import GridURL
@@ -513,16 +514,16 @@ class ShareTensor(PassthroughTensor):
             operation_str=method_name, nr_parties=nr_parties
         )
 
-        args_id = deepcopy(RunClassMethodSMPCAction.GLOBAL_ARGS_ID)
-        kwargs = deepcopy(RunClassMethodSMPCAction.GLOBAL_KWARGS)
+        args_id = deepcopy(context.GLOBAL_ARGS_ID)
+        kwargs = deepcopy(context.GLOBAL_KWARGS)
 
         if args_id is None or kwargs is None:
             raise ValueError(
                 f"Args ID: {args_id} or Kwargs: kwargs {kwargs} should not be none."
             )
         else:
-            RunClassMethodSMPCAction.GLOBAL_ARGS_ID = None
-            RunClassMethodSMPCAction.GLOBAL_KWARGS = None
+            context.GLOBAL_ARGS_ID = None
+            context.GLOBAL_KWARGS = None
         node = kwargs.get("node", None)
         verify_key = kwargs.get("verify_key", None)
         kwargs.pop("verify_key")
@@ -676,7 +677,7 @@ class ShareTensor(PassthroughTensor):
         new_share = self.apply_function(y, "ne")
         return new_share
 
-    def bit_decomposition(self,ring_size:int ,bitwise: bool) -> "ShareTensor":
+    def bit_decomposition(self, ring_size: int, bitwise: bool) -> "ShareTensor":
         """Apply the "decomposition" operation on self
 
         Args:

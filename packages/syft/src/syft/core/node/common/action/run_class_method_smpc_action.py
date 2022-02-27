@@ -26,6 +26,7 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
+from ....tensor.smpc import context
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
@@ -50,9 +51,6 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
          kwargs: kwargs to pass to the function. They should be pointers to objects
             located on the :class:`Node` that will execute the action.
     """
-
-    GLOBAL_ARGS_ID: Optional[list] = None
-    GLOBAL_KWARGS: Optional[dict] = None
 
     def __init__(
         self,
@@ -167,8 +165,8 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             "verify_key": verify_key,
         }
 
-        GLOBAL_ARGS_ID = args_id  # noqa
-        GLOBAL_KWARGS = kwargs  # noqa
+        context.GLOBAL_ARGS_ID = args_id
+        context.GLOBAL_KWARGS = kwargs
         result = method(*upcasted_args, **upcasted_kwargs)
 
         id_at_location = self.id_at_location
