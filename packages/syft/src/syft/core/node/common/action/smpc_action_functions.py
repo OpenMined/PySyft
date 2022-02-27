@@ -36,7 +36,7 @@ def get_action_generator_from_op(
     return functools.partial(MAP_FUNC_TO_ACTION[operation_str], nr_parties)
 
 
-def get_id_at_location_from_op(seed: bytes, operation_str: str) -> UID:
+def get_id_at_location_from_op(seed: int, operation_str: str) -> UID:
     generator = np.random.default_rng(seed)
     return UID(UUID(bytes=generator.bytes(16)))
 

@@ -75,6 +75,7 @@ class IsNodeDaaEnabled(BasePermission):
 
         return True
 
+
 class NoRestriction(BasePermission):
     def has_permissions(
         self,
@@ -83,6 +84,7 @@ class NoRestriction(BasePermission):
         verify_key: Optional[VerifyKey],
     ) -> bool:
         return True
+
 
 class UserIsOwner(BasePermission):
     def has_permission(

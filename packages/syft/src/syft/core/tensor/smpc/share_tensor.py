@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from copy import deepcopy
 import functools
 from functools import lru_cache
 import operator
@@ -30,6 +31,11 @@ from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
+from ...node.common.action.run_class_method_smpc_action import RunClassMethodSMPCAction
+from ...node.common.action.smpc_action_message import SMPCActionMessage
+from ...node.common.action.smpc_action_seq_batch_message import (
+    SMPCActionSeqBatchMessage,
+)
 from ...smpc.store.crypto_store import CryptoStore
 from ..passthrough import PassthroughTensor  # type: ignore
 
@@ -413,6 +419,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor: Result of the operation.
         """
+        ShareTensor.sanity_check(y)
 
         op = ShareTensor.get_op(self.ring_size, op_str)
         numpy_type = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
@@ -424,7 +431,12 @@ class ShareTensor(PassthroughTensor):
             value = op(self.child, y.child)
         else:
             # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
-            value = op(self.child, np.array(y, numpy_type))  # TODO: change to np.int64
+            if self.rank == 0:
+                value = op(
+                    self.child, np.array(y, numpy_type)
+                )  # TODO: change to np.int64
+            else:
+                value = deepcopy(value)
 
         res = self.copy_tensor()
         res.child = value
@@ -441,11 +453,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-
-        ShareTensor.sanity_check(y)
-
         new_share = self.apply_function(y, "add")
-
         return new_share
 
     def sub(
@@ -459,8 +467,6 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-
-        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "sub")
         return new_share
 
@@ -475,11 +481,76 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-
-        ShareTensor.sanity_check(y)
         new_self = self.mul(-1)
         new_share = new_self.apply_function(y, "add")
         return new_share
+
+    def apply_action_function(
+        self, y: Union[ShareTensor, None], op_str: str
+    ) -> "ShareTensor":
+        """Apply action based operations.
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): tensor to apply the operator.
+            op_str (str): Operator.
+
+        Returns:
+            ShareTensor: Result of the operation.
+        """
+        # relative
+        from ...node.common.action import smpc_action_functions
+
+        # TODO: refactor in next iteration, creation of action, accesses the DB again
+        # we could pass in the sharetensor values directly from this function.
+        if y and not isinstance(y, ShareTensor):
+            raise ValueError("Action funciton works only for private operation.")
+
+        nr_parties = self.nr_parties
+        rank = self.rank
+        method_name = op_str
+
+        actions_generator = smpc_action_functions.get_action_generator_from_op(
+            operation_str=method_name, nr_parties=nr_parties
+        )
+
+        args_id = deepcopy(RunClassMethodSMPCAction.GLOBAL_ARGS_ID)
+        kwargs = deepcopy(RunClassMethodSMPCAction.GLOBAL_KWARGS)
+
+        if args_id is None or kwargs is None:
+            raise ValueError(
+                f"Args ID: {args_id} or Kwargs: kwargs {kwargs} should not be none."
+            )
+        else:
+            RunClassMethodSMPCAction.GLOBAL_ARGS_ID = None
+            RunClassMethodSMPCAction.GLOBAL_KWARGS = None
+        node = kwargs.get("node", None)
+        verify_key = kwargs.get("verify_key", None)
+        kwargs.pop("verify_key")
+
+        actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
+        actions = actions_generator(*args_id, **kwargs)  # type: ignore
+
+        if isinstance(actions, (list, tuple)) and isinstance(
+            actions[0], SMPCActionMessage
+        ):
+            actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
+            for action in actions:
+                result = RunClassMethodSMPCAction.execute_smpc_action(
+                    node, action, verify_key
+                )
+        elif isinstance(actions, SMPCActionSeqBatchMessage):
+            msg = actions
+            while msg.smpc_actions:
+                action = msg.smpc_actions[0]
+                result = RunClassMethodSMPCAction.execute_smpc_action(
+                    node, action, verify_key
+                )
+                del msg.smpc_actions[0]
+
+        if result is None:
+            raise ValueError(f"Result:{result} should be a valid ShareTensor")
+
+        return result
 
     def mul(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
@@ -492,13 +563,10 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        # if isinstance(y, ShareTensor):
-        #     raise ValueError(
-        #         "We should not reach this point for private multiplication. Only public one"
-        #     )
-
-        ShareTensor.sanity_check(y)
-        new_share = self.apply_function(y, "mul")
+        if isinstance(y, ShareTensor):
+            new_share = self.apply_action_function(y, "__mul__")
+        else:
+            new_share = self.apply_function(y, "mul")
         return new_share
 
     def matmul(
@@ -515,7 +583,6 @@ class ShareTensor(PassthroughTensor):
         if isinstance(y, ShareTensor):
             raise ValueError("Private matmul not supported yet")
 
-        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "matmul")
         return new_share
 
@@ -531,7 +598,6 @@ class ShareTensor(PassthroughTensor):
         if isinstance(y, ShareTensor):
             raise ValueError("Private matmul not supported yet")
 
-        ShareTensor.sanity_check(y)
         new_share = y.apply_function(self, "matmul")
         return new_share
 
@@ -547,7 +613,6 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "lt")
         return new_share
 
@@ -563,7 +628,6 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "gt")
         return new_share
 
@@ -579,7 +643,6 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "ge")
         return new_share
 
@@ -595,7 +658,6 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "le")
         return new_share
 
@@ -611,7 +673,6 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "ne")
         return new_share
 
@@ -624,9 +685,12 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        raise ValueError(
-            "It should not reach this point since we generate SMPCAction for this"
-        )
+        res = self.apply_action_function(y=None, op_str="bit_decomposition")
+        return res
+
+        # raise ValueError(
+        #     "It should not reach this point since we generate SMPCAction for this"
+        # )
 
     def eq(self, other: Any) -> bool:
         """Equal operator.
