@@ -13,8 +13,11 @@ jobs:
     strategy:
       matrix:
         python-version: [ 3.9 ]
-    runs-on: ubuntu-latest
+    runs-on: [self-hosted, linux]
     steps:
+      - name: set permissions on work folder for self-runners
+        run: |
+          sudo chown -R $USER:$USER ~/actions-runner/_work/
       - uses: actions/checkout@v2
 
       - name: Set up Python ${{ matrix.python-version }}
