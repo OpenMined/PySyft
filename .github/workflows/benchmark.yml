@@ -41,8 +41,9 @@ jobs:
 
       - name: Install tox
         run: |
-          pip install tox
+          conda install -c conda-forge tox
 
       - name: Run Benchmark
         run: |
-          tox -e syft.benchmark
+          echo $CONDA
+#          tox -e syft.benchmark
