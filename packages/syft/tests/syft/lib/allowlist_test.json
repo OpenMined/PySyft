@@ -3420,7 +3420,8 @@
       },
       "_version": {
         "profile": "tensor_property_noinput",
-        "return_type": "syft.lib.python.Int"
+        "return_type": "syft.lib.python.Int",
+        "deterministic": false
       },
       "all": {
         "profile": "tensor_method_noinput",

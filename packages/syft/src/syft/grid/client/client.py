@@ -40,6 +40,7 @@ def connect(
 ) -> Client:
     # Use Server metadata
     # to build client route
+    credentials = credentials if credentials else {}
     conn = conn_type(url=GridURL.from_url(url))  # type: ignore
 
     # get metadata and check for https redirect so that login is sent over TLS

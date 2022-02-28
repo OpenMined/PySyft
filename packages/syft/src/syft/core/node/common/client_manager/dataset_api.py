@@ -168,7 +168,7 @@ class DatasetRequestAPI(RequestAPI):
     def all_as_datasets(self) -> List[Any]:
         a = self.all()
         out = list()
-        for key, d in enumerate(a):
+        for key, _ in enumerate(a):
             raw = a[key : key + 1]  # noqa: E203
             out.append(Dataset(raw, self.client, key=key, **a[key]))
         return out
@@ -255,7 +255,7 @@ class DatasetRequestAPI(RequestAPI):
                 """
 
         rows = ""
-        for row_i, d in enumerate(dataset_iterable):
+        for _, d in enumerate(dataset_iterable):
 
             data = d.data
             truncated_assets = False
@@ -264,7 +264,7 @@ class DatasetRequestAPI(RequestAPI):
                 data = data[:3]
 
             assets = ""
-            for i, a in enumerate(data):
+            for _, a in enumerate(data):
                 assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
 
             if truncated_assets:
@@ -355,7 +355,7 @@ class Dataset:
             data = data[0:15]
 
         assets = ""
-        for i, a in enumerate(data):
+        for _, a in enumerate(data):
             assets += '["' + a["name"] + '"] -> ' + a["dtype"] + "<br /><br />"
 
             rows += (
