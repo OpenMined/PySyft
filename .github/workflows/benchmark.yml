@@ -20,10 +20,10 @@ jobs:
           sudo chown -R $USER:$USER ~/actions-runner/_work/
       - uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+#      - name: Set up Python ${{ matrix.python-version }}
+#        uses: actions/setup-python@v2
+#        with:
+#          python-version: ${{ matrix.python-version }}
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
