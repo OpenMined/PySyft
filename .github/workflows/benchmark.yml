@@ -13,7 +13,7 @@ jobs:
     strategy:
       matrix:
         python-version: [3.9]
-    runs-on: [self-hosted, linux]
+    runs-on: [benchmark-linux]
     steps:
       - name: set permissions on work folder for self-runners
         run: |
