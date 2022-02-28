@@ -83,6 +83,7 @@ from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
+from .service import DomainServiceClass
 
 
 class Domain(Node):
@@ -167,6 +168,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(UserLoginService)
 
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
+
+        # TODO: New Service registration process
+        self.immediate_services_with_reply.append(DomainServiceClass)
 
         # TODO: @Madhava change to a map of accountants that are created on first
         # use of the DS key
