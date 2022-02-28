@@ -20,10 +20,10 @@ jobs:
           sudo chown -R $USER:$USER ~/actions-runner/_work/
       - uses: actions/checkout@v2
 
-      # - name: Set up Python ${{ matrix.python-version }}
-      #   uses: actions/setup-python@v2
-      #   with:
-      #     python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
 
       - uses: conda-incubator/setup-miniconda@v2
         with:
@@ -38,21 +38,11 @@ jobs:
       - name: Upgrade pip
         run: |
           pip install --upgrade --user pip
-      
+
+      - name: Install tox
+        run: |
+          pip install tox
+
       - name: Run Benchmark
         run: |
-          pip install --upgrade pyperf
-          conda develop  packages/syft
-          python3 benchmarks/executor.py --fast -n 26 -o test.json
-          cat test.json
-          pyperf stats test.json
-          pyperf hist test.json
-
-      # - name: Install tox
-      #   run: |
-      #     conda install -c conda-forge tox
-      #     conda list --no-pip
-
-      # - name: Run Benchmark
-      #   run: |
-      #     tox -e syft.benchmark
+          tox -e syft.benchmark
