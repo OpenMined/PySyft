@@ -20,20 +20,10 @@ jobs:
           sudo chown -R $USER:$USER ~/actions-runner/_work/
       - uses: actions/checkout@v2
 
-#      - name: Set up Python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v2
-#        with:
-#          python-version: ${{ matrix.python-version }}
-
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
         with:
-            miniconda-version: "latest"
-            activate-environment: "syft"
-            python-version: ${{ matrix.python-version }}
-
-      - name: Conda info
-        shell: bash -l {0}
-        run: conda info
+          python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
         run: |
@@ -41,9 +31,8 @@ jobs:
 
       - name: Install tox
         run: |
-          conda install -c conda-forge tox
+          pip install --upgrade tox
 
       - name: Run Benchmark
         run: |
-          echo $CONDA
-          $CONDA/bin/tox -e syft.benchmark
+         tox -e syft.benchmark
