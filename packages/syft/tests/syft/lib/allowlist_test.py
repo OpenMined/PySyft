@@ -218,7 +218,7 @@ if os.path.exists(SUPPORT_FILE_PATH):
         diff = time.time() - file_stat.st_mtime
         if diff > 0.1:
             # only delete on the first run
-            for retry in range(5):
+            for _ in range(5):
                 try:
                     os.unlink(SUPPORT_FILE_PATH)
                     break
