@@ -1,1 +1,1 @@
-docker ps --format '{{.Names}}' | grep "celeryworker" |  xargs -I '{}' bash -c 'echo "{} -> $(docker exec -i {} input.sh) "' - {}
+docker ps --format '{{.Names}}' | grep "celeryworker" |  xargs -I '{}' bash -c 'echo "{} -> $(docker exec -i {} /bin/bash /input.sh) "' - {}
