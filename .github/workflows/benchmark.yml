@@ -41,12 +41,12 @@ jobs:
       
       - name: Run Benchmark
         run: |
-        pip install --upgrade pyperf
-        pip install -e packages/syft
-        python3 benchmarks/executor.py --fast -n 26 -o test.json
-        cat test.json
-        pyperf stats test.json
-        pyperf hist test.json
+          pip install --upgrade pyperf
+          pip install -e packages/syft
+          python3 benchmarks/executor.py --fast -n 26 -o test.json
+          cat test.json
+          pyperf stats test.json
+          pyperf hist test.json
 
       # - name: Install tox
       #   run: |
