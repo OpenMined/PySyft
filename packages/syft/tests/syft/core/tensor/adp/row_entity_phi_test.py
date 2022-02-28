@@ -255,7 +255,7 @@ def test_eq_values(
         ), f"REPT + 1 == REPT failed at child {i}"
 
     # comparison_result = tensor1 == tensor2
-    tensor1 == tensor2
+    assert all(tensor1 == tensor2) is True
     # assert not comparison_result  # This will work as soon as the .all() or .any() methods are implemented.
     # Would this be more user-friendly if SEPT == SEPT -> singular T/F instead of array of T/F?
 
@@ -1241,3 +1241,25 @@ def test_converter(
         output = REPT.convert_to_gamma([igt3, row_data_ishan[0]])
         assert isinstance(output, IGT)
         assert output._entities().shape == output.shape
+
+
+def test_rept_add_dims() -> None:
+    reference_data = np.array(
+        [[-62, -47, 17], [20, -48, 90], [-4, 97, -47]], dtype=np.int32
+    )
+
+    data = SEPT(
+        entity=Entity("Ishan"),
+        child=reference_data,
+        max_vals=reference_data,
+        min_vals=reference_data,
+    )
+    row_data_ishan = []
+    row_data_ishan.append(data)
+
+    """Test addition to REPT with 1 row still returns a REPT"""
+    tensor1 = REPT(rows=row_data_ishan)
+    tensor2 = REPT(rows=row_data_ishan) + 1
+
+    assert tensor1.shape == tensor2.shape
+    assert type(tensor1) == type(tensor2)

@@ -70,7 +70,7 @@ def _get_triples(
     min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
 
     triples = []
-    for i in range(nr_instances):
+    for _ in range(nr_instances):
         seed_przs = secrets.randbits(32)
         a_rand = Tensor(
             ttp_generator.integers(

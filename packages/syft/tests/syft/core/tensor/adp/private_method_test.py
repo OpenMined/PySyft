@@ -11,7 +11,7 @@ def test_incompatible_input_tensor_type() -> None:
     try:
         x = sy.Tensor(np.float32([1, 2, 3, 4.0]))
         x.private(min_val=0, max_val=5, entities="bob")
-        assert False
+        raise AssertionError()
     except TypeError:
         assert True
 
