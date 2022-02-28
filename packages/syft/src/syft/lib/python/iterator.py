@@ -80,7 +80,7 @@ class Iterator(PyPrimitive):
             exhausted = getattr(self, "exhausted", False)
             self_index = getattr(self, "_index", 0)
             if (max_len is not None and self_index >= max_len) or exhausted:
-                setattr(self, "exhausted", True)
+                self.exhausted = True
                 raise StopIteration
 
             try:
@@ -111,13 +111,13 @@ class Iterator(PyPrimitive):
                     # collections.abc.* KeysView, ValuesView, ItemsView end up here
                     # they do not have __next__ or __getitem__ but they do have __iter__
                     # so we can just replace our self._obj_ref and keep going
-                    setattr(self, "_obj_ref", _obj_ref.__iter__())
+                    self._obj_ref = _obj_ref.__iter__()
                     # obj = next(self._obj_ref) # just call self.__next__() instead
                     return self.__next__()
                 else:
                     raise ValueError("Can't iterate through given object.")
             except StopIteration as e:
-                setattr(self, "exhausted", True)
+                self.exhausted = True
                 raise e
 
             if hasattr(self, "_index"):

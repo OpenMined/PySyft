@@ -39,6 +39,7 @@ from ..common.node_manager.dataset_manager import DatasetManager
 from ..common.node_manager.environment_manager import EnvironmentManager
 from ..common.node_manager.node_manager import NodeManager
 from ..common.node_manager.node_route_manager import NodeRouteManager
+from ..common.node_manager.redis_store import RedisStore
 from ..common.node_manager.request_manager import RequestManager
 from ..common.node_manager.role_manager import RoleManager
 from ..common.node_manager.user_manager import UserManager
@@ -82,6 +83,7 @@ from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
 from .client import DomainClient
+from .service import DomainServiceClass
 
 
 class Domain(Node):
@@ -104,6 +106,7 @@ class Domain(Node):
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
         settings: BaseSettings = BaseSettings(),
+        store_type: type = RedisStore,
     ):
 
         if db_engine is None:
@@ -118,6 +121,7 @@ class Domain(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             db_engine=db_engine,
+            store_type=store_type,
         )
 
         # share settings with the FastAPI application level
@@ -164,6 +168,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(UserLoginService)
 
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
+
+        # TODO: New Service registration process
+        self.immediate_services_with_reply.append(DomainServiceClass)
 
         # TODO: @Madhava change to a map of accountants that are created on first
         # use of the DS key

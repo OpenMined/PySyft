@@ -39,7 +39,7 @@ then
     git remote add origin https://github.com/$2
     git fetch origin
     echo "Checking out branch: ${3}"
-    git reset --hard
+    git reset --hard "origin/${3}"
     git checkout "origin/${3}" --force
     chown -R $4:$5 .
 fi
@@ -49,28 +49,44 @@ then
     echo "Checking out branch: ${3}"
 fi
 
-git reset --hard
 git fetch origin
+git reset --hard "origin/${3}"
 git checkout "origin/${3}" --force
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
-CONTAINER_HASH=$(docker exec $(docker ps --format "{{.Names}}" | grep backend-1) env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
+CONTAINER_HASH=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
 
-# set a default if its missing
-if [ ! -z ${11} ]; then
-    RELEASE=${11}
+REDEPLOY="0"
+
+# see hagrid --release options
+if [[ ${11} = "development" ]]; then
+    RELEASE=development
 else
     RELEASE=production
 fi
 
-if [ "$START_HASH" != "$END_HASH" ]
+if [[ "$START_HASH" != "$END_HASH" ]]
 then
-    echo "Git hashes dont match, redeploying"
-    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${RELEASE}
+    echo "Git hashes $START_HASH vs $END_HASH dont match, redeploying"
+    REDEPLOY="1"
 elif [[ ! "$END_HASH" == *"$CONTAINER_HASH"* ]]
 then
-    echo "Container hash doesnt match code, redeploying"
+    echo "Container hash $END_HASH not in $CONTAINER_HASH, redeploying"
+    REDEPLOY="1"
+elif [[ -z "$CONTAINER_HASH" ]]
+then
+    echo "Container hash $CONTAINER_HASH is not valid, redeploying"
+    REDEPLOY="1"
+fi
+
+echo "START_HASH=$START_HASH"
+echo "END_HASH=$END_HASH"
+echo "CONTAINER_HASH=$CONTAINER_HASH"
+echo "REDEPLOY=$REDEPLOY"
+
+if [[ ${REDEPLOY} != "0" ]]; then
     bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${RELEASE}
 fi
+
 echo "Finished autoupdate CRON"

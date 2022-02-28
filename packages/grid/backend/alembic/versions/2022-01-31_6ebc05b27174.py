@@ -1,24 +1,36 @@
 """remove group table
 
 Revision ID: 6ebc05b27174
-Revises: 07fb4c284883
+Revises: ada15f85c3d0
 Create Date: 2022-01-31 07:11:32.471320
 
 """
 # third party
 from alembic import op  # type: ignore
 import sqlalchemy as sa
+from sqlalchemy.engine.reflection import Inspector
 
 # revision identifiers, used by Alembic.
 revision = "6ebc05b27174"
-down_revision = "07fb4c284883"
+down_revision = "ada15f85c3d0"
 branch_labels = None
 depends_on = None
 
 
+def get_table_names() -> list:
+    conn = op.get_bind()
+    inspector = Inspector.from_engine(conn)
+    tables = inspector.get_table_names()
+    return tables
+
+
 def upgrade() -> None:
-    op.drop_table("usergroup")
-    op.drop_table("group")
+    table_names = get_table_names()
+    if "usergroup" in table_names:
+        op.drop_table("usergroup")
+
+    if "group" in table_names:
+        op.drop_table("group")
 
 
 def downgrade() -> None:

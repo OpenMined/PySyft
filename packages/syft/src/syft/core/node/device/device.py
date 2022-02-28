@@ -1,6 +1,5 @@
 # stdlib
 from typing import Any
-from typing import Dict
 from typing import Optional
 from typing import Union
 
@@ -17,6 +16,7 @@ from ...common.uid import UID
 from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.node import Node
+from ..common.node_manager.dict_store import DictStore
 from ..vm.client import VirtualMachineClient
 from ..vm.vm import VirtualMachine
 from .client import DeviceClient
@@ -39,9 +39,9 @@ class Device(Node):
         device: SpecificLocation = SpecificLocation(),
         vm: Optional[Location] = None,
         device_type: Any = None,
-        vms: Dict[UID, VirtualMachine] = {},
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
+        store_type: type = DictStore,
     ):
         super().__init__(
             name=name,
@@ -51,6 +51,7 @@ class Device(Node):
             vm=vm,
             signing_key=signing_key,
             verify_key=verify_key,
+            store_type=store_type,
         )
 
         # specific location with name

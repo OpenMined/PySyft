@@ -111,6 +111,7 @@ class iDPGaussianMechanism(Mechanism):
             "public_value": float(squared_l2_norm_upper_bound),
             "L": float(L),
         }  # This will be useful for the Calibrator
+
         self.entity_name = entity_name
         # TODO: should a generic unspecified mechanism have a name and a param dictionary?
 

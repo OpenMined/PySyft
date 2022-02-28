@@ -35,8 +35,7 @@ from syft.core.node.common.node_service.success_resp_message import (
 )
 
 
-def test_create_role_message() -> None:
-    domain = sy.Domain(name="Domain Name")
+def test_create_role_message(domain: sy.Domain) -> None:
     role_name = "New Role"
     user_key = SigningKey(domain.verify_key.encode())
 
@@ -55,9 +54,9 @@ def test_create_role_message() -> None:
     assert reply.resp_msg == "Role created successfully!"
 
 
-def test_update_role_message() -> None:
-    domain = sy.Domain(name="Domain Name")
-    role = domain.roles.first()
+def test_update_role_message(domain: sy.Domain) -> None:
+    domain.roles.register(**{"name": "RoleToUpdate"})
+    role = domain.roles.first(**{"name": "RoleToUpdate"})
     new_name = "New Role Name"
     user_key = SigningKey(domain.verify_key.encode())
 
@@ -74,12 +73,11 @@ def test_update_role_message() -> None:
 
     assert reply is not None
     assert reply.resp_msg == "Role updated successfully!"
-    role_obj = domain.roles.first()
+    role_obj = domain.roles.first(**{"id": role.id})
     assert role_obj.name == new_name
 
 
-def test_get_role_message() -> None:
-    domain = sy.Domain(name="Domain Name")
+def test_get_role_message(domain: sy.Domain) -> None:
     role = domain.roles.first()
     user_key = SigningKey(domain.verify_key.encode())
 
@@ -99,8 +97,7 @@ def test_get_role_message() -> None:
     assert reply.content["name"] == role.name
 
 
-def test_get_roles_message() -> None:
-    domain = sy.Domain(name="Domain Name")
+def test_get_roles_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
     msg = GetRolesMessage(
@@ -118,10 +115,12 @@ def test_get_roles_message() -> None:
     assert type(reply.content) == list
 
 
-def test_del_role_manager() -> None:
-    domain = sy.Domain(name="Domain Name")
+def test_del_role_manager(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
-    role = domain.roles.first()
+
+    # Create a dummy role to be deleted
+    domain.roles.register(**{"name": "RoleToDelete"})
+    role = domain.roles.first(**{"name": "RoleToDelete"})
 
     msg = DeleteRoleMessage(
         address=domain.address,
