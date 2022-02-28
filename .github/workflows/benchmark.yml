@@ -46,4 +46,4 @@ jobs:
       - name: Run Benchmark
         run: |
           echo $CONDA
-#          tox -e syft.benchmark
+          $CONDA/bin/tox -e syft.benchmark
