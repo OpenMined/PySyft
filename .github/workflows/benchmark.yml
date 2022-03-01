@@ -2,7 +2,7 @@ name: Benchmark Test
 
 on:
   workflow_call:
-  
+
   workflow_dispatch:
     inputs:
       none:
