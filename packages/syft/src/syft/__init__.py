@@ -25,7 +25,7 @@ Syft "python" functionality includes the following modules:
     higher level ones.
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
-# import warnings 
+# import warnings
 # warnings.filterwarnings("ignore", category=UserWarning)
 # uncomment during dev to switch off numpy warnings.
 
