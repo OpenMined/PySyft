@@ -96,3 +96,13 @@ services:
       - "14268:14268"
       - "14269:14269"
       - "9411:9411"
+
+  weed:
+    image: chrislusf/seaweedfs:latest
+    command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=1024"
+    ports:
+      - "9333:9333"
+      - "8888:8888"
+      - "8333:8333"
+    volumes:
+      - ./seaweedfs/s3config.json:/etc/s3config.json

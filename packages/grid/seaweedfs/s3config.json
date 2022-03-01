@@ -1,0 +1,26 @@
+{
+    "identities": [
+      {
+        "name": "guest",
+        "actions": [
+          "Read"
+        ]
+      },
+      {
+        "name": "admin",
+        "credentials": [
+          {
+            "accessKey": "admin",
+            "secretKey": "admin"
+          }
+        ],
+        "actions": [
+          "Admin",
+          "Read",
+          "List",
+          "Tagging",
+          "Write"
+        ]
+      }
+    ]
+  }
