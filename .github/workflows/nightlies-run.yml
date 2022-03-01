@@ -41,3 +41,7 @@ jobs:
   call-syft-version_tests:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/syft-version_tests.yml@dev
+  
+  call-benchmark:
+    if: github.repository == 'OpenMined/PySyft' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/benchmark.yml@dev
