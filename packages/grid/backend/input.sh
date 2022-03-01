@@ -1,0 +1,1 @@
+python -c "from grid.core.celery_app import celery_app; celery_app.control.purge();print('Tasks Cleared')"
