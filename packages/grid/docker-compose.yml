@@ -229,6 +229,16 @@ services:
       - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn.stripprefix.forceslash=true"
       - "traefik.http.services.${STACK_NAME?Variable not set}-vpn.loadbalancer.server.port=8080"
 
+  weed:
+    image: chrislusf/seaweedfs:latest
+    command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=1024"
+    ports:
+      - "9333:9333"
+      - "8888:8888"
+      - "8333:8333"
+    volumes:
+      - ./seaweedfs/s3config.json:/etc/s3config.json
+
 volumes:
   app-db-data:
   tailscale-data:
