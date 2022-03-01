@@ -1,8 +1,8 @@
 name: Benchmark Test
 
 on:
-#  schedule:
-#    - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT #Trigger commit
+  workflow_call:
+  
   workflow_dispatch:
     inputs:
       none:
@@ -13,27 +13,17 @@ jobs:
     strategy:
       matrix:
         python-version: [3.9]
-    runs-on: [benchmark]
+    runs-on: [benchmark-linux]
     steps:
       - name: set permissions on work folder for self-runners
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
       - uses: actions/checkout@v2
 
-#      - name: Set up Python ${{ matrix.python-version }}
-#        uses: actions/setup-python@v2
-#        with:
-#          python-version: ${{ matrix.python-version }}
-
-      - uses: conda-incubator/setup-miniconda@v2
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
         with:
-            miniconda-version: "latest"
-            activate-environment: "syft"
-            python-version: ${{ matrix.python-version }}
-
-      - name: Conda info
-        shell: bash -l {0}
-        run: conda info
+          python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
         run: |
@@ -41,9 +31,8 @@ jobs:
 
       - name: Install tox
         run: |
-          conda install -c conda-forge tox
+          pip install --upgrade tox
 
       - name: Run Benchmark
         run: |
-          echo $CONDA
-          $CONDA/bin/tox -e syft.benchmark
+         tox -e syft.benchmark
