@@ -14,7 +14,7 @@ jobs:
   hagrid-hash-challenge:
     runs-on: ubuntu-latest
     name: hash-challenge
-    
+
     outputs:
      current_hash: ${{ steps.get_hash.outputs.current_hash }}
      previous_hash: ${{ steps.get_hash.outputs.previous_hash }}
@@ -28,7 +28,7 @@ jobs:
           current_hash=$(checksumdir packages/hagrid)
           echo "::set-output name=current_hash::$current_hash"
           previous_hash=$(cat ./packages/hagrid/hagrid_hash)
-  
+
   deploy-hagrid-beta:
     runs-on: ubuntu-latest
     steps:
