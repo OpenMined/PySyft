@@ -14,6 +14,7 @@ then
     pip install --user -e /app/syft[dev]
 fi
 
+python3 -c "print('---Monkey Patching: Gevent---\n');from gevent import monkey;monkey.patch_all()"
 
 # Let the DB start
 python /app/grid/backend_prestart.py
