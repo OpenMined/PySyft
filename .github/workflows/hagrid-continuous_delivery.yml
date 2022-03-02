@@ -21,7 +21,7 @@ jobs:
     steps:
       - name: Install checksumdir
         run: |
-          pip install --user checksumdir
+          pip install --upgrade checksumdir
       - name: Get the hashes
         id: get-hashes
         run: |
