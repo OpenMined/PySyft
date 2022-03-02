@@ -29,7 +29,7 @@ jobs:
       working-directory: docs/
 
     - name: Deploy the docs
-      uses: s0/git-publish-subdir-action@dev
+      uses: s0/git-publish-subdir-action@develop
       env:
         REPO: self
         BRANCH: gh-pages
