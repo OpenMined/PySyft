@@ -106,3 +106,4 @@ services:
       - "8333:8333"
     volumes:
       - ./seaweedfs/s3config.json:/etc/s3config.json
+      - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
