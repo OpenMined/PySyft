@@ -20,6 +20,7 @@ from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 from .beaver_action import BeaverAction
 from .greenlets_switch import beaver_retrieve_object
+from .greenlets_switch import crypto_store_retrieve_object
 from .smpc_action_message import SMPCActionMessage
 from .smpc_action_seq_batch_message import SMPCActionSeqBatchMessage
 
@@ -234,9 +235,13 @@ def smpc_mul(
         delta_id = UID(UUID(bytes=generator.bytes(16)))
         a_shape = tuple(_self.shape)
         b_shape = tuple(other.shape)
-        crypto_store = ShareTensor.crypto_store
-        a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-            "beaver_mul", a_shape=a_shape, b_shape=b_shape, ring_size=ring_size, remove=True  # type: ignore
+
+        a_share, b_share, c_share = crypto_store_retrieve_object(
+            "beaver_mul",
+            a_shape=a_shape,
+            b_shape=b_shape,
+            ring_size=ring_size,
+            remove=True,
         )
 
         actions.append(
