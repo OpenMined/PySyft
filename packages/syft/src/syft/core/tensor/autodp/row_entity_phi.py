@@ -4,7 +4,6 @@ from __future__ import annotations
 # stdlib
 from collections.abc import Sequence
 from functools import reduce
-import pickle
 from typing import Any
 from typing import Dict
 from typing import List
@@ -1021,18 +1020,19 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-    def pickle_serialize(self) -> Tuple[Any, Any]:
-        assets = [row.simple_assets_for_serde() for row in self.child]
+    # Security tests raises a warning
+    # def pickle_serialize(self) -> Tuple[Any, Any]:
+    #     assets = [row.simple_assets_for_serde() for row in self.child]
 
-        child, min_vals, max_vals, entity, scalar_manager = zip(*assets)
-        child = np.concatenate(child)
-        max_vals = np.concatenate(max_vals)
-        min_vals = np.concatenate(min_vals)
-        assets = [child, min_vals, max_vals, entity, scalar_manager]
+    #     child, min_vals, max_vals, entity, scalar_manager = zip(*assets)
+    #     child = np.concatenate(child)
+    #     max_vals = np.concatenate(max_vals)
+    #     min_vals = np.concatenate(min_vals)
+    #     assets = [child, min_vals, max_vals, entity, scalar_manager]
 
-        buffers: List[Any] = []
-        blob = pickle.dumps(assets, protocol=5, buffer_callback=buffers.append)
-        return blob, buffers
+    #     buffers: List[Any] = []
+    #     blob = pickle.dumps(assets, protocol=5, buffer_callback=buffers.append)
+    #     return blob, buffers
 
     def arrow_serialize(self) -> bytes:
         # assets: Deque = deque()
