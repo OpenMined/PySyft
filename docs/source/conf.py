@@ -12,7 +12,6 @@
 #
 import os
 import sys
-import jinja2
 
 sys.path.insert(0, os.path.abspath('../../packages'))
 
