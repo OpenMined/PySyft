@@ -8,9 +8,7 @@ import gevent
 # relative
 from .....logger import critical
 from ....common.uid import UID
-from ....smpc.store.exceptions import EmptyPrimitiveStore
 from ....store.storeable_object import StorableObject
-from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 
 
@@ -60,6 +58,10 @@ def beaver_retrieve_object(
 def crypto_store_retrieve_object(
     op_str: str, a_shape: tuple, b_shape: tuple, ring_size: int, remove: bool
 ) -> Tuple:
+    # relative
+    from ....smpc.store.exceptions import EmptyPrimitiveStore
+    from ....tensor.smpc.share_tensor import ShareTensor
+
     crypto_store = ShareTensor.crypto_store
 
     # A hard time limit is set on celery worker which prevents infinite execution.
