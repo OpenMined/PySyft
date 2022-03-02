@@ -1,8 +1,8 @@
 name: Benchmark Test
 
 on:
-#  schedule:
-#    - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT #Trigger commit
+  workflow_call:
+
   workflow_dispatch:
     inputs:
       none:
