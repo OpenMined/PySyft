@@ -142,10 +142,10 @@ def spdz_multiply(
     delta_a = delta * a_share.child  # Symmetric only for mul
 
     tensor = c_share + eps_b + delta_a
-    if x.rank == 0:
-        mul_op = ShareTensor.get_op(ring_size, "mul")
-        eps_delta = mul_op(eps.child, delta.child)  # type: ignore
-        tensor = tensor + eps_delta
+
+    mul_op = ShareTensor.get_op(ring_size, "mul")
+    eps_delta = mul_op(eps.child, delta.child)  # type: ignore
+    tensor = tensor + eps_delta
 
     share = x.copy_tensor()
     share.child = tensor.child  # As we do not use fixed point we neglect truncation.

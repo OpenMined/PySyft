@@ -431,13 +431,17 @@ class ShareTensor(PassthroughTensor):
             utils.get_ring_size(self.ring_size, y.ring_size)
             value = op(self.child, y.child)
         else:
-            # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
-            if self.rank == 0:
-                value = op(
-                    self.child, np.array(y, numpy_type)
-                )  # TODO: change to np.int64
+            if op_str in {"add", "sub"}:
+                # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
+                value = (
+                    op(self.child, np.array(y, numpy_type))
+                    if self.rank == 0
+                    else deepcopy(self.child)
+                )
+            elif op_str == "mul":
+                value = op(self.child, np.array(y, numpy_type))
             else:
-                value = deepcopy(self.child)
+                raise ValueError(f"{op_str} not supported")
 
         res = self.copy_tensor()
         res.child = value
