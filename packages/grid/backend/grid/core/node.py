@@ -4,15 +4,16 @@ import threading
 from typing import Optional
 
 # third party
-from nacl.signing import SigningKey
 import boto3
 from botocore.client import Config as BotoConfig
+from nacl.signing import SigningKey
 
 # syft absolute
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.node_table.utils import seed_db
+from syft.grid.grid_url import GridURL
 
 # grid absolute
 from grid.core.config import settings
@@ -69,15 +70,23 @@ def thread_function(*args, **kwargs) -> None:  # type: ignore
 if settings.NODE_TYPE.lower() == "domain":
     node = Domain("Domain", db_engine=get_db_engine(), settings=settings)
     logging.info("Trying to connect with SeaweedFS ... ")
+    s3_grid_url = GridURL(
+        host_or_ip=settings.S3_ENDPOINT, port=settings.S3_PORT
+    ).as_docker_host()
     s3_client = boto3.client(
-            "s3",
-            endpoint_url=settings.S3_ENDPOINT,
-            aws_access_key_id=settings.S3_ROOT_USER,
-            aws_secret_access_key=settings.S3_ROOT_PWD,
-            config=BotoConfig(signature_version="s3v4"),
-            region_name="us-east-1",
+        "s3",
+        endpoint_url=s3_grid_url.url,
+        aws_access_key_id=settings.S3_ROOT_USER,
+        aws_secret_access_key=settings.S3_ROOT_PWD,
+        config=BotoConfig(signature_version="s3v4"),
+        region_name="us-east-1",
     )
-    bucket_exists = any([bucket["Name"] == settings.S3_BUCKET for bucket in s3_client.list_buckets()["Buckets"]])
+    bucket_exists = any(
+        [
+            bucket["Name"] == settings.S3_BUCKET
+            for bucket in s3_client.list_buckets()["Buckets"]
+        ]
+    )
     if not bucket_exists:
         resp = s3_client.create_bucket(Bucket=settings.S3_BUCKET)
 elif settings.NODE_TYPE.lower() == "network":

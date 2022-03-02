@@ -103,6 +103,7 @@ class Settings(BaseSettings):
 
     # Configuration for S3 bucket
     S3_ENDPOINT: Optional[str] = os.getenv("S3_ENDPOINT")
+    S3_PORT: Optional[str] = os.getenv("S3_PORT")
     S3_ROOT_USER: Optional[str] = os.getenv("S3_ROOT_USER")
     S3_ROOT_PWD: Optional[str] = os.getenv("S3_ROOT_PWD")
     S3_BUCKET: Optional[str] = os.getenv("S3_BUCKET")
