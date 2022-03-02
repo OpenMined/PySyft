@@ -23,7 +23,7 @@ jobs:
         pip install sphinx==4.4.0
         pip install ipython==8.1.0
         pip install sphinx-panels==0.6.0
-        pip install pydata-sphinx-theme==0.8.1
+        pip install pydata-sphinx-theme==0.8.0
         pip install sphinx-copybutton==0.4.0
         pip install sphinx-autoapi==1.8.4
         pip install sphinx-code-include==1.1.1
