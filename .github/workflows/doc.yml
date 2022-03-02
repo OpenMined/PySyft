@@ -14,15 +14,15 @@ on:
 
 jobs:
   deploy syft documentation:
-    runs-on: ubuntu-latest    
+    runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
     - name: Install dependencies
       run: |
         pip install --user -upgrade pip
-        pip install pydata-sphinx-theme==0.7.1  
+        pip install pydata-sphinx-theme==0.7.1
         pip install sphinx-copybutton==0.4.0
-    
+
     - name: Build the docs
       run: |
         make html
