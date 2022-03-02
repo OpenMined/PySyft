@@ -6,38 +6,42 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Welcome to PySyft’s documentation! &#8212; PySyft  documentation</title>
+    <title>PySyft’s documentation &#8212; PySyft  documentation</title>
     
-  <link href="_static/css/theme.css" rel="stylesheet">
-  <link href="_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
-
+    <link href="_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
     
-  <link rel="stylesheet"
-    href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
-
+    <link rel="stylesheet"
+      href="_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
     
       
-
+  
     
     <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="_static/styles/pydata-sphinx-theme.css" />
     <link rel="stylesheet" type="text/css" href="_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="_static/css/pysyft.css" />
     
-  <link rel="preload" as="script" href="_static/js/index.be7d3bbb2ef33a8344ce.js">
-
+    <link rel="preload" as="script" href="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
     <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
     <script src="_static/jquery.js"></script>
     <script src="_static/underscore.js"></script>
     <script src="_static/doctools.js"></script>
     <script src="_static/clipboard.min.js"></script>
     <script src="_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="_static/favicon.ico"/>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
-    <link rel="next" title="Beginner-level PySyft and PyGrid Installation Tutorials" href="install_tutorials/overview.html" />
+    <link rel="next" title="Getting started" href="getting_started/index.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -55,9 +59,11 @@
   <div id="navbar-start">
     
     
+
 <a class="navbar-brand" href="#">
-<p class="title">PySyft</p>
+  <img src="_static/logo.png" class="logo" alt="logo">
 </a>
+
 
     
   </div>
@@ -73,32 +79,26 @@
       <div class="navbar-center-item">
         <ul id="navbar-main-elements" class="navbar-nav">
     <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="install_tutorials/overview.html">
-  Beginner-level PySyft and PyGrid Installation Tutorials
+ <a class="reference internal nav-link" href="getting_started/index.html">
+  Getting started
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="install_tutorials/linux.html">
-  Installation on Linux (&gt;=20.04.03)
+ <a class="reference internal nav-link" href="user_guide/index.html">
+  User guide
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="install_tutorials/windows.html">
-  Windows Tutorials
+ <a class="reference internal nav-link" href="api_reference/index.html">
+  API reference
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="install_tutorials/osx_11_5_1.html">
-  macOS Tutorial (Big Sur - 11.5.1)
- </a>
-</li>
-
-<li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="deployment/index.html">
-  Advanced Deployment: Introduction to HaGrid
+ <a class="reference internal nav-link" href="developer_guide/index.html">
+  Contributor Guidelines
  </a>
 </li>
 
@@ -118,6 +118,14 @@
       
       <div class="navbar-end-item">
         <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
       </ul>
       </div>
       
@@ -132,7 +140,8 @@
           
             
             <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="search.html" method="get">
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="search.html" method="get">
   <i class="icon fas fa-search"></i>
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
@@ -140,43 +149,15 @@
     
   </div>
 </nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
             </div>
             
           
 
           
           <div class="d-none d-xl-block col-xl-2 bd-toc">
-            
-              
-              <div class="toc-item">
-                
-<div class="tocsection onthispage pt-5 pb-3">
-    <i class="fas fa-list"></i> On this page
-</div>
-
-<nav id="bd-toc-nav">
-    <ul class="visible nav section-nav flex-column">
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#">
-   Welcome to PySyft’s documentation!
-  </a>
-  <ul class="visible nav section-nav flex-column">
-  </ul>
- </li>
- <li class="toc-h1 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#indices-and-tables">
-   Indices and tables
-  </a>
- </li>
-</ul>
-
-</nav>
-              </div>
-              
-              <div class="toc-item">
-                
-              </div>
-              
             
           </div>
           
@@ -189,42 +170,98 @@
               
               <div>
                 
-  <section id="welcome-to-pysyft-s-documentation">
-<h1>Welcome to PySyft’s documentation!<a class="headerlink" href="#welcome-to-pysyft-s-documentation" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Installation</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="install_tutorials/overview.html">Beginner-level PySyft and PyGrid Installation Tutorials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install_tutorials/linux.html">Installation on Linux (&gt;=20.04.03)</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install_tutorials/windows.html">Windows Tutorials</a></li>
-<li class="toctree-l1"><a class="reference internal" href="install_tutorials/osx_11_5_1.html">macOS Tutorial (Big Sur - 11.5.1)</a></li>
+  <span class="target" id="module-syft"></span><section id="pysyft-s-documentation">
+<h1>PySyft’s documentation<a class="headerlink" href="#pysyft-s-documentation" title="Permalink to this headline">¶</a></h1>
+<p><code class="xref py py-mod docutils literal notranslate"><span class="pre">PySyft</span></code> is an open source library that provides secure and private Deep
+Learning in Python.</p>
+<section id="latest-release">
+<h2>Latest release<a class="headerlink" href="#latest-release" title="Permalink to this headline">¶</a></h2>
+<p>Latest stable release can be found on:</p>
+<ul class="simple">
+<li><p><a class="reference external" href="https://pypi.org/project/syft/">PyPI</a></p></li>
+<li><p><a class="reference external" href="https://hub.docker.com/u/openmined">Docker Hub</a></p></li>
 </ul>
+</section>
+<section id="join-our-slack">
+<h2>Join our slack<a class="headerlink" href="#join-our-slack" title="Permalink to this headline">¶</a></h2>
+<p>Our rapidly growing community of 12,000+ can be found on <a class="reference external" href="http://slack.openmined.org/">Slack</a>. The Slack
+community is very friendly and great about quickly answering questions about the
+use and development of PySyft!</p>
+</section>
+<section id="resources">
+<h2>Resources<a class="headerlink" href="#resources" title="Permalink to this headline">¶</a></h2>
+<div class="toctree-wrapper compound">
 </div>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Advanced tutorials:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="deployment/index.html">Advanced Deployment: Introduction to HaGrid</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="deployment/index.html#prerequisites">Prerequisites</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deployment/index.html#explore-locally-with-the-pysyft-api">Explore locally with the PySyft API</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deployment/index.html#local-deployment-using-docker">Local deployment using Docker</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deployment/index.html#local-deployment-using-vagrant-and-virtualbox">Local deployment using Vagrant and VirtualBox</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deployment/index.html#deploying-on-kubernetes">Deploying on Kubernetes</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deployment/index.html#deploying-to-azure">Deploying to Azure</a></li>
-</ul>
-</li>
-</ul>
 </div>
 <div class="toctree-wrapper compound">
-<p aria-level="2" class="caption" role="heading"><span class="caption-text">Glossary:</span></p>
-<ul>
-<li class="toctree-l1"><a class="reference internal" href="deployment/glossary.html">Glossary</a><ul>
-<li class="toctree-l2"><a class="reference internal" href="deployment/glossary.html#general-terms">General terms</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deployment/glossary.html#personas">Personas</a></li>
-<li class="toctree-l2"><a class="reference internal" href="deployment/glossary.html#user-roles">User roles</a></li>
-</ul>
-</li>
-</ul>
 </div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="toctree-wrapper compound">
+</div>
+<div class="sphinx-bs container pb-4 docutils">
+<div class="row docutils">
+<div class="d-flex col-lg-6 col-md-6 col-sm-6 col-xs-12 docutils">
+<div class="card w-100 shadow intro-card text-center docutils">
+<img alt="img-top" class="card-img-top" src="_images/index_getting_started.svg" /><div class="card-header docutils">
+<p class="card-text">Getting started</p>
+</div>
+<div class="card-body docutils">
+<p class="card-text">New to <em>PySyft</em>? Here you can find a guide into installing and first steps into
+using PySyft, as a data owner or data scientist.</p>
+</div>
+<div class="card-footer docutils">
+<p class="card-text"><a class="sphinx-bs btn text-wrap btn-block btn-secondary stretched-link reference internal" href="getting_started/index.html"><span class="doc">To the getting started guides</span></a></p>
+</div>
+</div>
+</div>
+<div class="d-flex col-lg-6 col-md-6 col-sm-6 col-xs-12 docutils">
+<div class="card w-100 shadow intro-card text-center docutils">
+<img alt="img-top" class="card-img-top" src="_images/index_user_guide.svg" /><div class="card-header docutils">
+<p class="card-text">User guide</p>
+</div>
+<div class="card-body docutils">
+<p class="card-text">The user guide provides in-depth explanation ok the key concepts used by PySyft
+and a glossary of terms you may encounter.</p>
+</div>
+<div class="card-footer docutils">
+<p class="card-text"><a class="sphinx-bs btn text-wrap btn-block btn-secondary stretched-link reference internal" href="user_guide/index.html"><span class="doc">To the user guide</span></a></p>
+</div>
+</div>
+</div>
+<div class="d-flex col-lg-6 col-md-6 col-sm-6 col-xs-12 docutils">
+<div class="card w-100 shadow intro-card text-center docutils">
+<img alt="img-top" class="card-img-top" src="_images/index_api.svg" /><div class="card-header docutils">
+<p class="card-text">API reference</p>
+</div>
+<div class="card-body docutils">
+<p class="card-text">The reference guide contains description of the PySyft API, covering how the
+methods work and which parameters can be used.
+It assumes that you have an understanding of the key concepts.</p>
+</div>
+<div class="card-footer docutils">
+<p class="card-text"><a class="sphinx-bs btn text-wrap btn-block btn-secondary stretched-link reference internal" href="api_reference/index.html"><span class="doc">To the reference guide</span></a></p>
+</div>
+</div>
+</div>
+<div class="d-flex col-lg-6 col-md-6 col-sm-6 col-xs-12 docutils">
+<div class="card w-100 shadow intro-card text-center docutils">
+<img alt="img-top" class="card-img-top" src="_images/index_contribute.svg" /><div class="card-header docutils">
+<p class="card-text">Developer guide</p>
+</div>
+<div class="card-body docutils">
+<p class="card-text">Want to contribute to Openmined tech stack, fix a typo or file a bug? Here
+you can find extensive guidelines on how you can help improve PySyft.</p>
+</div>
+<div class="card-footer docutils">
+<p class="card-text"><a class="sphinx-bs btn text-wrap btn-block btn-secondary stretched-link reference internal" href="developer_guide/index.html"><span class="doc">To the development guide</span></a></p>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
 </section>
 <section id="indices-and-tables">
 <h1>Indices and tables<a class="headerlink" href="#indices-and-tables" title="Permalink to this headline">¶</a></h1>
@@ -241,10 +278,10 @@
               
               <!-- Previous / next buttons -->
 <div class='prev-next-area'>
-    <a class='right-next' id="next-link" href="install_tutorials/overview.html" title="next page">
+    <a class='right-next' id="next-link" href="getting_started/index.html" title="next page">
     <div class="prev-next-info">
         <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Beginner-level PySyft and PyGrid Installation Tutorials</p>
+        <p class="prev-next-title">Getting started</p>
     </div>
     <i class="fas fa-angle-right"></i>
     </a>
@@ -256,8 +293,8 @@
       </div>
     </div>
   
-  <script src="_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
+    <script src="_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
   <div class="container">
     
     <div class="footer-item">

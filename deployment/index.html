@@ -8,37 +8,39 @@
 
     <title>Advanced Deployment: Introduction to HaGrid &#8212; PySyft  documentation</title>
     
-  <link href="../_static/css/theme.css" rel="stylesheet">
-  <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
-
+    <link href="../_static/styles/theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+<link href="../_static/styles/pydata-sphinx-theme.css?digest=1999514e3f237ded88cf" rel="stylesheet">
+  
     
-  <link rel="stylesheet"
-    href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
-  <link rel="preload" as="font" type="font/woff2" crossorigin
-    href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
-
+    <link rel="stylesheet"
+      href="../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+    <link rel="preload" as="font" type="font/woff2" crossorigin
+      href="../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+  
     
       
-
+  
     
     <link rel="stylesheet" type="text/css" href="../_static/pygments.css" />
-    <link rel="stylesheet" type="text/css" href="../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/styles/pydata-sphinx-theme.css" />
     <link rel="stylesheet" type="text/css" href="../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../_static/css/pysyft.css" />
     
-  <link rel="preload" as="script" href="../_static/js/index.be7d3bbb2ef33a8344ce.js">
-
+    <link rel="preload" as="script" href="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf">
+  
     <script data-url_root="../" id="documentation_options" src="../_static/documentation_options.js"></script>
     <script src="../_static/jquery.js"></script>
     <script src="../_static/underscore.js"></script>
     <script src="../_static/doctools.js"></script>
     <script src="../_static/clipboard.min.js"></script>
     <script src="../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../_static/favicon.ico"/>
     <link rel="index" title="Index" href="../genindex.html" />
     <link rel="search" title="Search" href="../search.html" />
-    <link rel="next" title="Glossary" href="glossary.html" />
-    <link rel="prev" title="macOS Tutorial (Big Sur - 11.5.1)" href="../install_tutorials/osx_11_5_1.html" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="docsearch:language" content="None">
     
@@ -56,9 +58,11 @@
   <div id="navbar-start">
     
     
+
 <a class="navbar-brand" href="../index.html">
-<p class="title">PySyft</p>
+  <img src="../_static/logo.png" class="logo" alt="logo">
 </a>
+
 
     
   </div>
@@ -74,32 +78,26 @@
       <div class="navbar-center-item">
         <ul id="navbar-main-elements" class="navbar-nav">
     <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../install_tutorials/overview.html">
-  Beginner-level PySyft and PyGrid Installation Tutorials
+ <a class="reference internal nav-link" href="../getting_started/index.html">
+  Getting started
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../install_tutorials/linux.html">
-  Installation on Linux (&gt;=20.04.03)
+ <a class="reference internal nav-link" href="../user_guide/index.html">
+  User guide
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../install_tutorials/windows.html">
-  Windows Tutorials
+ <a class="reference internal nav-link" href="../api_reference/index.html">
+  API reference
  </a>
 </li>
 
 <li class="toctree-l1 nav-item">
- <a class="reference internal nav-link" href="../install_tutorials/osx_11_5_1.html">
-  macOS Tutorial (Big Sur - 11.5.1)
- </a>
-</li>
-
-<li class="toctree-l1 current active nav-item">
- <a class="current reference internal nav-link" href="#">
-  Advanced Deployment: Introduction to HaGrid
+ <a class="reference internal nav-link" href="../developer_guide/index.html">
+  Contributor Guidelines
  </a>
 </li>
 
@@ -119,6 +117,14 @@
       
       <div class="navbar-end-item">
         <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub"><span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label></a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter"><span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label></a>
+        </li>
       </ul>
       </div>
       
@@ -133,7 +139,8 @@
           
             
             <!-- Only show if we have sidebars configured, else just a small margin  -->
-            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
+            <div class="col-12 col-md-3 bd-sidebar">
+              <div class="sidebar-start-items"><form class="bd-search d-flex align-items-center" action="../search.html" method="get">
   <i class="icon fas fa-search"></i>
   <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
 </form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
@@ -141,6 +148,9 @@
     
   </div>
 </nav>
+              </div>
+              <div class="sidebar-end-items">
+              </div>
             </div>
             
           
@@ -248,7 +258,7 @@
               <div>
                 
   <section id="advanced-deployment-introduction-to-hagrid">
-<h1>Advanced Deployment: Introduction to HaGrid<a class="headerlink" href="#advanced-deployment-introduction-to-hagrid" title="Permalink to this headline">¶</a></h1>
+<span id="advanced-deployment"></span><h1>Advanced Deployment: Introduction to HaGrid<a class="headerlink" href="#advanced-deployment-introduction-to-hagrid" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
 <p>Hagrid (HAppy GRID!) is a command-line tool that speeds up the
@@ -440,7 +450,7 @@ $ sudo usermod -aG docker <span class="nv">$USER</span>
 <ol class="loweralpha">
 <li><p>Log in using the following credentials:</p>
 <blockquote>
-<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">info</span><span class="nd">@openmined.org</span>
+<div><div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">info</span><span class="nd">@openmined</span><span class="o">.</span><span class="n">org</span>
 
 <span class="n">changethis</span>
 </pre></div>
@@ -455,7 +465,7 @@ $ sudo usermod -aG docker <span class="nv">$USER</span>
 </ol>
 </li>
 <li><p>While the Domain Node is online, you can start a Jupyter Notebook as described <a class="reference external" href="#explore-locally-with-the-pysyft-api-no-containers-involved">above</a> to use PySyft to communicate to it in a Python client rather than a REST API. Connecting to it can be done as following:</p>
-<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">syft</span> <span class="kn">as</span> <span class="nn">sy</span>
+<div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="kn">import</span> <span class="nn">syft</span> <span class="k">as</span> <span class="nn">sy</span>
 
 <span class="n">domain</span> <span class="o">=</span> <span class="n">sy</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">email</span><span class="o">=</span><span class="s1">&#39;info@openmined.org&#39;</span><span class="p">,</span> <span class="n">password</span><span class="o">=</span><span class="s1">&#39;changethis&#39;</span><span class="p">,</span> <span class="n">port</span><span class="o">=</span><span class="mi">8081</span><span class="p">)</span>
 
@@ -468,7 +478,7 @@ $ sudo usermod -aG docker <span class="nv">$USER</span>
 </div>
 </li>
 <li><p>To stop the node, run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ hagrid land --tag<span class="o">=</span>035c3b6a378a50f78cd74fc641d863c7 <span class="o">(</span>using the TAG specified in your CLI<span class="o">)</span>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ hagrid land --tag<span class="o">=</span>035c3b6a378a50f78cd74fc641d863c7 <span class="o">(</span>using the TAG specified <span class="k">in</span> your CLI<span class="o">)</span>
 </pre></div>
 </div>
 </li>
@@ -624,7 +634,7 @@ kubernetes-dashboard   Active   45h
 </pre></div>
 </div>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ kubectl get all -n openmined
-No resources found in openmined namespace.
+No resources found <span class="k">in</span> openmined namespace.
 </pre></div>
 </div>
 <ul class="simple">
@@ -642,7 +652,7 @@ Active namespace is <span class="s2">&quot;openmined&quot;</span>.
 </div>
 <p>Now when we use commands without <cite>-n</cite> we get openmined by default.</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ kubectl get all
-No resources found in openmined namespace.
+No resources found <span class="k">in</span> openmined namespace.
 </pre></div>
 </div>
 <ul class="simple">
@@ -862,21 +872,7 @@ queue            <span class="m">1</span>/1     <span class="m">1</span>        
               
               
               <!-- Previous / next buttons -->
-<div class='prev-next-area'> 
-    <a class='left-prev' id="prev-link" href="../install_tutorials/osx_11_5_1.html" title="previous page">
-        <i class="fas fa-angle-left"></i>
-        <div class="prev-next-info">
-            <p class="prev-next-subtitle">previous</p>
-            <p class="prev-next-title">macOS Tutorial (Big Sur - 11.5.1)</p>
-        </div>
-    </a>
-    <a class='right-next' id="next-link" href="glossary.html" title="next page">
-    <div class="prev-next-info">
-        <p class="prev-next-subtitle">next</p>
-        <p class="prev-next-title">Glossary</p>
-    </div>
-    <i class="fas fa-angle-right"></i>
-    </a>
+<div class='prev-next-area'>
 </div>
               
           </main>
@@ -885,8 +881,8 @@ queue            <span class="m">1</span>/1     <span class="m">1</span>        
       </div>
     </div>
   
-  <script src="../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
-<footer class="footer mt-5 mt-md-0">
+    <script src="../_static/scripts/pydata-sphinx-theme.js?digest=1999514e3f237ded88cf"></script>
+  <footer class="footer mt-5 mt-md-0">
   <div class="container">
     
     <div class="footer-item">
