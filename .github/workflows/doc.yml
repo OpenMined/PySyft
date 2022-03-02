@@ -14,9 +14,16 @@ on:
 
 jobs:
   deploy-syft-documentation:
+    strategy:
+      matrix:
+        python-version: [3.9]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
         pip install --upgrade pip
