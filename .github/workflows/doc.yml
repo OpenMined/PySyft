@@ -19,6 +19,8 @@ jobs:
     - uses: actions/checkout@v2
     - name: Install dependencies
       run: |
+        pip install --upgrade ipython
+        pip install --upgrade sphinx-panels
         pip install --upgrade pip
         pip install pydata-sphinx-theme==0.7.1
         pip install sphinx-copybutton==0.4.0
