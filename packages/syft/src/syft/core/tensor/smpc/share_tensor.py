@@ -493,7 +493,7 @@ class ShareTensor(PassthroughTensor):
 
     def apply_action_function(
         self, y: Union[ShareTensor, None], op_str: str
-    ) -> "ShareTensor":
+    ) -> Optional[ShareTensor]:
         """Apply action based operations.
 
         Args:
@@ -553,9 +553,6 @@ class ShareTensor(PassthroughTensor):
                 )
                 del msg.smpc_actions[0]
 
-        if result is None:
-            raise ValueError(f"Result:{result} should be a valid ShareTensor")
-
         return result
 
     def mul(
@@ -570,10 +567,14 @@ class ShareTensor(PassthroughTensor):
             ShareTensor. Result of the operation.
         """
         if isinstance(y, ShareTensor):
-            new_share = self.apply_action_function(y, "__mul__")
+            res = self.apply_action_function(y, "__mul__")
         else:
-            new_share = self.apply_function(y, "mul")
-        return new_share
+            res = self.apply_function(y, "mul")
+
+        if res is None:
+            raise ValueError(f"Result : {res} of the operation should not be None")
+
+        return res
 
     def matmul(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
@@ -682,7 +683,7 @@ class ShareTensor(PassthroughTensor):
         new_share = self.apply_function(y, "ne")
         return new_share
 
-    def bit_decomposition(self, ring_size: int, bitwise: bool) -> "ShareTensor":
+    def bit_decomposition(self, ring_size: int, bitwise: bool) -> None:
         """Apply the "decomposition" operation on self
 
         Args:
@@ -692,8 +693,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        res = self.apply_action_function(y=None, op_str="bit_decomposition")
-        return res
+        self.apply_action_function(y=None, op_str="bit_decomposition")
 
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
