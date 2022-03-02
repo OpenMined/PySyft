@@ -549,8 +549,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             self.scalar_manager = scalar_manager
 
         self.entity_asset = (
-            self.entity.name,
-            self.entity.bytes_value,
+            (
+                self.entity.name,
+                self.entity.bytes_value,
+            )
+            if isinstance(entity, Entity)
+            else None
         )
         self.scalar_manager_asset = (self.scalar_manager.prime2symbol,)
 
