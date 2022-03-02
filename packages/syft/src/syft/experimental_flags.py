@@ -1,5 +1,9 @@
 # stdlib
 from enum import Enum
+import os
+
+# relative
+from .util import str_to_bool
 
 
 class ApacheArrowCompression(Enum):
@@ -36,6 +40,10 @@ class ExperimentalFlags:
     @APACHE_ARROW_COMPRESSION.setter
     def APACHE_ARROW_COMPRESSION(self, value: ApacheArrowCompression) -> None:
         self._APACHE_ARROW_COMPRESSION = value
+
+    @property
+    def USE_NEW_SERVICE(self) -> bool:
+        return str_to_bool(os.getenv("USE_NEW_SERVICE", "False"))
 
 
 flags = ExperimentalFlags()

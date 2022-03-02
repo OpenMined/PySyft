@@ -85,7 +85,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     trade_partners = ((list(it_data["Partner"])))[0:10]
 
     entities = list()
-    for i in range(len(trade_partners)):
+    for _ in range(len(trade_partners)):
         entities.append(Entity(name="Other Asia, nes"))
 
     # Upload a private dataset to the Domain object, as the root owner
