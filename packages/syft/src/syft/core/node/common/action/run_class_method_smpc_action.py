@@ -162,7 +162,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         # TODO: For the moment we don't run any SMPC operation that provides any kwarg
         kwargs = {
-            "seed_id_locations": int(seed_id_locations),
+            "seed_id_locations": seed_id_locations,
             "node": node,
             "verify_key": verify_key,
         }
@@ -268,7 +268,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             args=list(map(lambda x: sy.serialize(x), self.args)),
             kwargs={k: sy.serialize(v) for k, v in self.kwargs.items()},
             id_at_location=sy.serialize(self.id_at_location),
-            seed_id_locations=self.seed_id_locations,
+            seed_id_locations=str(self.seed_id_locations),
             address=sy.serialize(self.address),
             msg_id=sy.serialize(self.id),
         )
@@ -294,7 +294,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             args=list(map(lambda x: sy.deserialize(blob=x), proto.args)),
             kwargs={k: sy.deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=sy.deserialize(blob=proto.id_at_location),
-            seed_id_locations=proto.seed_id_locations,
+            seed_id_locations=int(proto.seed_id_locations),
             address=sy.deserialize(blob=proto.address),
             msg_id=sy.deserialize(blob=proto.msg_id),
         )

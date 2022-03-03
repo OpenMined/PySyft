@@ -12,7 +12,7 @@ message RunClassMethodSMPCAction {
   repeated syft.core.pointer.Pointer args = 3;
   map<string, syft.core.pointer.Pointer> kwargs = 4;
   syft.core.common.UID id_at_location = 5;
-  uint64 seed_id_locations = 6;
+  string seed_id_locations = 6;
   syft.core.io.Address address = 7;
   syft.core.common.UID msg_id = 8;
 }
