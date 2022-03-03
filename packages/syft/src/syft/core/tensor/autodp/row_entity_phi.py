@@ -1020,32 +1020,68 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-    # Security tests raises a warning
-    # def pickle_serialize(self) -> Tuple[Any, Any]:
-    #     assets = [row.simple_assets_for_serde() for row in self.child]
-
-    #     child, min_vals, max_vals, entity, scalar_manager = zip(*assets)
-    #     child = np.concatenate(child)
-    #     max_vals = np.concatenate(max_vals)
-    #     min_vals = np.concatenate(min_vals)
-    #     assets = [child, min_vals, max_vals, entity, scalar_manager]
-
-    #     buffers: List[Any] = []
-    #     blob = pickle.dumps(assets, protocol=5, buffer_callback=buffers.append)
-    #     return blob, buffers
-
-    def arrow_serialize(self) -> bytes:
-        # assets: Deque = deque()
-
+    def arrow_marshal(self):
         row_assets = (row.assets for row in self.child)
-
         child, min_vals, max_vals, entity, scalar_manager = zip(*row_assets)
         child = np.concatenate(child)
         max_vals = np.concatenate(max_vals)
         min_vals = np.concatenate(min_vals)
-        assets = (child, min_vals, max_vals, entity, scalar_manager)
+        columns = {
+            "child": child,
+            "min_vals": min_vals,
+            "max_vals": max_vals,
+            "entity": entity,
+            "scalar_manager": scalar_manager,
+        }
+        return columns
 
-        return pa.serialize(assets).to_buffer()
+    def arrow_serialize_tensor(self, obj: np.ndarray) -> bytes:
+        # original_dtype = obj.dtype
+        apache_arrow = pa.Tensor.from_numpy(obj=obj)
+        sink = pa.BufferOutputStream()
+        pa.ipc.write_tensor(apache_arrow, sink)
+        buffer = sink.getvalue()
+        # numpy_bytes = pa.compress(buffer, asbytes=True, codec="zstd")
+        numpy_bytes = buffer.to_pybytes()
+        # dtype = original_dtype.name
+        return numpy_bytes
+
+    @staticmethod
+    def arrow_deserialize_tensor(buf: bytes) -> np.array:
+        # str_dtype = proto.dtype
+        # original_dtype = np.dtype(str_dtype)
+        # buf = pa.decompress(
+        #     buf,
+        #     decompressed_size=size,
+        #     codec="zstd",
+        # )
+
+        reader = pa.BufferReader(buf)
+        buf = reader.read_buffer()
+
+        result = pa.ipc.read_tensor(buf)
+        np_array = result.to_numpy()
+        np_array.setflags(write=True)
+        return np_array.astype(np.int32)
+
+    def arrow_serialize_string_array(self, entities: List[Entity]) -> bytes:
+        batch = pa.RecordBatch.from_pylist(
+            [{"name": entity.name} for entity in entities]
+        )
+        sink = pa.BufferOutputStream()
+        with pa.ipc.new_stream(sink, batch.schema) as writer:
+            writer.write_batch(batch)
+        return sink.getvalue()
+
+    def arrow_serialize(self) -> bytes:
+        data = self.arrow_marshal()
+        child_bytes = self.arrow_serialize_tensor(data["child"])
+        return child_bytes
+
+    @staticmethod
+    def arrow_deserialize(buf) -> np.ndarray:
+        obj = RowEntityPhiTensor.arrow_deserialize_tensor(buf=buf)
+        return obj
 
     def _object2proto(self) -> RowEntityPhiTensor:
         entity_list = []
