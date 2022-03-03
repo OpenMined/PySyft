@@ -24,7 +24,7 @@ notebooks with PySyft installed, such as if you're pretending to be
 both Data Owner and Data Scientist as a part of a tutorial or course.
 
 Step 1: Are you on OSX, Windows, or Linux?
-===============
+==========================================
 
 Installation differs greatly depending on whether your personal machine is
 running OSX, Linux, or Windows. PySyft and PyGrid are relatively new pieces

@@ -5,16 +5,7 @@ on:
 
   pull_request:
     branches:
-      - dev
-      - main
-      - "0.6.0"
-    paths:
-      - ".github/workflows/*.yml"
-      - "**.py"
-      - "**.txt"
-      - "**.yml"
-      - "**.cfg"
-      - "**.dockerfile"
+      - "**"
 
 jobs:
   linting:

@@ -45,13 +45,16 @@ def generate_key(headscale_host: str) -> str:
         resp = requests.post(command_url, json=data)
         report = get_result(json=resp.json())
         result_dict = dict(extract_nested_json(report))
-        result = result_dict["Key"]
+        result = result_dict["key"]
     except Exception as e:
         print("failed to make request", e)
     return result
 
 
 def connect_with_key(tailscale_host: str, headscale_host: str, authkey: str) -> str:
+    # we need --accept-dns=false because magicDNS replaces /etc/resolv.conf which
+    # breaks using tailscale in network_mode with docker compose because the
+    # /etc/resolv.conf has the mDNS ip nameserver 127.0.0.11
     data = {
         "args": [
             "-login-server",
@@ -60,6 +63,7 @@ def connect_with_key(tailscale_host: str, headscale_host: str, authkey: str) -> 
             "--force-reauth",
             "--authkey",
             f"{authkey}",
+            "--accept-dns=false",
         ],
         "timeout": 60,
     }
