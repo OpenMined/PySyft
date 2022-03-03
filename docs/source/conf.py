@@ -6,15 +6,15 @@
 
 # -- Path setup --------------------------------------------------------------
 
+# stdlib
 # If extensions (or modules to document with autodoc) are in another directory,
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 #
 import os
 import sys
-import jinja2
 
-sys.path.insert(0, os.path.abspath('../../packages'))
+sys.path.insert(0, os.path.abspath("../../packages"))
 
 # -- Project information -----------------------------------------------------
 
@@ -100,7 +100,7 @@ napoleon_attr_annotations = True
 
 autosummary_generate = True
 autodoc_typehints = "none"
-autoapi_dirs = ['../../packages/syft/src/syft']
+autoapi_dirs = ["../../packages/syft/src/syft"]
 
 # -- Options for HTML output -------------------------------------------------
 
@@ -126,5 +126,5 @@ html_theme_options = {
     "external_links": [],
     "github_url": "https://github.com/OpenMined/PySyft",
     "twitter_url": "https://twitter.com/openminedorg",
-    "navbar_end": ["navbar-icon-links"]
+    "navbar_end": ["navbar-icon-links"],
 }
