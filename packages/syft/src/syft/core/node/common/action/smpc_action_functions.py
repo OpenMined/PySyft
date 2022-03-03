@@ -406,9 +406,9 @@ def bit_decomposition(
 MAP_FUNC_TO_ACTION: Dict[
     str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
 ] = {
-    "add": functools.partial(smpc_basic_op, "add"),
-    "sub": functools.partial(smpc_basic_op, "sub"),
-    "mul": smpc_mul,  # type: ignore
+    "__add__": functools.partial(smpc_basic_op, "add"),
+    "__sub__": functools.partial(smpc_basic_op, "sub"),
+    "__mul__": smpc_mul,  # type: ignore
     "bit_decomposition": bit_decomposition,  # type: ignore
     # "__gt__": smpc_gt,  # type: ignore TODO: this should be added back when we have only one action
 }

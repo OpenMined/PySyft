@@ -526,7 +526,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        new_share = self.apply_action_function("add")
+        new_share = self.apply_action_function("__add__")
 
         if new_share is None:
             raise ValueError(
@@ -546,7 +546,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        new_share = self.apply_action_function("sub")
+        new_share = self.apply_action_function("__sub__")
 
         if new_share is None:
             raise ValueError(
@@ -567,7 +567,7 @@ class ShareTensor(PassthroughTensor):
             ShareTensor. Result of the operation.
         """
         new_self = ShareTensor.apply_function(self, -1, "mul")
-        new_share = new_self.apply_action_function("add")
+        new_share = new_self.apply_action_function("__add__")
 
         if new_share is None:
             raise ValueError(
@@ -587,7 +587,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        new_share = self.apply_action_function("mul")
+        new_share = self.apply_action_function("__mul__")
 
         if new_share is None:
             raise ValueError(
