@@ -43,7 +43,7 @@ def get_id_at_location_from_op(seed: int, operation_str: str) -> UID:
     return UID(UUID(bytes=generator.bytes(16)))
 
 
-# TODO: node.address is not really ,should be removed later.
+# TODO: node.address is not really used,should be removed later.
 
 
 def smpc_basic_op(
@@ -140,14 +140,14 @@ def spdz_multiply(
     eps = sum(eps.data)  # type: ignore
     delta = sum(delta.data)  # type:ignore
 
-    eps_b = eps * b_share.child
-    delta_a = delta * a_share.child  # Symmetric only for mul
+    eps_b = apply_function(eps, b_share.child, "mul")  # type: ignore
+    delta_a = apply_function(delta, a_share.child, "mul")  # type: ignore
 
-    tensor = c_share + eps_b + delta_a
+    tensor = apply_function(apply_function(c_share, eps_b, "add"), delta_a, "add")
 
     mul_op = ShareTensor.get_op(ring_size, "mul")
     eps_delta = mul_op(eps.child, delta.child)  # type: ignore
-    tensor = tensor + eps_delta
+    tensor = apply_function(tensor, eps_delta, "add")
 
     share = x.copy_tensor()
     share.child = tensor.child  # As we do not use fixed point we neglect truncation.
@@ -183,8 +183,8 @@ def spdz_mask(
 
     clients = ShareTensor.login_clients(x.parties_info)
 
-    eps = x - a_share  # beaver intermediate values.
-    delta = y - b_share
+    eps = apply_function(x, a_share, "sub")  # beaver intermediate values.
+    delta = apply_function(y, b_share, "sub")
 
     client_id_map = {client.id: client for client in clients}
     curr_client = client_id_map[node.id]  # type: ignore
