@@ -16,7 +16,7 @@ jobs:
   deploy-syft-documentation:
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: [3.8]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
@@ -34,6 +34,8 @@ jobs:
         pip install sphinx-copybutton==0.4.0
         pip install sphinx-autoapi==1.8.4
         pip install sphinx-code-include==1.1.1
+        pip install sphinx==4.3.0
+        pip install pydata-sphinx-theme==0.7.2
 
     - name: Build the docs
       run: |
