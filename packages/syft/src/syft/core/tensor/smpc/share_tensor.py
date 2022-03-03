@@ -408,8 +408,11 @@ class ShareTensor(PassthroughTensor):
         if isinstance(share, torch.Tensor) and torch.is_floating_point(share):
             raise ValueError("Torch tensor should have type int, but found float")
 
+    @staticmethod
     def apply_function(
-        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"], op_str: str
+        x: ShareTensor,
+        y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"],
+        op_str: str,
     ) -> "ShareTensor":
         """Apply a given operation.
 
@@ -422,77 +425,32 @@ class ShareTensor(PassthroughTensor):
         """
         ShareTensor.sanity_check(y)
 
-        op = ShareTensor.get_op(self.ring_size, op_str)
-        numpy_type = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
+        op = ShareTensor.get_op(x.ring_size, op_str)
+        numpy_type = utils.RING_SIZE_TO_TYPE.get(x.ring_size, None)
         if numpy_type is None:
-            raise ValueError(f"Do not know numpy type for ring size {self.ring_size}")
+            raise ValueError(f"Do not know numpy type for ring size {x.ring_size}")
 
         if isinstance(y, ShareTensor):
-            utils.get_ring_size(self.ring_size, y.ring_size)
-            value = op(self.child, y.child)
+            utils.get_ring_size(x.ring_size, y.ring_size)
+            value = op(x.child, y.child)
         else:
             if op_str in {"add", "sub"}:
                 # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
                 value = (
-                    op(self.child, np.array(y, numpy_type))
-                    if self.rank == 0
-                    else deepcopy(self.child)
+                    op(x.child, np.array(y, numpy_type))
+                    if x.rank == 0
+                    else deepcopy(x.child)
                 )
             elif op_str == "mul":
-                value = op(self.child, np.array(y, numpy_type))
+                value = op(x.child, np.array(y, numpy_type))
             else:
                 raise ValueError(f"{op_str} not supported")
 
-        res = self.copy_tensor()
+        res = x.copy_tensor()
         res.child = value
         return res
 
-    def add(
-        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
-    ) -> "ShareTensor":
-        """Apply the "add" operation between "self" and "y".
-
-        Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self + y
-
-        Returns:
-            ShareTensor. Result of the operation.
-        """
-        new_share = self.apply_function(y, "add")
-        return new_share
-
-    def sub(
-        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
-    ) -> "ShareTensor":
-        """Apply the "sub" operation between "self" and "y".
-
-        Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self - y
-
-        Returns:
-            ShareTensor. Result of the operation.
-        """
-        new_share = self.apply_function(y, "sub")
-        return new_share
-
-    def rsub(
-        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
-    ) -> "ShareTensor":
-        """Apply the "rsub" operation between "self" and "y"
-
-        Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): y - self
-
-        Returns:
-            ShareTensor. Result of the operation.
-        """
-        new_self = self.mul(-1)
-        new_share = new_self.apply_function(y, "add")
-        return new_share
-
-    def apply_action_function(
-        self, y: Union[ShareTensor, None], op_str: str
-    ) -> Optional[ShareTensor]:
+    def apply_action_function(self, op_str: str) -> Optional[ShareTensor]:
         """Apply action based operations.
 
         Args:
@@ -507,8 +465,6 @@ class ShareTensor(PassthroughTensor):
 
         # TODO: refactor in next iteration, creation of action, accesses the DB again
         # we could pass in the sharetensor values directly from this function.
-        if y and not isinstance(y, ShareTensor):
-            raise ValueError("Action funciton works only for private operation.")
 
         nr_parties = self.nr_parties
         rank = self.rank
@@ -528,9 +484,14 @@ class ShareTensor(PassthroughTensor):
         else:
             context.GLOBAL_ARGS_ID = None
             context.GLOBAL_KWARGS = None
+
         node = kwargs.get("node", None)
         verify_key = kwargs.get("verify_key", None)
         kwargs.pop("verify_key")
+
+        # STEP 1: Creates SMPC Action which are like steps to execute a given
+        # operation on the ShareTensor.Each action might be dependent on the output of
+        # actions
 
         actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
         actions = actions_generator(*args_id, **kwargs)  # type: ignore
@@ -554,6 +515,67 @@ class ShareTensor(PassthroughTensor):
 
         return result
 
+    def add(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "add" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self + y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        new_share = self.apply_action_function("add")
+
+        if new_share is None:
+            raise ValueError(
+                f"Result : {new_share} of the operation should not be None"
+            )
+
+        return new_share
+
+    def sub(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "sub" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self - y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        new_share = self.apply_action_function("sub")
+
+        if new_share is None:
+            raise ValueError(
+                f"Result : {new_share} of the operation should not be None"
+            )
+
+        return new_share
+
+    def rsub(
+        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
+    ) -> "ShareTensor":
+        """Apply the "rsub" operation between "self" and "y"
+
+        Args:
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): y - self
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        new_self = ShareTensor.apply_function(self, -1, "mul")
+        new_share = new_self.apply_action_function("add")
+
+        if new_share is None:
+            raise ValueError(
+                f"Result : {new_share} of the operation should not be None"
+            )
+
+        return new_share
+
     def mul(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
     ) -> "ShareTensor":
@@ -565,15 +587,26 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        if isinstance(y, ShareTensor):
-            res = self.apply_action_function(y, "__mul__")
-        else:
-            res = self.apply_function(y, "mul")
+        new_share = self.apply_action_function("mul")
 
-        if res is None:
-            raise ValueError(f"Result : {res} of the operation should not be None")
+        if new_share is None:
+            raise ValueError(
+                f"Result : {new_share} of the operation should not be None"
+            )
 
-        return res
+        return new_share
+
+    def bit_decomposition(self, ring_size: int, bitwise: bool) -> None:
+        """Apply the "decomposition" operation on self
+
+        Args:
+            ring_size (int): Ring size to decompose the shares
+            bitwise (bool): Flag for bitwise decomposition.
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        self.apply_action_function(op_str="bit_decomposition")
 
     def matmul(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
@@ -589,7 +622,7 @@ class ShareTensor(PassthroughTensor):
         if isinstance(y, ShareTensor):
             raise ValueError("Private matmul not supported yet")
 
-        new_share = self.apply_function(y, "matmul")
+        new_share = ShareTensor.apply_function(self, y, "matmul")
         return new_share
 
     def rmatmul(self, y: torch.Tensor) -> "ShareTensor":
@@ -604,7 +637,7 @@ class ShareTensor(PassthroughTensor):
         if isinstance(y, ShareTensor):
             raise ValueError("Private matmul not supported yet")
 
-        new_share = y.apply_function(self, "matmul")
+        new_share = ShareTensor.apply_function(self, y, "matmul")
         return new_share
 
     def lt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -619,7 +652,7 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        new_share = self.apply_function(y, "lt")
+        new_share = ShareTensor.apply_function(self, y, "lt")
         return new_share
 
     def gt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -634,7 +667,7 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        new_share = self.apply_function(y, "gt")
+        new_share = ShareTensor.apply_function(self, y, "gt")
         return new_share
 
     def ge(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -649,7 +682,7 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        new_share = self.apply_function(y, "ge")
+        new_share = ShareTensor.apply_function(self, y, "ge")
         return new_share
 
     def le(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -664,7 +697,7 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        new_share = self.apply_function(y, "le")
+        new_share = ShareTensor.apply_function(self, y, "le")
         return new_share
 
     def ne(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -679,24 +712,8 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        new_share = self.apply_function(y, "ne")
+        new_share = ShareTensor.apply_function(self, y, "ne")
         return new_share
-
-    def bit_decomposition(self, ring_size: int, bitwise: bool) -> None:
-        """Apply the "decomposition" operation on self
-
-        Args:
-            ring_size (int): Ring size to decompose the shares
-            bitwise (bool): Flag for bitwise decomposition.
-
-        Returns:
-            ShareTensor. Result of the operation.
-        """
-        self.apply_action_function(y=None, op_str="bit_decomposition")
-
-        # raise ValueError(
-        #     "It should not reach this point since we generate SMPCAction for this"
-        # )
 
     def eq(self, other: Any) -> bool:
         """Equal operator.

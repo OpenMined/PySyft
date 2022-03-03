@@ -1,7 +1,6 @@
 # stdlib
 from copy import deepcopy
 import functools
-import operator
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -11,6 +10,9 @@ from uuid import UUID
 
 # third party
 import numpy as np
+
+# syft absolute
+from syft.core.tensor.smpc.share_tensor.ShareTensor import apply_function
 
 # relative
 from ....common.uid import UID
@@ -405,9 +407,9 @@ def bit_decomposition(
 MAP_FUNC_TO_ACTION: Dict[
     str, Callable[[int, UID, UID, int, Any], List[SMPCActionMessage]]
 ] = {
-    "__add__": functools.partial(smpc_basic_op, "add"),
-    "__sub__": functools.partial(smpc_basic_op, "sub"),
-    "__mul__": smpc_mul,  # type: ignore
+    "add": functools.partial(smpc_basic_op, "add"),
+    "sub": functools.partial(smpc_basic_op, "sub"),
+    "mul": smpc_mul,  # type: ignore
     "bit_decomposition": bit_decomposition,  # type: ignore
     # "__gt__": smpc_gt,  # type: ignore TODO: this should be added back when we have only one action
 }
@@ -415,9 +417,9 @@ MAP_FUNC_TO_ACTION: Dict[
 
 # Map given an action map it to a function that should be run on the shares"
 _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
-    "mpc_add": operator.add,
-    "mpc_sub": operator.sub,
-    "mpc_mul": operator.mul,
+    "mpc_add": functools.partial(apply_function, op_str="add"),
+    "mpc_sub": functools.partial(apply_function, op_str="sub"),
+    "mpc_mul": functools.partial(apply_function, op_str="mul"),
     "spdz_mask": spdz_mask,
     "spdz_multiply": spdz_multiply,
     "local_decomposition": local_decomposition,
