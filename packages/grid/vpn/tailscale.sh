@@ -1,4 +1,4 @@
-#!/bin/sh
+#!/bin/ash
 
 # if we have a custom dev mode rootCA.pem it will get loaded
 update-ca-certificates
@@ -26,4 +26,4 @@ export PATH="/root/.local/bin:${PATH}"
 export FLASK_APP=tailscale
 export HOSTNAME="${1}"
 flask run -p 4000 --host=0.0.0.0&
-tailscaled
+tailscaled -port 41641
