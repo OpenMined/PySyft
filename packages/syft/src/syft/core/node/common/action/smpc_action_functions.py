@@ -1,6 +1,7 @@
 # stdlib
 from copy import deepcopy
 import functools
+from functools import reduce
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -135,19 +136,20 @@ def spdz_multiply(
     eps = beaver_retrieve_object(node, eps_id, nr_parties)  # type: ignore
     delta = beaver_retrieve_object(node, delta_id, nr_parties)  # type: ignore
 
-    # TODO : Should refactor fixed precision tensor later
+    share_add = functools.partial(apply_function, op_str="add")
+    share_mul = functools.partial(apply_function, op_str="mul")
 
-    eps = sum(eps.data)  # type: ignore
-    delta = sum(delta.data)  # type:ignore
+    eps = reduce(share_add, eps.data)  # type: ignore
+    delta = reduce(share_add, delta.data)  # type:ignore
 
-    eps_b = apply_function(eps, b_share.child, "mul")  # type: ignore
-    delta_a = apply_function(delta, a_share.child, "mul")  # type: ignore
+    eps_b = share_mul(eps, b_share.child)  # type: ignore
+    delta_a = share_mul(delta, a_share.child)  # type: ignore
 
-    tensor = apply_function(apply_function(c_share, eps_b, "add"), delta_a, "add")
+    tensor = reduce(share_add, [c_share, eps_b, delta_a])
 
     mul_op = ShareTensor.get_op(ring_size, "mul")
     eps_delta = mul_op(eps.child, delta.child)  # type: ignore
-    tensor = apply_function(tensor, eps_delta, "add")
+    tensor = share_add(tensor, eps_delta)
 
     share = x.copy_tensor()
     share.child = tensor.child  # As we do not use fixed point we neglect truncation.
