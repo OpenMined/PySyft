@@ -11,9 +11,6 @@ from uuid import UUID
 # third party
 import numpy as np
 
-# syft absolute
-from syft.core.tensor.smpc.share_tensor.ShareTensor import apply_function
-
 # relative
 from ....common.uid import UID
 from ....store.storeable_object import StorableObject
@@ -25,6 +22,8 @@ from .greenlets_switch import beaver_retrieve_object
 from .greenlets_switch import crypto_store_retrieve_object
 from .smpc_action_message import SMPCActionMessage
 from .smpc_action_seq_batch_message import SMPCActionSeqBatchMessage
+
+apply_function = ShareTensor.apply_function
 
 
 def get_action_generator_from_op(
