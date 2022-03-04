@@ -13,6 +13,7 @@ import uuid
 from nacl.signing import VerifyKey
 import numpy as np
 from numpy.typing import ArrayLike
+import pyarrow as pa
 
 # relative
 from ..adp.entity import Entity
@@ -531,7 +532,7 @@ class PhiTensorAncestor(TensorChainManager):
         elif entities is not None and len(entities) == self.shape[0]:
 
             class_type = _SingleEntityPhiTensor()
-            entities = np.array([entity.name for entity in entities])
+            entities = pa.array([entity.name for entity in entities])
 
             if isinstance(min_val, (bool, int, float)):
                 min_vals = np.array(min_val)

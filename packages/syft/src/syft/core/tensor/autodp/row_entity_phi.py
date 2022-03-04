@@ -1079,10 +1079,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         np_array.setflags(write=True)
         return np_array.astype(np.int32)
 
-    def arrow_serialize_string_array(self, entities: List[Entity]) -> bytes:
-        batch = pa.RecordBatch.from_pylist(
-            [{"name": entity.name} for entity in entities]
-        )
+    def arrow_serialize_string(self, entities) -> bytes:
+        batch = pa.RecordBatch.from_arrays([entities], name=["entities"])
+
         sink = pa.BufferOutputStream()
         with pa.ipc.new_stream(sink, batch.schema) as writer:
             writer.write_batch(batch)
@@ -1102,12 +1101,12 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # TODO : Implement andrew's notion of global data subject registry
         # As private scalar manager is empty initially excluding for now.
         # this serialization should give a  close estimate.
-        rows = numpy_serialize(self.rows, get_bytes=True)
-        min_val = numpy_serialize(self._min_val, get_bytes=True)
-        max_val = numpy_serialize(self._max_val, get_bytes=True)
-        entities = numpy_serialize(self._entities, get_bytes=True)
+        rows = numpy_serialize(self.child, get_bytes=True)
+        min_vals = numpy_serialize(self._min_vals.data, get_bytes=True)
+        max_vals = numpy_serialize(self._max_vals.data, get_bytes=True)
+        entities = self.arrow_serialize_string(self._entities)
 
-        total_size = len(rows) + len(min_val) + len(max_val) + len(entities)
+        total_size = len(rows) + len(min_vals) + len(max_vals) + len(entities)
         print("Total Size: ", total_size / 10**6)
 
     def _object2proto(self) -> RowEntityPhiTensor:
