@@ -90,7 +90,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         self._min_vals = min_vals
         self._max_vals = max_vals
-        self.entities = entities
+        self._entities = entities
         self.row_type = row_type
 
         self.serde_concurrency: int = 0
@@ -1105,7 +1105,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         rows = numpy_serialize(self.rows, get_bytes=True)
         min_val = numpy_serialize(self._min_val, get_bytes=True)
         max_val = numpy_serialize(self._max_val, get_bytes=True)
-        entities = numpy_serialize(self.entities, get_bytes=True)
+        entities = numpy_serialize(self._entities, get_bytes=True)
 
         total_size = len(rows) + len(min_val) + len(max_val) + len(entities)
         print("Total Size: ", total_size / 10**6)
