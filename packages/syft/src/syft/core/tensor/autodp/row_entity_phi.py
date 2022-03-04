@@ -1079,12 +1079,19 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         np_array.setflags(write=True)
         return np_array.astype(np.int32)
 
-    def arrow_serialize_string(self, entities) -> bytes:
-        batch = pa.RecordBatch.from_arrays([entities], names=["entities"])
+    def arrow_serialize_string(self, array: Union[pa.lib.ChunkedArray, pa.lib.StringArray]) -> bytes:
+        """ For serializing the entities"""
+        schema = pa.schema({pa.field('entity', pa.string())})
 
         sink = pa.BufferOutputStream()
-        with pa.ipc.new_stream(sink, batch.schema) as writer:
-            writer.write_batch(batch)
+        with pa.ipc.new_stream(sink, schema) as writer:
+            if isinstance(array, pa.lib.StringArray):
+                batch = pa.RecordBatch.from_arrays([array], names=["entity"])
+                writer.write_batch(batch)
+            else:
+                for row in range(len(array.chunks)):  # number of batches is the number of chunks\
+                    batch = pa.record_batch([array.chunks[row]], names=["entity"])
+                    writer.write_batch(batch)
         return sink.getvalue()
 
     def arrow_record_serialize(self) -> bytes:
