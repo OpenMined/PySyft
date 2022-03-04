@@ -1080,7 +1080,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return np_array.astype(np.int32)
 
     def arrow_serialize_string(self, entities) -> bytes:
-        batch = pa.RecordBatch.from_pylist([{"name": entity} for entity in entities])
+        batch = pa.RecordBatch.from_arrays([entities], names=["entities"])
 
         sink = pa.BufferOutputStream()
         with pa.ipc.new_stream(sink, batch.schema) as writer:
