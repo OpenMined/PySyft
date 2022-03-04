@@ -88,8 +88,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         self.child: Sequence
         super().__init__(rows)
 
-        self.min_vals = min_vals
-        self.max_vals = max_vals
+        self._min_vals = min_vals
+        self._max_vals = max_vals
         self.entities = entities
         self.row_type = row_type
 
@@ -1103,8 +1103,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # As private scalar manager is empty initially excluding for now.
         # this serialization should give a  close estimate.
         rows = numpy_serialize(self.rows, get_bytes=True)
-        min_val = numpy_serialize(self.min_val, get_bytes=True)
-        max_val = numpy_serialize(self.max_val, get_bytes=True)
+        min_val = numpy_serialize(self._min_val, get_bytes=True)
+        max_val = numpy_serialize(self._max_val, get_bytes=True)
         entities = numpy_serialize(self.entities, get_bytes=True)
 
         total_size = len(rows) + len(min_val) + len(max_val) + len(entities)
