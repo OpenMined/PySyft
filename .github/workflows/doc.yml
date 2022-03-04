@@ -14,14 +14,26 @@ on:
 
 jobs:
   deploy-syft-documentation:
+    strategy:
+      matrix:
+        python-version: [3.8]
     runs-on: ubuntu-latest
     steps:
     - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
     - name: Install dependencies
       run: |
-        pip install --user -upgrade pip
-        pip install pydata-sphinx-theme==0.7.1
+        pip install --upgrade pip
+        pip install ipython==8.1.0
+        pip install sphinx-panels==0.6.0
         pip install sphinx-copybutton==0.4.0
+        pip install sphinx-autoapi==1.8.4
+        pip install sphinx-code-include==1.1.1
+        pip install sphinx==4.3.0
+        pip install pydata-sphinx-theme==0.7.2
 
     - name: Build the docs
       run: |
@@ -33,4 +45,5 @@ jobs:
       env:
         REPO: self
         BRANCH: gh-pages
-        FOLDER: docs/build
+        FOLDER: docs/build/html
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -3,6 +3,8 @@ services:
   tailscale:
     ports:
       - "8080"
+    volumes:
+      - ./vpn:/tailscale
 
   proxy:
     command:
@@ -81,6 +83,12 @@ services:
       - PROFILE=true
       - JAEGER_HOST=docker-host
       - JAEGER_PORT=6831
+
+  headscale:
+    profiles:
+      - network
+    volumes:
+      - ./vpn:/headscale
 
   jaeger:
     image: jaegertracing/all-in-one:1.30
