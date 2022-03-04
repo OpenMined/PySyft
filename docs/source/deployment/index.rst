@@ -1,5 +1,8 @@
+.. _advanced_deployment:
+
+===========================================
 Advanced Deployment: Introduction to HaGrid
-*******************************************
+===========================================
 
 .. toctree::
    :maxdepth: 3
