@@ -18,8 +18,8 @@ import numpy.typing as npt
 import pyarrow as pa
 
 # relative
-from ....core.adp.entity import DataSubjectGroup as DSG
 from ....core.adp.entity import Entity
+from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ....proto.core.adp.phi_tensor_pb2 import (
     RowEntityPhiTensor as RowEntityPhiTensor_PB,
 )
@@ -32,6 +32,7 @@ from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.serde.types import Deserializeable
 from ..broadcastable import is_broadcastable
+from ..lazy_repeat_array import lazyrepeatarray
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
@@ -67,7 +68,15 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     we refer to the number of 'rows' we simply refer to the length of the first dimension. This
     tensor can have an arbitrary number of dimensions."""
 
-    def __init__(self, rows: Sequence, check_shape: bool = True):
+    def __init__(
+        self,
+        rows: Sequence,
+        min_vals: Union[np.nadarray, lazyrepeatarray],
+        max_vals: Union[np.nadarray, lazyrepeatarray],
+        entities: np.nadarray,
+        row_type: SingleEntityPhiTensor = SingleEntityPhiTensor,
+        check_shape: bool = True,
+    ):
         """Initialize a RowEntityPhiTensor
 
         rows: the actual data organized as an iterable (can be any type of iterable)
@@ -78,6 +87,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # Container type heirachy: https://docs.python.org/3/library/collections.abc.html
         self.child: Sequence
         super().__init__(rows)
+
+        self.min_vals = min_vals
+        self.max_vals = max_vals
+        self.entities = entities
+        self.row_type = row_type
 
         self.serde_concurrency: int = 0
         # include this check because it's expensive to check and sometimes we can skip it when
@@ -95,24 +109,25 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                     )
 
         """Calculate the number of unique entities behind the REPT"""
-        self.unique_entities: set[Entity] = set()
-        self.n_entities = 0
-        for entity in self.entities.flatten():
-            if isinstance(entity, Entity):
-                if entity not in self.unique_entities:
-                    self.unique_entities.add(entity)
-                    self.n_entities += 1
-                else:
-                    continue
-            elif isinstance(entity, DSG):
-                for e in entity.entity_set:
-                    if e not in self.unique_entities:
-                        self.unique_entities.add(e)
-                        self.n_entities += 1
-                    else:
-                        continue
-            else:
-                raise Exception(f"{type(entity)}")
+        # Ishan can we skip the calculation of unique entities.
+        # self.unique_entities: set[Entity] = set()
+        # self.n_entities = 0
+        # for entity in self.entities.flatten():
+        #     if isinstance(entity, Entity):
+        #         if entity not in self.unique_entities:
+        #             self.unique_entities.add(entity)
+        #             self.n_entities += 1
+        #         else:
+        #             continue
+        #     elif isinstance(entity, DSG):
+        #         for e in entity.entity_set:
+        #             if e not in self.unique_entities:
+        #                 self.unique_entities.add(e)
+        #                 self.n_entities += 1
+        #             else:
+        #                 continue
+        #     else:
+        #         raise Exception(f"{type(entity)}")
 
     @property
     def scalar_manager(self) -> VirtualMachinePrivateScalarManager:
@@ -1073,15 +1088,27 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             writer.write_batch(batch)
         return sink.getvalue()
 
-    def arrow_serialize(self) -> bytes:
+    def arrow_record_serialize(self) -> bytes:
         data = self.arrow_marshal()
         child_bytes = self.arrow_serialize_tensor(data["child"])
         return child_bytes
 
     @staticmethod
-    def arrow_deserialize(buf) -> np.ndarray:
+    def arrow_record_deserialize(buf) -> np.ndarray:
         obj = RowEntityPhiTensor.arrow_deserialize_tensor(buf=buf)
         return obj
+
+    def arrow_serialize(self) -> bytes:
+        # TODO : Implement andrew's notion of global data subject registry
+        # As private scalar manager is empty initially excluding for now.
+        # this serialization should give a  close estimate.
+        rows = numpy_serialize(self.rows, get_bytes=True)
+        min_val = numpy_serialize(self.min_val, get_bytes=True)
+        max_val = numpy_serialize(self.max_val, get_bytes=True)
+        entities = numpy_serialize(self.entities, get_bytes=True)
+
+        total_size = len(rows) + len(min_val) + len(max_val) + len(entities)
+        print("Total Size: ", total_size / 10**6)
 
     def _object2proto(self) -> RowEntityPhiTensor:
         entity_list = []

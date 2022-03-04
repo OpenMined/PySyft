@@ -38,7 +38,7 @@ DTYPE_REFACTOR = {
 }
 
 
-def arrow_serialize(obj: np.ndarray) -> bytes:
+def arrow_serialize(obj: np.ndarray, get_bytes: bool = False) -> bytes:
     original_dtype = obj.dtype
     apache_arrow = pa.Tensor.from_numpy(obj=obj)
     sink = pa.BufferOutputStream()
@@ -52,9 +52,12 @@ def arrow_serialize(obj: np.ndarray) -> bytes:
         )
     dtype = original_dtype.name
 
-    return NumpyProto(
-        arrow_data=numpy_bytes, dtype=dtype, decompressed_size=buffer.size
-    )
+    if get_bytes:
+        return numpy_bytes
+    else:
+        return NumpyProto(
+            arrow_data=numpy_bytes, dtype=dtype, decompressed_size=buffer.size
+        )
 
 
 def arrow_deserialize(proto: NumpyProto) -> np.ndarray:

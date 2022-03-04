@@ -17,6 +17,7 @@ from numpy.typing import ArrayLike
 # relative
 from ..adp.entity import Entity
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
+from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
 from .passthrough import is_acceptable_simple_type  # type: ignore
@@ -530,41 +531,40 @@ class PhiTensorAncestor(TensorChainManager):
         elif entities is not None and len(entities) == self.shape[0]:
 
             class_type = _SingleEntityPhiTensor()
+            entities = np.array([entity.name for entity in entities])
 
-            new_list = list()
-            for i, entity in enumerate(entities):
-
-                if isinstance(min_val, (float, int)):
-                    min_vals = (self.child[i : i + 1] * 0) + min_val  # noqa: E203
-                else:
-                    raise Exception(
-                        "min_val should be a float, got "
-                        + str(type(min_val))
-                        + " instead."
-                    )
-
-                if isinstance(max_val, (float, int)):
-                    max_vals = (self.child[i : i + 1] * 0) + max_val  # noqa: E203
-                else:
-                    raise Exception(
-                        "max_val should be a float, got "
-                        + str(type(min_val))
-                        + " instead."
-                    )
-
-                value = self.child[i : i + 1]  # noqa: E203
-
-                new_list.append(
-                    class_type(
-                        child=value,
-                        entity=entity,
-                        min_vals=min_vals,
-                        max_vals=max_vals,
-                        scalar_manager=scalar_manager,
-                    )
+            if isinstance(min_val, (bool, int, float)):
+                min_vals = np.array(min_val)
+            else:
+                raise Exception(
+                    "min_val should be either float,int,bool got "
+                    + str(type(min_val))
+                    + " instead."
                 )
 
-            self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
+            if isinstance(max_val, (bool, int, float)):
+                max_vals = np.array(max_val)
+            else:
+                raise Exception(
+                    "min_val should be either float,int,bool got "
+                    + str(type(max_val))
+                    + " instead."
+                )
+
+            if min_vals.shape != self.child.shape:
+                min_vals = lazyrepeatarray(min_vals, self.child.shape)
+
+            if max_vals.shape != self.child.shape:
+                max_vals = lazyrepeatarray(max_vals, self.child.shape)
+
+            self.replace_abstraction_top(
+                _RowEntityPhiTensor(),
+                rows=self.child,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                entities=entities,
+                row_type=class_type,
+            )  # type: ignore
 
         # TODO: if there's element-level entities - push all elements with PhiScalars
         else:
