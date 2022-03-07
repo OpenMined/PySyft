@@ -58,7 +58,7 @@ def row_deserialize(*rows: Deserializeable) -> List[Any]:
         output.append(deserialize(row, from_bytes=True))
     return output
 
-CHUNK_SIZE = 5.12e+8
+CHUNK_SIZE = int(5.12e+8)
 @serializable()
 class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     """This tensor is one of several tensors whose purpose is to carry metadata
