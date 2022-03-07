@@ -532,7 +532,7 @@ class PhiTensorAncestor(TensorChainManager):
         elif entities is not None and len(entities) == self.shape[0]:
 
             class_type = _SingleEntityPhiTensor()
-            entities = pa.array([entity.name for entity in entities])
+            entities = np.array([entity.name for entity in entities])
 
             if isinstance(min_val, (bool, int, float)):
                 min_vals = np.array(min_val)

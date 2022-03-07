@@ -3,7 +3,10 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
+from distutils.util import byte_compile
 from functools import reduce
+import os
+from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -12,6 +15,7 @@ from typing import Tuple
 from typing import Union
 
 # third party
+import capnp
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import numpy.typing as npt
@@ -992,15 +996,17 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list)
 
-    def copy(
-        self, order: Optional[str] = "K", subok: Optional[bool] = True
-    ) -> RowEntityPhiTensor:
+    def copy(self, order: Optional[str] = "K") -> RowEntityPhiTensor:
         """Return copy of the given object"""
-        new_list = list()
-        for row in self.child:
-            new_list.append(row.copy(order=order, subok=subok))
 
-        return RowEntityPhiTensor(rows=new_list, check_shape=False)
+        return RowEntityPhiTensor(
+            rows=self.child.copy(order=order),
+            min_vals=self._min_vals.copy(order=order),
+            max_vals=self._max_vals.copy(order=order),
+            entities=self._entities.copy(order=order),
+            row_type=self.row_type,
+            check_shape=False,
+        )
 
     def take(
         self,
@@ -1079,9 +1085,11 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         np_array.setflags(write=True)
         return np_array.astype(np.int32)
 
-    def arrow_serialize_string(self, array: Union[pa.lib.ChunkedArray, pa.lib.StringArray]) -> bytes:
-        """ For serializing the entities"""
-        schema = pa.schema({pa.field('entity', pa.string())})
+    def arrow_serialize_string(
+        self, array: Union[pa.lib.ChunkedArray, pa.lib.StringArray]
+    ) -> bytes:
+        """For serializing the entities"""
+        schema = pa.schema({pa.field("entity", pa.string())})
 
         sink = pa.BufferOutputStream()
         with pa.ipc.new_stream(sink, schema) as writer:
@@ -1089,10 +1097,12 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                 batch = pa.RecordBatch.from_arrays([array], names=["entity"])
                 writer.write_batch(batch)
             else:
-                for row in range(len(array.chunks)):  # number of batches is the number of chunks\
+                for row in range(
+                    len(array.chunks)
+                ):  # number of batches is the number of chunks\
                     batch = pa.record_batch([array.chunks[row]], names=["entity"])
                     writer.write_batch(batch)
-        return sink.getvalue()
+        return sink.getvalue().to_pybytes()
 
     def arrow_record_serialize(self) -> bytes:
         data = self.arrow_marshal()
@@ -1105,16 +1115,49 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return obj
 
     def arrow_serialize(self) -> bytes:
+        # stdlib
+        import time
+
+        here = os.path.dirname(__file__)
+        root_dir = Path(here) / ".." / ".." / ".." / ".." / ".." / "capnp"
+        rept_capnp = capnp.load(str(root_dir / "rept.capnp"))
+
+        start = time.time()
         # TODO : Implement andrew's notion of global data subject registry
         # As private scalar manager is empty initially excluding for now.
         # this serialization should give a  close estimate.
         rows = numpy_serialize(self.child, get_bytes=True)
         min_vals = numpy_serialize(self._min_vals.data, get_bytes=True)
         max_vals = numpy_serialize(self._max_vals.data, get_bytes=True)
-        entities = self.arrow_serialize_string(self._entities)
+        entities = self.arrow_serialize_string(pa.array(self._entities))
 
+        end = time.time()
+        print("step 1:", end - start)
         total_size = len(rows) + len(min_vals) + len(max_vals) + len(entities)
-        print("Total Size: ", total_size / 10**6)
+        print("Total Size: ", total_size / 10 ** 6)
+
+        start = time.time()
+        # data = {
+        #     "child": rows,
+        #     "min_vals": min_vals,
+        #     "max_vals": max_vals,
+        #     "entities": entities,
+        # }
+        # # print("what is our data", data)
+        # batch = pa.RecordBatch.from_pylist([data])
+        # sink = pa.BufferOutputStream()
+        # with pa.ipc.new_stream(sink, batch.schema) as writer:
+        #     writer.write_batch(batch)
+        # byte_stream = sink.getvalue()
+        rept_msg = rept_capnp.REPT.new_message()
+        rept_msg.child = rows
+        rept_msg.minVals = min_vals
+        rept_msg.maxVals = max_vals
+        rept_msg.entities = entities
+        byte_stream = rept_msg.to_bytes()
+        end = time.time()
+        print("step 2:", end - start)
+        return byte_stream
 
     def _object2proto(self) -> RowEntityPhiTensor:
         entity_list = []

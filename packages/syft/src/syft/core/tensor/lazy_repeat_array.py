@@ -1,4 +1,8 @@
+# future
+from __future__ import annotations
+
 # stdlib
+from typing import Optional
 from typing import Tuple
 
 # third party
@@ -79,6 +83,9 @@ class lazyrepeatarray:
     @staticmethod
     def deserialize_from_simple_assets(assets):
         return lazyrepeatarray(data=assets[0], shape=assets[1])
+
+    def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
+        return lazyrepeatarray(data=np.copy(self.data, order=order), shape=self.shape)
 
     @property
     def size(self):
