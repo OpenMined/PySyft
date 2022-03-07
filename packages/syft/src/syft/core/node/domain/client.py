@@ -8,12 +8,15 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
+from io import BytesIO
+import requests
 
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import names
 import pandas as pd
+import numpy as np
 
 # relative
 from ....logger import traceback_and_raise
@@ -34,8 +37,11 @@ from ...tensor.tensor import Tensor
 from ..abstract.node import AbstractNodeClient
 from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
+from ..common.util import read_chunks
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
+from ..common.node_service.upload_service.upload_service_messages import UploadDataMessage
+from ..common.node_service.upload_service.upload_service_messages import UploadDataCompleteMessage
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
 from ..common.client_manager.vpn_api import VPNAPI
@@ -555,6 +561,7 @@ class DomainClient(Client):
         name: Optional[str] = None,
         description: Optional[str] = None,
         skip_checks: bool = False,
+        chunk_size: int = 536870912, # 500 MB
         **metadata: Dict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
@@ -678,12 +685,52 @@ class DomainClient(Client):
 
         assets = downcast(assets)
         metadata = downcast(metadata)
-
+        
         binary_dataset = serialize(assets, to_bytes=True)
+        # 1 - Send a message to PyGrid warning about dataset upload.
+        # TODO: Avoid using hardcoded strings 
+        upload_response = self.datasets.perform_api_request_generic(
+                syft_msg=UploadDataMessage,
+                content={
+                    "filename": name,
+                    "file_size": len(binary_dataset),
+                    "chunk_size": chunk_size, 
+                    "address": self.address,
+                    "reply_to": self.address}
+        )
+
+        
+        # 2 - Starts to upload binary data into Seaweed.
+        # TODO: Make this a resumable upload and ADD progress bar.
+        binary_buff = BytesIO(binary_dataset)
+        parts = sorted(upload_response.payload.parts, key=lambda x: x['part_no'])
+        etag_chunk_no_pairs = list()
+        for data_chunk, part in zip( read_chunks(binary_buff, chunk_size), parts):
+            presigned_url = part["url"]
+            part_no = part["part_no"]
+            
+            res = requests.put(presigned_url, data=data_chunk)
+            # TODO: Replace with some error message if it fails.
+            assert res.status_code == 200  # Check if the request was successful
+            etag = res.headers["ETag"]
+            etag_chunk_no_pairs.append(
+                {"ETag": etag, "PartNumber": part_no}
+            )  # maintain list of part no and ETag
+
+        # 3 - Send a message to PyGrid warning about dataset upload complete!
+        upload_response = self.datasets.perform_request(
+                syft_msg=UploadDataCompleteMessage,
+                content={"upload_id": upload_response.payload.upload_id, "filename": name, "parts": etag_chunk_no_pairs}
+        )
+
+        
+        # TODO: Create a proxy class to replace dataset field.
+        proxy_obj = serialize({"filename": np.zeros(2)}, to_bytes=True)
+
 
         sys.stdout.write("\rLoading dataset... uploading...                        ")
         self.datasets.create_syft(
-            dataset=binary_dataset, metadata=metadata, platform="syft"
+            dataset=proxy_obj, metadata=metadata, platform="syft"
         )
         sys.stdout.write(
             "\rLoading dataset... uploading... SUCCESS!                        "
