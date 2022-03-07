@@ -1,14 +1,11 @@
 # stdlib
 import subprocess
-import warnings
 
 # third party
 import numpy as np
 import pyperf
 from syft_benchmarks import run_rept_suite
 from syft_benchmarks import run_sept_suite
-
-warnings.filterwarnings("ignore", category=UserWarning)
 
 
 def get_git_revision_short_hash() -> str:

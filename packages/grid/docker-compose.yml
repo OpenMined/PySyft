@@ -17,6 +17,8 @@ services:
       - RELEASE=${RELEASE:-production}
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
       - STACK_API_KEY=$STACK_API_KEY
+      - HTTP_PORT=$HTTP_PORT
+      - HTTPS_PORT=$HTTPS_PORT
     volumes:
       - tailscale-data:/var/lib/tailscale
       - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
@@ -71,6 +73,8 @@ services:
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
+      - HTTP_PORT=$HTTP_PORT
+      - HTTPS_PORT=$HTTPS_PORT
     labels:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
@@ -136,6 +140,8 @@ services:
       - STACK_API_KEY=${STACK_API_KEY}
       - PORT=8001
       - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=$HTTP_PORT
+      - HTTPS_PORT=$HTTPS_PORT
     build:
       context: ../
       dockerfile: ./grid/backend/backend.dockerfile
@@ -167,6 +173,8 @@ services:
       - PORT=8011
       - STREAM_QUEUE=1
       - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=$HTTP_PORT
+      - HTTPS_PORT=$HTTPS_PORT
     build:
       context: ../
       dockerfile: ./grid/backend/backend.dockerfile
@@ -197,6 +205,8 @@ services:
       - C_FORCE_ROOT=1
       - STACK_API_KEY=${STACK_API_KEY}
       - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=$HTTP_PORT
+      - HTTPS_PORT=$HTTPS_PORT
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
     build:
       context: ../
