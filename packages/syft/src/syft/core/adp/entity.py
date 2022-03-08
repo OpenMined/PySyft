@@ -7,15 +7,18 @@
 from __future__ import annotations
 
 # stdlib
+from html import entities
 from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import names
+import numpy as np
 
 # relative
 from ...proto.core.adp.entity_pb2 import DataSubjectGroup as DataSubjectGroup_PB
@@ -26,11 +29,34 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 
 
+@serializable
+class EntityList:
+    __attr_allowlist__ = ("one_hot_lookup", "entities_indexed")
+    __slots__ = ("one_hot_lookup", "entities_indexed")
+
+    def __init__(
+        self, one_hot_lookup: List[Union[Entity, str]], entities_indexed: np.ndaray
+    ) -> None:
+        self.one_hot_lookup = one_hot_lookup
+        self.entities_indexed = entities_indexed
+
+    @staticmethod
+    def from_objs(entities: Union[np.ndarray, list]) -> EntityList:
+        if isinstance(entities, list):
+            entities = np.array(entities)
+        one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
+
+        return EntityList(one_hot_lookup, entities_indexed)
+
+    def __getitem__(self, key: Union[int, slice, str]) -> Union[Entity, str]:
+        return self.one_hot_lookup[self.entities_indexed[key]]
+
+
 @serializable()
 class Entity:
-    __slots__ = ("name", "id", "bytes_value")
+    __slots__ = "name"
 
-    def __init__(self, name: str = "", id: Optional[UID] = None) -> None:
+    def __init__(self, name: str = "") -> None:
 
         # If someone doesn't provide a unique name - make one up!
         if name == "":
@@ -47,8 +73,6 @@ class Entity:
             )
 
         self.name = name
-        self.id = id if id else UID()
-        self.bytes_value = self.id.get_bytes
 
     @property
     def attributes(self) -> Dict[str, str]:
@@ -94,12 +118,11 @@ class Entity:
         return self.__add__(other)
 
     def to_string(self) -> str:
-        return f"{self.name}+{self.id.to_string()}"
+        return f"{self.name}"
 
     @staticmethod
     def from_string(blob: str) -> Entity:
-        ent_name, ent_id = blob.split("+")
-        return Entity(name=ent_name, id=UID.from_string(ent_id))
+        return Entity(name=blob)
 
     # represents entity as a string
     def __repr__(self) -> str:
@@ -107,19 +130,12 @@ class Entity:
 
     # converts entity into a protobuf object
     def _object2proto(self) -> Entity_PB:
-        return Entity_PB(name=self.name, id=self.id._object2proto())
-
-    def simple_assets_for_serde(self) -> tuple[str, bytes]:
-        return (self.name, self.bytes_value)
-
-    @staticmethod
-    def deserialize_from_simple_assets(assets: List) -> Entity:
-        return Entity(name=assets[0], id=UID.from_string(assets[1]))
+        return Entity_PB(name=self.name)
 
     # converts a generated protobuf object into an entity
     @staticmethod
     def _proto2object(proto: Entity_PB) -> Entity:
-        return Entity(name=proto.name, id=UID._proto2object(proto.id))
+        return Entity(name=proto.name)
 
     # returns the type of generated protobuf object
     @staticmethod

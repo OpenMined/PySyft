@@ -17,6 +17,7 @@ import pyarrow as pa
 
 # relative
 from ..adp.entity import Entity
+from ..adp.entity import EntityList
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
@@ -462,44 +463,25 @@ class PhiTensorAncestor(TensorChainManager):
             entities = [Entity(entities)]
         elif isinstance(entities, Entity):
             entities = [entities]
-
         # Check 4: If entities are a list, are the items strings or Entity objects.
         # If they're strings lets create Entity objects.
-        elif isinstance(entities, list):
-            _entities = list()
-            for e in entities:
-                if isinstance(e, str):
-                    _entities.append(Entity(e))
-                elif isinstance(e, int):
-                    _entities.append(Entity(str(e)))
-                elif isinstance(e, Entity):
-                    _entities.append(e)
-                elif isinstance(e, (list, np.ndarray)):
-                    # looks like it's actually a list of tensors, let's try to
-                    # cast the whole thing to an ndarray nd see if that works.
-                    entities = np.array(entities)
-                    break
-                else:
-                    raise Exception("What kind of entity is this?!")
 
-            entities = _entities
+        if isinstance(entities, (list, tuple)):
+            entities = np.array(entities)
 
-        elif isinstance(entities, np.ndarray):
-            if entities.shape != self.shape:
-                raise Exception(
-                    "Entities shape doesn't match data shape. If you're"
-                    " going to pass in something other than 1 entity for the"
-                    " entire tensor or one entity per row, you're going to need"
-                    " to make the np.ndarray of entities have the same shape as"
-                    " the tensor you're calling .private() on. Try again."
-                )
-            else:
-
-                raise Exception(
-                    "We don't yet support passing in a tensor of arbitrary entities. "
-                    "For now, call.flatten() on your tensor so you have one entity per row, "
-                    "or split your tensor into separate tensors for each value. We apologize "
-                    "for the inconvenience and will be adding this functionality soon!"
+        if entities.shape != self.shape:
+            raise Exception(
+                "Entities shape doesn't match data shape. If you're"
+                " going to pass in something other than 1 entity for the"
+                " entire tensor or one entity per row, you're going to need"
+                " to make the np.ndarray of entities have the same shape as"
+                " the tensor you're calling .private() on. Try again."
+            )
+        unique, encoded_entities = np.unique(entities, return_inverse=True)
+        for entity in unique:
+            if not isinstance(entity, (str, Entity)):
+                raise ValueError(
+                    f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
                 )
 
         # PHASE 2: CREATE CHILD
@@ -532,7 +514,7 @@ class PhiTensorAncestor(TensorChainManager):
         elif entities is not None and len(entities) == self.shape[0]:
 
             class_type = _SingleEntityPhiTensor()
-            entities = np.array([entity.name for entity in entities])
+            entities = EntityList.from_objs(entities)
 
             if isinstance(min_val, (bool, int, float)):
                 min_vals = np.array(min_val)
