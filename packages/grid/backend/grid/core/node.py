@@ -11,10 +11,10 @@ from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.node_table.utils import seed_db
+from syft.core.node.common.util import get_s3_client
 
 # grid absolute
 from grid.core.config import settings
-from grid.core.s3 import get_s3_client
 from grid.db.session import get_db_engine
 from grid.db.session import get_db_session
 
@@ -71,16 +71,20 @@ if settings.NODE_TYPE.lower() == "domain":
     s3_client = get_s3_client(docker_host=True)
 
     # Check if the bucket already exists
-    bucket_exists = any(
-        [
-            bucket["Name"] == settings.S3_BUCKET
-            for bucket in s3_client.list_buckets()["Buckets"]
-        ]
+    bucket_exists = (
+        any(
+            [
+                bucket["Name"] == settings.DOMAIN_NAME
+                for bucket in s3_client.list_buckets()["Buckets"]
+            ]
+        )
+        if s3_client
+        else False
     )
 
     # If bucket does not exists, then create a new one.
-    if not bucket_exists:
-        resp = s3_client.create_bucket(Bucket=settings.S3_BUCKET)
+    if s3_client and not bucket_exists:
+        resp = s3_client.create_bucket(Bucket=settings.DOMAIN_NAME)
 elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", db_engine=get_db_engine(), settings=settings)
     format = "%(asctime)s: %(message)s"
