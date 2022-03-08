@@ -4,9 +4,15 @@ struct REPT {
   child @0 :List(Data);
   minVals @1 :List(Data);
   maxVals @2 :List(Data);
-  oneHotLookup @3 :List(Text);
-  entitiesIndexed @4 : List(Data);
-  childDtype @4 :Text;
-  minValsDtype @5 :Text;
-  maxValsDtype @6 :Text;
+  entitiesIndexed @3 :List(Data);
+  childMetadata @4 :TensorMetadata;
+  minValsMetadata @5 :TensorMetadata;
+  maxValsMetadata @6 :TensorMetadata;
+  entitiesIndexedMetadata @7 :TensorMetadata;
+  oneHotLookup @8 :List(Text);
+  
+  struct TensorMetadata {
+    dtype @0 :Text;
+    decompressedSize @1 :UInt64;
+  }
 }

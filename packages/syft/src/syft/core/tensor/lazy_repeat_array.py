@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from typing import Any
 from typing import Optional
 from typing import Tuple
 
@@ -99,3 +100,8 @@ class lazyrepeatarray:
                 raise Exception("not sure how to do this yet")
         else:
             raise Exception("not sure how to do this yet")
+
+    def __eq__(self, other: Any) -> bool:
+        if isinstance(other, lazyrepeatarray):
+            return self.data == other.data and self.shape == other.shape
+        return self == other

@@ -23,7 +23,7 @@ import pyarrow as pa
 
 # relative
 from ....core.adp.entity import Entity
-from ....core.adp.entity import EntityList
+from ....core.adp.entity_list import EntityList
 from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
 from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ....proto.core.adp.phi_tensor_pb2 import (
@@ -31,6 +31,7 @@ from ....proto.core.adp.phi_tensor_pb2 import (
 )
 from ....util import concurrency_count
 from ....util import parallel_execution
+from ....util import size_mb
 from ....util import split_rows
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
@@ -1096,8 +1097,8 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     def arrow_serialize_string(
         self, array: Union[pa.lib.ChunkedArray, pa.lib.StringArray]
     ) -> bytes:
-        # syft absolute
-        from syft import flags
+        # relative
+        from .... import flags
 
         """For serializing the entities"""
         schema = pa.schema({pa.field("entity", pa.string())})
@@ -1150,45 +1151,57 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return bytes_value
 
     @staticmethod
-    def arrow_deserialize(data) -> RowEntityPhiTensor:
+    def arrow_deserialize(buf: bytes) -> RowEntityPhiTensor:
         # stdlib
         import time
 
+        start = time.time()
         here = os.path.dirname(__file__)
         root_dir = Path(here) / ".." / ".." / ".." / ".." / ".." / "capnp"
         rept_capnp = capnp.load(str(root_dir / "rept.capnp"))
-        rept_msg = rept_capnp.from_bytes(data)
+        rept_msg = rept_capnp.REPT.from_bytes(buf)
 
-        start = time.time()
-
-        child_type = np.dtype(rept_msg.childDtype)
-        min_val_type = np.dtype(rept_msg.minValsDtype)
-        max_val_type = np.dtype(rept_msg.maxValsDtype)
+        child_metadata = rept_msg.childMetadata
+        print("child_metadata", child_metadata.decompressedSize, child_metadata.dtype)
         rows = numpy_deserialize(
-            RowEntityPhiTensor.combine_bytes(rept_msg.child), child_type
+            RowEntityPhiTensor.combine_bytes(rept_msg.child),
+            child_metadata.decompressedSize,
+            child_metadata.dtype,
         )
+
+        min_vals_metadata = rept_msg.minValsMetadata
         min_vals = lazyrepeatarray(
             numpy_deserialize(
-                RowEntityPhiTensor.combine_bytes(rept_msg.minVals), min_val_type
+                RowEntityPhiTensor.combine_bytes(rept_msg.minVals),
+                min_vals_metadata.decompressedSize,
+                min_vals_metadata.dtype,
             ),
             rows.shape,
         )
+
+        max_vals_metadata = rept_msg.maxValsMetadata
         max_vals = lazyrepeatarray(
             numpy_deserialize(
-                RowEntityPhiTensor.combine_bytes(rept_msg.maxVals), max_val_type
+                RowEntityPhiTensor.combine_bytes(rept_msg.maxVals),
+                max_vals_metadata.decompressedSize,
+                max_vals_metadata.dtype,
             ),
             rows.shape,
         )
-        entities = RowEntityPhiTensor.combine_bytes(rept_msg.entities)
 
-        end = time.time()
-        print("step 1:", end - start)
-        total_size = len(rows) + len(min_vals) + len(max_vals) + len(entities)
-        print("Total Size: ", total_size / 10**6)
+        entities_metadata = rept_msg.entitiesIndexedMetadata
+        entities_indexed = numpy_deserialize(
+            RowEntityPhiTensor.combine_bytes(rept_msg.entitiesIndexed),
+            entities_metadata.decompressedSize,
+            entities_metadata.dtype,
+        )
+        one_hot_lookup = np.array(rept_msg.oneHotLookup)
 
-        start = time.time()
+        entity_list = EntityList(one_hot_lookup, entities_indexed)
 
-        rept = RowEntityPhiTensor(rows=rows, min_vals=min_vals, max_vals=max_vals)
+        rept = RowEntityPhiTensor(
+            rows=rows, min_vals=min_vals, max_vals=max_vals, entities=entity_list
+        )
         end = time.time()
         print("step 2:", end - start)
         return rept
@@ -1205,45 +1218,60 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # TODO : Implement andrew's notion of global data subject registry
         # As private scalar manager is empty initially excluding for now.
         # this serialization should give a  close estimate.
-        rows = numpy_serialize(self.child, get_bytes=True)
-        min_vals = numpy_serialize(self._min_vals.data, get_bytes=True)
-        max_vals = numpy_serialize(self._max_vals.data, get_bytes=True)
-        entities_indexed = numpy_serialize(
+        rows, rows_size = numpy_serialize(self.child, get_bytes=True)
+        min_vals, min_vals_size = numpy_serialize(self._min_vals.data, get_bytes=True)
+        max_vals, max_vals_size = numpy_serialize(self._max_vals.data, get_bytes=True)
+        entities_indexed, entities_indexed_size = numpy_serialize(
             self._entities.entities_indexed, get_bytes=True
         )
         one_hot_lookup = self._entities.one_hot_lookup
 
         end = time.time()
         print("step 1:", end - start)
-        total_size = len(rows) + len(min_vals) + len(max_vals) + len(entities)
-        print("Total Size: ", total_size / 10**6)
+        total_size = len(rows) + len(min_vals) + len(max_vals) + len(entities_indexed)
+        total_size_mb = total_size / 10**6
+        total_size_mb += size_mb(one_hot_lookup)
+
+        print("Total Size: ", total_size_mb)
 
         start = time.time()
-        # data = {
-        #     "child": rows,
-        #     "min_vals": min_vals,
-        #     "max_vals": max_vals,
-        #     "entities": entities,
-        # }
-        # # print("what is our data", data)
-        # batch = pa.RecordBatch.from_pylist([data])
-        # sink = pa.BufferOutputStream()
-        # with pa.ipc.new_stream(sink, batch.schema) as writer:
-        #     writer.write_batch(batch)
-        # byte_stream = sink.getvalue()
+
         rept_msg = rept_capnp.REPT.new_message()
-        rept_msg.childDtype = str(self.child.dtype)
-        rept_msg.minValsDtype = str(self._min_vals.data.dtype)
-        rept_msg.maxValsDtype = str(self._max_vals.data.dtype)
-        rept_msg.oneHotLookup = one_hot_lookup
+        child_metadata = rept_capnp.REPT.TensorMetadata.new_message()
+        min_vals_metadata = rept_capnp.REPT.TensorMetadata.new_message()
+        max_vals_metadata = rept_capnp.REPT.TensorMetadata.new_message()
+        entities_metadata = rept_capnp.REPT.TensorMetadata.new_message()
+
         self.chunk_bytes(rows, "child", rept_msg)
+        child_metadata.dtype = str(self.child.dtype)
+        child_metadata.decompressedSize = rows_size
+        rept_msg.childMetadata = child_metadata
+
         self.chunk_bytes(min_vals, "minVals", rept_msg)
+        min_vals_metadata.dtype = str(self._min_vals.data.dtype)
+        min_vals_metadata.decompressedSize = min_vals_size
+        rept_msg.minValsMetadata = min_vals_metadata
+
         self.chunk_bytes(max_vals, "maxVals", rept_msg)
+        max_vals_metadata.dtype = str(self._max_vals.data.dtype)
+        max_vals_metadata.decompressedSize = max_vals_size
+        rept_msg.maxValsMetadata = max_vals_metadata
+
         self.chunk_bytes(entities_indexed, "entitiesIndexed", rept_msg)
+        entities_metadata.dtype = str(self._entities.entities_indexed.dtype)
+        entities_metadata.decompressedSize = entities_indexed_size
+        rept_msg.entitiesIndexedMetadata = entities_metadata
+
+        oneHotLookupList = rept_msg.init("oneHotLookup", len(one_hot_lookup))
+        for i, entity in enumerate(one_hot_lookup):
+            oneHotLookupList[i] = (
+                entity if not getattr(entity, "name", None) else entity.name
+            )
 
         byte_stream = rept_msg.to_bytes()
         end = time.time()
         print("step 2:", end - start)
+        print("Capnp Size: ", size_mb(byte_stream))
         return byte_stream
 
     def _object2proto(self) -> RowEntityPhiTensor:

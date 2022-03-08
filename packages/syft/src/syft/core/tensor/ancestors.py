@@ -17,7 +17,7 @@ import pyarrow as pa
 
 # relative
 from ..adp.entity import Entity
-from ..adp.entity import EntityList
+from ..adp.entity_list import EntityList
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
@@ -448,7 +448,6 @@ class PhiTensorAncestor(TensorChainManager):
 
         # Check 2: If entities == None, then run the entity creation tutorial
         if entities is None:
-
             if skip_blocking_checks:
                 raise Exception(
                     "Error: 'entities' argument to .private() must not be None!"
@@ -461,7 +460,7 @@ class PhiTensorAncestor(TensorChainManager):
         # Check 3: If entities is a string, make it a list with one entity in it
         if isinstance(entities, str):
             entities = [Entity(entities)]
-        elif isinstance(entities, Entity):
+        elif isinstance(entities, (Entity,)):
             entities = [entities]
         # Check 4: If entities are a list, are the items strings or Entity objects.
         # If they're strings lets create Entity objects.
@@ -477,8 +476,8 @@ class PhiTensorAncestor(TensorChainManager):
                 " to make the np.ndarray of entities have the same shape as"
                 " the tensor you're calling .private() on. Try again."
             )
-        unique, encoded_entities = np.unique(entities, return_inverse=True)
-        for entity in unique:
+        one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
+        for entity in one_hot_lookup:
             if not isinstance(entity, (str, Entity)):
                 raise ValueError(
                     f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
@@ -487,7 +486,6 @@ class PhiTensorAncestor(TensorChainManager):
         # PHASE 2: CREATE CHILD
         if len(entities) == 1:
             # if there's only one entity - push a SingleEntityPhiTensor
-
             if isinstance(min_val, (float, int)):
                 min_vals = (self.child * 0) + min_val
             else:
@@ -512,9 +510,8 @@ class PhiTensorAncestor(TensorChainManager):
 
         # if there's row-level entities - push a RowEntityPhiTensor
         elif entities is not None and len(entities) == self.shape[0]:
-
             class_type = _SingleEntityPhiTensor()
-            entities = EntityList.from_objs(entities)
+            entity_list = EntityList(one_hot_lookup, entities_indexed)
 
             if isinstance(min_val, (bool, int, float)):
                 min_vals = np.array(min_val)
@@ -545,13 +542,12 @@ class PhiTensorAncestor(TensorChainManager):
                 rows=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
-                entities=entities,
+                entities=entity_list,
                 row_type=class_type,
             )  # type: ignore
 
         # TODO: if there's element-level entities - push all elements with PhiScalars
         else:
-
             raise Exception(
                 "If you're passing in mulitple entities, please pass in one entity per row."
             )

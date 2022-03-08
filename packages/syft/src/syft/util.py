@@ -25,6 +25,7 @@ from typing import Union
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pympler.asizeof import asizeof
 import requests
 
 # syft absolute
@@ -638,3 +639,7 @@ def concurrency_override(count: int = 1) -> Iterator:
         yield None
     finally:
         os.environ["FORCE_CONCURRENCY_COUNT"] = "0"
+
+
+def size_mb(obj: Any) -> int:
+    return asizeof(obj) / (1024 * 1024)  # MBs

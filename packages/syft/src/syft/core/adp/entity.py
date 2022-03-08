@@ -29,29 +29,6 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
 
 
-@serializable
-class EntityList:
-    __attr_allowlist__ = ("one_hot_lookup", "entities_indexed")
-    __slots__ = ("one_hot_lookup", "entities_indexed")
-
-    def __init__(
-        self, one_hot_lookup: List[Union[Entity, str]], entities_indexed: np.ndaray
-    ) -> None:
-        self.one_hot_lookup = one_hot_lookup
-        self.entities_indexed = entities_indexed
-
-    @staticmethod
-    def from_objs(entities: Union[np.ndarray, list]) -> EntityList:
-        if isinstance(entities, list):
-            entities = np.array(entities)
-        one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
-
-        return EntityList(one_hot_lookup, entities_indexed)
-
-    def __getitem__(self, key: Union[int, slice, str]) -> Union[Entity, str]:
-        return self.one_hot_lookup[self.entities_indexed[key]]
-
-
 @serializable()
 class Entity:
     __slots__ = "name"
@@ -84,6 +61,9 @@ class Entity:
 
     # checks if the two entities are equal
     def __eq__(self, other: Any) -> bool:
+        # TODO: Remove this once Entity is refactored out
+        if isinstance(other, str):
+            return self.name == other
         return self.name == other.name
 
     # checks if the two entities are not equal

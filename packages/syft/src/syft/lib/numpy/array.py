@@ -1,3 +1,7 @@
+# stdlib
+from typing import Tuple
+from typing import Union
+
 # third party
 import numpy as np
 import pyarrow as pa
@@ -38,7 +42,9 @@ DTYPE_REFACTOR = {
 }
 
 
-def arrow_serialize(obj: np.ndarray, get_bytes: bool = False) -> bytes:
+def arrow_serialize(
+    obj: np.ndarray, get_bytes: bool = False
+) -> Union[Tuple[bytes, int], NumpyProto]:
     original_dtype = obj.dtype
     apache_arrow = pa.Tensor.from_numpy(obj=obj)
     sink = pa.BufferOutputStream()
@@ -53,14 +59,16 @@ def arrow_serialize(obj: np.ndarray, get_bytes: bool = False) -> bytes:
     dtype = original_dtype.name
 
     if get_bytes:
-        return numpy_bytes
+        return numpy_bytes, buffer.size
     else:
         return NumpyProto(
             arrow_data=numpy_bytes, dtype=dtype, decompressed_size=buffer.size
         )
 
 
-def arrow_deserialize(buf: bytes, dtype: str = "int32") -> np.ndarray:
+def arrow_deserialize(
+    buf: bytes, decompressed_size: int, dtype: str = "int32"
+) -> np.ndarray:
     str_dtype = dtype
     original_dtype = np.dtype(str_dtype)
     if flags.APACHE_ARROW_COMPRESSION is ApacheArrowCompression.NONE:
@@ -69,7 +77,7 @@ def arrow_deserialize(buf: bytes, dtype: str = "int32") -> np.ndarray:
     else:
         buf = pa.decompress(
             buf,
-            decompressed_size=proto.decompressed_size,
+            decompressed_size=decompressed_size,
             codec=flags.APACHE_ARROW_COMPRESSION.value,
         )
 
@@ -117,7 +125,7 @@ def serialize_numpy_array(obj: np.ndarray) -> NumpyProto:
 
 def deserialize_numpy_array(proto: NumpyProto) -> np.ndarray:
     if proto.HasField("arrow_data"):
-        return arrow_deserialize(proto.arrow_data)
+        return arrow_deserialize(proto.arrow_data, proto.decompressed_size)
     else:
         return protobuf_deserialize(proto)
 
