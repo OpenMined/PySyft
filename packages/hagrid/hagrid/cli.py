@@ -373,7 +373,7 @@ Please install it and then retry your command.\
 
 def check_gcloud_cli_installed() -> bool:
     try:
-        subprocess.call(["gcloud"])
+        subprocess.call(["gcloud", "version"])
         print("Gcloud cli installed!")
     except FileNotFoundError:
         msg = "\nYou don't appear to have the Gcloud CLI installed!!! \n\n\
@@ -382,6 +382,24 @@ Please install it and then retry your command.\
         raise FileNotFoundError(msg)
 
     return True
+
+def check_gcloud_authed() -> bool:
+    cmd = "gcloud auth list"
+    try:
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        return True
+    except Exception:
+        pass
+    return False
+
+def login_gcloud() -> bool:
+    cmd = "gcloud auth login"
+    try:
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        return True
+    except Exception:
+        pass
+    return False
 
 
 def str_to_bool(bool_str: Optional[str]) -> bool:
@@ -648,10 +666,31 @@ def create_launch_cmd(
             msg += "The pip based instructions seem to be a bit buggy if you're using a conda environment"
             msg += "\n"
             raise MissingDependency(msg)
+    
+    
+    
+    
+    
+    
+    
     elif host in ["gcp"]:
         check_gcloud_cli_installed()
 
-    elif host in ["gcp"]:
+        while not check_gcloud_authed():
+            print("You need to log into Google Cloud")
+            login_gcloud()
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    elif host in ["aws"]:
         print("Coming soon.")
         return ""
     else:
