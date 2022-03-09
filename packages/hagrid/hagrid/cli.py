@@ -383,6 +383,7 @@ Please install it and then retry your command.\
 
     return True
 
+
 def check_gcloud_authed() -> bool:
     cmd = "gcloud auth list"
     try:
@@ -391,6 +392,7 @@ def check_gcloud_authed() -> bool:
     except Exception:
         pass
     return False
+
 
 def login_gcloud() -> bool:
     cmd = "gcloud auth login"
@@ -666,30 +668,14 @@ def create_launch_cmd(
             msg += "The pip based instructions seem to be a bit buggy if you're using a conda environment"
             msg += "\n"
             raise MissingDependency(msg)
-    
-    
-    
-    
-    
-    
-    
+
     elif host in ["gcp"]:
         check_gcloud_cli_installed()
 
         while not check_gcloud_authed():
             print("You need to log into Google Cloud")
             login_gcloud()
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
+
     elif host in ["aws"]:
         print("Coming soon.")
         return ""
