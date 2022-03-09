@@ -554,22 +554,29 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 sigma=sigma,
                 user_key=user_key,
                 public_only=True,
-            )
+            ),
         ).reshape(self.shape)
         print("IntermediaGammaTensor:510: SUCCESS: publish(scalars=self.flat_scalars)")
         sharetensor_values = getattr(self, "sharetensor_values", None)
         if sharetensor_values is not None:
             # relative
+            from .... import Tensor
             from ..smpc.share_tensor import ShareTensor
 
-            result = ShareTensor(
-                rank=sharetensor_values.rank,
-                parties_info=sharetensor_values.parties_info,
-                ring_size=sharetensor_values.ring_size,
-                seed_przs=sharetensor_values.seed_przs,
-                clients=sharetensor_values.clients,
-                value=result,
+            result = Tensor(
+                child=ShareTensor(
+                    rank=self.sharetensor_values.rank,
+                    parties_info=self.sharetensor_values.parties_info,
+                    ring_size=self.sharetensor_values.ring_size,
+                    seed_przs=self.sharetensor_values.seed_przs,
+                    clients=self.sharetensor_values.clients,
+                    value=result,
+                ),
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+                sanity_check=False,
             )
+
         return result
 
     def sum(self, axis: Optional[int] = None) -> IntermediateGammaTensor:

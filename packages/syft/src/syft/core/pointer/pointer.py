@@ -94,6 +94,7 @@ import warnings
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
+import numpy as np
 
 # syft absolute
 import syft as sy
@@ -283,7 +284,6 @@ class Pointer(AbstractPointer):
     def publish(self, sigma: float = 1.5) -> Any:
 
         # relative
-        from ...lib.python import Float
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,
         )
@@ -303,7 +303,7 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        afloat = Float(0.0)
+        afloat = sy.Tensor(np.array([0], dtype=np.int32))
         ptr_type = obj2pointer_type(obj=afloat)
         ptr = ptr_type(
             client=self.client,
@@ -359,13 +359,6 @@ class Pointer(AbstractPointer):
         if result is not None and delete_obj:
             self.gc_enabled = False
             self._exhausted = True
-
-        # third party
-        from scipy.stats import shapiro
-
-        shapiro_result = shapiro(result)  # type: ignore
-        if shapiro_result[1] > 0.05:
-            print("You might have run out of privacy budget :(")
 
         return result
 

@@ -339,7 +339,14 @@ class Tensor(
     # MPCTensorAncestor,
 ):
 
-    __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    __attr_allowlist__ = [
+        "child",
+        "tag_name",
+        "public_shape",
+        "public_dtype",
+        "_min_vals",
+        "_max_vals",
+    ]
 
     PointerClassOverride = TensorPointer
 
@@ -348,6 +355,9 @@ class Tensor(
         child: Any,
         public_shape: Optional[Tuple[int, ...]] = None,
         public_dtype: Optional[np.dtype] = None,
+        min_vals: Optional[np.ndarray] = None,
+        max_vals: Optional[np.ndarray] = None,
+        sanity_check: Optional[bool] = True,
     ) -> None:
         """data must be a list of numpy array"""
 
@@ -369,7 +379,8 @@ class Tensor(
             )
 
         if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
-            getattr(child, "dtype", None) not in [np.int32, np.bool_]
+            sanity_check
+            and getattr(child, "dtype", None) not in [np.int32, np.bool_]
             and getattr(child, "dtype", None) is not None
         ):
             raise TypeError(
@@ -396,6 +407,9 @@ class Tensor(
         self.tag_name: Optional[str] = None
         self.public_shape = public_shape
         self.public_dtype = public_dtype
+        # TODO: should move to DP Tensor level
+        self._min_vals = min_vals
+        self._max_vals = max_vals
 
     def tag(self, name: str) -> Tensor:
         self.tag_name = name

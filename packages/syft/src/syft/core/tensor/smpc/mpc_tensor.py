@@ -17,6 +17,7 @@ from typing import Union
 # third party
 import numpy as np
 import numpy.typing as npt
+from scipy.stats import shapiro
 import torch
 
 # relative
@@ -201,8 +202,6 @@ class MPCTensor(PassthroughTensor):
 
         for share in self.child:
             share.block
-
-        for share in self.child:
             new_share = share.publish(sigma=sigma)
             new_shares.append(new_share)
 
@@ -391,6 +390,9 @@ class MPCTensor(PassthroughTensor):
 
         # for now we need to convert the values coming back to int32
         # sometimes they are floats coming from DP
+        # relative
+        from .... import Tensor
+
         def convert_child_numpy_type(tensor: Any, np_type: type) -> Any:
             if isinstance(tensor, np.ndarray):
                 return np.array(tensor, np_type)
@@ -420,6 +422,7 @@ class MPCTensor(PassthroughTensor):
             local_shares.append(res)
 
         is_share_tensor = isinstance(local_shares[0], ShareTensor)
+        is_tensor = isinstance(local_shares[0], Tensor)
 
         if is_share_tensor:
             local_shares = [share.child for share in local_shares]
@@ -428,6 +431,23 @@ class MPCTensor(PassthroughTensor):
         op = ShareTensor.get_op(self.ring_size, "add")
         for share in local_shares[1:]:
             result = op(result, share)
+
+        # TODO: should modify min and max vals to DPTensor
+        if is_tensor:
+            min_vals = local_shares[0]._min_vals
+            max_vals = local_shares[0]._max_vals
+            result = result.child.child
+
+            shapiro_result = shapiro(result)  # type: ignore
+            if shapiro_result[1] > 0.05:
+                print(
+                    "You do not have sufficient privacy budget."
+                    + " Kindly request for additional privacy budget. \n"
+                )
+
+            if min_vals is not None and max_vals is not None:
+                result = result.clip(min_vals, max_vals)
+            return result
 
         if hasattr(result, "child") and isinstance(result.child, ShareTensor):
             return result.child.child
