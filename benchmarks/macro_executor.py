@@ -19,22 +19,28 @@ def get_git_revision_short_hash() -> str:
     )
 
 
-def run_suite() -> None:
+def run_suite(rept=True, sept=False) -> None:
     inf = np.iinfo(np.int32)
     runner = pyperf.Runner()
     runner.parse_args()
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
-    run_sept_suite(
-        runner=runner, rows=1000000, cols=10, lower_bound=inf.min, upper_bound=inf.max
-    )
-    run_rept_suite(
-        runner=runner,
-        rept_dimension=15,
-        rows=1000000,
-        cols=10,
-        lower_bound=inf.min,
-        upper_bound=inf.max,
-    )
+    if sept:
+        run_sept_suite(
+            runner=runner,
+            rows=1000000,
+            cols=10,
+            lower_bound=inf.min,
+            upper_bound=inf.max,
+        )
+    if rept:
+        run_rept_suite(
+            runner=runner,
+            rept_dimension=15,
+            rows=1000000,
+            cols=10,
+            lower_bound=inf.min,
+            upper_bound=inf.max,
+        )
 
 
-run_suite()
+run_suite(rept=True, sept=False)
