@@ -768,6 +768,11 @@ def create_launch_docker_cmd(
     print("  - TAIL: " + str(tail))
     print("\n")
 
+    version_string = GRID_SRC_VERSION[0]
+    if "release" in kwargs and kwargs["release"] == "development":
+        # force version to have -dev at the end in dev mode
+        version_string += "-dev"
+
     envs = {
         "RELEASE": "production",
         "COMPOSE_DOCKER_CLI_BUILD": 1,
@@ -778,7 +783,7 @@ def create_launch_docker_cmd(
         "DOMAIN_NAME": str(snake_name),
         "NODE_TYPE": str(node_type.input),
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
-        "VERSION": GRID_SRC_VERSION[0],
+        "VERSION": version_string,
         "VERSION_HASH": GRID_SRC_VERSION[1],
     }
 
