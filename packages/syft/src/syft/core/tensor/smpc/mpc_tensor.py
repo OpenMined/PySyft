@@ -381,7 +381,7 @@ class MPCTensor(PassthroughTensor):
 
         return self
 
-    def reconstruct(self) -> np.ndarray:
+    def reconstruct(self, delete_obj: bool = True) -> np.ndarray:
         # TODO: It might be that the resulted shares (if we run any computation) might
         # not be available at this point. We need to have this fail well with a nice
         # description as to which node wasn't able to be reconstructued.
@@ -417,7 +417,7 @@ class MPCTensor(PassthroughTensor):
 
         local_shares = []
         for share in self.child:
-            res = share.get()
+            res = share.get() if delete_obj else share.get_copy()
             res = convert_child_numpy_type(res, dtype)
             local_shares.append(res)
 
@@ -455,6 +455,7 @@ class MPCTensor(PassthroughTensor):
         return result
 
     get = reconstruct
+    get_copy = functools.partial(reconstruct, delete_obj=False)
 
     @staticmethod
     def hook_method(__self: MPCTensor, method_name: str) -> Callable[..., Any]:

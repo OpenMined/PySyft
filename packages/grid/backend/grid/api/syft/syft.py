@@ -13,6 +13,7 @@ from syft import deserialize
 from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
+from syft.core.common.message import SignedMessage
 from syft.core.node.domain.enums import RequestAPIFields
 from syft.util import get_tracer
 
@@ -60,7 +61,10 @@ async def syft_route(
     with tracer.start_as_current_span("POST syft_route"):
         data = await request.body()
         obj_msg = deserialize(blob=data, from_bytes=True)
-        if isinstance(obj_msg, SignedImmediateSyftMessageWithReply):
+        is_isr = isinstance(obj_msg, SignedImmediateSyftMessageWithReply) or isinstance(
+            obj_msg, SignedMessage
+        )
+        if is_isr:
             reply = node.recv_immediate_msg_with_reply(msg=obj_msg)
             r = Response(
                 serialize(obj=reply, to_bytes=True),

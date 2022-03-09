@@ -659,7 +659,9 @@ class Pointer(AbstractPointer):
         """
 
         # relative
-        from ..node.domain.service import RequestAnswerMessage
+        from ..node.common.node_service.request_answer.request_answer_messages import (
+            RequestAnswerMessage,
+        )
 
         msg = RequestAnswerMessage(
             request_id=request_id, address=self.client.address, reply_to=node.address
