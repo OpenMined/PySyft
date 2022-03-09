@@ -1,6 +1,7 @@
-FROM headscale/headscale:0.11
+FROM headscale/headscale:0.14.0-alpine
 
-RUN apt-get update && apt-get install wireguard-tools python3 python3-pip -y
+RUN apk add python3 py3-pip
+RUN pip install --upgrade pip
 
 WORKDIR /headscale
 COPY ./requirements.txt /headscale/requirements.txt
@@ -8,7 +9,7 @@ RUN --mount=type=cache,target=/root/.cache \
     pip install --user -r requirements.txt
 
 COPY ./headscale.sh /headscale/headscale.sh
-COPY ./config.yaml /headscale/config.yaml
+COPY ./config.yaml /etc/headscale/config.yaml
 COPY ./headscale.py /headscale/headscale.py
 
 ENV NETWORK_NAME="omnet"
