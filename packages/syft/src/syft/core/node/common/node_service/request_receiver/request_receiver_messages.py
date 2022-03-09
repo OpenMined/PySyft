@@ -47,6 +47,9 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         address: Address,
         requester_verify_key: VerifyKey,
         owner_address: Address,
+        status: Optional[str] = "",
+        request_type: Optional[str] = "",
+        date: Optional[str] = "",
         object_tags: Optional[List[str]] = None,
         object_type: str = "",
         request_description: str = "",
@@ -54,6 +57,11 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         owner_client_if_available: Optional[Client] = None,
         destination_node_if_available: Optional[Node] = None,
         timeout_secs: Optional[int] = None,
+        requested_budget: Optional[float] = 0.0,
+        current_budget: Optional[float] = 0.0,
+        user_name: Optional[str] = "",
+        user_role: Optional[str] = "",
+        user_email: Optional[str] = "",
     ):
         if request_id is None:
             request_id = UID()
@@ -70,6 +78,14 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         self.destination_node_if_available = destination_node_if_available
         self.timeout_secs = timeout_secs
         self._arrival_time: Optional[float] = None
+        self.status: Optional[str] = status
+        self.date: Optional[str] = date
+        self.request_type: Optional[str] = request_type
+        self.user_name: Optional[str] = user_name
+        self.user_email: Optional[str] = user_email
+        self.user_role: Optional[str] = user_role
+        self.requested_budget: float = requested_budget  # type: ignore
+        self.current_budget: float = current_budget  # type: ignore
 
     def accept(self) -> None:
         self.send_msg(accept=True)
@@ -135,6 +151,14 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
         msg = RequestMessage_PB()
         msg.object_tags.extend(self.object_tags)
         msg.object_type = self.object_type
+        msg.status = self.status
+        msg.request_type = self.request_type
+        msg.date = self.date
+        msg.user_name = self.user_name
+        msg.user_email = self.user_email
+        msg.user_role = self.user_role
+        msg.requested_budget = self.requested_budget if self.requested_budget else 0.0
+        msg.current_budget = self.current_budget if self.current_budget else 0.0
         msg.request_description = self.request_description
         msg.request_id.CopyFrom(serialize(obj=self.request_id))
         msg.target_address.CopyFrom(serialize(obj=self.address))
@@ -153,8 +177,16 @@ class RequestMessage(ImmediateSyftMessageWithoutReply):
     def _proto2object(proto: RequestMessage_PB) -> "RequestMessage":
         request_msg = RequestMessage(
             request_id=deserialize(blob=proto.request_id),
+            status=proto.status,
+            request_type=proto.request_type,
+            date=proto.date,
             object_tags=proto.object_tags,
             object_type=proto.object_type,
+            user_name=proto.user_name,
+            user_email=proto.user_email,
+            user_role=proto.user_role,
+            requested_budget=proto.requested_budget,
+            current_budget=proto.current_budget,
             request_description=proto.request_description,
             address=deserialize(blob=proto.target_address),
             object_id=deserialize(blob=proto.object_id),

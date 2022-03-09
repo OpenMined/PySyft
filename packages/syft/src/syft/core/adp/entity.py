@@ -17,9 +17,12 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 import names
 
 # relative
+from ...proto.core.adp.entity_pb2 import DataSubjectGroup as DataSubjectGroup_PB
 from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
 from ..common import UID
+from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
+from ..common.serde.serialize import _serialize as serialize
 
 
 @serializable()
@@ -113,25 +116,28 @@ class Entity:
         return Entity_PB
 
 
+@serializable()
 class DataSubjectGroup:
     """Data Subject is what we have been calling an 'ENTITY' all along ..."""
 
-    def __init__(self, list_of_entities: Optional[Union[list, set]] = None):
+    def __init__(
+        self,
+        list_of_entities: Optional[Union[list, set, Entity]] = None,
+        id: Optional[UID] = None,
+    ):
         self.entity_set: set = set()
         # Ensure each entity being tracked is unique
-        if isinstance(list_of_entities, list):
-            self.entity_set = self.entity_set.union(set(list_of_entities))
-        elif isinstance(list_of_entities, set):
+        if isinstance(list_of_entities, (list, set)):
             self.entity_set = self.entity_set.union(list_of_entities)
         elif isinstance(list_of_entities, Entity):
             self.entity_set.add(list_of_entities)  # type: ignore
-        elif not list_of_entities:  # Don't need to do anything if is NoneType
+        elif list_of_entities is None:  # Don't need to do anything if is NoneType
             pass
         else:
             raise Exception(
                 f"Cannot initialize DSG with {type(list_of_entities)} - please try list or set instead."
             )
-        self.id = UID()
+        self.id = id if id else UID()
 
     def __hash__(self) -> int:
         return hash(tuple(sorted(self.entity_set)))
@@ -143,10 +149,8 @@ class DataSubjectGroup:
         return item in self.entity_set
 
     def to_string(self) -> str:
-        output_string = ""
-        for item in self.entity_set:
-            output_string += item.to_string() + ";"
-        return output_string[:-1]
+        output_string = ";".join(item.to_string() for item in self.entity_set)
+        return output_string
 
     @staticmethod
     def from_string(blob: str) -> DataSubjectGroup:
@@ -155,7 +159,7 @@ class DataSubjectGroup:
         entity_set = set()
         for entity_blob in entity_list:
             entity_set.add(Entity.from_string(entity_blob))
-        return DataSubjectGroup(list[entity_set])  # type: ignore
+        return DataSubjectGroup(entity_set)  # type: ignore
 
     def __add__(
         self, other: Union[DataSubjectGroup, Entity, int, float]
@@ -180,3 +184,22 @@ class DataSubjectGroup:
 
     def __repr__(self) -> str:
         return f"DSG{[i.__repr__() for i in self.entity_set]}"
+
+    # converts entity into a protobuf object
+    def _object2proto(self) -> DataSubjectGroup_PB:
+        return DataSubjectGroup_PB(
+            id=self.id._object2proto(), entities=[serialize(x) for x in self.entity_set]
+        )
+
+    # converts a generated protobuf object into an entity
+    @staticmethod
+    def _proto2object(proto: DataSubjectGroup_PB) -> DataSubjectGroup:
+        return DataSubjectGroup(
+            list_of_entities=[deserialize(x) for x in proto.entities],
+            id=UID._proto2object(proto.id),
+        )
+
+    # returns the type of generated protobuf object
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return DataSubjectGroup_PB

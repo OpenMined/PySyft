@@ -2,7 +2,7 @@ FROM python:3.9.9-slim as build
 
 RUN --mount=type=cache,target=/var/cache/apt \
   apt-get update && \
-  apt-get install -y --no-install-recommends curl python3-dev gcc make
+  apt-get install -y --no-install-recommends curl python3-dev gcc make build-essential
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
@@ -17,7 +17,9 @@ RUN if [ $(uname -m) = "x86_64" ]; then \
 
 # apple m1 build PyNaCl for aarch64
 RUN if [ $(uname -m) != "x86_64" ]; then \
-  pip install --user PyNaCl; \
+  pip install --user numpy==1.22.2; \
+  pip install --user primesieve==2.3.0 --force-reinstall --no-cache-dir; \
+  python -c "from primesieve.numpy._numpy import primes"; \
   pip install --user torch==1.10.0 -f https://download.pytorch.org/whl/torch_stable.html; \
   fi
 
@@ -39,10 +41,12 @@ COPY grid/backend/docker-scripts/start.sh /start.sh
 COPY grid/backend/docker-scripts/gunicorn_conf.py /gunicorn_conf.py
 COPY grid/backend/docker-scripts/start-reload.sh /start-reload.sh
 COPY grid/backend/worker-start.sh /worker-start.sh
+COPY grid/backend/worker-start-reload.sh /worker-start-reload.sh
 
 RUN chmod +x /start.sh
 RUN chmod +x /start-reload.sh
 RUN chmod +x /worker-start.sh
+RUN chmod +x /worker-start-reload.sh
 
 COPY --from=build /root/.local /root/.local
 COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit

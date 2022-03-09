@@ -7,3 +7,8 @@ message Entity {
   string name = 1;
   syft.core.common.UID id = 2;
 }
+
+message DataSubjectGroup {
+  syft.core.common.UID id = 1;
+  repeated Entity entities = 2;
+}

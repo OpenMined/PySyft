@@ -39,7 +39,7 @@ The following operating systems are currently supported: Linux, Windows, MacOS. 
 Setting up virtual environment using Python 3.9
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-1. Ensure using **Python3.7+**, which should be first installed in your system. To easily handle further dependencies, we suggest using conda:
+1. Ensure using **Python3.8+**, which should be first installed in your system. To easily handle further dependencies, we suggest using conda:
 
    a. Install conda `following these instructions <https://docs.anaconda.com/anaconda/install/index.html/>`_  depending on your OS.
 
@@ -178,7 +178,7 @@ Local deployment using Docker
 
    .. code-block:: bash
 
-      $ pip install hagrid==0.1.7
+      $ pip install hagrid
 
 2. Launch a Domain Node:
 
@@ -199,7 +199,7 @@ Local deployment using Docker
          - NAME: mystifying_wolf
          - TAG: 035c3b6a378a50f78cd74fc641d863c7
          - PORT: 8081
-         - DOCKER: v2.0.0-beta.5
+         - DOCKER: v2.2.3
 
    Optionally, you can provide here additional args to use a certain repository and branch, as:
 

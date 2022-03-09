@@ -36,7 +36,7 @@ def _get_triples(
     a_shape: Tuple[int],
     b_shape: Tuple[int],
     nr_instances: int = 1,
-    ring_size: int = 2 ** 32,
+    ring_size: int = 2**32,
     **kwargs: Dict[Any, Any],
 ) -> Tuple[Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]]:
     """Get triples.

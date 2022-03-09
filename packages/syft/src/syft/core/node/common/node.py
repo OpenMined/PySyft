@@ -53,7 +53,7 @@ from .action.exception_action import ExceptionMessage
 from .action.exception_action import UnknownPrivateException
 from .client import Client
 from .metadata import Metadata
-from .node_manager.bin_obj_manager import BinObjectManager
+from .node_manager.redis_store import RedisStore
 from .node_manager.setup_manager import SetupManager
 from .node_service.auth import AuthorizationException
 from .node_service.child_node_lifecycle.child_node_lifecycle_service import (
@@ -128,6 +128,7 @@ class Node(AbstractNode):
         verify_key: Optional[VerifyKey] = None,
         TableBase: Any = None,
         db_engine: Any = None,
+        store_type: type = RedisStore,
     ):
 
         # The node has a name - it exists purely to help the
@@ -166,7 +167,7 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        self.store = BinObjectManager(db=self.db_engine)
+        self.store = store_type(db=self.db_engine)
         self.setup = SetupManager(database=self.db_engine)
 
         # We need to register all the services once a node is created
@@ -362,6 +363,7 @@ class Node(AbstractNode):
             id=self.id,
             node=self.target_id,
             node_type=str(type(self).__name__),
+            version=str(sy.__version__),
         )
 
     def add_peer_routes(self, peer: NodeRow) -> None:
@@ -407,12 +409,12 @@ class Node(AbstractNode):
             if host_or_ip not in node_id_dict[vpn_key]:
                 # connect and save the client
                 grid_url = GridURL.from_url(host_or_ip)
-                client = sy.connect(url=grid_url.with_path("/api/v1"))
+                client = sy.connect(url=grid_url.with_path("/api/v1"), timeout=0.3)
                 node_id_dict[vpn_key][host_or_ip] = client
 
             self.peer_route_clients[node_id] = node_id_dict
         except Exception as e:
-            error(
+            debug(
                 f"Failed to add_route {node_id} {node_name} {host_or_ip} {is_vpn}. {e}"
             )
 

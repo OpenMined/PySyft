@@ -79,7 +79,7 @@ class GrammarTerm:
         type: str,
         name: str,
         default: Optional[Union[str, Callable]] = None,
-        options: TypeList = [],
+        options: Optional[TypeList] = None,
         example: Optional[str] = None,
         **kwargs: TypeDict[str, Any],
     ) -> None:
@@ -88,7 +88,7 @@ class GrammarTerm:
         self.type = type
         self.name = name
         self.default = default
-        self.options = options
+        self.options = options if options is not None else []
         self.example = example
 
     @property
@@ -288,14 +288,12 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
     found_domain_or_network = False
     preposition_position = 10000
     for i, arg in enumerate(args):
-
         if "domain" in arg:
             found_domain_or_network = True
-
         elif "network" in arg:
             found_domain_or_network = True
 
-        if "to" in arg or "from" in arg:
+        if arg.strip() in ["to", "from"]:
             if i < preposition_position:
                 preposition_position = i
 
@@ -303,7 +301,6 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
 
     # Default to domain if it's not provided
     if not found_domain_or_network:
-
         if preposition_position != 10000:
             _args.insert(preposition_position, "domain")
             preposition_position += 1
@@ -320,7 +317,6 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
 
     # if there are prepositions then combine the words in the name if there are multiple
     elif preposition_position != 10000:
-
         name = ""
         for i in range(preposition_position - 1):
             name += _args[i] + " "
@@ -339,7 +335,6 @@ def launch_shorthand_support(args: TypeTuple) -> TypeTuple:
 
 
 def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
-
     # if the command is a launch, check if any shorthands were employed
     if verb.command == "launch":
         args = launch_shorthand_support(args=args)
@@ -360,7 +355,6 @@ def parse_grammar(args: TypeTuple, verb: GrammarVerb) -> TypeList[GrammarTerm]:
             term_settings = verb.full_sentence[i]
 
             try:
-
                 term = term_settings["klass"](**term_settings)
                 term.parse_input(arg)
                 terms.append(term)

@@ -14,6 +14,9 @@ from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 import requests
 
+# syft absolute
+import syft as sy
+
 # relative
 from .. import GridURL
 from ...core.io.connection import ClientConnection
@@ -31,18 +34,24 @@ DEFAULT_PYGRID_ADDRESS = f"http://127.0.0.1:{DEFAULT_PYGRID_PORT}"
 def connect(
     url: Union[str, GridURL] = DEFAULT_PYGRID_ADDRESS,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
-    credentials: Dict = {},
+    credentials: Optional[Dict] = None,
     user_key: Optional[SigningKey] = None,
+    timeout: Optional[float] = None,
 ) -> Client:
     # Use Server metadata
     # to build client route
     conn = conn_type(url=GridURL.from_url(url))  # type: ignore
 
+    # get metadata and check for https redirect so that login is sent over TLS
+    metadata = conn._get_metadata(timeout=timeout)  # type: ignore
+
+    credentials = credentials if credentials is not None else {}
+
     if credentials:
         metadata, _user_key = conn.login(credentials=credentials)  # type: ignore
         _user_key = SigningKey(_user_key.encode(), encoder=HexEncoder)
     else:
-        metadata = conn._get_metadata()  # type: ignore
+
         if not user_key:
             _user_key = SigningKey.generate()
         else:
@@ -64,7 +73,12 @@ def connect(
     # Create a new Solo Route using the selected connection type
     route = SoloRoute(destination=spec_location, connection=conn)
 
-    kwargs = {"name": name, "routes": [route], "signing_key": _user_key}
+    kwargs = {
+        "name": name,
+        "routes": [route],
+        "signing_key": _user_key,
+        "version": metadata.version,
+    }
 
     if client_type is NetworkClient:
         kwargs["network"] = spec_location
@@ -124,7 +138,7 @@ def login(
     grid_url = grid_url.with_path("/api/v1")
 
     if verbose:
-        sys.stdout.write("Connecting to " + str(url) + "...")
+        sys.stdout.write("\rConnecting to " + str(url) + "...")
 
     if email is None or password is None:
         credentials = {}
@@ -147,6 +161,15 @@ def login(
         print("done!")
     else:
         print("Logging into: ...", str(node.name), " Done...")
+
+    if sy.__version__ != node.version:
+        print(
+            "\n**Warning**: The syft version on your system and the node are different."
+        )
+        print(
+            f"Version on your system: {sy.__version__}\nVersion on the node: {node.version}"
+        )
+        print()
 
     return node
 

@@ -1,6 +1,6 @@
 {
   "name": "pygrid-ui",
-  "version": "0.6.0",
+  "version": "0.7.0-beta.3",
   "private": true,
   "scripts": {
     "dev": "next dev",
@@ -14,9 +14,8 @@
     "export": "next export",
     "build:tailwind": "postcss src/styles/globals.css -o src/styles/tailwind.output.css",
     "watch:tailwind": "postcss --verbose --watch src/styles/globals.css -o src/styles/tailwind.output.css",
-    "cy:open": "cypress open",
-    "cy:install": "cypress install",
-    "cy:run": "cypress run",
+    "cypress:open": "export NEXT_PUBLIC_HOST=\"http://localhost:${HTTP_PORT-8081}\" && cypress open",
+    "cypress:run": "export NEXT_PUBLIC_HOST=\"http://localhost:${HTTP_PORT-8081}\" && cypress run",
     "format": "pretty-quick --staged"
   },
   "husky": {
@@ -37,7 +36,7 @@
     "ky-universal": "^0.9.1",
     "lodash.clonedeep": "^4.5.0",
     "lodash.get": "^4.4.2",
-    "next": "11.1.1",
+    "next": "12.1.0",
     "nookies": "^2.5.2",
     "react": "17.0.2",
     "react-animate-height": "^2.0.23",

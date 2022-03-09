@@ -98,6 +98,8 @@ class Settings(BaseSettings):
 
     OPEN_REGISTRATION: bool = True
 
+    DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
+
     class Config:
         case_sensitive = True
 

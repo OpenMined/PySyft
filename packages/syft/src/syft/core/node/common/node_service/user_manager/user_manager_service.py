@@ -256,11 +256,13 @@ def get_all_users_msg(
             # Remove private key
             del _user_json["private_key"]
 
-            _user_json["budget_spent"] = node.acc.user_budget(
+            # Remaining Budget
+            # TODO:
+            # Rename it from budget_spent to remaining budget
+            _user_json["budget_spent"] = node.acc.get_remaining_budget(  # type: ignore
                 user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
-                returned_epsilon_is_private=True,
+                returned_epsilon_is_private=False,
             )
-
             _msg.append(_user_json)
 
     return GetUsersResponse(

@@ -1,0 +1,98 @@
+version: "3.8"
+services:
+  tailscale:
+    ports:
+      - "8080"
+
+  proxy:
+    command:
+      - "--providers.docker"
+      - "--providers.docker.exposedbydefault=false"
+      - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
+      - "--entrypoints.web.address=:81"
+      - "--entrypoints.vpn.address=:80"
+
+      # Enable the access log, with HTTP requests
+      - "--accesslog"
+      # Enable the Traefik log, for configurations and errors
+      - "--log"
+      # Enable the Dashboard and API
+      - --api # admin panel
+      - --api.insecure=true # admin panel no password
+
+  frontend:
+    build:
+      target: "grid-ui-development"
+    volumes:
+      - ./frontend/:/app
+
+  db:
+    ports:
+      - "5432"
+
+  redis:
+    ports:
+      - "6379"
+
+  queue:
+    image: rabbitmq:3-management
+    ports:
+      - "5672"
+      - "15672"
+
+  backend:
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+      # - ./profile:/tmp/profile
+    command: /start-reload.sh
+    # command: "sleep 99999"
+    environment:
+      - PROFILE=true
+      - JAEGER_HOST=docker-host
+      - JAEGER_PORT=6831
+
+  backend_stream:
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+      # - ./profile:/tmp/profile
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
+    # command: "sleep 99999"
+    environment:
+      - PROFILE=true
+      - JAEGER_HOST=docker-host
+      - JAEGER_PORT=6831
+
+  celeryworker:
+    volumes:
+      - ./backend/grid:/app/grid
+      - ./backend/alembic:/app/alembic
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+      # - ./profile:/tmp/profile
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start-reload.sh"
+    # command: "sleep 99999"
+    environment:
+      - PROFILE=true
+      - JAEGER_HOST=docker-host
+      - JAEGER_PORT=6831
+
+  jaeger:
+    image: jaegertracing/all-in-one:1.30
+    environment:
+      - COLLECTOR_ZIPKIN_HOST_PORT=9411
+    ports:
+      - "5775:5775/udp"
+      - "6831:6831/udp"
+      - "6832:6832/udp"
+      - "5778:5778"
+      - "16686:16686"
+      - "14250:14250"
+      - "14268:14268"
+      - "14269:14269"
+      - "9411:9411"

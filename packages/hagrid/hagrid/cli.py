@@ -150,7 +150,36 @@ def clean(location: str) -> None:
     type=str,
 )
 @click.option("--tls", is_flag=True, help="Launch with TLS configuration")
-@click.option("--test", is_flag=True, help="Launch with Test configuration")
+@click.option("--test", is_flag=True, help="Launch with test configuration")
+@click.option("--dev", is_flag=True, help="Shortcut for development release")
+@click.option(
+    "--release",
+    default="production",
+    required=False,
+    type=click.Choice(["production", "development"], case_sensitive=False),
+    help="Optional: choose between production and development release",
+)
+@click.option(
+    "--cert_store_path",
+    default="/home/om/certs",
+    required=False,
+    type=str,
+    help="Optional: remote path to store and load TLS cert and key",
+)
+@click.option(
+    "--upload_tls_cert",
+    default="",
+    required=False,
+    type=str,
+    help="Optional: local path to TLS cert to upload and store at --cert_store_path",
+)
+@click.option(
+    "--upload_tls_key",
+    default="",
+    required=False,
+    type=str,
+    help="Optional: local path to TLS private key to upload and store at --cert_store_path",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -185,15 +214,19 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 def hide_password(cmd: str) -> str:
-    matcher = r"ansible_ssh_pass='(.+?)'"
-    passwords = re.findall(matcher, cmd)
-    if len(passwords) > 0:
-        password = passwords[0]
-        stars = "*" * 4
-        cmd = cmd.replace(
-            f"ansible_ssh_pass='{password}'", f"ansible_ssh_pass='{stars}'"
-        )
-    return cmd
+    try:
+        matcher = r"ansible_ssh_pass='(.+?)'"
+        passwords = re.findall(matcher, cmd)
+        if len(passwords) > 0:
+            password = passwords[0]
+            stars = "*" * 4
+            cmd = cmd.replace(
+                f"ansible_ssh_pass='{password}'", f"ansible_ssh_pass='{stars}'"
+            )
+        return cmd
+    except Exception as e:
+        print("Failed to hide password.")
+        raise e
 
 
 class QuestionInputError(Exception):
@@ -212,14 +245,14 @@ class Question:
         kind: str,
         default: Optional[str] = None,
         cache: bool = False,
-        options: TypeList[str] = [],
+        options: Optional[TypeList[str]] = None,
     ) -> None:
         self.var_name = var_name
         self.question = question
         self.default = default
         self.kind = kind
         self.cache = cache
-        self.options = options
+        self.options = options if options is not None else []
 
     def validate(self, value: str) -> str:
         value = value.strip()
@@ -325,6 +358,19 @@ def login_azure() -> bool:
     return False
 
 
+def check_azure_cli_installed() -> bool:
+    try:
+        subprocess.call(["az"])
+        print("Azure cli installed!")
+    except FileNotFoundError:
+        msg = "\nYou don't appear to have the Azure CLI installed!!! \n\n\
+Please install it and then retry your command.\
+\n\nInstallation Instructions: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli\n"
+        raise FileNotFoundError(msg)
+
+    return True
+
+
 def str_to_bool(bool_str: Optional[str]) -> bool:
     result = False
     bool_str = str(bool_str).lower()
@@ -366,6 +412,36 @@ def create_launch_cmd(
     if "tail" in kwargs and not str_to_bool(kwargs["tail"]):
         tail = False
 
+    parsed_kwargs = {}
+    build = True
+    if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
+        build = False
+    parsed_kwargs["build"] = build
+
+    headless = False
+    if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
+        headless = True
+    parsed_kwargs["headless"] = headless
+
+    parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
+    parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
+    parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
+
+    parsed_kwargs["release"] = "production"
+    if "release" in kwargs and kwargs["release"] != "production":
+        parsed_kwargs["release"] = kwargs["release"]
+
+    # if we use --dev override it
+    if parsed_kwargs["dev"] is True:
+        parsed_kwargs["release"] = "development"
+
+    if "cert_store_path" in kwargs:
+        parsed_kwargs["cert_store_path"] = kwargs["cert_store_path"]
+    if "upload_tls_cert" in kwargs:
+        parsed_kwargs["upload_tls_cert"] = kwargs["upload_tls_cert"]
+    if "upload_tls_key" in kwargs:
+        parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
+
     if host in ["docker"]:
 
         if not ignore_docker_version_check:
@@ -374,19 +450,6 @@ def create_launch_cmd(
             version = "n/a"
 
         if version:
-            parsed_kwargs = {}
-            build = True
-            if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
-                build = False
-            parsed_kwargs["build"] = build
-
-            headless = False
-            if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
-                headless = True
-            parsed_kwargs["headless"] = headless
-            parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
-            parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
-
             # If the user is using docker desktop (OSX/Windows), check to make sure there's enough RAM.
             # If the user is using Linux this isn't an issue because Docker scales to the avaialble RAM,
             # but on Docker Desktop it defaults to 2GB which isn't enough.
@@ -435,6 +498,8 @@ def create_launch_cmd(
                 f"Launching a VM locally requires: {' '.join(errors)}"
             )
     elif host in ["azure"]:
+
+        check_azure_cli_installed()
 
         while not check_azure_authed():
             print("You need to log into Azure")
@@ -555,20 +620,26 @@ def create_launch_cmd(
                 branch=branch,
                 auth=auth,
                 ansible_extras=kwargs["ansible_extras"],
+                kwargs=parsed_kwargs,
             )
         else:
             errors = []
             if not DEPENDENCIES["ansible-playbook"]:
                 errors.append("ansible-playbook")
-            raise MissingDependency(
-                f"Launching a Cloud VM requires: {' '.join(errors)}"
-            )
+            msg = "\nERROR!!! MISSING DEPENDENCY!!!"
+            msg += f"\n\nLaunching a Cloud VM requires: {' '.join(errors)}"
+            msg += "\n\nPlease follow installation instructions: "
+            msg += "https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#"
+            msg += "\n\nNote: we've found the 'conda' based installation instructions to work best"
+            msg += " (e.g. something lke 'conda install -c conda-forge ansible'). "
+            msg += "The pip based instructions seem to be a bit buggy if you're using a conda environment"
+            msg += "\n"
+            raise MissingDependency(msg)
     elif host in ["aws", "gcp"]:
         print("Coming soon.")
         return ""
     else:
         if DEPENDENCIES["ansible-playbook"]:
-            parsed_kwargs = {}
             if host != "localhost":
                 parsed_kwargs["username"] = ask(
                     question=Question(
@@ -670,6 +741,7 @@ def create_launch_docker_cmd(
     kwargs: TypeDict[str, Any],
     tail: bool = True,
 ) -> str:
+
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
@@ -697,6 +769,7 @@ def create_launch_docker_cmd(
     print("\n")
 
     envs = {
+        "RELEASE": "production",
         "COMPOSE_DOCKER_CLI_BUILD": 1,
         "DOCKER_BUILDKIT": 1,
         "HTTP_PORT": int(host_term.free_port),
@@ -709,8 +782,14 @@ def create_launch_docker_cmd(
         "VERSION_HASH": GRID_SRC_VERSION[1],
     }
 
-    if kwargs["test"] is True:
+    if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
+        envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
+
+    if "test" in kwargs and kwargs["test"] is True:
         envs["IGNORE_TLS_ERRORS"] = "True"
+
+    if "release" in kwargs:
+        envs["RELEASE"] = kwargs["release"]
 
     cmd = ""
     args = []
@@ -739,9 +818,11 @@ def create_launch_docker_cmd(
         cmd += " --profile frontend"
 
     cmd += " --file docker-compose.yml"
-    if kwargs["tls"] is True:
+    if "release" in kwargs and kwargs["release"] == "development":
+        cmd += " --file docker-compose.dev.yml"
+    if "tls" in kwargs and kwargs["tls"] is True:
         cmd += " --file docker-compose.tls.yml"
-    if kwargs["test"] is True:
+    if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
     cmd += " up"
 
@@ -860,11 +941,13 @@ def make_vm_azure(
     return host_ip
 
 
-def open_port_vm_azure(resource_group: str, node_name: str, port: int) -> None:
+def open_port_vm_azure(
+    resource_group: str, node_name: str, port_name: str, port: int, priority: int
+) -> None:
     cmd = f"az network nsg rule create --resource-group {resource_group} "
-    cmd += f"--nsg-name {node_name}NSG --name HTTP --destination-port-ranges {port} --priority 500"
+    cmd += f"--nsg-name {node_name}NSG --name {port_name} --destination-port-ranges {port} --priority {priority}"
     try:
-        print(f"Creating ngs rule.\nRunning: {cmd}")
+        print(f"Creating {port_name} {port} ngs rule.\nRunning: {cmd}")
         output = subprocess.check_call(cmd, shell=True)
         print("output", output)
         pass
@@ -883,6 +966,7 @@ def create_launch_azure_cmd(
     branch: str,
     auth: AuthCredentials,
     ansible_extras: str,
+    kwargs: TypeDict[str, Any],
 ) -> str:
     # resource group
     get_or_make_resource_group(resource_group=resource_group, location=location)
@@ -893,7 +977,22 @@ def create_launch_azure_cmd(
     host_ip = make_vm_azure(snake_name, resource_group, username, key_path, size)
 
     # open port 80
-    open_port_vm_azure(resource_group=resource_group, node_name=snake_name, port=80)
+    open_port_vm_azure(
+        resource_group=resource_group,
+        node_name=snake_name,
+        port_name="HTTP",
+        port=80,
+        priority=500,
+    )
+
+    # open port 443
+    open_port_vm_azure(
+        resource_group=resource_group,
+        node_name=snake_name,
+        port_name="HTTPS",
+        port=443,
+        priority=501,
+    )
 
     # get old host
     host_term = verb.get_named_term_hostgrammar(name="host")
@@ -902,12 +1001,13 @@ def create_launch_azure_cmd(
     host_term.parse_input(host_ip)
     verb.set_named_term_type(name="host", new_term=host_term)
 
-    kwargs = {
+    extra_kwargs = {
         "repo": repo,
         "branch": branch,
         "auth_type": "key",
         "ansible_extras": ansible_extras,
     }
+    kwargs.update(extra_kwargs)
 
     # provision
     return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
@@ -916,72 +1016,103 @@ def create_launch_azure_cmd(
 def create_launch_custom_cmd(
     verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
 ) -> str:
-    host_term = verb.get_named_term_hostgrammar(name="host")
-    node_name = verb.get_named_term_type(name="node_name")
-    node_type = verb.get_named_term_type(name="node_type")
-    # source_term = verb.get_named_term_type(name="source")
+    try:
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        node_name = verb.get_named_term_type(name="node_name")
+        node_type = verb.get_named_term_type(name="node_type")
+        # source_term = verb.get_named_term_type(name="source")
 
-    snake_name = str(node_name.snake_input)
+        snake_name = str(node_name.snake_input)
 
-    if ART:
-        hagrid()
+        if ART:
+            hagrid()
 
-    print(
-        "Launching a "
-        + str(node_type.input)
-        + " PyGrid node on port "
-        + str(host_term.port)
-        + "!\n"
-    )
+        print(
+            "Launching a "
+            + str(node_type.input)
+            + " PyGrid node on port "
+            + str(host_term.port)
+            + "!\n"
+        )
 
-    print("  - TYPE: " + str(node_type.input))
-    print("  - NAME: " + str(snake_name))
-    print("  - PORT: " + str(host_term.port))
-    print("\n")
+        print("  - TYPE: " + str(node_type.input))
+        print("  - NAME: " + str(snake_name))
+        print("  - PORT: " + str(host_term.port))
+        print("\n")
 
-    playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
-    ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
-    auth = cast(AuthCredentials, auth)
+        playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
+        ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+        auth = cast(AuthCredentials, auth)
 
-    if not os.path.exists(playbook_path):
-        print(f"Can't find playbook site.yml at: {playbook_path}")
-    cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook "
-    if host_term.host == "localhost":
-        cmd += "--connection=local "
-    cmd += f"-i {host_term.host}, {playbook_path}"
-    if host_term.host != "localhost" and kwargs["auth_type"] == "key":
-        cmd += f" --private-key {auth.key_path} --user {auth.username}"
-    elif host_term.host != "localhost" and kwargs["auth_type"] == "password":
-        cmd += f" -c paramiko --user {auth.username}"
+        if not os.path.exists(playbook_path):
+            print(f"Can't find playbook site.yml at: {playbook_path}")
+        cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook "
+        if host_term.host == "localhost":
+            cmd += "--connection=local "
+        cmd += f"-i {host_term.host}, {playbook_path}"
+        if host_term.host != "localhost" and kwargs["auth_type"] == "key":
+            cmd += f" --private-key {auth.key_path} --user {auth.username}"
+        elif host_term.host != "localhost" and kwargs["auth_type"] == "password":
+            cmd += f" -c paramiko --user {auth.username}"
 
-    ANSIBLE_ARGS = {
-        "node_type": node_type.input,
-        "node_name": snake_name,
-        "github_repo": kwargs["repo"],
-        "repo_branch": kwargs["branch"],
-    }
+        ANSIBLE_ARGS = {
+            "node_type": node_type.input,
+            "node_name": snake_name,
+            "github_repo": kwargs["repo"],
+            "repo_branch": kwargs["branch"],
+        }
 
-    if host_term.host != "localhost" and kwargs["auth_type"] == "password":
-        ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]
+        if host_term.host != "localhost" and kwargs["auth_type"] == "password":
+            ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]
 
-    if host_term.host == "localhost":
-        ANSIBLE_ARGS["local"] = "true"
+        if host_term.host == "localhost":
+            ANSIBLE_ARGS["local"] = "true"
 
-    if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
-        options = kwargs["ansible_extras"].split(",")
-        for option in options:
-            parts = option.strip().split("=")
-            if len(parts) == 2:
-                ANSIBLE_ARGS[parts[0]] = parts[1]
+        if kwargs["tls"] is True:
+            ANSIBLE_ARGS["tls"] = "true"
 
-    # if mode == "deploy":
-    #     ANSIBLE_ARGS["deploy"] = "true"
+        if "release" in kwargs:
+            ANSIBLE_ARGS["release"] = kwargs["release"]
 
-    for k, v in ANSIBLE_ARGS.items():
-        cmd += f" -e \"{k}='{v}'\""
+        if (
+            kwargs["tls"] is True
+            and "cert_store_path" in kwargs
+            and len(kwargs["cert_store_path"]) > 0
+        ):
+            ANSIBLE_ARGS["cert_store_path"] = kwargs["cert_store_path"]
 
-    cmd = "cd " + GRID_SRC_PATH + ";" + cmd
-    return cmd
+        if (
+            kwargs["tls"] is True
+            and "upload_tls_key" in kwargs
+            and len(kwargs["upload_tls_key"]) > 0
+        ):
+            ANSIBLE_ARGS["upload_tls_key"] = kwargs["upload_tls_key"]
+
+        if (
+            kwargs["tls"] is True
+            and "upload_tls_cert" in kwargs
+            and len(kwargs["upload_tls_cert"]) > 0
+        ):
+            ANSIBLE_ARGS["upload_tls_cert"] = kwargs["upload_tls_cert"]
+
+        if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
+            options = kwargs["ansible_extras"].split(",")
+            for option in options:
+                parts = option.strip().split("=")
+                if len(parts) == 2:
+                    ANSIBLE_ARGS[parts[0]] = parts[1]
+
+        # if mode == "deploy":
+        #     ANSIBLE_ARGS["deploy"] = "true"
+
+        for k, v in ANSIBLE_ARGS.items():
+            cmd += f" -e \"{k}='{v}'\""
+
+        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+        return cmd
+    except Exception as e:
+        print(f"Failed to construct custom deployment cmd: {cmd}. {e}")
+        raise e
 
 
 def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
