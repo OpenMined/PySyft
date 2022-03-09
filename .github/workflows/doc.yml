@@ -1,0 +1,49 @@
+name: Deploy Syft Documentation
+on:
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Deploy Syft Documentation"
+        required: false
+  pull_request:
+    branches: [dev]
+    paths: [docs/]
+  push:
+    branches: [dev]
+    paths: [docs/]
+
+jobs:
+  deploy-syft-documentation:
+    strategy:
+      matrix:
+        python-version: [3.8]
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v2
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+    - name: Install dependencies
+      run: |
+        pip install --upgrade pip
+        pip install ipython==8.1.0
+        pip install sphinx-panels==0.6.0
+        pip install sphinx-copybutton==0.4.0
+        pip install sphinx-autoapi==1.8.4
+        pip install sphinx-code-include==1.1.1
+        pip install sphinx==4.3.0
+        pip install pydata-sphinx-theme==0.7.2
+
+    - name: Build the docs
+      run: |
+        make html
+      working-directory: docs/
+
+    - name: Deploy the docs
+      uses: s0/git-publish-subdir-action@develop
+      env:
+        REPO: self
+        BRANCH: gh-pages
+        FOLDER: docs/build/html
+        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
