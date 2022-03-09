@@ -44,7 +44,7 @@ class EntityList:
     def __len__(self) -> int:
         return len(self.entities_indexed)
 
-    def __eq__(self, other: Any) -> None:
+    def __eq__(self, other: Any) -> bool:
         if isinstance(other, EntityList):
             if (
                 self.entities_indexed == other.entities_indexed

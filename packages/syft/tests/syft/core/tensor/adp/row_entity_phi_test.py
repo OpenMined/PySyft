@@ -233,8 +233,8 @@ def test_eq_values(
     reference_data: np.ndarray,
 ) -> None:
     """Test REPTs belonging to the same owner, with different data"""
-    tensor1 = REPT(rows=row_data_ishan)
-    tensor2 = REPT(rows=row_data_ishan) + 1
+    tensor1 = REPT.from_rows(rows=row_data_ishan)
+    tensor2 = REPT.from_rows(rows=row_data_ishan) + 1
 
     assert tensor2.shape == tensor1.shape, "Tensors not initialized properly"
     # assert tensor2 != tensor1, "Error: REPT + 1 == REPT"  # TODO: Investigate RecursionError Here

@@ -7,18 +7,14 @@
 from __future__ import annotations
 
 # stdlib
-from html import entities
 from typing import Any
 from typing import Dict
-from typing import List
 from typing import Optional
-from typing import Tuple
 from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import names
-import numpy as np
 
 # relative
 from ...proto.core.adp.entity_pb2 import DataSubjectGroup as DataSubjectGroup_PB

@@ -25,8 +25,8 @@ def test_string_entity() -> None:
 def test_list_of_strings_entity() -> None:
     x = sy.Tensor([1, 2, 3, 4])
     out = x.private(min_val=0, max_val=5, entities=["bob", "bob", "bob", "alice"])
-    assert out.child.entities[0][0].name == "bob"
-    assert out.child.entities[-1][0].name == "alice"
+    assert out.child.entities[0] == "bob"
+    assert out.child.entities[-1] == "alice"
 
 
 def test_class_entity() -> None:
@@ -42,5 +42,5 @@ def test_list_of_entity_objs() -> None:
         max_val=5,
         entities=[Entity("bob"), Entity("bob"), Entity("bob"), Entity("alice")],
     )
-    assert out.child.entities[0][0].name == "bob"
-    assert out.child.entities[-1][0].name == "alice"
+    assert out.child.entities[0].name == "bob"
+    assert out.child.entities[-1].name == "alice"

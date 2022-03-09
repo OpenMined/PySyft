@@ -551,7 +551,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         self.entity_asset = (
             (
                 self.entity.name,
-                self.entity.bytes_value,
             )
             if isinstance(entity, Entity)
             else None

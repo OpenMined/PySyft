@@ -10,7 +10,7 @@ struct REPT {
   maxValsMetadata @6 :TensorMetadata;
   entitiesIndexedMetadata @7 :TensorMetadata;
   oneHotLookup @8 :List(Text);
-  
+
   struct TensorMetadata {
     dtype @0 :Text;
     decompressedSize @1 :UInt64;

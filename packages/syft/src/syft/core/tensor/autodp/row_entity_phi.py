@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-from distutils.util import byte_compile
 from functools import reduce
 import os
 from pathlib import Path
@@ -142,6 +141,42 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         #     else:
         #         raise Exception(f"{type(entity)}")
 
+    @staticmethod
+    def from_rows(rows: Sequence, check_shape: bool = True) -> RowEntityPhiTensor:
+        if len(rows) < 1 or not isinstance(rows[0], SingleEntityPhiTensor):
+            raise Exception(
+                f"RowEntityPhiTensor.from_rows requires a list of SingleEntityPhiTensors"
+            )
+
+        # create lazyrepeatarrays of the first element
+        first_row = rows[0]
+        min_vals = lazyrepeatarray(
+            data=first_row.min_vals,
+            shape=tuple([len(rows)] + list(first_row.min_vals.shape)),
+        )
+        max_vals = lazyrepeatarray(
+            data=first_row.max_vals,
+            shape=tuple([len(rows)] + list(first_row.max_vals.shape)),
+        )
+
+        # collect entities and children into numpy arrays
+        entity_list = []
+        child_list = []
+        for row in rows:
+            entity_list.append(row.entity)
+            child_list.append(row.child)
+        entities = EntityList.from_objs(entities=entity_list)
+        child = np.stack(child_list)
+
+        # use new constructor
+        return RowEntityPhiTensor(
+            rows=child,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            entities=entities,
+            check_shape=check_shape,
+        )
+
     @property
     def scalar_manager(self) -> VirtualMachinePrivateScalarManager:
         return self.child[0].scalar_manager
@@ -163,9 +198,10 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # we must cast the result of x.shape prod to an int because sometimes
         # it can be a float depending on the original type which fails to
         # multiply the [x.entity] array
-        return np.array(
-            [[x.entity] * int(np.array(x.shape).prod()) for x in self.child]
-        ).reshape(self.shape)
+        # return np.array(
+        #     [[x.entity] * int(np.array(x.shape).prod()) for x in self.child]
+        # ).reshape(self.shape)
+        return self._entities
 
     @property
     def gamma(self) -> InitialGammaTensor:
@@ -1229,7 +1265,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         end = time.time()
         print("step 1:", end - start)
         total_size = len(rows) + len(min_vals) + len(max_vals) + len(entities_indexed)
-        total_size_mb = total_size / 10**6
+        total_size_mb = total_size / 10 ** 6
         total_size_mb += size_mb(one_hot_lookup)
 
         print("Total Size: ", total_size_mb)

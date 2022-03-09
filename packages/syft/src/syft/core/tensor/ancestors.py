@@ -13,7 +13,6 @@ import uuid
 from nacl.signing import VerifyKey
 import numpy as np
 from numpy.typing import ArrayLike
-import pyarrow as pa
 
 # relative
 from ..adp.entity import Entity
@@ -407,7 +406,6 @@ class PhiTensorAncestor(TensorChainManager):
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
-
         return self.copy()._private(
             min_val=min_val,
             max_val=max_val,
@@ -424,8 +422,6 @@ class PhiTensorAncestor(TensorChainManager):
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
     ) -> PhiTensorAncestor:
-        """ """
-
         # PHASE 1: RUN CHECKS
 
         # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
@@ -460,7 +456,7 @@ class PhiTensorAncestor(TensorChainManager):
         # Check 3: If entities is a string, make it a list with one entity in it
         if isinstance(entities, str):
             entities = [Entity(entities)]
-        elif isinstance(entities, (Entity,)):
+        elif isinstance(entities, Entity):
             entities = [entities]
         # Check 4: If entities are a list, are the items strings or Entity objects.
         # If they're strings lets create Entity objects.
@@ -468,7 +464,7 @@ class PhiTensorAncestor(TensorChainManager):
         if isinstance(entities, (list, tuple)):
             entities = np.array(entities)
 
-        if entities.shape != self.shape:
+        if len(entities) != 1 and entities.shape != self.shape:
             raise Exception(
                 "Entities shape doesn't match data shape. If you're"
                 " going to pass in something other than 1 entity for the"
@@ -538,7 +534,7 @@ class PhiTensorAncestor(TensorChainManager):
                 max_vals = lazyrepeatarray(max_vals, self.child.shape)
 
             self.replace_abstraction_top(
-                _RowEntityPhiTensor(),
+                tensor_type=_RowEntityPhiTensor(),
                 rows=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
