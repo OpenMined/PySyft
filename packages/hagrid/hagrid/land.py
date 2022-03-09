@@ -34,30 +34,12 @@ def get_land_verb() -> GrammarVerb:
     ]
 
     abbreviations: TypeDict[int, TypeList[Optional[str]]] = {
-        3: [
-            "adjective",
-            "preposition",
-            "propernoun",
-        ],  # node_name  # at  # host
-        2: [
-            "adjective",
-            None,
-            "propernoun",
-        ],  # node_name  # ignore  # host
-        1: [
-            "adjective",
-            None,
-            None,
-        ],  # node_name  # ignore  # ignore
-        0: [
-            None,
-            None,
-            None,
-        ],  # ignore  # ignore  # ignore
+        3: ["adjective", "preposition", "propernoun"],  # node_name  # at  # host
+        2: ["adjective", None, "propernoun"],  # node_name  # ignore  # host
+        1: ["adjective", None, None],  # node_name  # ignore  # ignore
+        0: [None, None, None],  # ignore  # ignore  # ignore
     }
 
     return GrammarVerb(
-        command="land",
-        full_sentence=full_sentence,
-        abbreviations=abbreviations,
+        command="land", full_sentence=full_sentence, abbreviations=abbreviations
     )

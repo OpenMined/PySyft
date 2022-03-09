@@ -25,10 +25,7 @@ from .....io.address import Address
 @final
 class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
     def __init__(
-        self,
-        address: Address,
-        reply_to: Address,
-        msg_id: Optional[UID] = None,
+        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
@@ -60,12 +57,7 @@ class GetRemainingBudgetMessage(ImmediateSyftMessageWithReply):
 
 @serializable()
 class GetRemainingBudgetReplyMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        budget: float,
-        address: Address,
-        msg_id: Optional[UID] = None,
-    ):
+    def __init__(self, budget: float, address: Address, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id)
         self.budget = budget
 

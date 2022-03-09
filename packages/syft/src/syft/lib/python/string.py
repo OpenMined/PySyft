@@ -25,10 +25,7 @@ from .types import SyPrimitiveRet
 @serializable()
 class String(UserString, PyPrimitive):
     def __init__(
-        self,
-        value: Any = None,
-        id: Optional[UID] = None,
-        temporary_box: bool = False,
+        self, value: Any = None, id: Optional[UID] = None, temporary_box: bool = False
     ):
 
         if value is None:
@@ -403,11 +400,7 @@ class String(UserString, PyPrimitive):
     @staticmethod
     def _proto2object(proto: String_PB) -> "String":
         str_id: UID = sy.deserialize(blob=proto.id)
-        return String(
-            value=proto.data,
-            id=str_id,
-            temporary_box=proto.temporary_box,
-        )
+        return String(value=proto.data, id=str_id, temporary_box=proto.temporary_box)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

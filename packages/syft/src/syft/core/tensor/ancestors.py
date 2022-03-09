@@ -98,7 +98,9 @@ class AutogradTensorAncestor(TensorChainManager):
     def autograd(self, requires_grad: bool = True) -> AutogradTensorAncestor:
         AutogradTensor = _AutogradTensor()
 
-        self.push_abstraction_top(AutogradTensor, requires_grad=requires_grad)  # type: ignore
+        self.push_abstraction_top(
+            AutogradTensor, requires_grad=requires_grad
+        )  # type: ignore
 
         return self
 
@@ -564,7 +566,9 @@ class PhiTensorAncestor(TensorChainManager):
                     )
                 )
 
-            self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
+            self.replace_abstraction_top(
+                _RowEntityPhiTensor(), rows=new_list
+            )  # type: ignore
 
         # TODO: if there's element-level entities - push all elements with PhiScalars
         else:

@@ -588,7 +588,9 @@ class Node(AbstractNode):
 
                 # only a small number of messages are allowed to be unsigned otherwise
                 # they need to be valid
-                if type(msg) not in self.allowed_unsigned_messages and not msg.is_valid:  # type: ignore
+                if (
+                    type(msg) not in self.allowed_unsigned_messages and not msg.is_valid
+                ):  # type: ignore
                     error(f"Message is not valid. {msg}")
                     traceback_and_raise(Exception("Message is not valid."))
 
@@ -609,9 +611,7 @@ class Node(AbstractNode):
                     result = service.process(node=self, msg=contents, verify_key=None)
                 else:
                     result = service.process(
-                        node=self,
-                        msg=contents,
-                        verify_key=msg.verify_key,
+                        node=self, msg=contents, verify_key=msg.verify_key
                     )
                 return result
 
@@ -622,13 +622,11 @@ class Node(AbstractNode):
                 # Forward message onwards
                 if issubclass(type(msg), SignedImmediateSyftMessageWithReply):
                     return self.signed_message_with_reply_forwarding_service.process(
-                        node=self,
-                        msg=msg,  # type: ignore
+                        node=self, msg=msg  # type: ignore
                     )
                 if issubclass(type(msg), SignedImmediateSyftMessageWithoutReply):
                     return self.signed_message_without_reply_forwarding_service.process(
-                        node=self,
-                        msg=msg,  # type: ignore
+                        node=self, msg=msg  # type: ignore
                     )
         except Exception as e:
             error(e)

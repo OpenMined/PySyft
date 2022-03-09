@@ -137,7 +137,9 @@ class OrderedDict(PyOrderedDict, PyPrimitive):
         res = super().update(*args, **kwds)
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def values(self, *args: Any, max_len: Optional[int] = None) -> Iterator:  # type: ignore
+    def values(
+        self, *args: Any, max_len: Optional[int] = None
+    ) -> Iterator:  # type: ignore
         # this is what the super type does and there is a test in dict_test.py
         # test_values which checks for this so we could disable the test or
         # keep this workaround

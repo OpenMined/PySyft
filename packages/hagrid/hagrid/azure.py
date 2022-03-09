@@ -58,9 +58,7 @@ def azure_credentials(
     tenant_id: str, client_id: str, client_secret: str
 ) -> ClientSecretCredential:
     return ClientSecretCredential(
-        tenant_id=tenant_id,
-        client_id=client_id,
-        client_secret=client_secret,
+        tenant_id=tenant_id, client_id=client_id, client_secret=client_secret
     )
 
 

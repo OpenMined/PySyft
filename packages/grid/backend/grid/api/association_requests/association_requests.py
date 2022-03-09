@@ -42,9 +42,7 @@ router = APIRouter()
 
 @router.post("/request", status_code=200, response_class=JSONResponse)
 def send_association_request(
-    target: str,
-    source: str,
-    current_user: Any = Depends(get_current_user),
+    target: str, source: str, current_user: Any = Depends(get_current_user)
 ) -> Any:
     """Sends a new association request to the target address
     Args:
@@ -115,9 +113,7 @@ def receive_association_request(
 
 @router.post("/reply", status_code=201, response_class=JSONResponse)
 def respond_association_request(
-    source: str,
-    target: str,
-    current_user: Any = Depends(get_current_user),
+    source: str, target: str, current_user: Any = Depends(get_current_user)
 ) -> Dict[str, str]:
     """Replies an association request
 
@@ -135,10 +131,7 @@ def respond_association_request(
 
     # Build Syft Message
     msg = RespondAssociationRequestMessage(
-        address=node.address,
-        target=target,
-        source=source,
-        reply_to=node.address,
+        address=node.address, target=target, source=source, reply_to=node.address
     ).sign(signing_key=user_key)
 
     # Process syft message
@@ -181,8 +174,7 @@ def get_all_association_requests(
 
 @router.get("/{association_request_id}", status_code=200, response_class=JSONResponse)
 def get_specific_association_route(
-    association_request_id: int,
-    current_user: Any = Depends(get_current_user),
+    association_request_id: int, current_user: Any = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Retrieves specific association
     Args:
@@ -215,8 +207,7 @@ def get_specific_association_route(
     "/{association_request_id}", status_code=200, response_class=JSONResponse
 )
 def delete_association_route(
-    association_request_id: int,
-    current_user: Any = Depends(get_current_user),
+    association_request_id: int, current_user: Any = Depends(get_current_user)
 ) -> Dict[str, str]:
     """Deletes specific association
     Args:

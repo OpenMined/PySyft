@@ -18,7 +18,9 @@ class AddOp(Op):
 
     __attr_allowlist__: Any = []
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
+    def forward(
+        self, x: AutogradTensor, y: AutogradTensor
+    ) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
 

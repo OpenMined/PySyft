@@ -34,8 +34,7 @@ from .tensor_manager_messages import UpdateTensorResponse
 
 
 def create_tensor_msg(
-    msg: CreateTensorMessage,
-    node: AbstractNode,
+    msg: CreateTensorMessage, node: AbstractNode
 ) -> CreateTensorResponse:
     try:
         payload = msg.content
@@ -77,15 +76,12 @@ def create_tensor_msg(
         )
     except Exception as e:
         return CreateTensorResponse(
-            address=msg.reply_to,
-            status_code=200,
-            content={"error": str(e)},
+            address=msg.reply_to, status_code=200, content={"error": str(e)}
         )
 
 
 def update_tensor_msg(
-    msg: UpdateTensorMessage,
-    node: AbstractNode,
+    msg: UpdateTensorMessage, node: AbstractNode
 ) -> UpdateTensorResponse:
     try:
         payload = msg.content
@@ -124,16 +120,11 @@ def update_tensor_msg(
         )
     except Exception as e:
         return UpdateTensorResponse(
-            address=msg.reply_to,
-            status_code=200,
-            content={"error": str(e)},
+            address=msg.reply_to, status_code=200, content={"error": str(e)}
         )
 
 
-def get_tensor_msg(
-    msg: GetTensorMessage,
-    node: AbstractNode,
-) -> GetTensorResponse:
+def get_tensor_msg(msg: GetTensorMessage, node: AbstractNode) -> GetTensorResponse:
     try:
         payload = msg.content
 
@@ -153,16 +144,11 @@ def get_tensor_msg(
         )
     except Exception as e:
         return GetTensorResponse(
-            address=msg.reply_to,
-            status_code=200,
-            content={"error": str(e)},
+            address=msg.reply_to, status_code=200, content={"error": str(e)}
         )
 
 
-def get_tensors_msg(
-    msg: GetTensorsMessage,
-    node: AbstractNode,
-) -> GetTensorsResponse:
+def get_tensors_msg(msg: GetTensorsMessage, node: AbstractNode) -> GetTensorsResponse:
     try:
         tensors = node.store.get_objects_of_type(obj_type=th.Tensor)
 
@@ -177,9 +163,7 @@ def get_tensors_msg(
                 }
             )
         return GetTensorsResponse(
-            address=msg.reply_to,
-            status_code=200,
-            content={"tensors": result},
+            address=msg.reply_to, status_code=200, content={"tensors": result}
         )
     except Exception as e:
         return GetTensorsResponse(
@@ -188,8 +172,7 @@ def get_tensors_msg(
 
 
 def del_tensor_msg(
-    msg: DeleteTensorMessage,
-    node: AbstractNode,
+    msg: DeleteTensorMessage, node: AbstractNode
 ) -> DeleteTensorResponse:
     try:
         payload = msg.content
@@ -205,9 +188,7 @@ def del_tensor_msg(
         )
     except Exception as e:
         return DeleteTensorResponse(
-            address=msg.reply_to,
-            status_code=200,
-            content={"error": str(e)},
+            address=msg.reply_to, status_code=200, content={"error": str(e)}
         )
 
 
@@ -247,9 +228,7 @@ class TensorManagerService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
-        msg: INPUT_MESSAGES,
-        verify_key: VerifyKey,
+        node: AbstractNode, msg: INPUT_MESSAGES, verify_key: VerifyKey
     ) -> OUTPUT_MESSAGES:
         return TensorManagerService.msg_handler_map[type(msg)](msg=msg, node=node)
 

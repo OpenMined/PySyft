@@ -71,9 +71,7 @@ def create_searchable_function_from_polynomial(
 
     else:
 
-        def _run_specific_args(
-            tuple_of_args: TypeTuple,
-        ) -> EM:
+        def _run_specific_args(tuple_of_args: TypeTuple,) -> EM:
             kwargs = {sym: tuple_of_args[i] for sym, i in symbol2index.items()}
             output = poly.subs(kwargs)
 
@@ -325,7 +323,7 @@ def max_lipschitz_via_jacobian(
     if try_hessian_shortcut:
         h = j.jacobian([x.sympoly for x in input_scalars])
         if (
-            len(solve(np.sum(h**2), *[x.sympoly for x in input_scalars], dict=True))
+            len(solve(np.sum(h ** 2), *[x.sympoly for x in input_scalars], dict=True))
             == 0
         ):
             print(

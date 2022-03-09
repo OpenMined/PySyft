@@ -71,9 +71,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
         return self._grad[self.backprop_id]
 
     @property
-    def grad_fn(
-        self,
-    ) -> Optional[Type[autograd.backward_ops.Op]]:
+    def grad_fn(self,) -> Optional[Type[autograd.backward_ops.Op]]:
         if not self.requires_grad:
             raise Exception("This tensor is not backpropagated")
         return self._grad_fn
@@ -102,7 +100,9 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
         op = autograd.backward_ops.MulOp()
         return op(self, other)
 
-    def __truediv__(self, other: AutogradTensor) -> AutogradTensorAncestor:  # type: ignore
+    def __truediv__(
+        self, other: AutogradTensor
+    ) -> AutogradTensorAncestor:  # type: ignore
         if is_acceptable_simple_type(other):
             # Ignoring type annotation error because only int, floats, np.ndarrays will be parsed
             return self * (1 / other)  # type: ignore
@@ -120,7 +120,9 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
         op = autograd.backward_ops.ReshapeOp()
         return op(self, *shape)
 
-    def repeat(self, *args: Tuple[Any, ...], **kwargs: Any) -> AutogradTensorAncestor:  # type: ignore
+    def repeat(
+        self, *args: Tuple[Any, ...], **kwargs: Any
+    ) -> AutogradTensorAncestor:  # type: ignore
         op = autograd.backward_ops.RepeatOp()
         return op(self, *args, **kwargs)
 
@@ -149,9 +151,7 @@ class AutogradTensor(PassthroughTensor, PhiTensorAncestor):
             self._grad[self.backprop_id] = self._grad[self.backprop_id] + grad
 
     def backward(
-        self,
-        grad: Optional[np.ndarray] = None,
-        backprop_id: Optional[uuid.UUID] = None,
+        self, grad: Optional[np.ndarray] = None, backprop_id: Optional[uuid.UUID] = None
     ) -> bool:
 
         if backprop_id is None:

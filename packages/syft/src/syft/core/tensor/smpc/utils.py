@@ -12,7 +12,7 @@ from typing import cast
 import numpy as np
 
 RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
-    2**32: np.dtype("int32"),
+    2 ** 32: np.dtype("int32"),
     2: np.dtype("bool"),  # Special case: need to do reconstruct and share with XOR
 }
 
@@ -45,11 +45,7 @@ def get_nr_bits(ring_size: int) -> int:
 
 
 @lru_cache(maxsize=128)
-def get_shape(
-    op_str: str,
-    x_shape: Tuple[int],
-    y_shape: Tuple[int],
-) -> Tuple[int]:
+def get_shape(op_str: str, x_shape: Tuple[int], y_shape: Tuple[int]) -> Tuple[int]:
     """Get the shape of apply an operation on two values
 
     Args:
@@ -67,10 +63,7 @@ def get_shape(
 
 
 @lru_cache(maxsize=128)
-def get_ring_size(
-    x_ring_size: int,
-    y_ring_size: int,
-) -> int:
+def get_ring_size(x_ring_size: int, y_ring_size: int) -> int:
     """Get the ring_size of apply an operation on two values
 
     Args:

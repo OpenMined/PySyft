@@ -251,10 +251,7 @@ def test_lt(
 
 
 def test_pos(
-    gamma_tensor_min: IGT,
-    gamma_tensor_ref: IGT,
-    gamma_tensor_max: IGT,
-    dsg: DSG,
+    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT, dsg: DSG
 ) -> None:
     with concurrency_override(count=1):
         assert isinstance(gamma_tensor_min, IGT)
@@ -272,10 +269,7 @@ def test_pos(
 
 
 def test_neg(
-    gamma_tensor_min: IGT,
-    gamma_tensor_ref: IGT,
-    gamma_tensor_max: IGT,
-    dsg: DSG,
+    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT, dsg: DSG
 ) -> None:
     with concurrency_override(count=1):
         assert isinstance(gamma_tensor_min, IGT)
@@ -293,10 +287,7 @@ def test_neg(
 
 
 def test_copy(
-    gamma_tensor_min: IGT,
-    gamma_tensor_ref: IGT,
-    gamma_tensor_max: IGT,
-    dsg: DSG,
+    gamma_tensor_min: IGT, gamma_tensor_ref: IGT, gamma_tensor_max: IGT, dsg: DSG
 ) -> None:
     with concurrency_override(count=1):
         output = gamma_tensor_min.copy()

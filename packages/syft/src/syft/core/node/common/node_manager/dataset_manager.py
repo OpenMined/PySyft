@@ -76,11 +76,7 @@ class DatasetManager(DatabaseManager):
     ) -> None:
 
         obj_dataset_relation = BinObjDataset(
-            name=name,
-            dataset=dataset_id,
-            obj=obj_id,
-            dtype=dtype,
-            shape=shape,
+            name=name, dataset=dataset_id, obj=obj_id, dtype=dtype, shape=shape
         )
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
         session_local.add(obj_dataset_relation)

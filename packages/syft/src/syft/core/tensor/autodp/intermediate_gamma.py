@@ -644,7 +644,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             other.update()  # change term tensor after combining scalar managers
 
             # Step 1: Concatenate
-            term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)  # type: ignore
+            term_tensor = np.concatenate(
+                [self.term_tensor, other.term_tensor], axis=-1
+            )  # type: ignore
             coeff_tensor = np.concatenate(  # type: ignore
                 [self.coeff_tensor, other.coeff_tensor], axis=-1
             )
@@ -705,7 +707,9 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 )
 
             # Step 1: Concatenate
-            term_tensor = np.concatenate([self.term_tensor, other.term_tensor], axis=-1)  # type: ignore
+            term_tensor = np.concatenate(
+                [self.term_tensor, other.term_tensor], axis=-1
+            )  # type: ignore
             coeff_tensor = np.concatenate(  # type: ignore
                 [self.coeff_tensor, other.coeff_tensor * -1], axis=-1
             )
@@ -777,11 +781,15 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     terms.append(new_term)
 
             for self_dim in range(self.term_tensor.shape[-1]):
-                new_term = np.expand_dims(self.term_tensor[..., self_dim], -1)  # type: ignore
+                new_term = np.expand_dims(
+                    self.term_tensor[..., self_dim], -1
+                )  # type: ignore
                 terms.append(new_term)
 
             for other_dim in range(self.term_tensor.shape[-1]):
-                new_term = np.expand_dims(other.term_tensor[..., self_dim], -1)  # type: ignore
+                new_term = np.expand_dims(
+                    other.term_tensor[..., self_dim], -1
+                )  # type: ignore
                 terms.append(new_term)
 
             term_tensor = np.concatenate(terms, axis=-1)  # type: ignore

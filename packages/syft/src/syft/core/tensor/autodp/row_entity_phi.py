@@ -474,11 +474,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def reshape(
-        self,
-        shape: Union[
-            int,
-            Union[Sequence[int], Sequence[Sequence[int]]],
-        ],
+        self, shape: Union[int, Union[Sequence[int], Sequence[Sequence[int]]]]
     ) -> RowEntityPhiTensor:
         if isinstance(shape, int):
             raise Exception(
@@ -504,9 +500,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def resize(
-        self,
-        new_shape: Union[int, Tuple[int, ...]],
-        refcheck: Optional[bool] = True,
+        self, new_shape: Union[int, Tuple[int, ...]], refcheck: Optional[bool] = True
     ) -> None:
         """This method is identical to reshape, but it modifies the Tensor in-place instead of returning a new one"""
         if isinstance(new_shape, int):
@@ -945,10 +939,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
-    def abs(
-        self,
-        out: Optional[np.ndarray] = None,
-    ) -> RowEntityPhiTensor:
+    def abs(self, out: Optional[np.ndarray] = None) -> RowEntityPhiTensor:
         """Calculate the absolute value element-wise"""
 
         new_list = list()

@@ -185,10 +185,7 @@ class GetAllRequestHandlersMessage(ImmediateSyftMessageWithReply):
 @serializable()
 class GetAllRequestHandlersResponseMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self,
-        handlers: List[DictType],
-        address: Address,
-        msg_id: Optional[UID] = None,
+        self, handlers: List[DictType], address: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.handlers = handlers

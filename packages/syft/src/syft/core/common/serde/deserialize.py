@@ -17,9 +17,7 @@ from .types import Deserializeable
 # enter at your own peril...
 # seriously, get some 🧪 HP Potions and 📜 TP Scrolls ready...
 def _deserialize(
-    blob: Deserializeable,
-    from_proto: bool = True,
-    from_bytes: bool = False,
+    blob: Deserializeable, from_proto: bool = True, from_bytes: bool = False
 ) -> Any:
     """We assume you're deserializing a protobuf object by default
 
@@ -94,7 +92,9 @@ def _deserialize(
         if obj_type is None:
             traceback_and_raise(deserialization_error)
 
-        obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
+        obj_type = index_syft_by_module_name(
+            fully_qualified_name=obj_type
+        )  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
     elif isinstance(obj_type, list):
 

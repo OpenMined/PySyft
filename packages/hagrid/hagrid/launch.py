@@ -109,7 +109,5 @@ def get_launch_verb() -> GrammarVerb:
     }
 
     return GrammarVerb(
-        command="launch",
-        full_sentence=full_sentence,
-        abbreviations=abbreviations,
+        command="launch", full_sentence=full_sentence, abbreviations=abbreviations
     )

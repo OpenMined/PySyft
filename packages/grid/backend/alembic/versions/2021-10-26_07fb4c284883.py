@@ -82,6 +82,5 @@ def downgrade() -> None:
         sa.Column("target", sa.LargeBinary(length=4096), nullable=True),
     )
     op.add_column(
-        "association_request",
-        sa.Column("node", sa.String(length=255), nullable=False),
+        "association_request", sa.Column("node", sa.String(length=255), nullable=False)
     )

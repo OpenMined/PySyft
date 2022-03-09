@@ -42,10 +42,7 @@ class LogConfig(BaseSettings):
     LOGURU_SINK: Optional[str] = "/var/log/pygrid/grid.log"
     LOGURU_COMPRESSION: Optional[str]
     LOGURU_ROTATION: Union[
-        Optional[str],
-        Optional[int],
-        Optional[time],
-        Optional[timedelta],
+        Optional[str], Optional[int], Optional[time], Optional[timedelta]
     ]
     LOGURU_RETENTION: Union[Optional[str], Optional[int], Optional[timedelta]]
     LOGURU_COLORIZE: Optional[bool] = True

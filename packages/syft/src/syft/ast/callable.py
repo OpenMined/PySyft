@@ -55,9 +55,7 @@ class Callable(ast.attribute.Attribute):
         self.is_static = is_static
 
     def __call__(
-        self,
-        *args: Tuple[Any, ...],
-        **kwargs: Any,
+        self, *args: Tuple[Any, ...], **kwargs: Any
     ) -> Optional[Union["Callable", CallableT]]:
         """The `__call__` method on a `Callable` has two possible roles, e.g.
 
@@ -83,10 +81,9 @@ class Callable(ast.attribute.Attribute):
             ptr = return_tensor_type_pointer_type(client=self.client)
 
             # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+            (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
+                args=args, kwargs=kwargs
+            )
 
             # then we convert anything which isn't a pointer into a pointer
             pointer_args, pointer_kwargs = ast.klass.pointerize_args_and_kwargs(

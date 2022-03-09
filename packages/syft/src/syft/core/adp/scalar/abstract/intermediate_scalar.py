@@ -123,7 +123,9 @@ class IntermediateScalar(Scalar):
 
         if self.poly is not None:
             result = EM(
-                context={obj.poly.name: obj.value for obj in self.input_scalars}  # type: ignore
+                context={
+                    obj.poly.name: obj.value for obj in self.input_scalars
+                }  # type: ignore
             )(self.poly)
             return float(result)
         return None

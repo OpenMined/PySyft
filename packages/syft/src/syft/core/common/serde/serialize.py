@@ -10,9 +10,7 @@ from .types import Deserializeable
 
 
 def _serialize(
-    obj: object,
-    to_proto: bool = True,
-    to_bytes: bool = False,
+    obj: object, to_proto: bool = True, to_bytes: bool = False
 ) -> Deserializeable:
     """Serialize the object according to the parameters.
 

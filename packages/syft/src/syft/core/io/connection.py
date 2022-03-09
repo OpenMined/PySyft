@@ -49,8 +49,7 @@ class ServerConnection:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
     def recv_immediate_msg_with_reply(
-        self,
-        msg: SignedImmediateSyftMessageWithReply,
+        self, msg: SignedImmediateSyftMessageWithReply
     ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 

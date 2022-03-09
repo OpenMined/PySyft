@@ -18,8 +18,7 @@ depends_on = None
 
 def upgrade() -> None:
     op.add_column(
-        "obj_metadata",
-        sa.Column("write_permissions", sa.JSON(), nullable=True),
+        "obj_metadata", sa.Column("write_permissions", sa.JSON(), nullable=True)
     )
 
 

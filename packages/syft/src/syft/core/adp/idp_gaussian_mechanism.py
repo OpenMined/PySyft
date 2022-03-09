@@ -37,7 +37,7 @@ def listtonumpy64(value: List) -> np.int64:
 def _individual_RDP_gaussian(
     sigma: float, value: float, L: float, alpha: float
 ) -> float:
-    return (alpha * (L**2) * (value**2)) / (2 * (sigma**2))
+    return (alpha * (L ** 2) * (value ** 2)) / (2 * (sigma ** 2))
 
 
 def individual_RDP_gaussian(params: Dict, alpha: float) -> np.float64:
@@ -79,9 +79,7 @@ class iDPGaussianMechanism(Mechanism):
     ]
 
     # delta0 is a numpy.int64 number (not supported by syft.serde)
-    __serde_overrides__ = {
-        "delta0": [numpy64tolist, listtonumpy64],
-    }
+    __serde_overrides__ = {"delta0": [numpy64tolist, listtonumpy64]}
 
     def __init__(
         self,

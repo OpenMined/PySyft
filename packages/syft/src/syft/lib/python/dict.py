@@ -74,10 +74,7 @@ class Dict(UserDict, PyPrimitive):
 
         temporary_box = kwargs["temporary_box"] if "temporary_box" in kwargs else False
         if temporary_box:
-            PyPrimitive.__init__(
-                self,
-                temporary_box=temporary_box,
-            )
+            PyPrimitive.__init__(self, temporary_box=temporary_box)
 
     @property
     def id(self) -> UID:
@@ -178,7 +175,9 @@ class Dict(UserDict, PyPrimitive):
     def keys(self, max_len: Optional[int] = None) -> Iterator:  # type: ignore
         return Iterator(KeysView(self), max_len=max_len)
 
-    def values(self, *args: Any, max_len: Optional[int] = None) -> Iterator:  # type: ignore
+    def values(
+        self, *args: Any, max_len: Optional[int] = None
+    ) -> Iterator:  # type: ignore
         # this is what the super type does and there is a test in dict_test.py
         # test_values which checks for this so we could disable the test or
         # keep this workaround
@@ -224,12 +223,7 @@ class Dict(UserDict, PyPrimitive):
         else:
             temporary_box = False
 
-        return Dict_PB(
-            id=id_,
-            keys=keys,
-            values=values,
-            temporary_box=temporary_box,
-        )
+        return Dict_PB(id=id_, keys=keys, values=values, temporary_box=temporary_box)
 
     @staticmethod
     def _proto2object(proto: Dict_PB) -> "Dict":

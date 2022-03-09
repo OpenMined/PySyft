@@ -19,9 +19,7 @@ class SimpleService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
-        msg: SimpleMessage,
-        verify_key: Optional[VerifyKey] = None,
+        node: AbstractNode, msg: SimpleMessage, verify_key: Optional[VerifyKey] = None
     ) -> SimpleReplyMessage:
         if verify_key is None:
             traceback_and_raise(

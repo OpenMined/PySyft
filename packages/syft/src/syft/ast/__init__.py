@@ -137,8 +137,7 @@ def add_modules(
 
 
 def add_classes(
-    ast: globals.Globals,
-    paths: TypeList[TypeTuple[str, str, TypeAny]],
+    ast: globals.Globals, paths: TypeList[TypeTuple[str, str, TypeAny]]
 ) -> None:
     """Parse a list of classes and register each class to its corresponding parent object in the AST path.
 
@@ -161,10 +160,7 @@ def add_classes(
         )
 
 
-def add_methods(
-    ast: globals.Globals,
-    paths: TypeList[TypeTuple[str, str]],
-) -> None:
+def add_methods(ast: globals.Globals, paths: TypeList[TypeTuple[str, str]]) -> None:
     """Parse a list of methods and register each method to its corresponding parent object in the AST path.
 
     Args:
@@ -175,9 +171,7 @@ def add_methods(
         parent = get_parent(path, ast)
         path_list = path.split(".")
         parent.add_path(
-            path=path_list,
-            index=len(path_list) - 1,
-            return_type_name=return_type,
+            path=path_list, index=len(path_list) - 1, return_type_name=return_type
         )
 
 

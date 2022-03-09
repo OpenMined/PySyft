@@ -296,7 +296,7 @@ latex_elements: Dict[str, str] = {
 # Grouping the document tree into LaTeX files. List of tuples
 # (source start file, target name, title, author, documentclass [howto/manual]).
 latex_documents = [
-    ("index", "user_guide.tex", "syft Documentation", "Andrew Trask", "manual"),
+    ("index", "user_guide.tex", "syft Documentation", "Andrew Trask", "manual")
 ]
 
 # The name of an image file (relative to this directory) to place at the top of

@@ -115,9 +115,7 @@ def detect_wsl2(req: Requirement) -> bool:
 requirements = []
 requirements.append(
     Requirement(
-        full_name="Windows Subsystem for Linux 2",
-        choco_name="wsl2",
-        detect=detect_wsl2,
+        full_name="Windows Subsystem for Linux 2", choco_name="wsl2", detect=detect_wsl2
     )
 )
 requirements.append(
@@ -136,9 +134,7 @@ requirements.append(
 )
 requirements.append(
     Requirement(
-        full_name="Git Version Control",
-        choco_name="git",
-        detect=exe("git.exe"),
+        full_name="Git Version Control", choco_name="git", detect=exe("git.exe")
     )
 )
 requirements.append(

@@ -95,7 +95,7 @@ class UserLoginMessageWithReply(GenericPayloadMessageWithReply):
                 # "access_token": access_token,
                 # "token_type": "bearer",
                 # "metadata": metadata,
-                "key": user.private_key,
+                "key": user.private_key
             }
 
             response["status"] = "ok"

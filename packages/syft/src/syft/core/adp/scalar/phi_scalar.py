@@ -43,7 +43,11 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
         ssid: Optional[str] = None,
     ) -> None:
         super().__init__(
-            min_val=min_val, value=value, max_val=max_val, entity=entity, id=id  # type: ignore
+            min_val=min_val,
+            value=value,
+            max_val=max_val,
+            entity=entity,
+            id=id,  # type: ignore
         )
         # The scalar string identifier (SSID) - because we're using polynomial libraries
         # we need to be able to reference this object in string form. The library

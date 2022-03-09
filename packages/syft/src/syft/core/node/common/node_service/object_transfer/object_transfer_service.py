@@ -27,11 +27,7 @@ class TransferObjectService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: Domain,
-        msg: Union[
-            LoadObjectMessage,
-        ],
-        verify_key: VerifyKey,
+        node: Domain, msg: Union[LoadObjectMessage,], verify_key: VerifyKey
     ) -> Union[LoadObjectResponse, SaveObjectResponse]:
         _worker_address = msg.content.get("address", None)
         _obj_id = msg.content.get("uid", None)
@@ -78,11 +74,7 @@ class TransferObjectService(ImmediateNodeServiceWithReply):
 class SaveObjectService(ImmediateNodeServiceWithoutReply):
     @staticmethod
     @service_auth(guests_welcome=True)
-    def process(
-        node: Domain,
-        msg: SaveObjectMessage,
-        verify_key: VerifyKey,
-    ) -> None:
+    def process(node: Domain, msg: SaveObjectMessage, verify_key: VerifyKey) -> None:
         _obj_id = msg.content.get("uid", None)
 
         _syft_id = UID.from_string(value=_obj_id)

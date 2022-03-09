@@ -189,7 +189,9 @@ class Client(AbstractNodeClient):
             # we are leaving the client and entering the node in a container
             # any hostnames of localhost need to be converted to docker-host
             if client is not None:
-                grid_url = client.routes[0].connection.base_url.as_docker_host()  # type: ignore
+                grid_url = client.routes[
+                    0
+                ].connection.base_url.as_docker_host()  # type: ignore
             else:
                 grid_url = GridURL.from_url(str(host_or_ip)).as_docker_host()
 
@@ -217,9 +219,14 @@ class Client(AbstractNodeClient):
 
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
+        from .node_service.tff.tff_messages import (
+            TFFMessageWithReply,
+        )  # TODO Teo: decide if this is needed, probably it isnt
 
         # TEMPORARY: if message is instance of NodeRunnableMessageWithReply then we need to wrap it in a SimpleMessage
-        if isinstance(msg, NodeRunnableMessageWithReply):
+        if isinstance(msg, NodeRunnableMessageWithReply) or isinstance(
+            msg, TFFMessageWithReply
+        ):
             msg = msg.prepare(address=self.address, reply_to=self.address)
 
         route_index = route_index or self.default_route_index

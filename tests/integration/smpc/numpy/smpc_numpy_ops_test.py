@@ -329,11 +329,11 @@ def test_pow(get_clients, power) -> None:
 
     mpc_tensor = MPCTensor(parties=clients, secret=remote_value, shape=(3,))
 
-    res = mpc_tensor**power
+    res = mpc_tensor ** power
     res.block_with_timeout(secs=40)
     res = res.reconstruct()
 
-    exp_res = value**power
+    exp_res = value ** power
 
     assert (res == exp_res.child).all()
 

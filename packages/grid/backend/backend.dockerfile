@@ -63,6 +63,8 @@ COPY syft/setup.py /app/syft/setup.py
 COPY syft/setup.cfg /app/syft/setup.cfg
 COPY syft/src /app/syft/src
 
+RUN pip install --upgrade tensorflow-federated
+
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -e /app/syft

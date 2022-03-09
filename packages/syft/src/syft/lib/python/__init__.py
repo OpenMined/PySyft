@@ -477,10 +477,7 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.lib.python.Set.issuperset", "syft.lib.python.Bool"),
         ("syft.lib.python.Set.pop", "syft.lib.python._SyNone"),
         ("syft.lib.python.Set.remove", "syft.lib.python._SyNone"),
-        (
-            "syft.lib.python.Set.symmetric_difference_update",
-            "syft.lib.python._SyNone",
-        ),
+        ("syft.lib.python.Set.symmetric_difference_update", "syft.lib.python._SyNone"),
         ("syft.lib.python.Set.symmetric_difference", "syft.lib.python.Set"),
         ("syft.lib.python.Set.union", "syft.lib.python.Set"),
         ("syft.lib.python.Set.update", "syft.lib.python._SyNone"),
@@ -492,47 +489,23 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python.collections.OrderedDict.__delitem__",
             "syft.lib.python._SyNone",
         ),
-        (
-            "syft.lib.python.collections.OrderedDict.__eq__",
-            "syft.lib.python.Bool",
-        ),
-        (
-            "syft.lib.python.collections.OrderedDict.__ge__",
-            "syft.lib.python.Bool",
-        ),
-        (
-            "syft.lib.python.collections.OrderedDict.__getitem__",
-            "syft.lib.python.Any",
-        ),
-        (
-            "syft.lib.python.collections.OrderedDict.__gt__",
-            "syft.lib.python.Bool",
-        ),
-        (
-            "syft.lib.python.collections.OrderedDict.__le__",
-            "syft.lib.python.Bool",
-        ),
+        ("syft.lib.python.collections.OrderedDict.__eq__", "syft.lib.python.Bool"),
+        ("syft.lib.python.collections.OrderedDict.__ge__", "syft.lib.python.Bool"),
+        ("syft.lib.python.collections.OrderedDict.__getitem__", "syft.lib.python.Any"),
+        ("syft.lib.python.collections.OrderedDict.__gt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.collections.OrderedDict.__le__", "syft.lib.python.Bool"),
         (
             "syft.lib.python.collections.OrderedDict.__iter__",
             "syft.lib.python.Iterator",
         ),
         ("syft.lib.python.collections.OrderedDict.__len__", "syft.lib.python.Int"),
-        (
-            "syft.lib.python.collections.OrderedDict.__lt__",
-            "syft.lib.python.Bool",
-        ),
-        (
-            "syft.lib.python.collections.OrderedDict.__ne__",
-            "syft.lib.python.Bool",
-        ),
+        ("syft.lib.python.collections.OrderedDict.__lt__", "syft.lib.python.Bool"),
+        ("syft.lib.python.collections.OrderedDict.__ne__", "syft.lib.python.Bool"),
         (
             "syft.lib.python.collections.OrderedDict.__setitem__",
             "syft.lib.python._SyNone",
         ),
-        (
-            "syft.lib.python.collections.OrderedDict.clear",
-            "syft.lib.python._SyNone",
-        ),
+        ("syft.lib.python.collections.OrderedDict.clear", "syft.lib.python._SyNone"),
         (
             "syft.lib.python.collections.OrderedDict.copy",
             "syft.lib.python.collections.OrderedDict",
@@ -549,23 +522,11 @@ def create_python_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         ("syft.lib.python.collections.OrderedDict.pop", "syft.lib.python.Any"),
         ("syft.lib.python.collections.OrderedDict.popitem", "syft.lib.python.Any"),
-        (
-            "syft.lib.python.collections.OrderedDict.setdefault",
-            "syft.lib.python.Any",
-        ),
-        (
-            "syft.lib.python.collections.OrderedDict.update",
-            "syft.lib.python._SyNone",
-        ),
-        (
-            "syft.lib.python.collections.OrderedDict.values",
-            "syft.lib.python.Iterator",
-        ),
+        ("syft.lib.python.collections.OrderedDict.setdefault", "syft.lib.python.Any"),
+        ("syft.lib.python.collections.OrderedDict.update", "syft.lib.python._SyNone"),
+        ("syft.lib.python.collections.OrderedDict.values", "syft.lib.python.Iterator"),
         ("syft.lib.python.collections.OrderedDict.items", "syft.lib.python.List"),
-        (
-            "syft.lib.python.collections.OrderedDict.dict_get",
-            "syft.lib.python.Any",
-        ),
+        ("syft.lib.python.collections.OrderedDict.dict_get", "syft.lib.python.Any"),
     ]
 
     dynamic_objects = [("syft.lib.python.Bool.my_field", "syft.lib.python.Int")]

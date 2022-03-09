@@ -68,8 +68,7 @@ def connect(
 # for a vpn key, then use that vpn key to connect
 @router.post("/join/{host_or_ip}", status_code=200, response_class=JSONResponse)
 def join(
-    host_or_ip: str,
-    current_user: Any = Depends(get_current_user),
+    host_or_ip: str, current_user: Any = Depends(get_current_user)
 ) -> Dict[str, Any]:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     msg = (
@@ -92,9 +91,7 @@ def join(
 # this endpoint will ask the node to get the status of the vpn connection which returns
 # a bool for connected, the host details and the peers
 @router.get("/status", status_code=200, response_class=JSONResponse)
-def status(
-    current_user: Any = Depends(get_current_user),
-) -> Dict[str, Any]:
+def status(current_user: Any = Depends(get_current_user),) -> Dict[str, Any]:
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
     msg = (
         VPNStatusMessageWithReply(kwargs={})

@@ -39,10 +39,7 @@ class IntermediatePhiScalar(IntermediateScalar):
         self._gamma: Optional[GammaScalar] = None
         self.entity = entity
 
-    def max_lipschitz_wrt_entity(
-        self,
-        entity: Entity,
-    ) -> float:
+    def max_lipschitz_wrt_entity(self, entity: Entity) -> float:
         """Perform the search for max Lipshitz with respect to the current PhiScalar's entity"""
         return self.gamma.max_lipschitz_wrt_entity(entity=entity)
 

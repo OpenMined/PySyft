@@ -51,21 +51,13 @@ METHODS_FORWARD_ALL_SHARES = {
     "cumsum",
     "trace",
 }
-INPLACE_OPS = {
-    "resize",
-}
+INPLACE_OPS = {"resize"}
 
 PARTIES_REGISTER_CACHE: Dict[Any, GridURL] = {}
 
 
 class MPCTensor(PassthroughTensor):
-    __slots__ = (
-        "seed_przs",
-        "mpc_shape",
-        "parties",
-        "parties_info",
-        "ring_size",
-    )
+    __slots__ = ("seed_przs", "mpc_shape", "parties", "parties_info", "ring_size")
 
     def __init__(
         self,
@@ -150,7 +142,7 @@ class MPCTensor(PassthroughTensor):
             return ring_size
 
         logger.warning("Ring size was not found! Defaulting to 2**32.")
-        return 2**32
+        return 2 ** 32
 
     @staticmethod
     def get_parties_info(parties: Iterable[Any]) -> List[GridURL]:
@@ -219,8 +211,7 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _mpc_from_shares(
-        shares: List[ShareTensor],
-        parties: Optional[List[Any]] = None,
+        shares: List[ShareTensor], parties: Optional[List[Any]] = None
     ) -> List[ShareTensor]:
         if not isinstance(shares, (list, tuple)):
             raise ValueError("_mpc_from_shares expected a list or tuple of shares")
@@ -309,15 +300,13 @@ class MPCTensor(PassthroughTensor):
                 )
 
             else:
-                remote_share = (
-                    party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
-                        rank=i,
-                        parties_info=parties_info,
-                        value=value,
-                        shape=shape,
-                        seed_przs=seed_przs,
-                        ring_size=ring_size,
-                    )
+                remote_share = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
+                    rank=i,
+                    parties_info=parties_info,
+                    value=value,
+                    shape=shape,
+                    seed_przs=seed_przs,
+                    ring_size=ring_size,
                 )
 
             shares.append(remote_share)
@@ -330,7 +319,7 @@ class MPCTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         seed_przs: int,
         parties_info: List[GridURL],
-        ring_size: int = 2**32,
+        ring_size: int = 2 ** 32,
     ) -> List[ShareTensor]:
         shares = []
         nr_parties = len(parties_info)
@@ -460,7 +449,9 @@ class MPCTensor(PassthroughTensor):
 
                 # TODO: generalize type after fixed precision
                 dummy_res = np.random.randint(
-                    _self.mpc_shape[0], size=_self.mpc_shape, dtype=np.int32  # type: ignore
+                    _self.mpc_shape[0],
+                    size=_self.mpc_shape,
+                    dtype=np.int32,  # type: ignore
                 )
                 if method_name not in INPLACE_OPS:
                     dummy_res = getattr(dummy_res, method_name)(*args, **kwargs)
@@ -536,7 +527,9 @@ class MPCTensor(PassthroughTensor):
                 ring_size=mpc_tensor.ring_size,
             )
 
-        res_mpc = MPCTensor(shares=shares, ring_size=mpc_tensor.ring_size, shape=shape, parties=parties)  # type: ignore
+        res_mpc = MPCTensor(
+            shares=shares, ring_size=mpc_tensor.ring_size, shape=shape, parties=parties
+        )  # type: ignore
 
         return res_mpc
 
@@ -636,9 +629,7 @@ class MPCTensor(PassthroughTensor):
         return res_shares
 
     def __apply_op(
-        self,
-        y: Union[int, float, torch.Tensor, np.ndarray, MPCTensor],
-        op_str: str,
+        self, y: Union[int, float, torch.Tensor, np.ndarray, MPCTensor], op_str: str
     ) -> MPCTensor:
         """Apply an operation on "self" which is a MPCTensor "y".
 
@@ -716,7 +707,8 @@ class MPCTensor(PassthroughTensor):
         else:
             if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
-                    getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
+                    getattr(a, op)(a, b, **kwargs)
+                    for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
                 ]
             else:
 
@@ -885,7 +877,8 @@ class MPCTensor(PassthroughTensor):
     def synthetic(self) -> np.ndarray:
         # TODO finish. max_vals and min_vals not available at present.
         return (
-            np.random.rand(*list(self.shape)) * (self.max_vals - self.min_vals)  # type: ignore
+            np.random.rand(*list(self.shape))
+            * (self.max_vals - self.min_vals)  # type: ignore
             + self.min_vals
         ).astype(self.public_dtype)
 

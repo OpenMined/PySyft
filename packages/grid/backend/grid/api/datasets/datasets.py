@@ -122,8 +122,7 @@ def get_all_dataset_metadata_route(
 
 @router.get("/{dataset_id}", status_code=200, response_class=JSONResponse)
 def get_specific_dataset_metadata_route(
-    dataset_id: str,
-    current_user: Any = Depends(get_current_user),
+    dataset_id: str, current_user: Any = Depends(get_current_user)
 ) -> Union[Dict[str, str], Any]:
     """Retrieves dataset by its ID.
 
@@ -163,11 +162,7 @@ def update_dataset_metadata_route(
     # Map User Key
     user_key = SigningKey(current_user.private_key.encode(), encoder=HexEncoder)
 
-    metadata = {
-        "manifest": manifest,
-        "description": description,
-        "tags": tags,
-    }
+    metadata = {"manifest": manifest, "description": description, "tags": tags}
 
     # Build Syft Message
     msg = UpdateDatasetMessage(
@@ -189,8 +184,7 @@ def update_dataset_metadata_route(
 
 @router.delete("/{dataset_id}", status_code=200, response_class=JSONResponse)
 def delete_dataset_route(
-    dataset_id: str,
-    current_user: Any = Depends(get_current_user),
+    dataset_id: str, current_user: Any = Depends(get_current_user)
 ) -> Dict[str, str]:
     """Deletes a dataset
 

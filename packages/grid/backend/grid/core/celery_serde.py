@@ -38,9 +38,5 @@ def dumps(obj: Any) -> bytes:
 
 
 serialization.register(
-    "syft",
-    dumps,
-    loads,
-    content_type="application/syft",
-    content_encoding="binary",
+    "syft", dumps, loads, content_type="application/syft", content_encoding="binary"
 )

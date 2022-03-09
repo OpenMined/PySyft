@@ -123,7 +123,7 @@ def test_find():
     digits = 4
     base = len(charset)
     teststrings = set()
-    for i in range(base**digits):
+    for i in range(base ** digits):
         entry = []
         for j in range(digits):
             i, m = divmod(i, base)
@@ -172,7 +172,7 @@ def test_rfind():
     digits = 3
     base = len(charset)
     teststrings = set()
-    for i in range(base**digits):
+    for i in range(base ** digits):
         entry = []
         for j in range(digits):
             i, m = divmod(i, base)
@@ -245,11 +245,7 @@ def test_rindex():
 
 
 def test_lower():
-    checkequal(
-        String("hello"),
-        String("HeLLo"),
-        "lower",
-    )
+    checkequal(String("hello"), String("HeLLo"), "lower")
     checkequal(String("hello"), String("hello"), "lower")
     checkraises(TypeError, String("hello"), "lower", 42)
 
@@ -285,10 +281,7 @@ def test_expandtabs():
         8,
     )
     checkequal(
-        String("abc\r\nab  def\ng   hi"),
-        "abc\r\nab\tdef\ng\thi",
-        "expandtabs",
-        4,
+        String("abc\r\nab  def\ng   hi"), "abc\r\nab\tdef\ng\thi", "expandtabs", 4
     )
     checkequal(
         String("abc\r\nab\r\ndef\ng\r\nhi"),
@@ -304,10 +297,7 @@ def test_expandtabs():
         tabsize=8,
     )
     checkequal(
-        "abc\rab  def\ng   hi",
-        String("abc\rab\tdef\ng\thi"),
-        "expandtabs",
-        tabsize=4,
+        "abc\rab  def\ng   hi", String("abc\rab\tdef\ng\thi"), "expandtabs", tabsize=4
     )
 
     checkequal("  a\n b", String(" \ta\n\tb"), "expandtabs", 1)
@@ -321,34 +311,17 @@ def test_expandtabs():
 def test_split():
     # by a char
     checkequal(
-        [String("a"), String("b"), "c", String("d")],
-        String("a|b|c|d"),
-        "split",
-        "|",
+        [String("a"), String("b"), "c", String("d")], String("a|b|c|d"), "split", "|"
     )
     checkequal(["a|b|c|d"], String("a|b|c|d"), "split", "|", 0)
-    checkequal(
-        ["a", String("b|c|d")],
-        String("a|b|c|d"),
-        "split",
-        String("|"),
-        1,
-    )
+    checkequal(["a", String("b|c|d")], String("a|b|c|d"), "split", String("|"), 1)
     checkequal(["a", "b", "c|d"], String("a|b|c|d"), "split", "|", 2)
     checkequal(["a", "b", "c", "d"], String("a|b|c|d"), "split", String("|"), 3)
     checkequal(
-        ["a", String("b"), String("c"), String("d")],
-        String("a|b|c|d"),
-        "split",
-        "|",
-        4,
+        ["a", String("b"), String("c"), String("d")], String("a|b|c|d"), "split", "|", 4
     )
     checkequal(
-        ["a", "b", "c", "d"],
-        String("a|b|c|d"),
-        "split",
-        String("|"),
-        sys.maxsize - 2,
+        ["a", "b", "c", "d"], String("a|b|c|d"), "split", String("|"), sys.maxsize - 2
     )
     checkequal(["a|b|c|d"], String("a|b|c|d"), "split", String("|"), 0)
     checkequal(
@@ -361,22 +334,11 @@ def test_split():
     checkequal([String("abcd")], String("abcd"), "split", "|")
     checkequal([""], String(""), "split", "|")
     checkequal(
-        [String("endcase "), String("")],
-        String("endcase |"),
-        "split",
-        String("|"),
+        [String("endcase "), String("")], String("endcase |"), "split", String("|")
     )
+    checkequal(["", String(" startcase")], String("| startcase"), "split", String("|"))
     checkequal(
-        ["", String(" startcase")],
-        String("| startcase"),
-        "split",
-        String("|"),
-    )
-    checkequal(
-        [String(""), String("bothcase"), String("")],
-        String("|bothcase|"),
-        "split",
-        "|",
+        [String(""), String("bothcase"), String("")], String("|bothcase|"), "split", "|"
     )
     checkequal(
         ["a", "", String("b\x00c\x00d")],
@@ -388,41 +350,20 @@ def test_split():
 
     checkequal(["a"] * 20, (String("a|") * 20)[:-1], "split", String("|"))
     checkequal(
-        [String("a")] * 15 + [String("a|a|a|a|a")],
-        ("a|" * 20)[:-1],
-        "split",
-        "|",
-        15,
+        [String("a")] * 15 + [String("a|a|a|a|a")], ("a|" * 20)[:-1], "split", "|", 15
     )
 
     # by string
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a//b//c//d"),
         "split",
         String("//"),
     )
-    checkequal(
-        [String("a"), String("b//c//d")],
-        String("a//b//c//d"),
-        "split",
-        "//",
-        1,
-    )
+    checkequal([String("a"), String("b//c//d")], String("a//b//c//d"), "split", "//", 1)
     checkequal(["a", "b", "c//d"], String("a//b//c//d"), "split", String("//"), 2)
     checkequal(["a", "b", "c", "d"], String("a//b//c//d"), "split", "//", 3)
-    checkequal(
-        ["a", "b", "c", String("d")],
-        String("a//b//c//d"),
-        "split",
-        "//",
-        4,
-    )
+    checkequal(["a", "b", "c", String("d")], String("a//b//c//d"), "split", "//", 4)
     checkequal(
         ["a", "b", "c", "d"],
         String("a//b//c//d"),
@@ -430,13 +371,7 @@ def test_split():
         String("//"),
         sys.maxsize - 10,
     )
-    checkequal(
-        [String("a//b//c//d")],
-        String("a//b//c//d"),
-        "split",
-        String("//"),
-        0,
-    )
+    checkequal([String("a//b//c//d")], String("a//b//c//d"), "split", String("//"), 0)
     checkequal(
         [String("a"), String(""), "b////c////d"],
         String("a////b////c////d"),
@@ -450,33 +385,15 @@ def test_split():
         "split",
         String("test"),
     )
-    checkequal(
-        [String("a"), String("bc")],
-        String("abbbc"),
-        "split",
-        String("bb"),
-    )
-    checkequal(
-        [String(""), String("")],
-        String("aaa"),
-        "split",
-        String("aaa"),
-    )
+    checkequal([String("a"), String("bc")], String("abbbc"), "split", String("bb"))
+    checkequal([String(""), String("")], String("aaa"), "split", String("aaa"))
     checkequal([String("aaa")], String("aaa"), "split", String("aaa"), 0)
-    checkequal(
-        [String("ab"), String("ab")],
-        String("abbaab"),
-        "split",
-        String("ba"),
-    )
+    checkequal([String("ab"), String("ab")], String("abbaab"), "split", String("ba"))
     checkequal([String("aaaa")], String("aaaa"), "split", String("aab"))
     checkequal([String("")], String(""), "split", String("aaa"))
     checkequal([String("aa")], String("aa"), "split", String("aaa"))
     checkequal(
-        [String("A"), String("bobb")],
-        String("Abbobbbobb"),
-        "split",
-        String("bbobb"),
+        [String("A"), String("bobb")], String("Abbobbbobb"), "split", String("bbobb")
     )
     checkequal(
         [String("A"), String("B"), String("")],
@@ -485,18 +402,9 @@ def test_split():
         String("bbobb"),
     )
 
+    checkequal([String("a")] * 20, (String("aBLAH") * 20)[:-4], "split", String("BLAH"))
     checkequal(
-        [String("a")] * 20,
-        (String("aBLAH") * 20)[:-4],
-        "split",
-        String("BLAH"),
-    )
-    checkequal(
-        [String("a")] * 20,
-        (String("aBLAH") * 20)[:-4],
-        "split",
-        String("BLAH"),
-        19,
+        [String("a")] * 20, (String("aBLAH") * 20)[:-4], "split", String("BLAH"), 19
     )
     checkequal(
         [String("a")] * 18 + [String("aBLAHa")],
@@ -508,12 +416,7 @@ def test_split():
 
     # with keyword args
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a|b|c|d"),
         "split",
         sep=String("|"),
@@ -539,12 +442,7 @@ def test_split():
         maxsplit=1,
         sep=String("|"),
     )
-    checkequal(
-        [String("a"), String("b c d")],
-        String("a b c d"),
-        "split",
-        maxsplit=1,
-    )
+    checkequal([String("a"), String("b c d")], String("a b c d"), "split", maxsplit=1)
 
     # argument type
     checkraises(TypeError, String("hello"), "split", 42, 42, 42)
@@ -557,22 +455,13 @@ def test_split():
 def test_rsplit():
     # by a char
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a|b|c|d"),
         "rsplit",
         String("|"),
     )
     checkequal(
-        [String("a|b|c"), String("d")],
-        String("a|b|c|d"),
-        "rsplit",
-        String("|"),
-        1,
+        [String("a|b|c"), String("d")], String("a|b|c|d"), "rsplit", String("|"), 1
     )
     checkequal(
         [String("a|b"), String("c"), String("d")],
@@ -582,48 +471,27 @@ def test_rsplit():
         2,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a|b|c|d"),
         "rsplit",
         String("|"),
         3,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a|b|c|d"),
         "rsplit",
         String("|"),
         4,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a|b|c|d"),
         "rsplit",
         String("|"),
         sys.maxsize - 100,
     )
-    checkequal(
-        [String("a|b|c|d")],
-        String("a|b|c|d"),
-        "rsplit",
-        String("|"),
-        0,
-    )
+    checkequal([String("a|b|c|d")], String("a|b|c|d"), "rsplit", String("|"), 0)
     checkequal(
         [String("a||b||c"), String(""), String("d")],
         String("a||b||c||d"),
@@ -634,16 +502,10 @@ def test_rsplit():
     checkequal([String("abcd")], String("abcd"), "rsplit", String("|"))
     checkequal([String("")], String(""), "rsplit", String("|"))
     checkequal(
-        [String(""), String(" begincase")],
-        String("| begincase"),
-        "rsplit",
-        String("|"),
+        [String(""), String(" begincase")], String("| begincase"), "rsplit", String("|")
     )
     checkequal(
-        [String("endcase "), String("")],
-        String("endcase |"),
-        "rsplit",
-        String("|"),
+        [String("endcase "), String("")], String("endcase |"), "rsplit", String("|")
     )
     checkequal(
         [String(""), String("bothcase"), String("")],
@@ -660,12 +522,7 @@ def test_rsplit():
         2,
     )
 
-    checkequal(
-        [String("a")] * 20,
-        (String("a|") * 20)[:-1],
-        "rsplit",
-        String("|"),
-    )
+    checkequal([String("a")] * 20, (String("a|") * 20)[:-1], "rsplit", String("|"))
     checkequal(
         [String("a|a|a|a|a")] + [String("a")] * 15,
         (String("a|") * 20)[:-1],
@@ -676,12 +533,7 @@ def test_rsplit():
 
     # by string
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a//b//c//d"),
         "rsplit",
         String("//"),
@@ -701,48 +553,27 @@ def test_rsplit():
         2,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a//b//c//d"),
         "rsplit",
         String("//"),
         3,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a//b//c//d"),
         "rsplit",
         String("//"),
         4,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a//b//c//d"),
         "rsplit",
         String("//"),
         sys.maxsize - 5,
     )
-    checkequal(
-        [String("a//b//c//d")],
-        String("a//b//c//d"),
-        "rsplit",
-        String("//"),
-        0,
-    )
+    checkequal([String("a//b//c//d")], String("a//b//c//d"), "rsplit", String("//"), 0)
     checkequal(
         [String("a////b////c"), String(""), String("d")],
         String("a////b////c////d"),
@@ -768,33 +599,15 @@ def test_rsplit():
         "rsplit",
         String("test"),
     )
-    checkequal(
-        [String("ab"), String("c")],
-        String("abbbc"),
-        "rsplit",
-        String("bb"),
-    )
-    checkequal(
-        [String(""), String("")],
-        String("aaa"),
-        "rsplit",
-        String("aaa"),
-    )
+    checkequal([String("ab"), String("c")], String("abbbc"), "rsplit", String("bb"))
+    checkequal([String(""), String("")], String("aaa"), "rsplit", String("aaa"))
     checkequal([String("aaa")], String("aaa"), "rsplit", String("aaa"), 0)
-    checkequal(
-        [String("ab"), String("ab")],
-        String("abbaab"),
-        "rsplit",
-        String("ba"),
-    )
+    checkequal([String("ab"), String("ab")], String("abbaab"), "rsplit", String("ba"))
     checkequal([String("aaaa")], String("aaaa"), "rsplit", String("aab"))
     checkequal([String("")], String(""), "rsplit", String("aaa"))
     checkequal([String("aa")], String("aa"), "rsplit", String("aaa"))
     checkequal(
-        [String("bbob"), String("A")],
-        String("bbobbbobbA"),
-        "rsplit",
-        String("bbobb"),
+        [String("bbob"), String("A")], String("bbobbbobbA"), "rsplit", String("bbobb")
     )
     checkequal(
         [String(""), String("B"), String("A")],
@@ -804,17 +617,10 @@ def test_rsplit():
     )
 
     checkequal(
-        [String("a")] * 20,
-        (String("aBLAH") * 20)[:-4],
-        "rsplit",
-        String("BLAH"),
+        [String("a")] * 20, (String("aBLAH") * 20)[:-4], "rsplit", String("BLAH")
     )
     checkequal(
-        [String("a")] * 20,
-        (String("aBLAH") * 20)[:-4],
-        "rsplit",
-        String("BLAH"),
-        19,
+        [String("a")] * 20, (String("aBLAH") * 20)[:-4], "rsplit", String("BLAH"), 19
     )
     checkequal(
         [String("aBLAHa")] + [String("a")] * 18,
@@ -826,12 +632,7 @@ def test_rsplit():
 
     # with keyword args
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a|b|c|d"),
         "rsplit",
         sep=String("|"),
@@ -857,12 +658,7 @@ def test_rsplit():
         maxsplit=1,
         sep=String("|"),
     )
-    checkequal(
-        [String("a b c"), String("d")],
-        String("a b c d"),
-        "rsplit",
-        maxsplit=1,
-    )
+    checkequal([String("a b c"), String("d")], String("a b c d"), "rsplit", maxsplit=1)
 
     # argument type
     checkraises(TypeError, String("hello"), "rsplit", 42, 42, 42)
@@ -876,95 +672,20 @@ def test_replace():
     EQ = checkequal
 
     # Operations on the empty string
-    EQ(
-        String(""),
-        String(""),
-        "replace",
-        String(""),
-        String(""),
-    )
-    EQ(
-        String("A"),
-        String(""),
-        "replace",
-        String(""),
-        String("A"),
-    )
-    EQ(
-        String(""),
-        String(""),
-        "replace",
-        String("A"),
-        String(""),
-    )
-    EQ(
-        String(""),
-        String(""),
-        "replace",
-        String("A"),
-        String("A"),
-    )
-    EQ(
-        String(""),
-        String(""),
-        "replace",
-        String(""),
-        String(""),
-        100,
-    )
-    EQ(
-        String(""),
-        String(""),
-        "replace",
-        String(""),
-        String(""),
-        sys.maxsize,
-    )
+    EQ(String(""), String(""), "replace", String(""), String(""))
+    EQ(String("A"), String(""), "replace", String(""), String("A"))
+    EQ(String(""), String(""), "replace", String("A"), String(""))
+    EQ(String(""), String(""), "replace", String("A"), String("A"))
+    EQ(String(""), String(""), "replace", String(""), String(""), 100)
+    EQ(String(""), String(""), "replace", String(""), String(""), sys.maxsize)
 
     # interleave (from==String(""), 'to' gets inserted everywhere)
-    EQ(
-        String("A"),
-        String("A"),
-        "replace",
-        String(""),
-        String(""),
-    )
-    EQ(
-        String("*A*"),
-        String("A"),
-        "replace",
-        String(""),
-        String("*"),
-    )
-    EQ(
-        String("*1A*1"),
-        String("A"),
-        "replace",
-        String(""),
-        String("*1"),
-    )
-    EQ(
-        String("*-#A*-#"),
-        String("A"),
-        "replace",
-        String(""),
-        String("*-#"),
-    )
-    EQ(
-        String("*-A*-A*-"),
-        String("AA"),
-        "replace",
-        String(""),
-        String("*-"),
-    )
-    EQ(
-        String("*-A*-A*-"),
-        String("AA"),
-        "replace",
-        String(""),
-        String("*-"),
-        -1,
-    )
+    EQ(String("A"), String("A"), "replace", String(""), String(""))
+    EQ(String("*A*"), String("A"), "replace", String(""), String("*"))
+    EQ(String("*1A*1"), String("A"), "replace", String(""), String("*1"))
+    EQ(String("*-#A*-#"), String("A"), "replace", String(""), String("*-#"))
+    EQ(String("*-A*-A*-"), String("AA"), "replace", String(""), String("*-"))
+    EQ(String("*-A*-A*-"), String("AA"), "replace", String(""), String("*-"), -1)
     EQ(
         String("*-A*-A*-"),
         String("AA"),
@@ -973,140 +694,25 @@ def test_replace():
         String("*-"),
         sys.maxsize,
     )
-    EQ(
-        String("*-A*-A*-"),
-        String("AA"),
-        "replace",
-        String(""),
-        String("*-"),
-        4,
-    )
-    EQ(
-        String("*-A*-A*-"),
-        String("AA"),
-        "replace",
-        String(""),
-        String("*-"),
-        3,
-    )
-    EQ(
-        String("*-A*-A"),
-        String("AA"),
-        "replace",
-        String(""),
-        String("*-"),
-        2,
-    )
-    EQ(
-        String("*-AA"),
-        String("AA"),
-        "replace",
-        String(""),
-        String("*-"),
-        1,
-    )
-    EQ(
-        String("AA"),
-        String("AA"),
-        "replace",
-        String(""),
-        String("*-"),
-        0,
-    )
+    EQ(String("*-A*-A*-"), String("AA"), "replace", String(""), String("*-"), 4)
+    EQ(String("*-A*-A*-"), String("AA"), "replace", String(""), String("*-"), 3)
+    EQ(String("*-A*-A"), String("AA"), "replace", String(""), String("*-"), 2)
+    EQ(String("*-AA"), String("AA"), "replace", String(""), String("*-"), 1)
+    EQ(String("AA"), String("AA"), "replace", String(""), String("*-"), 0)
 
     # single character deletion (from==String("A"), to==String(""))
-    EQ(
-        String(""),
-        String("A"),
-        "replace",
-        String("A"),
-        String(""),
-    )
-    EQ(
-        String(""),
-        String("AAA"),
-        "replace",
-        String("A"),
-        String(""),
-    )
-    EQ(
-        String(""),
-        String("AAA"),
-        "replace",
-        String("A"),
-        String(""),
-        -1,
-    )
-    EQ(
-        String(""),
-        String("AAA"),
-        "replace",
-        String("A"),
-        String(""),
-        sys.maxsize,
-    )
-    EQ(
-        String(""),
-        String("AAA"),
-        "replace",
-        String("A"),
-        String(""),
-        4,
-    )
-    EQ(
-        String(""),
-        String("AAA"),
-        "replace",
-        String("A"),
-        String(""),
-        3,
-    )
-    EQ(
-        String("A"),
-        String("AAA"),
-        "replace",
-        String("A"),
-        String(""),
-        2,
-    )
-    EQ(
-        String("AA"),
-        String("AAA"),
-        "replace",
-        String("A"),
-        String(""),
-        1,
-    )
-    EQ(
-        String("AAA"),
-        String("AAA"),
-        "replace",
-        String("A"),
-        String(""),
-        0,
-    )
-    EQ(
-        String(""),
-        String("AAAAAAAAAA"),
-        "replace",
-        String("A"),
-        String(""),
-    )
-    EQ(
-        String("BCD"),
-        String("ABACADA"),
-        "replace",
-        String("A"),
-        String(""),
-    )
-    EQ(
-        String("BCD"),
-        String("ABACADA"),
-        "replace",
-        String("A"),
-        String(""),
-        -1,
-    )
+    EQ(String(""), String("A"), "replace", String("A"), String(""))
+    EQ(String(""), String("AAA"), "replace", String("A"), String(""))
+    EQ(String(""), String("AAA"), "replace", String("A"), String(""), -1)
+    EQ(String(""), String("AAA"), "replace", String("A"), String(""), sys.maxsize)
+    EQ(String(""), String("AAA"), "replace", String("A"), String(""), 4)
+    EQ(String(""), String("AAA"), "replace", String("A"), String(""), 3)
+    EQ(String("A"), String("AAA"), "replace", String("A"), String(""), 2)
+    EQ(String("AA"), String("AAA"), "replace", String("A"), String(""), 1)
+    EQ(String("AAA"), String("AAA"), "replace", String("A"), String(""), 0)
+    EQ(String(""), String("AAAAAAAAAA"), "replace", String("A"), String(""))
+    EQ(String("BCD"), String("ABACADA"), "replace", String("A"), String(""))
+    EQ(String("BCD"), String("ABACADA"), "replace", String("A"), String(""), -1)
     EQ(
         String("BCD"),
         String("ABACADA"),
@@ -1115,75 +721,15 @@ def test_replace():
         String(""),
         sys.maxsize,
     )
-    EQ(
-        String("BCD"),
-        String("ABACADA"),
-        "replace",
-        String("A"),
-        String(""),
-        5,
-    )
-    EQ(
-        String("BCD"),
-        String("ABACADA"),
-        "replace",
-        String("A"),
-        String(""),
-        4,
-    )
-    EQ(
-        String("BCDA"),
-        String("ABACADA"),
-        "replace",
-        String("A"),
-        String(""),
-        3,
-    )
-    EQ(
-        String("BCADA"),
-        String("ABACADA"),
-        "replace",
-        String("A"),
-        String(""),
-        2,
-    )
-    EQ(
-        String("BACADA"),
-        String("ABACADA"),
-        "replace",
-        String("A"),
-        String(""),
-        1,
-    )
-    EQ(
-        String("ABACADA"),
-        String("ABACADA"),
-        "replace",
-        String("A"),
-        String(""),
-        0,
-    )
-    EQ(
-        String("BCD"),
-        String("ABCAD"),
-        "replace",
-        String("A"),
-        String(""),
-    )
-    EQ(
-        String("BCD"),
-        String("ABCADAA"),
-        "replace",
-        String("A"),
-        String(""),
-    )
-    EQ(
-        String("BCD"),
-        String("BCD"),
-        "replace",
-        String("A"),
-        String(""),
-    )
+    EQ(String("BCD"), String("ABACADA"), "replace", String("A"), String(""), 5)
+    EQ(String("BCD"), String("ABACADA"), "replace", String("A"), String(""), 4)
+    EQ(String("BCDA"), String("ABACADA"), "replace", String("A"), String(""), 3)
+    EQ(String("BCADA"), String("ABACADA"), "replace", String("A"), String(""), 2)
+    EQ(String("BACADA"), String("ABACADA"), "replace", String("A"), String(""), 1)
+    EQ(String("ABACADA"), String("ABACADA"), "replace", String("A"), String(""), 0)
+    EQ(String("BCD"), String("ABCAD"), "replace", String("A"), String(""))
+    EQ(String("BCD"), String("ABCADAA"), "replace", String("A"), String(""))
+    EQ(String("BCD"), String("BCD"), "replace", String("A"), String(""))
     EQ(
         String("*************"),
         String("*************"),
@@ -1201,55 +747,13 @@ def test_replace():
     )
 
     # substring deletion (from==String("the"), to==String(""))
-    EQ(
-        String(""),
-        String("the"),
-        "replace",
-        String("the"),
-        String(""),
-    )
-    EQ(
-        String("ater"),
-        String("theater"),
-        "replace",
-        String("the"),
-        String(""),
-    )
-    EQ(
-        String(""),
-        String("thethe"),
-        "replace",
-        String("the"),
-        String(""),
-    )
-    EQ(
-        String(""),
-        String("thethethethe"),
-        "replace",
-        String("the"),
-        String(""),
-    )
-    EQ(
-        String("aaaa"),
-        String("theatheatheathea"),
-        "replace",
-        String("the"),
-        String(""),
-    )
-    EQ(
-        String("that"),
-        String("that"),
-        "replace",
-        String("the"),
-        String(""),
-    )
-    EQ(
-        String("thaet"),
-        String("thaet"),
-        "replace",
-        String("the"),
-        String(""),
-    )
+    EQ(String(""), String("the"), "replace", String("the"), String(""))
+    EQ(String("ater"), String("theater"), "replace", String("the"), String(""))
+    EQ(String(""), String("thethe"), "replace", String("the"), String(""))
+    EQ(String(""), String("thethethethe"), "replace", String("the"), String(""))
+    EQ(String("aaaa"), String("theatheatheathea"), "replace", String("the"), String(""))
+    EQ(String("that"), String("that"), "replace", String("the"), String(""))
+    EQ(String("thaet"), String("thaet"), "replace", String("the"), String(""))
     EQ(
         String("here and re"),
         String("here and there"),
@@ -1313,50 +817,14 @@ def test_replace():
         String(""),
     )
 
-    EQ(
-        String("abc"),
-        String("abc"),
-        "replace",
-        String("the"),
-        String(""),
-    )
-    EQ(
-        String("abcdefg"),
-        String("abcdefg"),
-        "replace",
-        String("the"),
-        String(""),
-    )
+    EQ(String("abc"), String("abc"), "replace", String("the"), String(""))
+    EQ(String("abcdefg"), String("abcdefg"), "replace", String("the"), String(""))
 
     # substring deletion (from==String("bob"), to==String(""))
-    EQ(
-        String("bob"),
-        String("bbobob"),
-        "replace",
-        String("bob"),
-        String(""),
-    )
-    EQ(
-        String("bobXbob"),
-        String("bbobobXbbobob"),
-        "replace",
-        String("bob"),
-        String(""),
-    )
-    EQ(
-        String("aaaaaaa"),
-        String("aaaaaaabob"),
-        "replace",
-        String("bob"),
-        String(""),
-    )
-    EQ(
-        String("aaaaaaa"),
-        String("aaaaaaa"),
-        "replace",
-        String("bob"),
-        String(""),
-    )
+    EQ(String("bob"), String("bbobob"), "replace", String("bob"), String(""))
+    EQ(String("bobXbob"), String("bbobobXbbobob"), "replace", String("bob"), String(""))
+    EQ(String("aaaaaaa"), String("aaaaaaabob"), "replace", String("bob"), String(""))
+    EQ(String("aaaaaaa"), String("aaaaaaa"), "replace", String("bob"), String(""))
 
     # single character replace in place (len(from)==len(to)==1)
     EQ(
@@ -1530,13 +998,7 @@ def test_replace():
         String("**"),
         0,
     )
-    EQ(
-        String("cobob"),
-        String("bobob"),
-        "replace",
-        String("bob"),
-        String("cob"),
-    )
+    EQ(String("cobob"), String("bobob"), "replace", String("bob"), String("cob"))
     EQ(
         String("cobobXcobocob"),
         String("bobobXbobobob"),
@@ -1544,22 +1006,10 @@ def test_replace():
         String("bob"),
         String("cob"),
     )
-    EQ(
-        String("bobob"),
-        String("bobob"),
-        "replace",
-        String("bot"),
-        String("bot"),
-    )
+    EQ(String("bobob"), String("bobob"), "replace", String("bot"), String("bot"))
 
     # replace single character (len(from)==1, len(to)>1)
-    EQ(
-        String("ReyKKjaviKK"),
-        String("Reykjavik"),
-        "replace",
-        String("k"),
-        String("KK"),
-    )
+    EQ(String("ReyKKjaviKK"), String("Reykjavik"), "replace", String("k"), String("KK"))
     EQ(
         String("ReyKKjaviKK"),
         String("Reykjavik"),
@@ -1616,13 +1066,7 @@ def test_replace():
         String("&lt;"),
     )
 
-    EQ(
-        String("Reykjavik"),
-        String("Reykjavik"),
-        "replace",
-        String("q"),
-        String("KK"),
-    )
+    EQ(String("Reykjavik"), String("Reykjavik"), "replace", String("q"), String("KK"))
 
     # replace substring (len(from)>1, len(to)!=len(from))
     EQ(
@@ -1689,13 +1133,7 @@ def test_replace():
         0,
     )
 
-    EQ(
-        String("bobob"),
-        String("bobobob"),
-        "replace",
-        String("bobob"),
-        String("bob"),
-    )
+    EQ(String("bobob"), String("bobobob"), "replace", String("bobob"), String("bob"))
     EQ(
         String("bobobXbobob"),
         String("bobobobXbobobob"),
@@ -1703,13 +1141,7 @@ def test_replace():
         String("bobob"),
         String("bob"),
     )
-    EQ(
-        String("BOBOBOB"),
-        String("BOBOBOB"),
-        "replace",
-        String("bob"),
-        String("bobby"),
-    )
+    EQ(String("BOBOBOB"), String("BOBOBOB"), "replace", String("bob"), String("bobby"))
 
     checkequal(
         String("one@two!three!"),
@@ -1780,75 +1212,18 @@ def test_replace():
         String("@"),
         2,
     )
-    checkequal(
-        String("-a-b-c-"),
-        String("abc"),
-        "replace",
-        String(""),
-        String("-"),
-    )
-    checkequal(
-        String("-a-b-c"),
-        String("abc"),
-        "replace",
-        String(""),
-        String("-"),
-        3,
-    )
-    checkequal(
-        String("abc"),
-        String("abc"),
-        "replace",
-        String(""),
-        String("-"),
-        0,
-    )
-    checkequal(
-        String(""),
-        String(""),
-        "replace",
-        String(""),
-        String(""),
-    )
-    checkequal(
-        String("abc"),
-        String("abc"),
-        "replace",
-        String("ab"),
-        String("--"),
-        0,
-    )
-    checkequal(
-        String("abc"),
-        String("abc"),
-        "replace",
-        String("xy"),
-        String("--"),
-    )
+    checkequal(String("-a-b-c-"), String("abc"), "replace", String(""), String("-"))
+    checkequal(String("-a-b-c"), String("abc"), "replace", String(""), String("-"), 3)
+    checkequal(String("abc"), String("abc"), "replace", String(""), String("-"), 0)
+    checkequal(String(""), String(""), "replace", String(""), String(""))
+    checkequal(String("abc"), String("abc"), "replace", String("ab"), String("--"), 0)
+    checkequal(String("abc"), String("abc"), "replace", String("xy"), String("--"))
     # Next three for SF bug 422088: [OSF1 alpha] string.replace(); died with
     # MemoryError due to empty result (platform malloc issue when requesting
     # 0 bytes).
-    checkequal(
-        String(""),
-        String("123"),
-        "replace",
-        String("123"),
-        String(""),
-    )
-    checkequal(
-        String(""),
-        String("123123"),
-        "replace",
-        String("123"),
-        String(""),
-    )
-    checkequal(
-        String("x"),
-        String("123x123"),
-        "replace",
-        String("123"),
-        String(""),
-    )
+    checkequal(String(""), String("123"), "replace", String("123"), String(""))
+    checkequal(String(""), String("123123"), "replace", String("123"), String(""))
+    checkequal(String("x"), String("123x123"), "replace", String("123"), String(""))
 
     checkraises(TypeError, String("hello"), "replace")
     checkraises(TypeError, String("hello"), "replace", 42)
@@ -1911,73 +1286,37 @@ def test_capitalize():
 
 def test_additional_split():
     checkequal(
-        [
-            String("this"),
-            String("is"),
-            String("the"),
-            "split",
-            String("function"),
-        ],
+        [String("this"), String("is"), String("the"), "split", String("function")],
         String("this is the split function"),
         "split",
     )
 
     # by whitespace
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a b c d "),
         "split",
     )
+    checkequal([String("a"), String("b c d")], String("a b c d"), "split", None, 1)
     checkequal(
-        [String("a"), String("b c d")],
-        String("a b c d"),
-        "split",
-        None,
-        1,
+        [String("a"), String("b"), String("c d")], String("a b c d"), "split", None, 2
     )
     checkequal(
-        [String("a"), String("b"), String("c d")],
-        String("a b c d"),
-        "split",
-        None,
-        2,
-    )
-    checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a b c d"),
         "split",
         None,
         3,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a b c d"),
         "split",
         None,
         4,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a b c d"),
         "split",
         None,
@@ -1996,26 +1335,10 @@ def test_additional_split():
     checkequal([], String("         "), "split")
     checkequal([String("a")], String("  a    "), "split")
     checkequal([String("a"), String("b")], String("  a    b   "), "split")
+    checkequal([String("a"), String("b   ")], String("  a    b   "), "split", None, 1)
+    checkequal([String("a    b   c   ")], String("  a    b   c   "), "split", None, 0)
     checkequal(
-        [String("a"), String("b   ")],
-        String("  a    b   "),
-        "split",
-        None,
-        1,
-    )
-    checkequal(
-        [String("a    b   c   ")],
-        String("  a    b   c   "),
-        "split",
-        None,
-        0,
-    )
-    checkequal(
-        [String("a"), String("b   c   ")],
-        String("  a    b   c   "),
-        "split",
-        None,
-        1,
+        [String("a"), String("b   c   ")], String("  a    b   c   "), "split", None, 1
     )
     checkequal(
         [String("a"), String("b"), String("c   ")],
@@ -2031,11 +1354,7 @@ def test_additional_split():
         None,
         3,
     )
-    checkequal(
-        [String("a"), String("b")],
-        String("\n\ta \t\r b \v "),
-        "split",
-    )
+    checkequal([String("a"), String("b")], String("\n\ta \t\r b \v "), "split")
     aaa = String(" a ") * 20
     checkequal([String("a")] * 20, aaa, "split")
     checkequal([String("a")] + [aaa[4:]], aaa, "split", None, 1)
@@ -2055,73 +1374,37 @@ def test_additional_split():
 
 def test_additional_rsplit():
     checkequal(
-        [
-            String("this"),
-            String("is"),
-            String("the"),
-            "rsplit",
-            String("function"),
-        ],
+        [String("this"), String("is"), String("the"), "rsplit", String("function")],
         String("this is the rsplit function"),
         "rsplit",
     )
 
     # by whitespace
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a b c d "),
         "rsplit",
     )
+    checkequal([String("a b c"), String("d")], String("a b c d"), "rsplit", None, 1)
     checkequal(
-        [String("a b c"), String("d")],
-        String("a b c d"),
-        "rsplit",
-        None,
-        1,
+        [String("a b"), String("c"), String("d")], String("a b c d"), "rsplit", None, 2
     )
     checkequal(
-        [String("a b"), String("c"), String("d")],
-        String("a b c d"),
-        "rsplit",
-        None,
-        2,
-    )
-    checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a b c d"),
         "rsplit",
         None,
         3,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a b c d"),
         "rsplit",
         None,
         4,
     )
     checkequal(
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
         String("a b c d"),
         "rsplit",
         None,
@@ -2140,26 +1423,10 @@ def test_additional_rsplit():
     checkequal([], String("         "), "rsplit")
     checkequal([String("a")], String("  a    "), "rsplit")
     checkequal([String("a"), String("b")], String("  a    b   "), "rsplit")
+    checkequal([String("  a"), String("b")], String("  a    b   "), "rsplit", None, 1)
+    checkequal([String("  a    b   c")], String("  a    b   c   "), "rsplit", None, 0)
     checkequal(
-        [String("  a"), String("b")],
-        String("  a    b   "),
-        "rsplit",
-        None,
-        1,
-    )
-    checkequal(
-        [String("  a    b   c")],
-        String("  a    b   c   "),
-        "rsplit",
-        None,
-        0,
-    )
-    checkequal(
-        [String("  a    b"), String("c")],
-        String("  a    b   c   "),
-        "rsplit",
-        None,
-        1,
+        [String("  a    b"), String("c")], String("  a    b   c   "), "rsplit", None, 1
     )
     checkequal(
         [String("  a"), String("b"), String("c")],
@@ -2176,11 +1443,7 @@ def test_additional_rsplit():
         3,
     )
     checkequal(
-        [String("a"), String("b")],
-        String("\n\ta \t\r b \v "),
-        "rsplit",
-        None,
-        88,
+        [String("a"), String("b")], String("\n\ta \t\r b \v "), "rsplit", None, 88
     )
     aaa = String(" a ") * 20
     checkequal([String("a")] * 20, aaa, "rsplit")
@@ -2219,39 +1482,14 @@ def test_strip_whitespace():
 
 def test_strip():
     # strip/lstrip/rstrip with str arg
-    checkequal(
-        String("hello"),
-        String("xyzzyhelloxyzzy"),
-        "strip",
-        String("xyz"),
-    )
-    checkequal(
-        String("helloxyzzy"),
-        String("xyzzyhelloxyzzy"),
-        "lstrip",
-        String("xyz"),
-    )
-    checkequal(
-        String("xyzzyhello"),
-        String("xyzzyhelloxyzzy"),
-        "rstrip",
-        String("xyz"),
-    )
+    checkequal(String("hello"), String("xyzzyhelloxyzzy"), "strip", String("xyz"))
+    checkequal(String("helloxyzzy"), String("xyzzyhelloxyzzy"), "lstrip", String("xyz"))
+    checkequal(String("xyzzyhello"), String("xyzzyhelloxyzzy"), "rstrip", String("xyz"))
     checkequal(String("hello"), String("hello"), "strip", String("xyz"))
-    checkequal(
-        String(""),
-        String("mississippi"),
-        "strip",
-        String("mississippi"),
-    )
+    checkequal(String(""), String("mississippi"), "strip", String("mississippi"))
 
     # only trim the start and end; does not strip internal characters
-    checkequal(
-        String("mississipp"),
-        String("mississippi"),
-        "strip",
-        String("i"),
-    )
+    checkequal(String("mississipp"), String("mississippi"), "strip", String("i"))
 
     checkraises(TypeError, String("hello"), "strip", 42, 42)
     checkraises(TypeError, String("hello"), "lstrip", 42, 42)
@@ -2263,13 +1501,7 @@ def test_ljust():
     checkequal(String("abc   "), String("abc"), "ljust", 6)
     checkequal(String("abc"), String("abc"), "ljust", 3)
     checkequal(String("abc"), String("abc"), "ljust", 2)
-    checkequal(
-        String("abc*******"),
-        String("abc"),
-        "ljust",
-        10,
-        String("*"),
-    )
+    checkequal(String("abc*******"), String("abc"), "ljust", 10, String("*"))
     checkraises(TypeError, String("abc"), "ljust")
 
 
@@ -2278,13 +1510,7 @@ def test_rjust():
     checkequal(String("   abc"), String("abc"), "rjust", 6)
     checkequal(String("abc"), String("abc"), "rjust", 3)
     checkequal(String("abc"), String("abc"), "rjust", 2)
-    checkequal(
-        String("*******abc"),
-        String("abc"),
-        "rjust",
-        10,
-        String("*"),
-    )
+    checkequal(String("*******abc"), String("abc"), "rjust", 10, String("*"))
     checkraises(TypeError, String("abc"), "rjust")
 
 
@@ -2293,13 +1519,7 @@ def test_center():
     checkequal(String(" abc  "), String("abc"), "center", 6)
     checkequal(String("abc"), String("abc"), "center", 3)
     checkequal(String("abc"), String("abc"), "center", 2)
-    checkequal(
-        String("***abc****"),
-        String("abc"),
-        "center",
-        10,
-        String("*"),
-    )
+    checkequal(String("***abc****"), String("abc"), "center", 10, String("*"))
     checkraises(TypeError, String("abc"), "center")
 
 
@@ -2409,16 +1629,8 @@ def test_isascii():
     for p in range(8):
         checkequal(True, String(" ") * p + String("\x7f"), "isascii")
         checkequal(False, String(" ") * p + String("\x80"), "isascii")
-        checkequal(
-            True,
-            String(" ") * p + String("\x7f") + String(" ") * 8,
-            "isascii",
-        )
-        checkequal(
-            False,
-            String(" ") * p + String("\x80") + String(" ") * 8,
-            "isascii",
-        )
+        checkequal(True, String(" ") * p + String("\x7f") + String(" ") * 8, "isascii")
+        checkequal(False, String(" ") * p + String("\x80") + String(" ") * 8, "isascii")
 
 
 def test_isdigit():
@@ -2451,22 +1663,12 @@ def test_title():
 
 def test_splitlines():
     checkequal(
-        [
-            String("abc"),
-            String("def"),
-            String(""),
-            String("ghi"),
-        ],
+        [String("abc"), String("def"), String(""), String("ghi")],
         String("abc\ndef\n\rghi"),
         "splitlines",
     )
     checkequal(
-        [
-            String("abc"),
-            String("def"),
-            String(""),
-            String("ghi"),
-        ],
+        [String("abc"), String("def"), String(""), String("ghi")],
         String("abc\ndef\n\r\nghi"),
         "splitlines",
     )
@@ -2481,34 +1683,17 @@ def test_splitlines():
         "splitlines",
     )
     checkequal(
-        [
-            String("abc"),
-            String("def"),
-            String("ghi"),
-            String(""),
-        ],
+        [String("abc"), String("def"), String("ghi"), String("")],
         String("abc\ndef\r\nghi\n\r"),
         "splitlines",
     )
     checkequal(
-        [
-            String(""),
-            String("abc"),
-            String("def"),
-            String("ghi"),
-            String(""),
-        ],
+        [String(""), String("abc"), String("def"), String("ghi"), String("")],
         String("\nabc\ndef\r\nghi\n\r"),
         "splitlines",
     )
     checkequal(
-        [
-            String(""),
-            String("abc"),
-            String("def"),
-            String("ghi"),
-            String(""),
-        ],
+        [String(""), String("abc"), String("def"), String("ghi"), String("")],
         String("\nabc\ndef\r\nghi\n\r"),
         "splitlines",
         False,
@@ -2526,13 +1711,7 @@ def test_splitlines():
         True,
     )
     checkequal(
-        [
-            String(""),
-            String("abc"),
-            String("def"),
-            String("ghi"),
-            String(""),
-        ],
+        [String(""), String("abc"), String("def"), String("ghi"), String("")],
         String("\nabc\ndef\r\nghi\n\r"),
         "splitlines",
         keepends=False,
@@ -2576,16 +1755,8 @@ def test_capitalize_nonascii():
         String("\u24df\u24e8\u24e3\u24d7\u24de\u24dd"),
         "capitalize",
     )
-    checkequal(
-        String("\u2160\u2171\u2172"),
-        String("\u2160\u2161\u2162"),
-        "capitalize",
-    )
-    checkequal(
-        String("\u2160\u2171\u2172"),
-        String("\u2170\u2171\u2172"),
-        "capitalize",
-    )
+    checkequal(String("\u2160\u2171\u2172"), String("\u2160\u2161\u2162"), "capitalize")
+    checkequal(String("\u2160\u2171\u2172"), String("\u2170\u2171\u2172"), "capitalize")
     # check with Ll chars with no upper - nothing changes here
     checkequal(
         String("\u019b\u1d00\u1d86\u0221\u1fb7"),
@@ -2616,14 +1787,7 @@ def test_startswith():
     checkequal(True, String("hello"), "startswith", String("he"), 0, -1)
     checkequal(True, String("hello"), "startswith", String("he"), -53, -1)
     checkequal(False, String("hello"), "startswith", String("hello"), 0, -1)
-    checkequal(
-        False,
-        String("hello"),
-        "startswith",
-        String("hello world"),
-        -1,
-        -10,
-    )
+    checkequal(False, String("hello"), "startswith", String("hello world"), -1, -10)
     checkequal(False, String("hello"), "startswith", String("ello"), -5)
     checkequal(True, String("hello"), "startswith", String("ello"), -4)
     checkequal(False, String("hello"), "startswith", String("o"), -2)
@@ -2635,24 +1799,9 @@ def test_startswith():
     checkraises(TypeError, String("hello"), "startswith", 42)
 
     # test tuple arguments
-    checkequal(
-        True,
-        String("hello"),
-        "startswith",
-        (String("he"), String("ha")),
-    )
-    checkequal(
-        False,
-        String("hello"),
-        "startswith",
-        (String("lo"), String("llo")),
-    )
-    checkequal(
-        True,
-        String("hello"),
-        "startswith",
-        (String("hellox"), String("hello")),
-    )
+    checkequal(True, String("hello"), "startswith", (String("he"), String("ha")))
+    checkequal(False, String("hello"), "startswith", (String("lo"), String("llo")))
+    checkequal(True, String("hello"), "startswith", (String("hellox"), String("hello")))
     checkequal(False, String("hello"), "startswith", ())
     checkequal(
         True,
@@ -2668,30 +1817,11 @@ def test_startswith():
         (String("hellowo"), String("ello"), String("rld")),
         3,
     )
+    checkequal(True, String("hello"), "startswith", (String("lo"), String("he")), 0, -1)
     checkequal(
-        True,
-        String("hello"),
-        "startswith",
-        (String("lo"), String("he")),
-        0,
-        -1,
+        False, String("hello"), "startswith", (String("he"), String("hel")), 0, 1
     )
-    checkequal(
-        False,
-        String("hello"),
-        "startswith",
-        (String("he"), String("hel")),
-        0,
-        1,
-    )
-    checkequal(
-        True,
-        String("hello"),
-        "startswith",
-        (String("he"), String("hel")),
-        0,
-        2,
-    )
+    checkequal(True, String("hello"), "startswith", (String("he"), String("hel")), 0, 2)
 
     checkraises(TypeError, String("hello"), "startswith", (42,))
 
@@ -2734,24 +1864,9 @@ def test_endswith():
     checkraises(TypeError, String("hello"), "endswith", 42)
 
     # test tuple arguments
-    checkequal(
-        False,
-        String("hello"),
-        "endswith",
-        (String("he"), String("ha")),
-    )
-    checkequal(
-        True,
-        String("hello"),
-        "endswith",
-        (String("lo"), String("llo")),
-    )
-    checkequal(
-        True,
-        String("hello"),
-        "endswith",
-        (String("hellox"), String("hello")),
-    )
+    checkequal(False, String("hello"), "endswith", (String("he"), String("ha")))
+    checkequal(True, String("hello"), "endswith", (String("lo"), String("llo")))
+    checkequal(True, String("hello"), "endswith", (String("hellox"), String("hello")))
     checkequal(False, String("hello"), "endswith", ())
     checkequal(
         True,
@@ -2769,29 +1884,10 @@ def test_endswith():
         -1,
     )
     checkequal(
-        True,
-        String("hello"),
-        "endswith",
-        (String("hell"), String("ell")),
-        0,
-        -1,
+        True, String("hello"), "endswith", (String("hell"), String("ell")), 0, -1
     )
-    checkequal(
-        False,
-        String("hello"),
-        "endswith",
-        (String("he"), String("hel")),
-        0,
-        1,
-    )
-    checkequal(
-        True,
-        String("hello"),
-        "endswith",
-        (String("he"), String("hell")),
-        0,
-        4,
-    )
+    checkequal(False, String("hello"), "endswith", (String("he"), String("hel")), 0, 1)
+    checkequal(True, String("hello"), "endswith", (String("he"), String("hell")), 0, 4)
 
     checkraises(TypeError, String("hello"), "endswith", (42,))
 
@@ -2845,10 +1941,7 @@ def test_extended_getslice():
             for step in indices[1:]:
                 L = list(s)[start:stop:step]
                 checkequal(
-                    String("").join(L),
-                    s,
-                    "__getitem__",
-                    slice(start, stop, step),
+                    String("").join(L), s, "__getitem__", slice(start, stop, step)
                 )
 
 
@@ -2870,23 +1963,13 @@ def test_join():
         String("a b c d"),
         String(" "),
         "join",
-        [
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ],
+        [String("a"), String("b"), String("c"), String("d")],
     )
     checkequal(
         String("abcd"),
         String(""),
         "join",
-        (
-            String("a"),
-            String("b"),
-            String("c"),
-            String("d"),
-        ),
+        (String("a"), String("b"), String("c"), String("d")),
     )
     checkequal(
         String("bd"),
@@ -2902,24 +1985,11 @@ def test_join():
     )
     checkequal(String("w x y z"), String(" "), "join", Sequence())
     checkequal(String("abc"), String("a"), "join", (String("abc"),))
+    checkequal(String("z"), String("a"), "join", List([String("z")]))
     checkequal(
-        String("z"),
-        String("a"),
-        "join",
-        List([String("z")]),
+        String("a.b.c"), String("."), "join", [String("a"), String("b"), String("c")]
     )
-    checkequal(
-        String("a.b.c"),
-        String("."),
-        "join",
-        [String("a"), String("b"), String("c")],
-    )
-    checkraises(
-        TypeError,
-        String("."),
-        "join",
-        [String("a"), String("b"), 3],
-    )
+    checkraises(TypeError, String("."), "join", [String("a"), String("b"), 3])
     for i in [5, 25, 125]:
         checkequal(
             (((String("a") * i) + String("-")) * i)[:-1],
@@ -2943,12 +2013,7 @@ def test_join():
 
 
 def test_formatting():
-    checkequal(
-        String("+hello+"),
-        String("+%s+"),
-        "__mod__",
-        String("hello"),
-    )
+    checkequal(String("+hello+"), String("+%s+"), "__mod__", String("hello"))
     checkequal(String("+10+"), String("+%d+"), "__mod__", 10)
     checkequal(String("a"), String("%c"), "__mod__", String("a"))
     checkequal(String("a"), String("%c"), "__mod__", String("a"))
@@ -2974,12 +2039,7 @@ def test_formatting():
     checkraises(TypeError, String("%s%s"), "__mod__", (42,))
     checkraises(TypeError, String("%c"), "__mod__", (None,))
     checkraises(ValueError, String("%(foo"), "__mod__", {})
-    checkraises(
-        TypeError,
-        String("%(foo)s %(bar)s"),
-        "__mod__",
-        (String("foo"), 42),
-    )
+    checkraises(TypeError, String("%(foo)s %(bar)s"), "__mod__", (String("foo"), 42))
     checkraises(TypeError, String("%d"), "__mod__", String("42"))  # not numeric
     checkraises(
         TypeError, String("%d"), "__mod__", (42 + 0j)
@@ -2987,38 +2047,22 @@ def test_formatting():
 
     # argument names with properly nested brackets are supported
     checkequal(
-        String("bar"),
-        String("%((foo))s"),
-        "__mod__",
-        {String("(foo)"): String("bar")},
+        String("bar"), String("%((foo))s"), "__mod__", {String("(foo)"): String("bar")}
     )
 
     # 100 is a magic number in PyUnicode_Format, this forces a resize
     checkequal(
-        103 * String("a") + String("x"),
-        String("%sx"),
-        "__mod__",
-        103 * String("a"),
+        103 * String("a") + String("x"), String("%sx"), "__mod__", 103 * String("a")
     )
 
-    checkraises(
-        TypeError,
-        String("%*s"),
-        "__mod__",
-        (String("foo"), String("bar")),
-    )
+    checkraises(TypeError, String("%*s"), "__mod__", (String("foo"), String("bar")))
     checkraises(TypeError, String("%10.*f"), "__mod__", (String("foo"), 42.0))
     checkraises(ValueError, String("%10"), "__mod__", (42,))
 
     # Outrageously large width or precision should raise ValueError.
-    checkraises(ValueError, String("%%%df") % (2**64), "__mod__", (3.2))
-    checkraises(ValueError, String("%%.%df") % (2**64), "__mod__", (3.2))
-    checkraises(
-        OverflowError,
-        String("%*s"),
-        "__mod__",
-        (sys.maxsize + 1, String("")),
-    )
+    checkraises(ValueError, String("%%%df") % (2 ** 64), "__mod__", (3.2))
+    checkraises(ValueError, String("%%.%df") % (2 ** 64), "__mod__", (3.2))
+    checkraises(OverflowError, String("%*s"), "__mod__", (sys.maxsize + 1, String("")))
     checkraises(OverflowError, String("%.*f"), "__mod__", (sys.maxsize + 1, 1.0 / 7))
 
     class X(object):
@@ -3036,19 +2080,11 @@ def test_formatting_c_limits():
 
     SIZE_MAX = (1 << (PY_SSIZE_T_MAX.bit_length() + 1)) - 1
     checkraises(
-        OverflowError,
-        String("%*s"),
-        "__mod__",
-        (PY_SSIZE_T_MAX + 1, String("")),
+        OverflowError, String("%*s"), "__mod__", (PY_SSIZE_T_MAX + 1, String(""))
     )
     checkraises(OverflowError, String("%.*f"), "__mod__", (INT_MAX + 1, 1.0 / 7))
     # Issue 15989
-    checkraises(
-        OverflowError,
-        String("%*s"),
-        "__mod__",
-        (SIZE_MAX + 1, String("")),
-    )
+    checkraises(OverflowError, String("%*s"), "__mod__", (SIZE_MAX + 1, String("")))
     checkraises(OverflowError, String("%.*f"), "__mod__", (UINT_MAX + 1, 1.0 / 7))
 
 
@@ -3070,13 +2106,7 @@ def test_inplace_rewrites():
     checkequal(String("A"), String("a"), "upper")
     checkequal(True, String("a"), "islower")
 
-    checkequal(
-        String("a"),
-        String("A"),
-        "replace",
-        String("A"),
-        String("a"),
-    )
+    checkequal(String("a"), String("A"), "replace", String("A"), String("a"))
     checkequal(True, String("A"), "isupper")
 
     checkequal(String("A"), String("a"), "capitalize")
@@ -3091,11 +2121,7 @@ def test_inplace_rewrites():
 
 def test_partition():
     checkequal(
-        (
-            String("this is the par"),
-            String("ti"),
-            String("tion method"),
-        ),
+        (String("this is the par"), String("ti"), String("tion method")),
         String("this is the partition method"),
         "partition",
         String("ti"),
@@ -3134,11 +2160,7 @@ def test_partition():
 
 def test_rpartition():
     checkequal(
-        (
-            String("this is the rparti"),
-            String("ti"),
-            String("on method"),
-        ),
+        (String("this is the rparti"), String("ti"), String("on method")),
         String("this is the rpartition method"),
         "rpartition",
         String("ti"),

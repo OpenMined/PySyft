@@ -23,10 +23,7 @@ from .common import ImmediateActionWithoutReply
 @serializable()
 class SaveObjectAction(ImmediateActionWithoutReply):
     def __init__(
-        self,
-        obj: StorableObject,
-        address: Address,
-        msg_id: Optional[UID] = None,
+        self, obj: StorableObject, address: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.obj = obj

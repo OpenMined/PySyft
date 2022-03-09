@@ -75,9 +75,7 @@ async def syft_route(
 
 
 @router.post("/stream", response_model=str)
-async def syft_stream(
-    request: Request,
-) -> Any:
+async def syft_stream(request: Request,) -> Any:
     with tracer.start_as_current_span("POST syft_route /stream"):
         data = await request.body()
 

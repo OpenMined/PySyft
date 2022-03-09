@@ -47,9 +47,7 @@ class Property(ast.attribute.Attribute):
         self.is_static = False
 
     def __call__(
-        self,
-        *args: Tuple[Any, ...],
-        **kwargs: Any,
+        self, *args: Tuple[Any, ...], **kwargs: Any
     ) -> Optional[Union[Any, CallableT]]:
         """`Property` attribute is not callable.
 

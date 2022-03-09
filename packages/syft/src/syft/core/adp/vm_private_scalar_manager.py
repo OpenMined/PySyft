@@ -47,12 +47,12 @@ class PrimeFactory:
 
     def __init__(self) -> None:
         self.exp = 2
-        self.prime_numbers: list = get_cached_primes(total=10**self.exp)
+        self.prime_numbers: list = get_cached_primes(total=10 ** self.exp)
 
     def get(self, index: int) -> int:
         while index > len(self.prime_numbers) - 1:
             self.exp += 1
-            self.prime_numbers = get_cached_primes(total=10**self.exp)
+            self.prime_numbers = get_cached_primes(total=10 ** self.exp)
         return self.prime_numbers[index]
 
     def __eq__(self, other: Any) -> bool:
@@ -66,9 +66,7 @@ class PrimeFactory:
         return PrimeFactory_PB()
 
     @staticmethod
-    def _proto2object(
-        proto: PrimeFactory_PB,
-    ) -> PrimeFactory:
+    def _proto2object(proto: PrimeFactory_PB,) -> PrimeFactory:
         return PrimeFactory()
 
     @staticmethod

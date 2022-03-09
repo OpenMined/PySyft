@@ -60,7 +60,7 @@ class LogHandler:
                     "serialize": self.config.LOGURU_SERIALIZE,
                     "format": self.format_record,
                 }
-            ],
+            ]
         )
 
         try:

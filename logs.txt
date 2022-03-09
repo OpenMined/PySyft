@@ -1,0 +1,1048 @@
+Running start.sh with RELEASE=production
+---Monkey Patching: Gevent---
+
+Checking for script in /app/prestart.sh
+Running script /app/prestart.sh
+Running prestart.sh with RELEASE=production
+---Monkey Patching: Gevent---
+
+                                        dp                                         
+                                    44444ddVhm                                     
+                                4EE44EXE44EEVVhhgm                                 
+                            p4EEEgXXE4444ddddd4dhggSF                              
+                        B    4EEEEXXE4444dddd44dhgggq                              
+                    SXXXXgX4G   d44444XgEEE4Vhhgg    6qqqmm6p                      
+                GXXXXXGGPGPgggEg    dE4444ddh    ggSSSggSSSm66pFF                  
+            hgPPPPZZPXXXggggXPPEEEE4    hS   hhVhhhVhSSqmmm6mmq6pFF5y              
+            dPPPGbZPXXXXgggggXPPgEEdm        gVhhddhgSSqmmm666mqmFF55              
+          h6   gPPXXPZGPXXPPggEEEg   4444ddhm   hhggShhgqmqSq66pF6    fq           
+          EZXgg    XXXXXXXgggG   E4E44EXggEdVVhh    SSSqqmm66p    222225           
+          4bGPEEE4h    XXg   EEEEEEXgE444dddd44hhggg   CmmC   533222FF25           
+          dPEEEEgEddVhV   gEgggPXgE444444dddVVhhVdVggS5    3222355222223           
+          hX4dddVVdd4Vm   S4dd4EEEEE44444dddVVVhhgSm66y    yF52333333233           
+          gEdVVhhhggggm   mgm66mSgd44E444ddddVgmF2yyy2y    y233333333232           
+          SE4VhggSSSSS6   6q6ppFF5FFmSV44dhSp2yyyyyyy2y    y2y3333325532           
+          mhggghhgqmmqF   FmFFF555223335F5yfffyyyyyyy2y    y2yy3253333ye           
+              mqqmmSSq5   F655522233yyyywwffffyyyyyyy3f    y553yyyyw               
+          pSm5   yp6pp2   2F22233yyyyyffwwwwffffffyyy3f   ?f3yy3    yyyw           
+          pV66pp66   5y   3F523yyyffffffCCwwwwwwfffy35f   Vw    w3yyy2y3           
+          5q66m6F5555$    f3yyy33yffwwwwJJCCCwwfyywffff     wyyyy32233y3           
+          2mF55555F533f       wfffwfffCCJJJCwfCCwwCC       fyy23yyyyyyy3           
+          3p5222233y32f   fyf    jCCCCJwCCJJJJJw    #wJn   w3fffyyyyyyy3           
+          y6233yyyyyyyw   w3wwCJJ    T######    C#JJCwC    Cfwffffffy2f2           
+          f2y323yfffffC   CfwwfCJJ##T       nTT###wwCwJ    Cfwwwffyyfyfw           
+            3yfffyyyfwJ   JwJJJJJCC###u   unTTJJ#####C#    Jwwffwwwwwn             
+                wwwwCfJ   #w#####TTT#Cu   un#TTTTTTT#J#    #CJJCC#                 
+                    #JT   Tw##TTTTnnn#u   uununnnTTTTJT   nTJ#                     
+                          T#T##TTnnuuTL   jLuuuuunT#TTn                            
+                           7TnnnuTTuLnj   LLLuuTuuuunj                             
+                               7uuLLLTj   zjuLLLLn                                 
+                                   jjLz   zjjL                                     
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+>>>>>>>>>>>>)%                     ))>>>>>>>><               I>>>>            >)>  
+>))>>>>>>>>>)>)                  \>>>>>>>>>>>>>>             >>>>>            >i>> 
+>)><       >>)>)">>>       I>)> I>)>>       <>>>>  i>>><>>)<  <)>     <>>>>>)\>)>> 
+>)>>       >>i>)I>i>>      >i>> >>)>          >)   <))>>>>>>  >i>I  )>>>>>>>>>>)>> 
+>)>>>>>>>>>>>><   >)>>    >i><  >>)>    v>>>>>>)>  >>)>>      >)>I )>i>>     >>)>> 
+>>>>>>>>>>>><      >i>>  >)>)   >>)>    i>>>>>)i>  >>)>       >)>I <>)>       >)>> 
+>)>>               I>i>>>)>>    )>)>         <>)>  >>)>       >)>I <>)>       >)>> 
+>)><                )>)>>>>      >>)>>)   )i>>)>>  >>)>       >)>I  >)>>%   >>>>>> 
+>)>>                 >>)>>        <>>>>>>>>>>>>    >>))       >)>I  )>>>>>>>>>>)>> 
+<>>%                 >>><           >>>>>>))v      \<>>       <>>     "<)>>>i <>>  
+
+                                                     __
+                                                    |  \  _   _   _  .  _
+                                                    |__/ (_) ||| (_| | | )
+
+                                        dp                                         
+                                    44444ddVhm                                     
+                                4EE44EXE44EEVVhhgm                                 
+                            p4EEEgXXE4444ddddd4dhggSF                              
+                        B    4EEEEXXE4444dddd44dhgggq                              
+                    SXXXXgX4G   d44444XgEEE4Vhhgg    6qqqmm6p                      
+                GXXXXXGGPGPgggEg    dE4444ddh    ggSSSggSSSm66pFF                  
+            hgPPPPZZPXXXggggXPPEEEE4    hS   hhVhhhVhSSqmmm6mmq6pFF5y              
+            dPPPGbZPXXXXgggggXPPgEEdm        gVhhddhgSSqmmm666mqmFF55              
+          h6   gPPXXPZGPXXPPggEEEg   4444ddhm   hhggShhgqmqSq66pF6    fq           
+          EZXgg    XXXXXXXgggG   E4E44EXggEdVVhh    SSSqqmm66p    222225           
+          4bGPEEE4h    XXg   EEEEEEXgE444dddd44hhggg   CmmC   533222FF25           
+          dPEEEEgEddVhV   gEgggPXgE444444dddVVhhVdVggS5    3222355222223           
+          hX4dddVVdd4Vm   S4dd4EEEEE44444dddVVVhhgSm66y    yF52333333233           
+          gEdVVhhhggggm   mgm66mSgd44E444ddddVgmF2yyy2y    y233333333232           
+          SE4VhggSSSSS6   6q6ppFF5FFmSV44dhSp2yyyyyyy2y    y2y3333325532           
+          mhggghhgqmmqF   FmFFF555223335F5yfffyyyyyyy2y    y2yy3253333ye           
+              mqqmmSSq5   F655522233yyyywwffffyyyyyyy3f    y553yyyyw               
+          pSm5   yp6pp2   2F22233yyyyyffwwwwffffffyyy3f   ?f3yy3    yyyw           
+          pV66pp66   5y   3F523yyyffffffCCwwwwwwfffy35f   Vw    w3yyy2y3           
+          5q66m6F5555$    f3yyy33yffwwwwJJCCCwwfyywffff     wyyyy32233y3           
+          2mF55555F533f       wfffwfffCCJJJCwfCCwwCC       fyy23yyyyyyy3           
+          3p5222233y32f   fyf    jCCCCJwCCJJJJJw    #wJn   w3fffyyyyyyy3           
+          y6233yyyyyyyw   w3wwCJJ    T######    C#JJCwC    Cfwffffffy2f2           
+          f2y323yfffffC   CfwwfCJJ##T       nTT###wwCwJ    Cfwwwffyyfyfw           
+            3yfffyyyfwJ   JwJJJJJCC###u   unTTJJ#####C#    Jwwffwwwwwn             
+                wwwwCfJ   #w#####TTT#Cu   un#TTTTTTT#J#    #CJJCC#                 
+                    #JT   Tw##TTTTnnn#u   uununnnTTTTJT   nTJ#                     
+                          T#T##TTnnuuTL   jLuuuuunT#TTn                            
+                           7TnnnuTTuLnj   LLLuuTuuuunj                             
+                               7uuLLLTj   zjuLLLLn                                 
+                                   jjLz   zjjL                                     
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+>>>>>>>>>>>>)%                     ))>>>>>>>><               I>>>>            >)>  
+>))>>>>>>>>>)>)                  \>>>>>>>>>>>>>>             >>>>>            >i>> 
+>)><       >>)>)">>>       I>)> I>)>>       <>>>>  i>>><>>)<  <)>     <>>>>>)\>)>> 
+>)>>       >>i>)I>i>>      >i>> >>)>          >)   <))>>>>>>  >i>I  )>>>>>>>>>>)>> 
+>)>>>>>>>>>>>><   >)>>    >i><  >>)>    v>>>>>>)>  >>)>>      >)>I )>i>>     >>)>> 
+>>>>>>>>>>>><      >i>>  >)>)   >>)>    i>>>>>)i>  >>)>       >)>I <>)>       >)>> 
+>)>>               I>i>>>)>>    )>)>         <>)>  >>)>       >)>I <>)>       >)>> 
+>)><                )>)>>>>      >>)>>)   )i>>)>>  >>)>       >)>I  >)>>%   >>>>>> 
+>)>>                 >>)>>        <>>>>>>>>>>>>    >>))       >)>I  )>>>>>>>>>>)>> 
+<>>%                 >>><           >>>>>>))v      \<>>       <>>     "<)>>>i <>>  
+
+                                                     __
+                                                    |  \  _   _   _  .  _
+                                                    |__/ (_) ||| (_| | | )
+
+2022-02-07 19:53:17 | DEBUG    | grid.logger.handler:init_logger:77: Logging to /var/log/pygrid/grid.log
+2022-02-07 19:53:17 | INFO     | uvicorn.lifespan.on:startup:59: Application startup complete.
+2022-02-07 19:53:17 | INFO     | uvicorn.server:_log_started_message:217: Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+2022-02-07 19:53:17 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 127.0.0.1:60960 - "GET /api/v1/syft/metadata HTTP/1.1" 200
+2022-02-07 19:53:18 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 127.0.0.1:60964 - "GET /api/v1/syft/metadata HTTP/1.1" 200
+2022-02-07 19:53:32 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 172.26.0.6:56288 - "POST /api/v1/syft HTTP/1.1" 500
+2022-02-07 19:53:32 | ERROR    | uvicorn.protocols.http.httptools_impl:run_asgi:378: Exception in ASGI application
+Traceback (most recent call last):
+
+  File "/root/.local/bin/uvicorn", line 8, in <module>
+    sys.exit(main())
+    │   │    └ <Command main>
+    │   └ <built-in function exit>
+    └ <module 'sys' (built-in)>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1128, in __call__
+    return self.main(*args, **kwargs)
+           │    │     │       └ {}
+           │    │     └ ()
+           │    └ <function BaseCommand.main at 0x7f5fc097b280>
+           └ <Command main>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1053, in main
+    rv = self.invoke(ctx)
+         │    │      └ <click.core.Context object at 0x7f5fc13b5940>
+         │    └ <function Command.invoke at 0x7f5fc097bd30>
+         └ <Command main>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1395, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           │   │      │    │           │   └ {'host': '0.0.0.0', 'port': 8001, 'log_level': 'info', 'app': 'grid.main:app', 'uds': None, 'fd': None, 'debug': False, 'relo...
+           │   │      │    │           └ <click.core.Context object at 0x7f5fc13b5940>
+           │   │      │    └ <function main at 0x7f5fc0450ee0>
+           │   │      └ <Command main>
+           │   └ <function Context.invoke at 0x7f5fc0975af0>
+           └ <click.core.Context object at 0x7f5fc13b5940>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 754, in invoke
+    return __callback(*args, **kwargs)
+                       │       └ {'host': '0.0.0.0', 'port': 8001, 'log_level': 'info', 'app': 'grid.main:app', 'uds': None, 'fd': None, 'debug': False, 'relo...
+                       └ ()
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/main.py", line 425, in main
+    run(app, **kwargs)
+    │   │      └ {'host': '0.0.0.0', 'port': 8001, 'uds': None, 'fd': None, 'loop': 'auto', 'http': 'auto', 'ws': 'auto', 'ws_max_size': 16777...
+    │   └ 'grid.main:app'
+    └ <function run at 0x7f5fc05bf1f0>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/main.py", line 447, in run
+    server.run()
+    │      └ <function Server.run at 0x7f5fc0523e50>
+    └ <uvicorn.server.Server object at 0x7f5fc044d280>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/server.py", line 68, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           │       │   │    │             └ None
+           │       │   │    └ <function Server.serve at 0x7f5fc0523ee0>
+           │       │   └ <uvicorn.server.Server object at 0x7f5fc044d280>
+           │       └ <function run at 0x7f5fc128e790>
+           └ <module 'asyncio' from '/usr/local/lib/python3.9/asyncio/__init__.py'>
+  File "/usr/local/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+           │    │                  └ <coroutine object Server.serve at 0x7f5fc04757c0>
+           │    └ <method 'run_until_complete' of 'uvloop.loop.Loop' objects>
+           └ <uvloop.Loop running=True closed=False debug=False>
+> File "/root/.local/lib/python3.9/site-packages/uvicorn/protocols/http/httptools_impl.py", line 375, in run_asgi
+    result = await app(self.scope, self.receive, self.send)
+                   │   │    │      │    │        │    └ <function RequestResponseCycle.send at 0x7f5fc008e0d0>
+                   │   │    │      │    │        └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f50765a90>
+                   │   │    │      │    └ <function RequestResponseCycle.receive at 0x7f5fc008e160>
+                   │   │    │      └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f50765a90>
+                   │   │    └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+                   │   └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f50765a90>
+                   └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x7f5fc006dd90>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/middleware/proxy_headers.py", line 75, in __call__
+    return await self.app(scope, receive, send)
+                 │    │   │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f50765a...
+                 │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f507...
+                 │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+                 │    └ <fastapi.applications.FastAPI object at 0x7f5fc0090a90>
+                 └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x7f5fc006dd90>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/applications.py", line 208, in __call__
+    await super().__call__(scope, receive, send)
+                           │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f50765a...
+                           │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f507...
+                           └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+  File "/root/.local/lib/python3.9/site-packages/starlette/applications.py", line 112, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f50765a...
+          │    │                │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f507...
+          │    │                └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x7f5f508304c0>
+          └ <fastapi.applications.FastAPI object at 0x7f5fc0090a90>
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 181, in __call__
+    raise exc from None
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 159, in __call__
+    await self.app(scope, receive, _send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x7f5f50747f70>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f507...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.middleware.cors.CORSMiddleware object at 0x7f5f50830520>
+          └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x7f5f508304c0>
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/cors.py", line 78, in __call__
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x7f5f50747f70>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f507...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.exceptions.ExceptionMiddleware object at 0x7f5f50830550>
+          └ <starlette.middleware.cors.CORSMiddleware object at 0x7f5f50830520>
+  File "/root/.local/lib/python3.9/site-packages/starlette/exceptions.py", line 82, in __call__
+    raise exc from None
+  File "/root/.local/lib/python3.9/site-packages/starlette/exceptions.py", line 71, in __call__
+    await self.app(scope, receive, sender)
+          │    │   │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f5f5076d040>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f507...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <fastapi.routing.APIRouter object at 0x7f5fbf9624c0>
+          └ <starlette.exceptions.ExceptionMiddleware object at 0x7f5f50830550>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 580, in __call__
+    await route.handle(scope, receive, send)
+          │     │      │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f5f5076d040>
+          │     │      │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f507...
+          │     │      └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │     └ <function Route.handle at 0x7f5fbebbb550>
+          └ <fastapi.routing.APIRoute object at 0x7f5f5079f640>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 241, in handle
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f5f5076d040>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f507...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <function request_response.<locals>.app at 0x7f5f5077eb80>
+          └ <fastapi.routing.APIRoute object at 0x7f5f5079f640>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 52, in app
+    response = await func(request)
+                     │    └ <starlette.requests.Request object at 0x7f5f50765ca0>
+                     └ <function get_request_handler.<locals>.app at 0x7f5f5077eaf0>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/routing.py", line 219, in app
+    raw_response = await run_endpoint_function(
+                         └ <function run_endpoint_function at 0x7f5fbeba75e0>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/routing.py", line 152, in run_endpoint_function
+    return await dependant.call(**values)
+                 │         │      └ {'request': <starlette.requests.Request object at 0x7f5f50765ca0>}
+                 │         └ <function syft_route at 0x7f5f508d9af0>
+                 └ <fastapi.dependencies.models.Dependant object at 0x7f5f5079f670>
+
+  File "/app/./grid/api/syft/syft.py", line 58, in syft_route
+    obj_msg = deserialize(blob=data, from_bytes=True)
+              │                └ b'\n<syft.core.common.message.SignedImmediateSyftMessageWithReply\x12\xb4\x04\n\x12\n\x10.\x86\xaaV\xc6\x8eJ/\xbeq\x02\r\xd1\...
+              └ <function _deserialize at 0x7f5fbdba9280>
+
+  File "/app/syft/src/syft/core/common/serde/deserialize.py", line 141, in _deserialize
+    res = _proto2object(proto=blob)
+          │                   └ msg_id {
+          │                       value: ".\206\252V\306\216J/\276q\002\r\321\311\271e"
+          │                     }
+          │                     obj_type: "syft.core.node.common.node_service.tff.tff_mess...
+          └ <function SignedMessage._proto2object at 0x7f5fbdb2a040>
+
+  File "/app/syft/src/syft/core/common/message.py", line 183, in _proto2object
+    _deserialize(blob=proto.message, from_bytes=True), SyftMessage
+    │                 │     │                          └ <class 'syft.core.common.message.SyftMessage'>
+    │                 │     └ <field property 'syft.core.auth.SignedMessage.message'>
+    │                 └ msg_id {
+    │                     value: ".\206\252V\306\216J/\276q\002\r\321\311\271e"
+    │                   }
+    │                   obj_type: "syft.core.node.common.node_service.tff.tff_mess...
+    └ <function _deserialize at 0x7f5fbdba9280>
+
+  File "/app/syft/src/syft/core/common/serde/deserialize.py", line 62, in _deserialize
+    obj_type = index_syft_by_module_name(fully_qualified_name=data_message.obj_type)
+               │                                              │            └ <field property 'syft.util.DataMessage.obj_type'>
+               │                                              └ obj_type: "syft.core.node.common.node_service.tff.tff_messages.TFFMessage"
+               │                                                content: "\n\022\n\020.\206\252V\306\216J/\276q\00...
+               └ <function index_syft_by_module_name at 0x7f5fbdb9f9d0>
+
+  File "/app/syft/src/syft/util.py", line 129, in index_syft_by_module_name
+    return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
+           │                                            └ ['syft', 'core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           └ <function index_modules at 0x7f5fbdb9f940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft' from '/app/syft/src/syft/__init__.py'>
+           └ <function index_modules at 0x7f5fbdb9f940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft.core' from '/app/syft/src/syft/core/__init__.py'>
+           └ <function index_modules at 0x7f5fbdb9f940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft.core.node' from '/app/syft/src/syft/core/node/__init__.py'>
+           └ <function index_modules at 0x7f5fbdb9f940>
+  [Previous line repeated 2 more times]
+
+KeyError: 'tff'
+
+2022-02-07 19:53:34 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 172.26.0.6:56290 - "GET /api/v1/syft/metadata HTTP/1.1" 200
+2022-02-07 19:53:34 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 172.26.0.6:56290 - "POST /api/v1/login HTTP/1.1" 200
+2022-02-07 19:53:37 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 172.26.0.6:56290 - "POST /api/v1/syft HTTP/1.1" 500
+2022-02-07 19:53:37 | ERROR    | uvicorn.protocols.http.httptools_impl:run_asgi:378: Exception in ASGI application
+Traceback (most recent call last):
+
+  File "/root/.local/bin/uvicorn", line 8, in <module>
+    sys.exit(main())
+    │   │    └ <Command main>
+    │   └ <built-in function exit>
+    └ <module 'sys' (built-in)>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1128, in __call__
+    return self.main(*args, **kwargs)
+           │    │     │       └ {}
+           │    │     └ ()
+           │    └ <function BaseCommand.main at 0x7f5fc097b280>
+           └ <Command main>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1053, in main
+    rv = self.invoke(ctx)
+         │    │      └ <click.core.Context object at 0x7f5fc13b5940>
+         │    └ <function Command.invoke at 0x7f5fc097bd30>
+         └ <Command main>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1395, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           │   │      │    │           │   └ {'host': '0.0.0.0', 'port': 8001, 'log_level': 'info', 'app': 'grid.main:app', 'uds': None, 'fd': None, 'debug': False, 'relo...
+           │   │      │    │           └ <click.core.Context object at 0x7f5fc13b5940>
+           │   │      │    └ <function main at 0x7f5fc0450ee0>
+           │   │      └ <Command main>
+           │   └ <function Context.invoke at 0x7f5fc0975af0>
+           └ <click.core.Context object at 0x7f5fc13b5940>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 754, in invoke
+    return __callback(*args, **kwargs)
+                       │       └ {'host': '0.0.0.0', 'port': 8001, 'log_level': 'info', 'app': 'grid.main:app', 'uds': None, 'fd': None, 'debug': False, 'relo...
+                       └ ()
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/main.py", line 425, in main
+    run(app, **kwargs)
+    │   │      └ {'host': '0.0.0.0', 'port': 8001, 'uds': None, 'fd': None, 'loop': 'auto', 'http': 'auto', 'ws': 'auto', 'ws_max_size': 16777...
+    │   └ 'grid.main:app'
+    └ <function run at 0x7f5fc05bf1f0>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/main.py", line 447, in run
+    server.run()
+    │      └ <function Server.run at 0x7f5fc0523e50>
+    └ <uvicorn.server.Server object at 0x7f5fc044d280>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/server.py", line 68, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           │       │   │    │             └ None
+           │       │   │    └ <function Server.serve at 0x7f5fc0523ee0>
+           │       │   └ <uvicorn.server.Server object at 0x7f5fc044d280>
+           │       └ <function run at 0x7f5fc128e790>
+           └ <module 'asyncio' from '/usr/local/lib/python3.9/asyncio/__init__.py'>
+  File "/usr/local/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+           │    │                  └ <coroutine object Server.serve at 0x7f5fc04757c0>
+           │    └ <method 'run_until_complete' of 'uvloop.loop.Loop' objects>
+           └ <uvloop.Loop running=True closed=False debug=False>
+> File "/root/.local/lib/python3.9/site-packages/uvicorn/protocols/http/httptools_impl.py", line 375, in run_asgi
+    result = await app(self.scope, self.receive, self.send)
+                   │   │    │      │    │        │    └ <function RequestResponseCycle.send at 0x7f5fc008e0d0>
+                   │   │    │      │    │        └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506e24f0>
+                   │   │    │      │    └ <function RequestResponseCycle.receive at 0x7f5fc008e160>
+                   │   │    │      └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506e24f0>
+                   │   │    └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+                   │   └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506e24f0>
+                   └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x7f5fc006dd90>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/middleware/proxy_headers.py", line 75, in __call__
+    return await self.app(scope, receive, send)
+                 │    │   │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506e24...
+                 │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506...
+                 │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+                 │    └ <fastapi.applications.FastAPI object at 0x7f5fc0090a90>
+                 └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x7f5fc006dd90>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/applications.py", line 208, in __call__
+    await super().__call__(scope, receive, send)
+                           │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506e24...
+                           │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506...
+                           └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+  File "/root/.local/lib/python3.9/site-packages/starlette/applications.py", line 112, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506e24...
+          │    │                │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506...
+          │    │                └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x7f5f508304c0>
+          └ <fastapi.applications.FastAPI object at 0x7f5fc0090a90>
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 181, in __call__
+    raise exc from None
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 159, in __call__
+    await self.app(scope, receive, _send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x7f5f50747f70>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.middleware.cors.CORSMiddleware object at 0x7f5f50830520>
+          └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x7f5f508304c0>
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/cors.py", line 78, in __call__
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x7f5f50747f70>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.exceptions.ExceptionMiddleware object at 0x7f5f50830550>
+          └ <starlette.middleware.cors.CORSMiddleware object at 0x7f5f50830520>
+  File "/root/.local/lib/python3.9/site-packages/starlette/exceptions.py", line 82, in __call__
+    raise exc from None
+  File "/root/.local/lib/python3.9/site-packages/starlette/exceptions.py", line 71, in __call__
+    await self.app(scope, receive, sender)
+          │    │   │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f5f50747c10>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <fastapi.routing.APIRouter object at 0x7f5fbf9624c0>
+          └ <starlette.exceptions.ExceptionMiddleware object at 0x7f5f50830550>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 580, in __call__
+    await route.handle(scope, receive, send)
+          │     │      │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f5f50747c10>
+          │     │      │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506...
+          │     │      └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │     └ <function Route.handle at 0x7f5fbebbb550>
+          └ <fastapi.routing.APIRoute object at 0x7f5f5079f640>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 241, in handle
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f5f50747c10>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f5f506...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <function request_response.<locals>.app at 0x7f5f5077eb80>
+          └ <fastapi.routing.APIRoute object at 0x7f5f5079f640>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 52, in app
+    response = await func(request)
+                     │    └ <starlette.requests.Request object at 0x7f5fc044d8b0>
+                     └ <function get_request_handler.<locals>.app at 0x7f5f5077eaf0>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/routing.py", line 219, in app
+    raw_response = await run_endpoint_function(
+                         └ <function run_endpoint_function at 0x7f5fbeba75e0>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/routing.py", line 152, in run_endpoint_function
+    return await dependant.call(**values)
+                 │         │      └ {'request': <starlette.requests.Request object at 0x7f5fc044d8b0>}
+                 │         └ <function syft_route at 0x7f5f508d9af0>
+                 └ <fastapi.dependencies.models.Dependant object at 0x7f5f5079f670>
+
+  File "/app/./grid/api/syft/syft.py", line 58, in syft_route
+    obj_msg = deserialize(blob=data, from_bytes=True)
+              │                └ b'\n<syft.core.common.message.SignedImmediateSyftMessageWithReply\x12\xb4\x04\n\x12\n\x10\xf8\x04C>\xa9\'GB\x8a\'\x0b*|Z\x95\...
+              └ <function _deserialize at 0x7f5fbdba9280>
+
+  File "/app/syft/src/syft/core/common/serde/deserialize.py", line 141, in _deserialize
+    res = _proto2object(proto=blob)
+          │                   └ msg_id {
+          │                       value: "\370\004C>\251\'GB\212\'\013*|Z\225\272"
+          │                     }
+          │                     obj_type: "syft.core.node.common.node_service.tff.tff_messages....
+          └ <function SignedMessage._proto2object at 0x7f5fbdb2a040>
+
+  File "/app/syft/src/syft/core/common/message.py", line 183, in _proto2object
+    _deserialize(blob=proto.message, from_bytes=True), SyftMessage
+    │                 │     │                          └ <class 'syft.core.common.message.SyftMessage'>
+    │                 │     └ <field property 'syft.core.auth.SignedMessage.message'>
+    │                 └ msg_id {
+    │                     value: "\370\004C>\251\'GB\212\'\013*|Z\225\272"
+    │                   }
+    │                   obj_type: "syft.core.node.common.node_service.tff.tff_messages....
+    └ <function _deserialize at 0x7f5fbdba9280>
+
+  File "/app/syft/src/syft/core/common/serde/deserialize.py", line 62, in _deserialize
+    obj_type = index_syft_by_module_name(fully_qualified_name=data_message.obj_type)
+               │                                              │            └ <field property 'syft.util.DataMessage.obj_type'>
+               │                                              └ obj_type: "syft.core.node.common.node_service.tff.tff_messages.TFFMessage"
+               │                                                content: "\n\022\n\020\370\004C>\251\'GB\212\'\013...
+               └ <function index_syft_by_module_name at 0x7f5fbdb9f9d0>
+
+  File "/app/syft/src/syft/util.py", line 129, in index_syft_by_module_name
+    return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
+           │                                            └ ['syft', 'core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           └ <function index_modules at 0x7f5fbdb9f940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft' from '/app/syft/src/syft/__init__.py'>
+           └ <function index_modules at 0x7f5fbdb9f940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft.core' from '/app/syft/src/syft/core/__init__.py'>
+           └ <function index_modules at 0x7f5fbdb9f940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft.core.node' from '/app/syft/src/syft/core/node/__init__.py'>
+           └ <function index_modules at 0x7f5fbdb9f940>
+  [Previous line repeated 2 more times]
+
+KeyError: 'tff'
+
+2022-02-07 19:59:42 | INFO     | uvicorn.server:shutdown:263: Shutting down
+2022-02-07 19:59:42 | INFO     | uvicorn.lifespan.on:shutdown:64: Waiting for application shutdown.
+2022-02-07 19:59:42 | INFO     | uvicorn.lifespan.on:shutdown:75: Application shutdown complete.
+2022-02-07 19:59:42 | INFO     | uvicorn.server:serve:94: Finished server process [1]
+Running start.sh with RELEASE=production
+---Monkey Patching: Gevent---
+
+Checking for script in /app/prestart.sh
+Running script /app/prestart.sh
+Running prestart.sh with RELEASE=production
+---Monkey Patching: Gevent---
+
+                                        dp                                         
+                                    44444ddVhm                                     
+                                4EE44EXE44EEVVhhgm                                 
+                            p4EEEgXXE4444ddddd4dhggSF                              
+                        B    4EEEEXXE4444dddd44dhgggq                              
+                    SXXXXgX4G   d44444XgEEE4Vhhgg    6qqqmm6p                      
+                GXXXXXGGPGPgggEg    dE4444ddh    ggSSSggSSSm66pFF                  
+            hgPPPPZZPXXXggggXPPEEEE4    hS   hhVhhhVhSSqmmm6mmq6pFF5y              
+            dPPPGbZPXXXXgggggXPPgEEdm        gVhhddhgSSqmmm666mqmFF55              
+          h6   gPPXXPZGPXXPPggEEEg   4444ddhm   hhggShhgqmqSq66pF6    fq           
+          EZXgg    XXXXXXXgggG   E4E44EXggEdVVhh    SSSqqmm66p    222225           
+          4bGPEEE4h    XXg   EEEEEEXgE444dddd44hhggg   CmmC   533222FF25           
+          dPEEEEgEddVhV   gEgggPXgE444444dddVVhhVdVggS5    3222355222223           
+          hX4dddVVdd4Vm   S4dd4EEEEE44444dddVVVhhgSm66y    yF52333333233           
+          gEdVVhhhggggm   mgm66mSgd44E444ddddVgmF2yyy2y    y233333333232           
+          SE4VhggSSSSS6   6q6ppFF5FFmSV44dhSp2yyyyyyy2y    y2y3333325532           
+          mhggghhgqmmqF   FmFFF555223335F5yfffyyyyyyy2y    y2yy3253333ye           
+              mqqmmSSq5   F655522233yyyywwffffyyyyyyy3f    y553yyyyw               
+          pSm5   yp6pp2   2F22233yyyyyffwwwwffffffyyy3f   ?f3yy3    yyyw           
+          pV66pp66   5y   3F523yyyffffffCCwwwwwwfffy35f   Vw    w3yyy2y3           
+          5q66m6F5555$    f3yyy33yffwwwwJJCCCwwfyywffff     wyyyy32233y3           
+          2mF55555F533f       wfffwfffCCJJJCwfCCwwCC       fyy23yyyyyyy3           
+          3p5222233y32f   fyf    jCCCCJwCCJJJJJw    #wJn   w3fffyyyyyyy3           
+          y6233yyyyyyyw   w3wwCJJ    T######    C#JJCwC    Cfwffffffy2f2           
+          f2y323yfffffC   CfwwfCJJ##T       nTT###wwCwJ    Cfwwwffyyfyfw           
+            3yfffyyyfwJ   JwJJJJJCC###u   unTTJJ#####C#    Jwwffwwwwwn             
+                wwwwCfJ   #w#####TTT#Cu   un#TTTTTTT#J#    #CJJCC#                 
+                    #JT   Tw##TTTTnnn#u   uununnnTTTTJT   nTJ#                     
+                          T#T##TTnnuuTL   jLuuuuunT#TTn                            
+                           7TnnnuTTuLnj   LLLuuTuuuunj                             
+                               7uuLLLTj   zjuLLLLn                                 
+                                   jjLz   zjjL                                     
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+>>>>>>>>>>>>)%                     ))>>>>>>>><               I>>>>            >)>  
+>))>>>>>>>>>)>)                  \>>>>>>>>>>>>>>             >>>>>            >i>> 
+>)><       >>)>)">>>       I>)> I>)>>       <>>>>  i>>><>>)<  <)>     <>>>>>)\>)>> 
+>)>>       >>i>)I>i>>      >i>> >>)>          >)   <))>>>>>>  >i>I  )>>>>>>>>>>)>> 
+>)>>>>>>>>>>>><   >)>>    >i><  >>)>    v>>>>>>)>  >>)>>      >)>I )>i>>     >>)>> 
+>>>>>>>>>>>><      >i>>  >)>)   >>)>    i>>>>>)i>  >>)>       >)>I <>)>       >)>> 
+>)>>               I>i>>>)>>    )>)>         <>)>  >>)>       >)>I <>)>       >)>> 
+>)><                )>)>>>>      >>)>>)   )i>>)>>  >>)>       >)>I  >)>>%   >>>>>> 
+>)>>                 >>)>>        <>>>>>>>>>>>>    >>))       >)>I  )>>>>>>>>>>)>> 
+<>>%                 >>><           >>>>>>))v      \<>>       <>>     "<)>>>i <>>  
+
+                                                     __
+                                                    |  \  _   _   _  .  _
+                                                    |__/ (_) ||| (_| | | )
+
+                                        dp                                         
+                                    44444ddVhm                                     
+                                4EE44EXE44EEVVhhgm                                 
+                            p4EEEgXXE4444ddddd4dhggSF                              
+                        B    4EEEEXXE4444dddd44dhgggq                              
+                    SXXXXgX4G   d44444XgEEE4Vhhgg    6qqqmm6p                      
+                GXXXXXGGPGPgggEg    dE4444ddh    ggSSSggSSSm66pFF                  
+            hgPPPPZZPXXXggggXPPEEEE4    hS   hhVhhhVhSSqmmm6mmq6pFF5y              
+            dPPPGbZPXXXXgggggXPPgEEdm        gVhhddhgSSqmmm666mqmFF55              
+          h6   gPPXXPZGPXXPPggEEEg   4444ddhm   hhggShhgqmqSq66pF6    fq           
+          EZXgg    XXXXXXXgggG   E4E44EXggEdVVhh    SSSqqmm66p    222225           
+          4bGPEEE4h    XXg   EEEEEEXgE444dddd44hhggg   CmmC   533222FF25           
+          dPEEEEgEddVhV   gEgggPXgE444444dddVVhhVdVggS5    3222355222223           
+          hX4dddVVdd4Vm   S4dd4EEEEE44444dddVVVhhgSm66y    yF52333333233           
+          gEdVVhhhggggm   mgm66mSgd44E444ddddVgmF2yyy2y    y233333333232           
+          SE4VhggSSSSS6   6q6ppFF5FFmSV44dhSp2yyyyyyy2y    y2y3333325532           
+          mhggghhgqmmqF   FmFFF555223335F5yfffyyyyyyy2y    y2yy3253333ye           
+              mqqmmSSq5   F655522233yyyywwffffyyyyyyy3f    y553yyyyw               
+          pSm5   yp6pp2   2F22233yyyyyffwwwwffffffyyy3f   ?f3yy3    yyyw           
+          pV66pp66   5y   3F523yyyffffffCCwwwwwwfffy35f   Vw    w3yyy2y3           
+          5q66m6F5555$    f3yyy33yffwwwwJJCCCwwfyywffff     wyyyy32233y3           
+          2mF55555F533f       wfffwfffCCJJJCwfCCwwCC       fyy23yyyyyyy3           
+          3p5222233y32f   fyf    jCCCCJwCCJJJJJw    #wJn   w3fffyyyyyyy3           
+          y6233yyyyyyyw   w3wwCJJ    T######    C#JJCwC    Cfwffffffy2f2           
+          f2y323yfffffC   CfwwfCJJ##T       nTT###wwCwJ    Cfwwwffyyfyfw           
+            3yfffyyyfwJ   JwJJJJJCC###u   unTTJJ#####C#    Jwwffwwwwwn             
+                wwwwCfJ   #w#####TTT#Cu   un#TTTTTTT#J#    #CJJCC#                 
+                    #JT   Tw##TTTTnnn#u   uununnnTTTTJT   nTJ#                     
+                          T#T##TTnnuuTL   jLuuuuunT#TTn                            
+                           7TnnnuTTuLnj   LLLuuTuuuunj                             
+                               7uuLLLTj   zjuLLLLn                                 
+                                   jjLz   zjjL                                     
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+                                                                                   
+>>>>>>>>>>>>)%                     ))>>>>>>>><               I>>>>            >)>  
+>))>>>>>>>>>)>)                  \>>>>>>>>>>>>>>             >>>>>            >i>> 
+>)><       >>)>)">>>       I>)> I>)>>       <>>>>  i>>><>>)<  <)>     <>>>>>)\>)>> 
+>)>>       >>i>)I>i>>      >i>> >>)>          >)   <))>>>>>>  >i>I  )>>>>>>>>>>)>> 
+>)>>>>>>>>>>>><   >)>>    >i><  >>)>    v>>>>>>)>  >>)>>      >)>I )>i>>     >>)>> 
+>>>>>>>>>>>><      >i>>  >)>)   >>)>    i>>>>>)i>  >>)>       >)>I <>)>       >)>> 
+>)>>               I>i>>>)>>    )>)>         <>)>  >>)>       >)>I <>)>       >)>> 
+>)><                )>)>>>>      >>)>>)   )i>>)>>  >>)>       >)>I  >)>>%   >>>>>> 
+>)>>                 >>)>>        <>>>>>>>>>>>>    >>))       >)>I  )>>>>>>>>>>)>> 
+<>>%                 >>><           >>>>>>))v      \<>>       <>>     "<)>>>i <>>  
+
+                                                     __
+                                                    |  \  _   _   _  .  _
+                                                    |__/ (_) ||| (_| | | )
+
+2022-02-08 09:13:19 | DEBUG    | grid.logger.handler:init_logger:77: Logging to /var/log/pygrid/grid.log
+2022-02-08 09:13:19 | INFO     | uvicorn.lifespan.on:startup:59: Application startup complete.
+2022-02-08 09:13:19 | INFO     | uvicorn.server:_log_started_message:217: Uvicorn running on http://0.0.0.0:8001 (Press CTRL+C to quit)
+2022-02-08 09:13:19 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 127.0.0.1:34080 - "GET /api/v1/syft/metadata HTTP/1.1" 200
+2022-02-08 09:13:19 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 127.0.0.1:34084 - "GET /api/v1/syft/metadata HTTP/1.1" 200
+2022-02-08 09:18:10 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 172.26.0.6:43908 - "GET /api/v1/syft/metadata HTTP/1.1" 200
+2022-02-08 09:18:10 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 172.26.0.6:43908 - "POST /api/v1/login HTTP/1.1" 200
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Creating ✉️  (SimpleMessage) <UID:🚉🚹>
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Creating Signed ✉️ 🔏 (SignedImmediateSyftMessageWithReply) <UID:🚉🚹>
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > ✉️ 🔏 <- 🔢 Proto
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Creating ✉️  (SimpleMessage) <UID:🚉🚹>
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Received with Reply ✉️  (SimpleMessage) <UID: 2c93c41d22734ebe88ce44c0ce964b89> @ 🏰 node (Domain)@<UID:🚃🚄>
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Processing 📨 ✉️ 🔏 (SignedImmediateSyftMessageWithReply) @ 🏰 node (Domain)@<UID:🚃🚄> <SimpleMessage: 2c93c41d22734ebe88ce44c0ce964b89>
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Recipient Found ✉️ 🔏 (SignedImmediateSyftMessageWithReply)@<UID:🚃🚄> == 🏰 node (Domain)@<UID:🚃🚄>
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Checking ✉️  (SimpleMessage) 🔑 Matches 🏰 node (Domain)@<UID:🚃🚄> root 🗝
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Creating ✉️  (SimpleReplyMessage) <UID:🚳🙍>
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Signing with 🜘
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > Creating Signed ✉️ 🔏 (SignedImmediateSyftMessageWithoutReply) <UID:🚳🙍>
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > 🏰 node (Domain)@<UID:🚃🚄> Signing ✉️ 🔏 (SignedImmediateSyftMessageWithoutReply) with 🜘
+2022-02-08 09:18:13 | DEBUG    | syft.logger:log_and_print:85: > ✉️ 🔏 -> Proto 🔢 <UID: af537bf0a1e34727aa060b580290a6b8>
+2022-02-08 09:18:13 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 172.26.0.6:43908 - "POST /api/v1/syft HTTP/1.1" 200
+2022-02-08 09:18:19 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 172.26.0.6:43910 - "POST /api/v1/syft HTTP/1.1" 500
+2022-02-08 09:18:19 | ERROR    | uvicorn.protocols.http.httptools_impl:run_asgi:378: Exception in ASGI application
+Traceback (most recent call last):
+
+  File "/root/.local/bin/uvicorn", line 8, in <module>
+    sys.exit(main())
+    │   │    └ <Command main>
+    │   └ <built-in function exit>
+    └ <module 'sys' (built-in)>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1128, in __call__
+    return self.main(*args, **kwargs)
+           │    │     │       └ {}
+           │    │     └ ()
+           │    └ <function BaseCommand.main at 0x7f115359b280>
+           └ <Command main>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1053, in main
+    rv = self.invoke(ctx)
+         │    │      └ <click.core.Context object at 0x7f1153fd5940>
+         │    └ <function Command.invoke at 0x7f115359bd30>
+         └ <Command main>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1395, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           │   │      │    │           │   └ {'host': '0.0.0.0', 'port': 8001, 'log_level': 'info', 'app': 'grid.main:app', 'uds': None, 'fd': None, 'debug': False, 'relo...
+           │   │      │    │           └ <click.core.Context object at 0x7f1153fd5940>
+           │   │      │    └ <function main at 0x7f1153070ee0>
+           │   │      └ <Command main>
+           │   └ <function Context.invoke at 0x7f1153595af0>
+           └ <click.core.Context object at 0x7f1153fd5940>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 754, in invoke
+    return __callback(*args, **kwargs)
+                       │       └ {'host': '0.0.0.0', 'port': 8001, 'log_level': 'info', 'app': 'grid.main:app', 'uds': None, 'fd': None, 'debug': False, 'relo...
+                       └ ()
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/main.py", line 425, in main
+    run(app, **kwargs)
+    │   │      └ {'host': '0.0.0.0', 'port': 8001, 'uds': None, 'fd': None, 'loop': 'auto', 'http': 'auto', 'ws': 'auto', 'ws_max_size': 16777...
+    │   └ 'grid.main:app'
+    └ <function run at 0x7f11531df1f0>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/main.py", line 447, in run
+    server.run()
+    │      └ <function Server.run at 0x7f1153143e50>
+    └ <uvicorn.server.Server object at 0x7f115306d280>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/server.py", line 68, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           │       │   │    │             └ None
+           │       │   │    └ <function Server.serve at 0x7f1153143ee0>
+           │       │   └ <uvicorn.server.Server object at 0x7f115306d280>
+           │       └ <function run at 0x7f1153eb1790>
+           └ <module 'asyncio' from '/usr/local/lib/python3.9/asyncio/__init__.py'>
+  File "/usr/local/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+           │    │                  └ <coroutine object Server.serve at 0x7f11530957c0>
+           │    └ <method 'run_until_complete' of 'uvloop.loop.Loop' objects>
+           └ <uvloop.Loop running=True closed=False debug=False>
+> File "/root/.local/lib/python3.9/site-packages/uvicorn/protocols/http/httptools_impl.py", line 375, in run_asgi
+    result = await app(self.scope, self.receive, self.send)
+                   │   │    │      │    │        │    └ <function RequestResponseCycle.send at 0x7f1152cae0d0>
+                   │   │    │      │    │        └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e3390d30>
+                   │   │    │      │    └ <function RequestResponseCycle.receive at 0x7f1152cae160>
+                   │   │    │      └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e3390d30>
+                   │   │    └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+                   │   └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e3390d30>
+                   └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x7f1152c8dd90>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/middleware/proxy_headers.py", line 75, in __call__
+    return await self.app(scope, receive, send)
+                 │    │   │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e3390d...
+                 │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e33...
+                 │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+                 │    └ <fastapi.applications.FastAPI object at 0x7f1152c9a670>
+                 └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x7f1152c8dd90>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/applications.py", line 208, in __call__
+    await super().__call__(scope, receive, send)
+                           │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e3390d...
+                           │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e33...
+                           └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+  File "/root/.local/lib/python3.9/site-packages/starlette/applications.py", line 112, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e3390d...
+          │    │                │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e33...
+          │    │                └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x7f10e3452dc0>
+          └ <fastapi.applications.FastAPI object at 0x7f1152c9a670>
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 181, in __call__
+    raise exc from None
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 159, in __call__
+    await self.app(scope, receive, _send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x7f10e3371ee0>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e33...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.middleware.cors.CORSMiddleware object at 0x7f10e3452d60>
+          └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x7f10e3452dc0>
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/cors.py", line 78, in __call__
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x7f10e3371ee0>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e33...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.exceptions.ExceptionMiddleware object at 0x7f10e3452d30>
+          └ <starlette.middleware.cors.CORSMiddleware object at 0x7f10e3452d60>
+  File "/root/.local/lib/python3.9/site-packages/starlette/exceptions.py", line 82, in __call__
+    raise exc from None
+  File "/root/.local/lib/python3.9/site-packages/starlette/exceptions.py", line 71, in __call__
+    await self.app(scope, receive, sender)
+          │    │   │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f10e1314940>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e33...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <fastapi.routing.APIRouter object at 0x7f115257b400>
+          └ <starlette.exceptions.ExceptionMiddleware object at 0x7f10e3452d30>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 580, in __call__
+    await route.handle(scope, receive, send)
+          │     │      │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f10e1314940>
+          │     │      │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e33...
+          │     │      └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │     └ <function Route.handle at 0x7f11517d5550>
+          └ <fastapi.routing.APIRoute object at 0x7f10e33c50d0>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 241, in handle
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f10e1314940>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e33...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <function request_response.<locals>.app at 0x7f10e33b0a60>
+          └ <fastapi.routing.APIRoute object at 0x7f10e33c50d0>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 52, in app
+    response = await func(request)
+                     │    └ <starlette.requests.Request object at 0x7f10e3390d00>
+                     └ <function get_request_handler.<locals>.app at 0x7f10e33b09d0>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/routing.py", line 219, in app
+    raw_response = await run_endpoint_function(
+                         └ <function run_endpoint_function at 0x7f11517c65e0>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/routing.py", line 152, in run_endpoint_function
+    return await dependant.call(**values)
+                 │         │      └ {'request': <starlette.requests.Request object at 0x7f10e3390d00>}
+                 │         └ <function syft_route at 0x7f10e34fda60>
+                 └ <fastapi.dependencies.models.Dependant object at 0x7f10e33c5100>
+
+  File "/app/./grid/api/syft/syft.py", line 58, in syft_route
+    obj_msg = deserialize(blob=data, from_bytes=True)
+              │                └ b'\n<syft.core.common.message.SignedImmediateSyftMessageWithReply\x12\xb4\x04\n\x12\n\x10\xfb\xd18\xb4\xe0\x00F9\x8a\xe6\xd2\...
+              └ <function _deserialize at 0x7f11507c9280>
+
+  File "/app/syft/src/syft/core/common/serde/deserialize.py", line 141, in _deserialize
+    res = _proto2object(proto=blob)
+          │                   └ msg_id {
+          │                       value: "\373\3218\264\340\000F9\212\346\322\254\242\311q5"
+          │                     }
+          │                     obj_type: "syft.core.node.common.node_service.tff.tff...
+          └ <function SignedMessage._proto2object at 0x7f1150748040>
+
+  File "/app/syft/src/syft/core/common/message.py", line 183, in _proto2object
+    _deserialize(blob=proto.message, from_bytes=True), SyftMessage
+    │                 │     │                          └ <class 'syft.core.common.message.SyftMessage'>
+    │                 │     └ <field property 'syft.core.auth.SignedMessage.message'>
+    │                 └ msg_id {
+    │                     value: "\373\3218\264\340\000F9\212\346\322\254\242\311q5"
+    │                   }
+    │                   obj_type: "syft.core.node.common.node_service.tff.tff...
+    └ <function _deserialize at 0x7f11507c9280>
+
+  File "/app/syft/src/syft/core/common/serde/deserialize.py", line 62, in _deserialize
+    obj_type = index_syft_by_module_name(fully_qualified_name=data_message.obj_type)
+               │                                              │            └ <field property 'syft.util.DataMessage.obj_type'>
+               │                                              └ obj_type: "syft.core.node.common.node_service.tff.tff_messages.TFFMessage"
+               │                                                content: "\n\022\n\020\373\3218\264\340\000F9\212\...
+               └ <function index_syft_by_module_name at 0x7f11507bf9d0>
+
+  File "/app/syft/src/syft/util.py", line 129, in index_syft_by_module_name
+    return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
+           │                                            └ ['syft', 'core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           └ <function index_modules at 0x7f11507bf940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft' from '/app/syft/src/syft/__init__.py'>
+           └ <function index_modules at 0x7f11507bf940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft.core' from '/app/syft/src/syft/core/__init__.py'>
+           └ <function index_modules at 0x7f11507bf940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft.core.node' from '/app/syft/src/syft/core/node/__init__.py'>
+           └ <function index_modules at 0x7f11507bf940>
+  [Previous line repeated 2 more times]
+
+KeyError: 'tff'
+
+2022-02-08 09:21:14 | INFO     | uvicorn.protocols.http.httptools_impl:send:440: 172.26.0.6:43912 - "POST /api/v1/syft HTTP/1.1" 500
+2022-02-08 09:21:14 | ERROR    | uvicorn.protocols.http.httptools_impl:run_asgi:378: Exception in ASGI application
+Traceback (most recent call last):
+
+  File "/root/.local/bin/uvicorn", line 8, in <module>
+    sys.exit(main())
+    │   │    └ <Command main>
+    │   └ <built-in function exit>
+    └ <module 'sys' (built-in)>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1128, in __call__
+    return self.main(*args, **kwargs)
+           │    │     │       └ {}
+           │    │     └ ()
+           │    └ <function BaseCommand.main at 0x7f115359b280>
+           └ <Command main>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1053, in main
+    rv = self.invoke(ctx)
+         │    │      └ <click.core.Context object at 0x7f1153fd5940>
+         │    └ <function Command.invoke at 0x7f115359bd30>
+         └ <Command main>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 1395, in invoke
+    return ctx.invoke(self.callback, **ctx.params)
+           │   │      │    │           │   └ {'host': '0.0.0.0', 'port': 8001, 'log_level': 'info', 'app': 'grid.main:app', 'uds': None, 'fd': None, 'debug': False, 'relo...
+           │   │      │    │           └ <click.core.Context object at 0x7f1153fd5940>
+           │   │      │    └ <function main at 0x7f1153070ee0>
+           │   │      └ <Command main>
+           │   └ <function Context.invoke at 0x7f1153595af0>
+           └ <click.core.Context object at 0x7f1153fd5940>
+  File "/root/.local/lib/python3.9/site-packages/click/core.py", line 754, in invoke
+    return __callback(*args, **kwargs)
+                       │       └ {'host': '0.0.0.0', 'port': 8001, 'log_level': 'info', 'app': 'grid.main:app', 'uds': None, 'fd': None, 'debug': False, 'relo...
+                       └ ()
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/main.py", line 425, in main
+    run(app, **kwargs)
+    │   │      └ {'host': '0.0.0.0', 'port': 8001, 'uds': None, 'fd': None, 'loop': 'auto', 'http': 'auto', 'ws': 'auto', 'ws_max_size': 16777...
+    │   └ 'grid.main:app'
+    └ <function run at 0x7f11531df1f0>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/main.py", line 447, in run
+    server.run()
+    │      └ <function Server.run at 0x7f1153143e50>
+    └ <uvicorn.server.Server object at 0x7f115306d280>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/server.py", line 68, in run
+    return asyncio.run(self.serve(sockets=sockets))
+           │       │   │    │             └ None
+           │       │   │    └ <function Server.serve at 0x7f1153143ee0>
+           │       │   └ <uvicorn.server.Server object at 0x7f115306d280>
+           │       └ <function run at 0x7f1153eb1790>
+           └ <module 'asyncio' from '/usr/local/lib/python3.9/asyncio/__init__.py'>
+  File "/usr/local/lib/python3.9/asyncio/runners.py", line 44, in run
+    return loop.run_until_complete(main)
+           │    │                  └ <coroutine object Server.serve at 0x7f11530957c0>
+           │    └ <method 'run_until_complete' of 'uvloop.loop.Loop' objects>
+           └ <uvloop.Loop running=True closed=False debug=False>
+> File "/root/.local/lib/python3.9/site-packages/uvicorn/protocols/http/httptools_impl.py", line 375, in run_asgi
+    result = await app(self.scope, self.receive, self.send)
+                   │   │    │      │    │        │    └ <function RequestResponseCycle.send at 0x7f1152cae0d0>
+                   │   │    │      │    │        └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0aa8130>
+                   │   │    │      │    └ <function RequestResponseCycle.receive at 0x7f1152cae160>
+                   │   │    │      └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0aa8130>
+                   │   │    └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+                   │   └ <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0aa8130>
+                   └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x7f1152c8dd90>
+  File "/root/.local/lib/python3.9/site-packages/uvicorn/middleware/proxy_headers.py", line 75, in __call__
+    return await self.app(scope, receive, send)
+                 │    │   │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0aa81...
+                 │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0a...
+                 │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+                 │    └ <fastapi.applications.FastAPI object at 0x7f1152c9a670>
+                 └ <uvicorn.middleware.proxy_headers.ProxyHeadersMiddleware object at 0x7f1152c8dd90>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/applications.py", line 208, in __call__
+    await super().__call__(scope, receive, send)
+                           │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0aa81...
+                           │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0a...
+                           └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+  File "/root/.local/lib/python3.9/site-packages/starlette/applications.py", line 112, in __call__
+    await self.middleware_stack(scope, receive, send)
+          │    │                │      │        └ <bound method RequestResponseCycle.send of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0aa81...
+          │    │                │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0a...
+          │    │                └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x7f10e3452dc0>
+          └ <fastapi.applications.FastAPI object at 0x7f1152c9a670>
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 181, in __call__
+    raise exc from None
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/errors.py", line 159, in __call__
+    await self.app(scope, receive, _send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x7f10e1314430>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0a...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.middleware.cors.CORSMiddleware object at 0x7f10e3452d60>
+          └ <starlette.middleware.errors.ServerErrorMiddleware object at 0x7f10e3452dc0>
+  File "/root/.local/lib/python3.9/site-packages/starlette/middleware/cors.py", line 78, in __call__
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ServerErrorMiddleware.__call__.<locals>._send at 0x7f10e1314430>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0a...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <starlette.exceptions.ExceptionMiddleware object at 0x7f10e3452d30>
+          └ <starlette.middleware.cors.CORSMiddleware object at 0x7f10e3452d60>
+  File "/root/.local/lib/python3.9/site-packages/starlette/exceptions.py", line 82, in __call__
+    raise exc from None
+  File "/root/.local/lib/python3.9/site-packages/starlette/exceptions.py", line 71, in __call__
+    await self.app(scope, receive, sender)
+          │    │   │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f10e0a94ee0>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0a...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <fastapi.routing.APIRouter object at 0x7f115257b400>
+          └ <starlette.exceptions.ExceptionMiddleware object at 0x7f10e3452d30>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 580, in __call__
+    await route.handle(scope, receive, send)
+          │     │      │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f10e0a94ee0>
+          │     │      │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0a...
+          │     │      └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │     └ <function Route.handle at 0x7f11517d5550>
+          └ <fastapi.routing.APIRoute object at 0x7f10e33c50d0>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 241, in handle
+    await self.app(scope, receive, send)
+          │    │   │      │        └ <function ExceptionMiddleware.__call__.<locals>.sender at 0x7f10e0a94ee0>
+          │    │   │      └ <bound method RequestResponseCycle.receive of <uvicorn.protocols.http.httptools_impl.RequestResponseCycle object at 0x7f10e0a...
+          │    │   └ {'type': 'http', 'asgi': {'version': '3.0', 'spec_version': '2.1'}, 'http_version': '1.1', 'server': ('172.26.0.6', 8001), 'c...
+          │    └ <function request_response.<locals>.app at 0x7f10e33b0a60>
+          └ <fastapi.routing.APIRoute object at 0x7f10e33c50d0>
+  File "/root/.local/lib/python3.9/site-packages/starlette/routing.py", line 52, in app
+    response = await func(request)
+                     │    └ <starlette.requests.Request object at 0x7f10e0aa8340>
+                     └ <function get_request_handler.<locals>.app at 0x7f10e33b09d0>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/routing.py", line 219, in app
+    raw_response = await run_endpoint_function(
+                         └ <function run_endpoint_function at 0x7f11517c65e0>
+  File "/root/.local/lib/python3.9/site-packages/fastapi/routing.py", line 152, in run_endpoint_function
+    return await dependant.call(**values)
+                 │         │      └ {'request': <starlette.requests.Request object at 0x7f10e0aa8340>}
+                 │         └ <function syft_route at 0x7f10e34fda60>
+                 └ <fastapi.dependencies.models.Dependant object at 0x7f10e33c5100>
+
+  File "/app/./grid/api/syft/syft.py", line 58, in syft_route
+    obj_msg = deserialize(blob=data, from_bytes=True)
+              │                └ b'\n<syft.core.common.message.SignedImmediateSyftMessageWithReply\x12\xb4\x04\n\x12\n\x10\x0c4i]@8D\x8a\x81\xa0F\x9bvM\x81s\x...
+              └ <function _deserialize at 0x7f11507c9280>
+
+  File "/app/syft/src/syft/core/common/serde/deserialize.py", line 141, in _deserialize
+    res = _proto2object(proto=blob)
+          │                   └ msg_id {
+          │                       value: "\0144i]@8D\212\201\240F\233vM\201s"
+          │                     }
+          │                     obj_type: "syft.core.node.common.node_service.tff.tff_messages.TFFMe...
+          └ <function SignedMessage._proto2object at 0x7f1150748040>
+
+  File "/app/syft/src/syft/core/common/message.py", line 183, in _proto2object
+    _deserialize(blob=proto.message, from_bytes=True), SyftMessage
+    │                 │     │                          └ <class 'syft.core.common.message.SyftMessage'>
+    │                 │     └ <field property 'syft.core.auth.SignedMessage.message'>
+    │                 └ msg_id {
+    │                     value: "\0144i]@8D\212\201\240F\233vM\201s"
+    │                   }
+    │                   obj_type: "syft.core.node.common.node_service.tff.tff_messages.TFFMe...
+    └ <function _deserialize at 0x7f11507c9280>
+
+  File "/app/syft/src/syft/core/common/serde/deserialize.py", line 62, in _deserialize
+    obj_type = index_syft_by_module_name(fully_qualified_name=data_message.obj_type)
+               │                                              │            └ <field property 'syft.util.DataMessage.obj_type'>
+               │                                              └ obj_type: "syft.core.node.common.node_service.tff.tff_messages.TFFMessage"
+               │                                                content: "\n\022\n\020\0144i]@8D\212\201\240F\233v...
+               └ <function index_syft_by_module_name at 0x7f11507bf9d0>
+
+  File "/app/syft/src/syft/util.py", line 129, in index_syft_by_module_name
+    return index_modules(a_dict=globals()["syft"], keys=attr_list[1:])
+           │                                            └ ['syft', 'core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           └ <function index_modules at 0x7f11507bf940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['core', 'node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft' from '/app/syft/src/syft/__init__.py'>
+           └ <function index_modules at 0x7f11507bf940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['node', 'common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft.core' from '/app/syft/src/syft/core/__init__.py'>
+           └ <function index_modules at 0x7f11507bf940>
+
+  File "/app/syft/src/syft/util.py", line 87, in index_modules
+    return index_modules(a_dict=a_dict.__dict__[keys[0]], keys=keys[1:])
+           │                    │      │        │              └ ['common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      │        └ ['common', 'node_service', 'tff', 'tff_messages', 'TFFMessage']
+           │                    │      └ <member '__dict__' of 'module' objects>
+           │                    └ <module 'syft.core.node' from '/app/syft/src/syft/core/node/__init__.py'>
+           └ <function index_modules at 0x7f11507bf940>
+  [Previous line repeated 2 more times]
+
+KeyError: 'tff'
+

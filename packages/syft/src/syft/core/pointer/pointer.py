@@ -259,9 +259,7 @@ class Pointer(AbstractPointer):
                 )
 
                 response_status = self.request(
-                    reason="Calling remote print",
-                    block=True,
-                    timeout_secs=3,
+                    reason="Calling remote print", block=True, timeout_secs=3
                 )
                 if (
                     response_status is not None
@@ -306,10 +304,7 @@ class Pointer(AbstractPointer):
 
         afloat = Float(0.0)
         ptr_type = obj2pointer_type(obj=afloat)
-        ptr = ptr_type(
-            client=self.client,
-            id_at_location=id_at_location,
-        )
+        ptr = ptr_type(client=self.client, id_at_location=id_at_location)
         ptr._pointable = True
 
         # return pointer
@@ -344,10 +339,7 @@ class Pointer(AbstractPointer):
             result = self._get(delete_obj=delete_obj, verbose=verbose)
         else:
             response_status = self.request(
-                reason=reason,
-                block=True,
-                timeout_secs=timeout_secs,
-                verbose=verbose,
+                reason=reason, block=True, timeout_secs=timeout_secs, verbose=verbose
             )
             if (
                 response_status is not None
@@ -585,20 +577,14 @@ class Pointer(AbstractPointer):
     def searchable(self) -> bool:
         msg = "`searchable` is deprecated please use `pointable` in future"
         warning(msg, print=True)
-        warnings.warn(
-            msg,
-            DeprecationWarning,
-        )
+        warnings.warn(msg, DeprecationWarning)
         return self._pointable
 
     @searchable.setter
     def searchable(self, value: bool) -> None:
         msg = "`searchable` is deprecated please use `pointable` in future"
         warning(msg, print=True)
-        warnings.warn(
-            msg,
-            DeprecationWarning,
-        )
+        warnings.warn(msg, DeprecationWarning)
         self.pointable = value
 
     @property
@@ -630,10 +616,7 @@ class Pointer(AbstractPointer):
         if searchable is not None:
             warn_msg = "`searchable` is deprecated please use `pointable` in future"
             warning(warn_msg, print=True)
-            warnings.warn(
-                warn_msg,
-                DeprecationWarning,
-            )
+            warnings.warn(warn_msg, DeprecationWarning)
             pointable = searchable
 
         self._pointable = pointable

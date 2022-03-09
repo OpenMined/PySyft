@@ -53,8 +53,7 @@ class ReprMessage(ImmediateSyftMessageWithoutReply):
         """
 
         return ReprMessage_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
+            msg_id=serialize(self.id), address=serialize(self.address)
         )
 
     @staticmethod

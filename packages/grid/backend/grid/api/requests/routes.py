@@ -79,9 +79,7 @@ async def get_request_grid(
 
 
 @router.patch(
-    "/{request_id}",
-    name="requests:update",
-    status_code=status.HTTP_204_NO_CONTENT,
+    "/{request_id}", name="requests:update", status_code=status.HTTP_204_NO_CONTENT
 )
 async def update_user_grid(
     request_id: str,

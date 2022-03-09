@@ -31,7 +31,9 @@ class RequestAnswerService(ImmediateNodeServiceWithReply):
                 )
             )
 
-        status = node.get_request_status(message_request_id=msg.request_id)  # type: ignore
+        status = node.get_request_status(
+            message_request_id=msg.request_id
+        )  # type: ignore
         address = msg.reply_to
         return RequestAnswerResponse(
             request_id=msg.request_id, address=address, status=status

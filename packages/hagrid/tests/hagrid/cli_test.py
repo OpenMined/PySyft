@@ -165,10 +165,7 @@ def test_shortand_parse_of_multiword_name() -> None:
     args = grammar.launch_shorthand_support(args)
 
     # check that domain gets added to the end of the command
-    assert args == (
-        "United Nations",
-        "domain",
-    )
+    assert args == ("United Nations", "domain")
 
 
 def test_shortand_parse_of_multiword_name_with_domain() -> None:
@@ -181,7 +178,4 @@ def test_shortand_parse_of_multiword_name_with_domain() -> None:
     args = grammar.launch_shorthand_support(args)
 
     # check that domain gets added to the end of the command
-    assert args == (
-        "United Nations",
-        "domain",
-    )
+    assert args == ("United Nations", "domain")

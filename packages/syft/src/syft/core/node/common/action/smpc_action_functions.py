@@ -239,7 +239,11 @@ def smpc_mul(
         b_shape = node.store[b_shape_id].data
         crypto_store = ShareTensor.crypto_store
         a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-            "beaver_mul", a_shape=a_shape, b_shape=b_shape, ring_size=ring_size, remove=True  # type: ignore
+            "beaver_mul",
+            a_shape=a_shape,
+            b_shape=b_shape,
+            ring_size=ring_size,
+            remove=True,  # type: ignore
         )
 
         actions.append(
@@ -361,9 +365,7 @@ def local_decomposition(
             else:
                 data = sh
             store_obj = StorableObject(
-                id=id_at_location,
-                data=data,
-                read_permissions=read_permissions,
+                id=id_at_location, data=data, read_permissions=read_permissions
             )
             node.store[id_at_location] = store_obj
 

@@ -42,8 +42,7 @@ def get_current_user(token: str = Depends(reusable_oauth2)) -> UserPrivate:
     except Exception:
         # TODO: Improve error handling
         raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid credentials",
+            status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid credentials"
         )
 
 

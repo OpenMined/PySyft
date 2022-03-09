@@ -20,9 +20,7 @@ class GetReprService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(root_only=True)
     def process(
-        node: AbstractNode,
-        msg: GetReprMessage,
-        verify_key: Optional[VerifyKey] = None,
+        node: AbstractNode, msg: GetReprMessage, verify_key: Optional[VerifyKey] = None
     ) -> GetReprReplyMessage:
         if verify_key is None:
             traceback_and_raise(

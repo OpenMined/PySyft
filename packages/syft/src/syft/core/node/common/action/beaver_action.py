@@ -67,18 +67,14 @@ class BeaverAction(ImmediateActionWithoutReply):
         if obj is None:
             list_data = sy.lib.python.List([data])
             result = StorableObject(
-                id=id_at_location,
-                data=list_data,
-                read_permissions={},
+                id=id_at_location, data=list_data, read_permissions={}
             )
             BEAVER_CACHE[id_at_location] = result  # type: ignore
         elif isinstance(obj.data, sy.lib.python.List):
             list_obj: List = obj.data
             list_obj.append(data)
             result = StorableObject(
-                id=id_at_location,
-                data=list_obj,
-                read_permissions={},
+                id=id_at_location, data=list_obj, read_permissions={}
             )
             BEAVER_CACHE[id_at_location] = result  # type: ignore
         else:

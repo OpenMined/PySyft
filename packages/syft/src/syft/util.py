@@ -509,8 +509,7 @@ def get_tracer(service_name: Optional[str] = None) -> Any:
     )
 
     jaeger_exporter = JaegerExporter(
-        agent_host_name=jaeger_host,
-        agent_port=jaeger_port,
+        agent_host_name=jaeger_host, agent_port=jaeger_port
     )
 
     trace.get_tracer_provider().add_span_processor(BatchSpanProcessor(jaeger_exporter))
@@ -527,7 +526,11 @@ def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
         event_loop: The event loop.
     """
     if event_loop:
-        asyncio.set_event_loop(event_loop)
+        import selectors
+        print("HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIi")
+        selector = selectors.SelectSelector()
+        loop = asyncio.SelectorEventLoop(selector)
+        asyncio.set_event_loop(loop)
 
 
 # local scope functions cant be pickled so this needs to be global
@@ -551,8 +554,7 @@ def parallel_execution(
 
     @functools.wraps(fn)
     def wrapper(
-        args: List[List[Any]],
-        kwargs: Optional[Dict[Any, Dict[Any, Any]]] = None,
+        args: List[List[Any]], kwargs: Optional[Dict[Any, Dict[Any, Any]]] = None
     ) -> List[Any]:
         """Wrap sanity checks and checks what executor should be used.
         Args:

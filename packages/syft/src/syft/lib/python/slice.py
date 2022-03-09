@@ -244,12 +244,7 @@ class Slice(PyPrimitive):
         if proto.has_step:
             step = proto.step
 
-        return Slice(
-            start=start,
-            stop=stop,
-            step=step,
-            id=id_,
-        )
+        return Slice(start=start, stop=stop, step=step, id=id_)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

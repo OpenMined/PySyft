@@ -269,15 +269,10 @@ class GridHTTPConnection(HTTPConnection):
         session = requests.Session()
         with io.BytesIO(blob_message) as msg:
             form = MultipartEncoder(
-                {
-                    "file": ("message", msg.read(), "application/octet-stream"),
-                }
+                {"file": ("message", msg.read(), "application/octet-stream")}
             )
 
-            headers = {
-                "Prefer": "respond-async",
-                "Content-Type": form.content_type,
-            }
+            headers = {"Prefer": "respond-async", "Content-Type": form.content_type}
 
             resp = session.post(
                 str(self.base_url) + GridHTTPConnection.SYFT_ROUTE_STREAM,

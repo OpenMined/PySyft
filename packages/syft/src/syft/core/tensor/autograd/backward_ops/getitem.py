@@ -7,7 +7,9 @@ from .op import Op
 
 
 class GetItemOp(Op):
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
+    def forward(
+        self, x: AutogradTensor, y: AutogradTensor
+    ) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
         # This is just a placeholder to suppress linting errors until the method is built out

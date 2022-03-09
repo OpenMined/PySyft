@@ -32,8 +32,6 @@ class DynamicObject(ast.attribute.Attribute):
         )
 
     def __call__(
-        self,
-        *args: Tuple[Any, ...],
-        **kwargs: Any,
+        self, *args: Tuple[Any, ...], **kwargs: Any
     ) -> Optional[Union[Any, CallableT]]:
         traceback_and_raise(ValueError("Dynamic object should never be called."))

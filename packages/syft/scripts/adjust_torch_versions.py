@@ -49,11 +49,7 @@ def main(path_req: str, torch_version: str, gpu: str = "cpu") -> None:
         ):
             replace = ""  # no torchcsprng < 0.2.0 for python 3.9
 
-        req = re.sub(
-            rf"{lib}[<>=].*\n",
-            replace,
-            req,
-        )
+        req = re.sub(rf"{lib}[<>=].*\n", replace, req)
 
     with open(path_req, "w") as fp:
         fp.write(req)

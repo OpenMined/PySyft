@@ -104,15 +104,9 @@ class IntermediateGammaScalar(IntermediateScalar):
                 poly=self.poly * other.poly, max_val=max_val, min_val=min_val
             )
 
-        max_val = max(
-            self.min_val * other,
-            self.max_val * other,
-        )
+        max_val = max(self.min_val * other, self.max_val * other)
 
-        min_val = min(
-            self.min_val * other,
-            self.max_val * other,
-        )
+        min_val = min(self.min_val * other, self.max_val * other)
 
         return IntermediateGammaScalar(
             poly=self.poly * other, min_val=min_val, max_val=max_val
@@ -129,7 +123,9 @@ class IntermediateGammaScalar(IntermediateScalar):
 
         r2_diffs = np.array(
             [
-                GammaScalar(x.min_val, x.value, x.max_val, entity=x.entity, prime=x.prime).poly  # type: ignore
+                GammaScalar(
+                    x.min_val, x.value, x.max_val, entity=x.entity, prime=x.prime
+                ).poly  # type: ignore
                 for x in self.input_scalars
             ]
         )
@@ -197,7 +193,7 @@ class IntermediateGammaScalar(IntermediateScalar):
                 out += symbol_vector[index] ** 2
             # there's a small bit of rounding error from this constraint - this should
             # only be used as a double check or as a backup!!!
-            return out**0.5 - 1 / 2**16
+            return out ** 0.5 - 1 / 2 ** 16
 
         constraints.append({"type": "ineq", "fun": non_negative_additive_terms})
         results = minimize_function(

@@ -144,11 +144,7 @@ def clean(location: str) -> None:
     default=None,
     type=click.Choice(["key", "password"], case_sensitive=False),
 )
-@click.option(
-    "--ansible_extras",
-    default="",
-    type=str,
-)
+@click.option("--ansible_extras", default="", type=str)
 @click.option("--tls", is_flag=True, help="Launch with TLS configuration")
 @click.option("--test", is_flag=True, help="Launch with test configuration")
 @click.option("--dev", is_flag=True, help="Shortcut for development release")
@@ -559,10 +555,7 @@ def create_launch_cmd(
                 cache=True,
             )
             try:
-                key_path = ask(
-                    key_path_question,
-                    kwargs=kwargs,
-                )
+                key_path = ask(key_path_question, kwargs=kwargs)
             except QuestionInputPathError as e:
                 print(e)
                 key_path = str(e).split("is not a valid path")[0].strip()
@@ -573,10 +566,7 @@ def create_launch_cmd(
                     default="y",
                     kind="yesno",
                 )
-                create_key = ask(
-                    create_key_question,
-                    kwargs=kwargs,
-                )
+                create_key = ask(create_key_question, kwargs=kwargs)
                 if create_key == "y":
                     key_path = generate_key_at_path(key_path=key_path)
                 else:

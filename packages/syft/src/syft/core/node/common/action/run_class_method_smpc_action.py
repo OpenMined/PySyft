@@ -131,10 +131,9 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             resolved_kwargs[arg_name] = r_arg.data
             tag_kwargs[arg_name] = r_arg
 
-        (
-            upcasted_args,
-            upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+        (upcasted_args, upcasted_kwargs) = lib.python.util.upcast_args_and_kwargs(
+            resolved_args, resolved_kwargs
+        )
 
         method_name = self.path.split(".")[-1]
         value = resolved_self.data
@@ -159,10 +158,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         args_id = [arg.id_at_location for arg in self.args]
 
         # TODO: For the moment we don't run any SMPC operation that provides any kwarg
-        kwargs = {
-            "seed_id_locations": int(seed_id_locations),
-            "node": node,
-        }
+        kwargs = {"seed_id_locations": int(seed_id_locations), "node": node}
 
         # Get the list of actions to be run
         # TODO : Remove client as we do not use it now.
@@ -205,10 +201,9 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
             kwargs[key] = data
         kwargs = {**kwargs, **msg.kwargs}
-        (
-            upcasted_args,
-            upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+        (upcasted_args, upcasted_kwargs) = lib.python.util.upcast_args_and_kwargs(
+            args, kwargs
+        )
         logger.warning(func)
 
         if msg.name_action in {"spdz_multiply", "spdz_mask"}:

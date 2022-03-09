@@ -58,8 +58,7 @@ class GarbageCollectBatchedAction(EventualActionWithoutReply):
         addr = sy.deserialize(blob=proto.address)
 
         return GarbageCollectBatchedAction(
-            ids_at_location=ids_at_location,
-            address=addr,
+            ids_at_location=ids_at_location, address=addr
         )
 
     @staticmethod

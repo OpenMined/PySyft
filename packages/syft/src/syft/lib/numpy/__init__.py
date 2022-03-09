@@ -23,12 +23,10 @@ PACKAGE_SUPPORT = {"lib": LIB_NAME}
 def create_ast(client: TypeAny = None) -> Globals:
     ast = Globals(client)
 
-    modules: TypeList[TypeTuple[str, TypeAny]] = [
-        ("numpy", np),
-    ]
+    modules: TypeList[TypeTuple[str, TypeAny]] = [("numpy", np)]
 
     classes: TypeList[TypeTuple[str, str, TypeAny]] = [
-        ("numpy.ndarray", "numpy.ndarray", np.ndarray),
+        ("numpy.ndarray", "numpy.ndarray", np.ndarray)
     ]
 
     methods: TypeList[TypeTuple[str, str]] = [

@@ -88,12 +88,7 @@ def test_klass_get_and_set_request_config() -> None:
         # Test Klass pointer has set_request_config attribute and it works
         set_request_config = klass.pointer_type.set_request_config
         set_request_config(
-            klass_ptr,
-            {
-                "request_block": False,
-                "timeout_secs": 25,
-                "delete_obj": True,
-            },
+            klass_ptr, {"request_block": False, "timeout_secs": 25, "delete_obj": True}
         )
         get_request_config = klass.pointer_type.get_request_config
         assert get_request_config() == {

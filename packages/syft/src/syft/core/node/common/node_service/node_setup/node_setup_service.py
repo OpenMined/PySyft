@@ -74,9 +74,13 @@ def create_initial_setup(
     node.name = msg.domain_name
 
     # 4 - Create Admin User
-    _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
+    _node_private_key = node.signing_key.encode(encoder=HexEncoder).decode(
+        "utf-8"
+    )  # type: ignore
 
-    _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode("utf-8")  # type: ignore
+    _verify_key = node.signing_key.verify_key.encode(encoder=HexEncoder).decode(
+        "utf-8"
+    )  # type: ignore
 
     _admin_role = node.roles.owner_role
 
@@ -102,8 +106,7 @@ def create_initial_setup(
         print("Failed to save setup to database", e)
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Running initial setup!",
+        address=msg.reply_to, resp_msg="Running initial setup!"
     )
 
 
@@ -115,10 +118,7 @@ def get_setup(
     _setup["tags"] = loads(_setup["tags"])
     if node.network:
         _setup["domains"] = len(node.node.all())
-    return GetSetUpResponse(
-        address=msg.reply_to,
-        content=_setup,
-    )
+    return GetSetUpResponse(address=msg.reply_to, content=_setup)
 
 
 def update_settings(
@@ -157,11 +157,7 @@ class NodeSetupService(ImmediateNodeServiceWithReply):
     @service_auth(guests_welcome=True)
     def process(
         node: DomainInterface,
-        msg: Union[
-            CreateInitialSetUpMessage,
-            GetSetUpMessage,
-            UpdateSetupMessage,
-        ],
+        msg: Union[CreateInitialSetUpMessage, GetSetUpMessage, UpdateSetupMessage],
         verify_key: VerifyKey,
     ) -> Union[SuccessResponseMessage, GetSetUpResponse, UpdateSetupMessage]:
         return NodeSetupService.msg_handler_map[type(msg)](
@@ -170,8 +166,4 @@ class NodeSetupService(ImmediateNodeServiceWithReply):
 
     @staticmethod
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
-        return [
-            CreateInitialSetUpMessage,
-            GetSetUpMessage,
-            UpdateSetupMessage,
-        ]
+        return [CreateInitialSetUpMessage, GetSetUpMessage, UpdateSetupMessage]

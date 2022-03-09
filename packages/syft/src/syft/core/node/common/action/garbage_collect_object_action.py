@@ -42,10 +42,7 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         id_pb = sy.serialize(self.id_at_location)
         addr = sy.serialize(self.address)
 
-        return GarbageCollectObjectAction_PB(
-            id_at_location=id_pb,
-            address=addr,
-        )
+        return GarbageCollectObjectAction_PB(id_at_location=id_pb, address=addr)
 
     @staticmethod
     def _proto2object(
@@ -55,10 +52,7 @@ class GarbageCollectObjectAction(EventualActionWithoutReply):
         id_at_location = sy.deserialize(blob=proto.id_at_location)
         addr = sy.deserialize(blob=proto.address)
 
-        return GarbageCollectObjectAction(
-            id_at_location=id_at_location,
-            address=addr,
-        )
+        return GarbageCollectObjectAction(id_at_location=id_at_location, address=addr)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

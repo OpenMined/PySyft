@@ -23,11 +23,7 @@ SUPPORTED_INT_TYPES = [
     np.uint64,
 ]
 
-SUPPORTED_FLOAT_TYPES = [
-    np.float16,
-    np.float32,
-    np.float64,
-]
+SUPPORTED_FLOAT_TYPES = [np.float16, np.float32, np.float64]
 
 SUPPORTED_DTYPES = SUPPORTED_BOOL_TYPES + SUPPORTED_INT_TYPES + SUPPORTED_FLOAT_TYPES
 

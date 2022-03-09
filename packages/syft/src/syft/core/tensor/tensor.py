@@ -89,10 +89,9 @@ class TensorPointer(Pointer):
 
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
+            (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
+                args=[other], kwargs={}
+            )
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(

@@ -51,9 +51,7 @@ OUTPUT_MESSAGES = Union[SuccessResponseMessage, GetRoleResponse, GetRolesRespons
 
 
 def create_role_msg(
-    msg: CreateRoleMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: CreateRoleMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     """Creates a new role in the database.
 
@@ -103,15 +101,12 @@ def create_role_msg(
         raise AuthorizationError("You're not allowed to create a new Role!")
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Role created successfully!",
+        address=msg.reply_to, resp_msg="Role created successfully!"
     )
 
 
 def update_role_msg(
-    msg: UpdateRoleMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: UpdateRoleMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     """Updates the properties of the given role.
 
@@ -154,15 +149,12 @@ def update_role_msg(
         raise AuthorizationError("You're not authorized to edit this role!")
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Role updated successfully!",
+        address=msg.reply_to, resp_msg="Role updated successfully!"
     )
 
 
 def get_role_msg(
-    msg: GetRoleMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: GetRoleMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetRoleResponse:
     """Retrieves details of a role.
 
@@ -193,9 +185,7 @@ def get_role_msg(
 
 
 def get_all_roles_msg(
-    msg: GetRolesMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: GetRolesMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetRolesResponse:
     """Retrieves details of the all available roles.
 
@@ -224,9 +214,7 @@ def get_all_roles_msg(
 
 
 def del_role_msg(
-    msg: DeleteRoleMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: DeleteRoleMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     """Delete the role corresponding to the given role id.
 
@@ -251,8 +239,7 @@ def del_role_msg(
         raise AuthorizationError("You're not authorized to delete this role!")
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Role has been deleted!",
+        address=msg.reply_to, resp_msg="Role has been deleted!"
     )
 
 
@@ -270,9 +257,7 @@ class RoleManagerService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: DomainInterface,
-        msg: INPUT_MESSAGES,
-        verify_key: VerifyKey,
+        node: DomainInterface, msg: INPUT_MESSAGES, verify_key: VerifyKey
     ) -> OUTPUT_MESSAGES:
         return RoleManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key

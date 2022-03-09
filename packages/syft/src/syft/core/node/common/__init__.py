@@ -34,11 +34,7 @@ def create_client_ast(client: Optional[AbstractNodeClient] = None) -> Any:
             "syft.core.node.common.client.Client",
             Client,
         ),
-        (
-            "syft.core.common.uid.UID",
-            "syft.core.common.uid.UID",
-            UID,
-        ),
+        ("syft.core.common.uid.UID", "syft.core.common.uid.UID", UID),
     ]
 
     add_modules(ast, modules)

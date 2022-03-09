@@ -127,10 +127,7 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
 @final
 class ObjectSearchReplyMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self,
-        results: List[Pointer],
-        address: Address,
-        msg_id: Optional[UID] = None,
+        self, results: List[Pointer], address: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id)
         """By default this message just returns pointers to all the objects

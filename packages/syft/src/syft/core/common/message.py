@@ -183,6 +183,8 @@ class SignedMessage(SyftMessage):
             _deserialize(blob=proto.message, from_bytes=True), SyftMessage
         )
 
+        print(dir(sub_message))
+        print(type(sub_message))
         address = sub_message.address
 
         # proto.obj_type is final subclass callee for example ReprMessage

@@ -158,11 +158,7 @@ class List(UserList, PyPrimitive):
         id_ = sy.serialize(obj=self.id)
         downcasted = [downcast(value=element) for element in self.data]
         data = [sy.serialize(obj=element, to_bytes=True) for element in downcasted]
-        return List_PB(
-            id=id_,
-            data=data,
-            temporary_box=self.temporary_box,
-        )
+        return List_PB(id=id_, data=data, temporary_box=self.temporary_box)
 
     @staticmethod
     def _proto2object(proto: List_PB) -> "List":
@@ -172,10 +168,7 @@ class List(UserList, PyPrimitive):
         # [generator()] which is not equal to an empty list
         for element in proto.data:
             value.append(upcast(sy.deserialize(blob=element, from_bytes=True)))
-        new_list = List(
-            value=value,
-            temporary_box=proto.temporary_box,
-        )
+        new_list = List(value=value, temporary_box=proto.temporary_box)
         new_list._id = id_
         return new_list
 

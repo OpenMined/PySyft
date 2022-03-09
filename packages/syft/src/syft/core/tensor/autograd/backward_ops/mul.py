@@ -15,12 +15,11 @@ from .op import Op
 class MulOp(Op):
     """Multiplication operation with 2 tensors"""
 
-    __attr_allowlist__ = [
-        "x",
-        "y",
-    ]
+    __attr_allowlist__ = ["x", "y"]
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
+    def forward(
+        self, x: AutogradTensor, y: AutogradTensor
+    ) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
 

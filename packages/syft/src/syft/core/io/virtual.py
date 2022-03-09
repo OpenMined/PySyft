@@ -53,9 +53,7 @@ class VirtualServerConnection(ServerConnection):
     @staticmethod
     def _proto2object(proto: VirtualServerConnection_PB) -> "VirtualServerConnection":
         node = _deserialize(blob=proto.node, from_proto=True)
-        return VirtualServerConnection(
-            node=node,
-        )
+        return VirtualServerConnection(node=node)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:
@@ -92,7 +90,7 @@ class VirtualClientConnection(ClientConnection):
     @staticmethod
     def _proto2object(proto: VirtualClientConnection_PB) -> "VirtualClientConnection":
         return VirtualClientConnection(
-            server=VirtualServerConnection._proto2object(proto.server),
+            server=VirtualServerConnection._proto2object(proto.server)
         )
 
     @staticmethod

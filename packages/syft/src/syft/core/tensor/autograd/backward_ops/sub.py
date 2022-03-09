@@ -13,7 +13,9 @@ from .op import Op  # type: ignore
 class SubOp(Op):
     """Substraction operation with 2 tensors"""
 
-    def forward(self, x: AutogradTensor, y: AutogradTensor) -> AutogradTensor:  # type: ignore
+    def forward(
+        self, x: AutogradTensor, y: AutogradTensor
+    ) -> AutogradTensor:  # type: ignore
         self.x = x
         self.y = y
 

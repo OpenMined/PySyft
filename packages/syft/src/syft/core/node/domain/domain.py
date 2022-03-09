@@ -71,6 +71,7 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 )
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
 from ..common.node_service.simple.simple_service import SimpleService
+from ..common.node_service.tff.tff_service import TFFService
 from ..common.node_service.tensor_manager.tensor_manager_service import (
     TensorManagerService,
 )
@@ -154,6 +155,8 @@ class Domain(Node):
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
         self.immediate_services_with_reply.append(PingService)
+        self.immediate_services_with_reply.append(TFFService)
+
         self.immediate_services_with_reply.append(VPNConnectService)
         self.immediate_services_with_reply.append(VPNJoinService)
         self.immediate_services_with_reply.append(VPNStatusService)

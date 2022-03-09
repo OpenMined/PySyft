@@ -46,7 +46,7 @@ def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.smpc.store.CryptoStore",
             "syft.core.smpc.store.CryptoStore",
             CryptoStore,
-        ),
+        )
     ]
 
     methods = [
@@ -55,10 +55,7 @@ def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python.List",
         ),
         ("syft.core.smpc.store.CryptoStore.store", "syft.lib.python.Dict"),
-        (
-            "syft.core.smpc.store.CryptoStore.populate_store",
-            "syft.lib.python._SyNone",
-        ),
+        ("syft.core.smpc.store.CryptoStore.populate_store", "syft.lib.python._SyNone"),
     ]
 
     add_modules(ast, modules)

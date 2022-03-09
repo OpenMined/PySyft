@@ -59,12 +59,7 @@ class ResolvePointerTypeMessage(ImmediateSyftMessageWithReply):
 
 @serializable()
 class ResolvePointerTypeAnswerMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        type_path: str,
-        address: Address,
-        msg_id: Optional[UID] = None,
-    ):
+    def __init__(self, type_path: str, address: Address, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id)
         self.type_path = type_path
 

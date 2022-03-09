@@ -26,7 +26,7 @@ class CryptoPrimitiveProvider:
         g_kwargs: Optional[Dict[str, Any]] = None,
         p_kwargs: Optional[Dict[str, Any]] = None,
         nr_instances: int = 1,
-        ring_size: int = 2**32,
+        ring_size: int = 2 ** 32,
     ) -> List[Any]:
         g_kwargs = g_kwargs if g_kwargs is not None else {}
         p_kwargs = p_kwargs if p_kwargs is not None else {}

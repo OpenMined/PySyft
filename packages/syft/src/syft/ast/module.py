@@ -197,10 +197,7 @@ class Module(ast.attribute.Attribute):
                     client=self.client,
                     parent=self,
                 )
-                self.add_attr(
-                    attr_name=path[index],
-                    attr=klass,
-                )
+                self.add_attr(attr_name=path[index], attr=klass)
             elif inspect.isfunction(attr_ref) or inspect.isbuiltin(attr_ref):
                 is_static = is_static_method(self.object_ref, path[index])
 

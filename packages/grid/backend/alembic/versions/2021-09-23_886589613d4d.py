@@ -36,10 +36,7 @@ def upgrade() -> None:
         sa.Column("website", sa.String(2048), default=""),
         sa.Column("institution", sa.String(2048), default=""),
         sa.Column("added_by", sa.String(2048), default=""),
-        sa.ForeignKeyConstraint(
-            ["daa_pdf"],
-            ["daa_pdf.id"],
-        ),
+        sa.ForeignKeyConstraint(["daa_pdf"], ["daa_pdf.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
 

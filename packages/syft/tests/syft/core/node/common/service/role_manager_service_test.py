@@ -40,9 +40,7 @@ def test_create_role_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
     msg = CreateRoleMessage(
-        address=domain.address,
-        name=role_name,
-        reply_to=domain.address,
+        address=domain.address, name=role_name, reply_to=domain.address
     )
 
     reply = None
@@ -60,10 +58,7 @@ def test_update_role_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
     msg = UpdateRoleMessage(
-        address=domain.address,
-        role_id=role.id,
-        name=new_name,
-        reply_to=domain.address,
+        address=domain.address, role_id=role.id, name=new_name, reply_to=domain.address
     )
 
     reply = None
@@ -81,9 +76,7 @@ def test_get_role_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
     msg = GetRoleMessage(
-        address=domain.address,
-        role_id=role.id,
-        reply_to=domain.address,
+        address=domain.address, role_id=role.id, reply_to=domain.address
     )
 
     reply = None
@@ -99,10 +92,7 @@ def test_get_role_message(domain: sy.Domain) -> None:
 def test_get_roles_message(domain: sy.Domain) -> None:
     user_key = SigningKey(domain.verify_key.encode())
 
-    msg = GetRolesMessage(
-        address=domain.address,
-        reply_to=domain.address,
-    )
+    msg = GetRolesMessage(address=domain.address, reply_to=domain.address)
 
     reply = None
     with patch.object(domain.users, "can_triage_requests", return_value=True):
@@ -119,9 +109,7 @@ def test_del_role_manager(domain: sy.Domain) -> None:
     role = domain.roles.first()
 
     msg = DeleteRoleMessage(
-        address=domain.address,
-        reply_to=domain.address,
-        role_id=role.id,
+        address=domain.address, reply_to=domain.address, role_id=role.id
     )
 
     reply = None

@@ -23,9 +23,7 @@ class NetworkSearchService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: AbstractNode,
-        msg: NetworkSearchMessage,
-        verify_key: VerifyKey,
+        node: AbstractNode, msg: NetworkSearchMessage, verify_key: VerifyKey
     ) -> NetworkSearchResponse:
         queries = set(msg.content)
 

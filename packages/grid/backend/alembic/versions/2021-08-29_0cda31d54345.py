@@ -134,10 +134,7 @@ def upgrade() -> None:
         sa.Column("private_key", sa.String(length=2048), nullable=True),
         sa.Column("verify_key", sa.String(length=2048), nullable=True),
         sa.Column("role", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["role"],
-            ["role.id"],
-        ),
+        sa.ForeignKeyConstraint(["role"], ["role.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -153,10 +150,7 @@ def upgrade() -> None:
         sa.Column("verify_key", sa.String(length=255), nullable=True),
         sa.Column("object_type", sa.String(length=255), nullable=True),
         sa.Column("tags", sa.JSON(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["user_id"],
-            ["syft_user.id"],
-        ),
+        sa.ForeignKeyConstraint(["user_id"], ["syft_user.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -164,14 +158,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("user", sa.Integer(), nullable=True),
         sa.Column("environment", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["environment"],
-            ["environment.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["user"],
-            ["syft_user.id"],
-        ),
+        sa.ForeignKeyConstraint(["environment"], ["environment.id"]),
+        sa.ForeignKeyConstraint(["user"], ["syft_user.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
     op.create_table(
@@ -179,14 +167,8 @@ def upgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("user", sa.Integer(), nullable=True),
         sa.Column("group", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["group"],
-            ["group.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["user"],
-            ["syft_user.id"],
-        ),
+        sa.ForeignKeyConstraint(["group"], ["group.id"]),
+        sa.ForeignKeyConstraint(["user"], ["syft_user.id"]),
         sa.PrimaryKeyConstraint("id"),
     )
     # ### end Alembic commands ###

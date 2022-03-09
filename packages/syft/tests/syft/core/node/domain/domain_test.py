@@ -37,9 +37,7 @@ def test_domain_request_pending(domain: sy.Domain) -> None:
 
     domain_2 = sy.Domain(name="my domain", store_type=DictStore)
 
-    data_ptr_domain_1.request(
-        reason="I'd lke to see this pointer",
-    )
+    data_ptr_domain_1.request(reason="I'd lke to see this pointer")
 
     requested_object = data_ptr_domain_1.id_at_location
 

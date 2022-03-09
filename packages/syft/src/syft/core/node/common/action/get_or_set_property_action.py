@@ -98,10 +98,9 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         if not (inspect.isdatadescriptor(method) or self.map_to_dyn):
             raise ValueError(f"{method} not an actual property!")
 
-        (
-            upcasted_args,
-            upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+        (upcasted_args, upcasted_kwargs) = lib.python.util.upcast_args_and_kwargs(
+            resolved_args, resolved_kwargs
+        )
 
         data = resolved_self.data
 
@@ -210,9 +209,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: GetOrSetPropertyAction_PB,
-    ) -> "GetOrSetPropertyAction":
+    def _proto2object(proto: GetOrSetPropertyAction_PB,) -> "GetOrSetPropertyAction":
         """Creates a GetOrSetPropertyAction from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

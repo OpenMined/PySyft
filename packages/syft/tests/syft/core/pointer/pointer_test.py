@@ -82,8 +82,7 @@ def test_make_unpointable(
 
 @pytest.mark.slow
 def test_pointable_property(
-    client: sy.VirtualMachineClient,
-    root_client: sy.VirtualMachineClient,
+    client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
 ) -> None:
 
     ten = th.tensor([1, 2])

@@ -34,11 +34,7 @@ if TYPE_CHECKING:
 class GCBatched(GCStrategy):
     """The GCBatched Strategy."""
 
-    __slots__ = [
-        "obj_ids",
-        "threshold",
-        "client",
-    ]
+    __slots__ = ["obj_ids", "threshold", "client"]
 
     client: Optional["Client"]
     obj_ids: List[UID]

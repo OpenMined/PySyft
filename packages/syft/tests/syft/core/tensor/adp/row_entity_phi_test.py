@@ -228,10 +228,7 @@ def test_eq_diff_entities(
 
 # TODO: Update this test after REPT.all() and .any() are implemented, and check
 # `assert not comparison_result`
-def test_eq_values(
-    row_data_ishan: List,
-    reference_data: np.ndarray,
-) -> None:
+def test_eq_values(row_data_ishan: List, reference_data: np.ndarray) -> None:
     """Test REPTs belonging to the same owner, with different data"""
     tensor1 = REPT(rows=row_data_ishan)
     tensor2 = REPT(rows=row_data_ishan) + 1
@@ -1091,15 +1088,8 @@ def test_clip(row_data_trask: List, highest: int) -> None:
 
 
 def test_any(pos_row_data: List) -> None:
-    zeros_tensor = (
-        REPT(
-            rows=pos_row_data,
-        )
-        * 0
-    )
-    pos_tensor = REPT(
-        rows=pos_row_data,
-    )
+    zeros_tensor = REPT(rows=pos_row_data) * 0
+    pos_tensor = REPT(rows=pos_row_data)
     any_zeros_tensor = zeros_tensor.any()
     for i in range(len(zeros_tensor.child)):
         assert not any_zeros_tensor.child[i].child
@@ -1109,15 +1099,8 @@ def test_any(pos_row_data: List) -> None:
 
 
 def test_all(pos_row_data: List) -> None:
-    zeros_tensor = (
-        REPT(
-            rows=pos_row_data,
-        )
-        * 0
-    )
-    pos_tensor = REPT(
-        rows=pos_row_data,
-    )
+    zeros_tensor = REPT(rows=pos_row_data) * 0
+    pos_tensor = REPT(rows=pos_row_data)
     all_zeros_tensor = zeros_tensor.all()
     for i in range(len(zeros_tensor.child)):
         assert not all_zeros_tensor.child[i].child
@@ -1147,10 +1130,7 @@ def test_pow(row_data_trask: List) -> None:
 @pytest.mark.skip(
     reason="This wouldn't work because it attempts to call .child on an IGT to get the values."
 )
-def test_sum(
-    row_data_trask: List,
-    dims: int,
-) -> None:
+def test_sum(row_data_trask: List, dims: int) -> None:
     tensor = REPT(rows=row_data_trask)
     sum_tensor = tensor.sum()
     for k in range(len(tensor.child)):

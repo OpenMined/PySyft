@@ -97,10 +97,7 @@ async def process_applicant_request(
 
 
 @router.get(
-    "",
-    response_model=List[User],
-    name="users:read_all",
-    status_code=status.HTTP_200_OK,
+    "", response_model=List[User], name="users:read_all", status_code=status.HTTP_200_OK
 )
 async def get_all_users_grid(
     current_user: UserPrivate = Depends(get_current_user),
@@ -128,11 +125,7 @@ async def get_user_grid(
         raise_generic_private_error()
 
 
-@router.patch(
-    "/{user_id}",
-    name="users:update",
-    status_code=status.HTTP_204_NO_CONTENT,
-)
+@router.patch("/{user_id}", name="users:update", status_code=status.HTTP_204_NO_CONTENT)
 async def update_user_grid(
     user_id: int,
     updated_user: UserUpdate,

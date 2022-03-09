@@ -434,10 +434,7 @@ class GetAssociationRequestResponse(ImmediateSyftMessageWithoutReply):
 @serializable()
 class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
     def __init__(
-        self,
-        address: Address,
-        reply_to: Address,
-        msg_id: Optional[UID] = None,
+        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
@@ -501,10 +498,7 @@ class GetAssociationRequestsMessage(ImmediateSyftMessageWithReply):
 @serializable()
 class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self,
-        address: Address,
-        content: List[Dict],
-        msg_id: Optional[UID] = None,
+        self, address: Address, content: List[Dict], msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.content = content
@@ -522,8 +516,7 @@ class GetAssociationRequestsResponse(ImmediateSyftMessageWithoutReply):
             object.
         """
         msg = GetAssociationRequestsResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
+            msg_id=serialize(self.id), address=serialize(self.address)
         )
 
         metadata_constructor = GetAssociationRequestsResponse_PB.metadata_container

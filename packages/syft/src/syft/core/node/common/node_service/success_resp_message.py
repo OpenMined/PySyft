@@ -20,12 +20,7 @@ from ....io.address import Address
 @serializable()
 @final
 class SuccessResponseMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        address: Address,
-        resp_msg: str,
-        msg_id: Optional[UID] = None,
-    ):
+    def __init__(self, address: Address, resp_msg: str, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id)
         self.resp_msg = resp_msg
 
@@ -48,9 +43,7 @@ class SuccessResponseMessage(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: SuccessResponseMessage_PB,
-    ) -> "SuccessResponseMessage":
+    def _proto2object(proto: SuccessResponseMessage_PB,) -> "SuccessResponseMessage":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

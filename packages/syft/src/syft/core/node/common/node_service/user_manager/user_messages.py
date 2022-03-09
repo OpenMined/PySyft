@@ -108,9 +108,7 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: CreateUserMessage_PB,
-    ) -> "CreateUserMessage":
+    def _proto2object(proto: CreateUserMessage_PB,) -> "CreateUserMessage":
         """Creates a CreateUserMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -186,9 +184,7 @@ class GetUserMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: GetUserMessage_PB,
-    ) -> "GetUserMessage":
+    def _proto2object(proto: GetUserMessage_PB,) -> "GetUserMessage":
         """Creates a GetUserMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -302,12 +298,7 @@ class ProcessUserCandidateMessage(ImmediateSyftMessageWithReply):
 @serializable()
 @final
 class GetUserResponse(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        address: Address,
-        content: Dict,
-        msg_id: Optional[UID] = None,
-    ):
+    def __init__(self, address: Address, content: Dict, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id)
         self.content = content
 
@@ -330,9 +321,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: GetUserResponse_PB,
-    ) -> "GetUserResponse":
+    def _proto2object(proto: GetUserResponse_PB,) -> "GetUserResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -371,10 +360,7 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
 @final
 class GetUsersMessage(ImmediateSyftMessageWithReply):
     def __init__(
-        self,
-        address: Address,
-        reply_to: Address,
-        msg_id: Optional[UID] = None,
+        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
@@ -397,9 +383,7 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: GetUsersMessage_PB,
-    ) -> "GetUsersMessage":
+    def _proto2object(proto: GetUsersMessage_PB,) -> "GetUsersMessage":
         """Creates a GetUsersMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -438,10 +422,7 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
 @final
 class GetCandidatesMessage(ImmediateSyftMessageWithReply):
     def __init__(
-        self,
-        address: Address,
-        reply_to: Address,
-        msg_id: Optional[UID] = None,
+        self, address: Address, reply_to: Address, msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
 
@@ -464,9 +445,7 @@ class GetCandidatesMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: GetCandidatesMessage_PB,
-    ) -> "GetCandidatesMessage":
+    def _proto2object(proto: GetCandidatesMessage_PB,) -> "GetCandidatesMessage":
         """Creates a GetUsersMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -505,10 +484,7 @@ class GetCandidatesMessage(ImmediateSyftMessageWithReply):
 @final
 class GetCandidatesResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self,
-        address: Address,
-        content: List[Dict],
-        msg_id: Optional[UID] = None,
+        self, address: Address, content: List[Dict], msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.content = content
@@ -526,16 +502,13 @@ class GetCandidatesResponse(ImmediateSyftMessageWithoutReply):
             object.
         """
         msg = GetCandidatesResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
+            msg_id=serialize(self.id), address=serialize(self.address)
         )
         _ = [msg.content.append(serialize(content)) for content in self.content]
         return msg
 
     @staticmethod
-    def _proto2object(
-        proto: GetCandidatesResponse_PB,
-    ) -> "GetCandidatesResponse":
+    def _proto2object(proto: GetCandidatesResponse_PB,) -> "GetCandidatesResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -573,10 +546,7 @@ class GetCandidatesResponse(ImmediateSyftMessageWithoutReply):
 @final
 class GetUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self,
-        address: Address,
-        content: List[Dict],
-        msg_id: Optional[UID] = None,
+        self, address: Address, content: List[Dict], msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.content = content
@@ -594,16 +564,13 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
             object.
         """
         msg = GetUsersResponse_PB(
-            msg_id=serialize(self.id),
-            address=serialize(self.address),
+            msg_id=serialize(self.id), address=serialize(self.address)
         )
         _ = [msg.content.append(serialize(content)) for content in self.content]
         return msg
 
     @staticmethod
-    def _proto2object(
-        proto: GetUsersResponse_PB,
-    ) -> "GetUsersResponse":
+    def _proto2object(proto: GetUsersResponse_PB,) -> "GetUsersResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -694,9 +661,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: UpdateUserMessage_PB,
-    ) -> "UpdateUserMessage":
+    def _proto2object(proto: UpdateUserMessage_PB,) -> "UpdateUserMessage":
         """Creates a UpdateUserMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -773,9 +738,7 @@ class DeleteUserMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: DeleteUserMessage_PB,
-    ) -> "DeleteUserMessage":
+    def _proto2object(proto: DeleteUserMessage_PB,) -> "DeleteUserMessage":
         """Creates a DeleteUserMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -853,9 +816,7 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: SearchUsersMessage_PB,
-    ) -> "SearchUsersMessage":
+    def _proto2object(proto: SearchUsersMessage_PB,) -> "SearchUsersMessage":
         """Creates a SearchUsersMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -898,10 +859,7 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
 @final
 class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
     def __init__(
-        self,
-        address: Address,
-        content: List[Dict],
-        msg_id: Optional[UID] = None,
+        self, address: Address, content: List[Dict], msg_id: Optional[UID] = None
     ):
         super().__init__(address=address, msg_id=msg_id)
         self.content = content
@@ -925,9 +883,7 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(
-        proto: SearchUsersResponse_PB,
-    ) -> "SearchUsersResponse":
+    def _proto2object(proto: SearchUsersResponse_PB,) -> "SearchUsersResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

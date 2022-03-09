@@ -87,10 +87,7 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
                     raise Exception(err)
 
         if not isinstance(result, StorableObject):
-            result = StorableObject(
-                id=self.id_at_location,
-                data=result,
-            )
+            result = StorableObject(id=self.id_at_location, data=result)
 
         node.store[self.id_at_location] = result
 

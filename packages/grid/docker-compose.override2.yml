@@ -1,0 +1,163 @@
+version: "3.8"
+services:
+  proxy:
+    ports:
+      - "${DOMAIN_PORT?80}:80"
+      - "8080"
+    command:
+      # Enable Docker in Traefik, so that it reads labels from Docker services
+      - --providers.docker
+      # Add a constraint to only use services with the label for this stack
+      # from the env var TRAEFIK_TAG
+      - --providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)
+      # Do not expose all Docker services, only the ones explicitly exposed
+      - --providers.docker.exposedbydefault=false
+      # Disable Docker Swarm mode for local development
+      # - --providers.docker.swarmmode
+      # Enable the access log, with HTTP requests
+      - --accesslog
+      # Enable the Traefik log, for configurations and errors
+      - --log
+      # Enable the Dashboard and API
+      - --api
+      # Enable the Dashboard and API in insecure mode for local development
+      - --api.insecure=true
+      - --api.dashboard=true
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.${STACK_NAME?Variable not set}-traefik-public-http.rule=Host(`${DOMAIN?Variable not set}`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-traefik-public.loadbalancer.server.port=80
+
+  pgadmin:
+    ports:
+      - "5050"
+
+  db:
+    ports:
+      - "5432"
+  flower:
+    ports:
+      - "5555"
+    command:
+      - "--broker=amqp://guest@queue:5672//"
+      # For the "Broker" tab to work in the flower UI, uncomment the following command argument,
+      # and change the queue service's image as well
+      - "--broker_api=http://guest:guest@queue:15672/api//"
+
+  queue:
+    image: rabbitmq:3-management
+    ports:
+      - "5672"
+      - "15672"
+
+  backend:
+    ports:
+      - "8888"
+    volumes:
+      - ./backend/app:/app
+      - ../syft:/app/syft
+      - ../../notebooks:/notebooks
+      - ./data/package-cache:/root/.cache
+
+    environment:
+      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888 --notebook-dir=/notebooks
+      - SERVER_HOST=http://${DOMAIN?Variable not set}
+      - SYFT_USE_UVLOOP=0
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: "${INSTALL_DEV-true}"
+        INSTALL_JUPYTER: "${INSTALL_JUPYTER-true}"
+    # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
+    command: /start-reload.sh
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-http.rule=PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this wont match /api/v1/syft/stream because of length
+      - traefik.http.services.${STACK_NAME?Variable not set}-backend.loadbalancer.server.port=80
+
+  backend_stream:
+    depends_on:
+      - db
+      - backend
+    volumes:
+      - ./backend/app:/app
+      - ../syft:/app/syft
+      - ./data/package-cache:/root/.cache
+    environment:
+      - SERVER_HOST=http://${DOMAIN?Variable not set}
+      - SYFT_USE_UVLOOP=0
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - STREAM_QUEUE=1
+    build:
+      context: ./backend
+      dockerfile: backend.dockerfile
+      args:
+        INSTALL_DEV: "${INSTALL_DEV-true}"
+    # command: bash -c "while true; do sleep 1; done" # Infinite loop to keep container live doing nothing
+    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-backend-stream-http.rule=PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`) # WARNING: this only matches /api/v1/syft/stream because of length
+      - traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=80
+
+  celeryworker:
+    volumes:
+      - ./backend/app:/app
+      - ../syft:/app/syft
+      - ../../notebooks:/notebooks
+      - ./data/package-cache:/root/.cache
+    environment:
+      - RUN=celery worker -A app.worker -l info -Q main-queue -c 1
+      - JUPYTER=jupyter lab --ip=0.0.0.0 --allow-root --NotebookApp.custom_display_url=http://127.0.0.1:8888 --notebook-dir=/notebooks
+      - SERVER_HOST=http://${DOMAIN?Variable not set}
+      - SYFT_USE_UVLOOP=0
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+    build:
+      context: ./backend
+      dockerfile: celeryworker.dockerfile
+      args:
+        INSTALL_DEV: "${INSTALL_DEV-true}"
+        INSTALL_JUPYTER: "${INSTALL_JUPYTER-true}"
+    command: "waitforit -address=http://backend:80/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
+
+  frontend:
+    depends_on:
+      - db
+      - backend
+    build:
+      context: ./grid-ui
+      dockerfile: ui.dockerfile
+      args:
+        FRONTEND_ENV: development
+        NODE_TYPE: ${NODE_TYPE?Variable not set}
+    labels:
+      - traefik.enable=true
+      - traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}
+      - traefik.http.routers.${STACK_NAME?Variable not set}-frontend-http.rule=PathPrefix(`/`)
+      - traefik.http.services.${STACK_NAME?Variable not set}-frontend.loadbalancer.server.port=80
+        #docker-host:
+        #depends_on:
+        #- proxy
+        #- pgadmin
+        #- db
+        #- flower
+        #- queue
+        #- backend
+        #- backend_stream
+        #- celeryworker
+        #- frontend
+        #image: qoomon/docker-host
+        #cap_add: ["NET_ADMIN", "NET_RAW"]
+        #mem_limit: 8M
+        #restart: always
+
+networks:
+  traefik-public:
+    # For local dev, don't expect an external Traefik network
+    external: false

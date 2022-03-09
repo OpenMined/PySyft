@@ -108,9 +108,7 @@ test_suite = [
 
 @pytest.mark.parametrize("msg_constructor, kwargs, test_fields", test_suite)
 def test_create(
-    msg_constructor: Callable,
-    kwargs: Dict[str, Any],
-    test_fields: List[str],
+    msg_constructor: Callable, kwargs: Dict[str, Any], test_fields: List[str]
 ) -> None:
     msg = msg_constructor(**kwargs)
     regenerated_message = deserialize(serialize(msg))

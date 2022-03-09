@@ -35,9 +35,7 @@ from .user_messages import UpdateUserMessage
 
 
 def create_user_msg(
-    msg: CreateUserMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: CreateUserMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     # Check if node requires daa document
     if node.setup.first(domain_name=node.name).daa and not msg.daa_pdf:
@@ -84,15 +82,12 @@ def create_user_msg(
         )
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="User created successfully!",
+        address=msg.reply_to, resp_msg="User created successfully!"
     )
 
 
 def accept_or_deny_candidate(
-    msg: ProcessUserCandidateMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: ProcessUserCandidateMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     if True:  # node.users.can_create_users(verify_key=verify_key):
         node.users.process_user_application(
@@ -104,15 +99,12 @@ def accept_or_deny_candidate(
         )
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="User application processed successfully!",
+        address=msg.reply_to, resp_msg="User application processed successfully!"
     )
 
 
 def update_user_msg(
-    msg: UpdateUserMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: UpdateUserMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     _valid_parameters = (
         msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
@@ -178,10 +170,13 @@ def update_user_msg(
             new_role_id = node.roles.first(name=msg.role).id
             node.users.set(user_id=str(msg.user_id), role=new_role_id)
             current_user = node.users.get_user(verify_key=verify_key)
-            node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)  # type: ignore
+            node.users.set(
+                user_id=current_user.id, role=node.roles.admin_role.id
+            )  # type: ignore
             # Updating current node keys
             root_key = SigningKey(
-                current_user.private_key.encode("utf-8"), encoder=HexEncoder  # type: ignore
+                current_user.private_key.encode("utf-8"),
+                encoder=HexEncoder,  # type: ignore
             )
             node.signing_key = root_key
             node.verify_key = root_key.verify_key
@@ -195,15 +190,12 @@ def update_user_msg(
             raise AuthorizationError("You're not allowed to change User roles!")
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="User updated successfully!",
+        address=msg.reply_to, resp_msg="User updated successfully!"
     )
 
 
 def get_user_msg(
-    msg: GetUserMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: GetUserMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetUserResponse:
     # Check key permissions
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
@@ -227,16 +219,11 @@ def get_user_msg(
             user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
         )
 
-    return GetUserResponse(
-        address=msg.reply_to,
-        content=_msg,
-    )
+    return GetUserResponse(address=msg.reply_to, content=_msg)
 
 
 def get_all_users_msg(
-    msg: GetUsersMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: GetUsersMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetUsersResponse:
     # Check key permissions
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
@@ -265,16 +252,11 @@ def get_all_users_msg(
             )
             _msg.append(_user_json)
 
-    return GetUsersResponse(
-        address=msg.reply_to,
-        content=_msg,
-    )
+    return GetUsersResponse(address=msg.reply_to, content=_msg)
 
 
 def get_applicant_users(
-    msg: GetCandidatesMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: GetCandidatesMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetCandidatesResponse:
     # Check key permissions
     _allowed = node.users.can_triage_requests(verify_key=verify_key)
@@ -293,16 +275,11 @@ def get_applicant_users(
                 _user_json["daa_pdf"] = user.daa_pdf
             _msg.append(_user_json)
 
-    return GetCandidatesResponse(
-        address=msg.reply_to,
-        content=_msg,
-    )
+    return GetCandidatesResponse(address=msg.reply_to, content=_msg)
 
 
 def del_user_msg(
-    msg: DeleteUserMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: DeleteUserMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
 
     _target_user = node.users.first(id=msg.user_id)
@@ -320,20 +297,14 @@ def del_user_msg(
         raise AuthorizationError("You're not allowed to delete this user information!")
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="User deleted successfully!",
+        address=msg.reply_to, resp_msg="User deleted successfully!"
     )
 
 
 def search_users_msg(
-    msg: SearchUsersMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: SearchUsersMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SearchUsersResponse:
-    user_parameters = {
-        "email": msg.email,
-        "role": node.roles.first(name=msg.role).id,
-    }
+    user_parameters = {"email": msg.email, "role": node.roles.first(name=msg.role).id}
 
     filtered_parameters = filter(
         lambda key: user_parameters[key], user_parameters.keys()
@@ -353,10 +324,7 @@ def search_users_msg(
             "search_users_msg You're not allowed to get User information!"
         )
 
-    return SearchUsersResponse(
-        address=msg.reply_to,
-        content=_msg,
-    )
+    return SearchUsersResponse(address=msg.reply_to, content=_msg)
 
 
 class UserManagerService(ImmediateNodeServiceWithReply):
@@ -402,9 +370,7 @@ class UserManagerService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: DomainInterface,
-        msg: INPUT_MESSAGES,
-        verify_key: VerifyKey,
+        node: DomainInterface, msg: INPUT_MESSAGES, verify_key: VerifyKey
     ) -> OUTPUT_MESSAGES:
         reply = UserManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key

@@ -94,7 +94,7 @@ def test_math() -> None:
 
     for b in SyFalse, SyTrue:
         for i in Int(0), Int(1), Int(2):
-            assert b**i == Int(b) ** i
+            assert b ** i == Int(b) ** i
             assert b ** i is not Bool(Int(b) ** i)
 
     assert (Int(1) == Int(1)) == SyTrue

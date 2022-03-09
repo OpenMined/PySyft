@@ -8,7 +8,9 @@ from .op import Op
 
 
 class ArgMaxOp(Op):
-    def forward(self, x: AutogradTensor, axis: Optional[int] = None) -> AutogradTensor:  # type: ignore
+    def forward(
+        self, x: AutogradTensor, axis: Optional[int] = None
+    ) -> AutogradTensor:  # type: ignore
         self.x = x
 
         # This is just a placeholder to suppress linting errors until the method is built out

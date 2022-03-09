@@ -16,7 +16,9 @@ class ReshapeOp(Op):
 
     __attr_allowlist__ = ["x", "shape", "backward_shape"]
 
-    def forward(self, x: AutogradTensor, *shape: tuple) -> AutogradTensor:  # type: ignore
+    def forward(
+        self, x: AutogradTensor, *shape: tuple
+    ) -> AutogradTensor:  # type: ignore
         self.x = x
         self.shape = shape
         self.backward_shape = self.x.shape

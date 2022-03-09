@@ -117,7 +117,7 @@ class ABY3:
 
         shape_x = tuple(a[0].shape)  # type: ignore
         shape_y = tuple(b[0].shape)  # type: ignore
-        ring_size = 2**32
+        ring_size = 2 ** 32
 
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
@@ -167,7 +167,7 @@ class ABY3:
 
         shape_x = tuple(a[0].shape)  # type: ignore
         shape_y = tuple(b[0].shape)  # type: ignore
-        ring_size = 2**32
+        ring_size = 2 ** 32
 
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
@@ -227,7 +227,7 @@ class ABY3:
         from ....tensor import TensorPointer
 
         nr_parties = len(x.parties)
-        ring_size = 2**32  # Should extract this info better
+        ring_size = 2 ** 32  # Should extract this info better
         ring_bits = get_nr_bits(ring_size)
         shape = x.shape
         parties = x.parties

@@ -137,7 +137,9 @@ class AdversarialAccountant:
     ) -> float:
 
         # fetch mechanisms from the database
-        table_mechanisms = self.entity2ledger.query(entity_name=entity.name)  # type: ignore
+        table_mechanisms = self.entity2ledger.query(
+            entity_name=entity.name
+        )  # type: ignore
         mechanisms = [x.obj for x in table_mechanisms]
 
         # filter out mechanisms that weren't created by this data scientist user

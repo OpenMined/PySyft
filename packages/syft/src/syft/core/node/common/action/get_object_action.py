@@ -65,9 +65,7 @@ class GetObjectResponseMessage(ImmediateSyftMessageWithoutReply):
         ser = sy.serialize(self.obj)
 
         return GetObjectResponseMessage_PB(
-            msg_id=sy.serialize(self.id),
-            address=sy.serialize(self.address),
-            obj=ser,
+            msg_id=sy.serialize(self.id), address=sy.serialize(self.address), obj=ser
         )
 
     @staticmethod
@@ -193,7 +191,9 @@ class GetObjectAction(ImmediateActionWithReply):
                     debug(
                         f"Calling delete on Object with ID {self.id_at_location} in store."
                     )
-                    if not node.store.is_dataset(key=self.id_at_location):  # type: ignore
+                    if not node.store.is_dataset(
+                        key=self.id_at_location
+                    ):  # type: ignore
                         node.store.delete(key=self.id_at_location)
                 except Exception as e:
                     log = (

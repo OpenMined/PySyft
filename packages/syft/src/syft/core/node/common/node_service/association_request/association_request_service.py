@@ -66,9 +66,7 @@ def check_if_is_vpn(host_or_ip: str) -> bool:
 
 # domain gets this message from a user and will try to send to the network
 def send_association_request_msg(
-    msg: SendAssociationRequestMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: SendAssociationRequestMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     # Check Key permissions
     info(
@@ -84,7 +82,8 @@ def send_association_request_msg(
 
         # Build an association request to send to the target
         user_priv_key = SigningKey(
-            node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
+            node.users.get_user(verify_key).private_key.encode(),
+            encoder=HexEncoder,  # type: ignore
         )
 
         metadata = dict(msg.metadata)
@@ -142,16 +141,13 @@ def send_association_request_msg(
         raise AuthorizationError("You're not allowed to create an Association Request!")
     info(f"Node: {node} received the answer from ReceiveAssociationRequestMessage.")
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Association request sent!",
+        address=msg.reply_to, resp_msg="Association request sent!"
     )
 
 
 # network gets the above message first and then later the domain gets this message as well
 def recv_association_request_msg(
-    msg: ReceiveAssociationRequestMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: ReceiveAssociationRequestMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     _previous_request = node.association_requests.contain(
         source=msg.source, target=msg.target
@@ -184,7 +180,9 @@ def recv_association_request_msg(
         info(
             f"Node {node} - recv_association_request_msg: answering an existing association request."
         )
-        node.association_requests.set(source=msg.source, target=msg.target, response=msg.response)  # type: ignore
+        node.association_requests.set(
+            source=msg.source, target=msg.target, response=msg.response
+        )  # type: ignore
 
     # get or create a new node and node_route which represents the opposing node which
     # is supplied in the metadata
@@ -200,16 +198,13 @@ def recv_association_request_msg(
         error(f"Failed to save the node and node_route rows. {e}")
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Association request received!",
+        address=msg.reply_to, resp_msg="Association request received!"
     )
 
 
 # network owner user approves the request and sends this to the network
 def respond_association_request_msg(
-    msg: RespondAssociationRequestMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: RespondAssociationRequestMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     # Check if handshake/address/value fields are empty
     missing_paramaters = not msg.target or not msg.response
@@ -226,9 +221,12 @@ def respond_association_request_msg(
     if allowed:
         # Set the status of the Association Request according to the "value" field received
 
-        node.association_requests.set(source=msg.source, target=msg.target, response=msg.response)  # type: ignore
+        node.association_requests.set(
+            source=msg.source, target=msg.target, response=msg.response
+        )  # type: ignore
         user_priv_key = SigningKey(
-            node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
+            node.users.get_user(verify_key).private_key.encode(),
+            encoder=HexEncoder,  # type: ignore
         )
 
         metadata = {}
@@ -270,15 +268,12 @@ def respond_association_request_msg(
         raise AuthorizationError("You're not allowed to create an Association Request!")
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Association request replied!",
+        address=msg.reply_to, resp_msg="Association request replied!"
     )
 
 
 def get_association_request_msg(
-    msg: GetAssociationRequestMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: GetAssociationRequestMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetAssociationRequestResponse:
     # Check Key Permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
@@ -301,9 +296,7 @@ def get_association_request_msg(
 
 
 def get_all_association_request_msg(
-    msg: GetAssociationRequestsMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: GetAssociationRequestsMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetAssociationRequestsResponse:
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
 
@@ -321,15 +314,12 @@ def get_all_association_request_msg(
         )
 
     return GetAssociationRequestsResponse(
-        address=msg.reply_to,
-        content=association_requests_json,
+        address=msg.reply_to, content=association_requests_json
     )
 
 
 def del_association_request_msg(
-    msg: DeleteAssociationRequestMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: DeleteAssociationRequestMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(
@@ -345,8 +335,7 @@ def del_association_request_msg(
         )
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Association request deleted!",
+        address=msg.reply_to, resp_msg="Association request deleted!"
     )
 
 

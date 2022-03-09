@@ -106,7 +106,9 @@ def wrap_type(typ: type, fields: List[str]) -> None:
     def object2proto(obj: object) -> ReturnTypes_PB:
         proto = ReturnTypes_PB()
 
-        obj_type = full_name_with_name(klass=obj._sy_serializable_wrapper_type)  # type: ignore
+        obj_type = full_name_with_name(
+            klass=obj._sy_serializable_wrapper_type
+        )  # type: ignore
         proto.obj_type = obj_type
 
         values = [getattr(obj, field, None) for field in fields]

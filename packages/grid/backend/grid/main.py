@@ -12,8 +12,7 @@ from grid.core.config import settings
 from grid.logger.handler import get_log_handler
 
 app = FastAPI(
-    title=settings.PROJECT_NAME,
-    openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    title=settings.PROJECT_NAME, openapi_url=f"{settings.API_V1_STR}/openapi.json"
 )
 
 app.add_event_handler("startup", get_log_handler().init_logger)
@@ -32,12 +31,7 @@ app.include_router(api_router, prefix=settings.API_V1_STR)
 
 
 # needed for Google Kubernetes Engine LoadBalancer Healthcheck
-@app.get(
-    "/",
-    name="healthcheck",
-    status_code=200,
-    response_class=JSONResponse,
-)
+@app.get("/", name="healthcheck", status_code=200, response_class=JSONResponse)
 def healthcheck() -> Dict[str, str]:
     """
     Currently, all service backends must satisfy either of the following requirements to

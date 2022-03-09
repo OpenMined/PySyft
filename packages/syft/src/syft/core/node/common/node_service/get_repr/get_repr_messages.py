@@ -59,12 +59,7 @@ class GetReprMessage(ImmediateSyftMessageWithReply):
 
 @serializable()
 class GetReprReplyMessage(ImmediateSyftMessageWithoutReply):
-    def __init__(
-        self,
-        repr: str,
-        address: Address,
-        msg_id: Optional[UID] = None,
-    ):
+    def __init__(self, repr: str, address: Address, msg_id: Optional[UID] = None):
         super().__init__(address=address, msg_id=msg_id)
         self.repr = repr
 

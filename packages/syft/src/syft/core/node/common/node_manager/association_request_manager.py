@@ -27,12 +27,7 @@ class AssociationRequestManager(DatabaseManager):
         return result
 
     def create_association_request(
-        self,
-        node_name: str,
-        node_address: str,
-        source: str,
-        target: str,
-        status: str,
+        self, node_name: str, node_address: str, source: str, target: str, status: str
     ) -> None:
         table_fields = {}
         table_fields["node_name"] = node_name

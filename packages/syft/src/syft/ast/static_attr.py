@@ -177,7 +177,9 @@ class StaticAttribute(ast.attribute.Attribute):
         """
         raise ValueError("MAKE PROPER SCHEMA, THIS SHOULD NEVER BE CALLED")
 
-    def add_path(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> None:  # type: ignore
+    def add_path(
+        self, *args: List[Any], **kwargs: Dict[Any, Any]
+    ) -> None:  # type: ignore
         """An `StaticAttribute` can no longer have children nodes.
 
         Args:

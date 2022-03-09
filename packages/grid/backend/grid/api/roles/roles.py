@@ -130,8 +130,7 @@ def get_all_roles_route(
 
 @router.get("/{role_id}", status_code=200, response_class=JSONResponse)
 def get_specific_role_route(
-    role_id: int,
-    current_user: Any = Depends(get_current_user),
+    role_id: int, current_user: Any = Depends(get_current_user)
 ) -> Dict[str, Any]:
     """Retrieves role by its ID.
 
@@ -225,8 +224,7 @@ def update_use_route(
 
 @router.delete("/{role_id}", status_code=200, response_class=JSONResponse)
 def delete_user_role(
-    role_id: int,
-    current_user: Any = Depends(get_current_user),
+    role_id: int, current_user: Any = Depends(get_current_user)
 ) -> Dict[str, str]:
     """Deletes a user
 

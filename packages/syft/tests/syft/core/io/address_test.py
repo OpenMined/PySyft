@@ -58,13 +58,7 @@ def _gen_address_kwargs() -> list:
 
 def _gen_icons() -> list:
     """Helper method to return an pre-ordered list of icons."""
-    return [
-        "💠 [🍰📱🏰]",
-        "💠 [🍰📱🔗]",
-        "💠 [🍰🏰🔗]",
-        "💠 [📱🏰🔗]",
-        "💠 [🍰📱🏰🔗]",
-    ]
+    return ["💠 [🍰📱🏰]", "💠 [🍰📱🔗]", "💠 [🍰🏰🔗]", "💠 [📱🏰🔗]", "💠 [🍰📱🏰🔗]"]
 
 
 def _gen_address_kwargs_and_expected_values() -> list:
@@ -160,13 +154,7 @@ def test_target_emoji_method() -> None:
 
 
 @pytest.mark.parametrize(
-    "address_kwargs, expected_icon",
-    list(
-        zip(
-            _gen_address_kwargs(),
-            _gen_icons(),
-        )
-    ),
+    "address_kwargs, expected_icon", list(zip(_gen_address_kwargs(), _gen_icons()))
 )
 def test_icon_property_method(address_kwargs: dict, expected_icon: str) -> None:
     """Unit tests for Address.icon property method"""
@@ -175,13 +163,7 @@ def test_icon_property_method(address_kwargs: dict, expected_icon: str) -> None:
 
 
 @pytest.mark.parametrize(
-    "address_kwargs, expected_icon",
-    list(
-        zip(
-            _gen_address_kwargs(),
-            _gen_icons(),
-        )
-    ),
+    "address_kwargs, expected_icon", list(zip(_gen_address_kwargs(), _gen_icons()))
 )
 def test_pprint_property_method(address_kwargs: dict, expected_icon: str) -> None:
     """Unit tests for Address.pprint property method"""
@@ -342,12 +324,7 @@ def test_target_id_property_method_with_a_return() -> None:
     domain = SpecificLocation(id=UID())
     device = SpecificLocation(id=UID())
     vm = SpecificLocation(id=UID())
-    address = Address(
-        network=network,
-        domain=domain,
-        device=device,
-        vm=vm,
-    )
+    address = Address(network=network, domain=domain, device=device, vm=vm)
     assert address.target_id == vm
     address.vm = None
     assert address.target_id == device
@@ -427,13 +404,7 @@ def test_proto_serialization() -> None:
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     loc = SpecificLocation(id=uid, name="Test Location")
-    obj = Address(
-        name="Test Address",
-        network=loc,
-        domain=loc,
-        device=loc,
-        vm=loc,
-    )
+    obj = Address(name="Test Address", network=loc, domain=loc, device=loc, vm=loc)
 
     blob = Address.get_protobuf_schema()(
         name="Test Address",
@@ -458,12 +429,7 @@ def test_proto_deserialization() -> None:
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     loc = SpecificLocation(id=uid, name="Test Location")
 
-    obj = Address(
-        network=loc,
-        domain=loc,
-        device=loc,
-        vm=loc,
-    )
+    obj = Address(network=loc, domain=loc, device=loc, vm=loc)
 
     blob = Address.get_protobuf_schema()(
         has_network=True,

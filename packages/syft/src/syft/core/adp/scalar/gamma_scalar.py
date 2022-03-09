@@ -59,10 +59,7 @@ class GammaScalar(BaseScalar, IntermediateGammaScalar):
         ssid2obj[self.ssid] = self
 
     def _object2proto(self) -> GammaScalar_PB:
-        kwargs = {
-            "id": sy.serialize(self.id, to_proto=True),
-            "prime": self.prime,
-        }
+        kwargs = {"id": sy.serialize(self.id, to_proto=True), "prime": self.prime}
         entity_data = sy.serialize(self.entity, to_proto=True)
         if isinstance(self.entity, Entity):
             kwargs["entity"] = entity_data

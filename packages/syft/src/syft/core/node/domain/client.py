@@ -79,7 +79,9 @@ class RequestQueueClient(AbstractNodeClient):
             address=self.client.address, reply_to=self.client.address
         )
 
-        requests = self.client.send_immediate_msg_with_reply(msg=msg).requests  # type: ignore
+        requests = self.client.send_immediate_msg_with_reply(
+            msg=msg
+        ).requests  # type: ignore
 
         for request in requests:
             request.gc_enabled = False
@@ -337,10 +339,7 @@ class DomainClient(Client):
         return self.send_immediate_msg_with_reply(msg).budget  # type: ignore
 
     def request_budget(
-        self,
-        eps: float = 0.0,
-        reason: str = "",
-        skip_checks: bool = False,
+        self, eps: float = 0.0, reason: str = "", skip_checks: bool = False
     ) -> Any:
 
         if not skip_checks:
@@ -353,9 +352,7 @@ class DomainClient(Client):
                 )
 
         msg = CreateBudgetRequestMessage(
-            reason=reason,
-            budget=eps,
-            address=self.address,
+            reason=reason, budget=eps, address=self.address
         )
 
         self.send_immediate_msg_without_reply(msg=msg)
@@ -427,9 +424,7 @@ class DomainClient(Client):
         return self._perform_grid_request(grid_msg=GetSetUpMessage, content=kwargs)
 
     def apply_to_network(
-        self,
-        client: Optional[AbstractNodeClient] = None,
-        **metadata: str,
+        self, client: Optional[AbstractNodeClient] = None, **metadata: str
     ) -> None:
         try:
             # joining the network might take some time and won't block

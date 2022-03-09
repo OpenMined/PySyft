@@ -33,13 +33,7 @@ def downgrade() -> None:
         sa.Column("id", sa.Integer(), autoincrement=True, nullable=False),
         sa.Column("user", sa.Integer(), nullable=True),
         sa.Column("group", sa.Integer(), nullable=True),
-        sa.ForeignKeyConstraint(
-            ["group"],
-            ["group.id"],
-        ),
-        sa.ForeignKeyConstraint(
-            ["user"],
-            ["syft_user.id"],
-        ),
+        sa.ForeignKeyConstraint(["group"], ["group.id"]),
+        sa.ForeignKeyConstraint(["user"], ["syft_user.id"]),
         sa.PrimaryKeyConstraint("id"),
     )

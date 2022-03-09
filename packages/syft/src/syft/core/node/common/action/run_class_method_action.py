@@ -135,10 +135,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             resolved_kwargs[arg_name] = r_arg.data  # type: ignore
             tag_kwargs[arg_name] = r_arg
 
-        (
-            upcasted_args,
-            upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
+        (upcasted_args, upcasted_kwargs) = lib.python.util.upcast_args_and_kwargs(
+            resolved_args, resolved_kwargs
+        )
 
         resolved_self_previous_bytes: Optional[bytes] = None
         if self.is_static:

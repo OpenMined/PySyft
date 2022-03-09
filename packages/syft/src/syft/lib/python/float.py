@@ -225,10 +225,7 @@ class Float(float, PyPrimitive):
         return super().__hash__()
 
     def _object2proto(self) -> Float_PB:
-        return Float_PB(
-            id=sy.serialize(obj=self.id),
-            data=self,
-        )
+        return Float_PB(id=sy.serialize(obj=self.id), data=self)
 
     @staticmethod
     def _proto2object(proto: Float_PB) -> "Float":

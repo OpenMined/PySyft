@@ -64,9 +64,7 @@ if TYPE_CHECKING:
 
 
 def create_request_msg(
-    msg: CreateRequestMessage,
-    node: Domain,
-    verify_key: VerifyKey,
+    msg: CreateRequestMessage, node: Domain, verify_key: VerifyKey
 ) -> CreateRequestResponse:
     # Get Payload Content
     current_user_id = msg.content.get("current_user", None)
@@ -126,16 +124,12 @@ def create_request_msg(
     request_json = model_to_json(request_obj)
 
     return CreateRequestResponse(
-        address=msg.reply_to,
-        status_code=200,
-        content=request_json,
+        address=msg.reply_to, status_code=200, content=request_json
     )
 
 
 def create_budget_request_msg(
-    msg: CreateBudgetRequestMessage,
-    node: Domain,
-    verify_key: VerifyKey,
+    msg: CreateBudgetRequestMessage, node: Domain, verify_key: VerifyKey
 ) -> None:
     if verify_key is None:
         raise ValueError(
@@ -178,9 +172,7 @@ def create_budget_request_msg(
 
 
 def get_request_msg(
-    msg: GetRequestMessage,
-    node: Domain,
-    verify_key: VerifyKey,
+    msg: GetRequestMessage, node: Domain, verify_key: VerifyKey
 ) -> GetRequestResponse:
 
     # Get Payload Content
@@ -210,16 +202,12 @@ def get_request_msg(
         raise AuthorizationError("You're not allowed to get Request information!")
 
     return GetRequestResponse(
-        address=msg.reply_to,
-        status_code=200,
-        request_id=request_json,
+        address=msg.reply_to, status_code=200, request_id=request_json
     )
 
 
 def get_all_request_msg(
-    msg: GetRequestsMessage,
-    node: Domain,
-    verify_key: VerifyKey,
+    msg: GetRequestsMessage, node: Domain, verify_key: VerifyKey
 ) -> GetRequestsResponse:
     users = node.users
 
@@ -244,17 +232,11 @@ def get_all_request_msg(
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
 
-    return GetRequestsResponse(
-        status_code=200,
-        address=msg.reply_to,
-        content=response,
-    )
+    return GetRequestsResponse(status_code=200, address=msg.reply_to, content=response)
 
 
 def get_all_budget_requests(
-    msg: GetBudgetRequestsMessage,
-    node: Domain,
-    verify_key: VerifyKey,
+    msg: GetBudgetRequestsMessage, node: Domain, verify_key: VerifyKey
 ) -> GetBudgetRequestsResponse:
     users = node.users
 
@@ -277,16 +259,11 @@ def get_all_budget_requests(
             response.append({"user": user, "req": request})
     else:
         raise AuthorizationError("You're not allowed to get Request information!")
-    return GetBudgetRequestsResponse(
-        address=msg.reply_to,
-        content=response,
-    )
+    return GetBudgetRequestsResponse(address=msg.reply_to, content=response)
 
 
 def update_request_msg(
-    msg: UpdateRequestMessage,
-    node: Domain,
-    verify_key: VerifyKey,
+    msg: UpdateRequestMessage, node: Domain, verify_key: VerifyKey
 ) -> UpdateRequestResponse:
 
     # Get Payload Content
@@ -348,9 +325,7 @@ def update_request_msg(
 
 
 def del_request_msg(
-    msg: DeleteRequestMessage,
-    node: Domain,
-    verify_key: VerifyKey,
+    msg: DeleteRequestMessage, node: Domain, verify_key: VerifyKey
 ) -> DeleteRequestResponse:
 
     request_id = msg.request_id.get("request_id", None)  # type: ignore
@@ -507,9 +482,7 @@ class RequestService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: Domain,
-        msg: INPUT_MESSAGES,
-        verify_key: VerifyKey,
+        node: Domain, msg: INPUT_MESSAGES, verify_key: VerifyKey
     ) -> OUTPUT_MESSAGES:
         return RequestService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key
@@ -707,9 +680,7 @@ class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
     ]
 
     INPUT_MESSAGES = Union[
-        RequestMessage,
-        AcceptOrDenyRequestMessage,
-        UpdateRequestHandlerMessage,
+        RequestMessage, AcceptOrDenyRequestMessage, UpdateRequestHandlerMessage
     ]
 
     msg_handler_map: Dict[INPUT_TYPE, Callable[..., None]] = {
@@ -724,9 +695,7 @@ class ObjectRequestServiceWithoutReply(ImmediateNodeServiceWithoutReply):
     def process(
         node: Domain,
         msg: Union[
-            RequestMessage,
-            AcceptOrDenyRequestMessage,
-            UpdateRequestHandlerMessage,
+            RequestMessage, AcceptOrDenyRequestMessage, UpdateRequestHandlerMessage
         ],
         verify_key: VerifyKey,
     ) -> None:

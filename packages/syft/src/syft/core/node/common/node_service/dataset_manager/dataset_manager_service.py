@@ -56,8 +56,7 @@ def _handle_dataset_creation_grid_ui(
                 raise ValueError("Dataset Tar corrupted")
 
             reader = csv.reader(
-                extracted_file.read().decode().split("\n"),
-                delimiter=",",
+                extracted_file.read().decode().split("\n"), delimiter=","
             )
             dataset = []
 
@@ -120,9 +119,7 @@ def _handle_dataset_creation_syft(
 
 
 def create_dataset_msg(
-    msg: CreateDatasetMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: CreateDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     # Check key permissions
     _allowed = node.users.can_upload_data(verify_key=verify_key)
@@ -136,15 +133,12 @@ def create_dataset_msg(
         _handle_dataset_creation_grid_ui(msg, node, verify_key)
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Dataset Created Successfully!",
+        address=msg.reply_to, resp_msg="Dataset Created Successfully!"
     )
 
 
 def get_dataset_metadata_msg(
-    msg: GetDatasetMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: GetDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetDatasetResponse:
     ds, objs = node.datasets.get(msg.dataset_id)
     if not ds:
@@ -152,19 +146,19 @@ def get_dataset_metadata_msg(
     dataset_json = model_to_json(ds)
     # these types seem broken
     dataset_json["data"] = [
-        {"name": obj.name, "id": obj.obj, "dtype": obj.dtype, "shape": obj.shape}  # type: ignore
+        {
+            "name": obj.name,
+            "id": obj.obj,
+            "dtype": obj.dtype,
+            "shape": obj.shape,
+        }  # type: ignore
         for obj in objs
     ]
-    return GetDatasetResponse(
-        address=msg.reply_to,
-        metadata=dataset_json,
-    )
+    return GetDatasetResponse(address=msg.reply_to, metadata=dataset_json)
 
 
 def get_all_datasets_metadata_msg(
-    msg: GetDatasetsMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: GetDatasetsMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> GetDatasetsResponse:
     datasets = []
     for dataset in node.datasets.all():
@@ -181,16 +175,11 @@ def get_all_datasets_metadata_msg(
             for obj in objs
         ]
         datasets.append(ds)
-    return GetDatasetsResponse(
-        address=msg.reply_to,
-        metadatas=datasets,
-    )
+    return GetDatasetsResponse(address=msg.reply_to, metadatas=datasets)
 
 
 def update_dataset_msg(
-    msg: UpdateDatasetMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: UpdateDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     # Get Payload Content
     _allowed = node.users.can_upload_data(verify_key=verify_key)
@@ -206,15 +195,12 @@ def update_dataset_msg(
         raise AuthorizationError("You're not allowed to upload data!")
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Dataset updated successfully!",
+        address=msg.reply_to, resp_msg="Dataset updated successfully!"
     )
 
 
 def delete_dataset_msg(
-    msg: DeleteDatasetMessage,
-    node: DomainInterface,
-    verify_key: VerifyKey,
+    msg: DeleteDatasetMessage, node: DomainInterface, verify_key: VerifyKey
 ) -> SuccessResponseMessage:
     _allowed = node.users.can_upload_data(verify_key=verify_key)
 
@@ -238,8 +224,7 @@ def delete_dataset_msg(
         raise AuthorizationError("You're not allowed to delete data!")
 
     return SuccessResponseMessage(
-        address=msg.reply_to,
-        resp_msg="Dataset deleted successfully!",
+        address=msg.reply_to, resp_msg="Dataset deleted successfully!"
     )
 
 
@@ -275,9 +260,7 @@ class DatasetManagerService(ImmediateNodeServiceWithReply):
     @staticmethod
     @service_auth(guests_welcome=True)
     def process(
-        node: DomainInterface,
-        msg: INPUT_MESSAGES,
-        verify_key: VerifyKey,
+        node: DomainInterface, msg: INPUT_MESSAGES, verify_key: VerifyKey
     ) -> OUTPUT_MESSAGES:
         return DatasetManagerService.msg_handler_map[type(msg)](
             msg=msg, node=node, verify_key=verify_key

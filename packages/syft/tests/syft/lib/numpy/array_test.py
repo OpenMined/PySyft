@@ -209,9 +209,7 @@ def test_view(arrow_backend: bool, root_client: sy.VirtualMachineClient) -> None
     view_ptr = x_ptr.view()
     local_view = x.view()
     view_val = view_ptr.get()
-    y = np.array(
-        [[1, 2, 3]],
-    )
+    y = np.array([[1, 2, 3]])
     assert (view_val == y).all()
     assert (local_view == view_val).all()
 

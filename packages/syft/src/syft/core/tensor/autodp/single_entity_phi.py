@@ -114,7 +114,8 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
     @property
     def synthetic(self) -> np.ndarray:
         return (
-            np.random.rand(*list(self.public_shape)) * (self.max_vals - self.min_vals)  # type: ignore
+            np.random.rand(*list(self.public_shape))
+            * (self.max_vals - self.min_vals)  # type: ignore
             + self.min_vals
         ).astype(self.public_dtype)
 
@@ -156,10 +157,9 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
 
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
+            (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
+                args=[other], kwargs={}
+            )
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -653,7 +653,9 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             if self.entity != other.entity:
                 return convert_to_gamma_tensor(self) == convert_to_gamma_tensor(other)
             else:
-                if is_broadcastable(self.child.shape, other.child.shape):  # type: ignore
+                if is_broadcastable(
+                    self.child.shape, other.child.shape
+                ):  # type: ignore
                     data = self.child == other.child
                 else:
                     raise Exception(
@@ -853,8 +855,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             max_min = self.max_vals * other.min_vals
             max_max = self.max_vals * other.max_vals
 
-            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_vals = np.min(
+                [min_min, min_max, max_min, max_max], axis=0
+            )  # type: ignore
+            max_vals = np.max(
+                [min_min, min_max, max_min, max_max], axis=0
+            )  # type: ignore
             entity = self.entity
 
             return SingleEntityPhiTensor(
@@ -873,8 +879,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             max_min = self.max_vals * other
             max_max = self.max_vals * other
 
-            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_vals = np.min(
+                [min_min, min_max, max_min, max_max], axis=0
+            )  # type: ignore
+            max_vals = np.max(
+                [min_min, min_max, max_min, max_max], axis=0
+            )  # type: ignore
             entity = self.entity
 
             return SingleEntityPhiTensor(
@@ -953,8 +963,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 max_min = self.max_vals / other.min_vals
                 max_max = self.max_vals / other.max_vals
 
-                min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-                max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+                min_vals = np.min(
+                    [min_min, min_max, max_min, max_max], axis=0
+                )  # type: ignore
+                max_vals = np.max(
+                    [min_min, min_max, max_min, max_max], axis=0
+                )  # type: ignore
 
             entity = self.entity
 
@@ -1769,10 +1783,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             scalar_manager=self.scalar_manager,
         )
 
-    def abs(
-        self,
-        out: Optional[np.ndarray] = None,
-    ) -> SingleEntityPhiTensor:
+    def abs(self, out: Optional[np.ndarray] = None) -> SingleEntityPhiTensor:
         """Calculate the absolute value element-wise"""
         if is_acceptable_simple_type(self.child):
             data = self.child.__abs__()
@@ -1806,15 +1817,19 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             if self.entity != value.entity:
                 return NotImplemented
 
-            data = self.child**value.child
+            data = self.child ** value.child
 
-            min_min = self.min_vals**value.min_vals
-            min_max = self.min_vals**value.max_vals
-            max_min = self.max_vals**value.min_vals
-            max_max = self.max_vals**value.max_vals
+            min_min = self.min_vals ** value.min_vals
+            min_max = self.min_vals ** value.max_vals
+            max_min = self.max_vals ** value.min_vals
+            max_max = self.max_vals ** value.max_vals
 
-            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_vals = np.min(
+                [min_min, min_max, max_min, max_max], axis=0
+            )  # type: ignore
+            max_vals = np.max(
+                [min_min, min_max, max_min, max_max], axis=0
+            )  # type: ignore
             entity = self.entity
 
             return SingleEntityPhiTensor(
@@ -1827,15 +1842,19 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         elif is_acceptable_simple_type(value):
 
-            data = self.child**value
+            data = self.child ** value
 
-            min_min = self.min_vals**value
-            min_max = self.min_vals**value
-            max_min = self.max_vals**value
-            max_max = self.max_vals**value
+            min_min = self.min_vals ** value
+            min_max = self.min_vals ** value
+            max_min = self.max_vals ** value
+            max_max = self.max_vals ** value
 
-            min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_vals = np.min(
+                [min_min, min_max, max_min, max_max], axis=0
+            )  # type: ignore
+            max_vals = np.max(
+                [min_min, min_max, max_min, max_max], axis=0
+            )  # type: ignore
             entity = self.entity
 
             return SingleEntityPhiTensor(
@@ -2077,10 +2096,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             max_vals = self.max_vals
 
         return SingleEntityPhiTensor(
-            child=data,
-            max_vals=max_vals,
-            min_vals=min_vals,
-            entity=self.entity,
+            child=data, max_vals=max_vals, min_vals=min_vals, entity=self.entity
         )
 
     def min(
@@ -2114,10 +2130,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             max_vals = self.max_vals
 
         return SingleEntityPhiTensor(
-            child=data,
-            max_vals=max_vals,
-            min_vals=min_vals,
-            entity=self.entity,
+            child=data, max_vals=max_vals, min_vals=min_vals, entity=self.entity
         )
 
     # TODO: Figure out how to do type annotation for dtype
@@ -2147,10 +2160,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             maxes = self.max_vals * len(self.child)
 
         return SingleEntityPhiTensor(
-            child=data,
-            min_vals=mins,
-            max_vals=maxes,
-            entity=self.entity,
+            child=data, min_vals=mins, max_vals=maxes, entity=self.entity
         )
 
     def prod(

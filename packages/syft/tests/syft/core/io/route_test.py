@@ -117,7 +117,4 @@ def test_solo_route_send_immediate_msg_with_reply() -> None:
     msg = construct_dummy_message(SignedImmediateSyftMessageWithReply)
     ret = h_solo.send_immediate_msg_with_reply(msg)
 
-    assert isinstance(
-        ret,
-        SignedImmediateSyftMessageWithoutReply,
-    )
+    assert isinstance(ret, SignedImmediateSyftMessageWithoutReply)
