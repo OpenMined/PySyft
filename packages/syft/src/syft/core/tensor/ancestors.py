@@ -590,7 +590,7 @@ class PhiTensorAncestor(TensorChainManager):
 
             self.replace_abstraction_top(
                 tensor_type=_NDimEntityPhiTensor(),
-                rows=self.child,
+                child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
                 entities=entity_list,  # type: ignore

@@ -91,6 +91,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         entities: Union[List[Entity], EntityList],
         min_vals: np.ndarray,
         max_vals: np.ndarray,
+        row_type: SingleEntityPhiTensor = SingleEntityPhiTensor,  # type: ignore
     ) -> None:
 
         # child = the actual private data
@@ -113,9 +114,6 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         #     self.scalar_manager = VirtualMachinePrivateScalarManager()
         # else:
         #     self.scalar_manager = scalar_manager
-
-        # self.entity_asset = (self.entity.name,) if isinstance(entity, Entity) else None
-        # self.scalar_manager_asset = (self.scalar_manager.prime2symbol,)
 
     @staticmethod
     def from_rows(rows: Sequence) -> NDimEntityPhiTensor:
