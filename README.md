@@ -34,7 +34,7 @@ The Syft ecosystem seeks to change this system, allowing you to write software w
 
 ## Stable Release
 
-The current stable release is `0.5.0` which is available on:
+The current stable release is `0.6.0` which is available on:
 
 - [PyPI](https://pypi.org/project/syft/)
 - [Docker Hub](https://hub.docker.com/u/openmined)
@@ -45,11 +45,11 @@ For many use cases you can simply use:
 $ pip install syft
 ```
 
-If you are doing the [Private AI Series](https://courses.openmined.org/) or you are an external party developing against Syft and Grid please use the [`syft_0.5.0`](https://github.com/OpenMined/pysyft/tree/syft_0.5.0) branch.
+If you are doing the [Private AI Series](https://courses.openmined.org/) or you are an external party developing against Syft and Grid please use the [`syft_0.6.0`](https://github.com/OpenMined/pysyft/tree/0.6.0) branch.
 
 ## Development Branch
 
-This is the `dev` branch and to accommodate our need to experiment with new ideas and implementations we will be moving a few things around during the early stages of `0.6.0`. Currently the core `syft` library and code will remain fairly stable, while we do some much needed quality improvements and refactors to the `grid` codebase and its tooling for deployment and orchestration of nodes.
+This is the `dev` branch and to accommodate our need to experiment with new ideas and implementations we will be moving a few things around during the early stages of `0.7.0`. Currently the core `syft` library and code will remain fairly stable, while we do some much needed quality improvements and refactors to the `grid` codebase and its tooling for deployment and orchestration of nodes.
 During the process of development we will be moving examples from the `/packages/syft/examples` folder down to the `/notebooks` folder and ensuring they are working and tested with the latest `dev` code.
 
 ## Mono Repo 🚝
@@ -67,7 +67,7 @@ OpenMined/PySyft
 
 ## Syft
 
-To read more about what Syft is please consult the current [`0.5.0` README](packages/syft/README.md).
+To read more about what Syft is please consult the current [`0.6.0` Documentation](https://openmined.github.io/PySyft/).
 
 ## Grid
 
