@@ -42,6 +42,7 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
     __name__ = "TensorWrappedNDimEntityPhiTensorPointer"
     __module__ = "syft.core.tensor.autodp.ndim_entity_phi"
     __attr_allowlist__ = ("min_vals", "max_vals", "entities")
+    # TODO :should create serialization for Entity List
 
     def __init__(
         self,
