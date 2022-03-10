@@ -4,8 +4,6 @@ from __future__ import annotations
 # stdlib
 from collections.abc import Sequence
 from functools import reduce
-import os
-from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -14,23 +12,18 @@ from typing import Tuple
 from typing import Union
 
 # third party
-import capnp
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
 import numpy.typing as npt
-import pyarrow as pa
 
 # relative
+from ....core.adp.entity import DataSubjectGroup as DSG
 from ....core.adp.entity import Entity
-from ....core.adp.entity_list import EntityList
-from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
-from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ....proto.core.adp.phi_tensor_pb2 import (
     RowEntityPhiTensor as RowEntityPhiTensor_PB,
 )
 from ....util import concurrency_count
 from ....util import parallel_execution
-from ....util import size_mb
 from ....util import split_rows
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.deserialize import _deserialize as deserialize
@@ -38,7 +31,6 @@ from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...common.serde.types import Deserializeable
 from ..broadcastable import is_broadcastable
-from ..lazy_repeat_array import lazyrepeatarray
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import implements  # type: ignore
@@ -60,9 +52,6 @@ def row_deserialize(*rows: Deserializeable) -> List[Any]:
     return output
 
 
-CHUNK_SIZE = int(5.12e8)
-
-
 @serializable()
 class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     """This tensor is one of several tensors whose purpose is to carry metadata
@@ -77,15 +66,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
     we refer to the number of 'rows' we simply refer to the length of the first dimension. This
     tensor can have an arbitrary number of dimensions."""
 
-    def __init__(
-        self,
-        rows: Sequence,
-        min_vals: Union[np.nadarray, lazyrepeatarray],
-        max_vals: Union[np.nadarray, lazyrepeatarray],
-        entities: Union[np.ndarray, EntityList],
-        row_type: SingleEntityPhiTensor = SingleEntityPhiTensor,
-        check_shape: bool = True,
-    ):
+    def __init__(self, rows: Sequence, check_shape: bool = True):
         """Initialize a RowEntityPhiTensor
 
         rows: the actual data organized as an iterable (can be any type of iterable)
@@ -96,14 +77,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # Container type heirachy: https://docs.python.org/3/library/collections.abc.html
         self.child: Sequence
         super().__init__(rows)
-
-        self._min_vals = min_vals
-        self._max_vals = max_vals
-        if not isinstance(entities, EntityList):
-            entities = EntityList.from_objs(entities)
-
-        self._entities = entities
-        self.row_type = row_type
 
         self.serde_concurrency: int = 0
         # include this check because it's expensive to check and sometimes we can skip it when
@@ -121,61 +94,27 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
                     )
 
         """Calculate the number of unique entities behind the REPT"""
-        # Ishan can we skip the calculation of unique entities.
-        # self.unique_entities: set[Entity] = set()
-        # self.n_entities = 0
-        # for entity in self.entities.flatten():
-        #     if isinstance(entity, Entity):
-        #         if entity not in self.unique_entities:
-        #             self.unique_entities.add(entity)
-        #             self.n_entities += 1
-        #         else:
-        #             continue
-        #     elif isinstance(entity, DSG):
-        #         for e in entity.entity_set:
-        #             if e not in self.unique_entities:
-        #                 self.unique_entities.add(e)
-        #                 self.n_entities += 1
-        #             else:
-        #                 continue
-        #     else:
-        #         raise Exception(f"{type(entity)}")
+        self.unique_entities: set[Entity] = set()
+        self.n_entities = 0
+        for entity in self.entities.flatten():
+            if isinstance(entity, str):
+                entity = Entity(name=entity)
 
-    @staticmethod
-    def from_rows(rows: Sequence, check_shape: bool = True) -> RowEntityPhiTensor:
-        if len(rows) < 1 or not isinstance(rows[0], SingleEntityPhiTensor):
-            raise Exception(
-                f"RowEntityPhiTensor.from_rows requires a list of SingleEntityPhiTensors"
-            )
-
-        # create lazyrepeatarrays of the first element
-        first_row = rows[0]
-        min_vals = lazyrepeatarray(
-            data=first_row.min_vals,
-            shape=tuple([len(rows)] + list(first_row.min_vals.shape)),
-        )
-        max_vals = lazyrepeatarray(
-            data=first_row.max_vals,
-            shape=tuple([len(rows)] + list(first_row.max_vals.shape)),
-        )
-
-        # collect entities and children into numpy arrays
-        entity_list = []
-        child_list = []
-        for row in rows:
-            entity_list.append(row.entity)
-            child_list.append(row.child)
-        entities = EntityList.from_objs(entities=entity_list)
-        child = np.stack(child_list)
-
-        # use new constructor
-        return RowEntityPhiTensor(
-            rows=child,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            entities=entities,
-            check_shape=check_shape,
-        )
+            if isinstance(entity, Entity):
+                if entity not in self.unique_entities:
+                    self.unique_entities.add(entity)
+                    self.n_entities += 1
+                else:
+                    continue
+            elif isinstance(entity, DSG):
+                for e in entity.entity_set:
+                    if e not in self.unique_entities:
+                        self.unique_entities.add(e)
+                        self.n_entities += 1
+                    else:
+                        continue
+            else:
+                raise Exception(f"{type(entity)}")
 
     @property
     def scalar_manager(self) -> VirtualMachinePrivateScalarManager:
@@ -198,10 +137,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         # we must cast the result of x.shape prod to an int because sometimes
         # it can be a float depending on the original type which fails to
         # multiply the [x.entity] array
-        # return np.array(
-        #     [[x.entity] * int(np.array(x.shape).prod()) for x in self.child]
-        # ).reshape(self.shape)
-        return self._entities
+        return np.array(
+            [[x.entity] * int(np.array(x.shape).prod()) for x in self.child]
+        ).reshape(self.shape)
 
     @property
     def gamma(self) -> InitialGammaTensor:
@@ -1041,17 +979,15 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
 
         return RowEntityPhiTensor(rows=new_list)
 
-    def copy(self, order: Optional[str] = "K") -> RowEntityPhiTensor:
+    def copy(
+        self, order: Optional[str] = "K", subok: Optional[bool] = True
+    ) -> RowEntityPhiTensor:
         """Return copy of the given object"""
+        new_list = list()
+        for row in self.child:
+            new_list.append(row.copy(order=order, subok=subok))
 
-        return RowEntityPhiTensor(
-            rows=self.child.copy(order=order),
-            min_vals=self._min_vals.copy(order=order),
-            max_vals=self._max_vals.copy(order=order),
-            entities=self._entities.copy(order=order),
-            row_type=self.row_type,
-            check_shape=False,
-        )
+        return RowEntityPhiTensor(rows=new_list, check_shape=False)
 
     def take(
         self,
@@ -1085,230 +1021,6 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
             new_list.append(tensor.round(decimals))
 
         return RowEntityPhiTensor(rows=new_list, check_shape=False)
-
-    def arrow_marshal(self):
-        row_assets = (row.assets for row in self.child)
-        child, min_vals, max_vals, entity, scalar_manager = zip(*row_assets)
-        child = np.concatenate(child)
-        max_vals = np.concatenate(max_vals)
-        min_vals = np.concatenate(min_vals)
-        columns = {
-            "child": child,
-            "min_vals": min_vals,
-            "max_vals": max_vals,
-            "entity": entity,
-            "scalar_manager": scalar_manager,
-        }
-        return columns
-
-    def arrow_serialize_tensor(self, obj: np.ndarray) -> bytes:
-        # original_dtype = obj.dtype
-        apache_arrow = pa.Tensor.from_numpy(obj=obj)
-        sink = pa.BufferOutputStream()
-        pa.ipc.write_tensor(apache_arrow, sink)
-        buffer = sink.getvalue()
-        # numpy_bytes = pa.compress(buffer, asbytes=True, codec="zstd")
-        numpy_bytes = buffer.to_pybytes()
-        # dtype = original_dtype.name
-        return numpy_bytes
-
-    @staticmethod
-    def arrow_deserialize_tensor(buf: bytes) -> np.array:
-        # str_dtype = proto.dtype
-        # original_dtype = np.dtype(str_dtype)
-        # buf = pa.decompress(
-        #     buf,
-        #     decompressed_size=size,
-        #     codec="zstd",
-        # )
-
-        reader = pa.BufferReader(buf)
-        buf = reader.read_buffer()
-
-        result = pa.ipc.read_tensor(buf)
-        np_array = result.to_numpy()
-        np_array.setflags(write=True)
-        return np_array.astype(np.int32)
-
-    def arrow_serialize_string(
-        self, array: Union[pa.lib.ChunkedArray, pa.lib.StringArray]
-    ) -> bytes:
-        # relative
-        from .... import flags
-
-        """For serializing the entities"""
-        schema = pa.schema({pa.field("entity", pa.string())})
-
-        sink = pa.BufferOutputStream()
-        with pa.ipc.new_stream(sink, schema) as writer:
-            if isinstance(array, pa.lib.StringArray):
-                batch = pa.RecordBatch.from_arrays([array], names=["entity"])
-                writer.write_batch(batch)
-            else:
-                for row in range(
-                    len(array.chunks)
-                ):  # number of batches is the number of chunks\
-                    batch = pa.record_batch([array.chunks[row]], names=["entity"])
-                    writer.write_batch(batch)
-        entity_buffer = sink.getvalue()
-        entity_bytes = pa.compress(
-            entity_buffer, asbytes=True, codec=flags.APACHE_ARROW_COMPRESSION.value
-        )
-
-        return entity_bytes
-
-    def arrow_record_serialize(self) -> bytes:
-        data = self.arrow_marshal()
-        child_bytes = self.arrow_serialize_tensor(data["child"])
-        return child_bytes
-
-    @staticmethod
-    def arrow_record_deserialize(buf) -> np.ndarray:
-        obj = RowEntityPhiTensor.arrow_deserialize_tensor(buf=buf)
-        return obj
-
-    @staticmethod
-    def chunk_bytes(data, field_name, rept_msg) -> List:
-        list_size = len(data) // CHUNK_SIZE + 1
-        data_lst = rept_msg.init(field_name, list_size)
-        idx = 0
-        while len(data) > CHUNK_SIZE:
-            data_lst[idx] = data[:CHUNK_SIZE]
-            data = data[CHUNK_SIZE:]
-            idx += 1
-        else:
-            data_lst[0] = data
-
-    @staticmethod
-    def combine_bytes(rept_field) -> bytes:
-        bytes_value = b""
-        for value in rept_field:
-            bytes_value += value
-        return bytes_value
-
-    @staticmethod
-    def arrow_deserialize(buf: bytes) -> RowEntityPhiTensor:
-        # stdlib
-        import time
-
-        start = time.time()
-        here = os.path.dirname(__file__)
-        root_dir = Path(here) / ".." / ".." / ".." / ".." / ".." / "capnp"
-        rept_capnp = capnp.load(str(root_dir / "rept.capnp"))
-        rept_msg = rept_capnp.REPT.from_bytes(buf)
-
-        child_metadata = rept_msg.childMetadata
-        print("child_metadata", child_metadata.decompressedSize, child_metadata.dtype)
-        rows = numpy_deserialize(
-            RowEntityPhiTensor.combine_bytes(rept_msg.child),
-            child_metadata.decompressedSize,
-            child_metadata.dtype,
-        )
-
-        min_vals_metadata = rept_msg.minValsMetadata
-        min_vals = lazyrepeatarray(
-            numpy_deserialize(
-                RowEntityPhiTensor.combine_bytes(rept_msg.minVals),
-                min_vals_metadata.decompressedSize,
-                min_vals_metadata.dtype,
-            ),
-            rows.shape,
-        )
-
-        max_vals_metadata = rept_msg.maxValsMetadata
-        max_vals = lazyrepeatarray(
-            numpy_deserialize(
-                RowEntityPhiTensor.combine_bytes(rept_msg.maxVals),
-                max_vals_metadata.decompressedSize,
-                max_vals_metadata.dtype,
-            ),
-            rows.shape,
-        )
-
-        entities_metadata = rept_msg.entitiesIndexedMetadata
-        entities_indexed = numpy_deserialize(
-            RowEntityPhiTensor.combine_bytes(rept_msg.entitiesIndexed),
-            entities_metadata.decompressedSize,
-            entities_metadata.dtype,
-        )
-        one_hot_lookup = np.array(rept_msg.oneHotLookup)
-
-        entity_list = EntityList(one_hot_lookup, entities_indexed)
-
-        rept = RowEntityPhiTensor(
-            rows=rows, min_vals=min_vals, max_vals=max_vals, entities=entity_list
-        )
-        end = time.time()
-        print("step 2:", end - start)
-        return rept
-
-    def arrow_serialize(self) -> bytes:
-        # stdlib
-        import time
-
-        here = os.path.dirname(__file__)
-        root_dir = Path(here) / ".." / ".." / ".." / ".." / ".." / "capnp"
-        rept_capnp = capnp.load(str(root_dir / "rept.capnp"))
-
-        start = time.time()
-        # TODO : Implement andrew's notion of global data subject registry
-        # As private scalar manager is empty initially excluding for now.
-        # this serialization should give a  close estimate.
-        rows, rows_size = numpy_serialize(self.child, get_bytes=True)
-        min_vals, min_vals_size = numpy_serialize(self._min_vals.data, get_bytes=True)
-        max_vals, max_vals_size = numpy_serialize(self._max_vals.data, get_bytes=True)
-        entities_indexed, entities_indexed_size = numpy_serialize(
-            self._entities.entities_indexed, get_bytes=True
-        )
-        one_hot_lookup = self._entities.one_hot_lookup
-
-        end = time.time()
-        print("step 1:", end - start)
-        total_size = len(rows) + len(min_vals) + len(max_vals) + len(entities_indexed)
-        total_size_mb = total_size / 10 ** 6
-        total_size_mb += size_mb(one_hot_lookup)
-
-        print("Total Size: ", total_size_mb)
-
-        start = time.time()
-
-        rept_msg = rept_capnp.REPT.new_message()
-        child_metadata = rept_capnp.REPT.TensorMetadata.new_message()
-        min_vals_metadata = rept_capnp.REPT.TensorMetadata.new_message()
-        max_vals_metadata = rept_capnp.REPT.TensorMetadata.new_message()
-        entities_metadata = rept_capnp.REPT.TensorMetadata.new_message()
-
-        self.chunk_bytes(rows, "child", rept_msg)
-        child_metadata.dtype = str(self.child.dtype)
-        child_metadata.decompressedSize = rows_size
-        rept_msg.childMetadata = child_metadata
-
-        self.chunk_bytes(min_vals, "minVals", rept_msg)
-        min_vals_metadata.dtype = str(self._min_vals.data.dtype)
-        min_vals_metadata.decompressedSize = min_vals_size
-        rept_msg.minValsMetadata = min_vals_metadata
-
-        self.chunk_bytes(max_vals, "maxVals", rept_msg)
-        max_vals_metadata.dtype = str(self._max_vals.data.dtype)
-        max_vals_metadata.decompressedSize = max_vals_size
-        rept_msg.maxValsMetadata = max_vals_metadata
-
-        self.chunk_bytes(entities_indexed, "entitiesIndexed", rept_msg)
-        entities_metadata.dtype = str(self._entities.entities_indexed.dtype)
-        entities_metadata.decompressedSize = entities_indexed_size
-        rept_msg.entitiesIndexedMetadata = entities_metadata
-
-        oneHotLookupList = rept_msg.init("oneHotLookup", len(one_hot_lookup))
-        for i, entity in enumerate(one_hot_lookup):
-            oneHotLookupList[i] = (
-                entity if not getattr(entity, "name", None) else entity.name
-            )
-
-        byte_stream = rept_msg.to_bytes()
-        end = time.time()
-        print("step 2:", end - start)
-        print("Capnp Size: ", size_mb(byte_stream))
-        return byte_stream
 
     def _object2proto(self) -> RowEntityPhiTensor:
         entity_list = []

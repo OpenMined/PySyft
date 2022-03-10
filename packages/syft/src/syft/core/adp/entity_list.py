@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -36,7 +37,7 @@ class EntityList:
     def __getitem__(self, key: Union[int, slice, str]) -> Union[Entity, str]:
         return self.one_hot_lookup[self.entities_indexed[key]]
 
-    def copy(self, order: str = "K") -> EntityList:
+    def copy(self, order: Optional[str] = "K") -> EntityList:
         return EntityList(
             self.one_hot_lookup.copy(), self.entities_indexed.copy(order=order)
         )

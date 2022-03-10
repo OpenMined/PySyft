@@ -15,7 +15,6 @@ from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import numpy as np
 import numpy.typing as npt
-import pyarrow as pa
 import torch
 
 # relative
@@ -548,13 +547,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             self.scalar_manager = scalar_manager
 
-        self.entity_asset = (
-            (
-                self.entity.name,
-            )
-            if isinstance(entity, Entity)
-            else None
-        )
+        self.entity_asset = (self.entity.name,) if isinstance(entity, Entity) else None
         self.scalar_manager_asset = (self.scalar_manager.prime2symbol,)
 
         self.assets = (
@@ -2390,36 +2383,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         return SingleEntityPhiTensor(
             child=data, min_vals=mins, max_vals=maxes, entity=self.entity
         )
-
-    def simple_assets_for_serde(self) -> tuple[Any, ...]:
-        return self.assets
-
-    @staticmethod
-    def deserialize_from_simple_assets(assets: List) -> SingleEntityPhiTensor:
-        child, min_vals, max_vals, entity, scalar_manager = assets
-        entity = Entity.deserialize_from_simple_assets(entity)
-        scalar_manager = (
-            VirtualMachinePrivateScalarManager.deserialize_from_simple_assets(
-                scalar_manager
-            )
-        )
-        return SingleEntityPhiTensor(
-            child=child,
-            entity=entity,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            scalar_manager=scalar_manager,
-        )
-
-    def arrow_serialize(self) -> bytes:
-        assets = [
-            self._min_vals,
-            self._max_vals,
-            self.child,  # assume it is always numpy for now.
-            self.entity.simple_assets_for_serde(),
-            self.scalar_manager.simple_assets_for_serde(),
-        ]
-        return pa.serialize(assets).to_buffer()
 
     def _object2proto(self) -> SingleEntityPhiTensor_PB:
         proto_init_kwargs = {

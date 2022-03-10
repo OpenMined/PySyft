@@ -1,6 +1,6 @@
 @0x8f9c60bd7a9842fc;
 
-struct REPT {
+struct NDEPT {
   child @0 :List(Data);
   minVals @1 :List(Data);
   maxVals @2 :List(Data);

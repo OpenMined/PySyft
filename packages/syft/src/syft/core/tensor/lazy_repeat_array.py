@@ -9,7 +9,12 @@ from typing import Tuple
 # third party
 import numpy as np
 
+# relative
+from ..common.serde.serializable import serializable
+from .passthrough import is_acceptable_simple_type  # type: ignore
 
+
+@serializable(recursive_serde=True)
 class lazyrepeatarray:
     """
     When data is repeated along one or more dimensions, store it using lazyrepeatarray
@@ -17,6 +22,8 @@ class lazyrepeatarray:
     of np.broadcast, repeated values along an axis are collapsed but the .shape
     attribute of the higher dimensional projection is retained for operations.
     """
+
+    __attr_allowlist__ = ["data", "shape"]
 
     def __init__(self, data: np.ndarray, shape: Tuple[int, ...]) -> None:
         """
@@ -36,6 +43,9 @@ class lazyrepeatarray:
         if isinstance(data, (bool, int, float)):
             data = np.array(data)
 
+        # verify broadcasting works on shapes
+        np.broadcast_shapes(data.shape, shape)
+
         self.data = data
         self.shape = shape
 
@@ -44,11 +54,14 @@ class lazyrepeatarray:
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
         Don't touch it. It's going to get more complicated.
         """
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data + other, shape=self.shape)
+
         if self.shape != other.shape:
             raise Exception("cannot add tensors with different shapes")
 
         if self.data.shape == other.data.shape:
-            return lazyrepeatarray(data=self.data + other.data, shape=self.shape)
+            return self.__class__(data=self.data + other.data, shape=self.shape)
 
         raise Exception("not sure how to do this yet")
 
@@ -57,11 +70,14 @@ class lazyrepeatarray:
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
         Don't touch it. It's going to get more complicated.
         """
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data - other, shape=self.shape)
+
         if self.shape != other.shape:
             raise Exception("cannot subtract tensors with different shapes")
 
         if self.data.shape == other.data.shape:
-            return lazyrepeatarray(data=self.data - other.data, shape=self.shape)
+            return self.__class__(data=self.data - other.data, shape=self.shape)
 
         raise Exception("not sure how to do this yet")
 
@@ -70,11 +86,14 @@ class lazyrepeatarray:
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
         Don't touch it. It's going to get more complicated.
         """
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data * other, shape=self.shape)
+
         if self.shape != other.shape:
             raise Exception("cannot multiply tensors with different shapes")
 
         if self.data.shape == other.data.shape:
-            return lazyrepeatarray(data=self.data * other.data, shape=self.shape)
+            return self.__class__(data=self.data * other.data, shape=self.shape)
 
         raise Exception("not sure how to do this yet")
 
@@ -83,17 +102,8 @@ class lazyrepeatarray:
             return self * self
         raise Exception("not sure how to do this yet")
 
-    def simple_assets_for_serde(self) -> Tuple[np.ndarray, Tuple[int, ...]]:
-        return (self.data, self.shape)
-
-    @staticmethod
-    def deserialize_from_simple_assets(
-        assets: Tuple[np.ndarray, Tuple[int, ...]]
-    ) -> lazyrepeatarray:
-        return lazyrepeatarray(data=assets[0], shape=assets[1])
-
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
-        return lazyrepeatarray(data=np.copy(self.data, order=order), shape=self.shape)
+        return self.__class__(data=np.copy(self.data, order=order), shape=self.shape)
 
     @property
     def size(self) -> int:
@@ -101,14 +111,50 @@ class lazyrepeatarray:
 
     def sum(self, axis: Optional[int] = None) -> np.ndarray:
         if axis is None:
-            if self.data.size == 1:
-                return np.array(self.data * self.size).flatten()
-            else:
-                raise Exception("not sure how to do this yet")
+            # TODO: make fast
+            return self.to_numpy().sum()
         else:
             raise Exception("not sure how to do this yet")
 
-    def __eq__(self, other: Any) -> bool:
+    def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, lazyrepeatarray):
-            return self.data == other.data and self.shape == other.shape
+            if self.shape == other.shape:
+                return lazyrepeatarray(data=self.data == other.data, shape=self.shape)
+            else:
+                result = (self.to_numpy() == other.to_numpy()).all()
+                return lazyrepeatarray(data=np.array([result]), shape=result.shape)
+        if isinstance(other, np.ndarray):
+            try:
+                result = (self.to_numpy(shape=other.shape) == other).all()
+                return lazyrepeatarray(data=np.array([result]), shape=other.shape)
+            except Exception as e:
+                print(
+                    "Failed to compare lazyrepeatarray with "
+                    + f"{self.shape} == {other.shape} to numpy by broadcasting. {e}"
+                )
+                raise e
+
         return self == other
+
+    @property
+    def dtype(self) -> np.dtype:
+        return self.data.dtype
+
+    def astype(self, np_type: np.dtype) -> lazyrepeatarray:
+        return self.__class__(self.data.astype(np_type), self.shape)
+
+    def to_numpy(self, shape: Optional[Tuple[int, ...]] = None) -> np.ndarray:
+        shape = shape if shape is not None else self.shape
+        return np.broadcast_to(self.data, shape)
+
+    def __repr__(self) -> str:
+        return f"<lazyrepeatarray data: {self.data} -> shape: {self.shape}>"
+
+    def __bool__(self) -> bool:
+        return self.data.__bool__()
+
+    def all(self) -> bool:
+        return self.data.all()
+
+    def any(self) -> bool:
+        return self.data.any()

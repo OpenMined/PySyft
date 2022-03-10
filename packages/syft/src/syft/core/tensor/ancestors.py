@@ -49,6 +49,23 @@ def _RowEntityPhiTensor() -> Type[PassthroughTensor]:
     return _RowEntityPhiTensorRef
 
 
+_NDimEntityPhiTensorRef = None
+
+
+# use experimental NEPT
+NEPT = False
+
+
+def _NDimEntityPhiTensor() -> Type[PassthroughTensor]:
+    global _NDimEntityPhiTensorRef
+    if _NDimEntityPhiTensorRef is None:
+        # relative
+        from .autodp.ndim_entity_phi import NDimEntityPhiTensor
+
+        _NDimEntityPhiTensorRef = NDimEntityPhiTensor
+    return _NDimEntityPhiTensorRef
+
+
 _AutogradTensorRef = None
 
 
@@ -507,6 +524,44 @@ class PhiTensorAncestor(TensorChainManager):
         # if there's row-level entities - push a RowEntityPhiTensor
         elif entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
+
+            new_list = list()
+            for i, entity in enumerate(entities):
+
+                if isinstance(min_val, (float, int)):
+                    min_vals = (self.child[i : i + 1] * 0) + min_val  # noqa: E203
+                else:
+                    raise Exception(
+                        "min_val should be a float, got "
+                        + str(type(min_val))
+                        + " instead."
+                    )
+
+                if isinstance(max_val, (float, int)):
+                    max_vals = (self.child[i : i + 1] * 0) + max_val  # noqa: E203
+                else:
+                    raise Exception(
+                        "max_val should be a float, got "
+                        + str(type(min_val))
+                        + " instead."
+                    )
+
+                value = self.child[i : i + 1]  # noqa: E203
+
+                new_list.append(
+                    class_type(
+                        child=value,
+                        entity=entity,
+                        min_vals=min_vals,
+                        max_vals=max_vals,
+                        scalar_manager=scalar_manager,
+                    )
+                )
+
+            self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
+
+        elif NEPT is True:
+            class_type = _SingleEntityPhiTensor()
             entity_list = EntityList(one_hot_lookup, entities_indexed)
 
             if isinstance(min_val, (bool, int, float)):
@@ -534,12 +589,12 @@ class PhiTensorAncestor(TensorChainManager):
                 max_vals = lazyrepeatarray(max_vals, self.child.shape)
 
             self.replace_abstraction_top(
-                tensor_type=_RowEntityPhiTensor(),
+                tensor_type=_NDimEntityPhiTensor(),
                 rows=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
-                entities=entity_list,
-                row_type=class_type,
+                entities=entity_list,  # type: ignore
+                row_type=class_type,  # type: ignore
             )  # type: ignore
 
         # TODO: if there's element-level entities - push all elements with PhiScalars
