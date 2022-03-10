@@ -125,7 +125,7 @@ class lazyrepeatarray:
                 return lazyrepeatarray(data=np.array([result]), shape=result.shape)
         if isinstance(other, np.ndarray):
             try:
-                result = (self.to_numpy(shape=other.shape) == other).all()
+                result = (self.to_numpy() == other).all()
                 return lazyrepeatarray(data=np.array([result]), shape=other.shape)
             except Exception as e:
                 print(

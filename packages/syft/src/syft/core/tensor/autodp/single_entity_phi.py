@@ -547,17 +547,6 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         else:
             self.scalar_manager = scalar_manager
 
-        self.entity_asset = (self.entity.name,) if isinstance(entity, Entity) else None
-        self.scalar_manager_asset = (self.scalar_manager.prime2symbol,)
-
-        self.assets = (
-            self.child,
-            self._min_vals,
-            self._max_vals,
-            self.entity_asset,
-            self.scalar_manager_asset,
-        )
-
     def init_pointer(
         self,
         client: Any,

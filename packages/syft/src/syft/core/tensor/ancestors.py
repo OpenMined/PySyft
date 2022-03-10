@@ -52,8 +52,8 @@ def _RowEntityPhiTensor() -> Type[PassthroughTensor]:
 _NDimEntityPhiTensorRef = None
 
 
-# use experimental NEPT
-NEPT = False
+# use experimental NDEPT
+NDEPT = False
 
 
 def _NDimEntityPhiTensor() -> Type[PassthroughTensor]:
@@ -522,7 +522,7 @@ class PhiTensorAncestor(TensorChainManager):
             )
 
         # if there's row-level entities - push a RowEntityPhiTensor
-        elif entities is not None and len(entities) == self.shape[0]:
+        elif not NDEPT and entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
 
             new_list = list()
@@ -560,7 +560,7 @@ class PhiTensorAncestor(TensorChainManager):
 
             self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
 
-        elif NEPT is True:
+        elif NDEPT and entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
             entity_list = EntityList(one_hot_lookup, entities_indexed)
 
