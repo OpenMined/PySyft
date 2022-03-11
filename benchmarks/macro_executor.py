@@ -27,7 +27,7 @@ def run_suite(rept=True, sept=False) -> None:
     if sept:
         run_sept_suite(
             runner=runner,
-            rows=1000000,
+            rows=1000,
             cols=10,
             lower_bound=inf.min,
             upper_bound=inf.max,
@@ -36,7 +36,7 @@ def run_suite(rept=True, sept=False) -> None:
         run_rept_suite(
             runner=runner,
             rept_dimension=15,
-            rows=1000000,
+            rows=200000,
             cols=10,
             lower_bound=inf.min,
             upper_bound=inf.max,
