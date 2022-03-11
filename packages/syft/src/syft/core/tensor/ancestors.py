@@ -52,10 +52,6 @@ def _RowEntityPhiTensor() -> Type[PassthroughTensor]:
 _NDimEntityPhiTensorRef = None
 
 
-# use experimental NDEPT
-NDEPT = False
-
-
 def _NDimEntityPhiTensor() -> Type[PassthroughTensor]:
     global _NDimEntityPhiTensorRef
     if _NDimEntityPhiTensorRef is None:
@@ -438,6 +434,7 @@ class PhiTensorAncestor(TensorChainManager):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
+        ndept: bool = False,
     ) -> PhiTensorAncestor:
         # PHASE 1: RUN CHECKS
 
@@ -522,7 +519,7 @@ class PhiTensorAncestor(TensorChainManager):
             )
 
         # if there's row-level entities - push a RowEntityPhiTensor
-        elif not NDEPT and entities is not None and len(entities) == self.shape[0]:
+        elif not ndept and entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
 
             new_list = list()
@@ -560,7 +557,7 @@ class PhiTensorAncestor(TensorChainManager):
 
             self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
 
-        elif NDEPT and entities is not None and len(entities) == self.shape[0]:
+        elif ndept and entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
             entity_list = EntityList(one_hot_lookup, entities_indexed)
 

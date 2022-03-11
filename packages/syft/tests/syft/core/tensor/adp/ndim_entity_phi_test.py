@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 # syft absolute
+import syft as sy
 from syft.core.adp.entity import Entity
 from syft.core.adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
@@ -198,12 +199,8 @@ def test_serde(
         child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
 
-    ser = tensor1._object2bytes()
-    de = NDEPT._bytes2object(buf=ser)
-
-    # TODO update serde to handle new interface
-    # ser = sy.serialize(tensor1, to_bytes=True)
-    # de = sy.deserialize(ser, from_bytes=True)
+    ser = sy.serialize(tensor1)
+    de = sy.deserialize(ser)
 
     assert de == tensor1
     assert (de.child == tensor1.child).all()

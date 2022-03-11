@@ -11,6 +11,7 @@ import syft
 
 # relative
 from ....util import aggressive_set_attr
+from .deserialize import CAPNP_REGISTRY
 
 module_type = type(syft)
 
@@ -92,6 +93,7 @@ def serializable(
     generate_wrapper: bool = False,
     protobuf_object: bool = False,
     recursive_serde: bool = False,
+    capnp_bytes: bool = False,
 ) -> Any:
     def rs_decorator(cls: Any) -> Any:
         # relative
@@ -126,6 +128,14 @@ def serializable(
         else:
             protobuf_schema.schema2type = cls
         return cls
+
+    def capnp_decorator(cls: Any) -> Any:
+        # register deserialize with the capnp registry
+        CAPNP_REGISTRY[cls.__name__] = cls._bytes2object
+        return cls
+
+    if capnp_bytes:
+        return capnp_decorator
 
     if generate_wrapper:
         return GenerateWrapper

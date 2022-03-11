@@ -22,6 +22,8 @@ from ....core.adp.entity_list import EntityList
 from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
 from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
+from ...common.serde.deserialize import CAPNP_END_MAGIC_HEADER
+from ...common.serde.deserialize import CAPNP_START_MAGIC_HEADER
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...pointer.pointer import Pointer
@@ -74,10 +76,10 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         self.public_dtype = public_dtype
 
 
-@serializable(recursive_serde=True)
+@serializable(capnp_bytes=True)
 class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     PointerClassOverride = TensorWrappedNDimEntityPhiTensorPointer
-    __attr_allowlist__ = ["child", "min_vals", "max_vals"]
+    __attr_allowlist__ = ["child", "min_vals", "max_vals", "entities"]
     __slots__ = (
         "child",
         "min_vals",
@@ -258,10 +260,14 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             if is_acceptable_simple_type(other):
                 result = self.child == other
             else:
+                # check entities match, if they dont gamma_output = True
+                #
                 result = self.child == other.child
                 if isinstance(result, InitialGammaTensor):
                     gamma_output = True
             if not gamma_output:
+                # min_vals=self.min_vals * 0.0,
+                # max_vals=self.max_vals * 0.0 + 1.0,
                 return self.copy_with(child=result)
             else:
                 return self.copy_with(child=result).gamma
@@ -328,10 +334,20 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     @staticmethod
     def combine_bytes(capnp_list: List[bytes]) -> bytes:
+        # TODO: make sure this doesn't copy, perhaps allocate a fixed size buffer
+        # and move the bytes into it as we go
         bytes_value = b""
         for value in capnp_list:
             bytes_value += value
         return bytes_value
+
+    @staticmethod
+    def serde_magic_header() -> str:
+        return (
+            f"{CAPNP_START_MAGIC_HEADER}"
+            + f"{NDimEntityPhiTensor.__name__}"
+            + f"{CAPNP_END_MAGIC_HEADER}"
+        )
 
     def _object2bytes(self) -> bytes:
         schema = NDimEntityPhiTensor.get_capnp_schema()
@@ -351,6 +367,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         min_vals_metadata = metadata_schema.new_message()
         max_vals_metadata = metadata_schema.new_message()
         entities_metadata = metadata_schema.new_message()
+
+        # this is how we dispatch correct deserialization of bytes
+        ndept_msg.magicHeader = NDimEntityPhiTensor.serde_magic_header()
 
         NDimEntityPhiTensor.chunk_bytes(rows, "child", ndept_msg)
         child_metadata.dtype = str(self.child.dtype)

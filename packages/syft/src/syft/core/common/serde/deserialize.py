@@ -1,6 +1,8 @@
 # stdlib
 import re
 from typing import Any
+from typing import Callable
+from typing import Dict
 
 # third party
 from google.protobuf.message import Message
@@ -10,6 +12,13 @@ from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
 from .types import Deserializeable
+
+CAPNP_START_MAGIC_HEADER = "capnp:"
+CAPNP_END_MAGIC_HEADER = ":capnp"
+CAPNP_START_MAGIC_HEADER_BYTES = CAPNP_START_MAGIC_HEADER.encode("utf-8")
+CAPNP_END_MAGIC_HEADER_BYTES = CAPNP_END_MAGIC_HEADER.encode("utf-8")
+
+CAPNP_REGISTRY: Dict[str, Callable] = {}
 
 
 # WARNING: This code has more 🐉 Dragons than a game of D&D 🗡🧙🎲
@@ -56,6 +65,13 @@ def _deserialize(
         "to deserialize is not supported in this version."
     )
 
+    # try to decode capnp first
+    if isinstance(blob, bytes):
+        try:
+            return deserialize_capnp(buf=blob)
+        except Exception:
+            pass
+
     if from_bytes:
         data_message = DataMessage()
         data_message.ParseFromString(blob)
@@ -97,7 +113,6 @@ def _deserialize(
         obj_type = index_syft_by_module_name(fully_qualified_name=obj_type)  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
     elif isinstance(obj_type, list):
-
         if isinstance(blob, rs_get_protobuf_schema()):
             res = rs_proto2object(proto=blob)
             if getattr(res, "temporary_box", False) and hasattr(res, "upcast"):
@@ -143,3 +158,20 @@ def _deserialize(
         return res.upcast()
 
     return res
+
+
+def deserialize_capnp(buf: bytes) -> Any:
+    start_index = buf.find(CAPNP_START_MAGIC_HEADER_BYTES)
+    if start_index == -1:
+        raise Exception(
+            f"capnp Magic Header {CAPNP_START_MAGIC_HEADER}" + "not found in bytes"
+        )
+    start_index += len(CAPNP_START_MAGIC_HEADER_BYTES)
+    end_index = buf.index(CAPNP_END_MAGIC_HEADER_BYTES)
+    class_name = buf[start_index:end_index].decode("utf-8")
+    if class_name not in CAPNP_REGISTRY:
+        raise Exception(
+            f"Found capnp Magic Header: {CAPNP_START_MAGIC_HEADER} "
+            + f"and Class {class_name} but no mapping in capnp registry {CAPNP_REGISTRY}"
+        )
+    return CAPNP_REGISTRY[class_name](buf=buf)

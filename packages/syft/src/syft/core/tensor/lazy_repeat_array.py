@@ -125,6 +125,7 @@ class lazyrepeatarray:
                 return lazyrepeatarray(data=np.array([result]), shape=result.shape)
         if isinstance(other, np.ndarray):
             try:
+                _ = np.broadcast_shapes(self.shape, other.shape)
                 result = (self.to_numpy() == other).all()
                 return lazyrepeatarray(data=np.array([result]), shape=other.shape)
             except Exception as e:
@@ -143,9 +144,8 @@ class lazyrepeatarray:
     def astype(self, np_type: np.dtype) -> lazyrepeatarray:
         return self.__class__(self.data.astype(np_type), self.shape)
 
-    def to_numpy(self, shape: Optional[Tuple[int, ...]] = None) -> np.ndarray:
-        shape = shape if shape is not None else self.shape
-        return np.broadcast_to(self.data, shape)
+    def to_numpy(self) -> np.ndarray:
+        return np.broadcast_to(self.data, self.shape)
 
     def __repr__(self) -> str:
         return f"<lazyrepeatarray data: {self.data} -> shape: {self.shape}>"

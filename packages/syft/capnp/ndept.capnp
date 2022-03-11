@@ -1,15 +1,16 @@
 @0x8f9c60bd7a9842fc;
 
 struct NDEPT {
-  child @0 :List(Data);
-  minVals @1 :List(Data);
-  maxVals @2 :List(Data);
-  entitiesIndexed @3 :List(Data);
-  childMetadata @4 :TensorMetadata;
-  minValsMetadata @5 :TensorMetadata;
-  maxValsMetadata @6 :TensorMetadata;
-  entitiesIndexedMetadata @7 :TensorMetadata;
-  oneHotLookup @8 :List(Text);
+  magicHeader @0 :Text;
+  child @1 :List(Data);
+  minVals @2 :List(Data);
+  maxVals @3 :List(Data);
+  entitiesIndexed @4 :List(Data);
+  childMetadata @5 :TensorMetadata;
+  minValsMetadata @6 :TensorMetadata;
+  maxValsMetadata @7 :TensorMetadata;
+  entitiesIndexedMetadata @8 :TensorMetadata;
+  oneHotLookup @9 :List(Text);
 
   struct TensorMetadata {
     dtype @0 :Text;
