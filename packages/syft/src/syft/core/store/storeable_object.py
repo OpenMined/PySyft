@@ -11,6 +11,7 @@ import syft as sy
 
 # relative
 from ...logger import traceback_and_raise
+from .proxy_dataset import ProxyDataClass
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
 from ...util import index_syft_by_module_name
@@ -95,6 +96,8 @@ class StorableObject(AbstractStorableObject):
     def data(self) -> Any:  # type: ignore
         if type(self._data).__name__.endswith("Wrapper"):
             return self._data.obj
+        elif isinstance(self._data, ProxyDataClass):
+            return self._data.get_s3_data()
         else:
             return self._data
 

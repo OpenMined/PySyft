@@ -114,7 +114,7 @@ def _handle_dataset_creation_syft(
                 name=table_name,
                 dataset_id=str(dataset_id),
                 obj_id=str(id_at_location.value),
-                dtype=str(table.__class__.__name__),
+                dtype=str(table.dtype),
                 shape=str(table.shape),
             )
 

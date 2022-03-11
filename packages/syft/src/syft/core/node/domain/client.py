@@ -21,6 +21,7 @@ import numpy as np
 # relative
 from ....logger import traceback_and_raise
 from ....util import validate_field
+from ...store.proxy_dataset import ProxyDataClass
 from ...common.message import SyftMessage
 from ...common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...common.uid import UID
@@ -683,54 +684,70 @@ class DomainClient(Client):
             if isinstance(v, str):  # type: ignore
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
+
         assets = downcast(assets)
         metadata = downcast(metadata)
-        
-        binary_dataset = serialize(assets, to_bytes=True)
-        # 1 - Send a message to PyGrid warning about dataset upload.
-        # TODO: Avoid using hardcoded strings 
-        upload_response = self.datasets.perform_api_request_generic(
+
+        proxy_obj_set = {}
+
+        for asset_name, asset in assets.items():
+            binary_dataset = serialize(asset, to_bytes=True)
+            
+            # 1 - Send a message to PyGrid warning about dataset upload.
+            # TODO: Avoid using hardcoded strings 
+            upload_response = self.datasets.perform_api_request_generic(
                 syft_msg=UploadDataMessage,
                 content={
-                    "filename": name,
+                    "filename": name + "/" + asset_name,
                     "file_size": len(binary_dataset),
                     "chunk_size": chunk_size, 
                     "address": self.address,
                     "reply_to": self.address}
-        )
+            )
 
-        
-        # 2 - Starts to upload binary data into Seaweed.
-        # TODO: Make this a resumable upload and ADD progress bar.
-        binary_buff = BytesIO(binary_dataset)
-        parts = sorted(upload_response.payload.parts, key=lambda x: x['part_no'])
-        etag_chunk_no_pairs = list()
-        for data_chunk, part in zip( read_chunks(binary_buff, chunk_size), parts):
-            presigned_url = part["url"]
-            part_no = part["part_no"]
+            # 2 - Starts to upload binary data into Seaweed.
+            # TODO: Make this a resumable upload and ADD progress bar.
+            binary_buff = BytesIO(binary_dataset)
+            parts = sorted(upload_response.payload.parts, key=lambda x: x['part_no'])
+            etag_chunk_no_pairs = list()
+            for data_chunk, part in zip( read_chunks(binary_buff, chunk_size), parts):
+                presigned_url = part["url"]
+                part_no = part["part_no"]
             
-            res = requests.put(presigned_url, data=data_chunk)
-            # TODO: Replace with some error message if it fails.
-            assert res.status_code == 200  # Check if the request was successful
-            etag = res.headers["ETag"]
-            etag_chunk_no_pairs.append(
-                {"ETag": etag, "PartNumber": part_no}
-            )  # maintain list of part no and ETag
-
-        # 3 - Send a message to PyGrid warning about dataset upload complete!
-        upload_response = self.datasets.perform_request(
-                syft_msg=UploadDataCompleteMessage,
-                content={"upload_id": upload_response.payload.upload_id, "filename": name, "parts": etag_chunk_no_pairs}
-        )
-
+                res = requests.put(presigned_url, data=data_chunk)
+            
+                # TODO: Replace with some error message if it fails.
+                assert res.status_code == 200  # Check if the request was successful
+                etag = res.headers["ETag"]
+                etag_chunk_no_pairs.append(
+                    {"ETag": etag, "PartNumber": part_no}
+                )  # maintain list of part no and ETag
         
+
+            # 3 - Send a message to PyGrid warning about dataset upload complete!
+            upload_response = self.datasets.perform_request(
+                    syft_msg=UploadDataCompleteMessage,
+                    content={"upload_id": upload_response.payload.upload_id, "filename": name + "/" + asset_name, "parts": etag_chunk_no_pairs}
+            )
+
+
+            proxy_obj_set[asset_name] = ProxyDataClass(
+                asset_name=asset_name,
+                dataset_name=name,
+                node_name=self.name,
+                dtype=type(asset).__name__,
+                shape=asset.shape,
+            )
+
+
+                    
         # TODO: Create a proxy class to replace dataset field.
-        proxy_obj = serialize({"filename": np.zeros(2)}, to_bytes=True)
+        proxy_objs = serialize(proxy_obj_set, to_bytes=True)
 
 
         sys.stdout.write("\rLoading dataset... uploading...                        ")
         self.datasets.create_syft(
-            dataset=proxy_obj, metadata=metadata, platform="syft"
+            dataset=proxy_objs, metadata=metadata, platform="syft"
         )
         sys.stdout.write(
             "\rLoading dataset... uploading... SUCCESS!                        "
