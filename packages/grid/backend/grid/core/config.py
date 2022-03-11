@@ -1,5 +1,4 @@
 # stdlib
-import os
 import secrets
 from typing import Any
 from typing import Dict
@@ -100,14 +99,6 @@ class Settings(BaseSettings):
     OPEN_REGISTRATION: bool = True
 
     DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
-
-    # Configuration for S3 bucket
-    S3_ENDPOINT: Optional[str] = os.getenv("S3_ENDPOINT")
-    S3_PORT: Optional[str] = os.getenv("S3_PORT")
-    S3_ROOT_USER: Optional[str] = os.getenv("S3_ROOT_USER")
-    S3_ROOT_PWD: Optional[str] = os.getenv("S3_ROOT_PWD")
-    S3_BUCKET: Optional[str] = os.getenv("S3_BUCKET")
-    S3_REGION: Optional[str] = os.getenv("S3_REGION")
 
     class Config:
         case_sensitive = True
