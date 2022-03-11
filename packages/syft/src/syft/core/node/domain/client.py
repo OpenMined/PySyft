@@ -1,4 +1,5 @@
 # stdlib
+from io import BytesIO
 import logging
 import sys
 import time
@@ -8,20 +9,17 @@ from typing import List
 from typing import Optional
 from typing import Type
 from typing import Union
-from io import BytesIO
-import requests
 
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 import names
 import pandas as pd
-import numpy as np
+import requests
 
 # relative
 from ....logger import traceback_and_raise
 from ....util import validate_field
-from ...store.proxy_dataset import ProxyDataClass
 from ...common.message import SyftMessage
 from ...common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...common.uid import UID
@@ -33,16 +31,14 @@ from ...node.common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
 from ...pointer.pointer import Pointer
+from ...store.proxy_dataset import ProxyDataClass
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
 from ..abstract.node import AbstractNodeClient
 from ..common.action.exception_action import ExceptionMessage
 from ..common.client import Client
-from ..common.util import read_chunks
 from ..common.client_manager.association_api import AssociationRequestAPI
 from ..common.client_manager.dataset_api import DatasetRequestAPI
-from ..common.node_service.upload_service.upload_service_messages import UploadDataMessage
-from ..common.node_service.upload_service.upload_service_messages import UploadDataCompleteMessage
 from ..common.client_manager.role_api import RoleRequestAPI
 from ..common.client_manager.user_api import UserRequestAPI
 from ..common.client_manager.vpn_api import VPNAPI
@@ -60,6 +56,13 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from ..common.node_service.simple.obj_exists import DoesObjectExistMessage
+from ..common.node_service.upload_service.upload_service_messages import (
+    UploadDataCompleteMessage,
+)
+from ..common.node_service.upload_service.upload_service_messages import (
+    UploadDataMessage,
+)
+from ..common.util import read_chunks
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
@@ -562,7 +565,7 @@ class DomainClient(Client):
         name: Optional[str] = None,
         description: Optional[str] = None,
         skip_checks: bool = False,
-        chunk_size: int = 536870912, # 500 MB
+        chunk_size: int = 536870912,  # 500 MB
         **metadata: Dict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
@@ -638,9 +641,6 @@ class DomainClient(Client):
             "\rLoading dataset... checking asset types...                              "
         )
 
-        # relative
-        from ....lib.python.util import downcast
-
         if not skip_checks:
             for _, asset in assets.items():
 
@@ -684,66 +684,67 @@ class DomainClient(Client):
             if isinstance(v, str):  # type: ignore
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
-
-        assets = downcast(assets)
-        metadata = downcast(metadata)
-
         proxy_obj_set = {}
 
         for asset_name, asset in assets.items():
-            binary_dataset = serialize(asset, to_bytes=True)
-            
+            binary_dataset: bytes = serialize(asset, to_bytes=True)  # type: ignore
+
             # 1 - Send a message to PyGrid warning about dataset upload.
-            # TODO: Avoid using hardcoded strings 
+            # TODO: Avoid using hardcoded strings
             upload_response = self.datasets.perform_api_request_generic(
                 syft_msg=UploadDataMessage,
                 content={
                     "filename": name + "/" + asset_name,
                     "file_size": len(binary_dataset),
-                    "chunk_size": chunk_size, 
+                    "chunk_size": chunk_size,
                     "address": self.address,
-                    "reply_to": self.address}
+                    "reply_to": self.address,
+                },
             )
 
             # 2 - Starts to upload binary data into Seaweed.
             # TODO: Make this a resumable upload and ADD progress bar.
             binary_buff = BytesIO(binary_dataset)
-            parts = sorted(upload_response.payload.parts, key=lambda x: x['part_no'])
+            parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
             etag_chunk_no_pairs = list()
-            for data_chunk, part in zip( read_chunks(binary_buff, chunk_size), parts):
+            for data_chunk, part in zip(read_chunks(binary_buff, chunk_size), parts):
                 presigned_url = part["url"]
                 part_no = part["part_no"]
-            
+
                 res = requests.put(presigned_url, data=data_chunk)
-            
+
                 # TODO: Replace with some error message if it fails.
-                assert res.status_code == 200  # Check if the request was successful
+
+                if res.status_code != 200:
+                    raise Exception(
+                        f"Uploading Chunk {part} failed. "
+                        + f"HTTP Status Code: {res.status_code}"
+                    )
                 etag = res.headers["ETag"]
                 etag_chunk_no_pairs.append(
                     {"ETag": etag, "PartNumber": part_no}
                 )  # maintain list of part no and ETag
-        
 
             # 3 - Send a message to PyGrid warning about dataset upload complete!
             upload_response = self.datasets.perform_request(
-                    syft_msg=UploadDataCompleteMessage,
-                    content={"upload_id": upload_response.payload.upload_id, "filename": name + "/" + asset_name, "parts": etag_chunk_no_pairs}
+                syft_msg=UploadDataCompleteMessage,
+                content={
+                    "upload_id": upload_response.payload.upload_id,
+                    "filename": name + "/" + asset_name,
+                    "parts": etag_chunk_no_pairs,
+                },
             )
-
 
             proxy_obj_set[asset_name] = ProxyDataClass(
                 asset_name=asset_name,
                 dataset_name=name,
-                node_name=self.name,
-                dtype=type(asset).__name__,
+                node_id=self.domain.id,
+                dtype=str(asset),
                 shape=asset.shape,
             )
 
-
-                    
         # TODO: Create a proxy class to replace dataset field.
         proxy_objs = serialize(proxy_obj_set, to_bytes=True)
-
 
         sys.stdout.write("\rLoading dataset... uploading...                        ")
         self.datasets.create_syft(

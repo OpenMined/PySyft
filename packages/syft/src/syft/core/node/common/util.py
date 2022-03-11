@@ -1,9 +1,13 @@
 # stdlib
+from io import BytesIO
 from typing import Any
+from typing import Generator
 from typing import List
 
 
-def read_chunks(fp, chunk_size=1024**3):
+def read_chunks(
+    fp: BytesIO, chunk_size: int = 1024**3
+) -> Generator[bytes, None, None]:
     """Read data in chunks from the file."""
     while True:
         data = fp.read(chunk_size)

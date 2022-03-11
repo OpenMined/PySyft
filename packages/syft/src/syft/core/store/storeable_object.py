@@ -11,7 +11,6 @@ import syft as sy
 
 # relative
 from ...logger import traceback_and_raise
-from .proxy_dataset import ProxyDataClass
 from ...proto.core.store.store_object_pb2 import StorableObject as StorableObject_PB
 from ...util import get_fully_qualified_name
 from ...util import index_syft_by_module_name
@@ -21,6 +20,7 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
+from .proxy_dataset import ProxyDataClass
 
 
 @serializable()
