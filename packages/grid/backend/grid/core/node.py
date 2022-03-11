@@ -11,7 +11,7 @@ from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.node_table.utils import seed_db
-from syft.core.node.common.util import get_s3_client
+from syft.core.store.util import get_s3_client
 
 # grid absolute
 from grid.core.config import settings
