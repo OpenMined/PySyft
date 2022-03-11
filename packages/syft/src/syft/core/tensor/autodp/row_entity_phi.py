@@ -97,6 +97,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         self.unique_entities: set[Entity] = set()
         self.n_entities = 0
         for entity in self.entities.flatten():
+            if isinstance(entity, str):
+                entity = Entity(name=entity)
+
             if isinstance(entity, Entity):
                 if entity not in self.unique_entities:
                     self.unique_entities.add(entity)

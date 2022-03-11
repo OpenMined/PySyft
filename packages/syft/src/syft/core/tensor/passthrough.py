@@ -288,8 +288,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __invert__(self) -> PassthroughTensor:
         return self.child.__invert__()
 
-    def copy(self) -> PassthroughTensor:
-        return self.__class__(self.child.copy())
+    def copy(self, order: Optional[str] = "K") -> PassthroughTensor:
+        return self.__class__(self.child.copy(order=order))
 
     def __mul__(
         self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
