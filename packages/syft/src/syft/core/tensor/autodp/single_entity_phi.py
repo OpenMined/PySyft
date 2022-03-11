@@ -1813,12 +1813,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             if self.entity != value.entity:
                 return NotImplemented
 
-            data = self.child ** value.child
+            data = self.child**value.child
 
-            min_min = self.min_vals ** value.min_vals
-            min_max = self.min_vals ** value.max_vals
-            max_min = self.max_vals ** value.min_vals
-            max_max = self.max_vals ** value.max_vals
+            min_min = self.min_vals**value.min_vals
+            min_max = self.min_vals**value.max_vals
+            max_min = self.max_vals**value.min_vals
+            max_max = self.max_vals**value.max_vals
 
             min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
             max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
@@ -1834,12 +1834,12 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
 
         elif is_acceptable_simple_type(value):
 
-            data = self.child ** value
+            data = self.child**value
 
-            min_min = self.min_vals ** value
-            min_max = self.min_vals ** value
-            max_min = self.max_vals ** value
-            max_max = self.max_vals ** value
+            min_min = self.min_vals**value
+            min_max = self.min_vals**value
+            max_min = self.max_vals**value
+            max_max = self.max_vals**value
 
             min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
             max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
