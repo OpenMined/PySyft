@@ -10,7 +10,6 @@ Sanity tests for OrderedDict
 from collections.abc import MutableMapping
 import copy
 import gc
-import pickle
 from random import randrange
 from random import shuffle
 import sys
@@ -363,19 +362,6 @@ def test_reduce_not_too_fat():
     od.x = 10
     assertEqual(od.__dict__["x"], 10)
     assertEqual(od.__reduce__()[2], {"x": 10})
-
-
-def test_pickle_recursive():
-    OrderedDict = SyOrderedDict
-    od = OrderedDict()
-    od[1] = od
-
-    # pickle directly pulls the module, so we have to fake it
-    for proto in range(-1, pickle.HIGHEST_PROTOCOL + 1):
-        dup = pickle.loads(pickle.dumps(od, proto))
-        assert dup is not od
-        assertEqual(list(dup.keys()), [1])
-        assert dup[1], dup
 
 
 def test_repr():
