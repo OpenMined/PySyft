@@ -57,20 +57,20 @@ jobs:
         run: echo "${{needs.hagrid-hash-challenge.outputs.current_hash}}" > hagrid_hash
         working-directory: ./packages/hagrid
 
-      # - name: Commit changes
-      #   if: ${{needs.hagrid-hash-challenge.outputs.current_hash}} != ${{needs.hagrid-hash-challenge.outputs.previous_hash}}
-      #   uses: EndBug/add-and-commit@v7
-      #   with:
-      #     author_name: Madhava Jay
-      #     author_email: madhava@openmined.org
-      #     message: "bump version"
-      #     add: "['./packages/hagrid/.bumpversion.cfg','./packages/hagrid/hagrid/__init__.py', './packages/hagrid/hagrid_hash']"
+      - name: Commit changes
+        if: ${{needs.hagrid-hash-challenge.outputs.current_hash}} != ${{needs.hagrid-hash-challenge.outputs.previous_hash}}
+        uses: EndBug/add-and-commit@v7
+        with:
+          author_name: Madhava Jay
+          author_email: madhava@openmined.org
+          message: "bump version"
+          add: "['./packages/hagrid/.bumpversion.cfg','./packages/hagrid/hagrid/__init__.py', './packages/hagrid/hagrid_hash']"
 
-      # - name: Build and publish
-      #   if: ${{needs.hagrid-hash-challenge.outputs.current_hash}} != ${{needs.hagrid-hash-challenge.outputs.previous_hash}}
-      #   env:
-      #     TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-      #     TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
-      #   run: |
-      #     tox -e hagrid.publish
-      #     twine upload packages/hagrid/dist/*
+      - name: Build and publish
+        if: ${{needs.hagrid-hash-challenge.outputs.current_hash}} != ${{needs.hagrid-hash-challenge.outputs.previous_hash}}
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          tox -e hagrid.publish
+          twine upload packages/hagrid/dist/*
