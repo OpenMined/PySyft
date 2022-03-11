@@ -69,7 +69,7 @@ def _deserialize(
     if isinstance(blob, bytes):
         try:
             return deserialize_capnp(buf=blob)
-        except Exception:
+        except Exception:  # nosec
             pass
 
     if from_bytes:

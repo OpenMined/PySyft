@@ -18,7 +18,7 @@ RUN if [ $(uname -m) = "x86_64" ]; then \
 # apple m1 build PyNaCl for aarch64
 RUN if [ $(uname -m) != "x86_64" ]; then \
   pip install --user pycapnp==1.1.0; \
-  pip install --user numpy==1.22.2; \
+  pip install --user numpy==1.22.3; \
   pip install --user primesieve==2.3.0 --force-reinstall --no-cache-dir; \
   python -c "from primesieve.numpy._numpy import primes"; \
   pip install --user torch==1.10.0 -f https://download.pytorch.org/whl/torch_stable.html; \
