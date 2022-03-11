@@ -55,7 +55,7 @@ class UID:
 
     """
 
-    __slots__ = ("value", "bytes_value")
+    __slots__ = "value"
     value: uuid_type
 
     def __init__(self, value: Optional[uuid_type] = None):
@@ -87,8 +87,6 @@ class UID:
             next(uuid_value_generator, uuid.uuid4()) if value is None else value
         )
 
-        self.bytes_value = self.value.bytes
-
     @staticmethod
     def from_string(value: str) -> "UID":
         try:
@@ -96,10 +94,6 @@ class UID:
         except Exception as e:
             critical(f"Unable to convert {value} to UUID. {e}")
             traceback_and_raise(e)
-
-    @property
-    def get_bytes(self) -> bytes:
-        return self.bytes_value
 
     def to_string(self) -> str:
         return self.no_dash
