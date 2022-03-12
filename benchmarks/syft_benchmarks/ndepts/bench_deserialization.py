@@ -8,7 +8,7 @@ import pyperf
 import syft as sy
 
 
-def create_bench_rept_deserialize(runner: pyperf.Runner, ndept):
+def create_bench_ndept_deserialize(runner: pyperf.Runner, ndept):
 
     serialized_data = sy.serialize(ndept, to_bytes=True)
     partially_evaluated_func = functools.partial(
