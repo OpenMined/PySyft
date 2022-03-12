@@ -1,11 +1,21 @@
 # stdlib
+import os
+from pathlib import Path
 import subprocess
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
 
 # third party
-import numpy as np
 import pyperf
-from syft_benchmarks import run_rept_suite
-from syft_benchmarks import run_sept_suite
+from syft_benchmarks import run_ndept_suite
+from syft_benchmarks import run_rept_suite  # noqa: F401
+from syft_benchmarks import run_sept_suite  # noqa: F401
+
+# syft absolute
+from syft.util import download_file
+from syft.util import get_root_data_path
 
 
 def get_git_revision_short_hash() -> str:
@@ -16,22 +26,53 @@ def get_git_revision_short_hash() -> str:
     )
 
 
+def download_spicy_bird_benchmark(
+    sizes: Optional[List[str]] = None,
+) -> Tuple[Dict[str, Path], List[str]]:
+    sizes = sizes if sizes else ["100K", "250K", "500K", "750K", "1M"]
+    file_suffix = "_rows_dataset_sample.parquet"
+    BASE_URL = "https://raw.githubusercontent.com/madhavajay/datasets/main/spicy_bird/"
+
+    folder_name = "spicy_bird"
+    dataset_path = get_root_data_path() / folder_name
+    paths = []
+    for size in sizes:
+        filename = f"{size}{file_suffix}"
+        full_path = dataset_path / filename
+        url = f"{BASE_URL}{filename}"
+        if not os.path.exists(full_path):
+            print(url)
+            path = download_file(url=url, full_path=full_path)
+        else:
+            path = Path(full_path)
+        paths.append(path)
+    return dict(zip(sizes, paths)), sizes
+
+
+key_size = "100K"
+files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
+
+
 def run_suite() -> None:
-    inf = np.iinfo(np.int32)
+
+    data_file = files[key_size]
     runner = pyperf.Runner()
     runner.parse_args()
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
-    run_sept_suite(
-        runner=runner, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max
-    )
-    run_rept_suite(
-        runner=runner,
-        rept_dimension=15,
-        rows=1000,
-        cols=10,
-        lower_bound=inf.min,
-        upper_bound=inf.max,
-    )
+
+    # inf = np.iinfo(np.int32)
+    # run_sept_suite(
+    #     runner=runner, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max
+    # )
+    # run_rept_suite(
+    #     runner=runner,
+    #     rept_dimension=15,
+    #     rows=1000,
+    #     cols=10,
+    #     lower_bound=inf.min,
+    #     upper_bound=inf.max,
+    # )
+    run_ndept_suite(runner=runner, data_file=data_file)
 
 
 run_suite()
