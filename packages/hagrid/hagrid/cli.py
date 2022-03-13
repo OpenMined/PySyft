@@ -385,10 +385,12 @@ Please install it and then retry your command.\
 
 
 def check_gcloud_authed() -> bool:
-    cmd = "gcloud auth list"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
-        return True
+        result = subprocess.run(
+            ["gcloud", "auth", "print-identity-token"], stdout=subprocess.PIPE
+        )
+        if result.returncode == 0:
+            return True
     except Exception:
         pass
     return False
@@ -675,6 +677,7 @@ def create_launch_cmd(
         while not check_gcloud_authed():
             print("You need to log into Google Cloud")
             login_gcloud()
+        print("You need to create a service account")
 
     elif host in ["aws"]:
         print("Coming soon.")
