@@ -12,6 +12,7 @@ from typing import Dict
 from typing import List
 from typing import Deque
 from collections import deque
+from dis import dis
 
 # third party
 import flax
@@ -142,14 +143,22 @@ class GammaTensor:
 
     @property
     def lipschitz_bound(self) -> float:
+        # TODO: Check if there are any functions for which lipschitz bounds shouldn't be computed
+        # if dis(self.func) == dis(no_op):
+        #     raise Exception
+
+        print("Starting JAX JIT")
         fn = jax.jit(self.func)
+        print("Traced self.func with jax's jit, now calculating gradient")
         grad_fn = jax.grad(fn)
+        print("Obtained gradient, creating lookup tables")
         i2k, k2i, i2v, i2s = create_new_lookup_tables(self.state)
 
+        print("created lookup tables, now getting bounds")
         i2minval = jnp.concatenate([x.min_val for x in i2v]).reshape(-1, 1)
         i2maxval = jnp.concatenate([x.max_val for x in i2v]).reshape(-1, 1)
         bounds = jnp.concatenate([i2minval, i2maxval], axis=1)
-
+        print("Obtained bounds")
         sample_input = i2minval.reshape(-1)
         print("Obtained all inputs")
 
