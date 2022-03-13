@@ -37,6 +37,7 @@ from .adp_tensor import ADPTensor
 from .initial_gamma import InitialGammaTensor
 from .initial_gamma import IntermediateGammaTensor
 from .single_entity_phi import SingleEntityPhiTensor
+from .gamma_tensor import GammaTensor
 
 
 @serializable(recursive_serde=True)
@@ -200,9 +201,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         new_tensor.child = child
         return new_tensor
 
-    def create_gamma(
-        self, scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None
-    ) -> InitialGammaTensor:
+    def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
 
         # if scalar_manager is None:
@@ -214,12 +213,12 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         # )
 
         # TODO: update InitialGammaTensor to handle EntityList
-        return InitialGammaTensor(
-            values=self.child,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+        # TODO: check if values needs to be a JAX array or if numpy will suffice
+        return GammaTensor(
+            value=self.child,
+            min_vaL=self.min_vals,
+            max_val=self.max_vals,
             entities=self.entities,
-            # scalar_manager=scalar_manager,
         )
 
     def publish(
@@ -309,6 +308,20 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
+
+    def sum(self) -> Union[NDimEntityPhiTensor, GammaTensor]:
+        if len(self.entities.one_hot_lookup) == 1:
+            return NDimEntityPhiTensor(
+                child=self.child.sum(),
+                min_vals=self.min_vals.sum(),
+                max_vals=self.max_vals.sum(),
+                entities=EntityList.from_objs(self.entities[0])  # Need to check this
+            )
+        return GammaTensor(
+            value=self.child.sum(),
+            min_val=self.min_vals.sum(),
+            max_val=self.max_vals.sum()
+        )
 
     @staticmethod
     def get_capnp_schema() -> type:
