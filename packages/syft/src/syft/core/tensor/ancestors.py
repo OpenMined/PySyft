@@ -434,7 +434,7 @@ class PhiTensorAncestor(TensorChainManager):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
-        ndept: bool = False,
+        ndept: bool = True,
     ) -> PhiTensorAncestor:
         # PHASE 1: RUN CHECKS
 

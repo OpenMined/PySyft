@@ -24,19 +24,19 @@ from functools import partial
 
 
 def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]:
-    index2key = [str(x) for x in dictionary.keys()]
-    key2index = {key:i for i, key in enumerate(index2key)}
+    index2key: List = [str(x) for x in dictionary.keys()]
+    key2index: dict = {key:i for i, key in enumerate(index2key)}
     # Note this maps to GammaTensor, not to GammaTensor.value as name may imply
-    index2values = [dictionary[i] for i in index2key]
+    index2values: List = [dictionary[i] for i in index2key]
 
     return index2key, key2index, index2values
 
 
 def create_new_lookup_tables(dictionary: dict) -> Tuple[Deque[str], dict, Deque[dict], Deque[Tuple[int, ...]]]:
-    index2key = deque()
-    key2index = {}
-    index2values = deque()  # Note this maps to GammaTensor, not to GammaTensor.value as name may imply
-    index2size = deque()
+    index2key: Deque = deque()
+    key2index: dict = {}
+    index2values: Deque = deque()  # Note this maps to GammaTensor, not to GammaTensor.value as name may imply
+    index2size: Deque = deque()
     for index, key in enumerate(dictionary.keys()):
         key = str(key)
         index2key.append(key)
@@ -63,7 +63,7 @@ class GammaTensor:
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**32 - 1))
-    )
+    )  #TODO: Need to check if there are any scenarios where this is not secure
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
     def __post_init__(self) -> None:
