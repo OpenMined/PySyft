@@ -1,15 +1,56 @@
+# future
 from __future__ import annotations
-import jax
-import flax
-import numpy as np
-from jax import numpy as jnp
-from typing import Union
+
+# stdlib
+from typing import Any
 from typing import Callable
+from typing import Optional
+from typing import Union
+from typing import Tuple
 from typing import Set
-from random import randint
+from typing import Dict
+from typing import List
+from typing import Deque
+from collections import deque
+
+# third party
+import flax
+import jax
+from jax import numpy as jnp
+from numpy.random import randint
+from scipy.optimize import shgo
+from functools import partial
 
 
-def no_op(x):
+def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]:
+    index2key = [str(x) for x in dictionary.keys()]
+    key2index = {key:i for i, key in enumerate(index2key)}
+    # Note this maps to GammaTensor, not to GammaTensor.value as name may imply
+    index2values = [dictionary[i] for i in index2key]
+
+    return index2key, key2index, index2values
+
+
+def create_new_lookup_tables(dictionary: dict) -> Tuple[Deque[str], dict, Deque[dict], Deque[Tuple[int, ...]]]:
+    index2key = deque()
+    key2index = {}
+    index2values = deque()  # Note this maps to GammaTensor, not to GammaTensor.value as name may imply
+    index2size = deque()
+    for index, key in enumerate(dictionary.keys()):
+        key = str(key)
+        index2key.append(key)
+        key2index[key] = index
+        index2values.append(dictionary[key])
+        index2size.append(len(dictionary[key]))
+
+    return index2key, key2index, index2values, index2size
+
+
+def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
+    """A Private input will be initialized with this function.
+    Whenever you manipulate a private input (i.e. add it to another private tensor), the result will have a different
+    function. Thus we can check to seee if the f
+    """
     return x
 
 
@@ -19,20 +60,22 @@ class GammaTensor:
     min_val: float = flax.struct.field(pytree_node=False)
     max_val: float = flax.struct.field(pytree_node=False)
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
-    id: str = flax.struct.field(pytree_node=False, default_factory=lambda: str(randint(0, 2 ** 32 - 1)))
+    id: str = flax.struct.field(
+        pytree_node=False, default_factory=lambda: str(randint(0, 2**32 - 1))
+    )
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if len(self.state) == 0:
             self.state[self.id] = self
 
-    def run(self, state):
+    def run(self, state: dict) -> Union[Callable]:
         # we hit a private input
         if self.func is no_op:
             return self.func(state[self.id].value)
         return self.func(state)
 
-    def __add__(self, other):
+    def __add__(self, other: Any) -> GammaTensor:
         state = dict()
         state.update(self.state)
 
@@ -40,13 +83,18 @@ class GammaTensor:
             adder = lambda state: jnp.add(self.run(state), other.run(state))
             state.update(other.state)
             value = self.value + other.value
+            min_val = self.min_val + other.min_val
+            max_val = self.max_val + other.max_val
         else:
             adder = lambda state: jnp.add(self.run(state), other)
             value = self.value + other
+            min_val = self.min_val + other
+            max_val = self.max_val + other
 
-        return GammaTensor(value=value, func=adder, state=state)
+        return GammaTensor(value=value, min_val=min_val, max_val=max_val,
+                           func=adder, state=state)
 
-    def sum(self):
+    def sum(self) -> GammaTensor:
         sum = lambda state: jnp.sum(self.run(state))
         state = dict()
         state.update(self.state)
@@ -55,65 +103,74 @@ class GammaTensor:
         min_val = jnp.sum(self.min_val)
         max_val = jnp.sum(self.max_val)
 
-        return GammaTensor(value=value, min_val=min_val, max_val=max_val, func=sum, state=state)
+        return GammaTensor(
+            value=value, min_val=min_val, max_val=max_val, func=sum, state=state
+        )
 
-    def expand_dims(self, axis):
+    def expand_dims(self, axis: int) -> GammaTensor:
         expand_dims = lambda state: jnp.expand_dims(self.run(state), axis)
 
         state = dict()
         state.update(self.state)
 
-        return GammaTensor(value=jnp.expand_dims(self.value, axis), min_val=self.min_val, max_val=self.max_val,
-                           func=expand_dims, state=state)
+        return GammaTensor(
+            value=jnp.expand_dims(self.value, axis),
+            min_val=self.min_val,
+            max_val=self.max_val,
+            func=expand_dims,
+            state=state,
+        )
 
-    def squeeze(self, axis=None):
+    def squeeze(self, axis: Optional[int] = None) -> GammaTensor:
         squeeze = lambda state: jnp.squeeze(self.run(state), axis)
         state = dict()
         state.update(self.state)
-        return GammaTensor(value=jnp.squeeze(self.value, axis), min_val=self.min_val, max_val=self.max_val,
-                           func=squeeze, state=state)
+        return GammaTensor(
+            value=jnp.squeeze(self.value, axis),
+            min_val=self.min_val,
+            max_val=self.max_val,
+            func=squeeze,
+            state=state,
+        )
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.value)
 
+    @property
+    def shape(self) -> Tuple[int, ...]:
+        return self.value.shape
 
-@flax.struct.dataclass
-class IntermediateGammaScalar:
-    value: float
-    min_val: float = flax.struct.field(pytree_node=False)
-    max_val: float = flax.struct.field(pytree_node=False)
-    entities: jnp.array = flax.struct.field(pytree_node=False)
-    is_linear: bool = flax.struct.field(pytree_node=False)
-    generative_func: Callable = flax.struct.field(pytree_node=False)
+    @property
+    def lipschitz_bound(self) -> float:
+        fn = jax.jit(self.func)
+        grad_fn = jax.grad(fn)
+        i2k, k2i, i2v, i2s = create_new_lookup_tables(self.state)
 
-    def __add__(self, other: Union["GammaScalar", "IntermediateGammaScalar"]) -> "IntermediateGammaScalar":
-        value = self.value + other.value
-        min_val = self.min_val + other.min_val
-        max_val = self.max_val + other.max_val
+        i2minval = jnp.concatenate([x.min_val for x in i2v]).reshape(-1, 1)
+        i2maxval = jnp.concatenate([x.max_val for x in i2v]).reshape(-1, 1)
+        bounds = jnp.concatenate([i2minval, i2maxval], axis=1)
 
-        if isinstance(other, GammaScalar):
-            new_entities = jnp.append(self.entities, other.entity)
-        else:
-            new_entities = jnp.concatenate([self.entities, other.entities])
+        sample_input = i2minval.reshape(-1)
+        print("Obtained all inputs")
 
-        return IntermediateGammaScalar(value=value, min_val=min_val, max_val=max_val, entities=new_entities,
-                                       is_linear=True, generative_func=None)
+        def max_grad_fn(input_values):
+            vectors = {}
+            n = 0
+            for i, size_param in enumerate(i2s):
+                vectors[i2k[i]] = input_values[n:n + size_param]
+                n += size_param
 
+            grad_pred = grad_fn(vectors)
 
-@flax.struct.dataclass
-class GammaScalar:
-    value: float
-    min_val: float = flax.struct.field(pytree_node=False)
-    max_val: float = flax.struct.field(pytree_node=False)
-    entity: int = flax.struct.field(pytree_node=False)
-    is_linear: bool = flax.struct.field(pytree_node=False)
+            m = 0
+            for value in grad_pred.values():
+                m = max(m, jnp.max(value))
 
-    def __add__(self, other: "GammaScalar") -> Union["GammaScalar", "IntermediateGammaScalar"]:
-        new_min = self.min_val + other.min_val
-        new_max = self.max_val + other.max_val
-        new_value = self.value + other.value
-        new_entities = jnp.array((self.entity, other.entity))
-        return IntermediateGammaScalar(value=new_value, min_val=new_min, max_val=new_max, entities=new_entities,
-                                       is_linear=True, generative_func=None)
+            # return negative because we want to maximize instead of minimize
+            return -m
 
-
+        print("starting SHGO")
+        res = shgo(max_grad_fn, bounds, iters=1, constraints=tuple())
+        print("Ran SHGO")
+        # return negative because we flipped earlier
+        return -float(res.fun)
