@@ -269,86 +269,85 @@ def test_benchmark_datasets() -> None:
     assert benchmark_report[key_size]["upload_secs"] <= 120
     assert benchmark_report[key_size]["sum_secs"] <= 1
     assert benchmark_report[key_size]["publish_secs"] <= 10
-    assert False
 
 
-@pytest.mark.e2e
-def test_ndept() -> None:
-    tracer = get_tracer("test_benchmark_datasets")
+# @pytest.mark.e2e
+# def test_ndept() -> None:
+#     tracer = get_tracer("test_benchmark_datasets")
 
-    # 1M takes about 5 minutes right now for all the extra serde so lets use 100K
-    # in the integration test
-    key_size = "1M"
-    files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
-    domain = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
-    )
+#     # 1M takes about 5 minutes right now for all the extra serde so lets use 100K
+#     # in the integration test
+#     key_size = "1M"
+#     files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
+#     domain = sy.login(
+#         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
+#     )
 
-    # Upgrade admins budget
-    content = {"user_id": 1, "budget": 9999999}
-    domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
+#     # Upgrade admins budget
+#     content = {"user_id": 1, "budget": 9999999}
+#     domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
 
-    budget_before = domain.privacy_budget
+#     budget_before = domain.privacy_budget
 
-    benchmark_report = {}
-    # for size_name in reversed(ordered_sizes):
-    # for multiplier in [1, 10, 100, 1000]:
-    for multiplier in [1000]:
-        size_name = f"{multiplier}M"
-        if multiplier == 1000:
-            size_name = "1B"
-        # timeout = 300
-        unique_key = str(hash(time.time()))
-        benchmark_report[size_name] = {}
-        df = pd.read_parquet(files["1M"])
-        # make smaller
-        # df = df[0:100]
-        entity_count = 1000
+#     benchmark_report = {}
+#     # for size_name in reversed(ordered_sizes):
+#     # for multiplier in [1, 10, 100, 1000]:
+#     for multiplier in [1000]:
+#         size_name = f"{multiplier}M"
+#         if multiplier == 1000:
+#             size_name = "1B"
+#         # timeout = 300
+#         unique_key = str(hash(time.time()))
+#         benchmark_report[size_name] = {}
+#         df = pd.read_parquet(files["1M"])
+#         # make smaller
+#         # df = df[0:100]
+#         entity_count = 1000
 
-        with tracer.start_as_current_span("upload"):
-            upload_time = time_upload(
-                domain=domain,
-                size_name=size_name,
-                unique_key=unique_key,
-                df=df,
-                entity_count=entity_count,
-                ndept=True,
-                multiplier=multiplier,
-            )
-        benchmark_report[size_name]["upload_secs"] = upload_time
-        # all_chunks = get_all_chunks(domain=domain, unique_key=unique_key)
-        # with tracer.start_as_current_span("sum"):
-        #     sum_time, sum_ptr = time_sum(
-        #         domain=domain,
-        #         chunk_indexes=all_chunks,
-        #         size_name=size_name,
-        #         timeout=timeout,
-        #     )
-        # benchmark_report[size_name]["sum_secs"] = sum_time
+#         with tracer.start_as_current_span("upload"):
+#             upload_time = time_upload(
+#                 domain=domain,
+#                 size_name=size_name,
+#                 unique_key=unique_key,
+#                 df=df,
+#                 entity_count=entity_count,
+#                 ndept=True,
+#                 multiplier=multiplier,
+#             )
+#         benchmark_report[size_name]["upload_secs"] = upload_time
+#         # all_chunks = get_all_chunks(domain=domain, unique_key=unique_key)
+#         # with tracer.start_as_current_span("sum"):
+#         #     sum_time, sum_ptr = time_sum(
+#         #         domain=domain,
+#         #         chunk_indexes=all_chunks,
+#         #         size_name=size_name,
+#         #         timeout=timeout,
+#         #     )
+#         # benchmark_report[size_name]["sum_secs"] = sum_time
 
-        # start_time = time.time()
-        # with tracer.start_as_current_span("publish"):
-        #     publish_ptr = sum_ptr.publish(sigma=0.5)
-        #     publish_ptr.block_with_timeout(timeout)
-        #     result = publish_ptr.get(delete_obj=False)
-        #     print("result", result)
+#         # start_time = time.time()
+#         # with tracer.start_as_current_span("publish"):
+#         #     publish_ptr = sum_ptr.publish(sigma=0.5)
+#         #     publish_ptr.block_with_timeout(timeout)
+#         #     result = publish_ptr.get(delete_obj=False)
+#         #     print("result", result)
 
-        # benchmark_report[size_name]["publish_secs"] = time.time() - start_time
-        # break
+#         # benchmark_report[size_name]["publish_secs"] = time.time() - start_time
+#         # break
 
-    budget_after = domain.privacy_budget
-    print(benchmark_report)
+#     budget_after = domain.privacy_budget
+#     print(benchmark_report)
 
-    # no budget is spent even if the amount is checked
-    diff = budget_before - budget_after
-    print(f"Used {diff} Privacy Budget")
-    # assert budget_before != budget_after
+#     # no budget is spent even if the amount is checked
+#     diff = budget_before - budget_after
+#     print(f"Used {diff} Privacy Budget")
+#     # assert budget_before != budget_after
 
-    # Revert admins budget
-    content = {"user_id": 1, "budget": 5.55}
-    domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
+#     # Revert admins budget
+#     content = {"user_id": 1, "budget": 5.55}
+#     domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
 
-    # assert benchmark_report["1M"]["upload_secs"] <= 20
-    # assert benchmark_report[key_size]["sum_secs"] <= 1
-    # assert benchmark_report[key_size]["publish_secs"] <= 10
-    assert False
+#     # assert benchmark_report["1M"]["upload_secs"] <= 20
+#     # assert benchmark_report[key_size]["sum_secs"] <= 1
+#     # assert benchmark_report[key_size]["publish_secs"] <= 10
+#     assert False
