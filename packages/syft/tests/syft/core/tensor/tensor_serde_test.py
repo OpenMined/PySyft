@@ -282,13 +282,7 @@ def test_rept_vs_ndept() -> None:
 def test_big_ndept() -> None:
     """Create big NDEPTs"""
     # for multiplier in [1, 10, 100, 1000]:
-    """
-    failed capnp deserialize capnp/serialize.c++:197:
-    failed: expected totalWords <= options.traversalLimitInWords;
-    Message is too large.  To increase the limit on the receiving end,
-    see capnp::ReaderOptions.
-    """
-    for multiplier in [10]:
+    for multiplier in [1, 10, 100]:
         ndim = 1_000_000
         rows = 1
         cols = 7
@@ -308,5 +302,5 @@ def test_big_ndept() -> None:
 
         ndept_metrics = time_and_size_serde(big_ndept)
         print(multiplier, ndept_metrics)
-        # break
+
     assert False
