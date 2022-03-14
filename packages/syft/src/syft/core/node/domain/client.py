@@ -688,6 +688,7 @@ class DomainClient(Client):
 
         for asset_name, asset in assets.items():
             binary_dataset: bytes = serialize(asset, to_bytes=True)  # type: ignore
+            file_size = len(binary_dataset)
 
             # 1 - Send a message to PyGrid warning about dataset upload.
             # TODO: Avoid using hardcoded strings
@@ -695,7 +696,7 @@ class DomainClient(Client):
                 syft_msg=UploadDataMessage,
                 content={
                     "filename": name + "/" + asset_name,
-                    "file_size": len(binary_dataset),
+                    "file_size": file_size,
                     "chunk_size": chunk_size,
                     "address": self.address,
                     "reply_to": self.address,
@@ -704,8 +705,10 @@ class DomainClient(Client):
 
             # 2 - Starts to upload binary data into Seaweed.
             # TODO: Make this a resumable upload and ADD progress bar.
+            print(f"\nUploading: {asset_name}")
             binary_buffer = BytesIO(binary_dataset)
             parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
+            total_parts = file_size / chunk_size
             etag_chunk_no_pairs = list()
             for data_chunk, part in zip(read_chunks(binary_buffer, chunk_size), parts):
                 presigned_url = part["url"]
@@ -724,6 +727,8 @@ class DomainClient(Client):
                 etag_chunk_no_pairs.append(
                     {"ETag": etag, "PartNumber": part_no}
                 )  # maintain list of part no and ETag
+
+                print(f"Progess: {100*round(part_no/total_parts, 2)}/100.0", end="\r")
 
             # 3 - Send a message to PyGrid warning about dataset upload complete!
             upload_response = self.datasets.perform_request(

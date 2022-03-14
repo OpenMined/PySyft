@@ -94,6 +94,7 @@ import warnings
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
+import requests
 
 # syft absolute
 import syft as sy
@@ -210,7 +211,17 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).data
+        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg)
+        if obj.obj.is_proxy:
+            response = requests.get(obj.obj._data.url)
+            if response.status_code != 200:
+                raise Exception(
+                    f"Failed to get object from store. HTTP Status Code: {response.status_code}"
+                )
+            obj = _deserialize(response.content, from_bytes=True)
+        else:
+            obj = obj.data
+
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)

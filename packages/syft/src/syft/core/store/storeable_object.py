@@ -96,7 +96,7 @@ class StorableObject(AbstractStorableObject):
     def data(self) -> Any:  # type: ignore
         if type(self._data).__name__.endswith("Wrapper"):
             return self._data.obj
-        elif isinstance(self._data, ProxyDataClass):
+        elif self.is_proxy:
             return self._data.get_s3_data()
         else:
             return self._data
@@ -107,6 +107,10 @@ class StorableObject(AbstractStorableObject):
             self._data = value._sy_serializable_wrapper_type(value=value)
         else:
             self._data = value
+
+    @property
+    def is_proxy(self) -> bool:
+        return isinstance(self._data, ProxyDataClass)
 
     @property
     def tags(self) -> Optional[List[str]]:
@@ -312,6 +316,15 @@ class StorableObject(AbstractStorableObject):
         This method return a copy of self, but clean up the search_permissions and
         read_permissions attributes.
         """
-        return StorableObject(
-            id=self.id, data=self.data, tags=self.tags, description=self.description
-        )
+        if self.is_proxy:
+            self._data.generate_presigned_url()
+            return StorableObject(
+                id=self.id,
+                data=self._data,
+                tags=self.tags,
+                description=self.description,
+            )
+        else:
+            return StorableObject(
+                id=self.id, data=self.data, tags=self.tags, description=self.description
+            )
