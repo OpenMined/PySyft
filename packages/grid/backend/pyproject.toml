@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "PyGrid"
-version = "0.7.0-beta.5"
+version = "0.7.0-beta.6"
 description = ""
 authors = ["OpenMined <info@openmined.org>"]
 
