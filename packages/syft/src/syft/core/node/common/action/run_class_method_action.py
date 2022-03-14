@@ -222,6 +222,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 resolved_self.read_permissions = result_read_permissions
                 resolved_self.write_permissions = result_write_permissions
         if not isinstance(result, StorableObject):
+            # TODO: Upload object to seaweed store, instead of storing in redis
+            # create a proxy object class and store it here.
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,

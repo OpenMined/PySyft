@@ -18,6 +18,7 @@ import syft
 from ....common.uid import UID
 from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
+from ....store.proxy_dataset import ProxyDataClass
 from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj_metadata import ObjectMetadata
 
@@ -134,7 +135,10 @@ class RedisStore(ObjectStore):
         return obj_dataset_relation
 
     def __setitem__(self, key: UID, value: StorableObject) -> None:
-        bin = syft.serialize(value.data, to_bytes=True)
+        if isinstance(value._data, ProxyDataClass):
+            bin = syft.serialize(value._data, to_bytes=True)
+        else:
+            bin = syft.serialize(value.data, to_bytes=True)
         self.redis.set(str(key.value), bin)
 
         key_str = str(key.value)
