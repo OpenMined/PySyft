@@ -704,10 +704,10 @@ class DomainClient(Client):
 
             # 2 - Starts to upload binary data into Seaweed.
             # TODO: Make this a resumable upload and ADD progress bar.
-            binary_buff = BytesIO(binary_dataset)
+            binary_buffer = BytesIO(binary_dataset)
             parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
             etag_chunk_no_pairs = list()
-            for data_chunk, part in zip(read_chunks(binary_buff, chunk_size), parts):
+            for data_chunk, part in zip(read_chunks(binary_buffer, chunk_size), parts):
                 presigned_url = part["url"]
                 part_no = part["part_no"]
 
@@ -735,13 +735,20 @@ class DomainClient(Client):
                 },
             )
 
+            # 4 - Create a proxy dataset for the uploaded data.
+            asset_dtype = type(asset).__name__
             proxy_obj_set[asset_name] = ProxyDataClass(
                 asset_name=asset_name,
                 dataset_name=name,
                 node_id=self.domain.id,
-                dtype=str(asset),
+                dtype=asset_dtype,
                 shape=asset.shape,
             )
+
+        # relative
+        from ....lib.python.util import downcast
+
+        metadata = downcast(metadata)
 
         # TODO: Create a proxy class to replace dataset field.
         proxy_objs = serialize(proxy_obj_set, to_bytes=True)

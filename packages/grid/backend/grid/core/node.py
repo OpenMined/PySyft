@@ -74,7 +74,7 @@ if settings.NODE_TYPE.lower() == "domain":
     bucket_exists = (
         any(
             [
-                bucket["Name"] == settings.DOMAIN_NAME
+                bucket["Name"] == node.id.no_dash
                 for bucket in s3_client.list_buckets()["Buckets"]
             ]
         )
@@ -84,7 +84,7 @@ if settings.NODE_TYPE.lower() == "domain":
 
     # If bucket does not exists, then create a new one.
     if s3_client and not bucket_exists:
-        resp = s3_client.create_bucket(Bucket=settings.DOMAIN_NAME)
+        resp = s3_client.create_bucket(Bucket=node.id.no_dash)
 elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", db_engine=get_db_engine(), settings=settings)
     format = "%(asctime)s: %(message)s"

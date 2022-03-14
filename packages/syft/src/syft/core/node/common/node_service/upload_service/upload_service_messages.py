@@ -58,7 +58,7 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
         #    return {"message": "You're not authorized to do this."}
         key = f"{self.payload.filename}"
         s3_client = get_s3_client(docker_host=True)
-        result = s3_client.create_multipart_upload(Bucket=node.name, Key=key)
+        result = s3_client.create_multipart_upload(Bucket=node.id.no_dash, Key=key)
         total_parts = math.ceil(self.payload.file_size / self.payload.chunk_size)
         upload_id = result["UploadId"]
         s3_client = get_s3_client()
@@ -69,7 +69,7 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
             signed_url = s3_client.generate_presigned_url(
                 ClientMethod="upload_part",
                 Params={
-                    "Bucket": node.name,
+                    "Bucket": node.id.no_dash,
                     "Key": key,
                     "UploadId": upload_id,
                     "PartNumber": part_no,
@@ -122,7 +122,7 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
         key = f"{self.payload.filename}"
         client: boto3.client.S3 = get_s3_client(docker_host=True)
         _ = client.complete_multipart_upload(
-            Bucket=node.name,
+            Bucket=node.id.no_dash,
             Key=key,
             MultipartUpload={"Parts": self.payload.parts},
             UploadId=self.payload.upload_id,
