@@ -25,6 +25,7 @@ from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..util import upload_result_to_s3
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
 
@@ -224,6 +225,12 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         if not isinstance(result, StorableObject):
             # TODO: Upload object to seaweed store, instead of storing in redis
             # create a proxy object class and store it here.
+            result = upload_result_to_s3(
+                asset_name=self.id_at_location.no_dash,
+                dataset_name="",
+                domain_id=node.id,
+                data=result,
+            )
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
