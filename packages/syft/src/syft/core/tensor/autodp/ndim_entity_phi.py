@@ -22,8 +22,8 @@ from ....core.adp.entity_list import EntityList
 from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
 from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...common.serde.deserialize import CAPNP_END_MAGIC_HEADER
-from ...common.serde.deserialize import CAPNP_START_MAGIC_HEADER
+from ...common.serde.deserialize import CAPNP_END_MAGIC_HEADER_BYTES
+from ...common.serde.deserialize import CAPNP_START_MAGIC_HEADER_BYTES
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...pointer.pointer import Pointer
@@ -342,11 +342,11 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         return bytes_value
 
     @staticmethod
-    def serde_magic_header() -> str:
+    def serde_magic_header() -> bytes:
         return (
-            f"{CAPNP_START_MAGIC_HEADER}"
-            + f"{NDimEntityPhiTensor.__name__}"
-            + f"{CAPNP_END_MAGIC_HEADER}"
+            CAPNP_START_MAGIC_HEADER_BYTES
+            + NDimEntityPhiTensor.__name__.encode("utf-8")
+            + CAPNP_END_MAGIC_HEADER_BYTES
         )
 
     def _object2bytes(self) -> bytes:
@@ -397,13 +397,13 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 entity if not getattr(entity, "name", None) else entity.name  # type: ignore
             )
 
-        return ndept_msg.to_bytes()
+        return ndept_msg.to_bytes_packed()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> NDimEntityPhiTensor:
         schema = NDimEntityPhiTensor.get_capnp_schema()
         ndept_struct: capnp.lib.capnp._StructModule = schema.NDEPT  # type: ignore
-        ndept_msg = ndept_struct.from_bytes(buf)
+        ndept_msg = ndept_struct.from_bytes_packed(buf)
 
         child_metadata = ndept_msg.childMetadata
 
