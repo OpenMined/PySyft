@@ -218,7 +218,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             value=self.child,
             min_vaL=self.min_vals,
             max_val=self.max_vals,
-            entities=self.entities,
+            data_subjects=self.entities
         )
 
     def publish(
@@ -309,7 +309,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
-    def sum(self) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    def sum(self) -> Union[NDimEntityPhiTensor, GammaTensor]:  # type: ignore
         if len(self.entities.one_hot_lookup) == 1:
             return NDimEntityPhiTensor(
                 child=self.child.sum(),
@@ -319,8 +319,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             )
         return GammaTensor(
             value=self.child.sum(),
+            data_subjects=self.entities.sum(),
             min_val=self.min_vals.sum(),
-            max_val=self.max_vals.sum()
+            max_val=self.max_vals.sum(),
         )
 
     @staticmethod

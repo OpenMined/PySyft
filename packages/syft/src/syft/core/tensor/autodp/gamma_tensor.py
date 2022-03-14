@@ -21,6 +21,8 @@ from jax import numpy as jnp
 from numpy.random import randint
 from scipy.optimize import shgo
 from functools import partial
+from ...adp.entity_list import EntityList
+
 
 
 def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]:
@@ -58,6 +60,7 @@ def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
 @flax.struct.dataclass
 class GammaTensor:
     value: jnp.array
+    data_subjects: EntityList
     min_val: float = flax.struct.field(pytree_node=False)
     max_val: float = flax.struct.field(pytree_node=False)
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)

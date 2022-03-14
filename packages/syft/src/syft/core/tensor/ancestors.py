@@ -493,6 +493,9 @@ class PhiTensorAncestor(TensorChainManager):
                     f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
                 )
 
+        assert isinstance(one_hot_lookup, np.ndarray)
+        assert isinstance(entities_indexed, np.ndarray)
+
         # PHASE 2: CREATE CHILD
         if len(entities) == 1:
             # if there's only one entity - push a SingleEntityPhiTensor

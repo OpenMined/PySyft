@@ -94,3 +94,9 @@ class EntityList:
                 return True
             return False
         return self == other
+
+    def sum(self):
+        # If sum is used without any arguments then the result is always a singular value
+        return EntityList(
+            self.one_hot_lookup.copy(), self.entities_indexed.reshape(1, len(self.entities_indexed))
+        )
