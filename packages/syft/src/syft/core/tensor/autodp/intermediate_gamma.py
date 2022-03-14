@@ -160,7 +160,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     prime_list = factorint(term).items()
 
                 for prime, n_times in prime_list:
-                    input_scalar = self.scalar_manager.prime2symbol[prime]
+                    input_scalar = self.scalar_manager.prime2symbol[int(prime)]
                     right = input_scalar * n_times * coeff
                     input_mp.append(right)
 
