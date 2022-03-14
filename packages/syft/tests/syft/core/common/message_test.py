@@ -1,7 +1,6 @@
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
-import pytest
 
 # syft absolute
 import syft as sy
@@ -207,9 +206,7 @@ def test_verify_message_fails_empty() -> None:
     # change message
     sig_msg.signature = b""
 
-    # not so good
-    with pytest.raises(ValueError):
-        assert sig_msg.is_valid is False
+    assert sig_msg.is_valid is False
 
 
 def test_decode_message() -> None:
