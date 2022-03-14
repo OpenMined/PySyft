@@ -38,6 +38,15 @@ FROM python:3.9.9-slim as backend
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
+RUN if [ $(uname -m) != "x86_64" ]; then \
+  apt-get update \
+  && apt-get install --assume-yes --no-install-recommends \
+  cmake \
+  g++ \
+  make \
+  libzip-dev \
+  && apt-get clean all
+
 # copy start scripts and gunicorn conf
 COPY grid/backend/docker-scripts/start.sh /start.sh
 COPY grid/backend/docker-scripts/gunicorn_conf.py /gunicorn_conf.py
