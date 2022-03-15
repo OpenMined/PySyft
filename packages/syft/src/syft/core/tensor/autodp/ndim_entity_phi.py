@@ -22,8 +22,8 @@ from ....core.adp.entity_list import EntityList
 from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
 from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...common.serde.deserialize import CAPNP_END_MAGIC_HEADER
-from ...common.serde.deserialize import CAPNP_START_MAGIC_HEADER
+from ...common.serde.deserialize import CAPNP_END_MAGIC_HEADER_BYTES
+from ...common.serde.deserialize import CAPNP_START_MAGIC_HEADER_BYTES
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...pointer.pointer import Pointer
@@ -323,13 +323,12 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
         list_size = len(data) // CHUNK_SIZE + 1
         data_lst = builder.init(field_name, list_size)
-        idx = 0
-        while len(data) > CHUNK_SIZE:
-            data_lst[idx] = data[:CHUNK_SIZE]
-            data = data[CHUNK_SIZE:]
-            idx += 1
-        else:
-            data_lst[0] = data
+        END_INDEX = CHUNK_SIZE
+        for idx in range(list_size):
+            START_INDEX = idx * CHUNK_SIZE
+            END_INDEX = min(START_INDEX + CHUNK_SIZE, len(data))
+            data_lst[idx] = data[START_INDEX:END_INDEX]
+
         return data_lst
 
     @staticmethod
@@ -342,11 +341,11 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         return bytes_value
 
     @staticmethod
-    def serde_magic_header() -> str:
+    def serde_magic_header() -> bytes:
         return (
-            f"{CAPNP_START_MAGIC_HEADER}"
-            + f"{NDimEntityPhiTensor.__name__}"
-            + f"{CAPNP_END_MAGIC_HEADER}"
+            CAPNP_START_MAGIC_HEADER_BYTES
+            + NDimEntityPhiTensor.__name__.encode("utf-8")
+            + CAPNP_END_MAGIC_HEADER_BYTES
         )
 
     def _object2bytes(self) -> bytes:
@@ -397,13 +396,21 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 entity if not getattr(entity, "name", None) else entity.name  # type: ignore
             )
 
-        return ndept_msg.to_bytes()
+        # to pack or not to pack?
+        # return ndept_msg.to_bytes()
+        return ndept_msg.to_bytes_packed()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> NDimEntityPhiTensor:
         schema = NDimEntityPhiTensor.get_capnp_schema()
         ndept_struct: capnp.lib.capnp._StructModule = schema.NDEPT  # type: ignore
-        ndept_msg = ndept_struct.from_bytes(buf)
+        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        # to pack or not to pack?
+        # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
+        ndept_msg = ndept_struct.from_bytes_packed(
+            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        )
 
         child_metadata = ndept_msg.childMetadata
 

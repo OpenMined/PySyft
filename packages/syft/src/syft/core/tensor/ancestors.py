@@ -418,6 +418,7 @@ class PhiTensorAncestor(TensorChainManager):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
+        ndept: bool = False,
     ) -> PhiTensorAncestor:
         return self.copy()._private(
             min_val=min_val,
@@ -425,6 +426,7 @@ class PhiTensorAncestor(TensorChainManager):
             scalar_manager=scalar_manager,
             entities=entities,
             skip_blocking_checks=skip_blocking_checks,
+            ndept=ndept,
         )
 
     def _private(
