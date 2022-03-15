@@ -689,6 +689,7 @@ class Class(Callable):
             searchable: Optional[bool] = None,
             id_at_location_override: Optional[UID] = None,
             chunk_size: Optional[int] = None,
+            send_to_blob_storage: bool = False,
             **kwargs: Dict[str, Any],
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
 
@@ -765,77 +766,85 @@ class Class(Callable):
             else:
                 ptr.gc_enabled = True
 
-            # relative
-            from ..core.common.serde.serialize import _serialize
-            from ..core.node.common.node_service.upload_service.upload_service_messages import (
-                UploadDataCompleteMessage,
-            )
-            from ..core.node.common.node_service.upload_service.upload_service_messages import (
-                UploadDataMessage,
-            )
+            if send_to_blob_storage:
+                # relative
+                from ..core.common.serde.serialize import _serialize
+                from ..core.node.common.node_service.upload_service.upload_service_messages import (
+                    UploadDataCompleteMessage,
+                )
+                from ..core.node.common.node_service.upload_service.upload_service_messages import (
+                    UploadDataMessage,
+                )
 
-            binary_dataset: bytes = _serialize(self, to_bytes=True)  # type: ignore
-            file_size = len(binary_dataset)
-            # Step 2 - Send a message to PyGrid warning about dataset upload.
-            # TODO: Avoid using hardcoded strings
-            upload_response = client.datasets.perform_api_request_generic(
-                syft_msg=UploadDataMessage,
-                content={
-                    "filename": "" + "/" + f"{id_at_location.no_dash}",
-                    "file_size": file_size,
-                    "chunk_size": chunk_size,
-                    "address": client.address,
-                    "reply_to": client.address,
-                },
-            )
+                binary_dataset: bytes = _serialize(self, to_bytes=True)  # type: ignore
+                file_size = len(binary_dataset)
+                # Step 2 - Send a message to PyGrid warning about dataset upload.
+                # TODO: Avoid using hardcoded strings
+                upload_response = client.datasets.perform_api_request_generic(
+                    syft_msg=UploadDataMessage,
+                    content={
+                        "filename": "" + "/" + f"{id_at_location.no_dash}",
+                        "file_size": file_size,
+                        "chunk_size": chunk_size,
+                        "address": client.address,
+                        "reply_to": client.address,
+                    },
+                )
 
-            # Step 3 - Starts to upload binary data into Seaweed.
-            # TODO: Make this a resumable upload and ADD progress bar.
-            binary_buffer = BytesIO(binary_dataset)
-            parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
-            etag_chunk_no_pairs = list()
-            for data_chunk, part in zip(read_chunks(binary_buffer, chunk_size), parts):
-                presigned_url = part["url"]
-                part_no = part["part_no"]
+                # Step 3 - Starts to upload binary data into Seaweed.
+                # TODO: Make this a resumable upload and ADD progress bar.
+                binary_buffer = BytesIO(binary_dataset)
+                parts = sorted(
+                    upload_response.payload.parts, key=lambda x: x["part_no"]
+                )
+                etag_chunk_no_pairs = list()
+                for data_chunk, part in zip(
+                    read_chunks(binary_buffer, chunk_size), parts
+                ):
+                    presigned_url = part["url"]
+                    part_no = part["part_no"]
 
-                res = requests.put(presigned_url, data=data_chunk)
+                    client_url = client.url_from_path(presigned_url)
+                    res = requests.put(client_url, data=data_chunk)
 
-                # TODO: Replace with some error message if it fails.
+                    # TODO: Replace with some error message if it fails.
 
-                if res.status_code != 200:
-                    raise Exception(
-                        f"Uploading Chunk {part} failed. "
-                        + f"HTTP Status Code: {res.status_code}"
-                    )
-                etag = res.headers["ETag"]
-                etag_chunk_no_pairs.append(
-                    {"ETag": etag, "PartNumber": part_no}
-                )  # maintain list of part no and ETag
+                    if res.status_code != 200:
+                        raise Exception(
+                            f"Uploading Chunk {part} failed. "
+                            + f"HTTP Status Code: {res.status_code}"
+                        )
+                    etag = res.headers["ETag"]
+                    etag_chunk_no_pairs.append(
+                        {"ETag": etag, "PartNumber": part_no}
+                    )  # maintain list of part no and ETag
 
-            # Step 4 - Send a message to PyGrid warning about dataset upload complete!
-            upload_response = client.datasets.perform_request(
-                syft_msg=UploadDataCompleteMessage,
-                content={
-                    "upload_id": upload_response.payload.upload_id,
-                    "filename": "" + "/" + id_at_location.no_dash,
-                    "parts": etag_chunk_no_pairs,
-                },
-            )
+                # Step 4 - Send a message to PyGrid warning about dataset upload complete!
+                upload_response = client.datasets.perform_request(
+                    syft_msg=UploadDataCompleteMessage,
+                    content={
+                        "upload_id": upload_response.payload.upload_id,
+                        "filename": "" + "/" + id_at_location.no_dash,
+                        "parts": etag_chunk_no_pairs,
+                    },
+                )
 
-            # Step 5 - Create a proxy dataset for the uploaded data.
-            data_dtype = type(self).__name__
-            proxy_obj = ProxyDataClass(
-                asset_name=id_at_location.no_dash,
-                dataset_name="",
-                node_id=client.id,
-                dtype=data_dtype,
-                shape=self.shape,
-            )
+                # Step 5 - Create a proxy dataset for the uploaded data.
+                data_dtype = type(self).__name__
+                store_data = ProxyDataClass(
+                    asset_name=id_at_location.no_dash,
+                    dataset_name="",
+                    node_id=client.id,
+                    dtype=data_dtype,
+                    shape=self.shape,
+                )
+            else:
+                store_data = self
 
             # Step 6: create message which contains object to send
             storable = StorableObject(
                 id=ptr.id_at_location,
-                data=proxy_obj,
+                data=store_data,
                 tags=tags,
                 description=description,
                 search_permissions={VERIFYALL: None} if pointable else {},

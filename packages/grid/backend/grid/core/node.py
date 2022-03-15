@@ -14,9 +14,8 @@ from syft.core.node.common.node_table.utils import seed_db
 from syft.core.store.util import get_s3_client
 
 # grid absolute
-from grid.core.config import settings
-from grid.db.session import get_db_engine
-from grid.db.session import get_db_session
+from grid.core.config import Settings, settings
+from grid.db.session import get_db_engine, get_db_session
 
 
 def thread_function(*args, **kwargs) -> None:  # type: ignore
@@ -65,16 +64,15 @@ def thread_function(*args, **kwargs) -> None:  # type: ignore
         network_root.join_network(host_or_ip=NETWORK_PUBLIC_HOST)
 
 
-if settings.NODE_TYPE.lower() == "domain":
-    node = Domain("Domain", db_engine=get_db_engine(), settings=settings)
+def create_s3_bucket(bucket_name: str, settings: Settings) -> None:
     logging.info("Trying to connect with SeaweedFS ... ")
-    s3_client = get_s3_client(docker_host=True)
+    s3_client = get_s3_client(settings=settings)
 
     # Check if the bucket already exists
     bucket_exists = (
         any(
             [
-                bucket["Name"] == node.id.no_dash
+                bucket["Name"] == bucket_name
                 for bucket in s3_client.list_buckets()["Buckets"]
             ]
         )
@@ -84,7 +82,15 @@ if settings.NODE_TYPE.lower() == "domain":
 
     # If bucket does not exists, then create a new one.
     if s3_client and not bucket_exists:
-        resp = s3_client.create_bucket(Bucket=node.id.no_dash)
+        resp = s3_client.create_bucket(Bucket=bucket_name)
+        logging.info(f"Bucket Creation response: {resp}")
+
+
+if settings.NODE_TYPE.lower() == "domain":
+    node = Domain("Domain", db_engine=get_db_engine(), settings=settings)
+    if settings.USE_BLOB_STORAGE:
+        create_s3_bucket(bucket_name=node.id.no_dash, settings=settings)
+
 elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", db_engine=get_db_engine(), settings=settings)
     format = "%(asctime)s: %(message)s"

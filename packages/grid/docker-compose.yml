@@ -228,8 +228,6 @@ services:
       - RELEASE=${RELEASE:-production}
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
-    ports:
-      - "4000"
     labels:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
@@ -240,14 +238,22 @@ services:
       - "traefik.http.services.${STACK_NAME?Variable not set}-vpn.loadbalancer.server.port=8080"
 
   weed:
-    image: chrislusf/seaweedfs:latest
+    profiles:
+      - blob-storage
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
     command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=1024"
-    ports:
-      - "9333:9333"
-      - "8888:8888"
-      - "8333:8333"
     volumes:
       - ./seaweedfs/s3config.json:/etc/s3config.json
+    depends_on:
+      - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
+      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.rule=PathPrefix(`/blob`)"
+      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.middlewares=${STACK_NAME?Variable not set}-blob"
+      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.prefixes=/blob"
+      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.forceslash=true"
+      - "traefik.http.services.${STACK_NAME?Variable not set}-blob.loadbalancer.server.port=${S3_PORT}"
 
 volumes:
   app-db-data:

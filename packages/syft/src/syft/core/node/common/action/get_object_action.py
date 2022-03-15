@@ -182,7 +182,9 @@ class GetObjectAction(ImmediateActionWithReply):
                 )
                 traceback_and_raise(AuthorizationException(log))
 
-            obj = validate_type(storable_object.clean_copy(), StorableObject)
+            obj = validate_type(
+                storable_object.clean_copy(settings=node.settings), StorableObject
+            )
 
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 

@@ -89,6 +89,8 @@ services:
       - network
     volumes:
       - ./vpn:/headscale
+    ports:
+      - "4000"
 
   jaeger:
     image: jaegertracing/all-in-one:1.30
@@ -106,14 +108,12 @@ services:
       - "9411:9411"
 
   weed:
-    image: chrislusf/seaweedfs:latest
-    command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=1024"
-    ports:
-      - "9333:9333"
-      - "8888:8888"
-      - "8333:8333"
+    profiles:
+      - blob-storage
     volumes:
-      - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
-    depends_on:
-      - redis
+      - ./data/seaweedfs:/data
+    ports:
+      - "9333" # admin
+      - "8888" # filer
+      - "8333" # S3

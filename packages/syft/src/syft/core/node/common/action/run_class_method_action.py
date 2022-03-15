@@ -8,6 +8,7 @@ from typing import Optional
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
+from pydantic import BaseSettings
 
 # syft absolute
 import syft as sy
@@ -20,6 +21,7 @@ from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
 from .....util import inherit_tags
+from .....util import size_mb
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -91,6 +93,18 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             [f"{k}={v.__class__.__name__}" for k, v in self.kwargs.items()]
         )
         return f"RunClassMethodAction {self_name}.{method_name}({arg_names}, {kwargs_names})"
+
+    @staticmethod
+    def check_send_to_blob_storage(settings: BaseSettings, obj: Any) -> bool:
+        if not settings.USE_BLOB_STORAGE:
+            return False
+        # relative
+        from ....tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
+
+        if isinstance(obj, NDEPT) or size_mb(obj) > 1:
+            print(f"Sending {type(obj)} with size: {size_mb(obj)} to Blob Storage")
+            return True
+        return False
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
@@ -225,12 +239,16 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         if not isinstance(result, StorableObject):
             # TODO: Upload object to seaweed store, instead of storing in redis
             # create a proxy object class and store it here.
-            result = upload_result_to_s3(
-                asset_name=self.id_at_location.no_dash,
-                dataset_name="",
-                domain_id=node.id,
-                data=result,
-            )
+            if RunClassMethodAction.check_send_to_blob_storage(
+                settings=node.settings, obj=result
+            ):
+                result = upload_result_to_s3(
+                    asset_name=self.id_at_location.no_dash,
+                    dataset_name="",
+                    domain_id=node.id,
+                    data=result,
+                    settings=node.settings,
+                )
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
