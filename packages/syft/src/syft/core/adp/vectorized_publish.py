@@ -12,6 +12,7 @@ from typing import Union
 # third party
 from nacl.signing import VerifyKey
 from jax import numpy as jnp
+import numpy as np
 
 # relative
 from .entity import DataSubjectGroup
@@ -38,7 +39,13 @@ def publish(values: jnp.array,
     squared_l2_norm, worst_case_squared_l2_norm = calculate_bounds_for_mechanism(values, min_vals, max_val, public_only)
     print(squared_l2_norm)
     print(worst_case_squared_l2_norm)
-    # Step 2:
+
+    if is_linear:
+        lipschitz_array = np.ones_like(values)  # max lipschitz bound
+    else:
+        # Technically this is implemented (we call GammaTensor.lipschitz_bound) but let's deal with that later
+        raise NotImplementedError
+
     return jnp.ones_like(values)  # temporary placeholder
 
 
@@ -50,12 +57,12 @@ def calculate_bounds_for_mechanism(value_array, min_val_array, max_val_array, pu
     """
 
     # TODO: Double check whether the iDPGaussianMechanism class squares its squared_l2_norm values!!
-    worst_case_squared_l2_norm = jnp.sum(jnp.square(max_val_array - min_val_array))
+    worst_case_squared_l2_norm = np.sum(np.square(max_val_array - min_val_array))
 
     if public_only:
         squared_l2_norm = worst_case_squared_l2_norm
     else:
-        squared_l2_norm = jnp.sum(jnp.square(value_array))
+        squared_l2_norm = np.sum(np.square(value_array))
 
     return squared_l2_norm, worst_case_squared_l2_norm
 
@@ -65,7 +72,7 @@ def get_mechanism_for_unique_data_subjects(unique_ds: jnp.array):
     For each data subject in the data_subjects array, we need to:
     1. Create some kind of mechanism ID
     - I think we can use the GammaTensor.id attribute (if we make the random number generation there secure)
-    -
+    - Alternatively maybe we can use indices somehow
     """
 
     pass
