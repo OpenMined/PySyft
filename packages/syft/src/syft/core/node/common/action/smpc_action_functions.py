@@ -146,13 +146,16 @@ def spdz_multiply(
 def _decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> None:
     seed_id_locations = context.SMPC_CONTEXT.get("seed_id_locations", None)
     node = context.SMPC_CONTEXT.get("node", None)
-    verify_key = context.SMPC_CONTEXT.get("verify_key", None)
-    if seed_id_locations is None or node is None or verify_key is None:
+    read_permissions = context.SMPC_CONTEXT.get("read_permissions", None)
+    if seed_id_locations is None or node is None or read_permissions is None:
         raise ValueError(
-            f"Input values seed,node,verify_key : {seed_id_locations,node,verify_key} for decomposition should not None"
+            f"Input values seed,node,read_permissions : {seed_id_locations,node,read_permissions}"
+            + " for decomposition should not None"
         )
 
-    local_decomposition(x, ring_size, bitwise, seed_id_locations, node, verify_key)
+    local_decomposition(
+        x, ring_size, bitwise, seed_id_locations, node, read_permissions
+    )
 
 
 def local_decomposition(

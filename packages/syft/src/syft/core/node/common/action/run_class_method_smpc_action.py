@@ -155,7 +155,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         SMPC_CONTEXT = {
             "seed_id_locations": seed_id_locations,
             "node": node,
-            "verify_key": verify_key,
+            "read_permissions": result_read_permissions,
         }
 
         context.SMPC_CONTEXT = SMPC_CONTEXT
