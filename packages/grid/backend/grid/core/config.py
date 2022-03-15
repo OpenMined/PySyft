@@ -1,9 +1,19 @@
 # stdlib
 import secrets
-from typing import Any, Dict, List, Optional, Union
+from typing import Any
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Union
+import os
 
 # third party
-from pydantic import AnyHttpUrl, BaseSettings, EmailStr, HttpUrl, PostgresDsn, validator
+from pydantic import AnyHttpUrl
+from pydantic import BaseSettings
+from pydantic import EmailStr
+from pydantic import HttpUrl
+from pydantic import PostgresDsn
+from pydantic import validator
 
 
 class Settings(BaseSettings):
@@ -90,13 +100,13 @@ class Settings(BaseSettings):
     OPEN_REGISTRATION: bool = True
 
     DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
-    USE_BLOB_STORAGE: bool = False
-    S3_ENDPOINT: str = "localhost"
-    S3_PORT: int = 8333
-    S3_ROOT_USER: str = "admin"
-    S3_ROOT_PWD: Optional[str] = None
-    S3_REGION: str = "us-east-1"
-    S3_PRESIGNED_TIMEOUT_SECS: int = 1800  # 30 minutes in seconds
+    USE_BLOB_STORAGE: bool = os.getenv("USE_BLOB_STORAGE", False)
+    S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "localhost")
+    S3_PORT: int = os.getenv("S3_PORT", 8333)
+    S3_ROOT_USER: str = os.getenv("S3_ROOT_USER", "admin")
+    S3_ROOT_PWD: Optional[str] = os.getenv("S3_ROOT_PWD", "admin")
+    S3_REGION: str = os.getenv("S3_REGION", "us-east-1")
+    S3_PRESIGNED_TIMEOUT_SECS: int = os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)  # 30 minutes in seconds
 
     class Config:
         case_sensitive = True
