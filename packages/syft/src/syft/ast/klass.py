@@ -4,7 +4,6 @@
 from enum import Enum
 from enum import EnumMeta
 import inspect
-from io import BytesIO
 import sys
 from types import ModuleType
 from typing import Any
@@ -16,9 +15,6 @@ from typing import Optional
 from typing import Tuple
 from typing import Union
 import warnings
-
-# third party
-import requests
 
 # relative
 from .. import ast
@@ -36,9 +32,8 @@ from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_messages import (
     ResolvePointerTypeMessage,
 )
-from ..core.node.common.util import read_chunks
+from ..core.node.common.util import upload_to_s3_using_presigned
 from ..core.pointer.pointer import Pointer
-from ..core.store.proxy_dataset import ProxyDataClass
 from ..core.store.storeable_object import StorableObject
 from ..logger import traceback_and_raise
 from ..logger import warning
@@ -767,76 +762,11 @@ class Class(Callable):
                 ptr.gc_enabled = True
 
             if send_to_blob_storage:
-                # relative
-                from ..core.common.serde.serialize import _serialize
-                from ..core.node.common.node_service.upload_service.upload_service_messages import (
-                    UploadDataCompleteMessage,
-                )
-                from ..core.node.common.node_service.upload_service.upload_service_messages import (
-                    UploadDataMessage,
-                )
-
-                binary_dataset: bytes = _serialize(self, to_bytes=True)  # type: ignore
-                file_size = len(binary_dataset)
-                # Step 2 - Send a message to PyGrid warning about dataset upload.
-                # TODO: Avoid using hardcoded strings
-                upload_response = client.datasets.perform_api_request_generic(
-                    syft_msg=UploadDataMessage,
-                    content={
-                        "filename": "" + "/" + f"{id_at_location.no_dash}",
-                        "file_size": file_size,
-                        "chunk_size": chunk_size,
-                        "address": client.address,
-                        "reply_to": client.address,
-                    },
-                )
-
-                # Step 3 - Starts to upload binary data into Seaweed.
-                # TODO: Make this a resumable upload and ADD progress bar.
-                binary_buffer = BytesIO(binary_dataset)
-                parts = sorted(
-                    upload_response.payload.parts, key=lambda x: x["part_no"]
-                )
-                etag_chunk_no_pairs = list()
-                for data_chunk, part in zip(
-                    read_chunks(binary_buffer, chunk_size), parts
-                ):
-                    presigned_url = part["url"]
-                    part_no = part["part_no"]
-
-                    client_url = client.url_from_path(presigned_url)
-                    res = requests.put(client_url, data=data_chunk)
-
-                    # TODO: Replace with some error message if it fails.
-
-                    if res.status_code != 200:
-                        raise Exception(
-                            f"Uploading Chunk {part} failed. "
-                            + f"HTTP Status Code: {res.status_code}"
-                        )
-                    etag = res.headers["ETag"]
-                    etag_chunk_no_pairs.append(
-                        {"ETag": etag, "PartNumber": part_no}
-                    )  # maintain list of part no and ETag
-
-                # Step 4 - Send a message to PyGrid warning about dataset upload complete!
-                upload_response = client.datasets.perform_request(
-                    syft_msg=UploadDataCompleteMessage,
-                    content={
-                        "upload_id": upload_response.payload.upload_id,
-                        "filename": "" + "/" + id_at_location.no_dash,
-                        "parts": etag_chunk_no_pairs,
-                    },
-                )
-
-                # Step 5 - Create a proxy dataset for the uploaded data.
-                data_dtype = type(self).__name__
-                store_data = ProxyDataClass(
+                store_data = upload_to_s3_using_presigned(
+                    client=client,
+                    data=self,
+                    chunk_size=chunk_size,
                     asset_name=id_at_location.no_dash,
-                    dataset_name="",
-                    node_id=client.id,
-                    dtype=data_dtype,
-                    shape=self.shape,
                 )
             else:
                 store_data = self
