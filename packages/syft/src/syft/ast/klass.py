@@ -108,7 +108,6 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
     """
     # relative
     from ..core.node.common.action import smpc_action_functions
-    from ..core.node.common.action.smpc_action_functions import MAP_FUNC_TO_ACTION
 
     def run_class_smpc_method(
         __self: Any,
@@ -246,7 +245,8 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]
     if SMPC or (
-        "ShareTensor" in attr_path_and_name and method_name in MAP_FUNC_TO_ACTION
+        "ShareTensor" in attr_path_and_name
+        and method_name in smpc_action_functions.ACTION_FUNCTIONS
     ):
         return run_class_smpc_method
 

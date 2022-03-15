@@ -6,7 +6,6 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
-from typing import TYPE_CHECKING
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
@@ -17,7 +16,6 @@ import syft as sy
 
 # relative
 from ..... import lib
-from ..... import logger
 from .....logger import traceback_and_raise
 from .....proto.core.node.common.action.run_class_method_smpc_pb2 import (
     RunClassMethodSMPCAction as RunClassMethodSMPCAction_PB,
@@ -29,11 +27,6 @@ from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
-
-if TYPE_CHECKING:
-    # relative
-    from ....tensor.smpc.share_tensor import ShareTensor
-    from .smpc_action_message import SMPCActionMessage
 
 
 @serializable()
@@ -158,17 +151,14 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         method = node.lib_ast(self.path)
         seed_id_locations = self.seed_id_locations
 
-        args_id = [arg.id_at_location for arg in self.args]
-
         # TODO: For the moment we don't run any SMPC operation that provides any kwarg
-        kwargs = {
+        SMPC_CONTEXT = {
             "seed_id_locations": seed_id_locations,
             "node": node,
             "verify_key": verify_key,
         }
 
-        context.GLOBAL_ARGS_ID = args_id
-        context.GLOBAL_KWARGS = kwargs
+        context.SMPC_CONTEXT = SMPC_CONTEXT
         result = method(*upcasted_args, **upcasted_kwargs)
 
         id_at_location = self.id_at_location
@@ -201,50 +191,6 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             )
 
         node.store[id_at_location] = result
-
-    @staticmethod
-    def execute_smpc_action(
-        node: AbstractNode, msg: "SMPCActionMessage", verify_key: VerifyKey
-    ) -> Optional[ShareTensor]:
-        # relative
-        from .smpc_action_functions import _MAP_ACTION_TO_FUNCTION
-
-        func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
-        store_object_self = node.store.get_object(key=msg.self_id)
-        if store_object_self is None:
-            raise KeyError("Object not already in store")
-
-        _self = store_object_self.data
-        args = [node.store[arg_id].data for arg_id in msg.args_id]
-
-        kwargs = {}  # type: ignore
-        for key, kwarg_id in msg.kwargs_id.items():
-            data = node.store[kwarg_id].data
-            if data is None:
-                raise KeyError(f"Key {key} is not available")
-
-            kwargs[key] = data
-        kwargs = {**kwargs, **msg.kwargs}
-        (
-            upcasted_args,
-            upcasted_kwargs,
-        ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
-        logger.warning(func)
-
-        if msg.name_action in {"spdz_multiply", "spdz_mask"}:
-            result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
-        elif msg.name_action == "local_decomposition":
-            result = func(
-                _self,
-                *upcasted_args,
-                **upcasted_kwargs,
-                node=node,
-                read_permissions=store_object_self.read_permissions,
-            )
-        else:
-            result = func(_self, *upcasted_args, **upcasted_kwargs)
-
-        return result
 
     def _object2proto(self) -> RunClassMethodSMPCAction_PB:
         """Returns a protobuf serialization of self.
@@ -318,3 +264,49 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         """
 
         return RunClassMethodSMPCAction_PB
+
+
+# #### NOTE: DO NOT DELETE THIS CODE######
+# @staticmethod
+# def execute_smpc_action(
+#     node: AbstractNode, msg: "SMPCActionMessage", verify_key: VerifyKey
+# ) -> Optional[ShareTensor]:
+#     # relative
+#     from .smpc_action_functions import _MAP_ACTION_TO_FUNCTION
+
+#     func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
+#     store_object_self = node.store.get_object(key=msg.self_id)
+#     if store_object_self is None:
+#         raise KeyError("Object not already in store")
+
+#     _self = store_object_self.data
+#     args = [node.store[arg_id].data for arg_id in msg.args_id]
+
+#     kwargs = {}  # type: ignore
+#     for key, kwarg_id in msg.kwargs_id.items():
+#         data = node.store[kwarg_id].data
+#         if data is None:
+#             raise KeyError(f"Key {key} is not available")
+
+#         kwargs[key] = data
+#     kwargs = {**kwargs, **msg.kwargs}
+#     (
+#         upcasted_args,
+#         upcasted_kwargs,
+#     ) = lib.python.util.upcast_args_and_kwargs(args, kwargs)
+#     logger.warning(func)
+
+#     if msg.name_action in {"spdz_multiply", "spdz_mask"}:
+#         result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
+#     elif msg.name_action == "local_decomposition":
+#         result = func(
+#             _self,
+#             *upcasted_args,
+#             **upcasted_kwargs,
+#             node=node,
+#             read_permissions=store_object_self.read_permissions,
+#         )
+#     else:
+#         result = func(_self, *upcasted_args, **upcasted_kwargs)
+
+#     return result

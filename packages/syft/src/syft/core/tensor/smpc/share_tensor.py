@@ -24,7 +24,6 @@ import torch
 import syft as sy
 
 # relative
-from . import context
 from . import utils
 from .... import logger
 from ....grid import GridURL
@@ -32,11 +31,6 @@ from ....proto.core.tensor.share_tensor_pb2 import ShareTensor as ShareTensor_PB
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
-from ...node.common.action.run_class_method_smpc_action import RunClassMethodSMPCAction
-from ...node.common.action.smpc_action_message import SMPCActionMessage
-from ...node.common.action.smpc_action_seq_batch_message import (
-    SMPCActionSeqBatchMessage,
-)
 from ...smpc.store.crypto_store import CryptoStore
 from ..passthrough import PassthroughTensor  # type: ignore
 
@@ -408,9 +402,8 @@ class ShareTensor(PassthroughTensor):
         if isinstance(share, torch.Tensor) and torch.is_floating_point(share):
             raise ValueError("Torch tensor should have type int, but found float")
 
-    @staticmethod
     def apply_function(
-        x: ShareTensor,
+        self,
         y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"],
         op_str: str,
     ) -> "ShareTensor":
@@ -425,95 +418,30 @@ class ShareTensor(PassthroughTensor):
         """
         ShareTensor.sanity_check(y)
 
-        op = ShareTensor.get_op(x.ring_size, op_str)
-        numpy_type = utils.RING_SIZE_TO_TYPE.get(x.ring_size, None)
+        op = ShareTensor.get_op(self.ring_size, op_str)
+        numpy_type = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
         if numpy_type is None:
-            raise ValueError(f"Do not know numpy type for ring size {x.ring_size}")
+            raise ValueError(f"Do not know numpy type for ring size {self.ring_size}")
 
         if isinstance(y, ShareTensor):
-            utils.get_ring_size(x.ring_size, y.ring_size)
-            value = op(x.child, y.child)
+            utils.get_ring_size(self.ring_size, y.ring_size)  # sanity check
+            value = op(self.child, y.child)
         else:
             if op_str in {"add", "sub"}:
                 # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
                 value = (
-                    op(x.child, np.array(y, numpy_type))
-                    if x.rank == 0
-                    else deepcopy(x.child)
+                    op(self.child, np.array(y, numpy_type))
+                    if self.rank == 0
+                    else deepcopy(self.child)
                 )
             elif op_str == "mul":
-                value = op(x.child, np.array(y, numpy_type))
+                value = op(self.child, np.array(y, numpy_type))
             else:
                 raise ValueError(f"{op_str} not supported")
 
-        res = x.copy_tensor()
+        res = self.copy_tensor()
         res.child = value
         return res
-
-    def apply_action_function(self, op_str: str) -> Optional[ShareTensor]:
-        """Apply action based operations.
-
-        Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): tensor to apply the operator.
-            op_str (str): Operator.
-
-        Returns:
-            ShareTensor: Result of the operation.
-        """
-        # relative
-        from ...node.common.action import smpc_action_functions
-
-        # TODO: refactor in next iteration, creation of action, accesses the DB again
-        # we could pass in the sharetensor values directly from this function.
-
-        nr_parties = self.nr_parties
-        rank = self.rank
-        method_name = op_str
-
-        actions_generator = smpc_action_functions.get_action_generator_from_op(
-            operation_str=method_name, nr_parties=nr_parties
-        )
-
-        args_id = context.GLOBAL_ARGS_ID
-        kwargs = context.GLOBAL_KWARGS
-
-        if args_id is None or kwargs is None:
-            raise ValueError(
-                f"Args ID: {args_id} or Kwargs: kwargs {kwargs} should not be none."
-            )
-        else:
-            context.GLOBAL_ARGS_ID = None
-            context.GLOBAL_KWARGS = None
-
-        node = kwargs.get("node", None)
-        verify_key = kwargs.get("verify_key", None)
-        kwargs.pop("verify_key")
-
-        # STEP 1: Creates SMPC Action which are like steps to execute a given
-        # operation on the ShareTensor.Each action might be dependent on the output of
-        # actions
-
-        actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
-        actions = actions_generator(*args_id, **kwargs)  # type: ignore
-
-        if isinstance(actions, (list, tuple)) and isinstance(
-            actions[0], SMPCActionMessage
-        ):
-            actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
-            for action in actions:
-                result = RunClassMethodSMPCAction.execute_smpc_action(
-                    node, action, verify_key
-                )
-        elif isinstance(actions, SMPCActionSeqBatchMessage):
-            msg = actions
-            while msg.smpc_actions:
-                action = msg.smpc_actions[0]
-                result = RunClassMethodSMPCAction.execute_smpc_action(
-                    node, action, verify_key
-                )
-                del msg.smpc_actions[0]
-
-        return result
 
     def add(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
@@ -526,13 +454,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        new_share = self.apply_action_function("__add__")
-
-        if new_share is None:
-            raise ValueError(
-                f"Result : {new_share} of the operation should not be None"
-            )
-
+        new_share = self.apply_function(y, "add")
         return new_share
 
     def sub(
@@ -546,13 +468,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        new_share = self.apply_action_function("__sub__")
-
-        if new_share is None:
-            raise ValueError(
-                f"Result : {new_share} of the operation should not be None"
-            )
-
+        new_share = self.apply_function(y, "sub")
         return new_share
 
     def rsub(
@@ -566,14 +482,8 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        new_self = ShareTensor.apply_function(self, -1, "mul")
-        new_share = new_self.apply_action_function("__add__")
-
-        if new_share is None:
-            raise ValueError(
-                f"Result : {new_share} of the operation should not be None"
-            )
-
+        new_self = self.mul(-1)
+        new_share = new_self.apply_function(y, "add")
         return new_share
 
     def mul(
@@ -587,12 +497,13 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        new_share = self.apply_action_function("__mul__")
+        # relative
+        from ...node.common.action.smpc_action_functions import private_mul
 
-        if new_share is None:
-            raise ValueError(
-                f"Result : {new_share} of the operation should not be None"
-            )
+        if isinstance(y, ShareTensor):
+            new_share = private_mul(self, y)
+        else:
+            new_share = self.apply_function(y, "mul")
 
         return new_share
 
@@ -606,7 +517,10 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        self.apply_action_function(op_str="bit_decomposition")
+        # relative
+        from ...node.common.action.smpc_action_functions import _decomposition
+
+        _decomposition(self, ring_size, bitwise)
 
     def matmul(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
