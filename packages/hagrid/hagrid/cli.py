@@ -785,6 +785,7 @@ def create_launch_docker_cmd(
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
         "VERSION_HASH": GRID_SRC_VERSION[1],
+        "USE_BLOB_STORAGE": "False" if str(node_type.input) == "network" else "True",
     }
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
@@ -818,6 +819,8 @@ def create_launch_docker_cmd(
     cmd += " docker compose -p " + snake_name
     if str(node_type.input) == "network":
         cmd += " --profile network"
+    else:
+        cmd += " --profile blob-storage"
 
     if kwargs["headless"] is False:
         cmd += " --profile frontend"

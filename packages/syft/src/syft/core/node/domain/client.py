@@ -714,7 +714,8 @@ class DomainClient(Client):
                 presigned_url = part["url"]
                 part_no = part["part_no"]
 
-                res = requests.put(presigned_url, data=data_chunk)
+                client_url = self.url_from_path(presigned_url)
+                res = requests.put(client_url, data=data_chunk)
 
                 # TODO: Replace with some error message if it fails.
 

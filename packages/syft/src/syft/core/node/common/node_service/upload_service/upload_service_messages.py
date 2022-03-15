@@ -12,7 +12,9 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
+from ......grid import GridURL
 from .....common.serde.serializable import serializable
+from .....store.util import custom_presigned_url
 from .....store.util import get_s3_client
 from ....domain.domain_interface import DomainInterface
 from ....domain.registry import DomainMessageRegistry
@@ -56,17 +58,19 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
         # TODO : Move to permissions
         # if not node.users.can_upload_data(verify_key=verify_key):
         #    return {"message": "You're not authorized to do this."}
+
         key = f"{self.payload.filename}"
-        s3_client = get_s3_client(docker_host=True)
+        s3_client = get_s3_client(settings=node.settings)
         result = s3_client.create_multipart_upload(Bucket=node.id.no_dash, Key=key)
         total_parts = math.ceil(self.payload.file_size / self.payload.chunk_size)
         upload_id = result["UploadId"]
-        s3_client = get_s3_client()
 
         parts = list()
         for part_no in range(1, total_parts + 1):
             # Creating presigned urls
-            signed_url = s3_client.generate_presigned_url(
+            signed_url = custom_presigned_url(
+                s3_client,
+                "http://localhost:9082",
                 ClientMethod="upload_part",
                 Params={
                     "Bucket": node.id.no_dash,
@@ -74,9 +78,14 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
                     "UploadId": upload_id,
                     "PartNumber": part_no,
                 },
-                ExpiresIn=1800,  # in seconds
+                ExpiresIn=node.settings.S3_PRESIGNED_TIMEOUT_SECS,
             )
-            parts.append({"part_no": part_no, "url": signed_url})
+            # parse as a URL
+            grid_url = GridURL.from_url(url=signed_url)
+            # add /blob to path
+            grid_url.path = f"/blob{grid_url.path}"
+            # only return the path and let the client use its existing public url
+            parts.append({"part_no": part_no, "url": grid_url.url_path})
 
         return UploadDataMessage.Reply(upload_id=upload_id, parts=parts)
 
@@ -120,7 +129,7 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
         #    return {"message": "You're not authorized to do this."}
 
         key = f"{self.payload.filename}"
-        client: boto3.client.S3 = get_s3_client(docker_host=True)
+        client: boto3.client.S3 = get_s3_client(settings=node.settings)
         _ = client.complete_multipart_upload(
             Bucket=node.id.no_dash,
             Key=key,

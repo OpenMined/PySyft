@@ -1,18 +1,9 @@
 # stdlib
 import secrets
-from typing import Any
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Union
+from typing import Any, Dict, List, Optional, Union
 
 # third party
-from pydantic import AnyHttpUrl
-from pydantic import BaseSettings
-from pydantic import EmailStr
-from pydantic import HttpUrl
-from pydantic import PostgresDsn
-from pydantic import validator
+from pydantic import AnyHttpUrl, BaseSettings, EmailStr, HttpUrl, PostgresDsn, validator
 
 
 class Settings(BaseSettings):
@@ -45,7 +36,7 @@ class Settings(BaseSettings):
 
     POSTGRES_SERVER: str = "localhost"
     POSTGRES_USER: str = "user"
-    POSTGRES_PASSWORD: str = "pwd"
+    POSTGRES_PASSWORD: Optional[str] = None
     POSTGRES_DB: str = "db"
     SQLALCHEMY_DATABASE_URI: Optional[Union[PostgresDsn, str]] = None
 
@@ -99,6 +90,13 @@ class Settings(BaseSettings):
     OPEN_REGISTRATION: bool = True
 
     DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
+    USE_BLOB_STORAGE: bool = False
+    S3_ENDPOINT: str = "localhost"
+    S3_PORT: int = 8333
+    S3_ROOT_USER: str = "admin"
+    S3_ROOT_PWD: Optional[str] = None
+    S3_REGION: str = "us-east-1"
+    S3_PRESIGNED_TIMEOUT_SECS: int = 1800  # 30 minutes in seconds
 
     class Config:
         case_sensitive = True

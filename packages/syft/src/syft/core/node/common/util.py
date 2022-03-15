@@ -4,6 +4,9 @@ from typing import Any
 from typing import Generator
 from typing import List
 
+# third party
+from pydantic import BaseSettings
+
 # relative
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
@@ -12,7 +15,7 @@ from ...store.util import get_s3_client
 
 
 def read_chunks(
-    fp: BytesIO, chunk_size: int = 1024**3
+    fp: BytesIO, chunk_size: int = 1024 ** 3
 ) -> Generator[bytes, None, None]:
     """Read data in chunks from the file."""
     while True:
@@ -38,10 +41,14 @@ def listify(x: Any) -> List[Any]:
 
 
 def upload_result_to_s3(
-    asset_name: str, dataset_name: str, domain_id: UID, data: Any
+    asset_name: str,
+    dataset_name: str,
+    domain_id: UID,
+    data: Any,
+    settings: BaseSettings,
 ) -> ProxyDataClass:
 
-    s3_client = get_s3_client(docker_host=True)
+    s3_client = get_s3_client(settings=settings)
 
     binary_dataset: bytes = serialize(data, to_bytes=True)  # type: ignore
 

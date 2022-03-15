@@ -5,6 +5,7 @@ from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from pydantic import BaseSettings
 
 # syft absolute
 import syft as sy
@@ -311,13 +312,13 @@ class StorableObject(AbstractStorableObject):
     def class_name(self) -> str:
         return str(self.__class__.__name__)
 
-    def clean_copy(self) -> "StorableObject":
+    def clean_copy(self, settings: BaseSettings) -> "StorableObject":
         """
         This method return a copy of self, but clean up the search_permissions and
         read_permissions attributes.
         """
         if self.is_proxy:
-            self._data.generate_presigned_url()
+            self._data.generate_presigned_url(settings=settings)
             return StorableObject(
                 id=self.id,
                 data=self._data,

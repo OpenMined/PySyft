@@ -2,10 +2,14 @@
 from typing import Any
 from typing import Tuple
 
+# third party
+from pydantic import BaseSettings
+
 # relative
 from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
+from .util import custom_presigned_url
 from .util import get_s3_client
 
 
@@ -39,21 +43,23 @@ class ProxyDataClass:
     def name(self) -> str:
         return self.dataset_name + "/" + self.asset_name
 
-    def get_s3_data(self) -> Any:
-        s3_client = get_s3_client(docker_host=True)
+    def get_s3_data(self, settings: BaseSettings) -> Any:
+        s3_client = get_s3_client(settings=settings)
         if s3_client is None:
             return
         response = s3_client.get_object(Bucket=self.node_id.no_dash, Key=self.name)
         data = response.get("Body", b"").read()
         return deserialize(data, from_bytes=True)
 
-    def generate_presigned_url(self) -> None:
-        s3_client = get_s3_client(docker_host=False)
+    def generate_presigned_url(self, settings: BaseSettings) -> None:
+        s3_client = get_s3_client(settings=settings)
 
-        download_url = s3_client.generate_presigned_url(
+        download_url = custom_presigned_url(
+            s3_client,
+            "http://localhost:9082",
             ClientMethod="get_object",
             Params={"Bucket": self.node_id.no_dash, "Key": self.name},
-            ExpiresIn=1800,  # in seconds
+            ExpiresIn=settings.S3_PRESIGNED_TIMEOUT_SECS,
             HttpMethod="GET",
         )
         self.url = download_url
