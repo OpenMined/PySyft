@@ -28,13 +28,13 @@ def get_s3_client(settings: BaseSettings = BaseSettings()) -> "boto3.client.S3":
 
 
 def custom_presigned_url(
-    client,
+    client: "boto3.client.S3",
     endpoint_url: str,
     ClientMethod,
     Params=None,
     ExpiresIn=3600,
     HttpMethod=None,
-):
+) -> str:
     client_method = ClientMethod
     params = Params
     if params is None:
