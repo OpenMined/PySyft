@@ -100,7 +100,7 @@ class Settings(BaseSettings):
     OPEN_REGISTRATION: bool = True
 
     DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
-    USE_BLOB_STORAGE: Union[str,bool] = os.getenv("USE_BLOB_STORAGE", False)
+    USE_BLOB_STORAGE: bool = True if os.getenv("USE_BLOB_STORAGE", "false").lower() == "true" else False
     S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "localhost")
     S3_PORT: int = int(os.getenv("S3_PORT", 8333))
     S3_ROOT_USER: str = os.getenv("S3_ROOT_USER", "admin")
