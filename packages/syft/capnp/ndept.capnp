@@ -1,7 +1,7 @@
 @0x8f9c60bd7a9842fc;
 
 struct NDEPT {
-  magicHeader @0 :Text;
+  magicHeader @0 :Data;
   child @1 :List(Data);
   minVals @2 :List(Data);
   maxVals @3 :List(Data);
