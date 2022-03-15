@@ -3,9 +3,11 @@ from io import BytesIO
 from typing import Any
 from typing import Generator
 from typing import List
+from typing import Optional
 
 # third party
 from pydantic import BaseSettings
+import requests
 
 # relative
 from ...common.serde.serialize import _serialize as serialize
@@ -15,7 +17,7 @@ from ...store.util import get_s3_client
 
 
 def read_chunks(
-    fp: BytesIO, chunk_size: int = 1024 ** 3
+    fp: BytesIO, chunk_size: int = 1024**3
 ) -> Generator[bytes, None, None]:
     """Read data in chunks from the file."""
     while True:
@@ -47,18 +49,32 @@ def upload_result_to_s3(
     data: Any,
     settings: BaseSettings,
 ) -> ProxyDataClass:
+    """Upload data to Seaweed using boto3 client.
+
+    - Serialize data to binary
+    - Upload data to Seaweed using boto3 client
+    - Create a ProxyDataClass to store the metadata of the data uploaded to Seaweed
+
+    Args:
+        asset_name (str): name of the data being uploaded to Seaweed
+        dataset_name (str): name of the dataset to which the data belongs
+        domain_id (UID): unique id of the domain node
+        data (Any): data to be uploaded to Seaweed
+        settings (BaseSettings): base settings of the PyGrid server
+
+    Returns:
+        ProxyDataClass: Class to store the metadata of the data being uploaded
+    """
 
     s3_client = get_s3_client(settings=settings)
 
     binary_dataset: bytes = serialize(data, to_bytes=True)  # type: ignore
 
-    # 1 - Starts to upload binary data into Seaweed.
-    # TODO: Make this a resumable upload and ADD progress bar.
+    # 1- Serialize the data to be uploaded to bytes.
     binary_buffer = BytesIO(binary_dataset)
-
     filename = f"{dataset_name}/{asset_name}"
 
-    # 3 - Send a message to PyGrid warning about dataset upload complete!
+    # 2 - Start to upload binary data into Seaweed.
     upload_response = s3_client.put_object(
         Bucket=domain_id.no_dash,
         Body=binary_buffer,
@@ -70,6 +86,7 @@ def upload_result_to_s3(
     print("Upload Result")
     print(upload_response)
 
+    # 3 - Create a ProxyDataClass for the given data
     data_dtype = str(type(data))
     proxy_obj = ProxyDataClass(
         asset_name=asset_name,
@@ -79,3 +96,105 @@ def upload_result_to_s3(
         shape=data.shape,
     )
     return proxy_obj
+
+
+def upload_to_s3_using_presigned(
+    client: Any,
+    data: Any,
+    chunk_size: int,
+    asset_name: str,
+    dataset_name: Optional[str] = None,
+) -> ProxyDataClass:
+    """Perform a multipart upload of data to Seaweed using boto3 presigned urls.
+
+    The main steps involve:
+    - Converting the data to binary data
+    - Chunking the binary into smaller chunks
+    - Create presigned urls for each chunk
+    - Upload data to Seaweed via PUT request
+    - Send a acknowledge to Seaweed via PyGrid when all chunks are successfully uploaded
+    - Create a ProxyDataClass to store metadata of the uploaded data
+
+    Args:
+        client (Any): Client to send object to
+        data (Any): Data to be uploaded to Seaweed
+        chunk_size (int): smallest size of the data to be uploaded in bytes
+        asset_name (str): name of the data being uploaded
+        dataset_name Optional[(str)]: name of the dataset to which the data belongs
+
+    Raises:
+        Exception: If upload of data chunks to Seaweed fails.
+
+    Returns:
+        ProxyDataClass: Class to store metadata about the data that is uploaded to Seaweed.
+    """
+
+    # relative
+    from .node_service.upload_service.upload_service_messages import (
+        UploadDataCompleteMessage,
+    )
+    from .node_service.upload_service.upload_service_messages import UploadDataMessage
+
+    dataset_name = dataset_name if dataset_name is not None else ""
+
+    # Step 1 - Convert data to be uploaded to binary
+    binary_dataset: bytes = serialize(data, to_bytes=True)  # type: ignore
+    file_size = len(binary_dataset)
+
+    # Step 2 - Send a message to PyGrid to inform of the data being uploaded,
+    # and get presigned url for each chunk of data being uploaded.
+    upload_response = client.datasets.perform_api_request_generic(
+        syft_msg=UploadDataMessage,
+        content={
+            "filename": f"{dataset_name}/{asset_name}",
+            "file_size": file_size,
+            "chunk_size": chunk_size,
+            "address": client.address,
+            "reply_to": client.address,
+        },
+    )
+
+    # Step 3 - Starts to upload binary data into Seaweed.
+    binary_buffer = BytesIO(binary_dataset)
+    parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
+    etag_chunk_no_pairs = list()
+    for data_chunk, part in zip(read_chunks(binary_buffer, chunk_size), parts):
+        presigned_url = part["url"]
+        part_no = part["part_no"]
+
+        client_url = client.url_from_path(presigned_url)
+        res = requests.put(client_url, data=data_chunk)
+
+        # TODO: Replace with some error message if it fails.
+
+        if res.status_code != 200:
+            raise Exception(
+                f"Uploading Chunk {part} failed. "
+                + f"HTTP Status Code: {res.status_code}"
+            )
+        etag = res.headers["ETag"]
+        etag_chunk_no_pairs.append(
+            {"ETag": etag, "PartNumber": part_no}
+        )  # maintain list of part no and ETag
+
+    # Step 4 - Send a message to PyGrid informing about dataset upload complete!
+    upload_response = client.datasets.perform_request(
+        syft_msg=UploadDataCompleteMessage,
+        content={
+            "upload_id": upload_response.payload.upload_id,
+            "filename": f"{dataset_name}/{asset_name}",
+            "parts": etag_chunk_no_pairs,
+        },
+    )
+
+    # Step 5 - Create a proxy dataset for the uploaded data.
+    data_dtype = str(type(data))
+    proxy_data = ProxyDataClass(
+        asset_name=asset_name,
+        dataset_name=dataset_name,
+        node_id=client.id,
+        dtype=data_dtype,
+        shape=data.shape,
+    )
+
+    return proxy_data

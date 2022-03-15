@@ -14,8 +14,10 @@ from syft.core.node.common.node_table.utils import seed_db
 from syft.core.store.util import get_s3_client
 
 # grid absolute
-from grid.core.config import Settings, settings
-from grid.db.session import get_db_engine, get_db_session
+from grid.core.config import Settings
+from grid.core.config import settings
+from grid.db.session import get_db_engine
+from grid.db.session import get_db_session
 
 
 def thread_function(*args, **kwargs) -> None:  # type: ignore

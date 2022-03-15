@@ -1,3 +1,7 @@
+# stdlib
+from typing import Dict
+from typing import Optional
+
 # third party
 import boto3
 from botocore.awsrequest import prepare_request_dict
@@ -31,9 +35,9 @@ def custom_presigned_url(
     client: "boto3.client.S3",
     endpoint_url: str,
     ClientMethod: str,
-    Params=None,
-    ExpiresIn=3600,
-    HttpMethod=None,
+    Params: Optional[Dict] = None,
+    ExpiresIn: int = 3600,
+    HttpMethod: Optional[str] = None,
 ) -> str:
     client_method = ClientMethod
     params = Params
