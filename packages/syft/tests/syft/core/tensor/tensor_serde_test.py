@@ -282,7 +282,7 @@ def test_rept_vs_ndept() -> None:
 def test_big_ndept() -> None:
     """Create big NDEPTs"""
     # for multiplier in [1, 10, 100, 1000]:
-    for multiplier in [1, 10, 100]:
+    for multiplier in [100]:
         ndim = 1_000_000
         rows = 1
         cols = 7
@@ -302,5 +302,7 @@ def test_big_ndept() -> None:
 
         ndept_metrics = time_and_size_serde(big_ndept)
         print(multiplier, ndept_metrics)
-
-    assert False
+        assert ndept_metrics[0] < 8100
+        assert ndept_metrics[1] < 3000
+        assert ndept_metrics[2] < 30
+        assert ndept_metrics[3] < 30
