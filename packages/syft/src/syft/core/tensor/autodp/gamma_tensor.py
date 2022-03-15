@@ -13,6 +13,7 @@ from typing import List
 from typing import Deque
 from collections import deque
 from dis import dis
+from nacl.signing import VerifyKey
 
 # third party
 import flax
@@ -22,7 +23,7 @@ from numpy.random import randint
 from scipy.optimize import shgo
 from functools import partial
 from ...adp.entity_list import EntityList
-
+from ...adp.vectorized_publish import publish
 
 
 def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]:
@@ -63,6 +64,7 @@ class GammaTensor:
     data_subjects: EntityList
     min_val: float = flax.struct.field(pytree_node=False)
     max_val: float = flax.struct.field(pytree_node=False)
+    is_linear: bool = True
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**32 - 1))
@@ -110,6 +112,21 @@ class GammaTensor:
         return GammaTensor(
             value=value, min_val=min_val, max_val=max_val, func=sum, state=state
         )
+
+    def publish(self, accountant: Any, user_key: VerifyKey, sigma: Optional[float] = None) -> jnp.array:
+        if sigma is None:
+            sigma = self.value.mean()/4  # TODO: change this to something smarter
+        result = publish(
+            values=self.value,
+            min_vals=self.min_val,
+            max_val=self.max_val,
+            data_subjects=self.data_subjects,
+            is_linear=self.is_linear,
+            acc=accountant,
+            user_key=user_key,
+            sigma=sigma
+        )
+        return result.reshape(self.shape)
 
     def expand_dims(self, axis: int) -> GammaTensor:
         expand_dims = lambda state: jnp.expand_dims(self.run(state), axis)

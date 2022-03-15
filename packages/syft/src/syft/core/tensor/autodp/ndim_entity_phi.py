@@ -309,7 +309,8 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
-    def sum(self) -> Union[NDimEntityPhiTensor, GammaTensor]:  # type: ignore
+    def sum(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> Union[NDimEntityPhiTensor, GammaTensor]:
+        #TODO: Add support for axes arguments later
         if len(self.entities.one_hot_lookup) == 1:
             return NDimEntityPhiTensor(
                 child=self.child.sum(),
