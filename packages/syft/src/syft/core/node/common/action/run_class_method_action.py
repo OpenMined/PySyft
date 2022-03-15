@@ -96,7 +96,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def check_send_to_blob_storage(settings: BaseSettings, obj: Any) -> bool:
-        if not settings.USE_BLOB_STORAGE:
+        if not hasattr(settings, "USE_BLOB_STORAGE") or not settings.USE_BLOB_STORAGE:
             return False
         # relative
         from ....tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
