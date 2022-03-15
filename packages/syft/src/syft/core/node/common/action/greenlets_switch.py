@@ -76,7 +76,7 @@ def crypto_store_retrieve_object(
 
             if ctr % 1500 == 0:
                 critical(
-                    f"Crypto  Store Retrieval failed for  parties due to missing object:{EmptyPrimitiveStore}"
+                    f"Crypto  Store Retrieval failed for parties due to missing object: {EmptyPrimitiveStore}"
                 )
             # Implicit context switch between greenlets.
             gevent.sleep(0)

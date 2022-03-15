@@ -127,27 +127,6 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
-        # method_name = self.path.split(".")[-1]
-        # value = resolved_self.data
-        # if isinstance(value, Tensor):
-        #     nr_parties = value.child.child.nr_parties
-        #     rank = value.child.child.rank
-        # else:
-        #     nr_parties = value.nr_parties
-        #     rank = value.rank
-
-        # seed_id_locations = resolved_kwargs.get("seed_id_locations", None)
-        # if seed_id_locations is None:
-        #     raise ValueError(
-        #       "Expected 'seed_id_locations' to be in the kwargs to generate id_at_location in a deterministic matter"
-        #     )
-
-        # resolved_kwargs.pop("seed_id_locations")
-
-        # actions_generator = smpc_action_functions.get_action_generator_from_op(
-        #     operation_str=method_name, nr_parties=nr_parties
-        # )
-
         method = node.lib_ast(self.path)
         seed_id_locations = self.seed_id_locations
 
