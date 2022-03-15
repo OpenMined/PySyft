@@ -237,7 +237,7 @@ services:
       - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn.stripprefix.forceslash=true"
       - "traefik.http.services.${STACK_NAME?Variable not set}-vpn.loadbalancer.server.port=8080"
 
-  weed:
+  seaweedfs:
     profiles:
       - blob-storage
     image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"

@@ -107,7 +107,7 @@ services:
       - "14269:14269"
       - "9411:9411"
 
-  weed:
+  seaweedfs:
     profiles:
       - blob-storage
     volumes:
