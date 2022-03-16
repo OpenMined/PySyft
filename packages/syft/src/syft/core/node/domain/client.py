@@ -1,5 +1,4 @@
 # stdlib
-from io import BytesIO
 import logging
 import sys
 import time
@@ -55,14 +54,7 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from ..common.node_service.simple.obj_exists import DoesObjectExistMessage
-from ..common.node_service.upload_service.upload_service_messages import (
-    UploadDataCompleteMessage,
-)
-from ..common.node_service.upload_service.upload_service_messages import (
-    UploadDataMessage,
-)
 from ..common.util import check_send_to_blob_storage
-from ..common.util import read_chunks
 from ..common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields

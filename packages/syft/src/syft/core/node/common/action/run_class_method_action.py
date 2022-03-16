@@ -20,7 +20,6 @@ from .....proto.core.node.common.action.run_class_method_pb2 import (
     RunClassMethodAction as RunClassMethodAction_PB,
 )
 from .....util import inherit_tags
-from .....util import size_mb
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
@@ -227,7 +226,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         if not isinstance(result, StorableObject):
             # TODO: Upload object to seaweed store, instead of storing in redis
             # create a proxy object class and store it here.
-            if check_send_to_blob_storage(settings=node.settings, obj=result):
+            if check_send_to_blob_storage(obj=result, settings=node.settings):
                 result = upload_result_to_s3(
                     asset_name=self.id_at_location.no_dash,
                     dataset_name="",
