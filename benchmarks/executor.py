@@ -2,19 +2,27 @@
 import os
 from pathlib import Path
 import subprocess
-from typing import Dict
-from typing import List
+from typing import Any
+from typing import Dict as TypeDict
+from typing import List as TypeList
 from typing import Optional
-from typing import Tuple
+from typing import Tuple as TypeTuple
+from typing import cast
+import sys
+import os
+import argparse
 
 # third party
 import pyperf
-from syft_benchmarks import run_phitensor_suite
+from syft_benchmarks import run_rept_suite
+from syft_benchmarks import run_sept_suite
+import click
+import fire
 
-# syft absolute
-from syft.util import download_file
-from syft.util import get_root_data_path
 
+@click.group()
+def cli() -> None:
+    pass
 
 def get_git_revision_short_hash() -> str:
     return (
@@ -23,42 +31,40 @@ def get_git_revision_short_hash() -> str:
         .strip()
     )
 
+# check what is action=store_true in pyperf
 
-def download_spicy_bird_benchmark(
-    sizes: Optional[List[str]] = None,
-) -> Tuple[Dict[str, Path], List[str]]:
-    sizes = sizes if sizes else ["100K", "250K", "500K", "750K", "1M"]
-    file_suffix = "_rows_dataset_sample.parquet"
-    BASE_URL = "https://raw.githubusercontent.com/madhavajay/datasets/main/spicy_bird/"
-
-    folder_name = "spicy_bird"
-    dataset_path = get_root_data_path() / folder_name
-    paths = []
-    for size in sizes:
-        filename = f"{size}{file_suffix}"
-        full_path = dataset_path / filename
-        url = f"{BASE_URL}{filename}"
-        if not os.path.exists(full_path):
-            print(url)
-            path = download_file(url=url, full_path=full_path)
-        else:
-            path = Path(full_path)
-        paths.append(path)
-    return dict(zip(sizes, paths)), sizes
-
-
-key_size = "100K"
-files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
-
-
+# @click.command()
+# # @click.option('--rigorous', help="Spend longer running tests to get more accurate results")
+# @click.option('--fast', is_flag=True, help="Get rough answers quickly")
+# # @click.option('--debug-single-value', help="Debug mode, only compute a single value")
+# # @click.option('-p', '--processes', help='number of processes used to run benchmarks ') # TODO add default processes
+# @click.option('-n', '--values', type=int,help='number of values per process') # TODO add default values
+# # @click.option('-w', '--warmups', help='number of skipped values per run used to warmup the benchmark')
+# # @click.option('-l', '--loops', help='number of loops per value, 0 means automatic calibration ') # TODO add default
+# # @click.option('-v', '--verbose', help='enable verbose mode')
+# # @click.option('-q', '--quiet', help='enable quiet mode')
+# # @click.option('--pipe', help='Write benchmarks encoded as JSON into the pipe FD')
+# @click.option('-o', '--output', help='write results encoded to JSON into FILENAME')
+# # @click.option('--append', help='append results encoded to JSON into FILENAME')
+# # @click.option('--min-time', help='Minimum duration in seconds of a single value, used to calibrate the number of loops (default') # TODO add default
+# # @click.option('--worker')
 def run_suite() -> None:
-
-    data_file = files[key_size]
+    # print(sys.argv)
+    # print(kwargs)
+    inf = np.iinfo(np.int32)
+    parser = argparse.ArgumentParser(description='Process some integers.')
+    # parser.add_argument('--test')
     runner = pyperf.Runner()
+    print(sys.argv)
     runner.parse_args()
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
 
     run_phitensor_suite(runner=runner, data_file=data_file)
 
+# cli.add_command(run_suite)
 
-run_suite()
+if __name__ == "__main__":
+    # cli()
+    # fire.Fire(run_suite)
+    run_suite()
+
