@@ -12,7 +12,6 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.entity import Entity
-from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 from syft.util import size_mb
 
 DOMAIN1_PORT = 9082
@@ -135,7 +134,7 @@ def test_large_blob_upload() -> None:
     print("what type is the child", type(tweets_data.child))
 
     tweets_data_size = size_mb(sy.serialize(tweets_data, to_bytes=True))
-    print(f"Serialized size for tweets data", tweets_data_size)
+    print(f"Serialized size for tweets data : {tweets_data_size}")
 
     # assert False
 

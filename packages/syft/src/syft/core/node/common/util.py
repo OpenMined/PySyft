@@ -20,7 +20,7 @@ from ...store.proxy_dataset import ProxyDataClass
 
 
 def read_chunks(
-    fp: BytesIO, chunk_size: int = 1024 ** 3
+    fp: BytesIO, chunk_size: int = 1024**3
 ) -> Generator[bytes, None, None]:
     """Read data in chunks from the file."""
     while True:
@@ -222,9 +222,14 @@ def get_s3_client(settings: BaseSettings = BaseSettings()) -> "boto3.client.S3":
         raise e
 
 
-def check_send_to_blob_storage(obj: Any, use_blob_storage: bool = False) -> bool:
+def check_send_to_blob_storage(
+    obj: Any, settings: Optional[BaseSettings] = None, use_blob_storage: bool = False
+) -> bool:
     # relative
     from ...tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
+
+    # Envrionment variables take precedence is provided
+    use_blob_storage = settings.USE_BLOB_STORAGE if settings else use_blob_storage
 
     if use_blob_storage and isinstance(obj, NDEPT) or size_mb(obj) > 1:
         return True
