@@ -401,7 +401,7 @@ jobs:
         shell: bash
         run: |
           # replace minikube with an older version
-          wget https://github.com/kubernetes/minikube/releases/download/v1.23.2/minikube-linux-amd64
+          wget https://github.com/kubernetes/minikube/releases/download/v1.25.2/minikube-linux-amd64
           mv minikube-linux-amd64 minikube
           chmod +x minikube
           export PATH=`pwd`:$PATH
