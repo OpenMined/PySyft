@@ -37,8 +37,10 @@ def publish(values: jnp.array,
     unique_data_subjects = data_subjects.one_hot_lookup  # this is an array of all unique data subjects
 
     squared_l2_norm, worst_case_squared_l2_norm = calculate_bounds_for_mechanism(values, min_vals, max_val, public_only)
-    print(squared_l2_norm)
-    print(worst_case_squared_l2_norm)
+    # print(squared_l2_norm)
+    # print(worst_case_squared_l2_norm)
+
+
 
     if is_linear:
         lipschitz_array = np.ones_like(values)  # max lipschitz bound
