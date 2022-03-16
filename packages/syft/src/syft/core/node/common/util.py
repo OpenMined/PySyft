@@ -229,7 +229,8 @@ def check_send_to_blob_storage(
     from ...tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 
     # Envrionment variables take precedence is provided
-    use_blob_storage = settings.USE_BLOB_STORAGE if settings else use_blob_storage
+    if hasattr(settings, "USE_BLOB_STORAGE"):
+        use_blob_storage = settings.USE_BLOB_STORAGE  # type: ignore
 
     if use_blob_storage and isinstance(obj, NDEPT) or size_mb(obj) > 1:
         return True
