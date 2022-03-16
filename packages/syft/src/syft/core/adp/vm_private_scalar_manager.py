@@ -78,6 +78,8 @@ class PrimeFactory:
 
 @serializable()
 class VirtualMachinePrivateScalarManager:
+    __slots__ = ("prime_factory", "prime2symbol", "hash_cache", "index")
+
     def __init__(
         self,
         prime_factory: Optional[PrimeFactory] = None,
@@ -112,7 +114,7 @@ class VirtualMachinePrivateScalarManager:
             prime=int(self.prime_factory.get(self.index)),
         )
 
-        self.prime2symbol[gs.prime] = gs
+        self.prime2symbol[int(gs.prime)] = gs
         self.hash_cache = None
         self.index += 1
         return gs.prime
@@ -175,14 +177,14 @@ class VirtualMachinePrivateScalarManager:
             copy_dict = vsm2.prime2symbol.copy()
             length = len(self.primes_allocated)
             for prime_number, gs in copy_dict.items():
-                if prime_number in self.prime2symbol:  # If there's a collision
+                if int(prime_number) in self.prime2symbol:  # If there's a collision
                     new_prime = self.prime_factory.get(length)
                     gs.prime = new_prime
-                    self.prime2symbol[new_prime] = gs
-                    del vsm2.prime2symbol[prime_number]
-                    vsm2.prime2symbol[new_prime] = gs
+                    self.prime2symbol[int(new_prime)] = gs
+                    del vsm2.prime2symbol[int(prime_number)]
+                    vsm2.prime2symbol[int(new_prime)] = gs
                     length += 1
                 else:
-                    self.prime2symbol[gs.prime] = gs
+                    self.prime2symbol[int(gs.prime)] = gs
         else:
             warning("Detected prime2symbol where two tensors were using the same dict")
