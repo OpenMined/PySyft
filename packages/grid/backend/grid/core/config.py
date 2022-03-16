@@ -100,13 +100,17 @@ class Settings(BaseSettings):
     OPEN_REGISTRATION: bool = True
 
     DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
-    USE_BLOB_STORAGE: bool = True if os.getenv("USE_BLOB_STORAGE", "false").lower() == "true" else False
-    S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "localhost")
+    USE_BLOB_STORAGE: bool = (
+        True if os.getenv("USE_BLOB_STORAGE", "false").lower() == "true" else False
+    )
+    S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "seaweedfs")
     S3_PORT: int = int(os.getenv("S3_PORT", 8333))
     S3_ROOT_USER: str = os.getenv("S3_ROOT_USER", "admin")
     S3_ROOT_PWD: Optional[str] = os.getenv("S3_ROOT_PWD", "admin")
     S3_REGION: str = os.getenv("S3_REGION", "us-east-1")
-    S3_PRESIGNED_TIMEOUT_SECS: int = int(os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800))  # 30 minutes in seconds
+    S3_PRESIGNED_TIMEOUT_SECS: int = int(
+        os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
+    )  # 30 minutes in seconds
 
     class Config:
         case_sensitive = True

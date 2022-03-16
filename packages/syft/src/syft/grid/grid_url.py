@@ -17,7 +17,7 @@ from ..util import verify_tls
 
 @serializable(recursive_serde=True)
 class GridURL:
-    __attr_allowlist__ = ["protocol", "host_or_ip", "port", "path"]
+    __attr_allowlist__ = ["protocol", "host_or_ip", "port", "path", "query"]
 
     @staticmethod
     def from_url(url: Union[str, GridURL]) -> GridURL:
@@ -39,7 +39,7 @@ class GridURL:
                 path=parts.path,
                 port=port,
                 protocol=parts.scheme,
-                query=parts.query,
+                query=getattr(parts, "query", ""),
             )
         except Exception as e:
             print(f"Failed to convert url: {url} to GridURL. {e}")

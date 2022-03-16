@@ -14,7 +14,6 @@ from typing_extensions import final
 # relative
 from ......grid import GridURL
 from .....common.serde.serializable import serializable
-from .....store.util import custom_presigned_url
 from .....store.util import get_s3_client
 from ....domain.domain_interface import DomainInterface
 from ....domain.registry import DomainMessageRegistry
@@ -68,9 +67,7 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
         parts = list()
         for part_no in range(1, total_parts + 1):
             # Creating presigned urls
-            signed_url = custom_presigned_url(
-                s3_client,
-                "http://localhost:9082",
+            signed_url = s3_client.generate_presigned_url(
                 ClientMethod="upload_part",
                 Params={
                     "Bucket": node.id.no_dash,

@@ -713,8 +713,8 @@ class DomainClient(Client):
             for data_chunk, part in zip(read_chunks(binary_buffer, chunk_size), parts):
                 presigned_url = part["url"]
                 part_no = part["part_no"]
-
                 client_url = self.url_from_path(presigned_url)
+                part["client_url"] = client_url
                 res = requests.put(client_url, data=data_chunk)
 
                 # TODO: Replace with some error message if it fails.

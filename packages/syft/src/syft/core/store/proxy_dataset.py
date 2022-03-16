@@ -9,7 +9,6 @@ from pydantic import BaseSettings
 from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
-from .util import custom_presigned_url
 from .util import get_s3_client
 
 
@@ -54,9 +53,7 @@ class ProxyDataClass:
     def generate_presigned_url(self, settings: BaseSettings) -> None:
         s3_client = get_s3_client(settings=settings)
 
-        download_url = custom_presigned_url(
-            s3_client,
-            "http://localhost:9082",
+        download_url = s3_client.generate_presigned_url(
             ClientMethod="get_object",
             Params={"Bucket": self.node_id.no_dash, "Key": self.name},
             ExpiresIn=settings.S3_PRESIGNED_TIMEOUT_SECS,
