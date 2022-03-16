@@ -86,6 +86,10 @@ class RedisStore(ObjectStore):
             key_uid = UID.from_string(key_str)
 
         obj = self.redis.get(key_str)
+        # TODO: resolve real object
+        # if obj.is_proxy:
+        # write code here
+        # return self._data.get_s3_data(settings=settings)
         obj_metadata = (
             local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
         )
