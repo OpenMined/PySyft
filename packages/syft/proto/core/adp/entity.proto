@@ -5,7 +5,6 @@ import "proto/core/common/common_object.proto";
 
 message Entity {
   string name = 1;
-  syft.core.common.UID id = 2;
 }
 
 message DataSubjectGroup {

@@ -46,8 +46,8 @@ def get_self(current_user: UserPrivate = Depends(get_current_user)) -> User:
 @router.post("", name="users:create", status_code=status.HTTP_201_CREATED)
 async def create_user_grid(
     current_user: UserPrivate = Depends(get_current_user),
-    file: Optional[UploadFile] = File(...),
     new_user: str = Form(...),
+    file: Optional[UploadFile] = File(None),
 ) -> str:
     if file:
         pdf_file = file.file.read()  # type: ignore
