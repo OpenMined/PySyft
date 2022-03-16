@@ -9,7 +9,6 @@ from pydantic import BaseSettings
 from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
-from .util import get_s3_client
 
 
 @serializable(recursive_serde=True)
@@ -43,6 +42,9 @@ class ProxyDataClass:
         return self.dataset_name + "/" + self.asset_name
 
     def get_s3_data(self, settings: BaseSettings) -> Any:
+        # relative
+        from ..node.common.util import get_s3_client
+
         s3_client = get_s3_client(settings=settings)
         if s3_client is None:
             return
@@ -51,6 +53,9 @@ class ProxyDataClass:
         return deserialize(data, from_bytes=True)
 
     def generate_presigned_url(self, settings: BaseSettings) -> None:
+        # relative
+        from ..node.common.util import get_s3_client
+
         s3_client = get_s3_client(settings=settings)
 
         download_url = s3_client.generate_presigned_url(

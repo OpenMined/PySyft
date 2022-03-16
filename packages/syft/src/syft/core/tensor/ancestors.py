@@ -480,14 +480,15 @@ class PhiTensorAncestor(TensorChainManager):
         if isinstance(entities, (list, tuple)):
             entities = np.array(entities)
 
-        if len(entities) != 1 and entities.shape != self.shape:
-            raise Exception(
-                "Entities shape doesn't match data shape. If you're"
-                " going to pass in something other than 1 entity for the"
-                " entire tensor or one entity per row, you're going to need"
-                " to make the np.ndarray of entities have the same shape as"
-                " the tensor you're calling .private() on. Try again."
-            )
+        # if len(entities) != 1 and entities.shape != self.shape:
+        #     raise Exception(
+        #         "Entities shape doesn't match data shape. If you're"
+        #         " going to pass in something other than 1 entity for the"
+        #         " entire tensor or one entity per row, you're going to need"
+        #         " to make the np.ndarray of entities have the same shape as"
+        #         " the tensor you're calling .private() on. Try again."
+        #     )
+
         one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
         for entity in one_hot_lookup:
             if not isinstance(entity, (str, Entity)):

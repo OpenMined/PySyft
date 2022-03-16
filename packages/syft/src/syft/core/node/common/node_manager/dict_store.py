@@ -9,6 +9,7 @@ from typing import Union
 from typing import cast
 
 # third party
+from pydantic import BaseSettings
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
 
@@ -24,8 +25,9 @@ from ..node_table.bin_obj_metadata import ObjectMetadata
 
 
 class DictStore(ObjectStore):
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, settings: BaseSettings) -> None:
         self.db = db
+        self.settings = settings
         self.kv_store: dict[UID, Any] = {}
 
     def get_object(self, key: UID) -> Optional[StorableObject]:

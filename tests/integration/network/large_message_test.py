@@ -1,6 +1,8 @@
 # stdlib
+from datetime import datetime
 import time
 from typing import Any
+import uuid
 
 # third party
 import numpy as np
@@ -9,6 +11,9 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.adp.entity import Entity
+from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
+from syft.util import size_mb
 
 DOMAIN1_PORT = 9082
 
@@ -21,6 +26,12 @@ def highest() -> int:
     ii32 = np.iinfo(np.int32)
     # 2147483647
     return ii32.max
+
+
+def make_bounds(data, bound: int) -> np.ndarray:
+    """This is used to specify the max_vals for a SEPT that is either binary or randomly
+    generated b/w 0-1"""
+    return np.ones_like(data) * bound
 
 
 # This fails on Windows CI even though the same code works in a Jupyter Notebook
@@ -47,8 +58,7 @@ def test_large_message_size() -> None:
 
     # rabbitmq recommends max is 512 MB
     # rabbitmq.conf has max_message_size = 536870912
-
-    x = np.random.rand((ndim, ndim))
+    x = np.random.randint(-highest(), highest(), size=(ndim, ndim))
     x_bytes = sy.serialize(x, to_bytes=True)
     mb_size = size(x_bytes)
     mb = f"{mb_size} MB"
@@ -80,3 +90,77 @@ def test_large_message_size() -> None:
     except Exception as e:
         print(f"Failed to get data back. {e}")
         raise e
+
+
+@pytest.mark.network
+def test_large_blob_upload() -> None:
+
+    # use to enable mitm proxy
+    # from syft.grid.connections.http_connection import HTTPConnection
+    # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
+
+    domain_client = sy.login(
+        email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
+    )
+
+    # for multiplier in [1, 10, 100, 1000]:
+    # for multiplier in [1]:
+    multiplier = 1
+    # ndim = 1_000_000
+    ndim = 4000
+    size_name = f"{multiplier}M"
+    if multiplier == 1000:
+        size_name = "1B"
+
+    rows = 1
+    cols = 7
+
+    upper = highest()
+    lower = -highest()
+    reference_data = np.random.randint(
+        lower, upper, size=(multiplier * ndim, rows, cols), dtype=np.int32
+    )
+
+    ndept = False
+    entities = ["ishan"] * reference_data.shape[0]
+    if not ndept:
+        entities = [Entity(name=entity) for entity in entities]
+
+    print("reference_data", type(reference_data), reference_data.dtype)
+    tweets_data = sy.Tensor(reference_data).private(
+        min_val=0, max_val=30, entities=entities, ndept=ndept
+    )
+
+    print("what are we getting", type(tweets_data))
+    print("what type is the child", type(tweets_data.child))
+
+    tweets_data_size = size_mb(sy.serialize(tweets_data, to_bytes=True))
+    print(f"Serialized size for tweets data", tweets_data_size)
+
+    # assert False
+
+    # blocking
+    unique_tag = str(uuid.uuid4())
+    asset_name = f"{size_name}_tweets"
+    domain_client.load_dataset(
+        assets={asset_name: tweets_data},
+        name=f"{unique_tag}",
+        description=f"{size_name} - {datetime.now()}",
+    )
+
+    print("done uploading")
+    # stdlib
+    import time
+
+    time.sleep(3)
+
+    dataset = domain_client.datasets[-1]
+    asset_ptr = dataset[asset_name]
+    result = asset_ptr.get()
+
+    print(type(result))
+
+    assert tweets_data == result
+
+    print("DONE")
+    assert False

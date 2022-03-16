@@ -97,8 +97,6 @@ class StorableObject(AbstractStorableObject):
     def data(self) -> Any:  # type: ignore
         if type(self._data).__name__.endswith("Wrapper"):
             return self._data.obj
-        elif self.is_proxy:
-            return self._data.get_s3_data()
         else:
             return self._data
 

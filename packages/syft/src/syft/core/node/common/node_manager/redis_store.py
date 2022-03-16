@@ -7,6 +7,7 @@ from typing import Union
 from typing import cast
 
 # third party
+from pydantic import BaseSettings
 import redis
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy.orm.session import Session
@@ -24,8 +25,9 @@ from ..node_table.bin_obj_metadata import ObjectMetadata
 
 
 class RedisStore(ObjectStore):
-    def __init__(self, db: Session) -> None:
+    def __init__(self, db: Session, settings: BaseSettings) -> None:
         self.db = db
+        self.settings = settings
         try:
             # TODO: refactor hard coded host and port to configuration
             self.redis: redis.client.Redis = redis.Redis(host="redis", port=6379)

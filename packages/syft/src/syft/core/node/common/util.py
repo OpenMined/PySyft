@@ -6,18 +6,21 @@ from typing import List
 from typing import Optional
 
 # third party
+import boto3
+from botocore.client import Config
 from pydantic import BaseSettings
 import requests
 
 # relative
+from ....grid import GridURL
+from ....util import size_mb
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...store.proxy_dataset import ProxyDataClass
-from ...store.util import get_s3_client
 
 
 def read_chunks(
-    fp: BytesIO, chunk_size: int = 1024**3
+    fp: BytesIO, chunk_size: int = 1024 ** 3
 ) -> Generator[bytes, None, None]:
     """Read data in chunks from the file."""
     while True:
@@ -199,3 +202,30 @@ def upload_to_s3_using_presigned(
     )
 
     return proxy_data
+
+
+def get_s3_client(settings: BaseSettings = BaseSettings()) -> "boto3.client.S3":
+    try:
+        s3_endpoint = settings.S3_ENDPOINT
+        s3_port = settings.S3_PORT
+        s3_grid_url = GridURL(host_or_ip=s3_endpoint, port=s3_port)
+        return boto3.client(
+            "s3",
+            endpoint_url=s3_grid_url.url,
+            aws_access_key_id=settings.S3_ROOT_USER,
+            aws_secret_access_key=settings.S3_ROOT_PWD,
+            config=Config(signature_version="s3v4"),
+            region_name=settings.S3_REGION,
+        )
+    except Exception as e:
+        print(f"Failed to create S3 Client with {s3_endpoint} {s3_port} {s3_grid_url}")
+        raise e
+
+
+def check_send_to_blob_storage(obj: Any, use_blob_storage: bool = False) -> bool:
+    # relative
+    from ...tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
+
+    if use_blob_storage and isinstance(obj, NDEPT) or size_mb(obj) > 1:
+        return True
+    return False

@@ -14,11 +14,11 @@ from typing_extensions import final
 # relative
 from ......grid import GridURL
 from .....common.serde.serializable import serializable
-from .....store.util import get_s3_client
 from ....domain.domain_interface import DomainInterface
 from ....domain.registry import DomainMessageRegistry
 from ...permissions.permissions import BasePermission
 from ...permissions.user_permissions import NoRestriction
+from ...util import get_s3_client
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
 from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
