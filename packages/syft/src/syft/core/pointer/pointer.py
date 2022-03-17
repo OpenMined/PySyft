@@ -213,9 +213,9 @@ class Pointer(AbstractPointer):
 
         obj = self.client.send_immediate_msg_with_reply(msg=obj_msg)
         if obj.obj.is_proxy:
-            proxy_url = obj.obj._data.url
-            client_url = self.client.url_from_path(proxy_url, add_prefix="/blob")
-            response = requests.get(client_url)
+            presigned_url_path = obj.obj._data.url
+            presigned_url = self.client.url_from_path(presigned_url_path)
+            response = requests.get(presigned_url)
 
             if response.status_code != 200:
                 raise Exception(

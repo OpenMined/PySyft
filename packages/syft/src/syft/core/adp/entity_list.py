@@ -62,7 +62,9 @@ class EntityList:
     }
 
     def __init__(
-        self, one_hot_lookup: List[Union[Entity, str]], entities_indexed: np.ndaray
+        self,
+        one_hot_lookup: np.ndarray[Union[Entity, str]],
+        entities_indexed: np.ndaray,
     ) -> None:
         self.one_hot_lookup = one_hot_lookup
         self.entities_indexed = entities_indexed

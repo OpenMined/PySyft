@@ -12,6 +12,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.entity import Entity
+from syft.core.adp.entity_list import EntityList
 from syft.util import size_mb
 
 DOMAIN1_PORT = 9082
@@ -106,9 +107,10 @@ def test_large_blob_upload() -> None:
 
     # for multiplier in [1, 10, 100, 1000]:
     # for multiplier in [1]:
-    multiplier = 1
-    # ndim = 200_000
-    ndim = 4000
+    multiplier = 1000
+    ndim = 1_000_000
+
+    # ndim = 10
     size_name = f"{multiplier}M"
     if multiplier == 1000:
         size_name = "1B"
@@ -127,9 +129,14 @@ def test_large_blob_upload() -> None:
     )
 
     ndept = True
-    entities = ["ishan"] * reference_data.shape[0]
     if not ndept:
         entities = [Entity(name=entity) for entity in entities]
+    else:
+        one_hot_lookup = np.array(["ishan"])
+        entities_indexed = np.zeros(reference_data.shape, dtype=np.uint32)
+        entities = EntityList(
+            one_hot_lookup=one_hot_lookup, entities_indexed=entities_indexed
+        )
 
     print("reference_data", type(reference_data), reference_data.dtype)
     tweets_data = sy.Tensor(reference_data).private(
@@ -145,7 +152,7 @@ def test_large_blob_upload() -> None:
 
     report[size_name]["create_tensor_secs"] = end_time - start_time
 
-    tweets_data_size = size_mb(sy.serialize(tweets_data, to_bytes=True))
+    tweets_data_size = size_mb(sy.serialize(tweets_data.child, to_bytes=True))
     report[size_name]["tensor_bytes_size_mb"] = tweets_data_size
     print(f"Serialized size for tweets data : {tweets_data_size}")
 
@@ -154,10 +161,11 @@ def test_large_blob_upload() -> None:
     unique_tag = str(uuid.uuid4())
     asset_name = f"{size_name}_tweets_{unique_tag}"
     domain_client.load_dataset(
-        assets={asset_name: tweets_data},
+        assets={asset_name: tweets_data.child},
         name=f"{unique_tag}",
         description=f"{size_name} - {datetime.now()}",
         use_blob_storage=use_blob_storage,
+        skip_checks=True,
     )
 
     end_time = time.time()
@@ -165,8 +173,12 @@ def test_large_blob_upload() -> None:
 
     start_time = time.time()
     dataset = domain_client.datasets[-1]
+    print("dataset", dataset)
     asset_ptr = dataset[asset_name]
+    print("asset_ptr", asset_ptr)
     result = asset_ptr.get()
+
+    # do we check the client or the GetReprService
 
     end_time = time.time()
     report[size_name]["download_tensor_secs"] = end_time - start_time

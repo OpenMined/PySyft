@@ -405,7 +405,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         schema = NDimEntityPhiTensor.get_capnp_schema()
         ndept_struct: capnp.lib.capnp._StructModule = schema.NDEPT  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        MAX_TRAVERSAL_LIMIT = 2 ** 64 - 1
         # to pack or not to pack?
         # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
         ndept_msg = ndept_struct.from_bytes_packed(

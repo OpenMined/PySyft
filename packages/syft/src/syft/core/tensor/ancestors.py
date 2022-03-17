@@ -489,7 +489,14 @@ class PhiTensorAncestor(TensorChainManager):
         #         " the tensor you're calling .private() on. Try again."
         #     )
 
-        one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
+        if not isinstance(entities, EntityList):
+            one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
+        else:
+            one_hot_lookup, entities_indexed = (
+                entities.one_hot_lookup,
+                entities.entities_indexed,
+            )
+
         for entity in one_hot_lookup:
             if not isinstance(entity, (str, Entity)):
                 raise ValueError(
