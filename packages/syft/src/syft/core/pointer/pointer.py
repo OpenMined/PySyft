@@ -213,7 +213,10 @@ class Pointer(AbstractPointer):
 
         obj = self.client.send_immediate_msg_with_reply(msg=obj_msg)
         if obj.obj.is_proxy:
-            response = requests.get(obj.obj._data.url)
+            proxy_url = obj.obj._data.url
+            client_url = self.client.url_from_path(proxy_url, add_prefix="/blob")
+            response = requests.get(client_url)
+
             if response.status_code != 200:
                 raise Exception(
                     f"Failed to get object from store. HTTP Status Code: {response.status_code}"
