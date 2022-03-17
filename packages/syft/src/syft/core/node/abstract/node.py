@@ -64,7 +64,7 @@ class AbstractNode(Address):
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
-        settings: BaseSettings = BaseSettings(),
+        settings: Optional[BaseSettings] = None,
     ):
         super().__init__(
             name=name, network=network, domain=domain, device=device, vm=vm

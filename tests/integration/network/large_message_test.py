@@ -102,25 +102,31 @@ def test_large_blob_upload() -> None:
         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
     )
 
+    report = {}
+
     # for multiplier in [1, 10, 100, 1000]:
     # for multiplier in [1]:
     multiplier = 1
-    # ndim = 1_000_000
+    # ndim = 200_000
     ndim = 4000
     size_name = f"{multiplier}M"
     if multiplier == 1000:
         size_name = "1B"
 
-    rows = 1
-    cols = 7
+    report[size_name] = {}
 
+    rows = 1
+    cols = 1
+    use_blob_storage = True
+
+    start_time = time.time()
     upper = highest()
     lower = -highest()
     reference_data = np.random.randint(
         lower, upper, size=(multiplier * ndim, rows, cols), dtype=np.int32
     )
 
-    ndept = False
+    ndept = True
     entities = ["ishan"] * reference_data.shape[0]
     if not ndept:
         entities = [Entity(name=entity) for entity in entities]
@@ -130,36 +136,47 @@ def test_large_blob_upload() -> None:
         min_val=0, max_val=30, entities=entities, ndept=ndept
     )
 
+    report[size_name]["tensor_type"] = type(tweets_data.child).__name__
+
     print("what are we getting", type(tweets_data))
     print("what type is the child", type(tweets_data.child))
 
+    end_time = time.time()
+
+    report[size_name]["create_tensor_secs"] = end_time - start_time
+
     tweets_data_size = size_mb(sy.serialize(tweets_data, to_bytes=True))
+    report[size_name]["tensor_bytes_size_mb"] = tweets_data_size
     print(f"Serialized size for tweets data : {tweets_data_size}")
 
-    # assert False
-
     # blocking
+    start_time = time.time()
     unique_tag = str(uuid.uuid4())
-    asset_name = f"{size_name}_tweets"
+    asset_name = f"{size_name}_tweets_{unique_tag}"
     domain_client.load_dataset(
         assets={asset_name: tweets_data},
         name=f"{unique_tag}",
         description=f"{size_name} - {datetime.now()}",
+        use_blob_storage=use_blob_storage,
     )
 
-    print("done uploading")
-    # stdlib
-    import time
+    end_time = time.time()
+    report[size_name]["upload_tensor_secs"] = end_time - start_time
 
-    time.sleep(3)
-
+    start_time = time.time()
     dataset = domain_client.datasets[-1]
     asset_ptr = dataset[asset_name]
     result = asset_ptr.get()
 
+    end_time = time.time()
+    report[size_name]["download_tensor_secs"] = end_time - start_time
+
     print(type(result))
+
+    print(report)
 
     assert tweets_data == result
 
     print("DONE")
     assert False
+    x = {'1M': {'tensor_type': <class 'syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor'>, 'create_tensor_secs': 0.1321721076965332, 'tensor_bytes_size': 2.1665191650390625, 'upload_tensor_secs': 1.172835111618042, 'download_tensor_secs': 4.439817190170288}}

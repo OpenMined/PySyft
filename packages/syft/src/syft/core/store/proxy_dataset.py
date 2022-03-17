@@ -42,15 +42,19 @@ class ProxyDataClass:
         return self.dataset_name + "/" + self.asset_name
 
     def get_s3_data(self, settings: BaseSettings) -> Any:
-        # relative
-        from ..node.common.util import get_s3_client
+        try:
+            # relative
+            from ..node.common.util import get_s3_client
 
-        s3_client = get_s3_client(settings=settings)
-        if s3_client is None:
-            return
-        response = s3_client.get_object(Bucket=self.node_id.no_dash, Key=self.name)
-        data = response.get("Body", b"").read()
-        return deserialize(data, from_bytes=True)
+            s3_client = get_s3_client(settings=settings)
+            if s3_client is None:
+                raise Exception(f"get_s3_client returned None")
+            response = s3_client.get_object(Bucket=self.node_id.no_dash, Key=self.name)
+            data = response.get("Body", b"").read()
+            return deserialize(data, from_bytes=True)
+        except Exception as e:
+            print(f"Failed to get data from proxy object {e}.")
+            raise e
 
     def generate_presigned_url(self, settings: BaseSettings) -> None:
         # relative

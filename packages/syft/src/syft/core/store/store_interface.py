@@ -1,5 +1,6 @@
 # stdlib
 from abc import ABC
+from typing import Any
 from typing import Iterable
 from typing import Optional
 from typing import Type
@@ -170,3 +171,6 @@ class ObjectStore(ABC):
     @property
     def class_name(self) -> str:
         return str(self.__class__.__name__)
+
+    def resolve_proxy_object(self, obj: Any) -> Any:
+        traceback_and_raise(NotImplementedError)

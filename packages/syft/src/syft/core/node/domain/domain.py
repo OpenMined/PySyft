@@ -105,8 +105,8 @@ class Domain(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
-        settings: BaseSettings = BaseSettings(),
         store_type: type = RedisStore,
+        settings: Optional[BaseSettings] = None,
     ):
 
         if db_engine is None:
@@ -122,6 +122,7 @@ class Domain(Node):
             verify_key=verify_key,
             db_engine=db_engine,
             store_type=store_type,
+            settings=settings,
         )
 
         # share settings with the FastAPI application level

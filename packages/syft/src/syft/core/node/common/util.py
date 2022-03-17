@@ -20,7 +20,7 @@ from ...store.proxy_dataset import ProxyDataClass
 
 
 def read_chunks(
-    fp: BytesIO, chunk_size: int = 1024**3
+    fp: BytesIO, chunk_size: int = 1024 ** 3
 ) -> Generator[bytes, None, None]:
     """Read data in chunks from the file."""
     while True:
@@ -204,7 +204,7 @@ def upload_to_s3_using_presigned(
     return proxy_data
 
 
-def get_s3_client(settings: BaseSettings = BaseSettings()) -> "boto3.client.S3":
+def get_s3_client(settings: BaseSettings) -> "boto3.client.S3":
     try:
         s3_endpoint = settings.S3_ENDPOINT
         s3_port = settings.S3_PORT
@@ -222,14 +222,10 @@ def get_s3_client(settings: BaseSettings = BaseSettings()) -> "boto3.client.S3":
         raise e
 
 
-def check_send_to_blob_storage(
-    obj: Any, settings: Optional[BaseSettings] = None, use_blob_storage: bool = False
-) -> bool:
+def check_send_to_blob_storage(obj: Any, use_blob_storage: bool = False) -> bool:
     """Check if the data needs to be send to Seaweed storage depending upon its size and type.
-
     Args:
         obj (Any): Data to be stored to Seaweed.
-        settings (Optional[BaseSettings], optional): domain client settings. Defaults to None.
         use_blob_storage (bool, optional): Explicit flag to send the data to blob storage. Defaults to False.
 
     Returns:
@@ -238,10 +234,6 @@ def check_send_to_blob_storage(
     # relative
     from ...tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 
-    # Environment variables take precedence is provided
-    if hasattr(settings, "USE_BLOB_STORAGE"):
-        use_blob_storage = settings.USE_BLOB_STORAGE  # type: ignore
-
-    if use_blob_storage and isinstance(obj, NDEPT) or size_mb(obj) > 1:
+    if use_blob_storage and (isinstance(obj, NDEPT) or size_mb(obj) > 1):
         return True
     return False

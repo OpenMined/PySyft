@@ -217,7 +217,6 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
             )
 
         try:
-
             # if no object is specified, return all objects
             if msg.obj_id is None:
                 objs = node.store.get_objects_of_type(obj_type=object)

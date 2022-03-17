@@ -41,7 +41,7 @@ class VirtualMachine(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         store_type: type = DictStore,
-        settings: BaseSettings = BaseSettings(),
+        settings: Optional[BaseSettings] = None,
     ):
         super().__init__(
             name=name,
@@ -52,7 +52,6 @@ class VirtualMachine(Node):
             signing_key=signing_key,
             verify_key=verify_key,
             store_type=store_type,
-            settings=settings,
         )
 
         # specific location with name

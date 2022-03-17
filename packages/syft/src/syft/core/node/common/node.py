@@ -130,7 +130,7 @@ class Node(AbstractNode):
         TableBase: Any = None,
         db_engine: Any = None,
         store_type: type = RedisStore,
-        settings: BaseSettings = BaseSettings(),
+        settings: Optional[BaseSettings] = None,
     ):
 
         # The node has a name - it exists purely to help the

@@ -20,6 +20,7 @@ import syft as sy
 from ....common.uid import UID
 from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
+from ....store.proxy_dataset import ProxyDataClass
 from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj_metadata import ObjectMetadata
 
@@ -65,6 +66,11 @@ class DictStore(ObjectStore):
     def __contains__(self, key: UID) -> bool:
         return key in self.kv_store
 
+    def resolve_proxy_object(self, obj: Any) -> Any:
+        raise Exception(
+            f"Proxy Objects {type(obj)} should not be in Nodes with DictStore"
+        )
+
     def __getitem__(self, key: Union[UID, str, bytes]) -> StorableObject:
         try:
             local_session = sessionmaker(bind=self.db)()
@@ -99,6 +105,9 @@ class DictStore(ObjectStore):
 
             if id(obj) == id(store_obj):
                 raise Exception("Objects must use deepcopy or mutation can occur")
+
+            if isinstance(obj, ProxyDataClass):
+                obj = self.resolve_proxy_object(obj=obj)
 
             obj_metadata = (
                 local_session.query(ObjectMetadata).filter_by(obj=key_str).first()

@@ -247,6 +247,7 @@ services:
     command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=1024"
     volumes:
       - ./seaweedfs/s3config.json:/etc/s3config.json
+      - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
     depends_on:
       - redis
     labels:

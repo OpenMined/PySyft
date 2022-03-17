@@ -111,7 +111,6 @@ services:
     profiles:
       - blob-storage
     volumes:
-      - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
       - ./data/seaweedfs:/data
     ports:
       - "9333" # admin

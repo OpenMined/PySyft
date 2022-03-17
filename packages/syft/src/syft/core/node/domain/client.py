@@ -559,6 +559,7 @@ class DomainClient(Client):
         description: Optional[str] = None,
         skip_checks: bool = False,
         chunk_size: int = 536870912,  # 500 MB
+        use_blob_storage: bool = False,
         **metadata: Dict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
@@ -678,10 +679,12 @@ class DomainClient(Client):
             if isinstance(v, str):  # type: ignore
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
-        # If one of the assets needs to be send to blob_storage, then store all other assets to blob storage as well
+        # If one of the assets needs to be send to blob_storage, then store all other
+        # assets to blob storage as well
+        # TODO: Determine use_blob_storage from the clients node metadata
         send_assets_to_blob_storage = any(
             [
-                check_send_to_blob_storage(obj=asset, use_blob_storage=True)
+                check_send_to_blob_storage(obj=asset, use_blob_storage=use_blob_storage)
                 for asset in assets.values()
             ]
         )

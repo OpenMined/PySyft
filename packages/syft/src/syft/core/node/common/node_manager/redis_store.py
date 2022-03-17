@@ -1,4 +1,5 @@
 # stdlib
+from typing import Any
 from typing import Collection
 from typing import Iterable
 from typing import List
@@ -25,8 +26,10 @@ from ..node_table.bin_obj_metadata import ObjectMetadata
 
 
 class RedisStore(ObjectStore):
-    def __init__(self, db: Session, settings: BaseSettings) -> None:
+    def __init__(self, db: Session, settings: Optional[BaseSettings] = None) -> None:
         self.db = db
+        if settings is None:
+            raise Exception(f"RedisStore requires Settings")
         self.settings = settings
         try:
             # TODO: refactor hard coded host and port to configuration
@@ -42,6 +45,7 @@ class RedisStore(ObjectStore):
             return None
 
     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
+        # TODO: remove this kind of operation which pulls all the data out in one go
         # raise NotImplementedError("get_objects_of_type")
         # return [obj for obj in self.values() if isinstance(obj.data, obj_type)]
         return self.values()
@@ -72,6 +76,12 @@ class RedisStore(ObjectStore):
     def __contains__(self, key: UID) -> bool:
         return str(key.value) in self.redis
 
+    def resolve_proxy_object(self, obj: Any) -> Any:
+        obj = obj.get_s3_data(settings=self.settings)
+        if obj is None:
+            raise Exception(f"Failed to fetch real object from proxy. {type(obj)}")
+        return obj
+
     def __getitem__(self, key: Union[UID, str, bytes]) -> StorableObject:
         local_session = sessionmaker(bind=self.db)()
 
@@ -86,10 +96,6 @@ class RedisStore(ObjectStore):
             key_uid = UID.from_string(key_str)
 
         obj = self.redis.get(key_str)
-        # TODO: resolve real object
-        # if obj.is_proxy:
-        # write code here
-        # return self._data.get_s3_data(settings=settings)
         obj_metadata = (
             local_session.query(ObjectMetadata).filter_by(obj=key_str).first()
         )
@@ -97,6 +103,8 @@ class RedisStore(ObjectStore):
             raise KeyError(f"Object not found! for UID: {key_str}")
 
         obj = syft.deserialize(obj, from_bytes=True)
+        if isinstance(obj, ProxyDataClass):
+            obj = self.resolve_proxy_object(obj=obj)
 
         obj = StorableObject(
             id=key_uid,
