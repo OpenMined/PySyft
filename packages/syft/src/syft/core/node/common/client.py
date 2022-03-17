@@ -294,12 +294,13 @@ class Client(AbstractNodeClient):
             msg=signed_msg, timeout=timeout
         )
 
-    def url_from_path(self, path: str) -> str:
+    def url_from_path(self, path: str, add_prefix: str = "") -> str:
         new_url = GridURL.from_url(url=path)
         client_url = self.routes[0].connection.base_url.copy()  # type: ignore
         new_url.protocol = client_url.protocol
         new_url.port = client_url.port
         new_url.host_or_ip = client_url.host_or_ip
+        new_url.path = f"{add_prefix}{new_url.path}"
         return new_url.url
 
     def __repr__(self) -> str:
