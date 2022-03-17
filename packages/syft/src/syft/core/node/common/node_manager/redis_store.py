@@ -29,7 +29,7 @@ class RedisStore(ObjectStore):
     def __init__(self, db: Session, settings: Optional[BaseSettings] = None) -> None:
         self.db = db
         if settings is None:
-            raise Exception(f"RedisStore requires Settings")
+            raise Exception("RedisStore requires Settings")
         self.settings = settings
         try:
             # TODO: refactor hard coded host and port to configuration
@@ -38,9 +38,11 @@ class RedisStore(ObjectStore):
             print("failed to load redis", e)
             raise e
 
-    def get_object(self, key: UID) -> Optional[StorableObject]:
+    def get_object(
+        self, key: UID, proxy_only: bool = False
+    ) -> Optional[StorableObject]:
         try:
-            return self.__getitem__(key)
+            return self.__getitem__(key, proxy_only)
         except KeyError as e:  # noqa: F841
             return None
 
@@ -82,7 +84,9 @@ class RedisStore(ObjectStore):
             raise Exception(f"Failed to fetch real object from proxy. {type(obj)}")
         return obj
 
-    def __getitem__(self, key: Union[UID, str, bytes]) -> StorableObject:
+    def __getitem__(
+        self, key: Union[UID, str, bytes], proxy_only: bool = False
+    ) -> StorableObject:
         local_session = sessionmaker(bind=self.db)()
 
         if isinstance(key, UID):
@@ -103,7 +107,7 @@ class RedisStore(ObjectStore):
             raise KeyError(f"Object not found! for UID: {key_str}")
 
         obj = syft.deserialize(obj, from_bytes=True)
-        if isinstance(obj, ProxyDataClass):
+        if proxy_only is False and isinstance(obj, ProxyDataClass):
             obj = self.resolve_proxy_object(obj=obj)
 
         obj = StorableObject(

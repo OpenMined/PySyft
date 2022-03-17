@@ -6,7 +6,13 @@ from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import get_fully_qualified_name
 from ....util import validate_type
+from .deserialize import PROTOBUF_END_MAGIC_HEADER
+from .deserialize import PROTOBUF_START_MAGIC_HEADER
 from .types import Deserializeable
+
+
+def create_protobuf_magic_header(obj_type: str) -> str:
+    return f"{PROTOBUF_START_MAGIC_HEADER}{obj_type}{PROTOBUF_END_MAGIC_HEADER}"
 
 
 def _serialize(
@@ -76,8 +82,10 @@ def _serialize(
         # indent=None means no white space or \n in the serialized version
         # this is compatible with json.dumps(x, indent=None)
         serialized_data = is_serializable._object2proto().SerializeToString()
+        obj_type = get_fully_qualified_name(obj=is_serializable)
         blob: Message = DataMessage(
-            obj_type=get_fully_qualified_name(obj=is_serializable),
+            magic_header=create_protobuf_magic_header(obj_type=obj_type),
+            obj_type=obj_type,
             content=serialized_data,
         )
         return validate_type(blob.SerializeToString(), bytes)

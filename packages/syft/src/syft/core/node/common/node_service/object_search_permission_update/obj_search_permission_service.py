@@ -22,7 +22,7 @@ class ImmediateObjectSearchPermissionUpdateService(ImmediateNodeServiceWithoutRe
         msg: ObjectSearchPermissionUpdateMessage,
         verify_key: VerifyKey,
     ) -> None:
-        storable_object = node.store[msg.target_object_id]
+        storable_object = node.store.get_object(msg.target_object_id, proxy_only=True)
         if (
             verify_key != node.root_verify_key
             or verify_key not in storable_object.read_permissions

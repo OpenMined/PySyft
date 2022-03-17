@@ -31,7 +31,9 @@ class DictStore(ObjectStore):
         self.settings = settings
         self.kv_store: dict[UID, Any] = {}
 
-    def get_object(self, key: UID) -> Optional[StorableObject]:
+    def get_object(
+        self, key: UID, proxy_only: bool = False
+    ) -> Optional[StorableObject]:
         try:
             return self.__getitem__(key)
         except KeyError as e:  # noqa: F841

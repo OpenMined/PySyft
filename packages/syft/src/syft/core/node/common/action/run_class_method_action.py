@@ -227,7 +227,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             # TODO: Upload object to seaweed store, instead of storing in redis
             # create a proxy object class and store it here.
             if check_send_to_blob_storage(
-                obj=result, use_blob_storage=node.settings.USE_BLOB_STORAGE
+                obj=result,
+                use_blob_storage=getattr(node.settings, "USE_BLOB_STORAGE", False),
             ):
                 result = upload_result_to_s3(
                     asset_name=self.id_at_location.no_dash,

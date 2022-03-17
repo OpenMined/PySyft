@@ -195,11 +195,11 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             raise KeyError("Object not already in store")
 
         _self = store_object_self.data
-        args = [node.store[arg_id].data for arg_id in msg.args_id]
+        args = [node.store.get_object(arg_id).data for arg_id in msg.args_id]
 
         kwargs = {}  # type: ignore
         for key, kwarg_id in msg.kwargs_id.items():
-            data = node.store[kwarg_id].data
+            data = node.store.get_object(kwarg_id).data
             if data is None:
                 raise KeyError(f"Key {key} is not available")
 

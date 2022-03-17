@@ -401,6 +401,9 @@ class StoreClient:
     def __iter__(self) -> Iterator[Any]:
         return self.store.__iter__()
 
+    def get_object(self, id: Union[str, int, UID]) -> Pointer:
+        return self[id]
+
     #
     # def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
     #

@@ -179,4 +179,3 @@ def test_large_blob_upload() -> None:
 
     print("DONE")
     assert False
-    x = {'1M': {'tensor_type': <class 'syft.core.tensor.autodp.row_entity_phi.RowEntityPhiTensor'>, 'create_tensor_secs': 0.1321721076965332, 'tensor_bytes_size': 2.1665191650390625, 'upload_tensor_secs': 1.172835111618042, 'download_tensor_secs': 4.439817190170288}}

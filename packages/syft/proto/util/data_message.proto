@@ -2,6 +2,7 @@ syntax = "proto3";
 package syft.util;
 
 message DataMessage {
-  string obj_type = 1;
-  bytes content = 2;
+  string magic_header = 1;
+  string obj_type = 2;
+  bytes content = 3;
 }

@@ -162,7 +162,11 @@ class GetObjectAction(ImmediateActionWithReply):
     ) -> ImmediateSyftMessageWithoutReply:
         try:
             try:
-                storable_object = node.store[self.id_at_location]
+                storable_object = node.store.get_object(
+                    self.id_at_location, proxy_only=True
+                )
+                if storable_object is None:
+                    raise KeyError(f"Object not found! for UID: {self.id_at_location}")
             except Exception as e:
                 log = (
                     f"Unable to Get Object with ID {self.id_at_location} from store. "
@@ -185,6 +189,9 @@ class GetObjectAction(ImmediateActionWithReply):
             obj = validate_type(
                 storable_object.clean_copy(settings=node.settings), StorableObject
             )
+
+            if obj.is_proxy:
+                obj.data.generate_presigned_url(settings=node.settings, public_url=True)
 
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 

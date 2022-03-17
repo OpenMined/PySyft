@@ -9,6 +9,7 @@ from pydantic import BaseSettings
 from ...core.common.serde.deserialize import _deserialize as deserialize
 from ...core.common.serde.serializable import serializable
 from ...core.common.uid import UID
+from ...grid import GridURL
 
 
 @serializable(recursive_serde=True)
@@ -48,7 +49,7 @@ class ProxyDataClass:
 
             s3_client = get_s3_client(settings=settings)
             if s3_client is None:
-                raise Exception(f"get_s3_client returned None")
+                raise Exception("get_s3_client returned None")
             response = s3_client.get_object(Bucket=self.node_id.no_dash, Key=self.name)
             data = response.get("Body", b"").read()
             return deserialize(data, from_bytes=True)
@@ -56,7 +57,9 @@ class ProxyDataClass:
             print(f"Failed to get data from proxy object {e}.")
             raise e
 
-    def generate_presigned_url(self, settings: BaseSettings) -> None:
+    def generate_presigned_url(
+        self, settings: BaseSettings, public_url: bool = False
+    ) -> None:
         # relative
         from ..node.common.util import get_s3_client
 
@@ -68,4 +71,11 @@ class ProxyDataClass:
             ExpiresIn=settings.S3_PRESIGNED_TIMEOUT_SECS,
             HttpMethod="GET",
         )
+
+        if public_url:
+            grid_url = GridURL.from_url(url=download_url)
+            # add /blob to path
+            grid_url.path = f"/blob{grid_url.path}"
+            download_url = grid_url.url
+
         self.url = download_url

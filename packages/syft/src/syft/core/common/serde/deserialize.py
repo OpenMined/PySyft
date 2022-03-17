@@ -18,6 +18,11 @@ CAPNP_END_MAGIC_HEADER = ":capnp"
 CAPNP_START_MAGIC_HEADER_BYTES = CAPNP_START_MAGIC_HEADER.encode("utf-8")
 CAPNP_END_MAGIC_HEADER_BYTES = CAPNP_END_MAGIC_HEADER.encode("utf-8")
 
+PROTOBUF_START_MAGIC_HEADER = "protobuf:"
+PROTOBUF_END_MAGIC_HEADER = ":protobuf"
+PROTOBUF_START_MAGIC_HEADER_BYTES = PROTOBUF_START_MAGIC_HEADER.encode("utf-8")
+PROTOBUF_END_MAGIC_HEADER_BYTES = PROTOBUF_END_MAGIC_HEADER.encode("utf-8")
+
 CAPNP_REGISTRY: Dict[str, Callable] = {}
 
 
@@ -171,7 +176,14 @@ class CapnpMagicBytesNotFound(Exception):
 
 def deserialize_capnp(buf: bytes) -> Any:
     global CAPNP_REGISTRY
+    proto_start_index = buf.find(PROTOBUF_START_MAGIC_HEADER_BYTES)
     start_index = buf.find(CAPNP_START_MAGIC_HEADER_BYTES)
+
+    if proto_start_index != -1 and (proto_start_index < start_index):
+        # we have protobuf on the outside
+        raise CapnpMagicBytesNotFound(
+            f"protobuf Magic Header {PROTOBUF_START_MAGIC_HEADER} found in bytes"
+        )
     if start_index == -1:
         raise CapnpMagicBytesNotFound(
             f"capnp Magic Header {CAPNP_START_MAGIC_HEADER}" + "not found in bytes"

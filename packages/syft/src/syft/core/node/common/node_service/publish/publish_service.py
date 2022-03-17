@@ -34,11 +34,11 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
             print(publish_id)
             try:
                 print(
-                    "PublishScalarsService:36: TRY: publish_object = node.store[publish_id]"
+                    "PublishScalarsService:36: TRY: publish_object = node.store.get_object(publish_id)"
                 )
-                publish_object = node.store[publish_id]
+                publish_object = node.store.get_object(publish_id)
                 print(
-                    "PublishScalarsService:38: SUCCESS: publish_object = node.store[publish_id]"
+                    "PublishScalarsService:38: SUCCESS: publish_object = node.store.get_object(publish_id)"
                 )
                 if isinstance(publish_object.data, PassthroughTensor):
                     print(

@@ -223,7 +223,10 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
 
             # if object id is specified - return just that object
             else:
-                objs = [node.store[msg.obj_id]]
+                # TODO: refactor to proxy_only=True so that we can do this quickly
+                # we need to change the pointer constructor below to not require
+                # the original object
+                objs = [node.store.get_object(msg.obj_id, proxy_only=False)]
 
             for obj in objs:
                 # if this tensor allows anyone to search for it, then one of its keys

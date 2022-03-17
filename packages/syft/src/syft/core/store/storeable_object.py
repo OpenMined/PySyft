@@ -315,15 +315,6 @@ class StorableObject(AbstractStorableObject):
         This method return a copy of self, but clean up the search_permissions and
         read_permissions attributes.
         """
-        if self.is_proxy:
-            self._data.generate_presigned_url(settings=settings)
-            return StorableObject(
-                id=self.id,
-                data=self._data,
-                tags=self.tags,
-                description=self.description,
-            )
-        else:
-            return StorableObject(
-                id=self.id, data=self.data, tags=self.tags, description=self.description
-            )
+        return StorableObject(
+            id=self.id, data=self.data, tags=self.tags, description=self.description
+        )

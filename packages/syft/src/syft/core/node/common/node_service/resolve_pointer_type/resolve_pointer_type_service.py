@@ -36,7 +36,9 @@ class ResolvePointerTypeService(ImmediateNodeServiceWithReply):
         Returns:
             ResolvePointerTypeAnswerMessage: details of the generated pointer type.
         """
-        object = node.store[msg.id_at_location]
+        # TODO: refactor so we can get the pointer without deserializing the whole
+        # object which could be over in the blob store
+        object = node.store.get_object(msg.id_at_location, proxy_only=False)
         type_qualname = object.object_qualname
         return ResolvePointerTypeAnswerMessage(
             address=msg.reply_to, type_path=type_qualname

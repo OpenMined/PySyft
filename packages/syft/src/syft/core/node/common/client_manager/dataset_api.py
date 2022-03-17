@@ -329,7 +329,7 @@ class Dataset:
         keys = list()
         for d in self.data:
             if d["name"] == key:
-                return self.client.store[d["id"]]  # type: ignore
+                return self.client.store.get_object(d["id"])  # type: ignore
             keys.append(d["name"])
 
         raise KeyError(
@@ -491,4 +491,4 @@ class Dataset:
             asset_name = asset["name"]
             if asset_name not in exclude:
                 asset_id = asset["id"].replace("-", "")
-                yield self.client.store[asset_id]  # type: ignore
+                yield self.client.store.get_object(asset_id)  # type: ignore

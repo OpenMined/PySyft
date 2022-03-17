@@ -64,6 +64,8 @@ class RequestReceiverService(ImmediateNodeServiceWithoutReply):
             msg.object_tags.pop()
 
         if "budget" not in msg.object_type:
-            msg.object_tags.extend(node.store[msg.object_id]._tags)
+            msg.object_tags.extend(
+                node.store.get_object(msg.object_id, proxy_only=True)._tags
+            )
 
         node.requests.append(msg)
