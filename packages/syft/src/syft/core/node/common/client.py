@@ -500,10 +500,10 @@ class StoreClient:
             msg = ObjectSearchMessage(
                 address=self.client.address, reply_to=self.client.address, obj_id=key
             )
-
             results = getattr(
                 self.client.send_immediate_msg_with_reply(msg=msg), "results", None
             )
+
             if results is None:
                 traceback_and_raise(ValueError("TODO"))
 

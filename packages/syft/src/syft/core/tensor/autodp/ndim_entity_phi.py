@@ -39,18 +39,18 @@ from .initial_gamma import IntermediateGammaTensor
 from .single_entity_phi import SingleEntityPhiTensor
 
 
-@serializable(recursive_serde=True)
-class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
-    __name__ = "TensorWrappedNDimEntityPhiTensorPointer"
+# @serializable(recursive_serde=True)
+class NDimEntityPhiTensorPointer(Pointer):
+    __name__ = "NDimEntityPhiTensorPointer"
     __module__ = "syft.core.tensor.autodp.ndim_entity_phi"
-    __attr_allowlist__ = ("min_vals", "max_vals", "entities")
+
     # TODO :should create serialization for Entity List
 
     def __init__(
         self,
-        entities: EntityList,
-        min_vals: np.typing.ArrayLike,
-        max_vals: np.typing.ArrayLike,
+        # entities: EntityList,
+        # min_vals: np.typing.ArrayLike,
+        # max_vals: np.typing.ArrayLike,
         client: Any,
         # scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
         id_at_location: Optional[UID] = None,
@@ -68,17 +68,17 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
             description=description,
         )
 
-        self.min_vals = min_vals
-        self.max_vals = max_vals
-        self.entities = entities
+        # self.min_vals = min_vals
+        # self.max_vals = max_vals
+        # self.entities = entities
         # self.scalar_manager = scalar_manager
-        self.public_shape = public_shape
-        self.public_dtype = public_dtype
+        # self.public_shape = public_shape
+        # self.public_dtype = public_dtype
 
 
 @serializable(capnp_bytes=True)
 class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
-    PointerClassOverride = TensorWrappedNDimEntityPhiTensorPointer
+    PointerClassOverride = NDimEntityPhiTensorPointer
     __attr_allowlist__ = ["child", "min_vals", "max_vals", "entities"]
     __slots__ = (
         "child",
@@ -159,12 +159,12 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         object_type: str = "",
         tags: Optional[List[str]] = None,
         description: str = "",
-    ) -> TensorWrappedNDimEntityPhiTensorPointer:
-        return TensorWrappedNDimEntityPhiTensorPointer(
+    ) -> NDimEntityPhiTensorPointer:
+        return NDimEntityPhiTensorPointer(
             # Arguments specifically for SEPhiTensor
-            entities=self.entities,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            # entities=self.entities,
+            # min_vals=self.min_vals,
+            # max_vals=self.max_vals,
             # scalar_manager=self.scalar_manager,
             # Arguments required for a Pointer to work
             client=client,
@@ -405,7 +405,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         schema = NDimEntityPhiTensor.get_capnp_schema()
         ndept_struct: capnp.lib.capnp._StructModule = schema.NDEPT  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2 ** 64 - 1
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
         ndept_msg = ndept_struct.from_bytes_packed(

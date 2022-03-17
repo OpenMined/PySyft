@@ -424,7 +424,6 @@ class Pointer(AbstractPointer):
         # TODO: we need _proto2object to include a reference to the node doing the
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
-
         points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
 

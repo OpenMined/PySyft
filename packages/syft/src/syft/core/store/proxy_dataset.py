@@ -1,5 +1,7 @@
 # stdlib
 from typing import Any
+from typing import Callable
+from typing import Optional
 from typing import Tuple
 
 # third party
@@ -20,6 +22,7 @@ class ProxyDataClass:
         "dataset_name",
         "shape",
         "dtype",
+        "fqn",
         "url",
     ]
 
@@ -29,18 +32,24 @@ class ProxyDataClass:
         dataset_name: str,
         shape: Tuple[int, ...],
         dtype: str,
+        fqn: str,
         node_id: UID,
     ) -> None:
         self.asset_name = asset_name
         self.dataset_name = dataset_name
         self.shape = shape
         self.dtype = dtype
+        self.fqn = fqn
         self.node_id = node_id
         self.url = ""
 
     @property
     def name(self) -> str:
         return self.dataset_name + "/" + self.asset_name
+
+    @property
+    def data_fully_qualified_name(self) -> str:
+        return self.fqn
 
     def get_s3_data(self, settings: BaseSettings) -> Any:
         try:

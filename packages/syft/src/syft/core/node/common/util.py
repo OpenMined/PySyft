@@ -10,9 +10,11 @@ import boto3
 from botocore.client import Config
 from pydantic import BaseSettings
 import requests
+from tqdm import tqdm
 
 # relative
 from ....grid import GridURL
+from ....util import get_fully_qualified_name
 from ....util import size_mb
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
@@ -90,12 +92,15 @@ def upload_result_to_s3(
     print(upload_response)
 
     # 3 - Create a ProxyDataClass for the given data
+    # Retrieve fully qualified name to  use for pointer creation.
+    data_fqn = str(get_fully_qualified_name(data))
     data_dtype = str(type(data))
     proxy_obj = ProxyDataClass(
         asset_name=asset_name,
         dataset_name=dataset_name,
         node_id=domain_id,
         dtype=data_dtype,
+        fqn=data_fqn,
         shape=data.shape,
     )
     return proxy_obj
@@ -131,7 +136,7 @@ def upload_to_s3_using_presigned(
     Returns:
         ProxyDataClass: Class to store metadata about the data that is uploaded to Seaweed.
     """
-
+    data_upload_description = f"Uploading {asset_name}"
     # relative
     from .node_service.upload_service.upload_service_messages import (
         UploadDataCompleteMessage,
@@ -161,7 +166,9 @@ def upload_to_s3_using_presigned(
     binary_buffer = BytesIO(binary_dataset)
     parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
     etag_chunk_no_pairs = list()
-    for data_chunk, part in zip(read_chunks(binary_buffer, chunk_size), parts):
+    data_chunks = zip(read_chunks(binary_buffer, chunk_size), parts)
+    for _ in tqdm(parts, desc=data_upload_description):
+        data_chunk, part = next(data_chunks)
         presigned_url = part["url"]
         part_no = part["part_no"]
         client_url = client.url_from_path(presigned_url)
@@ -192,12 +199,15 @@ def upload_to_s3_using_presigned(
     )
 
     # Step 5 - Create a proxy dataset for the uploaded data.
+    # Retrieve fully qualified name to  use for pointer creation.
+    data_fqn = str(get_fully_qualified_name(data))
     data_dtype = str(type(data))
     proxy_data = ProxyDataClass(
         asset_name=asset_name,
         dataset_name=dataset_name,
         node_id=client.id,
         dtype=data_dtype,
+        fqn=data_fqn,
         shape=data.shape,
     )
 

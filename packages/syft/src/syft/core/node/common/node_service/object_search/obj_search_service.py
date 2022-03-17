@@ -92,7 +92,6 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-
         return ObjectSearchMessage(
             msg_id=sy.deserialize(blob=proto.msg_id),
             address=sy.deserialize(blob=proto.address),
@@ -226,7 +225,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 # TODO: refactor to proxy_only=True so that we can do this quickly
                 # we need to change the pointer constructor below to not require
                 # the original object
-                objs = [node.store.get_object(msg.obj_id, proxy_only=False)]
+                objs = [node.store.get_object(msg.obj_id, proxy_only=True)]
 
             for obj in objs:
                 # if this tensor allows anyone to search for it, then one of its keys
@@ -239,7 +238,13 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or verify_key == node.root_verify_key
                     or contains_all_in_permissions
                 ):
-                    if hasattr(obj.data, "init_pointer"):
+
+                    if obj.is_proxy:
+                        ptr_constructor = obj2pointer_type(
+                            fqn=obj.data.data_fully_qualified_name
+                        )
+
+                    elif hasattr(obj.data, "init_pointer"):
                         ptr_constructor = obj.data.init_pointer  # type: ignore
                     else:
                         ptr_constructor = obj2pointer_type(obj=obj.data)
