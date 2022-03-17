@@ -678,7 +678,15 @@ class DomainClient(Client):
             if isinstance(v, str):  # type: ignore
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
-        if check_send_to_blob_storage(obj=asset, use_blob_storage=True):
+        # If one of the assets needs to be send to blob_storage, then store all other assets to blob storage as well
+        send_assets_to_blob_storage = any(
+            [
+                check_send_to_blob_storage(obj=asset, use_blob_storage=True)
+                for asset in assets.values()
+            ]
+        )
+
+        if send_assets_to_blob_storage:
             # upload to blob storage
             proxy_assets: Dict[str, ProxyDataClass] = {}
             # send each asset to blob storage and pack the results back

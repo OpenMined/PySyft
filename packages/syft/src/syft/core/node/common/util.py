@@ -225,10 +225,20 @@ def get_s3_client(settings: BaseSettings = BaseSettings()) -> "boto3.client.S3":
 def check_send_to_blob_storage(
     obj: Any, settings: Optional[BaseSettings] = None, use_blob_storage: bool = False
 ) -> bool:
+    """Check if the data needs to be send to Seaweed storage depending upon its size and type.
+
+    Args:
+        obj (Any): Data to be stored to Seaweed.
+        settings (Optional[BaseSettings], optional): domain client settings. Defaults to None.
+        use_blob_storage (bool, optional): Explicit flag to send the data to blob storage. Defaults to False.
+
+    Returns:
+        bool: _description_
+    """
     # relative
     from ...tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 
-    # Envrionment variables take precedence is provided
+    # Environment variables take precedence is provided
     if hasattr(settings, "USE_BLOB_STORAGE"):
         use_blob_storage = settings.USE_BLOB_STORAGE  # type: ignore
 
