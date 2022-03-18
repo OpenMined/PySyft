@@ -34,7 +34,7 @@ from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 from .....pointer.pointer import Pointer
-from .....store.proxy_dataset import ProxyDataClass
+from .....store.proxy_dataset import ProxyDataset
 from ....abstract.node import AbstractNode
 from ..node_service import ImmediateNodeServiceWithReply
 
@@ -241,7 +241,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 ):
 
                     if obj.is_proxy:
-                        proxy_obj: ProxyDataClass = obj.data  # type: ignore
+                        proxy_obj: ProxyDataset = obj.data  # type: ignore
                         ptr_constructor = obj2pointer_type(
                             fqn=proxy_obj.data_fully_qualified_name
                         )

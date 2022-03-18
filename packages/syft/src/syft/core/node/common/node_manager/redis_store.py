@@ -19,7 +19,7 @@ import syft
 from ....common.uid import UID
 from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
-from ....store.proxy_dataset import ProxyDataClass
+from ....store.proxy_dataset import ProxyDataset
 from ....store.store_interface import StoreKey
 from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj_metadata import ObjectMetadata
@@ -96,7 +96,7 @@ class RedisStore(ObjectStore):
             raise KeyError(f"Object not found! for UID: {key_str}")
 
         obj = syft.deserialize(obj, from_bytes=True)
-        if proxy_only is False and isinstance(obj, ProxyDataClass):
+        if proxy_only is False and isinstance(obj, ProxyDataset):
             obj = self.resolve_proxy_object(obj=obj)
 
         obj = StorableObject(
@@ -152,7 +152,7 @@ class RedisStore(ObjectStore):
     def set(self, key: StoreKey, value: StorableObject) -> None:
         key_str, _ = self.key_to_str_and_uid(key=key)
 
-        if isinstance(value._data, ProxyDataClass):
+        if isinstance(value._data, ProxyDataset):
             bin = syft.serialize(value._data, to_bytes=True)
         else:
             bin = syft.serialize(value.data, to_bytes=True)

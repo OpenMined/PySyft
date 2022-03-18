@@ -18,11 +18,11 @@ from ....util import get_fully_qualified_name
 from ....util import size_mb
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
-from ...store.proxy_dataset import ProxyDataClass
+from ...store.proxy_dataset import ProxyDataset
 
 
 def read_chunks(
-    fp: BytesIO, chunk_size: int = 1024**3
+    fp: BytesIO, chunk_size: int = 1024 ** 3
 ) -> Generator[bytes, None, None]:
     """Read data in chunks from the file."""
     while True:
@@ -53,12 +53,12 @@ def upload_result_to_s3(
     domain_id: UID,
     data: Any,
     settings: BaseSettings,
-) -> ProxyDataClass:
+) -> ProxyDataset:
     """Upload data to Seaweed using boto3 client.
 
     - Serialize data to binary
     - Upload data to Seaweed using boto3 client
-    - Create a ProxyDataClass to store the metadata of the data uploaded to Seaweed
+    - Create a ProxyDataset to store the metadata of the data uploaded to Seaweed
 
     Args:
         asset_name (str): name of the data being uploaded to Seaweed
@@ -68,7 +68,7 @@ def upload_result_to_s3(
         settings (BaseSettings): base settings of the PyGrid server
 
     Returns:
-        ProxyDataClass: Class to store the metadata of the data being uploaded
+        ProxyDataset: Class to store the metadata of the data being uploaded
     """
 
     s3_client = get_s3_client(settings=settings)
@@ -91,11 +91,11 @@ def upload_result_to_s3(
     print("Upload Result")
     print(upload_response)
 
-    # 3 - Create a ProxyDataClass for the given data
+    # 3 - Create a ProxyDataset for the given data
     # Retrieve fully qualified name to  use for pointer creation.
     data_fqn = str(get_fully_qualified_name(data))
     data_dtype = str(type(data))
-    proxy_obj = ProxyDataClass(
+    proxy_obj = ProxyDataset(
         asset_name=asset_name,
         dataset_name=dataset_name,
         node_id=domain_id,
@@ -112,7 +112,7 @@ def upload_to_s3_using_presigned(
     chunk_size: int,
     asset_name: str,
     dataset_name: Optional[str] = None,
-) -> ProxyDataClass:
+) -> ProxyDataset:
     """Perform a multipart upload of data to Seaweed using boto3 presigned urls.
 
     The main steps involve:
@@ -121,7 +121,7 @@ def upload_to_s3_using_presigned(
     - Create presigned urls for each chunk
     - Upload data to Seaweed via PUT request
     - Send a acknowledge to Seaweed via PyGrid when all chunks are successfully uploaded
-    - Create a ProxyDataClass to store metadata of the uploaded data
+    - Create a ProxyDataset to store metadata of the uploaded data
 
     Args:
         client (Any): Client to send object to
@@ -134,7 +134,7 @@ def upload_to_s3_using_presigned(
         Exception: If upload of data chunks to Seaweed fails.
 
     Returns:
-        ProxyDataClass: Class to store metadata about the data that is uploaded to Seaweed.
+        ProxyDataset: Class to store metadata about the data that is uploaded to Seaweed.
     """
     data_upload_description = f"Uploading {asset_name}"
     # relative
@@ -202,7 +202,7 @@ def upload_to_s3_using_presigned(
     # Retrieve fully qualified name to  use for pointer creation.
     data_fqn = str(get_fully_qualified_name(data))
     data_dtype = str(type(data))
-    proxy_data = ProxyDataClass(
+    proxy_data = ProxyDataset(
         asset_name=asset_name,
         dataset_name=dataset_name,
         node_id=client.id,

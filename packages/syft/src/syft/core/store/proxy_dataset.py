@@ -13,7 +13,7 @@ from ...grid import GridURL
 
 
 @serializable(recursive_serde=True)
-class ProxyDataClass:
+class ProxyDataset:
     __attr_allowlist__ = [
         "node_id",
         "asset_name",
@@ -40,6 +40,12 @@ class ProxyDataClass:
         self.fqn = fqn
         self.node_id = node_id
         self.url = ""
+
+    def __repr__(self) -> str:
+        return (
+            f"<{type(self).__name__}: {self.dataset_name}[{self.asset_name}] -> "
+            + f"shape: {self.shape} dtype: {self.dtype} url: {self.url}>"
+        )
 
     @property
     def name(self) -> str:
@@ -83,6 +89,6 @@ class ProxyDataClass:
             grid_url = GridURL.from_url(url=download_url)
             # add /blob to path
             grid_url.path = f"/blob{grid_url.path}"
-            download_url = grid_url.url
+            download_url = grid_url.url_path
 
         self.url = download_url

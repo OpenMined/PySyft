@@ -192,7 +192,9 @@ class Pointer(AbstractPointer):
     def __repr__(self) -> str:
         return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
 
-    def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
+    def _get(
+        self, delete_obj: bool = True, verbose: bool = False, proxy_only: bool = False
+    ) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -212,7 +214,7 @@ class Pointer(AbstractPointer):
         )
 
         obj = self.client.send_immediate_msg_with_reply(msg=obj_msg)
-        if obj.obj.is_proxy:
+        if not proxy_only and obj.obj.is_proxy:
             presigned_url_path = obj.obj._data.url
             presigned_url = self.client.url_from_path(presigned_url_path)
             response = requests.get(presigned_url)
@@ -336,6 +338,7 @@ class Pointer(AbstractPointer):
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
+        proxy_only: bool = False,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -355,7 +358,9 @@ class Pointer(AbstractPointer):
             )
 
         if not request_block:
-            result = self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(
+                delete_obj=delete_obj, verbose=verbose, proxy_only=proxy_only
+            )
         else:
             response_status = self.request(
                 reason=reason,

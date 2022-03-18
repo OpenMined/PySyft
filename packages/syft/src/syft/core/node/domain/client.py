@@ -29,7 +29,7 @@ from ...node.common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
 from ...pointer.pointer import Pointer
-from ...store.proxy_dataset import ProxyDataClass
+from ...store.proxy_dataset import ProxyDataset
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
 from ..abstract.node import AbstractNodeClient
@@ -691,7 +691,7 @@ class DomainClient(Client):
 
         if send_assets_to_blob_storage:
             # upload to blob storage
-            proxy_assets: Dict[str, ProxyDataClass] = {}
+            proxy_assets: Dict[str, ProxyDataset] = {}
             # send each asset to blob storage and pack the results back
             for asset_name, asset in assets.items():
                 proxy_obj = upload_to_s3_using_presigned(

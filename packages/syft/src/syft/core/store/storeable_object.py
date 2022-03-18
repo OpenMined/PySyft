@@ -21,7 +21,7 @@ from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
-from .proxy_dataset import ProxyDataClass
+from .proxy_dataset import ProxyDataset
 
 
 @serializable()
@@ -109,7 +109,7 @@ class StorableObject(AbstractStorableObject):
 
     @property
     def is_proxy(self) -> bool:
-        return isinstance(self._data, ProxyDataClass)
+        return isinstance(self._data, ProxyDataset)
 
     @property
     def tags(self) -> Optional[List[str]]:

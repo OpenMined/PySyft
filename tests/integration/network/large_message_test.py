@@ -13,6 +13,7 @@ import pytest
 import syft as sy
 from syft.core.adp.entity import Entity
 from syft.core.adp.entity_list import EntityList
+from syft.core.store.proxy_dataset import ProxyDataset
 from syft.util import size_mb
 
 DOMAIN1_PORT = 9082
@@ -105,89 +106,89 @@ def test_large_blob_upload() -> None:
 
     report = {}
 
-    # for multiplier in [1, 10, 100, 1000]:
-    # for multiplier in [1]:
-    multiplier = 1000
-    ndim = 1_000_000
+    try:
+        # multiplier = 1000
+        multiplier = 100
+        ndim = 1_000_000
 
-    # ndim = 10
-    size_name = f"{multiplier}M"
-    if multiplier == 1000:
-        size_name = "1B"
+        size_name = f"{multiplier}M"
+        if multiplier == 1000:
+            size_name = "1B"
 
-    report[size_name] = {}
+        report[size_name] = {}
 
-    rows = 1
-    cols = 1
-    use_blob_storage = True
+        rows = 1
+        cols = 1
+        use_blob_storage = True
 
-    start_time = time.time()
-    upper = highest()
-    lower = -highest()
-    reference_data = np.random.randint(
-        lower, upper, size=(multiplier * ndim, rows, cols), dtype=np.int32
-    )
-
-    ndept = True
-    if not ndept:
-        entities = [Entity(name="ϕhishan") * reference_data.shape[0]]
-    else:
-        one_hot_lookup = np.array(["ϕhishan"])
-        entities_indexed = np.zeros(reference_data.shape[0], dtype=np.uint32)
-        entities = EntityList(
-            one_hot_lookup=one_hot_lookup, entities_indexed=entities_indexed
+        # create tensor
+        start_time = time.time()
+        upper = highest()
+        lower = -highest()
+        reference_data = np.random.randint(
+            lower, upper, size=(multiplier * ndim, rows, cols), dtype=np.int32
         )
 
-    print("reference_data", type(reference_data), reference_data.dtype)
-    tweets_data = sy.Tensor(reference_data).private(
-        min_val=0, max_val=30, entities=entities, ndept=ndept
-    )
+        ndept = True
+        if not ndept:
+            entities = [Entity(name="ϕhishan") * reference_data.shape[0]]
+        else:
+            one_hot_lookup = np.array(["ϕhishan"])
+            entities_indexed = np.zeros(reference_data.shape[0], dtype=np.uint32)
+            entities = EntityList(
+                one_hot_lookup=one_hot_lookup, entities_indexed=entities_indexed
+            )
 
-    report[size_name]["tensor_type"] = type(tweets_data.child).__name__
+        tweets_data = sy.Tensor(reference_data).private(
+            min_val=0, max_val=30, entities=entities, ndept=ndept
+        )
 
-    print("what are we getting", type(tweets_data))
-    print("what type is the child", type(tweets_data.child))
+        report[size_name]["tensor_type"] = type(tweets_data.child).__name__
+        end_time = time.time()
+        report[size_name]["create_tensor_secs"] = end_time - start_time
 
-    end_time = time.time()
+        # serde for size
+        start_time = time.time()
+        tweets_data_size = size_mb(sy.serialize(tweets_data.child, to_bytes=True))
+        end_time = time.time()
+        report[size_name]["tensor_bytes_size_mb"] = tweets_data_size
+        report[size_name]["tensor_serialize_secs"] = end_time - start_time
 
-    report[size_name]["create_tensor_secs"] = end_time - start_time
+        # upload dataset
+        start_time = time.time()
+        unique_tag = str(uuid.uuid4())
+        asset_name = f"{size_name}_tweets_{unique_tag}"
+        domain_client.load_dataset(
+            assets={asset_name: tweets_data.child},
+            name=f"{unique_tag}",
+            description=f"{size_name} - {datetime.now()}",
+            use_blob_storage=use_blob_storage,
+            skip_checks=True,
+        )
 
-    tweets_data_size = size_mb(sy.serialize(tweets_data.child, to_bytes=True))
-    report[size_name]["tensor_bytes_size_mb"] = tweets_data_size
-    print(f"Serialized size for tweets data : {tweets_data_size}")
+        end_time = time.time()
+        report[size_name]["upload_tensor_secs"] = end_time - start_time
 
-    # blocking
-    start_time = time.time()
-    unique_tag = str(uuid.uuid4())
-    asset_name = f"{size_name}_tweets_{unique_tag}"
-    domain_client.load_dataset(
-        assets={asset_name: tweets_data.child},
-        name=f"{unique_tag}",
-        description=f"{size_name} - {datetime.now()}",
-        use_blob_storage=use_blob_storage,
-        skip_checks=True,
-    )
+        # get dataset and tensor back
+        start_time = time.time()
+        dataset = domain_client.datasets[-1]
+        asset_ptr = dataset[asset_name]
 
-    end_time = time.time()
-    report[size_name]["upload_tensor_secs"] = end_time - start_time
+        # get the proxy object
+        result_proxy = asset_ptr.get(delete_obj=False, proxy_only=True)
+        assert isinstance(result_proxy, ProxyDataset)
+        assert "http" not in result_proxy.url  # no protocol
+        assert ":" not in result_proxy.url  # no port
+        assert result_proxy.url.startswith("/blob/")  # no host
+        assert result_proxy.shape == tweets_data.shape
 
-    start_time = time.time()
-    dataset = domain_client.datasets[-1]
-    print("dataset", dataset)
-    asset_ptr = dataset[asset_name]
-    print("asset_ptr", asset_ptr)
-    result = asset_ptr.get()
+        # get the real object
+        result = asset_ptr.get()
 
-    # do we check the client or the GetReprService
+        # do we check the client or the GetReprService
+        end_time = time.time()
+        report[size_name]["download_tensor_secs"] = end_time - start_time
 
-    end_time = time.time()
-    report[size_name]["download_tensor_secs"] = end_time - start_time
-
-    print(type(result))
-
-    print(report)
-
-    assert tweets_data == result
-
-    print("DONE")
-    assert False
+        assert tweets_data == result
+    finally:
+        print(report)

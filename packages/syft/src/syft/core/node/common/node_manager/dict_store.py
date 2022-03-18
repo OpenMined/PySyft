@@ -19,7 +19,7 @@ import syft as sy
 from ....common.uid import UID
 from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
-from ....store.proxy_dataset import ProxyDataClass
+from ....store.proxy_dataset import ProxyDataset
 from ....store.store_interface import StoreKey
 from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj_metadata import ObjectMetadata
@@ -102,7 +102,7 @@ class DictStore(ObjectStore):
             if id(obj) == id(store_obj):
                 raise Exception("Objects must use deepcopy or mutation can occur")
 
-            if isinstance(obj, ProxyDataClass):
+            if isinstance(obj, ProxyDataset):
                 obj = self.resolve_proxy_object(obj=obj)
 
             obj_metadata = (
