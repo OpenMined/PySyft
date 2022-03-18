@@ -49,8 +49,7 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
                     # you must be a root user to accept a request
                     if verify_key == node.root_verify_key:
                         print("accepting reqest")
-                        obj = node.store.get_object(req.object_id, proxy_only=True)
-
+                        obj = node.store.get(req.object_id, proxy_only=True)
                         obj.read_permissions[req.requester_verify_key] = req.id
 
                         print(obj.read_permissions)
@@ -59,7 +58,7 @@ class AcceptOrDenyRequestService(ImmediateNodeServiceWithoutReply):
                         node.store[req.object_id] = obj
 
                         print(
-                            node.store.get_object(
+                            node.store.get(
                                 req.object_id, proxy_only=True
                             ).read_permissions
                         )

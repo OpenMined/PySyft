@@ -3,7 +3,9 @@ from abc import ABC
 from typing import Any
 from typing import Iterable
 from typing import Optional
+from typing import Tuple
 from typing import Type
+from typing import Union
 
 # relative
 from ...logger import debug
@@ -11,6 +13,8 @@ from ...logger import traceback_and_raise
 from ..common.storeable_object import AbstractStorableObject
 from ..common.uid import UID
 from .storeable_object import StorableObject
+
+StoreKey = Union[UID, str, bytes]
 
 
 class ObjectStore(ABC):
@@ -77,7 +81,7 @@ class ObjectStore(ABC):
         """
         traceback_and_raise(NotImplementedError)
 
-    def __getitem__(self, key: UID) -> StorableObject:
+    def __getitem__(self, key: StoreKey) -> StorableObject:
         """
         Method to retrieve an object from the store.
 
@@ -133,7 +137,15 @@ class ObjectStore(ABC):
         """
         traceback_and_raise(NotImplementedError)
 
-    def get_object(self, key: UID) -> Optional[StorableObject]:
+    def get_or_none(
+        self, key: UID, proxy_only: bool = False
+    ) -> Optional[StorableObject]:
+        traceback_and_raise(NotImplementedError)
+
+    def get(self, key: StoreKey, proxy_only: bool = False) -> StorableObject:
+        traceback_and_raise(NotImplementedError)
+
+    def set(self, key: StoreKey, value: StorableObject) -> None:
         traceback_and_raise(NotImplementedError)
 
     def has_object(self) -> None:
@@ -174,3 +186,13 @@ class ObjectStore(ABC):
 
     def resolve_proxy_object(self, obj: Any) -> Any:
         traceback_and_raise(NotImplementedError)
+
+    @staticmethod
+    def key_to_str_and_uid(key: StoreKey) -> Tuple[str, UID]:
+        if isinstance(key, bytes):
+            key = key.decode("utf-8")
+
+        if isinstance(key, str):
+            key = UID.from_string(key)
+
+        return str(key.value), key

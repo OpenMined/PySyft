@@ -53,7 +53,7 @@
 #         _worker_client = node.in_memory_client_registry[_syft_address.domain_id]
 
 #         try:
-#             _obj = node.store.get_object(_syft_id)
+#             _obj = node.store.get(_syft_id)
 #         except Exception:
 #             raise Exception("Object Not Found!")
 
@@ -88,7 +88,7 @@
 #         _syft_id = UID.from_string(value=_obj_id)
 
 #         try:
-#             _obj = node.store.get_object(_syft_id)  # noqa: 841
+#             _obj = node.store.get(_syft_id)  # noqa: 841
 #         except Exception:
 #             raise Exception("Object Not Found!")
 

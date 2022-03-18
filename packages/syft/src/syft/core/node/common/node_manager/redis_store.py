@@ -4,7 +4,6 @@ from typing import Collection
 from typing import Iterable
 from typing import List
 from typing import Optional
-from typing import Union
 from typing import cast
 
 # third party
@@ -21,6 +20,7 @@ from ....common.uid import UID
 from ....node.common.node_table.bin_obj_dataset import BinObjDataset
 from ....store import ObjectStore
 from ....store.proxy_dataset import ProxyDataClass
+from ....store.store_interface import StoreKey
 from ....store.storeable_object import StorableObject
 from ..node_table.bin_obj_metadata import ObjectMetadata
 
@@ -38,12 +38,12 @@ class RedisStore(ObjectStore):
             print("failed to load redis", e)
             raise e
 
-    def get_object(
+    def get_or_none(
         self, key: UID, proxy_only: bool = False
     ) -> Optional[StorableObject]:
         try:
-            return self.__getitem__(key, proxy_only)
-        except KeyError as e:  # noqa: F841
+            return self.get(key, proxy_only)
+        except KeyError:
             return None
 
     def get_objects_of_type(self, obj_type: type) -> Iterable[StorableObject]:
@@ -71,7 +71,7 @@ class RedisStore(ObjectStore):
         # this is bad we need to decouple getting the data from the search
         all_values = []
         for key in key_bytes:
-            all_values.append(self.__getitem__(key))
+            all_values.append(self.get(key))
 
         return all_values
 
@@ -84,20 +84,9 @@ class RedisStore(ObjectStore):
             raise Exception(f"Failed to fetch real object from proxy. {type(obj)}")
         return obj
 
-    def __getitem__(
-        self, key: Union[UID, str, bytes], proxy_only: bool = False
-    ) -> StorableObject:
+    def get(self, key: StoreKey, proxy_only: bool = False) -> StorableObject:
+        key_str, key_uid = self.key_to_str_and_uid(key=key)
         local_session = sessionmaker(bind=self.db)()
-
-        if isinstance(key, UID):
-            key_str = str(key.value)
-            key_uid = key
-        elif isinstance(key, bytes):
-            key_str = str(key.decode("utf-8"))
-            key_uid = UID.from_string(key_str)
-        else:
-            key_str = key
-            key_uid = UID.from_string(key_str)
 
         obj = self.redis.get(key_str)
         obj_metadata = (
@@ -144,22 +133,31 @@ class RedisStore(ObjectStore):
         local_session.close()
         return is_dataset_obj
 
-    def _get_obj_dataset_relation(self, key: UID) -> Optional[BinObjDataset]:
+    def _get_obj_dataset_relation(self, key: str) -> Optional[BinObjDataset]:
         local_session = sessionmaker(bind=self.db)()
         obj_dataset_relation = (
-            local_session.query(BinObjDataset).filter_by(obj=str(key.value)).first()
+            local_session.query(BinObjDataset).filter_by(obj=key).first()
         )
         local_session.close()
         return obj_dataset_relation
 
-    def __setitem__(self, key: UID, value: StorableObject) -> None:
+    def __getitem__(self, key: StoreKey) -> StorableObject:
+        raise Exception("obj = store[key] not allowed because additional args required")
+
+    # allow store[key] = obj
+    # but not obj = store[key]
+    def __setitem__(self, key: StoreKey, value: StorableObject) -> None:
+        self.set(key=key, value=value)
+
+    def set(self, key: StoreKey, value: StorableObject) -> None:
+        key_str, _ = self.key_to_str_and_uid(key=key)
+
         if isinstance(value._data, ProxyDataClass):
             bin = syft.serialize(value._data, to_bytes=True)
         else:
             bin = syft.serialize(value.data, to_bytes=True)
-        self.redis.set(str(key.value), bin)
+        self.redis.set(key_str, bin)
 
-        key_str = str(key.value)
         create_metadata = True
         local_session = sessionmaker(bind=self.db)()
         try:
@@ -173,7 +171,7 @@ class RedisStore(ObjectStore):
             # no metadata row exists lets insert one
             metadata_obj = ObjectMetadata()
 
-        metadata_obj.obj = str(key.value)
+        metadata_obj.obj = key_str
         metadata_obj.tags = value.tags
         metadata_obj.description = value.description
         metadata_obj.read_permissions = cast(
@@ -193,13 +191,13 @@ class RedisStore(ObjectStore):
             ),
         ).hex()
 
-        obj_dataset_relation = self._get_obj_dataset_relation(key)
+        obj_dataset_relation = self._get_obj_dataset_relation(key_str)
         if obj_dataset_relation:
             # Create a object dataset relationship for the new object
             obj_dataset_relation = BinObjDataset(
                 # id=obj_dataset_relation.id,  NOTE: Commented temporarily
                 name=obj_dataset_relation.name,
-                obj=str(key.value),
+                obj=key_str,
                 dataset=obj_dataset_relation.dataset,
                 dtype=obj_dataset_relation.dtype,
                 shape=obj_dataset_relation.shape,

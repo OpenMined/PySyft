@@ -400,8 +400,8 @@ class StoreClient:
     def __iter__(self) -> Iterator[Any]:
         return self.store.__iter__()
 
-    def get_object(self, id: Union[str, int, UID]) -> Pointer:
-        return self[id]
+    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
+        return self.get(key=key)
 
     #
     # def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
@@ -453,13 +453,11 @@ class StoreClient:
     #     else:
     #         traceback_and_raise(KeyError("Please pass in a string or int key"))
 
-    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
+    def get(self, key: Union[str, int, UID]) -> Pointer:
         if isinstance(key, str):
-
             try:
-                return self[UID.from_string(key)]
+                return self.get(UID.from_string(key))
             except IndexError:
-
                 matches = 0
                 match_obj: Optional[Pointer] = None
 

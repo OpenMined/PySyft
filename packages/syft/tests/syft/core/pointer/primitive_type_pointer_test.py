@@ -15,7 +15,7 @@ import syft as sy
 def get_permission(
     obj: Any, node: sy.VirtualMachine, client: sy.VirtualMachineClient
 ) -> None:
-    remote_obj = node.store.get_object(obj.id_at_location, proxy_only=True)
+    remote_obj = node.store.get(obj.id_at_location, proxy_only=True)
     remote_obj.read_permissions[client.verify_key] = obj.id_at_location
 
 

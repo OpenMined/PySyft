@@ -71,13 +71,13 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         method = ast_node.object_ref
 
         # storable object raw from object store
-        resolved_self = node.store.get_object(self._self.id_at_location)
+        resolved_self = node.store.get(self._self.id_at_location)
         result_read_permissions = resolved_self.read_permissions
 
         resolved_args = []
         tag_args = []
         for arg in self.args:
-            r_arg = node.store.get_object(arg.id_at_location)
+            r_arg = node.store.get(arg.id_at_location)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -87,7 +87,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store.get_object(arg.id_at_location)
+            r_arg = node.store.get(arg.id_at_location)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )

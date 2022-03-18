@@ -34,6 +34,7 @@ from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 from .....pointer.pointer import Pointer
+from .....store.proxy_dataset import ProxyDataClass
 from ....abstract.node import AbstractNode
 from ..node_service import ImmediateNodeServiceWithReply
 
@@ -225,7 +226,7 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 # TODO: refactor to proxy_only=True so that we can do this quickly
                 # we need to change the pointer constructor below to not require
                 # the original object
-                objs = [node.store.get_object(msg.obj_id, proxy_only=True)]
+                objs = [node.store.get(msg.obj_id, proxy_only=True)]
 
             for obj in objs:
                 # if this tensor allows anyone to search for it, then one of its keys
@@ -240,8 +241,9 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                 ):
 
                     if obj.is_proxy:
+                        proxy_obj: ProxyDataClass = obj.data  # type: ignore
                         ptr_constructor = obj2pointer_type(
-                            fqn=obj.data.data_fully_qualified_name
+                            fqn=proxy_obj.data_fully_qualified_name
                         )
 
                     elif hasattr(obj.data, "init_pointer"):

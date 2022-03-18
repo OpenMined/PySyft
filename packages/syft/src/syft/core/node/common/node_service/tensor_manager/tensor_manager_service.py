@@ -139,7 +139,7 @@
 
 #         # Retrieve the dataset from node.store
 #         key = UID.from_string(value=payload["tensor_id"])
-#         tensor = node.store.get_object(key)
+#         tensor = node.store.get(key)
 #         return GetTensorResponse(
 #             address=msg.reply_to,
 #             status_code=200,

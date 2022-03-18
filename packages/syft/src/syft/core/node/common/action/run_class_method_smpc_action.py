@@ -190,16 +190,16 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         from .smpc_action_functions import _MAP_ACTION_TO_FUNCTION
 
         func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
-        store_object_self = node.store.get_object(key=msg.self_id)
+        store_object_self = node.store.get(key=msg.self_id)
         if store_object_self is None:
             raise KeyError("Object not already in store")
 
         _self = store_object_self.data
-        args = [node.store.get_object(arg_id).data for arg_id in msg.args_id]
+        args = [node.store.get(arg_id).data for arg_id in msg.args_id]
 
         kwargs = {}  # type: ignore
         for key, kwarg_id in msg.kwargs_id.items():
-            data = node.store.get_object(kwarg_id).data
+            data = node.store.get(kwarg_id).data
             if data is None:
                 raise KeyError(f"Key {key} is not available")
 

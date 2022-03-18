@@ -130,10 +130,10 @@ def test_large_blob_upload() -> None:
 
     ndept = True
     if not ndept:
-        entities = [Entity(name=entity) for entity in entities]
+        entities = [Entity(name="ϕhishan") * reference_data.shape[0]]
     else:
-        one_hot_lookup = np.array(["ishan"])
-        entities_indexed = np.zeros(reference_data.shape, dtype=np.uint32)
+        one_hot_lookup = np.array(["ϕhishan"])
+        entities_indexed = np.zeros(reference_data.shape[0], dtype=np.uint32)
         entities = EntityList(
             one_hot_lookup=one_hot_lookup, entities_indexed=entities_indexed
         )

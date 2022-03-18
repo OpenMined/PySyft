@@ -285,13 +285,13 @@ class Domain(Node):
         # Currently theres no way to find which object to check the permissions
         # to find the stored request_id
         for obj_id in self.store.keys():
-            for _, request_id in self.store.get_object(
+            for _, request_id in self.store.get(
                 obj_id, proxy_only=True
             ).read_permissions.items():
                 if request_id == message_request_id:
                     return RequestStatus.Accepted
 
-            for _, request_id in self.store.get_object(
+            for _, request_id in self.store.get(
                 obj_id, proxy_only=True
             ).search_permissions.items():
                 if request_id == message_request_id:

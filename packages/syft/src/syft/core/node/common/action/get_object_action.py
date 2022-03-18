@@ -162,11 +162,7 @@ class GetObjectAction(ImmediateActionWithReply):
     ) -> ImmediateSyftMessageWithoutReply:
         try:
             try:
-                storable_object = node.store.get_object(
-                    self.id_at_location, proxy_only=True
-                )
-                if storable_object is None:
-                    raise KeyError(f"Object not found! for UID: {self.id_at_location}")
+                storable_object = node.store.get(self.id_at_location, proxy_only=True)
             except Exception as e:
                 log = (
                     f"Unable to Get Object with ID {self.id_at_location} from store. "

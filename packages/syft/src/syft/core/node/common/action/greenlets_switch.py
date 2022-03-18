@@ -14,7 +14,7 @@ def retrieve_object(
     # A hard time limit is set on celery worker which prevents infinite execution.
     ctr = 0
     while True:
-        store_obj = node.store.get_object(key=id_at_location)
+        store_obj = node.store.get_or_none(key=id_at_location)
         if store_obj is None:
             if ctr % 1500 == 0:
                 critical(
