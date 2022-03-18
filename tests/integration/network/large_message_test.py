@@ -109,7 +109,7 @@ def test_large_blob_upload() -> None:
     try:
         # multiplier = 1000
         multiplier = 1
-        ndim = 10
+        ndim = 1_000_000
 
         size_name = f"{multiplier}M"
         if multiplier == 1000:
@@ -174,11 +174,14 @@ def test_large_blob_upload() -> None:
         dataset = domain_client.datasets[-1]
         asset_ptr = dataset[asset_name]
 
+        # ATTEMPT Pointer addition
         # print("what is asset ptr", asset_ptr, type(asset_ptr))
-
         # res_prt = asset_ptr + asset_ptr
         # print(res_prt, res_prt.id_at_location)
-
+        # result = res_prt.get()
+        # print(result)
+        # org_result = tweets_data + tweets_data
+        # assert org_result == result
         # assert False
 
         # get the proxy object
@@ -199,6 +202,5 @@ def test_large_blob_upload() -> None:
         report[size_name]["download_tensor_secs"] = end_time - start_time
 
         assert tweets_data == result
-        assert False
     finally:
         print(report)
