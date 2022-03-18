@@ -108,8 +108,8 @@ def test_large_blob_upload() -> None:
 
     try:
         # multiplier = 1000
-        multiplier = 100
-        ndim = 1_000_000
+        multiplier = 1
+        ndim = 10
 
         size_name = f"{multiplier}M"
         if multiplier == 1000:
@@ -149,7 +149,7 @@ def test_large_blob_upload() -> None:
 
         # serde for size
         start_time = time.time()
-        tweets_data_size = size_mb(sy.serialize(tweets_data.child, to_bytes=True))
+        tweets_data_size = size_mb(sy.serialize(tweets_data, to_bytes=True))
         end_time = time.time()
         report[size_name]["tensor_bytes_size_mb"] = tweets_data_size
         report[size_name]["tensor_serialize_secs"] = end_time - start_time
@@ -159,7 +159,7 @@ def test_large_blob_upload() -> None:
         unique_tag = str(uuid.uuid4())
         asset_name = f"{size_name}_tweets_{unique_tag}"
         domain_client.load_dataset(
-            assets={asset_name: tweets_data.child},
+            assets={asset_name: tweets_data},
             name=f"{unique_tag}",
             description=f"{size_name} - {datetime.now()}",
             use_blob_storage=use_blob_storage,
@@ -174,6 +174,13 @@ def test_large_blob_upload() -> None:
         dataset = domain_client.datasets[-1]
         asset_ptr = dataset[asset_name]
 
+        # print("what is asset ptr", asset_ptr, type(asset_ptr))
+
+        # res_prt = asset_ptr + asset_ptr
+        # print(res_prt, res_prt.id_at_location)
+
+        # assert False
+
         # get the proxy object
         result_proxy = asset_ptr.get(delete_obj=False, proxy_only=True)
         assert isinstance(result_proxy, ProxyDataset)
@@ -181,6 +188,8 @@ def test_large_blob_upload() -> None:
         assert ":" not in result_proxy.url  # no port
         assert result_proxy.url.startswith("/blob/")  # no host
         assert result_proxy.shape == tweets_data.shape
+
+        print("obj_public_kwargs", result_proxy.obj_public_kwargs)
 
         # get the real object
         result = asset_ptr.get()
@@ -190,5 +199,6 @@ def test_large_blob_upload() -> None:
         report[size_name]["download_tensor_secs"] = end_time - start_time
 
         assert tweets_data == result
+        assert False
     finally:
         print(report)

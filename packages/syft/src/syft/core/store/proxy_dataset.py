@@ -1,5 +1,7 @@
 # stdlib
 from typing import Any
+from typing import Dict
+from typing import Optional
 from typing import Tuple
 
 # third party
@@ -22,6 +24,7 @@ class ProxyDataset:
         "dtype",
         "fqn",
         "url",
+        "obj_public_kwargs",
     ]
 
     def __init__(
@@ -32,6 +35,7 @@ class ProxyDataset:
         dtype: str,
         fqn: str,
         node_id: UID,
+        obj_public_kwargs: Optional[Dict[str, Any]] = None,
     ) -> None:
         self.asset_name = asset_name
         self.dataset_name = dataset_name
@@ -40,6 +44,9 @@ class ProxyDataset:
         self.fqn = fqn
         self.node_id = node_id
         self.url = ""
+        self.obj_public_kwargs = (
+            obj_public_kwargs if obj_public_kwargs is not None else {}
+        )
 
     def __repr__(self) -> str:
         return (

@@ -200,6 +200,7 @@ def upload_to_s3_using_presigned(
 
     # Step 5 - Create a proxy dataset for the uploaded data.
     # Retrieve fully qualified name to  use for pointer creation.
+    obj_public_kwargs = getattr(data, "proxy_public_kwargs", None)
     data_fqn = str(get_fully_qualified_name(data))
     data_dtype = str(type(data))
     proxy_data = ProxyDataset(
@@ -209,6 +210,7 @@ def upload_to_s3_using_presigned(
         dtype=data_dtype,
         fqn=data_fqn,
         shape=data.shape,
+        obj_public_kwargs=obj_public_kwargs,
     )
 
     return proxy_data

@@ -239,25 +239,33 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or verify_key == node.root_verify_key
                     or contains_all_in_permissions
                 ):
-
                     if obj.is_proxy:
                         proxy_obj: ProxyDataset = obj.data  # type: ignore
                         ptr_constructor = obj2pointer_type(
                             fqn=proxy_obj.data_fully_qualified_name
                         )
+                        ptr = ptr_constructor(
+                            client=node,
+                            id_at_location=obj.id,
+                            object_type=obj.object_type,
+                            tags=obj.tags,
+                            description=obj.description,
+                            **proxy_obj.obj_public_kwargs,
+                        )
 
-                    elif hasattr(obj.data, "init_pointer"):
-                        ptr_constructor = obj.data.init_pointer  # type: ignore
                     else:
-                        ptr_constructor = obj2pointer_type(obj=obj.data)
+                        if hasattr(obj.data, "init_pointer"):
+                            ptr_constructor = obj.data.init_pointer  # type: ignore
+                        else:
+                            ptr_constructor = obj2pointer_type(obj=obj.data)
 
-                    ptr = ptr_constructor(
-                        client=node,
-                        id_at_location=obj.id,
-                        object_type=obj.object_type,
-                        tags=obj.tags,
-                        description=obj.description,
-                    )
+                        ptr = ptr_constructor(
+                            client=node,
+                            id_at_location=obj.id,
+                            object_type=obj.object_type,
+                            tags=obj.tags,
+                            description=obj.description,
+                        )
 
                     results.append(ptr)
         except Exception as e:
