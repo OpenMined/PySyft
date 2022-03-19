@@ -529,8 +529,11 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
         scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
     ) -> None:
 
-        # child = the actual private data
-        super().__init__(FixedPrecisionTensor(value=child))
+        if isinstance(child, FixedPrecisionTensor):
+            # child = the actual private data
+            super().__init__(child)
+        else:
+            super().__init__(FixedPrecisionTensor(value=child))
 
         # identically shaped tensor to "child" but making the LOWEST possible value of this private value
         self._min_vals = min_vals
