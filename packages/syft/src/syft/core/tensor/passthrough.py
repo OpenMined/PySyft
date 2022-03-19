@@ -573,6 +573,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
             )
         )
 
+    def decode(self) -> AcceptableSimpleType:
+        return self.child.decode()
+
     def astype(self, np_type: np.dtype) -> PassthroughTensor:
         return self.__class__(self.child.astype(np_type))
 

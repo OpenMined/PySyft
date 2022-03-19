@@ -38,6 +38,7 @@ from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
 from ..broadcastable import is_broadcastable
+from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
@@ -141,6 +142,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
+        # We always maintain a Tensor hierarchy Tensor ---> SEPT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
 
         result = TensorWrappedSingleEntityPhiTensorPointer(
@@ -528,7 +530,7 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
     ) -> None:
 
         # child = the actual private data
-        super().__init__(child)
+        super().__init__(FixedPrecisionTensor(value=child))
 
         # identically shaped tensor to "child" but making the LOWEST possible value of this private value
         self._min_vals = min_vals
@@ -2383,27 +2385,13 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
             proto_init_kwargs["scalar_manager"] = serialize(self.scalar_manager)
 
         # either numpy array or ShareTensor
-        if self.child is None:
-            proto_init_kwargs["none"] = serialize(self.child)
-        elif isinstance(self.child, np.ndarray):
-            proto_init_kwargs["array"] = serialize(self.child)
-        elif isinstance(self.child, torch.Tensor):
-            proto_init_kwargs["array"] = serialize(np.array(self.child))
-        else:
-            proto_init_kwargs["tensor"] = serialize(self.child)
+        proto_init_kwargs["child"] = serialize(self.child, to_bytes=True)
 
         return SingleEntityPhiTensor_PB(**proto_init_kwargs)
 
     @staticmethod
     def _proto2object(proto: SingleEntityPhiTensor_PB) -> SingleEntityPhiTensor:
-        # either numpy array or ShareTensor
-        if proto.HasField("tensor"):
-            child = deserialize(proto.tensor)
-        elif proto.HasField("array"):
-            child = deserialize(proto.array)
-        else:
-            child = deserialize(proto.none)
-
+        child = deserialize(proto.child, from_bytes=True)
         return SingleEntityPhiTensor(
             child=child,
             entity=deserialize(proto.entity) if proto.HasField("entity") else None,
