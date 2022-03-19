@@ -10,4 +10,3 @@ def test_serde() -> None:
     deserialized = deserialize(serialized, from_bytes=True)
 
     assert ent.name == deserialized.name
-    assert ent.id == deserialized.id

@@ -66,6 +66,11 @@ def _serialize(
     #     )
     # )
 
+    # capnp_bytes=True
+    if hasattr(is_serializable, "_object2bytes"):
+        # capnp proto
+        return validate_type(is_serializable._object2bytes(), bytes)
+
     if to_bytes:
         # debug(f"Serializing {type(is_serializable)}")
         # indent=None means no white space or \n in the serialized version
