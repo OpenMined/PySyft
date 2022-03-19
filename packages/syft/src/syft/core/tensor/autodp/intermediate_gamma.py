@@ -30,6 +30,7 @@ from ...common.serde.serializable import serializable
 from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from ..broadcastable import is_broadcastable
+from ..fixed_precision_tensor import FixedPrecisionTensor
 from .adp_tensor import ADPTensor
 
 SupportedChainType = Union[int, bool, float, np.ndarray, PassthroughTensor]
@@ -547,29 +548,27 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
         print("IntermediaGammaTensor:510: TRY: publish(scalars=self.flat_scalars)")
-        result = np.array(
-            publish(
-                scalars=self.flat_scalars,
-                acc=acc,
-                sigma=sigma,
-                user_key=user_key,
-                public_only=True,
+        result = publish(
+            scalars=self.flat_scalars,
+            acc=acc,
+            sigma=sigma,
+            user_key=user_key,
+            public_only=True,
+        )
+        for i in range(len(result)):
+            result[i] = (
+                result[i].child
+                if isinstance(result[i], FixedPrecisionTensor)
+                else result[i]
             )
-        ).reshape(self.shape)
-        print("IntermediaGammaTensor:510: SUCCESS: publish(scalars=self.flat_scalars)")
-        sharetensor_values = getattr(self, "sharetensor_values", None)
-        if sharetensor_values is not None:
-            # relative
-            from ..smpc.share_tensor import ShareTensor
 
-            result = ShareTensor(
-                rank=sharetensor_values.rank,
-                parties_info=sharetensor_values.parties_info,
-                ring_size=sharetensor_values.ring_size,
-                seed_przs=sharetensor_values.seed_przs,
-                clients=sharetensor_values.clients,
-                value=result,
-            )
+        result = np.array(result).reshape(self.shape)
+
+        print("IntermediaGammaTensor:510: SUCCESS: publish(scalars=self.flat_scalars)")
+        fpt_values = getattr(self, "fpt_values", None)
+        if fpt_values is not None:
+            fpt_values.child.child = result
+            result = fpt_values
         return result
 
     def sum(self, axis: Optional[int] = None) -> IntermediateGammaTensor:

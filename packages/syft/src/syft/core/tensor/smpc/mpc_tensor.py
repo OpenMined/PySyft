@@ -387,7 +387,7 @@ class MPCTensor(PassthroughTensor):
 
     def reconstruct(self, delete_obj: bool = True) -> np.ndarray:
         # relative
-        from ..autodp.single_entity_phi import SingleEntityPhiTensor
+        from ..fixed_precision_tensor import FixedPrecisionTensor
 
         dtype = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
 
@@ -412,10 +412,18 @@ class MPCTensor(PassthroughTensor):
         for share in local_shares[1:]:
             result = op(result, share)
 
-        if hasattr(result, "child") and isinstance(result.child, SingleEntityPhiTensor):
-            return result.decode()
+        def check_fpt(value: Any) -> bool:
+            if isinstance(value, FixedPrecisionTensor):
+                return True
+            if hasattr(value, "child"):
+                return check_fpt(value.child)
+            else:
+                return False
 
-        return result.child
+        if check_fpt(result):
+            return result.decode()
+        else:
+            return result.child
 
     get = reconstruct
 

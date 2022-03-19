@@ -12,6 +12,7 @@ from ...adp.entity import DataSubjectGroup
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
+from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..smpc.share_tensor import ShareTensor
 from .adp_tensor import ADPTensor
@@ -58,11 +59,12 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
     ) -> None:
         self.uid = UID()
 
-        if isinstance(values, ShareTensor):
-            self.sharetensor_values = values
-            self.values = values.child
+        self.fpt_values: Optional[FixedPrecisionTensor]
+        if isinstance(values, FixedPrecisionTensor):
+            self.fpt_values = values
+            self.values = values.child.child
         else:
-            self.sharetensor_values = None
+            self.fpt_values = None
             self.values = values
 
         self.min_vals = min_vals
