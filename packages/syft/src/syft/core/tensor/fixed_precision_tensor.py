@@ -28,6 +28,8 @@ class FixedPrecisionTensor(PassthroughTensor):
             fpt_value = self._scale * value
             encoded_value = fpt_value.astype(np.int32)
             super().__init__(encoded_value)
+        else:
+            super().__init__(None)
 
     @property
     def precision(self) -> int:
@@ -57,9 +59,14 @@ class FixedPrecisionTensor(PassthroughTensor):
         return self._scale
 
     def decode(self) -> Any:
-        correction = (self.child < 0).astype(np.int32)
-        dividend = self.child // self._scale - correction
-        remainder = self.child % self._scale
+        # relative
+        from .smpc.share_tensor import ShareTensor
+
+        value = self.child.child if isinstance(self.child, ShareTensor) else self.child
+
+        correction = (value < 0).astype(np.int32)
+        dividend = value // self._scale - correction
+        remainder = value % self._scale
         remainder += (remainder == 0).astype(np.int32) * self._scale * correction
         value = dividend.astype(np.float32) + remainder.astype(np.float32) / self._scale
         return value

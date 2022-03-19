@@ -386,22 +386,8 @@ class MPCTensor(PassthroughTensor):
         return self
 
     def reconstruct(self, delete_obj: bool = True) -> np.ndarray:
-        # TODO: It might be that the resulted shares (if we run any computation) might
-        # not be available at this point. We need to have this fail well with a nice
-        # description as to which node wasn't able to be reconstructued.
-        # Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\
-        # stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
-
-        # for now we need to convert the values coming back to int32
-        # sometimes they are floats coming from DP
-        def convert_child_numpy_type(tensor: Any, np_type: type) -> Any:
-            if isinstance(tensor, np.ndarray):
-                return np.array(tensor, np_type)
-            if hasattr(tensor, "child"):
-                tensor.child = convert_child_numpy_type(
-                    tensor=tensor.child, np_type=np_type
-                )
-            return tensor
+        # relative
+        from ..autodp.single_entity_phi import SingleEntityPhiTensor
 
         dtype = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
 
@@ -419,26 +405,22 @@ class MPCTensor(PassthroughTensor):
         local_shares = []
         for share in self.child:
             res = share.get() if delete_obj else share.get_copy()
-            res = convert_child_numpy_type(res, dtype)
             local_shares.append(res)
-
-        is_share_tensor = isinstance(local_shares[0], ShareTensor)
-
-        if is_share_tensor:
-            local_shares = [share.child for share in local_shares]
 
         result = local_shares[0]
         op = ShareTensor.get_op(self.ring_size, "add")
         for share in local_shares[1:]:
             result = op(result, share)
 
-        if hasattr(result, "child") and isinstance(result.child, ShareTensor):
-            return result.child.child
+        if hasattr(result, "child") and isinstance(result.child, SingleEntityPhiTensor):
+            return result.decode()
 
-        return result
+        return result.child
 
     get = reconstruct
-    get_copy = functools.partial(reconstruct, delete_obj=False)
+
+    def get_copy(self) -> np.ndarray:
+        return self.reconstruct(delete_obj=False)
 
     @staticmethod
     def hook_method(__self: MPCTensor, method_name: str) -> Callable[..., Any]:

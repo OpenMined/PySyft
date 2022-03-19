@@ -415,7 +415,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
             child=SingleEntityPhiTensor(
-                child=None,
+                child=FixedPrecisionTensor(value=None),
                 entity=self.entity,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore

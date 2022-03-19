@@ -32,6 +32,7 @@ from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...smpc.store.crypto_store import CryptoStore
+from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import PassthroughTensor  # type: ignore
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -312,7 +313,7 @@ class ShareTensor(PassthroughTensor):
         else:
             generator_shares = np.random.default_rng(seed_przs)
 
-        if isinstance(value.child, ShareTensor):
+        if isinstance(value.child, (ShareTensor, FixedPrecisionTensor)):
             value = value.child
 
         share = ShareTensor(
@@ -372,7 +373,7 @@ class ShareTensor(PassthroughTensor):
                 ring_size=ring_size,
             )
 
-        share_wrapper.child.child = share
+        share_wrapper.child.child.child = share
 
         return share_wrapper
 
