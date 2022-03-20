@@ -7,12 +7,10 @@ from typing import Callable
 from typing import Optional
 from typing import Union
 from typing import Tuple
-from typing import Set
 from typing import Dict
 from typing import List
 from typing import Deque
 from collections import deque
-from dis import dis
 from nacl.signing import VerifyKey
 
 # third party
@@ -21,7 +19,6 @@ import jax
 from jax import numpy as jnp
 from numpy.random import randint
 from scipy.optimize import shgo
-from functools import partial
 from ...adp.entity_list import EntityList
 from ...adp.vectorized_publish import publish
 
