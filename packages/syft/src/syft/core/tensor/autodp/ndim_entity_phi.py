@@ -3,8 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-import os
-from pathlib import Path
 from typing import Any
 from typing import Dict
 from typing import List
@@ -391,7 +389,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         schema = get_capnp_schema(schema_file="ndept.capnp")
         ndept_struct: CapnpModule = schema.NDEPT  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2 ** 64 - 1
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
         ndept_msg = ndept_struct.from_bytes_packed(

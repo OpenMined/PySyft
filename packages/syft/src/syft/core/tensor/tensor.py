@@ -478,7 +478,7 @@ class Tensor(
         schema = get_capnp_schema(schema_file="tensor.capnp")
         tensor_struct: CapnpModule = schema.Tensor  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2 ** 64 - 1
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
         tensor_msg = tensor_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )

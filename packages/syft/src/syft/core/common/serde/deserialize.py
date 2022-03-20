@@ -1,8 +1,6 @@
 # stdlib
 import re
 from typing import Any
-from typing import Callable
-from typing import Dict
 
 # third party
 from google.protobuf.message import Message
@@ -19,6 +17,7 @@ from .types import Deserializeable
 
 PROTOBUF_START_MAGIC_HEADER = "protobuf:"
 PROTOBUF_START_MAGIC_HEADER_BYTES = PROTOBUF_START_MAGIC_HEADER.encode("utf-8")
+
 
 # WARNING: This code has more 🐉 Dragons than a game of D&D 🗡🧙🎲
 # you were warned...
