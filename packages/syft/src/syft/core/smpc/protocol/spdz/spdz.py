@@ -67,6 +67,18 @@ def mul_master(
             p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
             ring_size=ring_size,
         )
+        # TODO: Should input after the computation of a dummpy function
+        # This will not work for matmul
+        CryptoPrimitiveProvider.generate_primitives(
+            "beaver_wraps",
+            parties=parties,
+            g_kwargs={
+                "shape": shape_x,
+                "parties_info": parties_info,
+            },
+            p_kwargs={"shape": shape_x},
+            ring_size=ring_size,
+        )
 
     # TODO: Should modify to parallel execution.
     if not isinstance(x.child[0], TensorPointer):

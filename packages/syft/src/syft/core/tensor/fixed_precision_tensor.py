@@ -22,7 +22,7 @@ class FixedPrecisionTensor(PassthroughTensor):
     __attr_allowlist__ = ("child", "_base", "_precision", "_scale")
 
     def __init__(
-        self, value: Optional[Any] = None, base: int = 10, precision: int = 3
+        self, value: Optional[Any] = None, base: int = 2, precision: int = 9
     ) -> None:
 
         self._base = base

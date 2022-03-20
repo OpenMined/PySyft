@@ -185,7 +185,11 @@ def public_divide(x: ShareTensor, y: Union[int, np.integer]) -> ShareTensor:
     divide_mask(x, r_sh, z_id, node)
 
     # Phase 2: Share Corretion Phase:
-    res = divide_wrap_correction(x, y, z_id, r_sh, theta_r_sh, node)
+    theta_x = divide_wrap_correction(x, y, z_id, r_sh, theta_r_sh, node)
+
+    x.child = x.child // y
+    # To avoid out-of-bounds when y is small
+    res = x - theta_x * 4 * ((x.ring_size // 4) // y)
 
     return res
 
@@ -258,7 +262,7 @@ def divide_wrap_correction(
     beta_xr = count_wraps([x.child, r_share.child])
 
     theta_x.child = beta_xr - theta_r_sh.child
-    theta_z = count_wraps(z_shares)
+    theta_z = count_wraps([share.child for share in z_shares])
 
     # TODO: We neglect calculation of Etaxr as it involves a comparision which bottlnecks
     # the computation, we assume Etaxr =0 , the probability of an error in the division
