@@ -1,5 +1,4 @@
 # stdlib
-# stdlib
 from typing import Tuple
 
 # third party
@@ -55,8 +54,9 @@ def beaver_retrieve_object(
             return store_obj
 
 
-def crypto_store_retrieve_object(
-    op_str: str, a_shape: tuple, b_shape: tuple, ring_size: int, remove: bool
+def crypto_store_retrieve_object(  # type: ignore
+    op_str: str,
+    **kwargs,
 ) -> Tuple:
     # relative
     from ....smpc.store.exceptions import EmptyPrimitiveStore
@@ -68,10 +68,10 @@ def crypto_store_retrieve_object(
     ctr = 0
     while True:
         try:
-            a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-                op_str, a_shape=a_shape, b_shape=b_shape, ring_size=ring_size, remove=remove  # type: ignore
+            store_values = crypto_store.get_primitives_from_store(
+                op_str, **kwargs  # type: ignore
             )
-            return (a_share, b_share, c_share)
+            return tuple(store_values)
         except EmptyPrimitiveStore:
 
             if ctr % 1500 == 0:

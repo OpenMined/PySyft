@@ -508,6 +508,25 @@ class ShareTensor(PassthroughTensor):
 
         return new_share
 
+    def truediv(self, y: Union[int, float, np.ndarray, "ShareTensor"]) -> "ShareTensor":
+        """Apply the "division" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, np.ndarray, "ShareTensor"]): self / y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # relative
+        from ...node.common.action.smpc_action_functions import public_divide
+
+        if not isinstance(y, (int, np.integer)):
+            raise ValueError("Current Division only works for integers")
+        else:
+            new_share = public_divide(self, y)
+
+        return new_share
+
     def bit_decomposition(self, ring_size: int, bitwise: bool) -> None:
         """Apply the "decomposition" operation on self
 
@@ -815,6 +834,7 @@ class ShareTensor(PassthroughTensor):
     __rmul__ = mul
     __matmul__ = matmul
     __rmatmul__ = rmatmul
+    __truediv__ = truediv
     __lt__ = lt
     __gt__ = gt
     __ge__ = ge

@@ -3,6 +3,7 @@ from copy import deepcopy
 from typing import Any
 from typing import Dict
 from typing import Optional
+from typing import Union
 from uuid import UUID
 
 # third party
@@ -14,6 +15,7 @@ from ....store.storeable_object import StorableObject
 from ....tensor.smpc import context
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
+from ....tensor.smpc.utils import count_wraps
 from ...abstract.node import AbstractNode
 from .beaver_action import BeaverAction
 from .greenlets_switch import beaver_retrieve_object
@@ -93,10 +95,8 @@ def spdz_mask(
     client_id_map = {client.id: client for client in clients}
     curr_client = client_id_map[node.id]  # type: ignore
     beaver_action = BeaverAction(
-        eps=eps,
-        eps_id=eps_id,
-        delta=delta,
-        delta_id=delta_id,
+        values=[eps, delta],
+        locations=[eps_id, delta_id],
         address=curr_client.address,
     )
     beaver_action.execute_action(node, None)
@@ -141,6 +141,131 @@ def spdz_multiply(
     share.child = tensor.child  # As we do not use fixed point we neglect truncation.
 
     return share
+
+
+def public_divide(x: ShareTensor, y: Union[int, np.integer]) -> ShareTensor:
+    """Performs SMPC Public Division.
+
+    Args:
+        x (ShareTensor): input share tensor
+        y (Union[int, np.integer]): input share tensor
+
+    Returns:
+        res (ShareTensor): Result of the operation.
+    """
+    seed_id_locations = context.FPT_CONTEXT.get("seed_id_locations", None)
+    if seed_id_locations is None:
+        raise ValueError(
+            f"Input seed : {seed_id_locations} for public  division should not None"
+        )
+    generator = np.random.default_rng(seed_id_locations)
+    # SKIPPING first 3 location as they are used for multiplication.
+    for _ in range(3):
+        _ = UID(
+            UUID(bytes=generator.bytes(16))
+        )  # Ignore first one as it is used for result.
+    z_id = UID(UUID(bytes=generator.bytes(16)))  # id for result of x+r
+
+    ring_size = x.ring_size
+    shape = tuple(x.shape)
+
+    # TODO: Make  retrieval context less, this might fail when there are several
+    # parallel division.
+    r_sh, theta_r_sh = crypto_store_retrieve_object(
+        "beaver_wraps",
+        shape=shape,
+        ring_size=ring_size,
+        remove=True,
+    )
+
+    node = context.SMPC_CONTEXT.get("node", None)
+    # SMPC Public Division
+
+    # Phase 1: Communication Phase (Beaver dispatch)
+    divide_mask(x, r_sh, z_id, node)
+
+    # Phase 2: Share Corretion Phase:
+    res = divide_wrap_correction(x, y, z_id, r_sh, theta_r_sh, node)
+
+    return res
+
+
+def divide_mask(
+    x: ShareTensor,
+    r: ShareTensor,
+    z_id: UID,
+    node: Optional[AbstractNode] = None,
+) -> None:
+
+    if node is None:
+        raise ValueError("Node context should be passed to spdz mask")
+
+    clients = ShareTensor.login_clients(x.parties_info)
+
+    z = x + r
+
+    client_id_map = {client.id: client for client in clients}
+    curr_client = client_id_map[node.id]  # type: ignore
+    beaver_action = BeaverAction(
+        values=[z],
+        locations=[z_id],
+        address=curr_client.address,
+    )
+    beaver_action.execute_action(node, None)
+
+    for _, client in enumerate(clients):
+        if client != curr_client:
+            beaver_action.address = client.address
+            client.send_immediate_msg_without_reply(msg=beaver_action)
+
+
+def divide_wrap_correction(
+    x: ShareTensor,
+    y: Union[int, np.integer],
+    z_id: UID,
+    r_share: ShareTensor,
+    theta_r_sh: ShareTensor,
+    node: Optional[AbstractNode] = None,
+) -> ShareTensor:
+    """Privately computes the number of wraparounds for a set a shares.
+    Adapted From Crypten
+
+    To do so, we note that:
+        [theta_x] = theta_z + [beta_xr] - [theta_r] - [eta_xr]
+    Where:
+        [theta_x] is the wraps for a variable x
+        [beta_xr] is the differential wraps for variables x and r
+        [eta_xr]  is the plaintext wraps for variables x and r
+    Note: Since [eta_xr] = 0 with probability 1 - |x| / Q for modulus Q, we
+    can make the assumption that [eta_xr] = 0 with high probability.
+
+    Args:
+        x (ShareTensor): shares for which we want to compute the number of wraparounds
+        y (Union[int, np.integer]): the number/tensor by which we divide
+        r_share (ShareTensor): share for a random variable "r"
+        theta_r_sh (ShareTensor): share for the number of wraparounds for "r"
+        z_id (UID): UID which contains the z(z=x+r_share) from all parties
+        node (Optional[Any]) : current node context.
+
+    Returns:
+        ShareTensor representing the number of wraparounds
+    """
+    nr_parties = x.nr_parties
+    theta_x = x.copy_tensor()
+
+    z_shares = beaver_retrieve_object(node, z_id, nr_parties).data  # type: ignore
+
+    beta_xr = count_wraps([x.child, r_share.child])
+
+    theta_x.child = beta_xr - theta_r_sh.child
+    theta_z = count_wraps(z_shares)
+
+    # TODO: We neglect calculation of Etaxr as it involves a comparision which bottlnecks
+    # the computation, we assume Etaxr =0 , the probability of an error in the division
+    # is low when we make this assumption.
+    theta_x = theta_x + theta_z
+
+    return theta_x
 
 
 def _decomposition(x: ShareTensor, ring_size: int, bitwise: bool) -> None:

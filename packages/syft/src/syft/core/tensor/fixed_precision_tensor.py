@@ -13,6 +13,7 @@ import numpy as np
 from ..common.serde.serializable import serializable
 from .passthrough import PassthroughTensor  # type: ignore
 from .passthrough import is_acceptable_simple_type  # type: ignore
+from .smpc import context
 
 
 @serializable(recursive_serde=True)
@@ -110,5 +111,19 @@ class FixedPrecisionTensor(PassthroughTensor):
     def __mul__(self, other: Any) -> FixedPrecisionTensor:
         other = self.sanity_check(other)
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT[
+            "seed_id_locations"
+        ]
         res.child = self.child * other.child
+        res = res / self.scale
+        return res
+
+    def __truediv__(
+        self, other: Union[int, np.integer, FixedPrecisionTensor]
+    ) -> FixedPrecisionTensor:
+        if isinstance(other, FixedPrecisionTensor):
+            raise ValueError("We pdo not support Private Division yet.")
+
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = self.child / other
         return res
