@@ -106,3 +106,9 @@ class FixedPrecisionTensor(PassthroughTensor):
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child - other.child
         return res
+
+    def __mul__(self, other: Any) -> FixedPrecisionTensor:
+        other = self.sanity_check(other)
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = self.child * other.child
+        return res
