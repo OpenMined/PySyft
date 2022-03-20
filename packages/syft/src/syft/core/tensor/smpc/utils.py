@@ -5,6 +5,7 @@ from functools import lru_cache
 import operator
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import cast
@@ -89,3 +90,31 @@ def get_ring_size(
         )
 
     return x_ring_size
+
+
+def count_wraps(share_list: List[np.ndarray]) -> np.ndarray:
+    """Count overflows and underflows if we reconstruct the original value.
+
+    The code is adapted from the Crypten Project.
+
+    Args:
+        share_list (List[ShareTensor]): List of the shares.
+
+    Returns:
+        torch.Tensor: The number of wraparounds.
+    """
+    res = np.zeros_like(share_list[0], dtype=np.int32)
+    prev_share = share_list[0]
+    for cur_share in share_list[1:]:
+        next_share = cur_share + prev_share
+
+        # If prev and current shares are negative,
+        # but the result is positive then is an underflow
+        res -= (prev_share < 0) & (cur_share < 0) & (next_share > 0)
+
+        # If prev and current shares are positive,
+        # but the result is positive then is an overflow
+        res += (prev_share > 0) & (cur_share > 0) & (next_share < 0)
+        prev_share = next_share
+
+    return res

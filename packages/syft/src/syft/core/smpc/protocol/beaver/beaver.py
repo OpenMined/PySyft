@@ -21,6 +21,7 @@ import numpy as np
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.utils import RING_SIZE_TO_TYPE
+from ....tensor.smpc.utils import count_wraps
 from ...store import register_primitive_generator
 from ...store import register_primitive_store_add
 from ...store import register_primitive_store_get
@@ -298,6 +299,149 @@ def matmul_store_get(
         EmptyPrimitiveStore: If no primitive in the store for config_key.
     """
     config_key = f"beaver_matmul_{tuple(a_shape)}_{tuple(b_shape)}_{ring_size}"
+
+    try:
+        primitives = store[config_key]
+    except KeyError:
+        raise EmptyPrimitiveStore(f"{config_key} does not exists in the store")
+
+    try:
+        primitive = primitives[0]
+    except Exception:
+        raise EmptyPrimitiveStore(f"No primitive in the store for {config_key}")
+
+    if remove:
+        del primitives[0]
+
+    return primitive
+
+
+# TTP Operations for Public Division
+
+
+@register_primitive_generator("beaver_wraps")
+def count_wraps_rand(
+    nr_parties: int,
+    shape: Tuple[int],
+    parties_info: List[Any],
+    nr_instances: int = 1,
+    ring_size: int = 2**32,
+) -> List[Tuple[Tuple[ShareTensor, ShareTensor]]]:
+    """Count wraps random.
+    The Trusted Third Party (TTP) or Crypto provider should generate:
+    - a set of shares for a random number
+    - a set of shares for the number of wraparounds for that number
+    Those shares are used when doing a public division, such that the
+    end result would be the correct one.
+
+    Args:
+        nr_parties (int): Number of parties
+        shape (Tuple[int]): The shape for the random value
+        parties_info (List[Any]): Parties connection information.
+        shape (Tuple[int]): the shape of the numerator
+        ring_size (int) : Ring Size of the operation.
+        kwargs: Arbitrary keyword arguments for commands.
+
+    Returns:
+        List[List[List[ShareTensor, ShareTensor]]: a list of instaces with the shares
+        for a random integer value and shares for the number of wraparounds that are done when
+        reconstructing the random value
+    """
+    # relative
+    from ..... import Tensor
+
+    numpy_type = RING_SIZE_TO_TYPE[ring_size]
+    min_value, max_value = ShareTensor.compute_min_max_from_ring(ring_size)
+
+    primitives = []
+
+    for _ in range(nr_instances):
+
+        seed_przs = secrets.randbits(32)
+        rand_val = Tensor(
+            ttp_generator.integers(
+                low=min_value,
+                high=max_value,
+                size=shape,
+                endpoint=True,
+                dtype=numpy_type,
+            )
+        )
+
+        r_shares = MPCTensor._get_shares_from_local_secret(
+            secret=deepcopy(rand_val),
+            parties_info=parties_info,  # type: ignore
+            shape=shape,
+            seed_przs=seed_przs,
+            ring_size=ring_size,
+        )
+
+        seed_przs = secrets.randbits(32)
+        wraps = Tensor(count_wraps([share.child for share in r_shares]))
+
+        theta_r_shares = MPCTensor._get_shares_from_local_secret(
+            secret=deepcopy(wraps),
+            parties_info=parties_info,  # type: ignore
+            shape=shape,
+            seed_przs=seed_przs,
+            ring_size=ring_size,
+        )
+
+        # For now We are always creating only an instance
+        primitives.append((r_shares, theta_r_shares))
+
+    res_primitives = list(zip(*[zip(*primitive) for primitive in primitives]))
+
+    return res_primitives  # type: ignore
+
+
+@register_primitive_store_add("beaver_wraps")
+def wraps_store_add(
+    store: Dict[str, List[Any]],
+    primitives: List[Any],
+    shape: Tuple[int],
+    ring_size: int,
+) -> None:
+    """Add the primitives required for the public division operation to the CryptoStore.
+
+    Arguments:
+        store (Dict[str, List[Any]]): the CryptoStore
+        primitives (List[Any]): the list of primitives
+        shape (Tuple[int]): the shape of the numerator
+        ring_size (int): Ring size of the operation.
+    """
+
+    config_key = f"beaver_wraps_{shape}_{ring_size}"
+    if config_key in store:
+        store[config_key].extend(list(primitives))
+    else:
+        store[config_key] = list(primitives)
+
+
+@register_primitive_store_get("beaver_wraps")
+def wraps_store_get(
+    store: Dict[str, List[Any]],
+    shape: Tuple[int, ...],
+    ring_size: int,
+    remove: bool = True,
+) -> Any:
+    """Retrieve the primitives from the CryptoStore.
+
+    Those are needed for executing the public division operation.
+
+    Args:
+        store (Dict[str, List[Any]]): The CryptoStore.
+        shape (Tuple[int]): the shape of the numerator
+        ring_size (int): Ring size of the operation.
+        remove (bool): True if the primitives should be removed from the store.
+
+    Returns:
+        Any: The primitives required for the public division operation.
+
+    Raises:
+        EmptyPrimitiveStore: If no primitive in the store for config_key.
+    """
+    config_key = f"beaver_wraps_{tuple(shape)}_{ring_size}"
 
     try:
         primitives = store[config_key]
