@@ -417,10 +417,11 @@ class Tensor(
         tags: Optional[List[str]] = None,
         description: str = "",
     ) -> Pointer:
-
         # relative
         from .autodp.single_entity_phi import SingleEntityPhiTensor
         from .autodp.single_entity_phi import TensorWrappedSingleEntityPhiTensorPointer
+
+        # TODO:  Should create init pointer for NDimEntityPhiTensorPointer.
 
         if isinstance(self.child, SingleEntityPhiTensor):
             return TensorWrappedSingleEntityPhiTensorPointer(
