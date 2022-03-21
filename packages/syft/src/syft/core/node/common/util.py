@@ -182,6 +182,7 @@ def upload_to_s3_using_presigned(
             raise Exception(
                 f"Uploading Chunk {part} failed. "
                 + f"HTTP Status Code: {res.status_code}"
+                + f"HTTP Content: {str(res.content)}"
             )
         etag = res.headers["ETag"]
         etag_chunk_no_pairs.append(
