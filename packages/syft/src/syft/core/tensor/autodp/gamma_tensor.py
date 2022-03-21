@@ -16,11 +16,12 @@ from nacl.signing import VerifyKey
 # third party
 import flax
 import jax
+import numpy as np
 from jax import numpy as jnp
 from numpy.random import randint
 from scipy.optimize import shgo
 from ...adp.entity_list import EntityList
-from ...adp.vectorized_publish import publish
+from ...adp.vectorized_publish import vectorized_publish
 
 
 def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]:
@@ -110,20 +111,20 @@ class GammaTensor:
             value=value, min_val=min_val, max_val=max_val, func=sum, state=state
         )
 
-    def publish(self, accountant: Any, user_key: VerifyKey, sigma: Optional[float] = None) -> jnp.array:
+    def publish(self, sigma: Optional[float] = None, output_func: Callable=np.sum) -> jnp.array:
+        # TODO: Add data scientist privacy budget as an input argument, and pass it into vectorized_publish
         if sigma is None:
-            sigma = self.value.mean()/4  # TODO: change this to something smarter
-        result = publish(
-            values=self.value,
-            min_vals=self.min_val,
-            max_val=self.max_val,
-            data_subjects=self.data_subjects,
-            is_linear=self.is_linear,
-            acc=accountant,
-            user_key=user_key,
-            sigma=sigma
+            sigma = self.value.mean()/4
+
+        return vectorized_publish(
+                min_vals=self.min_val,
+                max_vals=self.max_val,
+                values=self.state["0"],
+                data_subjects=self.data_subjects,
+                is_linear=self.is_linear,
+                sigma=sigma,
+                output_func= output_func
         )
-        return result.reshape(self.shape)
 
     def expand_dims(self, axis: int) -> GammaTensor:
         expand_dims = lambda state: jnp.expand_dims(self.run(state), axis)

@@ -323,6 +323,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             data_subjects=self.entities.sum(),
             min_val=self.min_vals.sum(),
             max_val=self.max_vals.sum(),
+            state={"0": self.child}
         )
 
     @staticmethod
