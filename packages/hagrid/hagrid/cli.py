@@ -180,6 +180,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: local path to TLS private key to upload and store at --cert_store_path",
 )
+@click.option(
+    "--use_blob_storage",
+    default="",
+    required=False,
+    type=str,
+    help="Optional: flag to use blob storage",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -417,6 +424,9 @@ def create_launch_cmd(
     if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
         build = False
     parsed_kwargs["build"] = build
+
+    if "use_blob_storage" in kwargs:
+        parsed_kwargs["use_blob_storage"] = kwargs["use_blob_storage"]
 
     headless = False
     if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
@@ -773,6 +783,13 @@ def create_launch_docker_cmd(
         # force version to have -dev at the end in dev mode
         version_string += "-dev"
 
+    if str(node_type.input) == "network":
+        use_blob_storage = "False"
+    elif "use_blob_storage" in kwargs:
+        use_blob_storage = kwargs["use_blob_storage"]
+    else:
+        use_blob_storage = "True"
+
     envs = {
         "RELEASE": "production",
         "COMPOSE_DOCKER_CLI_BUILD": 1,
@@ -785,7 +802,7 @@ def create_launch_docker_cmd(
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
         "VERSION_HASH": GRID_SRC_VERSION[1],
-        "USE_BLOB_STORAGE": "False" if str(node_type.input) == "network" else "True",
+        "USE_BLOB_STORAGE": use_blob_storage,
     }
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
