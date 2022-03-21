@@ -35,62 +35,62 @@ def make_bounds(data, bound: int) -> np.ndarray:
     return np.ones_like(data) * bound
 
 
-# This fails on Windows CI even though the same code works in a Jupyter Notebook
-# on the same Windows CI machine.
-@pytest.mark.xfail
-@pytest.mark.network
-def test_large_message_size() -> None:
+# # This fails on Windows CI even though the same code works in a Jupyter Notebook
+# # on the same Windows CI machine.
+# @pytest.mark.xfail
+# @pytest.mark.network
+# def test_large_message_size() -> None:
 
-    # use to enable mitm proxy
-    # from syft.grid.connections.http_connection import HTTPConnection
-    # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
+#     # use to enable mitm proxy
+#     # from syft.grid.connections.http_connection import HTTPConnection
+#     # HTTPConnection.proxies = {"http": "http://127.0.0.1:8080"}
 
-    domain_client = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
-    )
+#     domain_client = sy.login(
+#         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
+#     )
 
-    # currently the database wont accept more than around 200mb
-    if sy.flags.APACHE_ARROW_TENSOR_SERDE is False:
-        ndim = 5500  # 510.76 MB
-        # 127 MB in Protobuf
-    else:
-        ndim = 5500
-        # 121 MB in PyArrow
+#     # currently the database wont accept more than around 200mb
+#     if sy.flags.APACHE_ARROW_TENSOR_SERDE is False:
+#         ndim = 5500  # 510.76 MB
+#         # 127 MB in Protobuf
+#     else:
+#         ndim = 5500
+#         # 121 MB in PyArrow
 
-    # rabbitmq recommends max is 512 MB
-    # rabbitmq.conf has max_message_size = 536870912
-    x = np.random.randint(-highest(), highest(), size=(ndim, ndim))
-    x_bytes = sy.serialize(x, to_bytes=True)
-    mb_size = size(x_bytes)
-    mb = f"{mb_size} MB"
+#     # rabbitmq recommends max is 512 MB
+#     # rabbitmq.conf has max_message_size = 536870912
+#     x = np.random.randint(-highest(), highest(), size=(ndim, ndim))
+#     x_bytes = sy.serialize(x, to_bytes=True)
+#     mb_size = size(x_bytes)
+#     mb = f"{mb_size} MB"
 
-    if mb_size > 510:
-        raise Exception(f"Message size: {mb_size} is too big for RabbitMQ.")
+#     if mb_size > 510:
+#         raise Exception(f"Message size: {mb_size} is too big for RabbitMQ.")
 
-    try:
-        start_time = time.time()
-        print(f"Sending {mb} sized message")
-        x_ptr = x.send(domain_client, tags=[f"{x.shape}", mb])
-        x_ptr.block_with_timeout(180)
-        total_time = time.time() - start_time
-        print(f"Took {total_time}")
-        data_rate = mb_size / total_time
-        print(f"Send transfer rate: {data_rate}")
-    except Exception as e:
-        total_time = time.time() - start_time
-        print(f"Failed to send {x.shape} in {total_time}. {e}")
-        raise e
+#     try:
+#         start_time = time.time()
+#         print(f"Sending {mb} sized message")
+#         x_ptr = x.send(domain_client, tags=[f"{x.shape}", mb])
+#         x_ptr.block_with_timeout(180)
+#         total_time = time.time() - start_time
+#         print(f"Took {total_time}")
+#         data_rate = mb_size / total_time
+#         print(f"Send transfer rate: {data_rate}")
+#     except Exception as e:
+#         total_time = time.time() - start_time
+#         print(f"Failed to send {x.shape} in {total_time}. {e}")
+#         raise e
 
-    try:
-        start_time = time.time()
-        back = x_ptr.get()
-        assert (back == x).all()
-        total_time = time.time() - start_time
-        data_rate = mb_size / total_time
-        print(f"Return transfer rate: {data_rate}")
-    except Exception as e:
-        print(f"Failed to get data back. {e}")
-        raise e
+#     try:
+#         start_time = time.time()
+#         back = x_ptr.get()
+#         assert (back == x).all()
+#         total_time = time.time() - start_time
+#         data_rate = mb_size / total_time
+#         print(f"Return transfer rate: {data_rate}")
+#     except Exception as e:
+#         print(f"Failed to get data back. {e}")
+#         raise e
 
 
 @pytest.mark.network
@@ -177,7 +177,7 @@ def test_large_blob_upload() -> None:
         # create new tensor from remote Tensor constructor
         new_tensor_ptr = domain_client.syft.core.tensor.tensor.Tensor(child=asset_ptr)
         new_tensor_ptr.block_with_timeout(
-            3 * multiplier
+            10 * multiplier
         )  # wait for obj upload and proxy obj creation
 
         # make sure new object is also in blob storage
@@ -187,7 +187,7 @@ def test_large_blob_upload() -> None:
         # pointer addition
         add_res_prt = asset_ptr + asset_ptr
         add_res_prt.block_with_timeout(
-            3 * multiplier
+            10 * multiplier
         )  # wait for obj upload and proxy obj creation
 
         # make sure new object is also in blob storage

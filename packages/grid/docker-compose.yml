@@ -244,7 +244,9 @@ services:
     profiles:
       - blob-storage
     image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
-    command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=1024"
+    environment:
+      - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:1024}
+    command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"
     volumes:
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml

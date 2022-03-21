@@ -791,8 +791,16 @@ def create_launch_docker_cmd(
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
 
-    if "test" in kwargs and kwargs["test"] is True:
+    if (
+        "tls" in kwargs
+        and kwargs["tls"] is True
+        and "test" in kwargs
+        and kwargs["test"] is True
+    ):
         envs["IGNORE_TLS_ERRORS"] = "True"
+
+    if "test" in kwargs and kwargs["test"] is True:
+        envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
