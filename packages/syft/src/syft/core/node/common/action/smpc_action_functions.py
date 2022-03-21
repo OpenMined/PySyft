@@ -205,8 +205,8 @@ def smpc_mul(
     nr_parties: int,
     self_id: UID,
     other_id: UID,
-    a_shape_id: UID,
-    b_shape_id: UID,
+    a_shape_id: Optional[UID] = None,
+    b_shape_id: Optional[UID] = None,
     seed_id_locations: Optional[int] = None,
     node: Optional[AbstractNode] = None,
 ) -> SMPCActionSeqBatchMessage:
@@ -223,7 +223,7 @@ def smpc_mul(
     other = node.store.get(other_id).data
 
     actions = []
-    if isinstance(other, (ShareTensor, Tensor)):
+    if isinstance(other, (ShareTensor, Tensor)) and (a_shape_id and b_shape_id):
         # crypto_store = ShareTensor.crypto_store
         # _self = node.store.get(self_id).data
         # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
@@ -235,8 +235,8 @@ def smpc_mul(
         mask_result = UID(UUID(bytes=generator.bytes(16)))
         eps_id = UID(UUID(bytes=generator.bytes(16)))
         delta_id = UID(UUID(bytes=generator.bytes(16)))
-        a_shape = node.store.get(a_shape_id).data
-        b_shape = node.store.get(b_shape_id).data
+        a_shape = node.store.get(a_shape_id).data  # type: ignore
+        b_shape = node.store.get(b_shape_id).data  # type: ignore
         crypto_store = ShareTensor.crypto_store
         a_share, b_share, c_share = crypto_store.get_primitives_from_store(
             "beaver_mul", a_shape=a_shape, b_shape=b_shape, ring_size=ring_size, remove=True  # type: ignore
