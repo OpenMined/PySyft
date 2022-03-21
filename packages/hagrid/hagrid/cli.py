@@ -182,7 +182,7 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--use_blob_storage",
-    default="",
+    default=None,
     required=False,
     type=str,
     help="Optional: flag to use blob storage",
@@ -425,8 +425,9 @@ def create_launch_cmd(
         build = False
     parsed_kwargs["build"] = build
 
-    if "use_blob_storage" in kwargs:
-        parsed_kwargs["use_blob_storage"] = kwargs["use_blob_storage"]
+    parsed_kwargs["use_blob_storage"] = (
+        kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
+    )
 
     headless = False
     if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
@@ -783,12 +784,12 @@ def create_launch_docker_cmd(
         # force version to have -dev at the end in dev mode
         version_string += "-dev"
 
+    use_blob_storage = "true"
+
     if str(node_type.input) == "network":
-        use_blob_storage = "False"
-    elif "use_blob_storage" in kwargs:
+        use_blob_storage = "false"
+    elif "use_blob_storage" in kwargs and kwargs["use_blob_storage"] is not None:
         use_blob_storage = kwargs["use_blob_storage"]
-    else:
-        use_blob_storage = "True"
 
     envs = {
         "RELEASE": "production",
