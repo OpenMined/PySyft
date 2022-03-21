@@ -1,9 +1,14 @@
-import numpy as np
-from entity_list import EntityList
-from typing import Optional
-from typing import Callable
+# stdlib
 from random import gauss
-from data_subject_ledger import DataSubjectLedger
+
+# from entity_list import EntityList
+from typing import Callable
+from typing import Optional
+
+# third party
+import numpy as np
+
+# from data_subject_ledger import DataSubjectLedger
 
 
 def calculate_bounds_for_mechanism(value_array, min_val_array, max_val_array):

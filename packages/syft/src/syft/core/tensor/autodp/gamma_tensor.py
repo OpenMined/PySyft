@@ -2,26 +2,29 @@
 from __future__ import annotations
 
 # stdlib
+from collections import deque
 from typing import Any
 from typing import Callable
-from typing import Optional
-from typing import Union
-from typing import Tuple
+from typing import Deque
 from typing import Dict
 from typing import List
-from typing import Deque
-from collections import deque
-from nacl.signing import VerifyKey
+from typing import Optional
+from typing import Tuple
+from typing import Union
 
 # third party
 import flax
 import jax
-import numpy as np
 from jax import numpy as jnp
+from nacl.signing import VerifyKey
+import numpy as np
 from numpy.random import randint
 from scipy.optimize import shgo
+
+# relative
 from ...adp.entity_list import EntityList
-from ...adp.vectorized_publish import vectorized_publish
+
+# from ...adp.vectorized_publish import vectorized_publish
 
 
 def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]:
