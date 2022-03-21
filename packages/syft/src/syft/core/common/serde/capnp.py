@@ -22,7 +22,6 @@ def get_capnp_schema(schema_file: str) -> type:
     here = os.path.dirname(__file__)
     root_dir = Path(here) / ".." / ".." / ".." / ".." / ".." / "capnp"
     capnp_path = os.path.abspath(root_dir / schema_file)
-    print("loading ", capnp_path, schema_file)
     return capnp.load(str(capnp_path))
 
 

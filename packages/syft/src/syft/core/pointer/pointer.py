@@ -346,6 +346,9 @@ class Pointer(AbstractPointer):
         :return: returns the downloaded data
         :rtype: Optional[StorableObject]
         """
+        if proxy_only and delete_obj:
+            delete_obj = False
+            print("Warning fetching proxy_only will not delete the real object")
 
         # relative
         from ..node.common.node_service.request_receiver.request_receiver_messages import (

@@ -174,15 +174,30 @@ def test_large_blob_upload() -> None:
         dataset = domain_client.datasets[-1]
         asset_ptr = dataset[asset_name]
 
-        # ATTEMPT Pointer addition
-        # print("what is asset ptr", asset_ptr, type(asset_ptr))
-        # res_prt = asset_ptr + asset_ptr
-        # print(res_prt, res_prt.id_at_location)
-        # result = res_prt.get()
-        # print(result)
-        # org_result = tweets_data + tweets_data
-        # assert org_result == result
-        # assert False
+        # create new tensor from remote Tensor constructor
+        new_tensor_ptr = domain_client.syft.core.tensor.tensor.Tensor(child=asset_ptr)
+        new_tensor_ptr.block_with_timeout(
+            1 * multiplier
+        )  # wait for obj upload and proxy obj creation
+
+        # make sure new object is also in blob storage
+        new_tensor_proxy = new_tensor_ptr.get(proxy_only=True)
+        assert isinstance(new_tensor_proxy, ProxyDataset)
+
+        # pointer addition
+        add_res_prt = asset_ptr + asset_ptr
+        add_res_prt.block_with_timeout(
+            1 * multiplier
+        )  # wait for obj upload and proxy obj creation
+
+        # make sure new object is also in blob storage
+        add_result_proxy = add_res_prt.get(delete_obj=False, proxy_only=True)
+        assert isinstance(add_result_proxy, ProxyDataset)
+
+        # compare result to locally generated result
+        add_result = add_res_prt.get(delete_obj=False)
+        org_result = tweets_data + tweets_data
+        assert org_result == add_result
 
         # get the proxy object
         result_proxy = asset_ptr.get(delete_obj=False, proxy_only=True)
@@ -192,10 +207,8 @@ def test_large_blob_upload() -> None:
         assert result_proxy.url.startswith("/blob/")  # no host
         assert result_proxy.shape == tweets_data.shape
 
-        print("obj_public_kwargs", result_proxy.obj_public_kwargs)
-
         # get the real object
-        result = asset_ptr.get()
+        result = asset_ptr.get(delete_obj=False)
 
         # do we check the client or the GetReprService
         end_time = time.time()

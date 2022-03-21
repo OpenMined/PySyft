@@ -133,14 +133,6 @@ class RedisStore(ObjectStore):
         local_session.close()
         return is_dataset_obj
 
-    def _get_obj_dataset_relation(self, key: str) -> Optional[BinObjDataset]:
-        local_session = sessionmaker(bind=self.db)()
-        obj_dataset_relation = (
-            local_session.query(BinObjDataset).filter_by(obj=key).first()
-        )
-        local_session.close()
-        return obj_dataset_relation
-
     def __getitem__(self, key: StoreKey) -> StorableObject:
         raise Exception("obj = store[key] not allowed because additional args required")
 
@@ -191,22 +183,9 @@ class RedisStore(ObjectStore):
             ),
         ).hex()
 
-        obj_dataset_relation = self._get_obj_dataset_relation(key_str)
-        if obj_dataset_relation:
-            # Create a object dataset relationship for the new object
-            obj_dataset_relation = BinObjDataset(
-                # id=obj_dataset_relation.id,  NOTE: Commented temporarily
-                name=obj_dataset_relation.name,
-                obj=key_str,
-                dataset=obj_dataset_relation.dataset,
-                dtype=obj_dataset_relation.dtype,
-                shape=obj_dataset_relation.shape,
-            )
-
         local_session = sessionmaker(bind=self.db)()
         if create_metadata:
             local_session.add(metadata_obj)
-        local_session.add(obj_dataset_relation) if obj_dataset_relation else None
         local_session.commit()
         local_session.close()
 

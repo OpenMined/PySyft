@@ -23,6 +23,7 @@ from .....util import inherit_tags
 from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
+from ....store.proxy_dataset import ProxyDataset
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from ..util import check_send_to_blob_storage
@@ -109,8 +110,20 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             mutating_internal = True
 
         resolved_self = None
+        is_proxy = False  # we need to know if its a proxy object when we save mutations
         if not self.is_static:
-            resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
+            resolved_self = retrieve_object(
+                node=node,
+                id_at_location=self._self.id_at_location,
+                path=self.path,
+                proxy_only=True,
+            )
+            # check if its proxy and resolve
+            if isinstance(resolved_self.data, ProxyDataset):
+                is_proxy = True
+                resolved_self.data = resolved_self.data.get_s3_data(
+                    settings=node.settings
+                )
             result_read_permissions = resolved_self.read_permissions  # type: ignore
             result_write_permissions = resolved_self.write_permissions  # type: ignore
         else:
@@ -223,20 +236,22 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             if isinstance(resolved_self, StorableObject):
                 resolved_self.read_permissions = result_read_permissions
                 resolved_self.write_permissions = result_write_permissions
+
+        # TODO: Upload object to seaweed store, instead of storing in redis
+        # create a proxy object class and store it here.
+        if check_send_to_blob_storage(
+            obj=result,
+            use_blob_storage=getattr(node.settings, "USE_BLOB_STORAGE", False),
+        ):
+            result = upload_result_to_s3(
+                asset_name=self.id_at_location.no_dash,
+                dataset_name="",
+                domain_id=node.id,
+                data=result,
+                settings=node.settings,
+            )
+
         if not isinstance(result, StorableObject):
-            # TODO: Upload object to seaweed store, instead of storing in redis
-            # create a proxy object class and store it here.
-            if check_send_to_blob_storage(
-                obj=result,
-                use_blob_storage=getattr(node.settings, "USE_BLOB_STORAGE", False),
-            ):
-                result = upload_result_to_s3(
-                    asset_name=self.id_at_location.no_dash,
-                    dataset_name="",
-                    domain_id=node.id,
-                    data=result,
-                    settings=node.settings,
-                )
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
@@ -257,6 +272,15 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
         # but if the method was static then we might not have a _self
         if resolved_self is not None and mutating_internal:
             # write the original resolved_self back to _self.id_at_location
+            if is_proxy:
+                resolved_self_proxy = upload_result_to_s3(
+                    asset_name=self._self.id_at_location.no_dash,
+                    dataset_name="",
+                    domain_id=node.id,
+                    data=resolved_self.data,
+                    settings=node.settings,
+                )
+                resolved_self.data = resolved_self_proxy
             node.store[self._self.id_at_location] = resolved_self  # type: ignore
 
         node.store[self.id_at_location] = result

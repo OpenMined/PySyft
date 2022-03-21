@@ -20,6 +20,8 @@ from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...store.proxy_dataset import ProxyDataset
 
+MIN_BLOB_UPLOAD_SIZE_MB = 1
+
 
 def read_chunks(
     fp: BytesIO, chunk_size: int = 1024**3
@@ -248,6 +250,8 @@ def check_send_to_blob_storage(obj: Any, use_blob_storage: bool = False) -> bool
     from ...tensor import Tensor
     from ...tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 
-    if use_blob_storage and (isinstance(obj, (NDEPT, Tensor)) or size_mb(obj) > 1):
+    if use_blob_storage and (
+        isinstance(obj, (NDEPT, Tensor)) or size_mb(obj) > MIN_BLOB_UPLOAD_SIZE_MB
+    ):
         return True
     return False

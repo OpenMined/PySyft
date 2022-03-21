@@ -16,7 +16,9 @@ from ...proto.core.store.store_object_pb2 import StorableObject as StorableObjec
 from ...util import get_fully_qualified_name
 from ...util import index_syft_by_module_name
 from ...util import key_emoji
+from ..common.serde.deserialize import CapnpMagicBytesNotFound
 from ..common.serde.deserialize import _deserialize
+from ..common.serde.deserialize import deserialize_capnp
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize
 from ..common.storeable_object import AbstractStorableObject
@@ -128,6 +130,9 @@ class StorableObject(AbstractStorableObject):
         self._description = description if description else ""
 
     def _object2proto(self) -> StorableObject_PB:
+        # relative
+        from ...lib.python.bytes import Bytes
+
         proto = StorableObject_PB()
 
         # Step 1: Serialize the id to protobuf and copy into protobuf
@@ -138,7 +143,10 @@ class StorableObject(AbstractStorableObject):
         proto.data_type = get_fully_qualified_name(obj=self._data)
 
         # Step 3: Serialize data to protobuf and pack into proto
-        if hasattr(self._data, "_object2proto"):
+        if hasattr(self._data, "_object2bytes"):
+            data = Bytes(self._data._object2bytes())._object2proto()
+            proto.data_type = get_fully_qualified_name(obj=Bytes())
+        elif hasattr(self._data, "_object2proto"):
             data = self._data._object2proto()
         else:
             # @Tudor this needs fixing during the serde refactor
@@ -183,6 +191,9 @@ class StorableObject(AbstractStorableObject):
 
     @staticmethod
     def _proto2object(proto: StorableObject_PB) -> "StorableObject":
+        # relative
+        from ...lib.python.bytes import Bytes
+
         # Step 1: deserialize the ID
         id = _deserialize(blob=proto.id)
 
@@ -203,6 +214,14 @@ class StorableObject(AbstractStorableObject):
             if descriptor is not None and proto.data.Is(descriptor):
                 proto.data.Unpack(data)
             data = data_type._proto2object(proto=data)  # type: ignore
+
+        if isinstance(data, (Bytes, bytes)):
+            try:
+                data = deserialize_capnp(buf=data)
+            except CapnpMagicBytesNotFound:
+                data = sy.deserialize(data, from_bytes=True)
+            except Exception as e:
+                traceback_and_raise(f"Failed to deserialize Bytes with capnp. {e}")
 
         # Step 5: get the description from proto
         description = proto.description if proto.description else ""

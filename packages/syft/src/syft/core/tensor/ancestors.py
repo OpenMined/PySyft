@@ -572,7 +572,7 @@ class PhiTensorAncestor(TensorChainManager):
             entity_list = EntityList(one_hot_lookup, entities_indexed)
 
             if isinstance(min_val, (bool, int, float)):
-                min_vals = np.array(min_val)
+                min_vals = np.array(min_val).ravel()  # make it 1D
             else:
                 raise Exception(
                     "min_val should be either float,int,bool got "
@@ -581,7 +581,7 @@ class PhiTensorAncestor(TensorChainManager):
                 )
 
             if isinstance(max_val, (bool, int, float)):
-                max_vals = np.array(max_val)
+                max_vals = np.array(max_val).ravel()  # make it 1D
             else:
                 raise Exception(
                     "min_val should be either float,int,bool got "
