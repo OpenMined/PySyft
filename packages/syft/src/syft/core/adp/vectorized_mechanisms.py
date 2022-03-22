@@ -1,6 +1,6 @@
 # third party
+import flax
 from jax import numpy as jnp
-import numpy as np
 
 
 # TODO: Sq_l2 value may (?) be a float if min/max val provided are floats and not array of floats.
@@ -50,7 +50,7 @@ class GaussianMechanism:
     def __post_init__(self) -> None:
         # TODO: Check to see if public or private value should be passed in
         if self.private_sq_l2_norm:
-            rdp = epsilon_spent(
+            _ = epsilon_spent(
                 sigma=self.sigma,
                 sq_l2_norm_value=self.private_sq_l2_norm,
                 lipschitz_bound=self.lipschitz_bound,

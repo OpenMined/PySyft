@@ -1,24 +1,26 @@
 # stdlib
 from random import gauss
-
-# from entity_list import EntityList
 from typing import Callable
 from typing import Optional
+from typing import Tuple
 
 # third party
+from data_subject_ledger import DataSubjectLedger
+from entity_list import EntityList
 import numpy as np
 
-# from data_subject_ledger import DataSubjectLedger
 
+def calculate_bounds_for_mechanism(
+    value_array: np.ndarray, min_val_array: np.ndarray, max_val_array: np.ndarray
+) -> Tuple[np.ndarray, np.ndarray]:
+    """Calculates the squared L2 norm values needed to create a Mechanism, and calculate
+    privacy budget + spend. If you calculate the privacy budget spend with the worst
+    case bound, you can show this number to the DS. If you calculate it with the
+    regular value (the value computed below when public_only = False, you cannot show
+    the privacy budget to the DS because this violates privacy."""
 
-def calculate_bounds_for_mechanism(value_array, min_val_array, max_val_array):
-    """Calculates the squared L2 norm values needed to create a Mechanism, and calculate privacy budget + spend"""
-    """ If you calculate the privacy budget spend with the worst case bound, you can show this number to the D.S.
-    If you calculate it with the regular value (the value computed below when public_only = False, you cannot show the
-    privacy budget to the DS because this violates privacy.
-    """
-
-    # TODO: Double check whether the iDPGaussianMechanism class squares its squared_l2_norm values!!
+    # TODO: Double check whether the iDPGaussianMechanism class squares its
+    # squared_l2_norm values!!
     worst_case_l2_norm = np.sqrt(
         np.sum(np.square(max_val_array - min_val_array))
     ) * np.ones_like(value_array)
@@ -39,11 +41,12 @@ def vectorized_publish(
     sigma: float = 1.5,
     output_func: Callable = np.sum
     # private: bool = False
-):
+) -> np.ndarray:
     print("Starting vectorized publish")
     # Get all unique entities
     unique_data_subjects = data_subjects.one_hot_lookup
-    unique_data_subject_indices = np.arange(
+    # unique_data_subject_indices = np.arange(
+    _ = np.arange(
         len(unique_data_subjects)
     )  # because unique_data_subjects returns an array, but we need indices
 

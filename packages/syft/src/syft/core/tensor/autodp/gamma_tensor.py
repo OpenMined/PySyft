@@ -9,22 +9,26 @@ from typing import Deque
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
-from typing import Union
+
+if TYPE_CHECKING:
+    # stdlib
+    from dataclasses import dataclass
+else:
+    from flax.struct import dataclass
 
 # third party
 import flax
 import jax
 from jax import numpy as jnp
-from nacl.signing import VerifyKey
 import numpy as np
 from numpy.random import randint
 from scipy.optimize import shgo
 
 # relative
 from ...adp.entity_list import EntityList
-
-# from ...adp.vectorized_publish import vectorized_publish
+from ...adp.vectorized_publish import vectorized_publish
 
 
 def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]:
@@ -38,7 +42,7 @@ def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]
 
 def create_new_lookup_tables(
     dictionary: dict,
-) -> Tuple[Deque[str], dict, Deque[dict], Deque[Tuple[int, ...]]]:
+) -> Tuple[Deque[str], dict, Deque[dict], Deque[int]]:
     index2key: Deque = deque()
     key2index: dict = {}
     index2values: Deque = (
@@ -63,7 +67,7 @@ def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
     return x
 
 
-@flax.struct.dataclass
+@dataclass
 class GammaTensor:
     value: jnp.array
     data_subjects: EntityList
@@ -80,7 +84,7 @@ class GammaTensor:
         if len(self.state) == 0:
             self.state[self.id] = self
 
-    def run(self, state: dict) -> Union[Callable]:
+    def run(self, state: dict) -> Callable:
         # we hit a private input
         if self.func is no_op:
             return self.func(state[self.id].value)
@@ -91,23 +95,36 @@ class GammaTensor:
         state.update(self.state)
 
         if isinstance(other, GammaTensor):
-            adder = lambda state: jnp.add(self.run(state), other.run(state))
+
+            def _add(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.add(self.run(state), other.run(state))
+
             state.update(other.state)
             value = self.value + other.value
             min_val = self.min_val + other.min_val
             max_val = self.max_val + other.max_val
         else:
-            adder = lambda state: jnp.add(self.run(state), other)
+
+            def _add(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.add(self.run(state), other)
+
             value = self.value + other
             min_val = self.min_val + other
             max_val = self.max_val + other
 
         return GammaTensor(
-            value=value, min_val=min_val, max_val=max_val, func=adder, state=state
+            value=value,
+            data_subjects=self.data_subjects,
+            min_val=min_val,
+            max_val=max_val,
+            func=_add,
+            state=state,
         )
 
     def sum(self) -> GammaTensor:
-        sum = lambda state: jnp.sum(self.run(state))
+        def _sum(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.sum(self.run(state))
+
         state = dict()
         state.update(self.state)
 
@@ -116,12 +133,17 @@ class GammaTensor:
         max_val = jnp.sum(self.max_val)
 
         return GammaTensor(
-            value=value, min_val=min_val, max_val=max_val, func=sum, state=state
+            value=value,
+            data_subjects=self.data_subjects,
+            min_val=min_val,
+            max_val=max_val,
+            func=_sum,
+            state=state,
         )
 
     def publish(
         self, sigma: Optional[float] = None, output_func: Callable = np.sum
-    ) -> jnp.array:
+    ) -> jax.numpy.DeviceArray:
         # TODO: Add data scientist privacy budget as an input argument, and pass it into vectorized_publish
         if sigma is None:
             sigma = self.value.mean() / 4
@@ -137,28 +159,33 @@ class GammaTensor:
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:
-        expand_dims = lambda state: jnp.expand_dims(self.run(state), axis)
+        def _expand_dims(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.expand_dims(self.run(state), axis)
 
         state = dict()
         state.update(self.state)
 
         return GammaTensor(
             value=jnp.expand_dims(self.value, axis),
+            data_subjects=self.data_subjects,
             min_val=self.min_val,
             max_val=self.max_val,
-            func=expand_dims,
+            func=_expand_dims,
             state=state,
         )
 
     def squeeze(self, axis: Optional[int] = None) -> GammaTensor:
-        squeeze = lambda state: jnp.squeeze(self.run(state), axis)
+        def _squeeze(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.squeeze(self.run(state), axis)
+
         state = dict()
         state.update(self.state)
         return GammaTensor(
             value=jnp.squeeze(self.value, axis),
+            data_subjects=self.data_subjects,
             min_val=self.min_val,
             max_val=self.max_val,
-            func=squeeze,
+            func=_squeeze,
             state=state,
         )
 
@@ -187,14 +214,15 @@ class GammaTensor:
         i2maxval = jnp.concatenate([x.max_val for x in i2v]).reshape(-1, 1)
         bounds = jnp.concatenate([i2minval, i2maxval], axis=1)
         print("Obtained bounds")
-        sample_input = i2minval.reshape(-1)
+        # sample_input = i2minval.reshape(-1)
+        _ = i2minval.reshape(-1)
         print("Obtained all inputs")
 
-        def max_grad_fn(input_values):
+        def max_grad_fn(input_values: np.ndarray) -> float:
             vectors = {}
             n = 0
             for i, size_param in enumerate(i2s):
-                vectors[i2k[i]] = input_values[n : n + size_param]
+                vectors[i2k[i]] = input_values[n : n + size_param]  # noqa: E203
                 n += size_param
 
             grad_pred = grad_fn(vectors)

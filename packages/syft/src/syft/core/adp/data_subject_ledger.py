@@ -1,5 +1,8 @@
 # stdlib
 import time
+from typing import Callable
+from typing import Optional
+from typing import Tuple
 
 # third party
 import numpy as np
@@ -9,14 +12,14 @@ from scipy.optimize import minimize_scalar
 class LedgerUpdate:
     def __init__(
         self,
-        sigmas,
-        l2_norms,
-        l2_norm_bounds,
-        Ls,
-        coeffs,
-        entity_ids,
-        update_number,
-        timestamp,
+        sigmas: np.ndarray,
+        l2_norms: np.ndarray,
+        l2_norm_bounds: np.ndarray,
+        Ls: np.ndarray,
+        coeffs: np.ndarray,
+        entity_ids: np.ndarray,
+        update_number: int,
+        timestamp: Optional[float] = None,
     ):
         self.sigmas = sigmas
         self.l2_norms = l2_norms
@@ -25,7 +28,7 @@ class LedgerUpdate:
         self.coeffs = coeffs
         self.entity_ids = entity_ids
         self.update_number = update_number
-        self.timestamp = time.time()
+        self.timestamp = timestamp if timestamp is not None else time.time()
 
 
 class DataSubjectLedger:
@@ -33,45 +36,54 @@ class DataSubjectLedger:
     of all mechanisms releasing informationo about this
     particular subject, stored in a vectorized form"""
 
-    def __init__(self, default_cache_size=1e3):
+    def __init__(self, default_cache_size: int = 1_000) -> None:
+        self.sigmas = np.array([])
+        self.l2_norms = np.array([])
+        self.l2_norm_bounds = np.array([])
+        self.Ls = np.array([])
+        self.coeffs = np.array([])
+        self.entity_ids = np.array([])
+        self.entity2budget = np.array([])
 
         self.delta = 1e-6  # WARNING: CHANGING DELTA INVALIDATES THE CACHE
         self.reset()
-        self.cache_constant2epsilon = list()
+        self.cache_constant2epsilon = np.array([])
         self.increase_max_cache(int(default_cache_size))
 
         # save initial size (number of rows from DB) when deserialized
         self.known_db_size = 0
         self.update_number = 0
-        self.timestamp_of_last_update = None
+        self.timestamp_of_last_update: Optional[float] = None
+        self.timestamp = time.time()
 
-    def write_to_db(self):
+    def write_to_db(self) -> LedgerUpdate:
         self.update_number += 1
 
         result = LedgerUpdate(
-            sigmas=self.sigmas[self.known_db_size :],
-            l2_norms=self.l2_norms[self.known_db_size :],
-            l2_norm_bounds=self.l2_norms[self.known_db_size :],
-            Ls=self.Ls[self.known_db_size :],
-            coeffs=self.coeffs[self.known_db_size :],
-            entity_ids=self.entity_ids[self.known_db_size :],
+            sigmas=self.sigmas[self.known_db_size :],  # noqa: E203
+            l2_norms=self.l2_norms[self.known_db_size :],  # noqa: E203
+            l2_norm_bounds=self.l2_norms[self.known_db_size :],  # noqa: E203
+            Ls=self.Ls[self.known_db_size :],  # noqa: E203
+            coeffs=self.coeffs[self.known_db_size :],  # noqa: E203
+            entity_ids=self.entity_ids[self.known_db_size :],  # noqa: E203
             update_number=self.update_number,
             timestamp=time.time(),
         )
         self.known_db_size += len(self.sigmas)
         return result
 
-    def read_from_db(self, update: LedgerUpdate):
+    def read_from_db(self, update: LedgerUpdate) -> None:
         if update.update_number == self.update_number + 1:
             if (
                 self.timestamp_of_last_update is not None
+                and update.timestamp is not None
                 and update.timestamp < self.timestamp
             ):
                 raise Exception(
                     "It appears that updates were created out of order."
-                    + "This is probably due to multiple python threads creating updates- which should NOT happen."
-                    + "This is a very serious error- please contact OpenMined immediately."
-                    + "Thank you!"
+                    + "This is probably due to multiple python threads creating updates"
+                    + "which should NOT happen. This is a very serious error. "
+                    + "Please contact OpenMined immediately. Thank you!"
                 )
             self.sigmas = np.concatenate([self.sigmas, update.sigmas])
             self.l2_norms = np.concatenate([self.l2_norms, update.l2_norms])
@@ -86,7 +98,7 @@ class DataSubjectLedger:
         else:
             raise Exception("Cannot add update to Ledger")
 
-    def reset(self):
+    def reset(self) -> None:
         self.sigmas = np.array([])
         self.l2_norms = np.array([])
         self.l2_norm_bounds = np.array([])
@@ -103,7 +115,7 @@ class DataSubjectLedger:
         Ls: np.ndarray,
         coeffs: np.ndarray,
         entity_ids: np.ndarray,
-    ):
+    ) -> None:
         self.sigmas = np.concatenate([self.sigmas, sigmas])
         self.l2_norms = np.concatenate([self.l2_norms, l2_norms])
         self.l2_norm_bounds = np.concatenate([self.l2_norm_bounds, l2_norm_bounds])
@@ -111,32 +123,32 @@ class DataSubjectLedger:
         self.coeffs = np.concatenate([self.coeffs, coeffs])
         self.entity_ids = np.concatenate([self.entity_ids, entity_ids])
 
-    def increase_max_cache(self, new_size):
+    def increase_max_cache(self, new_size: int) -> None:
         new_entries = []
         current_size = len(self.cache_constant2epsilon)
         for i in range(new_size - current_size):
-            alpha, eps = self.get_optimal_alpha_for_constant(i + 1 + current_size)
+            alpha, eps = self.get_optimal_alpha_for_constant(
+                constant=i + 1 + current_size
+            )
             new_entries.append(eps)
         self.cache_constant2epsilon = np.concatenate(
             [self.cache_constant2epsilon, np.array(new_entries)]
         )
         # print(self.cache_constant2epsilon)
 
-    def get_fake_rdp_func(self, constant):
-        def func(alpha):
+    def get_fake_rdp_func(self, constant: int) -> Callable:
+        def func(alpha: float) -> float:
             return alpha * constant
 
         return func
 
-    def get_alpha_search_function(self, rdp_compose_func):
-
+    def get_alpha_search_function(self, rdp_compose_func: Callable) -> Callable:
         # if len(self.deltas) > 0:
         # delta = np.max(self.deltas)
         # else:
         log_delta = np.log(self.delta)
 
-        def fun(alpha):  # the input is the RDP's \alpha
-
+        def fun(alpha: float) -> float:  # the input is the RDP's \alpha
             if alpha <= 1:
                 return np.inf
             else:
@@ -150,9 +162,10 @@ class DataSubjectLedger:
 
         return fun
 
-    def get_optimal_alpha_for_constant(self, constant=3):
-
-        f = self.get_fake_rdp_func(constant)
+    def get_optimal_alpha_for_constant(
+        self, constant: int = 3
+    ) -> Tuple[np.ndarray, Callable]:
+        f = self.get_fake_rdp_func(constant=constant)
         f2 = self.get_alpha_search_function(rdp_compose_func=f)
         results = minimize_scalar(
             f2, method="Brent", bracket=(1, 2), bounds=[1, np.inf]
@@ -160,9 +173,11 @@ class DataSubjectLedger:
 
         return results.x, results.fun
 
-    def get_batch_rdp_constants(self, entity_ids_query, private=True):
-
-        # get indices for all ledger rows corresponding to any of the entities in entity_ids_query
+    def get_batch_rdp_constants(
+        self, entity_ids_query: np.ndarray, private: bool = True
+    ) -> np.ndarray:
+        # get indices for all ledger rows corresponding to any of the entities in
+        # entity_ids_query
         indices_batch = np.where(np.in1d(self.entity_ids, entity_ids_query))[0]
 
         # use the indices to get a "batch" of the full ledger. this is the only part
@@ -196,7 +211,7 @@ class DataSubjectLedger:
             )
             return constant
 
-    def get_epsilon_spend(self, entity_ids_query):
+    def get_epsilon_spend(self, entity_ids_query: np.ndarray) -> np.ndarray:
         rdp_constants = self.get_batch_rdp_constants(
             entity_ids_query=entity_ids_query
         ).astype(np.int64)
@@ -208,10 +223,14 @@ class DataSubjectLedger:
             eps_spend = self.cache_constant2epsilon.take(rdp_constants_lookup)
         return eps_spend
 
-    def get_overbudgeted_entities(self, user_budget: float, unique_entity_ids_query):
+    def get_overbudgeted_entities(
+        self, user_budget: float, unique_entity_ids_query: np.ndarray
+    ) -> np.ndarray:
         """TODO:
-        In our current implementation, user_budget is obtained by querying the Adversarial Accountant's entity2ledger with the Data Scientist's User Key.
-        When we replace the entity2ledger with something else, we could perhaps directly add it into this method
+        In our current implementation, user_budget is obtained by querying the
+        Adversarial Accountant's entity2ledger with the Data Scientist's User Key.
+        When we replace the entity2ledger with something else, we could perhaps directly
+        add it into this method
         """
 
         # Get the privacy budget spent by all the entities

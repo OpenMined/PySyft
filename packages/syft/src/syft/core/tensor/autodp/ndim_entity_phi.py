@@ -197,7 +197,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         )
 
     @property
-    def gamma(self) -> InitialGammaTensor:
+    def gamma(self) -> GammaTensor:
         """Property to cast this tensor into a GammaTensor"""
         return self.create_gamma()
 
@@ -237,17 +237,15 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         # TODO: check if values needs to be a JAX array or if numpy will suffice
         return GammaTensor(
             value=self.child,
-            min_vaL=self.min_vals,
+            min_val=self.min_vals,
             max_val=self.max_vals,
             data_subjects=self.entities,
         )
 
-    def publish(
-        self, acc: Any, sigma: float, user_key: VerifyKey
-    ) -> AcceptableSimpleType:
+    def publish(self, sigma: float, user_key: VerifyKey) -> AcceptableSimpleType:
         print("PUBLISHING TO GAMMA:")
         print(self.child)
-        return self.gamma.publish(acc=acc, sigma=sigma, user_key=user_key)
+        return self.gamma.publish(sigma=sigma)
 
     @property
     def value(self) -> np.ndarray:
@@ -273,7 +271,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             + f"min_vals={self.min_vals}, max_vals={self.max_vals})"
         )
 
-    def __eq__(self, other: Any) -> Union[NDimEntityPhiTensor, IntermediateGammaTensor]:
+    def __eq__(  # type: ignore
+        self, other: Any
+    ) -> Union[NDimEntityPhiTensor, IntermediateGammaTensor, GammaTensor]:
         # TODO: what about entities and min / max values?
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             gamma_output = False
@@ -299,7 +299,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __add__(
         self, other: SupportedChainType
-    ) -> Union[NDimEntityPhiTensor, IntermediateGammaTensor]:
+    ) -> Union[NDimEntityPhiTensor, IntermediateGammaTensor, GammaTensor]:
 
         # if the tensor being added is also private
         if isinstance(other, NDimEntityPhiTensor):

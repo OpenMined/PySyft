@@ -9,6 +9,7 @@ from typing import Union
 
 # third party
 import numpy as np
+import pandas as pd
 
 # relative
 from ..common.serde.serializable import serializable
@@ -110,7 +111,7 @@ class EntityList:
             return False
         return self == other
 
-    def sum(self):
+    def sum(self) -> EntityList:
         # If sum is used without any arguments then the result is always a singular value
         return EntityList(
             self.one_hot_lookup.copy(),
