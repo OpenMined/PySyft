@@ -498,11 +498,12 @@ class PhiTensorAncestor(TensorChainManager):
                 entities.entities_indexed,
             )
 
-        for entity in one_hot_lookup:
-            if not isinstance(entity, (str, Entity)):
-                raise ValueError(
-                    f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
-                )
+        # SKIP check temporarily
+        # for entity in one_hot_lookup:
+        #     if not isinstance(entity, (np.integer, str, Entity)):
+        #         raise ValueError(
+        #             f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
+        #         )
 
         if not isinstance(one_hot_lookup, np.ndarray) or not isinstance(
             entities_indexed, np.ndarray

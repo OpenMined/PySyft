@@ -56,14 +56,15 @@ class EntityList:
     __attr_allowlist__ = ("one_hot_lookup", "entities_indexed")
     __slots__ = ("one_hot_lookup", "entities_indexed")
 
-    # one_hot_lookup is a numpy array of unicode strings which can't be serialized
-    __serde_overrides__ = {
-        "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
-    }
+    # Temporarily remove as we are not using strings.
+    # # one_hot_lookup is a numpy array of unicode strings which can't be serialized
+    # __serde_overrides__ = {
+    #     "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
+    # }
 
     def __init__(
         self,
-        one_hot_lookup: np.ndarray[Union[Entity, str]],
+        one_hot_lookup: np.ndarray[Union[Entity, str, np.integer]],
         entities_indexed: np.ndaray,
     ) -> None:
         self.one_hot_lookup = one_hot_lookup
@@ -78,9 +79,11 @@ class EntityList:
         data_subjects = entities_dataframe_slice.to_numpy()
 
         # This will be the equivalent of the EntityList.one_hot_indexed- a sorted array of all unique entities
-        unique_data_subjects = np.sort(entities_dataframe_slice.unique())
+        unique_data_subjects, entities_indexed = np.unique(
+            data_subjects, return_inverse=True
+        )
         return EntityList(
-            one_hot_lookup=unique_data_subjects, entities_indexed=data_subjects
+            one_hot_lookup=unique_data_subjects, entities_indexed=entities_indexed
         )
 
     @staticmethod

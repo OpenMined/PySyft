@@ -362,7 +362,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         entities_indexed, entities_indexed_size = numpy_serialize(
             self.entities.entities_indexed, get_bytes=True
         )
-        one_hot_lookup = self.entities.one_hot_lookup
+        one_hot_lookup, one_hot_lookup_size = numpy_serialize(
+            self.entities.one_hot_lookup, get_bytes=True
+        )
 
         ndept_struct: CapnpModule = schema.NDEPT  # type: ignore
         ndept_msg = ndept_struct.new_message()
@@ -371,6 +373,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         min_vals_metadata = metadata_schema.new_message()
         max_vals_metadata = metadata_schema.new_message()
         entities_metadata = metadata_schema.new_message()
+        one_hot_lookup_metadata = metadata_schema.new_message()
 
         # this is how we dispatch correct deserialization of bytes
         ndept_msg.magicHeader = serde_magic_header(type(self))
@@ -395,11 +398,15 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         entities_metadata.decompressedSize = entities_indexed_size
         ndept_msg.entitiesIndexedMetadata = entities_metadata
 
-        oneHotLookupList = ndept_msg.init("oneHotLookup", len(one_hot_lookup))
-        for i, entity in enumerate(one_hot_lookup):
-            oneHotLookupList[i] = (
-                entity if not getattr(entity, "name", None) else entity.name  # type: ignore
-            )
+        # oneHotLookupList = ndept_msg.init("oneHotLookup", len(one_hot_lookup))
+        # for i, entity in enumerate(one_hot_lookup):
+        #     oneHotLookupList[i] = (
+        #         entity if not getattr(entity, "name", None) else entity.name  # type: ignore
+        #     )
+        chunk_bytes(one_hot_lookup, "oneHotLookup", ndept_msg)
+        one_hot_lookup_metadata.dtype = str(self.entities.one_hot_lookup.dtype)
+        one_hot_lookup_metadata.decompressedSize = one_hot_lookup_size
+        ndept_msg.oneHotLookupMetadata = one_hot_lookup_metadata
 
         # to pack or not to pack?
         # return ndept_msg.to_bytes()
@@ -451,7 +458,13 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             entities_metadata.decompressedSize,
             entities_metadata.dtype,
         )
-        one_hot_lookup = np.array(ndept_msg.oneHotLookup)
+        # one_hot_lookup = np.array(ndept_msg.oneHotLookup)
+        one_hot_lookup_metadata = ndept_msg.oneHotLookupMetadata
+        one_hot_lookup = numpy_deserialize(
+            combine_bytes(ndept_msg.oneHotLookup),
+            one_hot_lookup_metadata.decompressedSize,
+            one_hot_lookup_metadata.dtype,
+        )
 
         entity_list = EntityList(one_hot_lookup, entities_indexed)
 
