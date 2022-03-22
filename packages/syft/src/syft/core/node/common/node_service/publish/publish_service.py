@@ -10,8 +10,8 @@ from nacl.signing import VerifyKey
 # relative
 from ......lib.python import List  # type: ignore
 from ......logger import traceback_and_raise  # type: ignore
-from .....adp.publish import publish  # type: ignore
 from .....adp.data_subject_ledger import DataSubjectLedger
+from .....adp.publish import publish  # type: ignore
 from .....common.uid import UID  # type: ignore
 from .....store.storeable_object import StorableObject  # type: ignore
 from .....tensor.tensor import PassthroughTensor  # type: ignore
@@ -50,7 +50,9 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                         ledger = node.ledger_store.get(verify_key)
                     except KeyError:
                         print("Ledger not found")
-                        ledger = DataSubjectLedger(store=node.ledger_store, user_key=verify_key)
+                        ledger = DataSubjectLedger(
+                            store=node.ledger_store, user_key=verify_key
+                        )
                         node.ledger_store.set(verify_key, ledger)
                         print("New ledger made!")
 

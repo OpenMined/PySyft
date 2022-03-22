@@ -284,11 +284,11 @@ class DataSubjectLedger:
         batch_coeffs = self.coeffs.take(indices_batch)
         batch_entity_ids = self.entity_ids.take(indices_batch).astype(np.int64)
 
-        squared_Ls = batch_Ls ** 2
-        squared_sigma = batch_sigmas ** 2
+        squared_Ls = batch_Ls**2
+        squared_sigma = batch_sigmas**2
 
         if private:
-            squared_L2_norms = batch_l2_norms ** 2
+            squared_L2_norms = batch_l2_norms**2
             constant = (
                 squared_Ls * squared_L2_norms / (2 * squared_sigma)
             ) * batch_coeffs
@@ -296,7 +296,7 @@ class DataSubjectLedger:
                 entity_ids_query
             )
         else:
-            squared_L2_norm_bounds = batch_l2_norm_bounds ** 2
+            squared_L2_norm_bounds = batch_l2_norm_bounds**2
             constant = (
                 squared_Ls * squared_L2_norm_bounds / (2 * squared_sigma)
             ) * batch_coeffs
