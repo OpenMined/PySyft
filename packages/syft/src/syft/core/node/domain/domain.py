@@ -71,10 +71,6 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 )
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
 from ..common.node_service.simple.simple_service import SimpleService
-
-# from ..common.node_service.tensor_manager.tensor_manager_service import (
-#     TensorManagerService,
-# )
 from ..common.node_service.user_auth.user_auth_service import UserLoginService
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
 from ..common.node_service.vpn.vpn_service import VPNConnectService
@@ -161,11 +157,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(VPNJoinService)
         self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(NodeSetupService)
-        # self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(DatasetManagerService)
-        # self.immediate_services_with_reply.append(TransferObjectService)
         self.immediate_services_with_reply.append(RequestService)
         self.immediate_services_with_reply.append(UserLoginService)
 

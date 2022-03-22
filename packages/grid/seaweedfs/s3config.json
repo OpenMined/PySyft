@@ -1,10 +1,6 @@
 {
   "identities": [
     {
-      "name": "guest",
-      "actions": ["Read"]
-    },
-    {
       "name": "admin",
       "credentials": [
         {

@@ -248,8 +248,10 @@ services:
       - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
     command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"
     volumes:
+      - seaweedfs-data:/data
       - ./seaweedfs/s3config.json:/etc/s3config.json
       - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
+
     depends_on:
       - redis
     labels:
@@ -261,12 +263,15 @@ services:
       - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.prefixes=/blob"
       - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.forceslash=true"
       - "traefik.http.services.${STACK_NAME?Variable not set}-blob.loadbalancer.server.port=${S3_PORT}"
+      # by rewriting the customrequestheaders.Host with the same host:port as the
+      # code uses internally any S3 presigned urls will still validate
 
 volumes:
   app-db-data:
   tailscale-data:
   headscale-data:
   app-redis-data:
+  seaweedfs-data:
 
 networks:
   traefik-public:

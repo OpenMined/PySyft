@@ -218,14 +218,13 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
 
         try:
             # if no object is specified, return all objects
+            # TODO change this to a get all keys and metadata method which does not
+            # require pulling out all data from the database
             if msg.obj_id is None:
                 objs = node.store.get_objects_of_type(obj_type=object)
 
             # if object id is specified - return just that object
             else:
-                # TODO: refactor to proxy_only=True so that we can do this quickly
-                # we need to change the pointer constructor below to not require
-                # the original object
                 objs = [node.store.get(msg.obj_id, proxy_only=True)]
 
             for obj in objs:

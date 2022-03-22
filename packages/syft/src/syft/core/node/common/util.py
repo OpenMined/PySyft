@@ -3,7 +3,6 @@ from io import BytesIO
 from typing import Any
 from typing import Generator
 from typing import List
-from typing import Optional
 
 # third party
 import boto3
@@ -113,7 +112,7 @@ def upload_to_s3_using_presigned(
     data: Any,
     chunk_size: int,
     asset_name: str,
-    dataset_name: Optional[str] = None,
+    dataset_name: str = "",
 ) -> ProxyDataset:
     """Perform a multipart upload of data to Seaweed using boto3 presigned urls.
 
@@ -145,7 +144,7 @@ def upload_to_s3_using_presigned(
     )
     from .node_service.upload_service.upload_service_messages import UploadDataMessage
 
-    dataset_name = dataset_name if dataset_name is not None else ""
+    dataset_name = str(dataset_name)
 
     # Step 1 - Convert data to be uploaded to binary
     binary_dataset: bytes = serialize(data, to_bytes=True)  # type: ignore
