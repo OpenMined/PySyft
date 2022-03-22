@@ -210,8 +210,8 @@ class GammaTensor:
         i2k, k2i, i2v, i2s = create_new_lookup_tables(self.state)
 
         print("created lookup tables, now getting bounds")
-        i2minval = jnp.concatenate([x.min_val for x in i2v]).reshape(-1, 1)
-        i2maxval = jnp.concatenate([x.max_val for x in i2v]).reshape(-1, 1)
+        i2minval = jnp.concatenate([x for x in i2v]).reshape(-1, 1)
+        i2maxval = jnp.concatenate([x for x in i2v]).reshape(-1, 1)
         bounds = jnp.concatenate([i2minval, i2maxval], axis=1)
         print("Obtained bounds")
         # sample_input = i2minval.reshape(-1)

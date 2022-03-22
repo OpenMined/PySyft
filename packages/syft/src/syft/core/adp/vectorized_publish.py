@@ -5,9 +5,11 @@ from typing import Optional
 from typing import Tuple
 
 # third party
-from data_subject_ledger import DataSubjectLedger
-from entity_list import EntityList
 import numpy as np
+
+# relative
+from .data_subject_ledger import DataSubjectLedger
+from .entity_list import EntityList
 
 
 def calculate_bounds_for_mechanism(
