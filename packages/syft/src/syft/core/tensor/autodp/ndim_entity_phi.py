@@ -341,15 +341,16 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         if len(self.entities.one_hot_lookup) == 1:
             return NDimEntityPhiTensor(
                 child=self.child.sum(),
-                min_vals=self.min_vals.sum(),
-                max_vals=self.max_vals.sum(),
+                min_vals=self.min_vals.sum(axis=None),
+                max_vals=self.max_vals.sum(axis=None),
                 entities=EntityList.from_objs(self.entities[0]),  # Need to check this
             )
+        # TypeCast to int32 , as numpy.sum() returns a 64bit integer.
         return GammaTensor(
-            value=self.child.sum(),
+            value=self.child.sum(dtype=np.int32),
             data_subjects=self.entities.sum(),
-            min_val=self.min_vals.sum(),
-            max_val=self.max_vals.sum(),
+            min_val=self.min_vals.sum(axis=None),
+            max_val=self.max_vals.sum(axis=None),
             state={"0": self.child},
         )
 
@@ -417,7 +418,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         schema = get_capnp_schema(schema_file="ndept.capnp")
         ndept_struct: CapnpModule = schema.NDEPT  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2 ** 64 - 1
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
         ndept_msg = ndept_struct.from_bytes_packed(

@@ -77,7 +77,7 @@ class GammaTensor:
     is_linear: bool = True
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
     id: str = flax.struct.field(
-        pytree_node=False, default_factory=lambda: str(randint(0, 2 ** 32 - 1))
+        pytree_node=False, default_factory=lambda: str(randint(0, 2**32 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
@@ -203,7 +203,7 @@ class GammaTensor:
         return vectorized_publish(
             min_vals=self.min_val,
             max_vals=self.max_val,
-            values=self.state[self.id].value,
+            values=self.state["0"],
             data_subjects=self.data_subjects,
             is_linear=self.is_linear,
             sigma=sigma,
