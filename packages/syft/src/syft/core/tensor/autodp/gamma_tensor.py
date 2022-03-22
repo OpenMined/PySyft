@@ -12,6 +12,15 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 
+# third party
+from google.protobuf.reflection import GeneratedProtocolMessageType
+
+# relative
+from ....proto.core.tensor.gamma_tensor_pb2 import GammaTensor as GammaTensor_PB
+from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
+
 if TYPE_CHECKING:
     # stdlib
     from dataclasses import dataclass
@@ -68,7 +77,16 @@ def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
     return x
 
 
+def jax2numpy(value: jnp.array) -> np.array:
+    return np.asarray(value)
+
+
+def numpy2jax(value: np.array) -> jnp.array:
+    return jnp.asarray(value)
+
+
 @dataclass
+@serializable()
 class GammaTensor:
     value: jnp.array
     data_subjects: EntityList
@@ -296,3 +314,37 @@ class GammaTensor:
     @property
     def dtype(self) -> np.dtype:
         return self.value.dtype
+
+    def _object2proto(self):
+        print("Type of value: ", type(self.value))
+        data_subjects = serialize(self.data_subjects, to_bytes=True)
+        state = serialize(self.state, to_bytes=True)
+        value = serialize(self.value, to_bytes=True)
+
+        return GammaTensor_PB(
+            value=value,
+            max_val=self.max_val,
+            min_val=self.min_val,
+            is_linear=self.is_linear,
+            data_subjects=data_subjects,
+            state=state,
+        )
+
+    @staticmethod
+    def _proto2object(proto):
+        data_subjects = deserialize(proto.data_subjects, from_bytes=True)
+        state = deserialize(proto.state, from_bytes=True)
+        value = deserialize(proto.value, from_bytes=True)
+
+        return GammaTensor(
+            value=value,
+            max_val=proto.max_val,
+            min_val=proto.min_val,
+            is_linear=proto.is_linear,
+            data_subjects=data_subjects,
+            state=state,
+        )
+
+    @staticmethod
+    def get_protobuf_schema() -> GeneratedProtocolMessageType:
+        return GammaTensor_PB
