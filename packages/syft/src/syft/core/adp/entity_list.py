@@ -69,6 +69,20 @@ class EntityList:
         self.entities_indexed = entities_indexed
 
     @staticmethod
+    def from_series(entities_dataframe_slice: pd.Series) -> EntityList:
+        """Given a Pandas Series object (such as from
+        getting a column from a pandas DataFrame, return an EntityList"""
+
+        # This will be the equivalent of the EntityList.entities_indexed
+        data_subjects = entities_dataframe_slice.to_numpy()
+
+        # This will be the equivalent of the EntityList.one_hot_indexed- a sorted array of all unique entities
+        unique_data_subjects = np.sort(entities_dataframe_slice.unique())
+        return EntityList(
+            one_hot_lookup=unique_data_subjects, entities_indexed=data_subjects
+        )
+
+    @staticmethod
     def from_objs(entities: Union[np.ndarray, list]) -> EntityList:
         if isinstance(entities, list):
             entities = np.array(entities)
@@ -102,3 +116,7 @@ class EntityList:
             self.one_hot_lookup.copy(),
             self.entities_indexed.reshape(1, len(self.entities_indexed)),
         )
+
+    @property
+    def shape(self) -> Tuple:
+        return self.entities_indexed.shape

@@ -503,8 +503,13 @@ class PhiTensorAncestor(TensorChainManager):
                     f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
                 )
 
-        assert isinstance(one_hot_lookup, np.ndarray)
-        assert isinstance(entities_indexed, np.ndarray)
+        if not isinstance(one_hot_lookup, np.ndarray) or not isinstance(
+            entities_indexed, np.ndarray
+        ):
+            raise Exception(
+                f"one_hot_lookup {type(one_hot_lookup)} and entities_indexed "
+                + f"{type(entities_indexed)} must be np.ndarrays"
+            )
 
         # PHASE 2: CREATE CHILD
         if len(entities) == 1:
@@ -572,7 +577,8 @@ class PhiTensorAncestor(TensorChainManager):
 
         elif ndept and entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
-            entity_list = EntityList(one_hot_lookup, entities_indexed)
+            if isinstance(entities, EntityList):
+                entity_list = entities
 
             if isinstance(min_val, (bool, int, float)):
                 min_vals = np.array(min_val).ravel()  # make it 1D
