@@ -405,8 +405,8 @@ class PhiTensorAncestor(TensorChainManager):
 
     def publish(
         self,
-        sigma: float,
         user_key: VerifyKey,
+        sigma: Optional[float] = None,
         acc: Optional[Any] = None,
         ledger: Optional[Any] = None,
     ) -> PhiTensorAncestor:
@@ -415,7 +415,7 @@ class PhiTensorAncestor(TensorChainManager):
 
         if isinstance(self.child, GammaTensor):
             return self.child.publish(sigma=sigma, ledger=ledger)
-        return self.child.publish(acc=acc, sigma=sigma, user_key=user_key)
+        return self.child.publish(acc=acc, sigma=100, user_key=user_key)
 
     def copy(self) -> PhiTensorAncestor:
         """This should certainly be implemented by the subclass but adding this here to
@@ -453,14 +453,13 @@ class PhiTensorAncestor(TensorChainManager):
         # PHASE 1: RUN CHECKS
 
         # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
-        if (
-            not isinstance(self.child, np.ndarray)
-            or getattr(self.child, "dtype", None) != np.int32
-        ):
+        if not isinstance(self.child, np.ndarray) or getattr(
+            self.child, "dtype", None
+        ) not in [np.int32, np.int64]:
 
             msg = (
                 "At present, you can only call .private() "
-                + "on syft.Tensor objects wrapping np.int32 arrays. You called it on a "
+                + "on syft.Tensor objects wrapping np.int32/64 arrays. You called it on a "
                 + "syft.Tensor wrapping a "
                 + str(type(self.child))
             )

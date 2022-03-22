@@ -63,6 +63,8 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                     print(type(publish_object.data))
                     print("Publish_object.data.child: ")
                     print(type(publish_object.data.child))
+                    print("Ledger: ")
+                    print(ledger)
 
                     result = publish_object.data.child.publish(
                         ledger=ledger, sigma=msg.sigma
