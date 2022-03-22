@@ -4,6 +4,7 @@ import pytest
 
 # syft absolute
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
+from syft.core.adp.data_subject_ledger import DictLedgerStore
 from syft.core.adp.entity import Entity
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 
@@ -71,9 +72,15 @@ def test_gamma_serde(
 
     gamma_tensor1 = tensor1.gamma
     print("gamma_tensor1", type(gamma_tensor1))
-    ledger = DataSubjectLedger()
-    results = gamma_tensor1.publish(ledger=ledger, sigma=0.5)
+    ledger_store = DictLedgerStore()
+    print(ledger_store.kv_store)
+    user_key = b"1231"
+    ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
+    results = gamma_tensor1.publish(ledger=ledger, sigma=0.1)
     print(results)
+    print(ledger_store.kv_store)
+
+    results = gamma_tensor1.publish(ledger=ledger, sigma=0.1)
 
     # gamma.publish, self, sigma: Optional[float] = None, output_func: Callable = np.sum
 

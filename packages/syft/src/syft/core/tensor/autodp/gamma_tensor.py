@@ -77,7 +77,7 @@ class GammaTensor:
     is_linear: bool = True
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
     id: str = flax.struct.field(
-        pytree_node=False, default_factory=lambda: str(randint(0, 2**32 - 1))
+        pytree_node=False, default_factory=lambda: str(randint(0, 2 ** 32 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
@@ -138,12 +138,6 @@ class GammaTensor:
             def _mul(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.multiply(self.run(state), other)
 
-            print(self.value, self.value.dtype, self.value.ndim, type(self.value))
-            print(
-                other, other.dtype, other.ndim, type(other), type(other.reshape(-1)[0])
-            )
-            if other.ndim == 0:
-                other = other.reshape(-1)
             value = self.value * other
 
         return GammaTensor(
@@ -206,12 +200,10 @@ class GammaTensor:
         if sigma is None:
             sigma = self.value.mean() / 4
 
-        print("state", self.state, type(self.state))
-
         return vectorized_publish(
             min_vals=self.min_val,
             max_vals=self.max_val,
-            values=self.state[self.id],
+            values=self.state[self.id].value,
             data_subjects=self.data_subjects,
             is_linear=self.is_linear,
             sigma=sigma,

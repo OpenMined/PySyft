@@ -22,23 +22,16 @@ def calculate_bounds_for_mechanism(
 
     # TODO: Double check whether the iDPGaussianMechanism class squares its
     # squared_l2_norm values!!
+
+    # using np.ones_like dtype=value_array.dtype because without it the output was
+    # of type "O" python object causing issues when doing operations against JAX
     worst_case_l2_norm = np.sqrt(
         np.sum(np.square(max_val_array - min_val_array))
-    ) * np.ones_like(value_array)
+    ) * np.ones_like(value_array, dtype=value_array.dtype)
 
-    # calculating l2_norm step by step to find the issues
-    a = np.square(value_array)
-    b = np.ones_like(value_array)
-    print("a", type(a), a)
-    l = a.sum(axis=None)
-    print("l", type(l))
-    c = np.sum(a)
-    d = np.sqrt(c)
-    print("types", type(d), type(b))
-    l2_norm = d * b
-
-    # one liner
-    # l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(value_array)
+    l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(
+        value_array, dtype=value_array.dtype
+    )
 
     # print(l2_norm.shape, worst_case_l2_norm.shape)
     # print(l2_norm.shape)
@@ -111,6 +104,7 @@ def vectorized_publish(
     # update = ledger.write_to_db()
 
     print("Written to DB!")
+    ledger.write_to_db()
 
     # Filter results
     filtered_inputs = values * (
