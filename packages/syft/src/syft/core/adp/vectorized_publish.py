@@ -23,16 +23,20 @@ def calculate_bounds_for_mechanism(
     # TODO: Double check whether the iDPGaussianMechanism class squares its
     # squared_l2_norm values!!
 
+    # min_val_array = min_val_array.astype(np.int64)
+    # max_val_array = max_val_array.astype(np.int64)
+
     # using np.ones_like dtype=value_array.dtype because without it the output was
     # of type "O" python object causing issues when doing operations against JAX
     worst_case_l2_norm = np.sqrt(
         np.sum(np.square(max_val_array - min_val_array))
-    ) * np.ones_like(value_array, dtype=value_array.dtype)
+    ) * np.ones_like(
+        value_array
+    )  # dtype=value_array.dtype)
 
-    l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(
-        value_array, dtype=value_array.dtype
-    )
-
+    l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(value_array)
+    # dtype=value_array.dtype
+    #
     # print(l2_norm.shape, worst_case_l2_norm.shape)
     # print(l2_norm.shape)
     return l2_norm, worst_case_l2_norm

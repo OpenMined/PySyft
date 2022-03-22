@@ -205,7 +205,6 @@ class DataSubjectLedger:
         self.sigmas = np.concatenate([self.sigmas, sigmas.flatten()])
         print(type(self.l2_norms), self.l2_norms, self.l2_norms.shape)
         print(type(l2_norms), l2_norms, l2_norms.shape)
-        print("fdsa")
         self.l2_norms = np.concatenate([self.l2_norms, l2_norms.flatten()])
         self.l2_norm_bounds = np.concatenate(
             [self.l2_norm_bounds, l2_norm_bounds.flatten()]
