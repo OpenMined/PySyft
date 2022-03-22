@@ -784,12 +784,11 @@ def create_launch_docker_cmd(
         # force version to have -dev at the end in dev mode
         version_string += "-dev"
 
-    use_blob_storage = "true"
-
+    use_blob_storage = "True"
     if str(node_type.input) == "network":
-        use_blob_storage = "false"
+        use_blob_storage = "False"
     elif "use_blob_storage" in kwargs and kwargs["use_blob_storage"] is not None:
-        use_blob_storage = kwargs["use_blob_storage"]
+        use_blob_storage = str(str_to_bool(kwargs["use_blob_storage"]))
 
     envs = {
         "RELEASE": "production",
