@@ -97,6 +97,7 @@ class GammaTensor:
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**32 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
+    inputs: jnp.array = np.array([])
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -221,7 +222,7 @@ class GammaTensor:
         return vectorized_publish(
             min_vals=self.min_val,
             max_vals=self.max_val,
-            values=self.state["0"],
+            values=self.inputs,
             data_subjects=self.data_subjects,
             is_linear=self.is_linear,
             sigma=sigma,

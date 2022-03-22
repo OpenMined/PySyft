@@ -351,7 +351,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             data_subjects=self.entities.sum(),
             min_val=self.min_vals.sum(axis=None),
             max_val=self.max_vals.sum(axis=None),
-            state={"0": self.child},
+            inputs=self.child,
         )
 
     def _object2bytes(self) -> bytes:
