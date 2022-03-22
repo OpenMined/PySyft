@@ -17,6 +17,7 @@ RUN if [ $(uname -m) = "x86_64" ]; then \
 
 # apple m1 build PyNaCl for aarch64
 RUN if [ $(uname -m) != "x86_64" ]; then \
+  pip install --user pytest-xdist[psutil]; \
   pip install --user pycapnp==1.1.0; \
   pip install --user numpy==1.22.3; \
   pip install --user primesieve==2.3.0 --force-reinstall --no-cache-dir; \

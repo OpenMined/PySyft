@@ -9,12 +9,12 @@ from ...abstract.node import AbstractNode
 
 
 def retrieve_object(
-    node: AbstractNode, id_at_location: UID, path: str
+    node: AbstractNode, id_at_location: UID, path: str, proxy_only: bool = False
 ) -> StorableObject:
     # A hard time limit is set on celery worker which prevents infinite execution.
     ctr = 0
     while True:
-        store_obj = node.store.get_object(key=id_at_location)
+        store_obj = node.store.get_or_none(key=id_at_location, proxy_only=proxy_only)
         if store_obj is None:
             if ctr % 1500 == 0:
                 critical(

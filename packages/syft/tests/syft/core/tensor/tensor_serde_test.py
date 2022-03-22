@@ -10,6 +10,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.entity import Entity
+from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
 from syft.core.tensor.tensor import Tensor
@@ -239,3 +240,69 @@ def test_big_sept_vs_rept_child() -> None:
     assert ((big_sept_metrics[0:2] - rept_metrics[0:2]) < 1e-3).all()
     # TODO: make time benchmarks stable (probably can't run in parallel)
     # assert ((big_sept_metrics[2:-1] - rept_metrics[2:-1]) < 1e-1).all()
+
+
+@pytest.mark.slow
+def test_rept_vs_ndept() -> None:
+    """Compare REPT of 1M vs NDEPT of 1M"""
+    rows = 1
+    cols = 7
+
+    stats = {"keys": ["mem_size", "serde_size", "time_ser", "time_de"]}
+
+    for rept_row_count in [50_000]:
+        sept = make_sept(rows=rows, cols=cols)
+        rept_rows = [sept.copy() for _ in range(rept_row_count)]
+
+        stats[rept_row_count] = {}
+
+        rept = REPT(rows=rept_rows)
+        rept_metrics = time_and_size_serde(rept)
+        stats[rept_row_count]["rept_metrics"] = rept_metrics
+
+        ndept = NDEPT.from_rows(rows=rept_rows)
+        ndept_metrics = time_and_size_serde(ndept)
+        stats[rept_row_count]["ndept_metrics"] = ndept_metrics
+
+        # diff both metric numpy arrays and turn into a percentage of REPT
+        diff_metrics = ((rept_metrics - ndept_metrics) / rept_metrics) * 100
+
+        print("Comparison Stats")
+        print("================")
+        print(f"For row count {rept_row_count}")
+        print(f"In-memory size of REPT is {diff_metrics[0]}% more than NDEPT")
+        print(f"Serialized size of REPT is {diff_metrics[1]}% more than NDEPT")
+        print(f"Serializing time of REPT is {diff_metrics[2]}% more than NDEPT")
+        print(f"Deserializing time of REPT is {diff_metrics[3]}% more than NDEPT")
+
+    print(stats)
+
+
+@pytest.mark.slow
+def test_big_ndept() -> None:
+    """Create big NDEPTs"""
+    # for multiplier in [1, 10, 100, 1000]:
+    for multiplier in [10]:
+        ndim = 1_000_000
+        rows = 1
+        cols = 7
+        num_entites = 1000
+
+        upper = highest()
+        lower = lowest()
+        reference_data = np.random.randint(
+            lower, upper, size=(multiplier * ndim, rows, cols), dtype=np.int32
+        )
+        big_ndept = NDEPT(
+            child=reference_data,
+            entities=[ishan() * num_entites],
+            max_vals=make_bounds(reference_data, upper),
+            min_vals=make_bounds(reference_data, lower),
+        )
+
+        ndept_metrics = time_and_size_serde(big_ndept)
+        print(multiplier, ndept_metrics)
+        assert ndept_metrics[0] < 81 * multiplier
+        assert ndept_metrics[1] < 30 * multiplier
+        assert ndept_metrics[2] < 3 * multiplier
+        assert ndept_metrics[3] < 3 * multiplier

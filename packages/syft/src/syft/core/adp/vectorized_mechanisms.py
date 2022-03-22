@@ -1,9 +1,12 @@
-import numpy as np
+# third party
 from jax import numpy as jnp
+import numpy as np
 
 
 # TODO: Sq_l2 value may (?) be a float if min/max val provided are floats and not array of floats.
-def epsilon_spent(sigma: float, sq_l2_norm_value: jnp.array, lipschitz_bound: float, alpha: int) -> jnp.array:
+def epsilon_spent(
+    sigma: float, sq_l2_norm_value: jnp.array, lipschitz_bound: float, alpha: int
+) -> jnp.array:
     """
     This calculates the privacy budget (epsilon) spent at a DATA SUBJECT level.
     This is based on the Individual Privacy Accounting via a Renyi Filter paper (https://arxiv.org/abs/2008.11193)
@@ -25,8 +28,10 @@ def epsilon_spent(sigma: float, sq_l2_norm_value: jnp.array, lipschitz_bound: fl
     if sigma <= 0:
         raise Exception("Sigma should be above 0")
     if alpha <= 0:
-        raise Exception("Alpha (order of Renyi Divergence in RDP) should be a positive integer")
-    return alpha * (lipschitz_bound ** 2) * sq_l2_norm_value/(2 * (sigma ** 2))
+        raise Exception(
+            "Alpha (order of Renyi Divergence in RDP) should be a positive integer"
+        )
+    return alpha * (lipschitz_bound**2) * sq_l2_norm_value / (2 * (sigma**2))
 
 
 @flax.struct.dataclass
@@ -43,11 +48,12 @@ class GaussianMechanism:
     name: str = "Gaussian"
 
     def __post_init__(self) -> None:
-        #TODO: Check to see if public or private value should be passed in
+        # TODO: Check to see if public or private value should be passed in
         if self.private_sq_l2_norm:
-            rdp = epsilon_spent(sigma=self.sigma,
-                                sq_l2_norm_value=self.private_sq_l2_norm,
-                                lipschitz_bound=self.lipschitz_bound,
-                                alpha=0)
+            rdp = epsilon_spent(
+                sigma=self.sigma,
+                sq_l2_norm_value=self.private_sq_l2_norm,
+                lipschitz_bound=self.lipschitz_bound,
+                alpha=0,
+            )
         pass
-

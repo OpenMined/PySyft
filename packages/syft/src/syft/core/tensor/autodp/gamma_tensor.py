@@ -29,17 +29,21 @@ from ...adp.entity_list import EntityList
 
 def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]:
     index2key: List = [str(x) for x in dictionary.keys()]
-    key2index: dict = {key:i for i, key in enumerate(index2key)}
+    key2index: dict = {key: i for i, key in enumerate(index2key)}
     # Note this maps to GammaTensor, not to GammaTensor.value as name may imply
     index2values: List = [dictionary[i] for i in index2key]
 
     return index2key, key2index, index2values
 
 
-def create_new_lookup_tables(dictionary: dict) -> Tuple[Deque[str], dict, Deque[dict], Deque[Tuple[int, ...]]]:
+def create_new_lookup_tables(
+    dictionary: dict,
+) -> Tuple[Deque[str], dict, Deque[dict], Deque[Tuple[int, ...]]]:
     index2key: Deque = deque()
     key2index: dict = {}
-    index2values: Deque = deque()  # Note this maps to GammaTensor, not to GammaTensor.value as name may imply
+    index2values: Deque = (
+        deque()
+    )  # Note this maps to GammaTensor, not to GammaTensor.value as name may imply
     index2size: Deque = deque()
     for index, key in enumerate(dictionary.keys()):
         key = str(key)
@@ -69,7 +73,7 @@ class GammaTensor:
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**32 - 1))
-    )  #TODO: Need to check if there are any scenarios where this is not secure
+    )  # TODO: Need to check if there are any scenarios where this is not secure
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -98,8 +102,9 @@ class GammaTensor:
             min_val = self.min_val + other
             max_val = self.max_val + other
 
-        return GammaTensor(value=value, min_val=min_val, max_val=max_val,
-                           func=adder, state=state)
+        return GammaTensor(
+            value=value, min_val=min_val, max_val=max_val, func=adder, state=state
+        )
 
     def sum(self) -> GammaTensor:
         sum = lambda state: jnp.sum(self.run(state))
@@ -114,19 +119,21 @@ class GammaTensor:
             value=value, min_val=min_val, max_val=max_val, func=sum, state=state
         )
 
-    def publish(self, sigma: Optional[float] = None, output_func: Callable=np.sum) -> jnp.array:
+    def publish(
+        self, sigma: Optional[float] = None, output_func: Callable = np.sum
+    ) -> jnp.array:
         # TODO: Add data scientist privacy budget as an input argument, and pass it into vectorized_publish
         if sigma is None:
-            sigma = self.value.mean()/4
+            sigma = self.value.mean() / 4
 
         return vectorized_publish(
-                min_vals=self.min_val,
-                max_vals=self.max_val,
-                values=self.state["0"],
-                data_subjects=self.data_subjects,
-                is_linear=self.is_linear,
-                sigma=sigma,
-                output_func= output_func
+            min_vals=self.min_val,
+            max_vals=self.max_val,
+            values=self.state["0"],
+            data_subjects=self.data_subjects,
+            is_linear=self.is_linear,
+            sigma=sigma,
+            output_func=output_func,
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:
@@ -187,7 +194,7 @@ class GammaTensor:
             vectors = {}
             n = 0
             for i, size_param in enumerate(i2s):
-                vectors[i2k[i]] = input_values[n:n + size_param]
+                vectors[i2k[i]] = input_values[n : n + size_param]
                 n += size_param
 
             grad_pred = grad_fn(vectors)

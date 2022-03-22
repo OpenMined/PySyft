@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -62,7 +61,9 @@ class EntityList:
     }
 
     def __init__(
-        self, one_hot_lookup: List[Union[Entity, str]], entities_indexed: np.ndaray
+        self,
+        one_hot_lookup: np.ndarray[Union[Entity, str]],
+        entities_indexed: np.ndaray,
     ) -> None:
         self.one_hot_lookup = one_hot_lookup
         self.entities_indexed = entities_indexed
@@ -98,5 +99,6 @@ class EntityList:
     def sum(self):
         # If sum is used without any arguments then the result is always a singular value
         return EntityList(
-            self.one_hot_lookup.copy(), self.entities_indexed.reshape(1, len(self.entities_indexed))
+            self.one_hot_lookup.copy(),
+            self.entities_indexed.reshape(1, len(self.entities_indexed)),
         )

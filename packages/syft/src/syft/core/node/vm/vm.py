@@ -6,6 +6,7 @@ from typing import Union
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pydantic import BaseSettings
 from typing_extensions import final
 
 # relative
@@ -40,6 +41,7 @@ class VirtualMachine(Node):
         signing_key: Optional[SigningKey] = None,
         verify_key: Optional[VerifyKey] = None,
         store_type: type = DictStore,
+        settings: Optional[BaseSettings] = None,
     ):
         super().__init__(
             name=name,

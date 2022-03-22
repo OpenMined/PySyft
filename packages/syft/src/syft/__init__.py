@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.7.0-beta.5"
+__version__ = "0.7.0-beta.7"
 
 # stdlib
 from pathlib import Path
@@ -64,6 +64,7 @@ from .core.node.vm.vm import VirtualMachine  # noqa: F401
 from .core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from .core.tensor import autodp  # noqa: F401
 from .core.tensor import autograd  # noqa: F401
+from .core.tensor.autodp import ndim_entity_phi  # noqa: F401
 from .core.tensor.autodp import row_entity_phi  # noqa: F401
 from .core.tensor.autodp import single_entity_phi  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
