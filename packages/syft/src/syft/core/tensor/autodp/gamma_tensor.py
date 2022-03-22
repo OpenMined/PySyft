@@ -16,10 +16,15 @@ from typing import Tuple
 from google.protobuf.reflection import GeneratedProtocolMessageType
 
 # relative
+from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
+from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ....proto.core.tensor.gamma_tensor_pb2 import GammaTensor as GammaTensor_PB
-from ...common.serde.deserialize import _deserialize as deserialize
+from ...common.serde.capnp import CapnpModule
+from ...common.serde.capnp import chunk_bytes
+from ...common.serde.capnp import combine_bytes
+from ...common.serde.capnp import get_capnp_schema
+from ...common.serde.capnp import serde_magic_header
 from ...common.serde.serializable import serializable
-from ...common.serde.serialize import _serialize as serialize
 
 if TYPE_CHECKING:
     # stdlib
@@ -86,7 +91,7 @@ def numpy2jax(value: np.array) -> jnp.array:
 
 
 @dataclass
-@serializable()
+@serializable(capnp_bytes=True)
 class GammaTensor:
     value: jnp.array
     data_subjects: EntityList
@@ -316,36 +321,129 @@ class GammaTensor:
     def dtype(self) -> np.dtype:
         return self.value.dtype
 
-    def _object2proto(self):
-        print("Type of value: ", type(self.value))
-        data_subjects = serialize(self.data_subjects, to_bytes=True)
-        state = serialize(self.state, to_bytes=True)
-        value = serialize(self.value, to_bytes=True)
+    def _object2bytes(self) -> bytes:
+        schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
 
-        return GammaTensor_PB(
-            value=value,
-            max_val=self.max_val,
-            min_val=self.min_val,
-            is_linear=self.is_linear,
-            data_subjects=data_subjects,
-            state=state,
+        # value @1 :List(Data);
+        # entitiesIndexed @2 :List(Data);
+        # oneHotLookup @3 :List(Data);
+        # minVals @4 :Float64;
+        # maxVals @5 :Float64;
+        # isLinear @6 :Bool;
+        # inputs @7 :List(Data);
+        # valueMetadata @8 :TensorMetadata;
+        # entitiesIndexedMetadata @9 :TensorMetadata;
+        # oneHotLookupMetadata @10 :TensorMetadata;
+        # inputsMetadata @11 :TensorMetadata;
+
+        value, value_size = numpy_serialize(jax2numpy(self.value), get_bytes=True)
+
+        entities_indexed, entities_indexed_size = numpy_serialize(
+            self.data_subjects.entities_indexed, get_bytes=True
+        )
+        one_hot_lookup, one_hot_lookup_size = numpy_serialize(
+            self.data_subjects.one_hot_lookup, get_bytes=True
         )
 
+        inputs, inputs_size = numpy_serialize(jax2numpy(self.inputs), get_bytes=True)
+
+        gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
+        gamma_msg = gamma_tensor_struct.new_message()
+        metadata_schema = gamma_tensor_struct.TensorMetadata
+        value_metadata = metadata_schema.new_message()
+        inputs_metadata = metadata_schema.new_message()
+        entities_metadata = metadata_schema.new_message()
+        one_hot_lookup_metadata = metadata_schema.new_message()
+
+        # this is how we dispatch correct deserialization of bytes
+        gamma_msg.magicHeader = serde_magic_header(type(self))
+
+        chunk_bytes(value, "value", gamma_msg)
+        value_metadata.dtype = str(self.value.dtype)
+        value_metadata.decompressedSize = value_size
+        gamma_msg.valueMetadata = value_metadata
+
+        chunk_bytes(inputs, "inputs", gamma_msg)
+        inputs_metadata.dtype = str(self.inputs.dtype)
+        inputs_metadata.decompressedSize = inputs_size
+        gamma_msg.inputsMetadata = inputs_metadata
+
+        chunk_bytes(entities_indexed, "entitiesIndexed", gamma_msg)
+        entities_metadata.dtype = str(self.data_subjects.entities_indexed.dtype)
+        entities_metadata.decompressedSize = entities_indexed_size
+        gamma_msg.entitiesIndexedMetadata = entities_metadata
+
+        # oneHotLookupList = ndept_msg.init("oneHotLookup", len(one_hot_lookup))
+        # for i, entity in enumerate(one_hot_lookup):
+        #     oneHotLookupList[i] = (
+        #         entity if not getattr(entity, "name", None) else entity.name  # type: ignore
+        #     )
+        chunk_bytes(one_hot_lookup, "oneHotLookup", gamma_msg)
+        one_hot_lookup_metadata.dtype = str(self.data_subjects.one_hot_lookup.dtype)
+        one_hot_lookup_metadata.decompressedSize = one_hot_lookup_size
+        gamma_msg.oneHotLookupMetadata = one_hot_lookup_metadata
+
+        gamma_msg.minVal = self.min_val
+        gamma_msg.maxVal = self.max_val
+        gamma_msg.isLinear = self.is_linear
+
+        # to pack or not to pack?
+        # return ndept_msg.to_bytes()
+        return gamma_msg.to_bytes_packed()
+
     @staticmethod
-    def _proto2object(proto):
-        data_subjects = deserialize(proto.data_subjects, from_bytes=True)
-        state = deserialize(proto.state, from_bytes=True)
-        value = deserialize(proto.value, from_bytes=True)
+    def _bytes2object(buf: bytes) -> GammaTensor:
+        schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
+        gamma_struct: CapnpModule = schema.GammaTensor  # type: ignore
+        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        # to pack or not to pack?
+        # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
+        gamma_msg = gamma_struct.from_bytes_packed(
+            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        )
+
+        value_metadata = gamma_msg.valueMetadata
+
+        value = numpy_deserialize(
+            combine_bytes(gamma_msg.value),
+            value_metadata.decompressedSize,
+            value_metadata.dtype,
+        )
+
+        inputs_metadata = gamma_msg.inputsMetadata
+
+        inputs = numpy_deserialize(
+            combine_bytes(gamma_msg.inputs),
+            inputs_metadata.decompressedSize,
+            inputs_metadata.dtype,
+        )
+
+        entities_metadata = gamma_msg.entitiesIndexedMetadata
+        entities_indexed = numpy_deserialize(
+            combine_bytes(gamma_msg.entitiesIndexed),
+            entities_metadata.decompressedSize,
+            entities_metadata.dtype,
+        )
+        # one_hot_lookup = np.array(ndept_msg.oneHotLookup)
+        one_hot_lookup_metadata = gamma_msg.oneHotLookupMetadata
+        one_hot_lookup = numpy_deserialize(
+            combine_bytes(gamma_msg.oneHotLookup),
+            one_hot_lookup_metadata.decompressedSize,
+            one_hot_lookup_metadata.dtype,
+        )
+
+        data_subjects = EntityList(one_hot_lookup, entities_indexed)
+
+        min_val = gamma_msg.minVal
+        max_val = gamma_msg.maxVal
+        is_linear = gamma_msg.isLinear
 
         return GammaTensor(
-            value=value,
-            max_val=proto.max_val,
-            min_val=proto.min_val,
-            is_linear=proto.is_linear,
+            value=numpy2jax(value),
             data_subjects=data_subjects,
-            state=state,
+            min_val=min_val,
+            max_val=max_val,
+            is_linear=is_linear,
+            inputs=numpy2jax(inputs),
         )
-
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return GammaTensor_PB
