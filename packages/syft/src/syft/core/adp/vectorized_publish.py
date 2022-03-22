@@ -110,4 +110,4 @@ def vectorized_publish(
     filtered_inputs = values * (
         mask ^ 1
     )  # + gauss(0, sigma)  # Double check that noise has mean of 0
-    return output_func(filtered_inputs) + gauss(0, sigma)
+    return np.asarray(output_func(filtered_inputs) + gauss(0, sigma))

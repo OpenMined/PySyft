@@ -25,6 +25,7 @@ from ....logger import debug
 from ....logger import info
 from ....logger import traceback
 from ...adp.adversarial_accountant import AdversarialAccountant
+from ...adp.data_subject_ledger import DictLedgerStore
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
@@ -139,6 +140,7 @@ class Domain(Node):
         self.node = NodeManager(db_engine)
         self.node_route = NodeRouteManager(db_engine)
         self.acc = AdversarialAccountant(db_engine=db_engine, max_budget=10000)
+        self.ledger_store = DictLedgerStore()
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)

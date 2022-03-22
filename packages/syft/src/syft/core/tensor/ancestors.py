@@ -403,7 +403,10 @@ class PhiTensorAncestor(TensorChainManager):
     def gamma(self):  # type: ignore
         return self.__class__(self.child.gamma)
 
-    def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> PhiTensorAncestor:
+    def publish(self,  sigma: float, user_key: VerifyKey, acc: Optional[Any] = None, ledger: Optional[Any] = None) -> PhiTensorAncestor:
+        from autodp.gamma_tensor import GammaTensor
+        if isinstance(self.child, GammaTensor):
+            return self.child.publish(sigma=sigma, ledger=ledger)
         return self.child.publish(acc=acc, sigma=sigma, user_key=user_key)
 
     def copy(self) -> PhiTensorAncestor:

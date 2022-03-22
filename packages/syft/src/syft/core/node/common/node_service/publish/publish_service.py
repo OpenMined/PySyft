@@ -11,6 +11,7 @@ from nacl.signing import VerifyKey
 from ......lib.python import List  # type: ignore
 from ......logger import traceback_and_raise  # type: ignore
 from .....adp.publish import publish  # type: ignore
+from .....adp.data_subject_ledger import DataSubjectLedger
 from .....common.uid import UID  # type: ignore
 from .....store.storeable_object import StorableObject  # type: ignore
 from .....tensor.tensor import PassthroughTensor  # type: ignore
@@ -44,9 +45,29 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                     print(
                         "PublishScalarsService:40: TRY: publish_object.data.publish()"
                     )
-                    result = publish_object.data.publish(
-                        acc=node.acc, sigma=msg.sigma, user_key=verify_key
+                    try:
+                        print("Trying to get DataSubjectLedger in PublishService")
+                        ledger = node.ledger_store.get(verify_key)
+                    except KeyError:
+                        print("Ledger not found")
+                        ledger = DataSubjectLedger(store=node.ledger_store, user_key=verify_key)
+                        node.ledger_store.set(verify_key, ledger)
+                        print("New ledger made!")
+
+                    print("Publishing!")
+                    print("Publish_object.data: ")
+                    print(type(publish_object))
+                    print("Publish_object.data: ")
+                    print(type(publish_object.data))
+                    print("Publish_object.data.child: ")
+                    print(type(publish_object.data.child))
+
+                    result = publish_object.data.child.publish(
+                        ledger=ledger, sigma=msg.sigma
                     )
+                    # result = publish_object.data.publish(
+                    #     acc=node.acc, sigma=msg.sigma, user_key=verify_key
+                    # )
                     print(
                         "PublishScalarsService:44: SUCCESS: publish_object.data.publish()"
                     )
@@ -76,6 +97,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
         if len(results) == 1:
             results = results[0]
         print("PublishScalarsService:67: storable = StorableObject(")
+        print(type(results))
         storable = StorableObject(
             id=msg.id_at_location,
             data=results,

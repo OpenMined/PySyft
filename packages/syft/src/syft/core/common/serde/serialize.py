@@ -72,7 +72,6 @@ def _serialize(
     # )
 
     # capnp_bytes=True
-    print(is_serializable)
     if hasattr(is_serializable, "_object2bytes"):
         # capnp proto
         return validate_type(is_serializable._object2bytes(), bytes)

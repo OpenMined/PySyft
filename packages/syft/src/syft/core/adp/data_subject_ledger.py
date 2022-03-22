@@ -112,9 +112,10 @@ class DataSubjectLedger:
 
     def write_to_db(self):
         self.update_number += 1
-        print("saving to db", len(self.entity_ids_query), len(self.rdp_constants))
-        print("data", self.entity_ids_query, self.rdp_constants)
+        # print("saving to db", len(self.entity_ids_query), len(self.rdp_constants))
+        # print("data", self.entity_ids_query, self.rdp_constants)
         ser = sy.serialize(self, to_bytes=True)
+        print("We managed to serialize it")
         try:
             # todo change user_key or uid?
             self.store.set(key=self.user_key, value=ser)
