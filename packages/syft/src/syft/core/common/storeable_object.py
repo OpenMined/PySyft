@@ -36,3 +36,7 @@ class AbstractStorableObject:
     @property
     def description(self) -> Optional[str]:
         raise NotImplementedError
+
+    @property
+    def is_proxy(self) -> bool:
+        raise NotImplementedError

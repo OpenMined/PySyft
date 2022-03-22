@@ -110,11 +110,12 @@ def _handle_dataset_creation_syft(
             )
             with tracer.start_as_current_span("save to DB"):
                 node.store[storable.id] = storable
+
             node.datasets.add(
                 name=table_name,
                 dataset_id=str(dataset_id),
                 obj_id=str(id_at_location.value),
-                dtype=str(table.__class__.__name__),
+                dtype=str(getattr(table, "dtype", type(table).__name__)),
                 shape=str(table.shape),
             )
 

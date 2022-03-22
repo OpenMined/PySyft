@@ -89,6 +89,8 @@ services:
       - network
     volumes:
       - ./vpn:/headscale
+    ports:
+      - "4000"
 
   jaeger:
     image: jaegertracing/all-in-one:1.30
@@ -104,3 +106,13 @@ services:
       - "14268:14268"
       - "14269:14269"
       - "9411:9411"
+
+  seaweedfs:
+    profiles:
+      - blob-storage
+    # volumes:
+    #   - ./data/seaweedfs:/data
+    ports:
+      - "9333" # admin
+      - "8888" # filer
+      - "8333" # S3
