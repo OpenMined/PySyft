@@ -1,6 +1,7 @@
 # stdlib
 import time
 from typing import Callable
+from typing import Final
 from typing import Optional
 from typing import Tuple
 
@@ -45,8 +46,7 @@ class DataSubjectLedger:
         self.entity_ids = np.array([])
         self.entity2budget = np.array([])
 
-        self.delta = 1e-6  # WARNING: CHANGING DELTA INVALIDATES THE CACHE
-        self.reset()
+        # self.reset()
         self.cache_constant2epsilon = np.array([])
         self.increase_max_cache(int(default_cache_size))
 
@@ -55,6 +55,11 @@ class DataSubjectLedger:
         self.update_number = 0
         self.timestamp_of_last_update: Optional[float] = None
         self.timestamp = time.time()
+
+    @property
+    def delta(self) -> float:
+        FIXED_DELTA: Final = 1e-6
+        return FIXED_DELTA  # WARNING: CHANGING DELTA INVALIDATES THE CACHE
 
     def write_to_db(self) -> LedgerUpdate:
         self.update_number += 1
@@ -98,14 +103,14 @@ class DataSubjectLedger:
         else:
             raise Exception("Cannot add update to Ledger")
 
-    def reset(self) -> None:
-        self.sigmas = np.array([])
-        self.l2_norms = np.array([])
-        self.l2_norm_bounds = np.array([])
-        self.Ls = np.array([])
-        self.coeffs = np.array([])
-        self.entity_ids = np.array([])
-        self.entity2budget = np.array([])
+    # def reset(self) -> None:
+    #     self.sigmas = np.array([])
+    #     self.l2_norms = np.array([])
+    #     self.l2_norm_bounds = np.array([])
+    #     self.Ls = np.array([])
+    #     self.coeffs = np.array([])
+    #     self.entity_ids = np.array([])
+    #     self.entity2budget = np.array([])
 
     def batch_append(
         self,

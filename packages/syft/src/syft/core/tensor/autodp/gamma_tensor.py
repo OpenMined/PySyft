@@ -27,6 +27,7 @@ from numpy.random import randint
 from scipy.optimize import shgo
 
 # relative
+from ...adp.data_subject_ledger import DataSubjectLedger
 from ...adp.entity_list import EntityList
 from ...adp.vectorized_publish import vectorized_publish
 
@@ -61,8 +62,8 @@ def create_new_lookup_tables(
 
 def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
     """A Private input will be initialized with this function.
-    Whenever you manipulate a private input (i.e. add it to another private tensor), the result will have a different
-    function. Thus we can check to seee if the f
+    Whenever you manipulate a private input (i.e. add it to another private tensor),
+    the result will have a different function. Thus we can check to see if the f
     """
     return x
 
@@ -121,7 +122,40 @@ class GammaTensor:
             state=state,
         )
 
-    def sum(self) -> GammaTensor:
+    def __mul__(self, other: Any) -> GammaTensor:
+        state = dict()
+        state.update(self.state)
+
+        if isinstance(other, GammaTensor):
+
+            def _mul(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.multiply(self.run(state), other.run(state))
+
+            state.update(other.state)
+            value = self.value * other.value
+        else:
+
+            def _mul(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.multiply(self.run(state), other)
+
+            print(self.value, self.value.dtype, self.value.ndim, type(self.value))
+            print(
+                other, other.dtype, other.ndim, type(other), type(other.reshape(-1)[0])
+            )
+            if other.ndim == 0:
+                other = other.reshape(-1)
+            value = self.value * other
+
+        return GammaTensor(
+            value=value,
+            data_subjects=self.data_subjects,
+            min_val=0,
+            max_val=10,
+            func=_mul,
+            state=state,
+        )
+
+    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sum(self.run(state))
 
@@ -141,21 +175,48 @@ class GammaTensor:
             state=state,
         )
 
+    def sqrt(self) -> GammaTensor:
+        def _sqrt(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.sqrt(self.run(state))
+
+        state = dict()
+        state.update(self.state)
+
+        value = jnp.sqrt(self.value)
+        min_val = jnp.sqrt(self.min_val)
+        max_val = jnp.sqrt(self.max_val)
+
+        return GammaTensor(
+            value=value,
+            data_subjects=self.data_subjects,
+            min_val=min_val,
+            max_val=max_val,
+            func=_sqrt,
+            state=state,
+        )
+
     def publish(
-        self, sigma: Optional[float] = None, output_func: Callable = np.sum
+        self,
+        ledger: DataSubjectLedger,
+        sigma: Optional[float] = None,
+        output_func: Callable = np.sum,
     ) -> jax.numpy.DeviceArray:
-        # TODO: Add data scientist privacy budget as an input argument, and pass it into vectorized_publish
+        # TODO: Add data scientist privacy budget as an input argument, and pass it
+        # into vectorized_publish
         if sigma is None:
             sigma = self.value.mean() / 4
+
+        print("state", self.state, type(self.state))
 
         return vectorized_publish(
             min_vals=self.min_val,
             max_vals=self.max_val,
-            values=self.state["0"],
+            values=self.state[self.id],
             data_subjects=self.data_subjects,
             is_linear=self.is_linear,
             sigma=sigma,
             output_func=output_func,
+            ledger=ledger,
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:
@@ -239,3 +300,7 @@ class GammaTensor:
         print("Ran SHGO")
         # return negative because we flipped earlier
         return -float(res.fun)
+
+    @property
+    def dtype(self) -> np.dtype:
+        return self.value.dtype

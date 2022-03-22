@@ -109,8 +109,9 @@ class lazyrepeatarray:
     def size(self) -> int:
         return np.prod(self.shape)
 
-    def sum(self, axis: Optional[int] = None) -> np.ndarray:
-        if axis is None:
+    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> np.ndarray:
+        print("args", args, "kwargs", kwargs)
+        if "axis" in kwargs and kwargs["axis"] is None:
             # TODO: make fast
             return self.to_numpy().sum()
         else:

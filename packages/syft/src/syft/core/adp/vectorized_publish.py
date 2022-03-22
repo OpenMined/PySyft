@@ -1,7 +1,6 @@
 # stdlib
 from random import gauss
 from typing import Callable
-from typing import Optional
 from typing import Tuple
 
 # third party
@@ -26,7 +25,21 @@ def calculate_bounds_for_mechanism(
     worst_case_l2_norm = np.sqrt(
         np.sum(np.square(max_val_array - min_val_array))
     ) * np.ones_like(value_array)
-    l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(value_array)
+
+    # calculating l2_norm step by step to find the issues
+    a = np.square(value_array)
+    b = np.ones_like(value_array)
+    print("a", type(a), a)
+    l = a.sum(axis=None)
+    print("l", type(l))
+    c = np.sum(a)
+    d = np.sqrt(c)
+    print("types", type(d), type(b))
+    l2_norm = d * b
+
+    # one liner
+    # l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(value_array)
+
     # print(l2_norm.shape, worst_case_l2_norm.shape)
     # print(l2_norm.shape)
     return l2_norm, worst_case_l2_norm
@@ -37,8 +50,8 @@ def vectorized_publish(
     max_vals: np.ndarray,
     values: np.ndarray,
     data_subjects: EntityList,
+    ledger: DataSubjectLedger,
     is_linear: bool = True,
-    ledger: Optional[DataSubjectLedger] = None,
     data_scientist_budget: float = 675,
     sigma: float = 1.5,
     output_func: Callable = np.sum
@@ -70,11 +83,11 @@ def vectorized_publish(
 
     print("Obtained all parameters for RDP")
 
-    if ledger is None:
-        ledger = DataSubjectLedger()
+    # if ledger is None:
+    #     ledger = DataSubjectLedger()
     print("Initialized ledger!")
 
-    ledger.reset()
+    # ledger.reset()
     # Get the Ledger started
     ledger.batch_append(
         sigmas=sigmas,

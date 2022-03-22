@@ -32,6 +32,7 @@ from ..node.common.action.run_class_method_action import RunClassMethodAction
 from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
+from .autodp.gamma_tensor import GammaTensor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
 from .smpc import utils
@@ -368,15 +369,13 @@ class Tensor(
             )
             child = to32bit(child.numpy())
 
-        if not isinstance(child, PassthroughTensor) and not isinstance(
-            child, np.ndarray
-        ):
-
+        print("what type of child do we have now?", child, type(child))
+        if not isinstance(child, (PassthroughTensor, np.ndarray, GammaTensor)):
             raise Exception(
                 f"Data: {child} ,type: {type(child)} must be list or nd.array "
             )
 
-        if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
+        if not isinstance(child, (PassthroughTensor, np.ndarray, GammaTensor)) or (
             getattr(child, "dtype", None) not in [np.int32, np.bool_]
             and getattr(child, "dtype", None) is not None
         ):

@@ -15,6 +15,7 @@ from nacl.signing import VerifyKey
 import numpy as np
 
 # relative
+from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.entity import Entity
 from ....core.adp.entity_list import EntityList
 from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
@@ -235,17 +236,23 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         # TODO: update InitialGammaTensor to handle EntityList
         # TODO: check if values needs to be a JAX array or if numpy will suffice
-        return GammaTensor(
-            value=self.child,
-            min_val=self.min_vals,
-            max_val=self.max_vals,
-            data_subjects=self.entities,
-        )
+        print("making jax")
+        try:
+            return GammaTensor(
+                value=self.child,
+                data_subjects=self.entities,
+                min_val=self.min_vals,
+                max_val=self.max_vals,
+            )
+        except Exception as e:
+            print("Wtf got error", e)
 
-    def publish(self, sigma: float, user_key: VerifyKey) -> AcceptableSimpleType:
+    def publish(
+        self, ledger: DataSubjectLedger, sigma: float, user_key: VerifyKey
+    ) -> AcceptableSimpleType:
         print("PUBLISHING TO GAMMA:")
         print(self.child)
-        return self.gamma.publish(sigma=sigma)
+        return self.gamma.publish(ledger=ledger, sigma=sigma)
 
     @property
     def value(self) -> np.ndarray:

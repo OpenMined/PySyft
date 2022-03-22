@@ -4,6 +4,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.entity import Entity
 from syft.core.adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
