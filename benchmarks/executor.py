@@ -47,14 +47,19 @@ def get_git_revision_short_hash() -> str:
 # # @click.option('--append', help='append results encoded to JSON into FILENAME')
 # # @click.option('--min-time', help='Minimum duration in seconds of a single value, used to calibrate the number of loops (default') # TODO add default
 # # @click.option('--worker')
+
+def add_cmd_args(cmd, args):
+    print(cmd)
+    
+
 def run_suite() -> None:
     # print(sys.argv)
     # print(kwargs)
     inf = np.iinfo(np.int32)
     parser = argparse.ArgumentParser(description='Process some integers.')
     # parser.add_argument('--test')
-    runner = pyperf.Runner()
-    print(sys.argv)
+    runner = pyperf.Runner(_argparser=parser, add_cmdline_args=add_cmd_args)
+    # print(sys.argv)
     runner.parse_args()
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
     run_sept_suite(
