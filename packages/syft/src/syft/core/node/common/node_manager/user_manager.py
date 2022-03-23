@@ -432,6 +432,7 @@ class UserManager(DatabaseManager):
                 )
 
             user.budget = user.budget - epsilon_spend
+            session_local.add(user)
             print(f"User budget has been updated from {old_budget} to {user.budget}")
 
         session_local.commit()
