@@ -90,6 +90,7 @@ def vectorized_publish(
     print("Initialized ledger!")
     ledger.entity_ids = np.array(input_entities, dtype=np.int64)
 
+    print("Max Sigma, Min Sigma", np.max(sigmas), np.min(sigmas))
     # Query budget spend of all unique entities
     rdp_params = RDPParams(
         sigmas=sigmas,

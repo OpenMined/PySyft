@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import os
 import time
 from typing import Any
 from typing import Callable
@@ -64,7 +65,12 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         self.entity_ids = np.array([], dtype=np.int64)
 
         self._cache_constant2epsilon = np.array([], dtype=np.float64)
-        self._increase_max_cache(int(default_cache_size))
+        if os.path.exists("cache300k.txt"):
+            print("Cache found!!!!!! REJOICE")
+            self._cache_constant2epsilon = np.loadtxt("cache300k.txt")
+        else:
+            print("Cache was not found, recalculating...")
+            self._increase_max_cache(int(default_cache_size))
 
         # tracking atomic updates
         self._pending_save: bool = False
@@ -110,6 +116,11 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
 
+        # print("This is the cache constants 2 epsilon")
+        # print(self._cache_constant2epsilon)
+        print("These are the RDP constants")
+        print(rdp_constants)
+
         epsilon_spent, mask = self._get_overbudgeted_entities(
             node=node,
             rdp_constants=rdp_constants,
@@ -133,9 +144,18 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     def _increase_max_cache(self, new_size: int) -> None:
         new_entries = []
         current_size = len(self._cache_constant2epsilon)
+        new_alphas = []
         for i in range(new_size - current_size):
-            _, eps = self._get_optimal_alpha_for_constant(constant=i + 1 + current_size)
+            alph, eps = self._get_optimal_alpha_for_constant(
+                constant=i + 1 + current_size
+            )
             new_entries.append(eps)
+            new_alphas.append(alph)
+        # print("The values of epsilon created were: ")
+        # print(new_entries)
+
+        # print("The values of alpha  used  for these epsilon were:")
+        # print(new_alphas)
         self._cache_constant2epsilon = np.concatenate(
             [self._cache_constant2epsilon, np.array(new_entries)]
         )
@@ -236,6 +256,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             # needed as np.int64 to use take
             eps_spend = self._cache_constant2epsilon.take(rdp_constants_lookup)
         except IndexError:
+            print(f"Cache missed the value at {max(rdp_constants_lookup)}")
             self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
             eps_spend = self._cache_constant2epsilon.take(rdp_constants_lookup)
         return eps_spend
@@ -251,12 +272,18 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         When we replace the entity2ledger with something else, we could perhaps directly
         add it into this method
         """
-
+        print("rdp_constants")
+        print(min(rdp_constants))
         # Get the privacy budget spent by all the entities
         epsilon_spent = self._get_epsilon_spend(rdp_constants=rdp_constants)
+
         # print(np.mean(epsilon_spent))
         user_epsilon_spend = max(epsilon_spent)
-
+        # print("Epsilon spent by all entities: ")
+        # print(epsilon_spent)
+        print("Min epsilon spent: ")
+        print(np.min(epsilon_spent))
+        print(f"Size of cache: {self._cache_constant2epsilon.shape}")
         attempts = 0
         user_budget = None
         while attempts < 5:

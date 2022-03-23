@@ -1,0 +1,38 @@
+sigma = 1e5
+
+eps spend array:
+[ 51255.57757465  84808.13046667  42844.41926499 ... 109910.62531725
+ 101547.05008221  42844.41926499]
+
+Min epsilon spent: 8938.689767187063
+Attemping to spend epsilon: 151679.09244613466. Try: 0
+
+
+sigma = 2e7
+
+
+Epsilon spent by all entities:
+[ 7.76621663 11.68859625  7.76621663 ... 11.68859625 11.68859625
+  7.76621663]
+ Min epsilon spent: 7.766216625311721
+ Attemping to spend epsilon: 14.947919164492593. Try: 0
+
+
+sigma = 4e7
+
+These are the RDP constants
+[2022-03-23 15:55:28,493: WARNING/MainProcess] [0.31003714 0.51672857 0.25836429 ... 0.67174714 0.62007428 0.25836429]
+[2022-03-23 15:55:28,493: WARNING/MainProcess] rdp_constants
+[2022-03-23 15:55:28,493: WARNING/MainProcess] [0.31003714 0.51672857 0.25836429 ... 0.67174714 0.62007428 0.25836429]
+[2022-03-23 15:55:28,533: WARNING/MainProcess] Epsilon spent by all entities:
+[2022-03-23 15:55:28,533: WARNING/MainProcess] [7.76621663 7.76621663 7.76621663 ... 7.76621663 7.76621663 7.76621663]
+
+
+TODO:
+cache linear scalar
+cache FP conversion
+fixed constant array
+ahead of computing budget, do a worst case bound and see if you can do the computation
+- make sure you can't run another query immediately after; add a block while the async op goes through
+FIFO list of immutable objects in memory
+
