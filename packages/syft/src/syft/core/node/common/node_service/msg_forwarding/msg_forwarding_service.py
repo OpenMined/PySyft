@@ -31,7 +31,7 @@ class SignedMessageWithoutReplyForwardingService(SignedNodeServiceWithoutReply):
         # order is important, vm, device, domain, network
         for scope_id in [addr.vm_id, addr.device_id, addr.domain_id, addr.network_id]:
             if scope_id is not None and scope_id in node.store:
-                obj = node.store[scope_id]
+                obj = node.store.get(scope_id)
                 func = getattr(obj, "send_immediate_msg_without_reply", None)
 
                 if func is None:
@@ -85,7 +85,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
         # order is important, vm, device, domain, network
         for scope_id in [addr.vm_id, addr.device_id, addr.domain_id, addr.network_id]:
             if scope_id is not None and scope_id in node.store:
-                obj = node.store[scope_id]
+                obj = node.store.get(scope_id)
                 func = getattr(obj, "send_immediate_msg_with_reply", None)
                 if func is None or not callable(func):
                     error(

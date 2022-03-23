@@ -15,10 +15,18 @@ import uuid
 
 # syft absolute
 import syft as sy
+from syft.core.common.serde.deserialize import PROTOBUF_START_MAGIC_HEADER_BYTES
 from syft.core.common.uid import UID
 from syft.core.io.location.specific import SpecificLocation
 
 # --------------------- INITIALIZATION ---------------------
+
+blob_bytes = (
+    b"\n\t"
+    + PROTOBUF_START_MAGIC_HEADER_BYTES
+    + b"\x12/syft.core.io.location.specific.SpecificLocation\x1a\x1a\n\x12\n\x10"
+    + b"\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
+)
 
 
 def test_specific_location_init_without_arguments() -> None:
@@ -133,26 +141,13 @@ def test_binary_serialization() -> None:
 
     uid = UID(value=uuid.UUID(int=333779996850170035686993356951732753684))
     obj = SpecificLocation(id=uid, name="Test")
-
-    blob = (
-        b"\n/syft.core.io.location.specific.SpecificLocation\x12\x1a\n\x12\n\x10"
-        + b"\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
-    )
-
-    assert sy.serialize(obj, to_bytes=True) == blob
-    assert sy.serialize(obj, to_bytes=True) == blob
-    assert sy.serialize(obj, to_bytes=True) == blob
+    assert sy.serialize(obj, to_bytes=True) == blob_bytes
 
 
 def test_binary_deserialization() -> None:
     """Test that binary SpecificLocation deserialization works as expected"""
 
-    blob = (
-        b"\n/syft.core.io.location.specific.SpecificLocation\x12\x1a\n\x12\n\x10"
-        + b"\xfb\x1b\xb0g[\xb7LI\xbe\xce\xe7\x00\xab\n\x15\x14\x12\x04Test"
-    )
-
-    obj = sy.deserialize(blob=blob, from_bytes=True)
+    obj = sy.deserialize(blob=blob_bytes, from_bytes=True)
     assert obj == SpecificLocation(
         id=UID(value=uuid.UUID(int=333779996850170035686993356951732753684)),
         name="Test",
