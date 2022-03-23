@@ -50,7 +50,7 @@ class TFFService(ImmediateNodeServiceWithReply):
         # print(s)
         # loop = asyncio.get_running_loop()
         # loop.run_until_complete(lambda: await tff.federated_computation(lambda: 'Hello World')())
-        print(res)
+        # print(res)
 
         result = msg.payload.run(node=node, verify_key=verify_key)
         return TFFReplyMessage(payload=result, address=msg.reply_to)
