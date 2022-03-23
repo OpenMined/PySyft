@@ -1,5 +1,6 @@
 # stdlib
 from random import gauss
+from typing import Any
 from typing import Callable
 from typing import Tuple
 
@@ -44,17 +45,22 @@ def calculate_bounds_for_mechanism(
 
 
 def vectorized_publish(
+    node: Any,
     min_vals: np.ndarray,
     max_vals: np.ndarray,
     values: np.ndarray,
     data_subjects: EntityList,
     ledger: DataSubjectLedger,
     is_linear: bool = True,
-    data_scientist_budget: float = 675,
     sigma: float = 1.5,
     output_func: Callable = np.sum
     # private: bool = False
 ) -> np.ndarray:
+    # TODO convert values to np.int64
+    # print("values1", type(values), values.dtype)
+    # values = jnp.array(values, dtype=np.int64)
+    # print("values2", type(values), values.dtype)
+
     print(f"Starting vectorized publish: {type(ledger)}")
     # Get all unique entities
     unique_data_subjects = data_subjects.one_hot_lookup
@@ -96,17 +102,26 @@ def vectorized_publish(
     try:
         mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
             unique_entity_ids_query=input_entities,
-            user_budget=data_scientist_budget,
             rdp_params=rdp_params,
             private=True,
+            node=node,
         )
 
-        print("Obtained overbudgeted entity mask")
+        if mask is None:
+            raise Exception("Failed to publish mask is None")
+
+        print("Obtained overbudgeted entity mask", mask.dtype)
 
         # Filter results
         filtered_inputs = values * (
             mask ^ 1
         )  # + gauss(0, sigma)  # Double check that noise has mean of 0
-        return np.asarray(output_func(filtered_inputs) + gauss(0, sigma))
+        output = np.asarray(output_func(filtered_inputs) + gauss(0, sigma))
+        print("got output", type(output), output.dtype)
+        return output
     except Exception as e:
+        # stdlib
+        import traceback
+
+        print(traceback.format_exc())
         print(f"Failed to run vectorized_publish. {e}")

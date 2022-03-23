@@ -3,9 +3,10 @@ import numpy as np
 import pytest
 
 # syft absolute
+import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
-from syft.core.adp.data_subject_ledger import DictLedgerStore
 from syft.core.adp.entity import Entity
+from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 
 
@@ -65,35 +66,59 @@ def test_gamma_serde(
     lower_bound: np.ndarray,
     ishan: Entity,
 ) -> None:
-    """Test basic serde for NDEPT"""
+    """Test basic serde for GammaTensor"""
     tensor1 = NDEPT(
-        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data,
+        entities=[0, 1],
+        max_vals=upper_bound,
+        min_vals=lower_bound,
     )
 
-    gamma_tensor1 = tensor1.gamma
+    gamma_tensor1 = tensor1.sum()
+
+    ser = sy.serialize(gamma_tensor1, to_bytes=True)
+    de = sy.deserialize(ser, from_bytes=True)
+
+    assert de.value == gamma_tensor1.value
+    assert de.data_subjects == gamma_tensor1.data_subjects
+    assert de.min_val == gamma_tensor1.min_val
+    assert de.max_val == gamma_tensor1.max_val
+    assert de.is_linear == gamma_tensor1.is_linear
+    assert de.func == gamma_tensor1.func
+    assert de.id == gamma_tensor1.id
+    assert (np.asarray(de.inputs) == np.asarray(gamma_tensor1.inputs)).all()
+    assert de.state.keys() == gamma_tensor1.state.keys()
+    for key in de.state.keys():
+        assert (de.state[key].inputs == gamma_tensor1.state[key].inputs).all()
+
+
+def test_gamma_publish(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test basic serde for GammaTensor"""
+    tensor1 = NDEPT(
+        child=reference_data,
+        entities=[0, 1],
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    gamma_tensor1 = tensor1.sum()
+
     print("gamma_tensor1", type(gamma_tensor1))
     ledger_store = DictLedgerStore()
     print(ledger_store.kv_store)
     user_key = b"1231"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
     results = gamma_tensor1.publish(ledger=ledger, sigma=0.1)
-    print(results)
+    print(results, results.dtype)
     print(ledger_store.kv_store)
 
-    results = gamma_tensor1.publish(ledger=ledger, sigma=0.1)
-
-    # gamma.publish, self, sigma: Optional[float] = None, output_func: Callable = np.sum
+    # results = gamma_tensor1.publish(ledger=ledger, sigma=0.1)
+    # print(results, results.dtype)
+    # print(ledger_store.kv_store)
 
     assert False
-
-    # ser = sy.serialize(tensor1)
-    # de = sy.deserialize(ser)
-
-    # assert de == tensor1
-    # assert (de.child == tensor1.child).all()
-    # assert (de.min_vals == tensor1.min_vals).all()
-    # assert (de.max_vals == tensor1.max_vals).all()
-    # assert de.entities == tensor1.entities
-
-    # assert np.shares_memory(tensor1.child, tensor1.child)
-    # assert not np.shares_memory(de.child, tensor1.child)

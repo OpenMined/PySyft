@@ -67,7 +67,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                     print(ledger)
 
                     result = publish_object.data.child.publish(
-                        ledger=ledger, sigma=msg.sigma
+                        node=node, ledger=ledger, sigma=msg.sigma
                     )
                     # result = publish_object.data.publish(
                     #     acc=node.acc, sigma=msg.sigma, user_key=verify_key

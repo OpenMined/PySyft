@@ -16,7 +16,9 @@ from syft.core.node.common.node_service.request_receiver.request_receiver_messag
 
 @pytest.mark.asyncio
 async def test_domain_creation() -> None:
-    sy.Domain(name="test domain", store_type=DictStore, ledger_store=DictLedgerStore)
+    sy.Domain(
+        name="test domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
 
 
 @pytest.mark.asyncio
@@ -37,7 +39,7 @@ def test_domain_request_pending(domain: sy.Domain) -> None:
     data_ptr_domain_1 = tensor.send(domain_1_client)
 
     domain_2 = sy.Domain(
-        name="my domain", store_type=DictStore, ledger_store=DictLedgerStore
+        name="my domain", store_type=DictStore, ledger_store_type=DictLedgerStore
     )
 
     data_ptr_domain_1.request(
@@ -70,7 +72,7 @@ def test_domain_request_denied(domain: sy.Domain) -> None:
     data_ptr_domain_1 = tensor.send(domain_1_client)
 
     domain_2 = sy.Domain(
-        name="my domain", store_type=DictStore, ledger_store=DictLedgerStore
+        name="my domain", store_type=DictStore, ledger_store_type=DictLedgerStore
     )
 
     data_ptr_domain_1.request(reason="I'd lke to see this pointer")
@@ -104,7 +106,7 @@ def test_domain_request_accepted(domain: sy.Domain) -> None:
     data_ptr_domain_1 = tensor.send(domain_1_client)
 
     domain_2 = sy.Domain(
-        name="my domain", store_type=DictStore, ledger_store=DictLedgerStore
+        name="my domain", store_type=DictStore, ledger_store_type=DictLedgerStore
     )
 
     data_ptr_domain_1.request(reason="I'd lke to see this pointer")

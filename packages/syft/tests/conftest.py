@@ -136,7 +136,9 @@ def node() -> sy.VirtualMachine:
 
 @pytest.fixture(scope="session")
 def domain() -> sy.VirtualMachine:
-    return sy.Domain(name="Alice", store_type=DictStore, ledger_store=DictLedgerStore)
+    return sy.Domain(
+        name="Alice", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
 
 
 @pytest.fixture(autouse=True)

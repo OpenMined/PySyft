@@ -25,7 +25,7 @@ class MockNode(Node):
     def __init__(
         self,
     ):
-        super().__init__(store_type=DictStore, ledger_store=DictLedgerStore)
+        super().__init__(store_type=DictStore, ledger_store_type=DictLedgerStore)
 
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply

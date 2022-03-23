@@ -142,7 +142,7 @@ def test_basic_publish_entities_event() -> None:
         "My Amazing Domain",
         max_budget=10,
         store_type=DictStore,
-        ledger_store=DictLedgerStore,
+        ledger_store_type=DictLedgerStore,
     )
     root_client = domain.get_root_client()
 
@@ -189,7 +189,7 @@ def test_basic_publish_entity_event() -> None:
         "My Amazing Domain",
         max_budget=10,
         store_type=DictStore,
-        ledger_store=DictLedgerStore,
+        ledger_store_type=DictLedgerStore,
     )
     root_client = domain.get_root_client()
 
@@ -232,7 +232,7 @@ def test_train_publish_entities_event() -> None:
         "My Amazing Domain",
         max_budget=10,
         store_type=DictStore,
-        ledger_store=DictLedgerStore,
+        ledger_store_type=DictLedgerStore,
     )
     root_client = domain.get_root_client()
 
@@ -296,7 +296,7 @@ def test_train_publish_entities_event() -> None:
 
 # TODO: @Madhava Make work
 # def test_simulated_publish_event() -> None:
-#     domain = sy.Domain("My Amazing Domain", max_budget=10, store_type=DictStore, ledger_store=DictLedgerStore)
+#     domain = sy.Domain("My Amazing Domain", max_budget=10, store_type=DictStore, ledger_store_type=DictLedgerStore)
 #     root_client = domain.get_root_client()
 #
 #     data_batch = np.random.rand(4, 28 * 28)

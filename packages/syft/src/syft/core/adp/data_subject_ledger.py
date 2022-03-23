@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import time
+from typing import Any
 from typing import Callable
 from typing import Final
 from typing import Optional
@@ -14,6 +15,7 @@ import numpy as np
 from scipy.optimize import minimize_scalar
 
 # relative
+from ...core.node.common.node_manager.user_manager import RefreshBudgetException
 from ..common.serde.serializable import serializable
 from .abstract_ledger_store import AbstractDataSubjectLedger
 from .abstract_ledger_store import AbstractLedgerStore
@@ -46,6 +48,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         "_timestamp_of_last_update",
         "_entity_ids_query",
         "_rdp_constants",
+        "_pending_save",  # theres no init on recursive serde so this isnt set to False
     ]
 
     def __init__(
@@ -95,8 +98,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     def get_entity_overbudget_mask_for_epsilon_and_append(
         self,
         unique_entity_ids_query: np.ndarray,
-        user_budget: float,
         rdp_params: RDPParams,
+        node: Any,
         private: bool = True,
     ) -> np.ndarray:
         # coerce to np.int64
@@ -107,21 +110,23 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
 
-        mask = self._get_overbudgeted_entities(
-            user_budget=user_budget,
+        epsilon_spent, mask = self._get_overbudgeted_entities(
+            node=node,
             rdp_constants=rdp_constants,
         )
 
-        if self._write_ledger():
+        if self._write_ledger(node=node, epsilon_spent=epsilon_spent):
             return mask
 
-    def _write_ledger(self) -> bool:
+    def _write_ledger(self, node: Any, epsilon_spent: float) -> bool:
+        print("write epsilon in transaction with serializing the ledger", epsilon_spent)
         self._update_number += 1
         try:
-            self.store.set(key=self.user_key, value=self)
             self._pending_save = False
-            return self._pending_save
+            self.store.set(key=self.user_key, value=self)
+            return True
         except Exception as e:
+            self._pending_save = True
             print(f"Failed to write ledger to ledger store. {e}")
             raise e
 
@@ -222,8 +227,13 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return constant
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
-        rdp_constants_lookup = rdp_constants - 1
+        rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
+        # TODO remove this hack
+        if not hasattr(self, "_cache_constant2epsilon"):
+            self._cache_constant2epsilon = np.array([], dtype=np.float64)
+            self._increase_max_cache(1_000)
         try:
+            # needed as np.int64 to use take
             eps_spend = self._cache_constant2epsilon.take(rdp_constants_lookup)
         except IndexError:
             self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
@@ -232,9 +242,9 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
     def _get_overbudgeted_entities(
         self,
-        user_budget: float,
+        node: Any,
         rdp_constants: np.ndarray,
-    ) -> np.ndarray:
+    ) -> Tuple[float, np.ndarray]:
         """TODO:
         In our current implementation, user_budget is obtained by querying the
         Adversarial Accountant's entity2ledger with the Data Scientist's User Key.
@@ -245,6 +255,42 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # Get the privacy budget spent by all the entities
         epsilon_spent = self._get_epsilon_spend(rdp_constants=rdp_constants)
         # print(np.mean(epsilon_spent))
+        user_epsilon_spend = max(epsilon_spent)
+
+        attempts = 0
+        user_budget = None
+        while attempts < 5:
+            print(f"Attemping to spend epsilon: {user_epsilon_spend}. Try: {attempts}")
+            attempts += 1
+            try:
+                user_budget = self.spend_epsilon(
+                    node=node, epsilon_spend=user_epsilon_spend
+                )
+                break
+            except RefreshBudgetException as e:
+                # this is the only exception we allow to retry
+                print("got refresh budget error", e)
+            except Exception as e:
+                print(f"Problem spending epsilon. {e}")
+                raise e
+
+        if user_budget is None:
+            raise Exception("Failed to spend_epsilon")
 
         # Create a mask
-        return np.ones_like(epsilon_spent) * user_budget < epsilon_spent
+        return (
+            epsilon_spent,
+            np.ones_like(epsilon_spent) * user_budget < epsilon_spent,
+        )
+
+    def spend_epsilon(self, node: Any, epsilon_spend: float) -> bool:
+        # get the budget
+        user_budget = node.users.get_budget_for_user(verify_key=self.user_key)
+        print("got user budget", user_budget, "epsilon_spent", epsilon_spend)
+        node.users.deduct_epsilon_for_user(
+            verify_key=self.user_key,
+            old_budget=user_budget,
+            epsilon_spend=epsilon_spend,
+        )
+        # return the budget we used
+        return user_budget

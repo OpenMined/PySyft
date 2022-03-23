@@ -55,7 +55,7 @@ def test_request_message() -> None:
 @mark.parametrize("method_name", ["accept", "approve"])
 def test_accept(method_name: str) -> None:
     node = Domain(
-        name="remote domain", store_type=DictStore, ledger_store=DictLedgerStore
+        name="remote domain", store_type=DictStore, ledger_store_type=DictLedgerStore
     )
     node_client = node.get_root_client()
 
@@ -81,7 +81,7 @@ def test_accept(method_name: str) -> None:
 @mark.parametrize("method_name", ["deny", "reject", "withdraw"])
 def test_deny(method_name: str) -> None:
     node = Domain(
-        name="remote domain", store_type=DictStore, ledger_store=DictLedgerStore
+        name="remote domain", store_type=DictStore, ledger_store_type=DictLedgerStore
     )
     node_client = node.get_root_client()
 

@@ -245,11 +245,11 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         )
 
     def publish(
-        self, ledger: DataSubjectLedger, sigma: float, user_key: VerifyKey
+        self, node: Any, ledger: DataSubjectLedger, sigma: float, user_key: VerifyKey
     ) -> AcceptableSimpleType:
         print("PUBLISHING TO GAMMA:")
         print(self.child)
-        return self.gamma.publish(ledger=ledger, sigma=sigma)
+        return self.gamma.publish(node=node, ledger=ledger, sigma=sigma)
 
     @property
     def value(self) -> np.ndarray:

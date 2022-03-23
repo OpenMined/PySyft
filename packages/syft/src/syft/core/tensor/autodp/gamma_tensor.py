@@ -79,10 +79,12 @@ def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
 
 
 def jax2numpy(value: jnp.array) -> np.array:
+    # are we incurring copying here?
     return np.asarray(value)
 
 
 def numpy2jax(value: np.array) -> jnp.array:
+    # are we incurring copying here?
     return jnp.asarray(value)
 
 
@@ -211,6 +213,7 @@ class GammaTensor:
 
     def publish(
         self,
+        node: Any,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
         output_func: Callable = np.sum,
@@ -229,6 +232,7 @@ class GammaTensor:
             sigma=sigma,
             output_func=output_func,
             ledger=ledger,
+            node=node,
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:
@@ -319,31 +323,8 @@ class GammaTensor:
 
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
-
-        # value @1 :List(Data);
-        # entitiesIndexed @2 :List(Data);
-        # oneHotLookup @3 :List(Data);
-        # minVals @4 :Float64;
-        # maxVals @5 :Float64;
-        # isLinear @6 :Bool;
-        # inputs @7 :List(Data);
-        # valueMetadata @8 :TensorMetadata;
-        # entitiesIndexedMetadata @9 :TensorMetadata;
-        # oneHotLookupMetadata @10 :TensorMetadata;
-        # inputsMetadata @11 :TensorMetadata;
-
-        value, value_size = numpy_serialize(jax2numpy(self.value), get_bytes=True)
-
-        entities_indexed, entities_indexed_size = numpy_serialize(
-            self.data_subjects.entities_indexed, get_bytes=True
-        )
-        one_hot_lookup, one_hot_lookup_size = numpy_serialize(
-            self.data_subjects.one_hot_lookup, get_bytes=True
-        )
-
-        inputs, inputs_size = numpy_serialize(jax2numpy(self.inputs), get_bytes=True)
-
         gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
+
         gamma_msg = gamma_tensor_struct.new_message()
         metadata_schema = gamma_tensor_struct.TensorMetadata
         value_metadata = metadata_schema.new_message()
@@ -351,40 +332,48 @@ class GammaTensor:
         entities_metadata = metadata_schema.new_message()
         one_hot_lookup_metadata = metadata_schema.new_message()
 
+        # what is the difference between inputs and value which do we serde
+        # do we need to serde func? if so how?
+        # what about the state dict?
+
         # this is how we dispatch correct deserialization of bytes
         gamma_msg.magicHeader = serde_magic_header(type(self))
 
+        value, value_size = numpy_serialize(jax2numpy(self.value), get_bytes=True)
         chunk_bytes(value, "value", gamma_msg)
         value_metadata.dtype = str(self.value.dtype)
         value_metadata.decompressedSize = value_size
         gamma_msg.valueMetadata = value_metadata
 
+        inputs, inputs_size = numpy_serialize(jax2numpy(self.inputs), get_bytes=True)
         chunk_bytes(inputs, "inputs", gamma_msg)
         inputs_metadata.dtype = str(self.inputs.dtype)
         inputs_metadata.decompressedSize = inputs_size
         gamma_msg.inputsMetadata = inputs_metadata
 
+        entities_indexed, entities_indexed_size = numpy_serialize(
+            self.data_subjects.entities_indexed, get_bytes=True
+        )
         chunk_bytes(entities_indexed, "entitiesIndexed", gamma_msg)
         entities_metadata.dtype = str(self.data_subjects.entities_indexed.dtype)
         entities_metadata.decompressedSize = entities_indexed_size
         gamma_msg.entitiesIndexedMetadata = entities_metadata
 
-        # oneHotLookupList = ndept_msg.init("oneHotLookup", len(one_hot_lookup))
-        # for i, entity in enumerate(one_hot_lookup):
-        #     oneHotLookupList[i] = (
-        #         entity if not getattr(entity, "name", None) else entity.name  # type: ignore
-        #     )
+        one_hot_lookup, one_hot_lookup_size = numpy_serialize(
+            self.data_subjects.one_hot_lookup, get_bytes=True
+        )
         chunk_bytes(one_hot_lookup, "oneHotLookup", gamma_msg)
         one_hot_lookup_metadata.dtype = str(self.data_subjects.one_hot_lookup.dtype)
         one_hot_lookup_metadata.decompressedSize = one_hot_lookup_size
         gamma_msg.oneHotLookupMetadata = one_hot_lookup_metadata
 
+        print(self.min_val)
+
         gamma_msg.minVal = self.min_val
         gamma_msg.maxVal = self.max_val
         gamma_msg.isLinear = self.is_linear
+        gamma_msg.id = self.id
 
-        # to pack or not to pack?
-        # return ndept_msg.to_bytes()
         return gamma_msg.to_bytes_packed()
 
     @staticmethod
@@ -421,7 +410,7 @@ class GammaTensor:
             entities_metadata.decompressedSize,
             entities_metadata.dtype,
         )
-        # one_hot_lookup = np.array(ndept_msg.oneHotLookup)
+
         one_hot_lookup_metadata = gamma_msg.oneHotLookupMetadata
         one_hot_lookup = numpy_deserialize(
             combine_bytes(gamma_msg.oneHotLookup),
@@ -434,6 +423,7 @@ class GammaTensor:
         min_val = gamma_msg.minVal
         max_val = gamma_msg.maxVal
         is_linear = gamma_msg.isLinear
+        id_str = gamma_msg.id
 
         return GammaTensor(
             value=numpy2jax(value),
@@ -442,4 +432,5 @@ class GammaTensor:
             max_val=max_val,
             is_linear=is_linear,
             inputs=numpy2jax(inputs),
+            id=id_str,
         )

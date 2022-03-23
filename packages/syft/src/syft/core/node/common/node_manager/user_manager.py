@@ -31,6 +31,18 @@ from .database_manager import DatabaseManager
 from .role_manager import RoleManager
 
 
+class RefreshBudgetException(Exception):
+    pass
+
+
+class NegativeBudgetException(Exception):
+    pass
+
+
+class NotEnoughBudgetException(Exception):
+    pass
+
+
 class UserManager(DatabaseManager):
     """Class to manage user database actions."""
 
@@ -387,3 +399,41 @@ class UserManager(DatabaseManager):
         hashed = hashed.decode("UTF-8")
         salt = salt.decode("UTF-8")
         return salt, hashed
+
+    def get_budget_for_user(self, verify_key: VerifyKey) -> float:
+        encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        user = self.first(verify_key=encoded_vk)
+        print("user", user, type(user))
+        print("user budget", user.budget)
+        if user is None:
+            raise Exception(f"No user for verify_key: {verify_key}")
+        return user.budget
+
+    def deduct_epsilon_for_user(
+        self, verify_key: VerifyKey, old_budget: float, epsilon_spend: float
+    ) -> bool:
+        session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()
+        with session_local.begin():
+            encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
+            user = self.first(verify_key=encoded_vk)
+            if user.budget != old_budget:
+                raise RefreshBudgetException(
+                    "The budget used does not match the current budget in the database."
+                    + "Try refreshing again"
+                )
+            if user.budget < 0:
+                raise NegativeBudgetException(
+                    f"Budget is somehow negative {user.budget}"
+                )
+
+            if old_budget - abs(epsilon_spend) < 0:
+                raise NotEnoughBudgetException(
+                    f"The user does not have enough budget: {user.budget} for epsilon spend: {epsilon_spend}"
+                )
+
+            user.budget = user.budget - epsilon_spend
+            print(f"User budget has been updated from {old_budget} to {user.budget}")
+
+        session_local.commit()
+        session_local.close()
+        return True

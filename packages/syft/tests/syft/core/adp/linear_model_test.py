@@ -15,7 +15,7 @@ from syft.core.tensor.tensor import Tensor
 
 
 def test_autodp_phiscalar_can_publish() -> None:
-    domain = sy.Domain("Alice", store_type=DictStore, ledger_store=DictLedgerStore)
+    domain = sy.Domain("Alice", store_type=DictStore, ledger_store_type=DictLedgerStore)
 
     def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")
@@ -45,7 +45,7 @@ def test_autodp_phiscalar_can_publish() -> None:
 
 
 def test_autodp_phiscalar_cannot_publish() -> None:
-    domain = sy.Domain("Alice", store_type=DictStore, ledger_store=DictLedgerStore)
+    domain = sy.Domain("Alice", store_type=DictStore, ledger_store_type=DictLedgerStore)
 
     def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")

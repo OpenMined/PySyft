@@ -3,17 +3,17 @@
 struct GammaTensor {
   magicHeader @0 :Data;
   value @1 :List(Data);
-  entitiesIndexed @2 :List(Data);
-  oneHotLookup @3 :List(Data);
-  minVal @4 :Float64;
-  maxVal @5 :Float64;
-  isLinear @6 :Bool;
-  inputs @7 :List(Data);
-  valueMetadata @8 :TensorMetadata;
-  entitiesIndexedMetadata @9 :TensorMetadata;
-  oneHotLookupMetadata @10 :TensorMetadata;
-  inputsMetadata @11 :TensorMetadata;
-
+  inputs @2 :List(Data);
+  entitiesIndexed @3 :List(Data);
+  oneHotLookup @4 :List(Data);
+  valueMetadata @5 :TensorMetadata;
+  inputsMetadata @6 :TensorMetadata;
+  entitiesIndexedMetadata @7 :TensorMetadata;
+  oneHotLookupMetadata @8 :TensorMetadata;
+  minVal @9 :Float64;
+  maxVal @10 :Float64;
+  isLinear @11 :Bool;
+  id @12 :Text;
 
   struct TensorMetadata {
     dtype @0 :Text;
