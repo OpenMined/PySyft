@@ -83,9 +83,14 @@ def create_s3_bucket(bucket_name: str, settings: Settings) -> None:
     )
 
     # If bucket does not exists, then create a new one.
-    if s3_client and not bucket_exists:
-        resp = s3_client.create_bucket(Bucket=bucket_name)
-        logging.info(f"Bucket Creation response: {resp}")
+    try:
+        if s3_client and not bucket_exists:
+            print("bucket_name", bucket_name)
+            resp = s3_client.create_bucket(Bucket=bucket_name)
+            logging.info(f"Bucket Creation response: {resp}")
+    except Exception as e:
+        print(f"Failed to create bucket. {e}")
+        raise e
 
 
 if settings.NODE_TYPE.lower() == "domain":

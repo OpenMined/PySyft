@@ -345,7 +345,6 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 max_vals=self.max_vals.sum(axis=None),
                 entities=EntityList.from_objs(self.entities[0]),  # Need to check this
             )
-        # TypeCast to int32 , as numpy.sum() returns a 64bit integer.
         return GammaTensor(
             value=np.array(self.child.sum()),
             data_subjects=self.entities.sum(),

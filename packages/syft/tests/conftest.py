@@ -14,6 +14,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import logger
+from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.lib import VendorLibraryImportException
 from syft.lib import _load_lib
@@ -135,7 +136,7 @@ def node() -> sy.VirtualMachine:
 
 @pytest.fixture(scope="session")
 def domain() -> sy.VirtualMachine:
-    return sy.Domain(name="Alice", store_type=DictStore)
+    return sy.Domain(name="Alice", store_type=DictStore, ledger_store=DictLedgerStore)
 
 
 @pytest.fixture(autouse=True)

@@ -12,13 +12,9 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 
-# third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
-
 # relative
 from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
 from ....lib.numpy.array import arrow_serialize as numpy_serialize
-from ....proto.core.tensor.gamma_tensor_pb2 import GammaTensor as GammaTensor_PB
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import chunk_bytes
 from ...common.serde.capnp import combine_bytes

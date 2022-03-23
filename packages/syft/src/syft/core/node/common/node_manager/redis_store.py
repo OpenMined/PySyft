@@ -33,7 +33,7 @@ class RedisStore(ObjectStore):
         self.settings = settings
         try:
             # TODO: refactor hard coded host and port to configuration
-            self.redis: redis.client.Redis = redis.Redis(host="redis", port=6379)
+            self.redis: redis.client.Redis = redis.Redis(host="redis", port=6379, db=0)
         except Exception as e:
             print("failed to load redis", e)
             raise e

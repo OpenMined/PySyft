@@ -8,13 +8,14 @@ import pytest
 import syft as sy
 from syft.core.adp.adversarial_accountant import AdversarialAccountant
 from syft.core.adp.entity import Entity
+from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.adp.scalar.phi_scalar import PhiScalar
 from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.tensor.tensor import Tensor
 
 
 def test_autodp_phiscalar_can_publish() -> None:
-    domain = sy.Domain("Alice", store_type=DictStore)
+    domain = sy.Domain("Alice", store_type=DictStore, ledger_store=DictLedgerStore)
 
     def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")
@@ -44,7 +45,7 @@ def test_autodp_phiscalar_can_publish() -> None:
 
 
 def test_autodp_phiscalar_cannot_publish() -> None:
-    domain = sy.Domain("Alice", store_type=DictStore)
+    domain = sy.Domain("Alice", store_type=DictStore, ledger_store=DictLedgerStore)
 
     def encode_key(key: SigningKey) -> str:
         return key.encode(encoder=HexEncoder).decode("utf-8")

@@ -8,6 +8,7 @@ import syft as sy
 from syft import deserialize
 from syft import serialize
 from syft.core.adp.entity import Entity
+from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.tensor.tensor import Tensor
 
@@ -137,7 +138,12 @@ def test_send_tensors(root_client: sy.VirtualMachineClient) -> None:
 # MADHAVA: this needs fixing
 @pytest.mark.xfail
 def test_basic_publish_entities_event() -> None:
-    domain = sy.Domain("My Amazing Domain", max_budget=10, store_type=DictStore)
+    domain = sy.Domain(
+        "My Amazing Domain",
+        max_budget=10,
+        store_type=DictStore,
+        ledger_store=DictLedgerStore,
+    )
     root_client = domain.get_root_client()
 
     data_batch = np.random.rand(4, 10)
@@ -179,7 +185,12 @@ def test_basic_publish_entities_event() -> None:
 # MADHAVA: this needs fixing
 @pytest.mark.xfail
 def test_basic_publish_entity_event() -> None:
-    domain = sy.Domain("My Amazing Domain", max_budget=10, store_type=DictStore)
+    domain = sy.Domain(
+        "My Amazing Domain",
+        max_budget=10,
+        store_type=DictStore,
+        ledger_store=DictLedgerStore,
+    )
     root_client = domain.get_root_client()
 
     data_batch = np.random.rand(4, 10)
@@ -217,7 +228,12 @@ def test_basic_publish_entity_event() -> None:
 # MADHAVA: this needs fixing
 @pytest.mark.xfail
 def test_train_publish_entities_event() -> None:
-    domain = sy.Domain("My Amazing Domain", max_budget=10, store_type=DictStore)
+    domain = sy.Domain(
+        "My Amazing Domain",
+        max_budget=10,
+        store_type=DictStore,
+        ledger_store=DictLedgerStore,
+    )
     root_client = domain.get_root_client()
 
     data_batch = np.random.rand(1, 3)
@@ -280,7 +296,7 @@ def test_train_publish_entities_event() -> None:
 
 # TODO: @Madhava Make work
 # def test_simulated_publish_event() -> None:
-#     domain = sy.Domain("My Amazing Domain", max_budget=10, store_type=DictStore)
+#     domain = sy.Domain("My Amazing Domain", max_budget=10, store_type=DictStore, ledger_store=DictLedgerStore)
 #     root_client = domain.get_root_client()
 #
 #     data_batch = np.random.rand(4, 28 * 28)

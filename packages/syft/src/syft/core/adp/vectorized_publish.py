@@ -8,6 +8,7 @@ import numpy as np
 
 # relative
 from .data_subject_ledger import DataSubjectLedger
+from .data_subject_ledger import RDPParams
 from .entity_list import EntityList
 
 
@@ -54,7 +55,7 @@ def vectorized_publish(
     output_func: Callable = np.sum
     # private: bool = False
 ) -> np.ndarray:
-    print("Starting vectorized publish")
+    print(f"Starting vectorized publish: {type(ledger)}")
     # Get all unique entities
     unique_data_subjects = data_subjects.one_hot_lookup
     # unique_data_subject_indices = np.arange(
@@ -80,38 +81,32 @@ def vectorized_publish(
 
     print("Obtained all parameters for RDP")
 
-    # if ledger is None:
-    #     ledger = DataSubjectLedger()
     print("Initialized ledger!")
+    ledger.entity_ids = np.array(input_entities, dtype=np.int64)
 
-    # ledger.reset()
-    # Get the Ledger started
-    ledger.batch_append(
+    # Query budget spend of all unique entities
+    rdp_params = RDPParams(
         sigmas=sigmas,
         l2_norms=l2_norms,
         l2_norm_bounds=l2_norm_bounds,
         Ls=lipschitz_bounds,
         coeffs=coeffs,
-        entity_ids=input_entities,
     )
 
-    print("Concluded batch append")
+    try:
+        mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
+            unique_entity_ids_query=input_entities,
+            user_budget=data_scientist_budget,
+            rdp_params=rdp_params,
+            private=True,
+        )
 
-    # Query budget spend of all unique entities
-    mask = ledger.get_overbudgeted_entities(
-        user_budget=data_scientist_budget, unique_entity_ids_query=input_entities
-    )  # unique_data_subject_indices)
+        print("Obtained overbudgeted entity mask")
 
-    print("Obtained overbudgeted entity mask")
-
-    # TODO: Send this LedgerUpdate to the actual database
-    # update = ledger.write_to_db()
-
-    print("Written to DB!")
-    ledger.write_to_db()
-
-    # Filter results
-    filtered_inputs = values * (
-        mask ^ 1
-    )  # + gauss(0, sigma)  # Double check that noise has mean of 0
-    return np.asarray(output_func(filtered_inputs) + gauss(0, sigma))
+        # Filter results
+        filtered_inputs = values * (
+            mask ^ 1
+        )  # + gauss(0, sigma)  # Double check that noise has mean of 0
+        return np.asarray(output_func(filtered_inputs) + gauss(0, sigma))
+    except Exception as e:
+        print(f"Failed to run vectorized_publish. {e}")
