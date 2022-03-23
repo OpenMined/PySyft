@@ -7,7 +7,6 @@ from nacl.bindings.crypto_sign import crypto_sign_keypair
 from nacl.signing import VerifyKey
 
 # syft absolute
-from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.common.message import SignedEventualSyftMessageWithoutReply
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
@@ -25,7 +24,7 @@ class MockNode(Node):
     def __init__(
         self,
     ):
-        super().__init__(store_type=DictStore, ledger_store_type=DictLedgerStore)
+        super().__init__(store_type=DictStore)
 
     def recv_immediate_msg_without_reply(
         self, msg: SignedImmediateSyftMessageWithoutReply

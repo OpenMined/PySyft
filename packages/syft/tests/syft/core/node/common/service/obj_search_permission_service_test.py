@@ -4,7 +4,6 @@ import torch as th
 
 # syft absolute
 import syft as sy
-from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
@@ -15,9 +14,7 @@ from syft.core.node.common.node_service.object_search_permission_update.obj_sear
 
 
 def test_object_search_permissons_update_message_serde() -> None:
-    bob_phone = sy.Device(
-        name="Bob's iPhone", store_type=DictStore, ledger_store_type=DictLedgerStore
-    )
+    bob_phone = sy.Device(name="Bob's iPhone", store_type=DictStore)
     bob_phone_client = bob_phone.get_client()
 
     ptr = th.tensor([1, 2, 3]).send(bob_phone_client)
@@ -40,9 +37,7 @@ def test_object_search_permissons_update_message_serde() -> None:
 
 
 def test_object_search_permissons_update_execute_add() -> None:
-    bob_phone = sy.Device(
-        name="Bob's iPhone", store_type=DictStore, ledger_store_type=DictLedgerStore
-    )
+    bob_phone = sy.Device(name="Bob's iPhone", store_type=DictStore)
     bob_phone_client = bob_phone.get_client()
 
     ptr = th.tensor([1, 2, 3]).send(bob_phone_client)
