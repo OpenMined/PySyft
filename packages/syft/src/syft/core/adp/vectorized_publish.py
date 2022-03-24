@@ -48,17 +48,22 @@ from .entity_list import EntityList
 
 @jax.jit
 def calculate_bounds_for_mechanism(
-    value_array: jnp.ndarray, min_val_array: jnp.ndarray, max_val_array: jnp.ndarray
-) -> Tuple[jnp.ndarray, jnp.ndarray]:
+    value_array: jnp.ndarray,
+    min_val_array: jnp.ndarray,
+    max_val_array: jnp.ndarray,
+    sigma: float,
+) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.array, jnp.array]:
 
     ones_like = jnp.ones_like(value_array)
+
+    one_dim = jnp.reshape(ones_like, -1)
 
     worst_case_l2_norm = (
         jnp.sqrt(jnp.sum(jnp.square(max_val_array - min_val_array))) * ones_like
     )
 
     l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) * ones_like
-    return l2_norm, worst_case_l2_norm
+    return l2_norm, worst_case_l2_norm, one_dim * sigma, one_dim
 
 
 def vectorized_publish(
@@ -81,9 +86,6 @@ def vectorized_publish(
     # Get all unique entities
     unique_data_subjects = data_subjects.one_hot_lookup
     # unique_data_subject_indices = np.arange(
-    _ = np.arange(
-        len(unique_data_subjects)
-    )  # because unique_data_subjects returns an array, but we need indices
 
     print("Obtained data subject indices")
 
@@ -91,14 +93,13 @@ def vectorized_publish(
 
     t1 = time()
     # Calculate everything needed for RDP
-    sigmas = np.reshape(np.ones_like(values) * sigma, -1)
-    coeffs = np.ones_like(values).reshape(-1)
-    l2_norms, l2_norm_bounds = calculate_bounds_for_mechanism(
-        value_array=values, min_val_array=min_vals, max_val_array=max_vals
+
+    l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
+        value_array=values, min_val_array=min_vals, max_val_array=max_vals, sigma=sigma
     )
 
     if is_linear:
-        lipschitz_bounds = np.ones_like(values).reshape(-1)
+        lipschitz_bounds = coeffs.copy()
     else:
         raise Exception("gamma_tensor.lipschitz_bound property would be used here")
 

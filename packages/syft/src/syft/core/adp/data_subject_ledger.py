@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from functools import partial
 import os
 from pathlib import Path
 import time
@@ -12,6 +13,9 @@ from typing import Optional
 from typing import Tuple
 
 # third party
+from flax.struct import dataclass
+import jax
+from jax import numpy as jnp
 from nacl.signing import VerifyKey
 import numpy as np
 from scipy.optimize import minimize_scalar
@@ -30,22 +34,6 @@ from .abstract_ledger_store import AbstractDataSubjectLedger
 from .abstract_ledger_store import AbstractLedgerStore
 
 
-class RDPParams:
-    def __init__(
-        self,
-        sigmas: np.ndarray,
-        l2_norms: np.ndarray,
-        l2_norm_bounds: np.ndarray,
-        Ls: np.ndarray,
-        coeffs: np.ndarray,
-    ) -> None:
-        self.sigmas = sigmas
-        self.l2_norms = l2_norms
-        self.l2_norm_bounds = l2_norm_bounds
-        self.Ls = Ls
-        self.coeffs = coeffs
-
-
 def get_cache_path(cache_filename: str) -> str:
     here = os.path.dirname(__file__)
     root_dir = Path(here) / ".." / ".." / "cache"
@@ -59,6 +47,52 @@ def load_cache(filename: str) -> np.ndarray:
     cache_array = np.load(CACHE_PATH)
     print(f"Loaded constant2epsilon cache of size: {cache_array.shape}")
     return cache_array
+
+
+@dataclass
+class RDPParams:
+    sigmas: jnp.array
+    l2_norms: jnp.array
+    l2_norm_bounds: jnp.array
+    Ls: jnp.array
+    coeffs: jnp.array
+
+
+@partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
+def first_try_branch(constant, rdp_constants, entity_ids_query, max_entity):
+    summed_constant = constant + rdp_constants.take(entity_ids_query)
+    if max_entity < len(rdp_constants):
+        return rdp_constants.at[entity_ids_query].set(summed_constant)
+    else:
+        pad_length = max_entity - len(rdp_constants) + 1
+        rdp_constants = jnp.concatenate([rdp_constants, jnp.zeros(shape=pad_length)])
+        summed_constant = constant + rdp_constants.take(entity_ids_query)
+        return rdp_constants.at[entity_ids_query].set(summed_constant)
+
+
+@partial(jax.jit, static_argnums=1)
+def compute_rdp_constant(rdp_params: RDPParams, private: bool):
+    squared_Ls = rdp_params.Ls**2
+    squared_sigma = rdp_params.sigmas**2
+
+    if private:
+        # this is calculated on the private true values
+        squared_l2 = rdp_params.l2_norms**2
+    else:
+        # bounds is computed on the metadata
+        squared_l2 = rdp_params.l2_norm_bounds**2
+
+    constant = (squared_Ls * squared_l2 / (2 * squared_sigma)) * rdp_params.coeffs
+    return constant
+
+
+@jax.jit
+def get_budgets_and_mask(epsilon_spend: jnp.array, user_budget: jnp.float64):
+    # Function to vectorize the result of the budget computation.
+    mask = jnp.ones_like(epsilon_spend) * user_budget < epsilon_spend
+    # get the highest value which was under budget and represented by False in the mask
+    highest_possible_spend = jnp.max(epsilon_spend * (1 - mask))
+    return (highest_possible_spend, user_budget, mask)
 
 
 @serializable(capnp_bytes=True)
@@ -226,74 +260,87 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return results.x, results.fun
 
     def _get_batch_rdp_constants(
-        self, entity_ids_query: np.ndarray, rdp_params: RDPParams, private: bool = True
-    ) -> np.ndarray:
-        if self._pending_save:
-            raise Exception(
-                "We need to save the DataSubjectLedger before querying again"
-            )
-        self._pending_save = True
-
-        squared_Ls = rdp_params.Ls**2
-        squared_sigma = rdp_params.sigmas**2
-
-        if private:
-            # this is calculated on the private true values
-            squared_l2 = rdp_params.l2_norms**2
-        else:
-            # bounds is computed on the metadata
-            squared_l2 = rdp_params.l2_norm_bounds**2
-
-        constant = (squared_Ls * squared_l2 / (2 * squared_sigma)) * rdp_params.coeffs
-
-        # update our serialized format with the calculated constants
-        # extend to and += _rdp_constants
-        # TODO: test take and put because these are hairy
-        # TODO: figure out what is faster between max() and take / put
-
-        try:
-            # add the calculated constants back to the cached _rdp_constants
-            summed_constant = constant + self._rdp_constants.take(entity_ids_query)
-            self._rdp_constants.put(entity_ids_query, summed_constant)
-        except IndexError:
-            new_length = max(
-                entity_ids_query
-            )  # the highest int is the highest entity id
-
-            old_length = len(self._rdp_constants)
-            if new_length <= old_length:
-                raise Exception(
-                    "We have an IndexError but _rdp_constants is big enough."
-                    + f"{new_length} {old_length}"
-                )
-            # figure out how many more spots we need in the array
-            pad_length = new_length - old_length
-            # if entity_ids_query is not 0 indexed, e.g. starts at 1, we will have
-            # 1 extra length required hence the pad_length + 1
-            # if not, we have 1 extra slot so who cares
-            self._rdp_constants = np.pad(
-                self._rdp_constants, pad_width=(0, pad_length + 1), constant_values=0
-            )
-
-            # one more time... lets celebrate
-            try:
-                summed_constant = constant + self._rdp_constants.take(entity_ids_query)
-                self._rdp_constants.put(entity_ids_query, summed_constant)
-            except IndexError as e:
-                print("Something really bad happened with np.pad.")
-                raise e
-
+        self, entity_ids_query: jnp.ndarray, rdp_params, private: bool = True
+    ) -> jnp.ndarray:
+        constant = compute_rdp_constant(rdp_params, private)
+        self._rdp_constants = first_try_branch(
+            constant,
+            self._rdp_constants,
+            entity_ids_query,
+            int(jnp.max(entity_ids_query)),
+        )
         return constant
+
+    # def _get_batch_rdp_constants(
+    #     self, entity_ids_query: np.ndarray, rdp_params: RDPParams, private: bool = True
+    # ) -> np.ndarray:
+    #     if self._pending_save:
+    #         raise Exception(
+    #             "We need to save the DataSubjectLedger before querying again"
+    #         )
+    #     self._pending_save = True
+
+    #     t1 = time.time()
+    #     constant = compute_rdp_constant(rdp_params, private)
+
+    #     t2 = time.time()
+    #     print("First Block ", t2 - t1)
+    #     # update our serialized format with the calculated constants
+    #     # extend to and += _rdp_constants
+    #     # TODO: test take and put because these are hairy
+    #     # TODO: figure out what is faster between max() and take / put
+    #     t1 = time.time()
+
+    #     try:
+    #         # add the calculated constants back to the cached _rdp_constants
+    #         summed_constant = constant + self._rdp_constants.take(entity_ids_query)
+    #         self._rdp_constants.put(entity_ids_query, summed_constant)
+    #     except IndexError:
+    #         new_length = np.max(
+    #             entity_ids_query
+    #         )  # the highest int is the highest entity id
+
+    #         old_length = len(self._rdp_constants)
+    #         if new_length <= old_length:
+    #             raise Exception(
+    #                 "We have an IndexError but _rdp_constants is big enough."
+    #                 + f"{new_length} {old_length}"
+    #             )
+    #         # figure out how many more spots we need in the array
+    #         pad_length = new_length - old_length
+    #         # if entity_ids_query is not 0 indexed, e.g. starts at 1, we will have
+    #         # 1 extra length required hence the pad_length + 1
+    #         # if not, we have 1 extra slot so who cares
+    #         self._rdp_constants = np.pad(
+    #             self._rdp_constants, pad_width=(0, pad_length + 1), constant_values=0
+    #         )
+
+    #         # one more time... lets celebrate
+    #         try:
+    #             summed_constant = constant + self._rdp_constants.take(entity_ids_query)
+    #             self._rdp_constants.put(entity_ids_query, summed_constant)
+    #         except IndexError as e:
+    #             print("Something really bad happened with np.pad.")
+    #             raise e
+
+    #     t2 = time.time()
+    #     print("Second Batch", t2 - t1)
+
+    #     return constant
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
         rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
         try:
             # needed as np.int64 to use take
-            eps_spend = self._cache_constant2epsilon.take(rdp_constants_lookup)
+            eps_spend = jax.jit(jnp.take)(
+                self._cache_constant2epsilon, rdp_constants_lookup
+            )
         except IndexError:
             print(f"Cache missed the value at {max(rdp_constants_lookup)}")
             self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
-            eps_spend = self._cache_constant2epsilon.take(rdp_constants_lookup)
+            eps_spend = jax.jit(jnp.take)(
+                self._cache_constant2epsilon, rdp_constants_lookup
+            )
         return eps_spend
 
     def _calculate_mask_for_current_budget(
@@ -301,10 +348,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     ) -> Tuple[float, float, np.ndarray]:
         user_budget = node.users.get_budget_for_user(verify_key=self.user_key)
         # create a mask of True and False where true is over current user_budget
-        mask = np.ones_like(epsilon_spend) * user_budget < epsilon_spend
-        # get the highest value which was under budget and represented by False in the mask
-        highest_possible_spend = np.max(epsilon_spend * (1 - mask))
-        return (highest_possible_spend, user_budget, mask)
+        return get_budgets_and_mask(epsilon_spend, user_budget)
 
     def _get_overbudgeted_entities(
         self,
@@ -337,6 +381,15 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         )
         t2 = time.time()
         print("Mask calculation time , ", t2 - t1)
+        print("Type of Mask", type(mask))
+        print("highest_possible_spend", type(highest_possible_spend))
+        print("user budget", type(user_budget))
+        mask = np.array(mask, copy=False)
+        highest_possible_spend = float(highest_possible_spend)
+        user_budget = float(user_budget)
+        print("New Type mask", mask)
+        print("new high", highest_possible_spend)
+        print(" new user budget", user_budget)
 
         if highest_possible_spend > 0:
             # go spend it in the db
@@ -402,6 +455,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # this is how we dispatch correct deserialization of bytes
         dsl_msg.magicHeader = serde_magic_header(type(self))
 
+        self._rdp_constants = np.array(self._rdp_constants, copy=False)
         constants, constants_size = numpy_serialize(self._rdp_constants, get_bytes=True)
         chunk_bytes(constants, "constants", dsl_msg)
         constants_metadata.dtype = str(self._rdp_constants.dtype)
