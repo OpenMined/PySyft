@@ -3,6 +3,7 @@ from datetime import datetime
 import json
 import os
 import re
+import socket
 import stat
 import subprocess
 import sys
@@ -1117,6 +1118,31 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
     return None
 
 
+def check_ip_for_ssh(host_ip: str, wait_time: int = 5) -> bool:
+    print(f"Checking VM at {host_ip} is up")
+    checks = int(600 / wait_time)  # 10 minutes in 5 second chunks
+    first_run = True
+    while checks > 0:
+        checks -= 1
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(wait_time)
+            result = sock.connect_ex((host_ip, 22))
+            sock.close()
+            if result == 0:
+                print(f"VM at {host_ip} is up!")
+                return True
+            else:
+                if first_run:
+                    print("Waiting for VM to start", end="", flush=True)
+                    first_run = False
+                else:
+                    print(".", end="", flush=True)
+        except Exception:  # nosec
+            pass
+    return False
+
+
 def make_vm_azure(
     node_name: str, resource_group: str, username: str, key_path: str, size: str
 ) -> Optional[str]:
@@ -1187,6 +1213,10 @@ def create_launch_gcp_cmd(
 
     # get old host
     host_term = verb.get_named_term_hostgrammar(name="host")
+
+    host_up = check_ip_for_ssh(host_ip=host_ip)
+    if not host_up:
+        raise Exception(f"Something went wrong launching the VM at IP: {host_ip}.")
 
     # replace
     host_term.parse_input(host_ip)
