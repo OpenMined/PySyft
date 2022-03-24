@@ -85,7 +85,6 @@ Example:
 
 """
 # stdlib
-import sys
 import time
 from typing import Any
 from typing import List
@@ -163,10 +162,8 @@ class Pointer(AbstractPointer):
 
     @property
     def block(self) -> AbstractPointer:
-        sys.stdout.write("Please wait we're still computing your query ...")
         while not self.exists:
             time.sleep(0.1)
-        sys.stdout.write("/nCompleted. 🎉")
         return self
 
     def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:
@@ -330,12 +327,6 @@ class Pointer(AbstractPointer):
             id_at_location=id_at_location,
         )
         ptr._pointable = True
-
-        sys.stdout.write(
-            """
-            Note: The value to this pointer may still be computing in the background.
-            Please call `<resultant_pointer>.exists` to check if the value is populated."""
-        )
 
         # return pointer
         return ptr
