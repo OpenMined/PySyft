@@ -16,7 +16,7 @@ from syft.core.adp.entity_list import EntityList
 from syft.core.store.proxy_dataset import ProxyDataset
 from syft.util import size_mb
 
-DOMAIN1_PORT = 8081
+DOMAIN1_PORT = 9082
 
 
 def size(obj: Any) -> int:
