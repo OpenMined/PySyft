@@ -1,10 +1,13 @@
 # stdlib
 from random import gauss
+from time import time
 from typing import Any
 from typing import Callable
 from typing import Tuple
 
 # third party
+import jax
+from jax import numpy as jnp
 import numpy as np
 
 # relative
@@ -12,35 +15,49 @@ from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .entity_list import EntityList
 
+# def calculate_bounds_for_mechanism(
+#     value_array: np.ndarray, min_val_array: np.ndarray, max_val_array: np.ndarray
+# ) -> Tuple[np.ndarray, np.ndarray]:
+#     """Calculates the squared L2 norm values needed to create a Mechanism, and calculate
+#     privacy budget + spend. If you calculate the privacy budget spend with the worst
+#     case bound, you can show this number to the DS. If you calculate it with the
+#     regular value (the value computed below when public_only = False, you cannot show
+#     the privacy budget to the DS because this violates privacy."""
 
+#     # TODO: Double check whether the iDPGaussianMechanism class squares its
+#     # squared_l2_norm values!!
+
+#     # min_val_array = min_val_array.astype(np.int64)
+#     # max_val_array = max_val_array.astype(np.int64)
+
+#     # using np.ones_like dtype=value_array.dtype because without it the output was
+#     # of type "O" python object causing issues when doing operations against JAX
+#     worst_case_l2_norm = np.sqrt(
+#         np.sum(np.square(max_val_array - min_val_array))
+#     ) * np.ones_like(
+#         value_array
+#     )  # dtype=value_array.dtype)
+
+#     l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(value_array)
+#     # dtype=value_array.dtype
+#     #
+#     # print(l2_norm.shape, worst_case_l2_norm.shape)
+#     # print(l2_norm.shape)
+#     return l2_norm, worst_case_l2_norm
+
+
+@jax.jit
 def calculate_bounds_for_mechanism(
-    value_array: np.ndarray, min_val_array: np.ndarray, max_val_array: np.ndarray
-) -> Tuple[np.ndarray, np.ndarray]:
-    """Calculates the squared L2 norm values needed to create a Mechanism, and calculate
-    privacy budget + spend. If you calculate the privacy budget spend with the worst
-    case bound, you can show this number to the DS. If you calculate it with the
-    regular value (the value computed below when public_only = False, you cannot show
-    the privacy budget to the DS because this violates privacy."""
+    value_array: jnp.ndarray, min_val_array: jnp.ndarray, max_val_array: jnp.ndarray
+) -> Tuple[jnp.ndarray, jnp.ndarray]:
 
-    # TODO: Double check whether the iDPGaussianMechanism class squares its
-    # squared_l2_norm values!!
+    ones_like = jnp.ones_like(value_array)
 
-    # min_val_array = min_val_array.astype(np.int64)
-    # max_val_array = max_val_array.astype(np.int64)
+    worst_case_l2_norm = (
+        jnp.sqrt(jnp.sum(jnp.square(max_val_array - min_val_array))) * ones_like
+    )
 
-    # using np.ones_like dtype=value_array.dtype because without it the output was
-    # of type "O" python object causing issues when doing operations against JAX
-    worst_case_l2_norm = np.sqrt(
-        np.sum(np.square(max_val_array - min_val_array))
-    ) * np.ones_like(
-        value_array
-    )  # dtype=value_array.dtype)
-
-    l2_norm = np.sqrt(np.sum(np.square(value_array))) * np.ones_like(value_array)
-    # dtype=value_array.dtype
-    #
-    # print(l2_norm.shape, worst_case_l2_norm.shape)
-    # print(l2_norm.shape)
+    l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) * ones_like
     return l2_norm, worst_case_l2_norm
 
 
@@ -70,6 +87,9 @@ def vectorized_publish(
 
     print("Obtained data subject indices")
 
+    print("RDP Params Calculation")
+
+    t1 = time()
     # Calculate everything needed for RDP
     sigmas = np.reshape(np.ones_like(values) * sigma, -1)
     coeffs = np.ones_like(values).reshape(-1)
@@ -83,6 +103,8 @@ def vectorized_publish(
         raise Exception("gamma_tensor.lipschitz_bound property would be used here")
 
     input_entities = data_subjects.entities_indexed[0].reshape(-1)
+    t2 = time()
+    print("RDP Param calculation time", t2 - t1)
 
     print("Obtained all parameters for RDP")
 
@@ -97,7 +119,7 @@ def vectorized_publish(
         Ls=lipschitz_bounds,
         coeffs=coeffs,
     )
-
+    print("Finished RDP Params Initialization")
     try:
         # query and save
         mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(

@@ -15,6 +15,7 @@ from .....common.uid import UID  # type: ignore
 from .....store.storeable_object import StorableObject  # type: ignore
 from .....tensor.tensor import PassthroughTensor  # type: ignore
 from ....abstract.node import AbstractNode  # type: ignore
+from ...action import context
 from ..node_service import ImmediateNodeServiceWithoutReply  # type: ignore
 from .publish_messages import PublishScalarsAction  # type: ignore
 
@@ -36,14 +37,21 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                 print(
                     "PublishScalarsService:36: TRY: publish_object = node.store.get(publish_id)"
                 )
-                publish_object = node.store.get(publish_id)
+                if publish_id.no_dash in context.OBJ_CACHE:
+                    print("Cache HIT --------------")
+                    publish_object = context.OBJ_CACHE[publish_id.no_dash]
+                else:
+                    print("Cache Miss _v_")
+                    publish_object = node.store.get(publish_id)
                 print(
                     "PublishScalarsService:38: SUCCESS: publish_object = node.store.get(publish_id)"
                 )
-                if isinstance(publish_object.data, PassthroughTensor):
-                    print(
-                        "PublishScalarsService:40: TRY: publish_object.data.publish()"
-                    )
+                if hasattr(publish_object, "data"):
+                    publish_object = publish_object.data
+
+                if isinstance(publish_object, PassthroughTensor):
+                    print("PublishScalarsService:40: TRY: publish_object.publish()")
+
                     try:
                         ledger = DataSubjectLedger.get_or_create(
                             store=node.ledger_store, user_key=verify_key
@@ -54,24 +62,20 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                         print(f"Failed to get a ledger. {e}")
                         raise e
 
-                    result = publish_object.data.child.publish(
+                    result = publish_object.child.publish(
                         node=node, ledger=ledger, sigma=msg.sigma
                     )
                     # result = publish_object.data.publish(
                     #     acc=node.acc, sigma=msg.sigma, user_key=verify_key
                     # )
-                    print(
-                        "PublishScalarsService:44: SUCCESS: publish_object.data.publish()"
-                    )
+                    print("PublishScalarsService:44: SUCCESS: publish_object.publish()")
                 else:
-                    print(
-                        "PublishScalarsService:46: TRY: publish([publish_object.data])"
-                    )
+                    print("PublishScalarsService:46: TRY: publish([publish_object])")
                     result = publish(
-                        [publish_object.data], node.acc, msg.sigma, user_key=verify_key
+                        [publish_object], node.acc, msg.sigma, user_key=verify_key
                     )
                     print(
-                        "PublishScalarsService:50: SUCCESS: publish([publish_object.data])"
+                        "PublishScalarsService:50: SUCCESS: publish([publish_object])"
                     )
                 results.append(result)
             except Exception as e:

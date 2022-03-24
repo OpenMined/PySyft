@@ -383,7 +383,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         chunk_bytes(rows, "child", ndept_msg)
         child_metadata.dtype = str(self.child.dtype)
         child_metadata.decompressedSize = rows_size
-        ndept_msg.childMetadata = child_metadata
+        ndept_msg.childMetadata = child_metadata  
 
         chunk_bytes(min_vals, "minVals", ndept_msg)
         min_vals_metadata.dtype = str(self.min_vals.data.dtype)
@@ -411,7 +411,8 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         ndept_msg.oneHotLookupMetadata = one_hot_lookup_metadata
 
         # to pack or not to pack?
-        # return ndept_msg.to_bytes()
+        # to_bytes = ndept_msg.to_bytes()
+
         return ndept_msg.to_bytes_packed()
 
     @staticmethod

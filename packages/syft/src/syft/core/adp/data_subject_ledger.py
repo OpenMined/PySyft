@@ -126,22 +126,31 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # coerce to np.int64
         entity_ids_query: np.ndarray = unique_entity_ids_query.astype(np.int64)
 
+        print("RDP constants calculation Batch")
+
+        t1 = time.time()
         # calculate constants
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
+        t2 = time.time()
+        print("Get Batch RDP Constants Time", t2 - t1)
 
         # print("This is the cache constants 2 epsilon")
         # print(self._cache_constant2epsilon)
         print("These are the RDP constants")
-        print(rdp_constants)
+        print(rdp_constants, rdp_constants.shape)
 
+        print("start Overbudgetted entities calculation")
         # here we iteratively attempt to calculate the overbudget mask and save
         # changes to the database
+        t1 = time.time()
         mask = self._get_overbudgeted_entities(
             node=node,
             rdp_constants=rdp_constants,
         )
+        t2 = time.time()
+        print("Overbudgeted Entitities time ", t2 - t1)
 
         # at this point we are confident that the database budget field has been updated
         # so now we should flush the _rdp_constants that we have calculated to storage
@@ -294,7 +303,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # create a mask of True and False where true is over current user_budget
         mask = np.ones_like(epsilon_spend) * user_budget < epsilon_spend
         # get the highest value which was under budget and represented by False in the mask
-        highest_possible_spend = max(epsilon_spend * (1 - mask))
+        highest_possible_spend = np.max(epsilon_spend * (1 - mask))
         return (highest_possible_spend, user_budget, mask)
 
     def _get_overbudgeted_entities(
@@ -309,10 +318,15 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         add it into this method
         """
         print("rdp_constants")
-        print(min(rdp_constants))
+        # print(min(rdp_constants))
         # Get the privacy budget spent by all the entities
-        epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants)
 
+        t1 = time.time()
+        epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants)
+        t2 = time.time()
+        print("GET Epsilon Spend time", t2 - t1)
+
+        t1 = time.time()
         # try first time
         (
             highest_possible_spend,
@@ -321,6 +335,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         ) = self._calculate_mask_for_current_budget(
             node=node, epsilon_spend=epsilon_spend
         )
+        t2 = time.time()
+        print("Mask calculation time , ", t2 - t1)
 
         if highest_possible_spend > 0:
             # go spend it in the db
@@ -331,11 +347,14 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
                 )
                 attempts += 1
                 try:
+                    t1 = time.time()
                     user_budget = self.spend_epsilon(
                         node=node,
                         epsilon_spend=highest_possible_spend,
                         old_user_budget=user_budget,
                     )
+                    t2 = time.time()
+                    print("Spend Epsilon time", t2 - t1)
                     break
                 except RefreshBudgetException as e:
                     # this is the only exception we allow to retry

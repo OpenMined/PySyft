@@ -79,7 +79,8 @@ class EntityList:
         data_subjects = entities_dataframe_slice.to_numpy()
 
         # This will be the equivalent of the EntityList.one_hot_indexed- a sorted array of all unique entities
-        unique_data_subjects = np.sort(entities_dataframe_slice.unique())
+        unique_data_subjects = np.sort(entities_dataframe_slice.unique().to_numpy())
+
         return EntityList(
             one_hot_lookup=unique_data_subjects, entities_indexed=data_subjects
         )
