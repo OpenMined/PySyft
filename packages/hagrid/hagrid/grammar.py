@@ -97,6 +97,12 @@ class GrammarTerm:
             return self.input.lower().replace(" ", "_")
         return None
 
+    @property
+    def kebab_input(self) -> Optional[str]:
+        if self.input:
+            return self.input.lower().replace(" ", "-")
+        return None
+
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}<{self.type}>: {self.input} [raw: {self.raw_input}]>"
 

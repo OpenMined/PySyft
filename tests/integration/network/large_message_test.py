@@ -133,7 +133,9 @@ def test_large_blob_upload() -> None:
         if not ndept:
             entities = [Entity(name="ϕhishan") * reference_data.shape[0]]
         else:
-            one_hot_lookup = np.array(["ϕhishan"])
+            entity_name = "ϕhishan"
+            # Since one_hot_lookup is an array of ints, so hashing the entity_name to int
+            one_hot_lookup = np.array([hash(entity_name)])
             entities_indexed = np.zeros(reference_data.shape[0], dtype=np.uint32)
             entities = EntityList(
                 one_hot_lookup=one_hot_lookup, entities_indexed=entities_indexed
