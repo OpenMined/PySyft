@@ -343,7 +343,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 child=self.child.sum(),
                 min_vals=self.min_vals.sum(axis=None),
                 max_vals=self.max_vals.sum(axis=None),
-                entities=EntityList.from_objs(self.entities[0]),  # Need to check this
+                entities=EntityList.from_objs(
+                    self.entities.one_hot_lookup[0]
+                ),  # Need to check this
             )
         return GammaTensor(
             value=np.array(self.child.sum()),

@@ -28,6 +28,11 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` 
 
 __version__ = "0.7.0-beta.7"
 
+# third party
+from jax.config import config
+
+config.update("jax_enable_x64", True)
+
 # stdlib
 from pathlib import Path
 import sys

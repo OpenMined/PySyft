@@ -92,8 +92,8 @@ class EntityList:
 
         return EntityList(one_hot_lookup, entities_indexed)
 
-    def __getitem__(self, key: Union[int, slice, str]) -> Union[Entity, str]:
-        return self.one_hot_lookup[self.entities_indexed[key]]
+    # def __getitem__(self, key: Union[int, slice, str]) -> Union[Entity, str]:
+    #     return self.one_hot_lookup[self.entities_indexed[key]]
 
     def copy(self, order: Optional[str] = "K") -> EntityList:
         return EntityList(

@@ -57,9 +57,8 @@ def vectorized_publish(
     # private: bool = False
 ) -> np.ndarray:
     # TODO convert values to np.int64
-    # print("values1", type(values), values.dtype)
-    # values = jnp.array(values, dtype=np.int64)
-    # print("values2", type(values), values.dtype)
+    if values.dtype != np.int64:
+        raise Exception("Values is not np.int64", values.dtype)
 
     print(f"Starting vectorized publish: {type(ledger)}")
     # Get all unique entities
@@ -88,7 +87,7 @@ def vectorized_publish(
     print("Obtained all parameters for RDP")
 
     print("Initialized ledger!")
-    ledger.entity_ids = np.array(input_entities, dtype=np.int64)
+    ledger.setup()
 
     print("Max Sigma, Min Sigma", np.max(sigmas), np.min(sigmas))
     # Query budget spend of all unique entities
@@ -101,21 +100,24 @@ def vectorized_publish(
     )
 
     try:
+        # query and save
         mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
             unique_entity_ids_query=input_entities,
             rdp_params=rdp_params,
             private=True,
             node=node,
         )
+        # here we have the final mask and highest possible spend has been applied
+        # to the data scientists budget field in the database
 
         if mask is None:
             raise Exception("Failed to publish mask is None")
 
         print("Obtained overbudgeted entity mask", mask.dtype)
 
-        # Filter results
+        # multiply values by the inverted mask
         filtered_inputs = values * (
-            mask ^ 1
+            1 - mask
         )  # + gauss(0, sigma)  # Double check that noise has mean of 0
         output = np.asarray(output_func(filtered_inputs) + gauss(0, sigma))
         print("got output", type(output), output.dtype)

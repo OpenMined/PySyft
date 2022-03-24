@@ -78,14 +78,13 @@ def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
     return x
 
 
-def jax2numpy(value: jnp.array) -> np.array:
+def jax2numpy(value: jnp.array, dtype: np.dtype) -> np.array:
     # are we incurring copying here?
-    return np.asarray(value)
+    return np.asarray(value, dtype=dtype)
 
 
-def numpy2jax(value: np.array) -> jnp.array:
-    # are we incurring copying here?
-    return jnp.asarray(value)
+def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
+    return jnp.asarray(value, dtype=dtype)
 
 
 @dataclass
@@ -100,7 +99,7 @@ class GammaTensor:
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**32 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
-    inputs: jnp.array = np.array([])
+    inputs: jnp.array = np.array([], dtype=np.int64)
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
     def __post_init__(self) -> None:
@@ -339,13 +338,17 @@ class GammaTensor:
         # this is how we dispatch correct deserialization of bytes
         gamma_msg.magicHeader = serde_magic_header(type(self))
 
-        value, value_size = numpy_serialize(jax2numpy(self.value), get_bytes=True)
+        value, value_size = numpy_serialize(
+            jax2numpy(self.value, dtype=self.value.dtype), get_bytes=True
+        )
         chunk_bytes(value, "value", gamma_msg)
         value_metadata.dtype = str(self.value.dtype)
         value_metadata.decompressedSize = value_size
         gamma_msg.valueMetadata = value_metadata
 
-        inputs, inputs_size = numpy_serialize(jax2numpy(self.inputs), get_bytes=True)
+        inputs, inputs_size = numpy_serialize(
+            jax2numpy(self.inputs, dtype=self.inputs.dtype), get_bytes=True
+        )
         chunk_bytes(inputs, "inputs", gamma_msg)
         inputs_metadata.dtype = str(self.inputs.dtype)
         inputs_metadata.decompressedSize = inputs_size
@@ -426,11 +429,11 @@ class GammaTensor:
         id_str = gamma_msg.id
 
         return GammaTensor(
-            value=numpy2jax(value),
+            value=numpy2jax(value, dtype=value_metadata.dtype),
             data_subjects=data_subjects,
             min_val=min_val,
             max_val=max_val,
             is_linear=is_linear,
-            inputs=numpy2jax(inputs),
+            inputs=numpy2jax(inputs, dtype=inputs_metadata.dtype),
             id=id_str,
         )

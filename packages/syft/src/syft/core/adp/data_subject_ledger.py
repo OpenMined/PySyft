@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import os
+from pathlib import Path
 import time
 from typing import Any
 from typing import Callable
@@ -38,46 +39,52 @@ class RDPParams:
         self.coeffs = coeffs
 
 
+def get_cache_path(cache_filename: str) -> type:
+    here = os.path.dirname(__file__)
+    root_dir = Path(here) / ".." / ".." / "cache"
+    return os.path.abspath(root_dir / cache_filename)
+
+
+def load_cache(filename: str) -> np.ndarray:
+    CACHE_PATH = get_cache_path(filename)
+    if not os.path.exists(CACHE_PATH):
+        raise Exception(f"Cannot load {CACHE_PATH}")
+    cache_array = np.load(CACHE_PATH)
+    print(f"Loaded constant2epsilon cache of size: {cache_array.shape}")
+    return cache_array
+
+
 @serializable(recursive_serde=True)
 class DataSubjectLedger(AbstractDataSubjectLedger):
     """for a particular data subject, this is the list
     of all mechanisms releasing informationo about this
     particular subject, stored in a vectorized form"""
 
+    CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_300k.npy"
+    _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
+
     __attr_allowlist__ = [
         "_update_number",
         "_timestamp_of_last_update",
-        "_entity_ids_query",
         "_rdp_constants",
-        "_pending_save",  # theres no init on recursive serde so this isnt set to False
     ]
 
     def __init__(
         self,
         store: AbstractLedgerStore,
         user_key: VerifyKey,
-        default_cache_size: int = 1_000,
     ) -> None:
         self.store = store
         self.user_key = user_key
 
-        # where is this absolute list coming from?
-        self.entity_ids = np.array([], dtype=np.int64)
-
-        self._cache_constant2epsilon = np.array([], dtype=np.float64)
-        if os.path.exists("cache300k.txt"):
-            print("Cache found!!!!!! REJOICE")
-            self._cache_constant2epsilon = np.loadtxt("cache300k.txt")
-        else:
-            print("Cache was not found, recalculating...")
-            self._increase_max_cache(int(default_cache_size))
-
-        # tracking atomic updates
-        self._pending_save: bool = False
         self._update_number = 0
         self._timestamp_of_last_update = time.time()
-        self._entity_ids_query = np.array([], dtype=np.int64)
         self._rdp_constants = np.array([], dtype=np.float64)
+        self.setup()
+
+    def setup(self) -> None:
+        # tracking atomic updates
+        self._pending_save: bool = False
 
     @property
     def delta(self) -> float:
@@ -121,16 +128,20 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         print("These are the RDP constants")
         print(rdp_constants)
 
-        epsilon_spent, mask = self._get_overbudgeted_entities(
+        # here we iteratively attempt to calculate the overbudget mask and save
+        # changes to the database
+        mask = self._get_overbudgeted_entities(
             node=node,
             rdp_constants=rdp_constants,
         )
 
-        if self._write_ledger(node=node, epsilon_spent=epsilon_spent):
+        # at this point we are confident that the database budget field has been updated
+        # so now we should flush the _rdp_constants that we have calculated to storage
+        if self._write_ledger(node=node):
             return mask
 
-    def _write_ledger(self, node: Any, epsilon_spent: float) -> bool:
-        print("write epsilon in transaction with serializing the ledger", epsilon_spent)
+    def _write_ledger(self, node: Any) -> bool:
+
         self._update_number += 1
         try:
             self._pending_save = False
@@ -205,53 +216,60 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
                 "We need to save the DataSubjectLedger before querying again"
             )
         self._pending_save = True
-        # get indices for all ledger rows corresponding to any of the entities in
-        # entity_ids_query
-        indices_batch = np.where(np.in1d(self.entity_ids, entity_ids_query))[0]
 
-        # use the indices to get a "batch" of the full ledger. this is the only part
-        # of the ledger we care about (the entries corresponding to specific entities)
-        batch_sigmas = rdp_params.sigmas.take(indices_batch)
-        batch_l2_norms = rdp_params.l2_norms.take(indices_batch)
-        batch_Ls = rdp_params.Ls.take(indices_batch)
-        batch_l2_norm_bounds = rdp_params.l2_norm_bounds.take(indices_batch)
-        batch_coeffs = rdp_params.coeffs.take(indices_batch)
-
-        batch_entity_ids = self.entity_ids.take(indices_batch)
-
-        squared_Ls = batch_Ls**2
-        squared_sigma = batch_sigmas**2
+        squared_Ls = rdp_params.Ls**2
+        squared_sigma = rdp_params.sigmas**2
 
         if private:
-            squared_L2_norms = batch_l2_norms**2
-            constant = (
-                squared_Ls * squared_L2_norms / (2 * squared_sigma)
-            ) * batch_coeffs
-            constant = np.bincount(batch_entity_ids, weights=constant).take(
-                entity_ids_query
-            )
+            # this is calculated on the private true values
+            squared_l2 = rdp_params.l2_norms**2
         else:
-            squared_L2_norm_bounds = batch_l2_norm_bounds**2
-            constant = (
-                squared_Ls * squared_L2_norm_bounds / (2 * squared_sigma)
-            ) * batch_coeffs
-            constant = np.bincount(batch_entity_ids, weights=constant).take(
-                entity_ids_query
-            )
+            # bounds is computed on the metadata
+            squared_l2 = rdp_params.l2_norm_bounds**2
+
+        constant = (squared_Ls * squared_l2 / (2 * squared_sigma)) * rdp_params.coeffs
 
         # update our serialized format with the calculated constants
-        self._rdp_constants = np.concatenate([self._rdp_constants, constant])
-        self._entity_ids_query = np.concatenate(
-            [self._entity_ids_query, entity_ids_query]
-        )
+        # extend to and += _rdp_constants
+        # TODO: test take and put because these are hairy
+        # TODO: figure out what is faster between max() and take / put
+
+        try:
+            # add the calculated constants back to the cached _rdp_constants
+            summed_constant = constant + self._rdp_constants.take(entity_ids_query)
+            self._rdp_constants.put(entity_ids_query, summed_constant)
+        except IndexError:
+            new_length = max(
+                entity_ids_query
+            )  # the highest int is the highest entity id
+
+            old_length = len(self._rdp_constants)
+            if new_length <= old_length:
+                raise Exception(
+                    "We have an IndexError but _rdp_constants is big enough."
+                    + f"{new_length} {old_length}"
+                )
+            # figure out how many more spots we need in the array
+            pad_length = new_length - old_length
+            # if entity_ids_query is not 0 indexed, e.g. starts at 1, we will have
+            # 1 extra length required hence the pad_length + 1
+            # if not, we have 1 extra slot so who cares
+            self._rdp_constants = np.pad(
+                self._rdp_constants, pad_width=(0, pad_length + 1), constant_values=0
+            )
+
+            # one more time... lets celebrate
+            try:
+                summed_constant = constant + self._rdp_constants.take(entity_ids_query)
+                self._rdp_constants.put(entity_ids_query, summed_constant)
+            except IndexError as e:
+                print("Something really bad happened with np.pad.")
+                raise e
+
         return constant
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
         rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
-        # TODO remove this hack
-        if not hasattr(self, "_cache_constant2epsilon"):
-            self._cache_constant2epsilon = np.array([], dtype=np.float64)
-            self._increase_max_cache(1_000)
         try:
             # needed as np.int64 to use take
             eps_spend = self._cache_constant2epsilon.take(rdp_constants_lookup)
@@ -261,11 +279,21 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             eps_spend = self._cache_constant2epsilon.take(rdp_constants_lookup)
         return eps_spend
 
+    def _calculate_mask_for_current_budget(
+        self, node: Any, epsilon_spend: np.ndarray
+    ) -> Tuple[float, float, np.ndarray]:
+        user_budget = node.users.get_budget_for_user(verify_key=self.user_key)
+        # create a mask of True and False where true is over current user_budget
+        mask = np.ones_like(epsilon_spend) * user_budget < epsilon_spend
+        # get the highest value which was under budget and represented by False in the mask
+        highest_possible_spend = max(epsilon_spend * (1 - mask))
+        return (highest_possible_spend, user_budget, mask)
+
     def _get_overbudgeted_entities(
         self,
         node: Any,
         rdp_constants: np.ndarray,
-    ) -> Tuple[float, np.ndarray]:
+    ) -> Tuple[np.ndarray]:
         """TODO:
         In our current implementation, user_budget is obtained by querying the
         Adversarial Accountant's entity2ledger with the Data Scientist's User Key.
@@ -275,49 +303,63 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         print("rdp_constants")
         print(min(rdp_constants))
         # Get the privacy budget spent by all the entities
-        epsilon_spent = self._get_epsilon_spend(rdp_constants=rdp_constants)
+        epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants)
 
-        # print(np.mean(epsilon_spent))
-        user_epsilon_spend = max(epsilon_spent)
-        # print("Epsilon spent by all entities: ")
-        # print(epsilon_spent)
-        print("Min epsilon spent: ")
-        print(np.min(epsilon_spent))
-        print(f"Size of cache: {self._cache_constant2epsilon.shape}")
-        attempts = 0
-        user_budget = None
-        while attempts < 5:
-            print(f"Attemping to spend epsilon: {user_epsilon_spend}. Try: {attempts}")
-            attempts += 1
-            try:
-                user_budget = self.spend_epsilon(
-                    node=node, epsilon_spend=user_epsilon_spend
+        # try first time
+        (
+            highest_possible_spend,
+            user_budget,
+            mask,
+        ) = self._calculate_mask_for_current_budget(
+            node=node, epsilon_spend=epsilon_spend
+        )
+
+        if highest_possible_spend > 0:
+            # go spend it in the db
+            attempts = 0
+            while attempts < 5:
+                print(
+                    f"Attemping to spend epsilon: {highest_possible_spend}. Try: {attempts}"
                 )
-                break
-            except RefreshBudgetException as e:
-                # this is the only exception we allow to retry
-                print("got refresh budget error", e)
-            except Exception as e:
-                print(f"Problem spending epsilon. {e}")
-                raise e
+                attempts += 1
+                try:
+                    user_budget = self.spend_epsilon(
+                        node=node,
+                        epsilon_spend=highest_possible_spend,
+                        old_user_budget=user_budget,
+                    )
+                    break
+                except RefreshBudgetException as e:
+                    # this is the only exception we allow to retry
+                    print("got refresh budget error", e)
+                    (
+                        highest_possible_spend,
+                        user_budget,
+                        mask,
+                    ) = self._calculate_mask_for_current_budget(
+                        node=node, epsilon_spend=epsilon_spend
+                    )
+                except Exception as e:
+                    print(f"Problem spending epsilon. {e}")
+                    raise e
 
         if user_budget is None:
             raise Exception("Failed to spend_epsilon")
 
-        # Create a mask
-        return (
-            epsilon_spent,
-            np.ones_like(epsilon_spent) * user_budget < epsilon_spent,
-        )
+        return mask
 
-    def spend_epsilon(self, node: Any, epsilon_spend: float) -> bool:
+    def spend_epsilon(
+        self,
+        node: Any,
+        epsilon_spend: float,
+        old_user_budget: float,
+    ) -> float:
         # get the budget
-        user_budget = node.users.get_budget_for_user(verify_key=self.user_key)
-        print("got user budget", user_budget, "epsilon_spent", epsilon_spend)
+        print("got user budget", old_user_budget, "epsilon_spent", epsilon_spend)
         node.users.deduct_epsilon_for_user(
             verify_key=self.user_key,
-            old_budget=user_budget,
+            old_budget=old_user_budget,
             epsilon_spend=epsilon_spend,
         )
         # return the budget we used
-        return user_budget
+        return old_user_budget
