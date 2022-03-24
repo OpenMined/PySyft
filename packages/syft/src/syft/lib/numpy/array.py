@@ -67,10 +67,9 @@ def arrow_serialize(
 
 
 def arrow_deserialize(
-    buf: bytes, decompressed_size: int, dtype: str = "int32"
+    buf: bytes, decompressed_size: int, dtype: str
 ) -> np.ndarray:
-    str_dtype = dtype
-    original_dtype = np.dtype(str_dtype)
+    original_dtype = np.dtype(dtype)
     if flags.APACHE_ARROW_COMPRESSION is ApacheArrowCompression.NONE:
         reader = pa.BufferReader(buf)
         buf = reader.read_buffer()
@@ -125,7 +124,7 @@ def serialize_numpy_array(obj: np.ndarray) -> NumpyProto:
 
 def deserialize_numpy_array(proto: NumpyProto) -> np.ndarray:
     if proto.HasField("arrow_data"):
-        return arrow_deserialize(proto.arrow_data, proto.decompressed_size)
+        return arrow_deserialize(buf=proto.arrow_data, decompressed_size=proto.decompressed_size, dtype=proto.dtype)
     else:
         return protobuf_deserialize(proto)
 

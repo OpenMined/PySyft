@@ -8,7 +8,6 @@ from typing import Type
 from nacl.signing import VerifyKey
 
 # relative
-from ......lib.python import List  # type: ignore
 from ......logger import traceback_and_raise  # type: ignore
 from .....adp.data_subject_ledger import DataSubjectLedger  # type: ignore
 from .....adp.publish import publish  # type: ignore
@@ -29,7 +28,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
         print("PublishScalarsService:28")
 
         # get scalar objects from store
-        results = List()
+        results = []
         for publish_id in msg.publish_ids_at_location:
             print("PublishScalarsService:33")
             print(publish_id)
@@ -46,7 +45,6 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                         "PublishScalarsService:40: TRY: publish_object.data.publish()"
                     )
                     try:
-                        print("Trying to get DataSubjectLedger in PublishService")
                         ledger = DataSubjectLedger.get_or_create(
                             store=node.ledger_store, user_key=verify_key
                         )
@@ -55,16 +53,6 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                     except Exception as e:
                         print(f"Failed to get a ledger. {e}")
                         raise e
-
-                    print("Publishing!")
-                    print("Publish_object.data: ")
-                    print(type(publish_object))
-                    print("Publish_object.data: ")
-                    print(type(publish_object.data))
-                    print("Publish_object.data.child: ")
-                    print(type(publish_object.data.child))
-                    print("Ledger: ")
-                    print(ledger)
 
                     result = publish_object.data.child.publish(
                         node=node, ledger=ledger, sigma=msg.sigma
@@ -101,7 +89,6 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
         if len(results) == 1:
             results = results[0]
         print("PublishScalarsService:67: storable = StorableObject(")
-        print(type(results))
         storable = StorableObject(
             id=msg.id_at_location,
             data=results,
