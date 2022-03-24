@@ -87,7 +87,6 @@ def vectorized_publish(
     print("Obtained all parameters for RDP")
 
     print("Initialized ledger!")
-    ledger.setup()
 
     print("Max Sigma, Min Sigma", np.max(sigmas), np.min(sigmas))
     # Query budget spend of all unique entities

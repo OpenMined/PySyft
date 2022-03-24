@@ -3,11 +3,9 @@
 struct DataSubjectLedger {
   magicHeader @0 :Data;
   constants @1 :List(Data);
-  entitiesIndexed @2 :List(Data);
-  constantsMetadata @3 :TensorMetadata;
-  entitiesIndexedMetadata @4 :TensorMetadata;
-  updateNumber @5 :UInt64;
-  timestamp @6 :Float64;
+  constantsMetadata @2 :TensorMetadata;
+  updateNumber @3 :UInt64;
+  timestamp @4 :Float64;
 
   struct TensorMetadata {
     dtype @0 :Text;

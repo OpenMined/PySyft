@@ -11,7 +11,11 @@ from nacl.signing import VerifyKey
 class AbstractDataSubjectLedger:
     store: AbstractLedgerStore
     user_key: Any
-    pass
+
+    def bind_to_store_with_key(
+        self, store: AbstractLedgerStore, user_key: VerifyKey
+    ) -> None:
+        raise NotImplementedError
 
 
 class AbstractLedgerStore:

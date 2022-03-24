@@ -18,6 +18,13 @@ from scipy.optimize import minimize_scalar
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
+from ...lib.numpy.array import arrow_deserialize as numpy_deserialize
+from ...lib.numpy.array import arrow_serialize as numpy_serialize
+from ..common.serde.capnp import CapnpModule
+from ..common.serde.capnp import chunk_bytes
+from ..common.serde.capnp import combine_bytes
+from ..common.serde.capnp import get_capnp_schema
+from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from .abstract_ledger_store import AbstractDataSubjectLedger
 from .abstract_ledger_store import AbstractLedgerStore
@@ -39,7 +46,7 @@ class RDPParams:
         self.coeffs = coeffs
 
 
-def get_cache_path(cache_filename: str) -> type:
+def get_cache_path(cache_filename: str) -> str:
     here = os.path.dirname(__file__)
     root_dir = Path(here) / ".." / ".." / "cache"
     return os.path.abspath(root_dir / cache_filename)
@@ -54,7 +61,7 @@ def load_cache(filename: str) -> np.ndarray:
     return cache_array
 
 
-@serializable(recursive_serde=True)
+@serializable(capnp_bytes=True)
 class DataSubjectLedger(AbstractDataSubjectLedger):
     """for a particular data subject, this is the list
     of all mechanisms releasing informationo about this
@@ -63,33 +70,33 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_300k.npy"
     _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
 
-    __attr_allowlist__ = [
-        "_update_number",
-        "_timestamp_of_last_update",
-        "_rdp_constants",
-    ]
-
     def __init__(
         self,
-        store: AbstractLedgerStore,
-        user_key: VerifyKey,
+        constants: Optional[np.ndarray] = None,
+        update_number: int = 0,
+        timestamp_of_last_update: Optional[float] = None,
     ) -> None:
-        self.store = store
-        self.user_key = user_key
-
-        self._update_number = 0
-        self._timestamp_of_last_update = time.time()
-        self._rdp_constants = np.array([], dtype=np.float64)
-        self.setup()
-
-    def setup(self) -> None:
-        # tracking atomic updates
-        self._pending_save: bool = False
+        self._rdp_constants = (
+            constants if constants is not None else np.array([], dtype=np.float64)
+        )
+        self._update_number = update_number
+        self._timestamp_of_last_update = (
+            timestamp_of_last_update
+            if timestamp_of_last_update is not None
+            else time.time()
+        )
+        self._pending_save = False
 
     @property
     def delta(self) -> float:
         FIXED_DELTA: Final = 1e-6
         return FIXED_DELTA  # WARNING: CHANGING DELTA INVALIDATES THE CACHE
+
+    def bind_to_store_with_key(
+        self, store: AbstractLedgerStore, user_key: VerifyKey
+    ) -> None:
+        self.store = store
+        self.user_key = user_key
 
     @staticmethod
     def get_or_create(
@@ -99,13 +106,14 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         try:
             # todo change user_key or uid?
             ledger = store.get(key=user_key)
-            ledger.store = store
-            ledger.user_key = user_key
+            ledger.bind_to_store_with_key(store=store, user_key=user_key)
         except KeyError:
             print("Creating new Ledger")
-            ledger = DataSubjectLedger(store=store, user_key=user_key)
+            ledger = DataSubjectLedger()
+            ledger.bind_to_store_with_key(store=store, user_key=user_key)
         except Exception as e:
             print(f"Failed to read ledger from ledger store. {e}")
+
         return ledger
 
     def get_entity_overbudget_mask_for_epsilon_and_append(
@@ -363,3 +371,58 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         )
         # return the budget we used
         return old_user_budget
+
+    def _object2bytes(self) -> bytes:
+        schema = get_capnp_schema(schema_file="data_subject_ledger.capnp")
+
+        dsl_struct: CapnpModule = schema.DataSubjectLedger  # type: ignore
+        dsl_msg = dsl_struct.new_message()
+        metadata_schema = dsl_struct.TensorMetadata
+        constants_metadata = metadata_schema.new_message()
+
+        # this is how we dispatch correct deserialization of bytes
+        dsl_msg.magicHeader = serde_magic_header(type(self))
+
+        constants, constants_size = numpy_serialize(self._rdp_constants, get_bytes=True)
+        chunk_bytes(constants, "constants", dsl_msg)
+        constants_metadata.dtype = str(self._rdp_constants.dtype)
+        constants_metadata.decompressedSize = constants_size
+        dsl_msg.constantsMetadata = constants_metadata
+
+        dsl_msg.updateNumber = self._update_number
+        print(
+            self._timestamp_of_last_update,
+            "self._timestamp_of_last_update",
+            type(self._timestamp_of_last_update),
+        )
+        dsl_msg.timestamp = self._timestamp_of_last_update
+
+        return dsl_msg.to_bytes_packed()
+
+    @staticmethod
+    def _bytes2object(buf: bytes) -> DataSubjectLedger:
+        schema = get_capnp_schema(schema_file="data_subject_ledger.capnp")
+        dsl_struct: CapnpModule = schema.DataSubjectLedger  # type: ignore
+        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        # to pack or not to pack?
+        # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
+        dsl_msg = dsl_struct.from_bytes_packed(
+            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        )
+
+        constants_metadata = dsl_msg.constantsMetadata
+
+        constants = numpy_deserialize(
+            combine_bytes(dsl_msg.constants),
+            constants_metadata.decompressedSize,
+            constants_metadata.dtype,
+        )
+        update_number = dsl_msg.updateNumber
+        timestamp_of_last_update = dsl_msg.timestamp
+
+        return DataSubjectLedger(
+            constants=constants,
+            update_number=update_number,
+            timestamp_of_last_update=timestamp_of_last_update,
+        )
