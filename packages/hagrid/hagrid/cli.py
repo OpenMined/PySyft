@@ -376,9 +376,9 @@ def check_gcloud_cli_installed() -> bool:
         subprocess.call(["gcloud", "version"])
         print("Gcloud cli installed!")
     except FileNotFoundError:
-        msg = "\nYou don't appear to have the Gcloud CLI installed!!! \n\n\
-Please install it and then retry your command.\
-\n\nInstallation Instructions: https://cloud.google.com/sdk/docs/quickstarts \n"
+        msg = "\nYou don't appear to have the gcloud CLI tool installed! \n\n\
+Please install it and then retry again.\
+\n\nInstallation Instructions: https://cloud.google.com/sdk/docs/install-sdk \n"
         raise FileNotFoundError(msg)
 
     return True
@@ -415,6 +415,23 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
 
 
 ART = str_to_bool(os.environ.get("HAGRID_ART", "True"))
+
+
+def generate_gcloud_key_at_path(key_path: str) -> str:
+    key_path = os.path.expanduser(key_path)
+    if os.path.exists(key_path):
+        raise Exception(f"Can't generate key since path already exists. {key_path}")
+    else:
+        # triggers a key check
+        cmd = "gcloud compute ssh '' --dry-run"
+        try:
+            subprocess.check_call(cmd, shell=True)
+        except Exception:  # nosec
+            pass
+        if not os.path.exists(key_path):
+            raise Exception(f"gcloud failed to generate ssh-key at: {key_path}")
+
+    return key_path
 
 
 def generate_key_at_path(key_path: str) -> str:
@@ -677,7 +694,134 @@ def create_launch_cmd(
         while not check_gcloud_authed():
             print("You need to log into Google Cloud")
             login_gcloud()
-        print("You need to create a service account")
+
+        if DEPENDENCIES["ansible-playbook"]:
+            project_id = ask(
+                question=Question(
+                    var_name="gcp_project_id",
+                    question="What PROJECT ID do you want to use?",
+                    default=arg_cache.gcp_project_id,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            zone = ask(
+                question=Question(
+                    var_name="gcp_zone",
+                    question="What zone do you want your VM in?",
+                    default=arg_cache.gcp_zone,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            machine_type = ask(
+                question=Question(
+                    var_name="gcp_machine_type",
+                    question="What size machine?",
+                    default=arg_cache.gcp_machine_type,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            username = ask(
+                question=Question(
+                    var_name="gcp_username",
+                    question="What is your shell username?",
+                    default=arg_cache.gcp_username,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            key_path_question = Question(
+                var_name="gcp_key_path",
+                question=f"Private key to access user@{host}?",
+                default=arg_cache.gcp_key_path,
+                kind="path",
+                cache=True,
+            )
+            try:
+                key_path = ask(
+                    key_path_question,
+                    kwargs=kwargs,
+                )
+            except QuestionInputPathError as e:
+                print(e)
+                key_path = str(e).split("is not a valid path")[0].strip()
+
+                create_key_question = Question(
+                    var_name="gcp_key_path",
+                    question=f"Key {key_path} does not exist. Do you want gcloud to make it? (y/n)",
+                    default="y",
+                    kind="yesno",
+                )
+                create_key = ask(
+                    create_key_question,
+                    kwargs=kwargs,
+                )
+                if create_key == "y":
+                    key_path = generate_gcloud_key_at_path(key_path=key_path)
+                else:
+                    raise QuestionInputError(
+                        "Unable to create VM without a private key"
+                    )
+
+            repo = ask(
+                Question(
+                    var_name="gcp_repo",
+                    question="Repo to fetch source from?",
+                    default=arg_cache.gcp_repo,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+            branch = ask(
+                Question(
+                    var_name="gcp_branch",
+                    question="Branch to monitor for updates?",
+                    default=arg_cache.gcp_branch,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            use_branch(branch=branch)
+
+            auth = AuthCredentials(username=username, key_path=key_path)
+
+            return create_launch_gcp_cmd(
+                verb=verb,
+                project_id=project_id,
+                zone=zone,
+                machine_type=machine_type,
+                repo=repo,
+                auth=auth,
+                branch=branch,
+                ansible_extras=kwargs["ansible_extras"],
+                kwargs=parsed_kwargs,
+            )
+        else:
+            errors = []
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            msg = "\nERROR!!! MISSING DEPENDENCY!!!"
+            msg += f"\n\nLaunching a Cloud VM requires: {' '.join(errors)}"
+            msg += "\n\nPlease follow installation instructions: "
+            msg += "https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#"
+            msg += "\n\nNote: we've found the 'conda' based installation instructions to work best"
+            msg += " (e.g. something lke 'conda install -c conda-forge ansible'). "
+            msg += "The pip based instructions seem to be a bit buggy if you're using a conda environment"
+            msg += "\n"
+            raise MissingDependency(msg)
 
     elif host in ["aws"]:
         print("Coming soon.")
@@ -950,11 +1094,25 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
         j = json.loads(output)
         if "publicIpAddress" in j:
             return str(j["publicIpAddress"])
-    except Exception:
+    except Exception:  # nosec
         matcher = r'publicIpAddress":\s+"(.+)"'
         ips = re.findall(matcher, output)
         if len(ips) > 0:
             return ips[0]
+
+    return None
+
+
+def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
+    output = stdout.decode("utf-8")
+
+    try:
+        matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
+        ips = re.findall(matcher, output)
+        if len(ips) == 2:
+            return ips[1]
+    except Exception:  # nosec
+        pass
 
     return None
 
@@ -1002,6 +1160,99 @@ def open_port_vm_azure(
         pass
     except Exception as e:
         print("failed", e)
+
+
+def create_launch_gcp_cmd(
+    verb: GrammarVerb,
+    project_id: str,
+    zone: str,
+    machine_type: str,
+    ansible_extras: str,
+    kwargs: TypeDict[str, Any],
+    repo: str,
+    branch: str,
+    auth: AuthCredentials,
+) -> str:
+    # vm
+    node_name = verb.get_named_term_type(name="node_name")
+    kebab_name = str(node_name.kebab_input)
+    disk_size_gb = "200"
+    host_ip = make_gcp_vm(
+        vm_name=kebab_name,
+        project_id=project_id,
+        zone=zone,
+        machine_type=machine_type,
+        disk_size_gb=disk_size_gb,
+    )
+
+    # get old host
+    host_term = verb.get_named_term_hostgrammar(name="host")
+
+    # replace
+    host_term.parse_input(host_ip)
+    verb.set_named_term_type(name="host", new_term=host_term)
+
+    extra_kwargs = {
+        "repo": repo,
+        "branch": branch,
+        "auth_type": "key",
+        "ansible_extras": ansible_extras,
+    }
+    kwargs.update(extra_kwargs)
+
+    # provision
+    return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+
+
+def make_gcp_vm(
+    vm_name: str, project_id: str, zone: str, machine_type: str, disk_size_gb: str
+) -> str:
+    create_cmd = "gcloud compute instances create"
+    network_settings = "network=default,network-tier=PREMIUM"
+    maintenance_policy = "MIGRATE"
+    scopes = [
+        "https://www.googleapis.com/auth/devstorage.read_only",
+        "https://www.googleapis.com/auth/logging.write",
+        "https://www.googleapis.com/auth/monitoring.write",
+        "https://www.googleapis.com/auth/servicecontrol",
+        "https://www.googleapis.com/auth/service.management.readonly",
+        "https://www.googleapis.com/auth/trace.append",
+    ]
+    tags = "http-server,https-server"
+    disk_image = "projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20220308"
+    disk = (
+        f"auto-delete=yes,boot=yes,device-name={vm_name},image={disk_image},"
+        + f"mode=rw,size={disk_size_gb},type=pd-ssd"
+    )
+    security_flags = (
+        "--no-shielded-secure-boot --shielded-vtpm "
+        + "--shielded-integrity-monitoring --reservation-affinity=any"
+    )
+
+    cmd = (
+        f"{create_cmd} {vm_name} "
+        + f"--project={project_id} "
+        + f"--zone={zone} "
+        + f"--machine-type={machine_type} "
+        + f"--create-disk={disk} "
+        + f"--network-interface={network_settings} "
+        + f"--maintenance-policy={maintenance_policy} "
+        + f"--scopes={','.join(scopes)} --tags={tags} "
+        + f"{security_flags}"
+    )
+
+    host_ip = None
+    try:
+        print(f"Creating vm.\nRunning: {cmd}")
+        output = subprocess.check_output(cmd, shell=True)
+        host_ip = extract_host_ip_gcp(stdout=output)
+    except Exception as e:
+        print("failed", e)
+
+    if host_ip is None:
+        raise Exception("Failed to create vm or get VM public ip")
+
+    return host_ip
 
 
 def create_launch_azure_cmd(
