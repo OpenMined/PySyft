@@ -137,7 +137,7 @@ def upload_to_s3_using_presigned(
     Returns:
         ProxyDataset: Class to store metadata about the data that is uploaded to Seaweed.
     """
-    data_upload_description = f"Uploading {asset_name}"
+    data_upload_description = f"Uploading `{asset_name}`"
     # relative
     from .node_service.upload_service.upload_service_messages import (
         UploadDataCompleteMessage,
@@ -168,7 +168,9 @@ def upload_to_s3_using_presigned(
     parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
     etag_chunk_no_pairs = list()
     data_chunks = zip(read_chunks(binary_buffer, chunk_size), parts)
-    for _ in tqdm(parts, desc=data_upload_description):
+    for _ in tqdm(
+        parts, desc=data_upload_description, colour="green", ncols=100, leave=True
+    ):
         data_chunk, part = next(data_chunks)
         presigned_url = part["url"]
         part_no = part["part_no"]

@@ -85,6 +85,7 @@ Example:
 
 """
 # stdlib
+import sys
 import time
 from typing import Any
 from typing import List
@@ -304,6 +305,8 @@ class Pointer(AbstractPointer):
             PublishScalarsAction,
         )
 
+        sys.stdout.write("Please wait we're computing your query ...")
+
         # TODO: make publish genuinely asynchronous (not sure why it isn't already but
         # if you call publish on an object before it exists it complains.
         self.block
@@ -327,6 +330,8 @@ class Pointer(AbstractPointer):
             id_at_location=id_at_location,
         )
         ptr._pointable = True
+
+        sys.stdout.write("Completed. 🎉")
 
         # return pointer
         return ptr
