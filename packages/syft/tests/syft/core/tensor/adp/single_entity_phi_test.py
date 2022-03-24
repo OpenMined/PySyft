@@ -1649,7 +1649,10 @@ def test_matmul_sept(
 
 
 def test_trace(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Test whether the trace() method works"""
     tensor = SEPT(
@@ -1664,7 +1667,10 @@ def test_trace(
 
 
 def test_prod(
-    reference_data: np.ndarray, upper_bound: np.ndarray, lower_bound: np.ndarray
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
 ) -> None:
     """Test whether the prod() method works"""
     tensor = SEPT(

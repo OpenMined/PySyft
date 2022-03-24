@@ -294,6 +294,14 @@ class Client(AbstractNodeClient):
             msg=signed_msg, timeout=timeout
         )
 
+    def url_from_path(self, path: str) -> str:
+        new_url = GridURL.from_url(url=path)
+        client_url = self.routes[0].connection.base_url.copy()  # type: ignore
+        new_url.protocol = client_url.protocol
+        new_url.port = client_url.port
+        new_url.host_or_ip = client_url.host_or_ip
+        return new_url.url
+
     def __repr__(self) -> str:
         return f"<Client pointing to node with id:{self.id}>"
 
@@ -392,6 +400,9 @@ class StoreClient:
     def __iter__(self) -> Iterator[Any]:
         return self.store.__iter__()
 
+    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
+        return self.get(key=key)
+
     #
     # def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
     #
@@ -442,13 +453,11 @@ class StoreClient:
     #     else:
     #         traceback_and_raise(KeyError("Please pass in a string or int key"))
 
-    def __getitem__(self, key: Union[str, int, UID]) -> Pointer:
+    def get(self, key: Union[str, int, UID]) -> Pointer:
         if isinstance(key, str):
-
             try:
-                return self[UID.from_string(key)]
+                return self.get(UID.from_string(key))
             except IndexError:
-
                 matches = 0
                 match_obj: Optional[Pointer] = None
 
@@ -489,10 +498,10 @@ class StoreClient:
             msg = ObjectSearchMessage(
                 address=self.client.address, reply_to=self.client.address, obj_id=key
             )
-
             results = getattr(
                 self.client.send_immediate_msg_with_reply(msg=msg), "results", None
             )
+
             if results is None:
                 traceback_and_raise(ValueError("TODO"))
 

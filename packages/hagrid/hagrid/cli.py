@@ -181,6 +181,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: local path to TLS private key to upload and store at --cert_store_path",
 )
+@click.option(
+    "--use_blob_storage",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: flag to use blob storage",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -470,6 +477,10 @@ def create_launch_cmd(
     if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
         build = False
     parsed_kwargs["build"] = build
+
+    parsed_kwargs["use_blob_storage"] = (
+        kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
+    )
 
     headless = False
     if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
@@ -962,6 +973,12 @@ def create_launch_docker_cmd(
         # force version to have -dev at the end in dev mode
         version_string += "-dev"
 
+    use_blob_storage = "True"
+    if str(node_type.input) == "network":
+        use_blob_storage = "False"
+    elif "use_blob_storage" in kwargs and kwargs["use_blob_storage"] is not None:
+        use_blob_storage = str(str_to_bool(kwargs["use_blob_storage"]))
+
     envs = {
         "RELEASE": "production",
         "COMPOSE_DOCKER_CLI_BUILD": 1,
@@ -974,13 +991,22 @@ def create_launch_docker_cmd(
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
         "VERSION_HASH": GRID_SRC_VERSION[1],
+        "USE_BLOB_STORAGE": use_blob_storage,
     }
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
 
-    if "test" in kwargs and kwargs["test"] is True:
+    if (
+        "tls" in kwargs
+        and kwargs["tls"] is True
+        and "test" in kwargs
+        and kwargs["test"] is True
+    ):
         envs["IGNORE_TLS_ERRORS"] = "True"
+
+    if "test" in kwargs and kwargs["test"] is True:
+        envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -1007,6 +1033,8 @@ def create_launch_docker_cmd(
     cmd += " docker compose -p " + snake_name
     if str(node_type.input) == "network":
         cmd += " --profile network"
+    else:
+        cmd += " --profile blob-storage"
 
     if kwargs["headless"] is False:
         cmd += " --profile frontend"
