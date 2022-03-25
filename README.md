@@ -392,6 +392,29 @@ $ hagrid launch node_name domain to 123.x.x.x --tls --upload_tls_key=/path/to/ce
 
 [![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2FPySyft%2Fdev%2Fpackages%2Fgrid%2Fquickstart%2Ftemplate.json)
 
+### Deploy from CLI to Azure
+
+HAGrid supports creating VMs and provisioning with PyGrid directly using:
+
+```
+$ hagrid launch to azure
+```
+
+Follow the prompts and enter resource groups, size, location, auth credentials etc.
+
+## Deploy from CLI to Google Cloud Platform (GCP)
+
+HAGrid supports creating VMs and provisioning with PyGrid directly using:
+
+```
+$ hagrid launch to gcp
+```
+
+Follow the prompts and enter project id, machine type, zone, auth credentials etc.
+**Note** Since we use the gcloud cli tool for provisioning we rely on the gcloud cli tool
+generated SSH keys so if you use a custom key path other than the default
+(~/.ssh/google_compute_engine) please specify the correct path.
+
 ### HAGrid Deployment
 
 Create a VM on your cloud provider with Ubuntu 20.04 with at least:
