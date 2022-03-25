@@ -1216,6 +1216,17 @@ def open_port_vm_azure(
         print("failed", e)
 
 
+def create_project(project_id: str) -> None:
+    cmd = f"gcloud projects create {project_id} --set-as-default"
+    try:
+        print(f"Creating project.\nRunning: {cmd}")
+        subprocess.check_call(cmd, shell=True)
+    except Exception as e:
+        print("failed", e)
+
+    print("create project complete")
+
+
 def create_launch_gcp_cmd(
     verb: GrammarVerb,
     project_id: str,
@@ -1227,6 +1238,8 @@ def create_launch_gcp_cmd(
     branch: str,
     auth: AuthCredentials,
 ) -> str:
+    # create project if it doesn't exist
+    create_project(project_id)
     # vm
     node_name = verb.get_named_term_type(name="node_name")
     kebab_name = str(node_name.kebab_input)
