@@ -22,7 +22,6 @@ from ....store import ObjectStore
 from ....store.proxy_dataset import ProxyDataset
 from ....store.store_interface import StoreKey
 from ....store.storeable_object import StorableObject
-from ..action import context
 from ..node_table.bin_obj_metadata import ObjectMetadata
 
 

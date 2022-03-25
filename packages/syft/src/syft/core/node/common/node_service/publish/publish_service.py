@@ -15,7 +15,7 @@ from .....common.uid import UID  # type: ignore
 from .....store.storeable_object import StorableObject  # type: ignore
 from .....tensor.tensor import PassthroughTensor  # type: ignore
 from ....abstract.node import AbstractNode  # type: ignore
-from ...action import context
+from ...action import context  # type: ignore
 from ..node_service import ImmediateNodeServiceWithoutReply  # type: ignore
 from .publish_messages import PublishScalarsAction  # type: ignore
 

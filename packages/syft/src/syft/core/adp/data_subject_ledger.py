@@ -10,10 +10,16 @@ from typing import Any
 from typing import Callable
 from typing import Final
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 
+if TYPE_CHECKING:
+    # stdlib
+    from dataclasses import dataclass
+else:
+    from flax.struct import dataclass
+
 # third party
-from flax.struct import dataclass
 import jax
 from jax import numpy as jnp
 from nacl.signing import VerifyKey
@@ -59,7 +65,12 @@ class RDPParams:
 
 
 @partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
-def first_try_branch(constant, rdp_constants, entity_ids_query, max_entity):
+def first_try_branch(
+    constant: jax.numpy.DeviceArray,
+    rdp_constants: np.ndarray,
+    entity_ids_query: np.ndarray,
+    max_entity: int,
+) -> jax.numpy.DeviceArray:
     summed_constant = constant + rdp_constants.take(entity_ids_query)
     if max_entity < len(rdp_constants):
         return rdp_constants.at[entity_ids_query].set(summed_constant)
@@ -71,7 +82,7 @@ def first_try_branch(constant, rdp_constants, entity_ids_query, max_entity):
 
 
 @partial(jax.jit, static_argnums=1)
-def compute_rdp_constant(rdp_params: RDPParams, private: bool):
+def compute_rdp_constant(rdp_params: RDPParams, private: bool) -> jax.numpy.DeviceArray:
     squared_Ls = rdp_params.Ls**2
     squared_sigma = rdp_params.sigmas**2
 
@@ -82,12 +93,13 @@ def compute_rdp_constant(rdp_params: RDPParams, private: bool):
         # bounds is computed on the metadata
         squared_l2 = rdp_params.l2_norm_bounds**2
 
-    constant = (squared_Ls * squared_l2 / (2 * squared_sigma)) * rdp_params.coeffs
-    return constant
+    return (squared_Ls * squared_l2 / (2 * squared_sigma)) * rdp_params.coeffs
 
 
 @jax.jit
-def get_budgets_and_mask(epsilon_spend: jnp.array, user_budget: jnp.float64):
+def get_budgets_and_mask(
+    epsilon_spend: jnp.array, user_budget: jnp.float64
+) -> Tuple[float, float, jax.numpy.DeviceArray]:
     # Function to vectorize the result of the budget computation.
     mask = jnp.ones_like(epsilon_spend) * user_budget < epsilon_spend
     # get the highest value which was under budget and represented by False in the mask
@@ -260,7 +272,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return results.x, results.fun
 
     def _get_batch_rdp_constants(
-        self, entity_ids_query: jnp.ndarray, rdp_params, private: bool = True
+        self, entity_ids_query: jnp.ndarray, rdp_params: RDPParams, private: bool = True
     ) -> jnp.ndarray:
         constant = compute_rdp_constant(rdp_params, private)
         self._rdp_constants = first_try_branch(

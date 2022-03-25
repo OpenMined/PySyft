@@ -84,7 +84,7 @@ def vectorized_publish(
 
     print(f"Starting vectorized publish: {type(ledger)}")
     # Get all unique entities
-    unique_data_subjects = data_subjects.one_hot_lookup
+    # unique_data_subjects = data_subjects.one_hot_lookup
     # unique_data_subject_indices = np.arange(
 
     print("Obtained data subject indices")

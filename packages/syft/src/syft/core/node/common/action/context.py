@@ -1,1 +1,1 @@
-OBJ_CACHE : dict =  {}
+OBJ_CACHE: dict = {}
