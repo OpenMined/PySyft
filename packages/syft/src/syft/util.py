@@ -346,7 +346,7 @@ left_name = [
 right_name = [
     "altman",
     "bach",
-    "bengio",
+    "bengios",
     "bostrom",
     "botvinick",
     "brockman",
