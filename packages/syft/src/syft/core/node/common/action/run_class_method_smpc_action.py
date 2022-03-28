@@ -131,13 +131,11 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         seed_id_locations = self.seed_id_locations
 
         # TODO: For the moment we don't run any SMPC operation that provides any kwarg
-        SMPC_CONTEXT = {
+        context.SMPC_CONTEXT = {
             "seed_id_locations": seed_id_locations,
             "node": node,
             "read_permissions": result_read_permissions,
         }
-
-        context.SMPC_CONTEXT = SMPC_CONTEXT
         result = method(*upcasted_args, **upcasted_kwargs)
 
         id_at_location = self.id_at_location
@@ -246,6 +244,8 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
 
 # #### NOTE: DO NOT DELETE THIS CODE######
+# This code is part of the retrieable actions logic in SMPC
+# We might switch to this,if we make a switch to retriable actions instead of greeen threads.
 # @staticmethod
 # def execute_smpc_action(
 #     node: AbstractNode, msg: "SMPCActionMessage", verify_key: VerifyKey

@@ -14,7 +14,6 @@ from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import PassthroughTensor  # type: ignore
-from ..smpc.share_tensor import ShareTensor
 from .adp_tensor import ADPTensor
 from .intermediate_gamma import IntermediateGammaTensor
 
@@ -47,7 +46,7 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
 
     __serde_overrides__ = {"entities": [numpy2list, list2numpy]}
 
-    sharetensor_values: Optional[ShareTensor]
+    fpt_values: Optional[FixedPrecisionTensor]
 
     def __init__(
         self,

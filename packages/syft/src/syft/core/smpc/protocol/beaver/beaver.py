@@ -316,7 +316,7 @@ def matmul_store_get(
     return primitive
 
 
-# TTP Operations for Public Division
+# Trusted Third Party (TTP) Operations for Public Division
 
 
 @register_primitive_generator("beaver_wraps")

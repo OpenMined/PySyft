@@ -37,6 +37,10 @@ class BeaverAction(ImmediateActionWithoutReply):
         super().__init__(address=address, msg_id=msg_id)
         self.values = values
         self.locations = locations
+        if len(values) != len(locations):
+            raise ValueError(
+                f"Iterable size for Values: {len(values)} Locations: {len(locations)} should be same for Beaver Action."
+            )
 
     def __repr__(self) -> str:
         res = f"Values: {self.values}, "
@@ -79,8 +83,8 @@ class BeaverAction(ImmediateActionWithoutReply):
             raise Exception(f"Object at {id_at_location} should be a List or None")
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        for idx in range(len(self.values)):
-            BeaverAction.beaver_populate(self.values[idx], self.locations[idx], node)
+        for value, location in zip(self.values, self.locations):
+            BeaverAction.beaver_populate(value, location, node)
 
     def _object2proto(self) -> BeaverAction_PB:
         values = [sy.serialize(value) for value in self.values]

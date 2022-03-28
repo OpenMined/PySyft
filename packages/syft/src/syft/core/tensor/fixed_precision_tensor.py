@@ -83,8 +83,8 @@ class FixedPrecisionTensor(PassthroughTensor):
         if isinstance(other, FixedPrecisionTensor):
             if self.base != other.base or self.precision != other.precision:
                 raise ValueError(
-                    f"Base:{self.base,other.base} and Precision:"
-                    + f"{self.precision, other.precision} should be same for"
+                    f"Base:{self.base,other.base} and Precision: "
+                    + f"{self.precision, other.precision} should be same for "
                     + "computation on FixedPrecisionTensor"
                 )
         elif is_acceptable_simple_type(other):
@@ -122,7 +122,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         self, other: Union[int, np.integer, FixedPrecisionTensor]
     ) -> FixedPrecisionTensor:
         if isinstance(other, FixedPrecisionTensor):
-            raise ValueError("We pdo not support Private Division yet.")
+            raise ValueError("We do not support Private Division yet.")
 
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child / other

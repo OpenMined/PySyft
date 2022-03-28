@@ -67,7 +67,7 @@ def mul_master(
             p_kwargs={"a_shape": shape_x, "b_shape": shape_y},
             ring_size=ring_size,
         )
-        # TODO: Should input after the computation of a dummpy function
+        # TODO: Should input size after the computation of a dummy function
         # This will not work for matmul
         CryptoPrimitiveProvider.generate_primitives(
             "beaver_wraps",
