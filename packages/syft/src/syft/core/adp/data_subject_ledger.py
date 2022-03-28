@@ -77,6 +77,12 @@ def first_try_branch(
     else:
         pad_length = max_entity - len(rdp_constants) + 1
         rdp_constants = jnp.concatenate([rdp_constants, jnp.zeros(shape=pad_length)])
+        print("constant:", type(constant))
+        print("rdp_constants", type(rdp_constants))
+        print("entity_ids_query", type(entity_ids_query))
+        print("entity_ids_query", entity_ids_query)
+        print("rdp_constants", rdp_constants)
+
         summed_constant = constant + rdp_constants.take(entity_ids_query)
         return rdp_constants.at[entity_ids_query].set(summed_constant)
 
@@ -125,6 +131,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         self._rdp_constants = (
             constants if constants is not None else np.array([], dtype=np.float64)
         )
+        print("rdp_constants upon initialization: ", self._rdp_constants.shape)
         self._update_number = update_number
         self._timestamp_of_last_update = (
             timestamp_of_last_update
@@ -274,7 +281,21 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     def _get_batch_rdp_constants(
         self, entity_ids_query: jnp.ndarray, rdp_params: RDPParams, private: bool = True
     ) -> jnp.ndarray:
+        print(rdp_params.sigmas.shape)
+        print(rdp_params.l2_norms.shape)
+        print(rdp_params.l2_norm_bounds.shape)
+        print(rdp_params.Ls.shape)
+        print(rdp_params.coeffs.shape)
+
+        print("those parameters were: sigmas, l2 norms, l2_norm_bounds, Ls, coeffs")
         constant = compute_rdp_constant(rdp_params, private)
+        print("constant")
+        print(type(constant))
+        print(constant.shape)
+        print("entity_ids_query", type(entity_ids_query), entity_ids_query.shape)
+        print("rdp_constants", type(self._rdp_constants), self._rdp_constants.shape)
+        if self._rdp_constants.size == 0:
+            self._rdp_constants = np.zeros_like(np.asarray(constant, constant.dtype))
         self._rdp_constants = first_try_branch(
             constant,
             self._rdp_constants,
