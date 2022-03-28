@@ -156,7 +156,7 @@ class RequestAPI:
         if content is None:
             content = {}
 
-        if isinstance(syft_msg, NewSyftMessage):
+        if issubclass(syft_msg, NewSyftMessage):
             signed_msg = syft_msg_constructor(  # type: ignore
                 address=self.client.address, reply_to=self.client.address, kwargs=content  # type: ignore
             ).sign(  # type: ignore

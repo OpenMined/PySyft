@@ -71,9 +71,6 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
 )
 from ..common.node_service.role_manager.role_manager_service import RoleManagerService
 from ..common.node_service.simple.simple_service import SimpleService
-from ..common.node_service.tensor_manager.tensor_manager_service import (
-    TensorManagerService,
-)
 from ..common.node_service.user_auth.user_auth_service import UserLoginService
 from ..common.node_service.user_manager.user_manager_service import UserManagerService
 from ..common.node_service.vpn.vpn_service import VPNConnectService
@@ -105,8 +102,8 @@ class Domain(Node):
         verify_key: Optional[VerifyKey] = None,
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
-        settings: BaseSettings = BaseSettings(),
         store_type: type = RedisStore,
+        settings: Optional[BaseSettings] = None,
     ):
 
         if db_engine is None:
@@ -122,6 +119,7 @@ class Domain(Node):
             verify_key=verify_key,
             db_engine=db_engine,
             store_type=store_type,
+            settings=settings,
         )
 
         # share settings with the FastAPI application level
@@ -159,11 +157,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(VPNJoinService)
         self.immediate_services_with_reply.append(VPNStatusService)
         self.immediate_services_with_reply.append(NodeSetupService)
-        self.immediate_services_with_reply.append(TensorManagerService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
         self.immediate_services_with_reply.append(DatasetManagerService)
-        # self.immediate_services_with_reply.append(TransferObjectService)
         self.immediate_services_with_reply.append(RequestService)
         self.immediate_services_with_reply.append(UserLoginService)
 
@@ -283,11 +279,15 @@ class Domain(Node):
         # Currently theres no way to find which object to check the permissions
         # to find the stored request_id
         for obj_id in self.store.keys():
-            for _, request_id in self.store[obj_id].read_permissions.items():
+            for _, request_id in self.store.get(
+                obj_id, proxy_only=True
+            ).read_permissions.items():
                 if request_id == message_request_id:
                     return RequestStatus.Accepted
 
-            for _, request_id in self.store[obj_id].search_permissions.items():
+            for _, request_id in self.store.get(
+                obj_id, proxy_only=True
+            ).search_permissions.items():
                 if request_id == message_request_id:
                     return RequestStatus.Accepted
 
