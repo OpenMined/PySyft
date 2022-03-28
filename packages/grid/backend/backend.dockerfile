@@ -2,7 +2,8 @@ FROM python:3.9.9-slim as build
 
 RUN --mount=type=cache,target=/var/cache/apt \
   apt-get update && \
-  apt-get install -y --no-install-recommends curl python3-dev gcc make build-essential
+  apt-get install -y --no-install-recommends curl python3-dev gcc make build-essential \
+                                             cmake
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
@@ -37,16 +38,6 @@ RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit
 FROM python:3.9.9-slim as backend
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
-
-RUN if [ $(uname -m) != "x86_64" ]; then \
-  apt-get update \
-  && apt-get install --assume-yes --no-install-recommends \
-  cmake \
-  g++ \
-  make \
-  libzip-dev \
-  && apt-get clean all; \
-  fi
 
 # copy start scripts and gunicorn conf
 COPY grid/backend/docker-scripts/start.sh /start.sh
