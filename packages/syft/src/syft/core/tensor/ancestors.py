@@ -418,6 +418,7 @@ class PhiTensorAncestor(TensorChainManager):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
+        ndept: bool = False,
     ) -> PhiTensorAncestor:
         return self.copy()._private(
             min_val=min_val,
@@ -425,6 +426,7 @@ class PhiTensorAncestor(TensorChainManager):
             scalar_manager=scalar_manager,
             entities=entities,
             skip_blocking_checks=skip_blocking_checks,
+            ndept=ndept,
         )
 
     def _private(
@@ -478,15 +480,23 @@ class PhiTensorAncestor(TensorChainManager):
         if isinstance(entities, (list, tuple)):
             entities = np.array(entities)
 
-        if len(entities) != 1 and entities.shape != self.shape:
-            raise Exception(
-                "Entities shape doesn't match data shape. If you're"
-                " going to pass in something other than 1 entity for the"
-                " entire tensor or one entity per row, you're going to need"
-                " to make the np.ndarray of entities have the same shape as"
-                " the tensor you're calling .private() on. Try again."
+        # if len(entities) != 1 and entities.shape != self.shape:
+        #     raise Exception(
+        #         "Entities shape doesn't match data shape. If you're"
+        #         " going to pass in something other than 1 entity for the"
+        #         " entire tensor or one entity per row, you're going to need"
+        #         " to make the np.ndarray of entities have the same shape as"
+        #         " the tensor you're calling .private() on. Try again."
+        #     )
+
+        if not isinstance(entities, EntityList):
+            one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
+        else:
+            one_hot_lookup, entities_indexed = (
+                entities.one_hot_lookup,
+                entities.entities_indexed,
             )
-        one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
+
         for entity in one_hot_lookup:
             if not isinstance(entity, (str, Entity)):
                 raise ValueError(
@@ -562,7 +572,7 @@ class PhiTensorAncestor(TensorChainManager):
             entity_list = EntityList(one_hot_lookup, entities_indexed)
 
             if isinstance(min_val, (bool, int, float)):
-                min_vals = np.array(min_val)
+                min_vals = np.array(min_val).ravel()  # make it 1D
             else:
                 raise Exception(
                     "min_val should be either float,int,bool got "
@@ -571,7 +581,7 @@ class PhiTensorAncestor(TensorChainManager):
                 )
 
             if isinstance(max_val, (bool, int, float)):
-                max_vals = np.array(max_val)
+                max_vals = np.array(max_val).ravel()  # make it 1D
             else:
                 raise Exception(
                     "min_val should be either float,int,bool got "

@@ -184,19 +184,21 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
         curse(obj, name, attr)
 
 
-def obj2pointer_type(obj: object) -> type:
-    fqn = None
-    try:
-        fqn = get_fully_qualified_name(obj=obj)
-    except Exception as e:
-        # sometimes the object doesn't have a __module__ so you need to use the type
-        # like: collections.OrderedDict
-        debug(f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}")
-        fqn = get_fully_qualified_name(obj=type(obj))
+def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) -> type:
+    if fqn is None:
+        try:
+            fqn = get_fully_qualified_name(obj=obj)
+        except Exception as e:
+            # sometimes the object doesn't have a __module__ so you need to use the type
+            # like: collections.OrderedDict
+            debug(
+                f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
+            )
+            fqn = get_fully_qualified_name(obj=type(obj))
 
-    # TODO: fix for other types
-    if obj is None:
-        fqn = "syft.lib.python._SyNone"
+        # TODO: fix for other types
+        if obj is None:
+            fqn = "syft.lib.python._SyNone"
 
     try:
         ref = syft.lib_ast.query(fqn, obj_type=type(obj))

@@ -31,4 +31,4 @@ else
     echo "Linux"
     find src/syft/proto -name "*_pb2.py" -print0 | xargs -0 sed -i 's/from \(proto.*\) import /from syft.\1 import /g'
 fi
-cd ../../ && isort . && black .
+cd ../../ && isort . && cd - && black .

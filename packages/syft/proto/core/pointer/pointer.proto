@@ -15,4 +15,5 @@ message Pointer {
   string object_type = 7;
   string attribute_name = 8;
   optional bytes public_shape = 9;
+  optional bytes obj_public_kwargs = 10;
 }
