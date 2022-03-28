@@ -528,7 +528,6 @@ This will create a file called `azure_vars.json` which will look something like 
 {
   "appId": "21b92977-8ad0-467c-ae3a-47c864418126",
   "displayName": "openmined-images",
-  "name": "21b92977-8ad0-467c-ae3a-47c864418126",
   "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "tenant": "e3f9defa-1378-49b3-aed7-3dcacb468c41"
 }

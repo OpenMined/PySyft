@@ -4,7 +4,6 @@ variable "appId" {
   sensitive = true
 }
 
-variable "name" {}
 variable "displayName" {}
 
 variable "password" {
@@ -48,7 +47,7 @@ source "azure-arm" "domain" {
   # resource_group_name               = "openmined-images" # vhd
   # storage_account                   = "openminedimgs" # vhd
   # managed image
-  managed_image_name                = "openmined-domain-ubuntu2004-1" # managed image
+  managed_image_name                = "openmined-domain-ubuntu2004-2" # managed image
   managed_image_resource_group_name = "openmined-images" # managed image
 }
 
