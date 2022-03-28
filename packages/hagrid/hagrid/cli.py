@@ -785,6 +785,7 @@ def create_launch_docker_cmd(
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
         "VERSION_HASH": GRID_SRC_VERSION[1],
+        "STACK_API_KEY": 'pwgen -B1 12'
     }
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
