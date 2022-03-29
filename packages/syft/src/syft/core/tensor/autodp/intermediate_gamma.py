@@ -30,7 +30,7 @@ from ...common.serde.serializable import serializable
 from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from ..broadcastable import is_broadcastable
-from ..fixed_precision_tensor import FixedPrecisionTensor
+from ..smpc.share_tensor import ShareTensor
 from .adp_tensor import ADPTensor
 
 SupportedChainType = Union[int, bool, float, np.ndarray, PassthroughTensor]
@@ -555,19 +555,17 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             user_key=user_key,
             public_only=True,
         )
-        for i in range(len(result)):
-            result[i] = (
-                result[i].child
-                if isinstance(result[i], FixedPrecisionTensor)
-                else result[i]
-            )
 
         result = np.array(result).reshape(self.shape)
 
         print("IntermediaGammaTensor:510: SUCCESS: publish(scalars=self.flat_scalars)")
         fpt_values = getattr(self, "fpt_values", None)
         if fpt_values is not None:
-            fpt_values.child.child = result
+            if isinstance(fpt_values.child, ShareTensor):
+                fpt_values.child.child = result
+            else:
+                fpt_values.child = result
+
             result = fpt_values
         return result
 
