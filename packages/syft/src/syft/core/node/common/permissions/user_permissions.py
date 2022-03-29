@@ -77,7 +77,7 @@ class IsNodeDaaEnabled(BasePermission):
 
 
 class NoRestriction(BasePermission):
-    def has_permissions(
+    def has_permission(
         self,
         msg: SyftMessage,
         node: NodeServiceInterface,

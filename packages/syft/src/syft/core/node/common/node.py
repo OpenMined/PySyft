@@ -20,6 +20,7 @@ from typing import Union
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pydantic import BaseSettings
 from sqlalchemy import create_engine
 from sqlalchemy.orm import declarative_base
 
@@ -129,6 +130,7 @@ class Node(AbstractNode):
         TableBase: Any = None,
         db_engine: Any = None,
         store_type: type = RedisStore,
+        settings: Optional[BaseSettings] = None,
     ):
 
         # The node has a name - it exists purely to help the
@@ -138,6 +140,8 @@ class Node(AbstractNode):
         super().__init__(
             name=name, network=network, domain=domain, device=device, vm=vm
         )
+
+        self.settings = settings
 
         # TableBase is the base class from which all ORM classes must inherit
         # If one isn't provided then we can simply make one.
@@ -167,7 +171,7 @@ class Node(AbstractNode):
         # become quite numerous (or otherwise fill up RAM).
         # self.store is the elastic memory.
 
-        self.store = store_type(db=self.db_engine)
+        self.store = store_type(db=self.db_engine, settings=settings)
         self.setup = SetupManager(database=self.db_engine)
 
         # We need to register all the services once a node is created
