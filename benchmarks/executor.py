@@ -1,3 +1,18 @@
+"""
+This file can be used to parametrize the benchmarking of autodp tensor operations
+This file can be run as:
+python executor.py MODE_OF_OPERATION SUITE_ARGS PERF_ARGS
+
+Parameters
+----------
+MODE_OF_OPERATION: {rept, sept, all}
+    This option allow you to choose whether you want to run the rept tests or the septs test or both
+SUITE_ARGS: 
+    These arguments control the size of the generated data used in our tests
+PERF_ARGS:
+    These arguments are inherited from the pyperf runner class, for more info: https://pyperf.readthedocs.io/en/latest/runner.html
+
+"""
 # stdlib
 import os
 from pathlib import Path
@@ -30,25 +45,26 @@ def get_git_revision_short_hash() -> str:
 def get_parser():
     parser = argparse.ArgumentParser(description="Process some integers.")
 
-    parser.add_argument("--run", choices=["rept", "sept", "both"])
+    parser.add_argument("--run", choices=["rept", "sept", "all"], 
+                        help="Choice whether you want to test the Single Entity Phi Tensor or the Row Entity Phi Tensor or both")
     subparsers = parser.add_subparsers(dest="run_type")
     subparsers.required = True
 
     parser_sept = subparsers.add_parser("sept")
-    parser_sept.add_argument("--sept_rows", action="store", type=int, default=1000)
-    parser_sept.add_argument("--sept_cols", action="store", type=int, default=10)
+    parser_sept.add_argument("--sept_rows", action="store", type=int, default=1000, help='number of rows')
+    parser_sept.add_argument("--sept_cols", action="store", type=int, default=10, help='number of cols')
 
     parser_rept = subparsers.add_parser("rept")
-    parser_rept.add_argument("--rept_rows", action="store", type=int, default=1000)
-    parser_rept.add_argument("--rept_cols", action="store", type=int, default=10)
-    parser_rept.add_argument("--rept_dimension", action="store", type=int, default=15)
+    parser_rept.add_argument("--rept_rows", action="store", type=int, default=1000, help='number of rows')
+    parser_rept.add_argument("--rept_cols", action="store", type=int, default=10, help='number of cols')
+    parser_rept.add_argument("--rept_dimension", action="store", type=int, default=15, help='dimension of the row tensor')
 
     parser_all = subparsers.add_parser("all")
-    parser_all.add_argument("--sept_rows", action="store", type=int, default=1000)
-    parser_all.add_argument("--sept_cols", action="store", type=int, default=10)
-    parser_all.add_argument("--rept_rows", action="store", type=int, default=1000)
-    parser_all.add_argument("--rept_cols", action="store", type=int, default=10)
-    parser_all.add_argument("--rept_dimension", action="store", type=int, default=15)
+    parser_all.add_argument("--sept_rows", action="store", type=int, default=1000, help='number of rows for the sept scenario')
+    parser_all.add_argument("--sept_cols", action="store", type=int, default=10, help='number of cols for the sept scenario')
+    parser_all.add_argument("--rept_rows", action="store", type=int, default=1000, help='number of rows for the rept scenario')
+    parser_all.add_argument("--rept_cols", action="store", type=int, default=10, help='number of cols for the rept scenario')
+    parser_all.add_argument("--rept_dimension", action="store", type=int, default=15, help='dimension of the row tensor')
 
     return parser
 
