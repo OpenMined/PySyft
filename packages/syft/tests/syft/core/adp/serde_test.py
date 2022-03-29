@@ -47,4 +47,3 @@ def test_serde_scalar(scalar: BaseScalar) -> None:
 
     if hasattr(scalar, "entity"):
         assert scalar.entity.name == deserialized.entity.name
-        assert scalar.entity.id == deserialized.entity.id

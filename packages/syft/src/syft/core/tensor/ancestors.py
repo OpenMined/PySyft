@@ -16,7 +16,9 @@ from numpy.typing import ArrayLike
 
 # relative
 from ..adp.entity import Entity
+from ..adp.entity_list import EntityList
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
+from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
 from .passthrough import is_acceptable_simple_type  # type: ignore
@@ -45,6 +47,19 @@ def _RowEntityPhiTensor() -> Type[PassthroughTensor]:
 
         _RowEntityPhiTensorRef = RowEntityPhiTensor
     return _RowEntityPhiTensorRef
+
+
+_NDimEntityPhiTensorRef = None
+
+
+def _NDimEntityPhiTensor() -> Type[PassthroughTensor]:
+    global _NDimEntityPhiTensorRef
+    if _NDimEntityPhiTensorRef is None:
+        # relative
+        from .autodp.ndim_entity_phi import NDimEntityPhiTensor
+
+        _NDimEntityPhiTensorRef = NDimEntityPhiTensor
+    return _NDimEntityPhiTensorRef
 
 
 _AutogradTensorRef = None
@@ -403,14 +418,15 @@ class PhiTensorAncestor(TensorChainManager):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
+        ndept: bool = False,
     ) -> PhiTensorAncestor:
-
         return self.copy()._private(
             min_val=min_val,
             max_val=max_val,
             scalar_manager=scalar_manager,
             entities=entities,
             skip_blocking_checks=skip_blocking_checks,
+            ndept=ndept,
         )
 
     def _private(
@@ -420,9 +436,8 @@ class PhiTensorAncestor(TensorChainManager):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
+        ndept: bool = False,
     ) -> PhiTensorAncestor:
-        """ """
-
         # PHASE 1: RUN CHECKS
 
         # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
@@ -445,7 +460,6 @@ class PhiTensorAncestor(TensorChainManager):
 
         # Check 2: If entities == None, then run the entity creation tutorial
         if entities is None:
-
             if skip_blocking_checks:
                 raise Exception(
                     "Error: 'entities' argument to .private() must not be None!"
@@ -460,50 +474,38 @@ class PhiTensorAncestor(TensorChainManager):
             entities = [Entity(entities)]
         elif isinstance(entities, Entity):
             entities = [entities]
-
         # Check 4: If entities are a list, are the items strings or Entity objects.
         # If they're strings lets create Entity objects.
-        elif isinstance(entities, list):
-            _entities = list()
-            for e in entities:
-                if isinstance(e, str):
-                    _entities.append(Entity(e))
-                elif isinstance(e, int):
-                    _entities.append(Entity(str(e)))
-                elif isinstance(e, Entity):
-                    _entities.append(e)
-                elif isinstance(e, (list, np.ndarray)):
-                    # looks like it's actually a list of tensors, let's try to
-                    # cast the whole thing to an ndarray nd see if that works.
-                    entities = np.array(entities)
-                    break
-                else:
-                    raise Exception("What kind of entity is this?!")
 
-            entities = _entities
+        if isinstance(entities, (list, tuple)):
+            entities = np.array(entities)
 
-        elif isinstance(entities, np.ndarray):
-            if entities.shape != self.shape:
-                raise Exception(
-                    "Entities shape doesn't match data shape. If you're"
-                    " going to pass in something other than 1 entity for the"
-                    " entire tensor or one entity per row, you're going to need"
-                    " to make the np.ndarray of entities have the same shape as"
-                    " the tensor you're calling .private() on. Try again."
-                )
-            else:
+        # if len(entities) != 1 and entities.shape != self.shape:
+        #     raise Exception(
+        #         "Entities shape doesn't match data shape. If you're"
+        #         " going to pass in something other than 1 entity for the"
+        #         " entire tensor or one entity per row, you're going to need"
+        #         " to make the np.ndarray of entities have the same shape as"
+        #         " the tensor you're calling .private() on. Try again."
+        #     )
 
-                raise Exception(
-                    "We don't yet support passing in a tensor of arbitrary entities. "
-                    "For now, call.flatten() on your tensor so you have one entity per row, "
-                    "or split your tensor into separate tensors for each value. We apologize "
-                    "for the inconvenience and will be adding this functionality soon!"
+        if not isinstance(entities, EntityList):
+            one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
+        else:
+            one_hot_lookup, entities_indexed = (
+                entities.one_hot_lookup,
+                entities.entities_indexed,
+            )
+
+        for entity in one_hot_lookup:
+            if not isinstance(entity, (str, Entity)):
+                raise ValueError(
+                    f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
                 )
 
         # PHASE 2: CREATE CHILD
         if len(entities) == 1:
             # if there's only one entity - push a SingleEntityPhiTensor
-
             if isinstance(min_val, (float, int)):
                 min_vals = (self.child * 0) + min_val
             else:
@@ -527,8 +529,7 @@ class PhiTensorAncestor(TensorChainManager):
             )
 
         # if there's row-level entities - push a RowEntityPhiTensor
-        elif entities is not None and len(entities) == self.shape[0]:
-
+        elif not ndept and entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
 
             new_list = list()
@@ -566,9 +567,45 @@ class PhiTensorAncestor(TensorChainManager):
 
             self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
 
+        elif ndept and entities is not None and len(entities) == self.shape[0]:
+            class_type = _SingleEntityPhiTensor()
+            entity_list = EntityList(one_hot_lookup, entities_indexed)
+
+            if isinstance(min_val, (bool, int, float)):
+                min_vals = np.array(min_val).ravel()  # make it 1D
+            else:
+                raise Exception(
+                    "min_val should be either float,int,bool got "
+                    + str(type(min_val))
+                    + " instead."
+                )
+
+            if isinstance(max_val, (bool, int, float)):
+                max_vals = np.array(max_val).ravel()  # make it 1D
+            else:
+                raise Exception(
+                    "min_val should be either float,int,bool got "
+                    + str(type(max_val))
+                    + " instead."
+                )
+
+            if min_vals.shape != self.child.shape:
+                min_vals = lazyrepeatarray(min_vals, self.child.shape)
+
+            if max_vals.shape != self.child.shape:
+                max_vals = lazyrepeatarray(max_vals, self.child.shape)
+
+            self.replace_abstraction_top(
+                tensor_type=_NDimEntityPhiTensor(),
+                child=self.child,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                entities=entity_list,  # type: ignore
+                row_type=class_type,  # type: ignore
+            )  # type: ignore
+
         # TODO: if there's element-level entities - push all elements with PhiScalars
         else:
-
             raise Exception(
                 "If you're passing in mulitple entities, please pass in one entity per row."
             )

@@ -11,6 +11,7 @@ import syft
 
 # relative
 from ....util import aggressive_set_attr
+from .capnp import CAPNP_REGISTRY
 
 module_type = type(syft)
 
@@ -92,6 +93,7 @@ def serializable(
     generate_wrapper: bool = False,
     protobuf_object: bool = False,
     recursive_serde: bool = False,
+    capnp_bytes: bool = False,
 ) -> Any:
     def rs_decorator(cls: Any) -> Any:
         # relative
@@ -104,14 +106,14 @@ def serializable(
                 f"__attr_allowlist__ not defined for type {cls.__name__},"
                 " even if it uses recursive serde, defaulting on the empty list."
             )
-            setattr(cls, "__attr_allowlist__", [])
+            cls.__attr_allowlist__ = []
 
         if not hasattr(cls, "__serde_overrides__"):
-            setattr(cls, "__serde_overrides__", {})
+            cls.__serde_overrides__ = {}
 
-        setattr(cls, "_object2proto", rs_object2proto)
-        setattr(cls, "_proto2object", staticmethod(rs_proto2object))
-        setattr(cls, "get_protobuf_schema", staticmethod(rs_get_protobuf_schema))
+        cls._object2proto = rs_object2proto
+        cls._proto2object = staticmethod(rs_proto2object)
+        cls.get_protobuf_schema = staticmethod(rs_get_protobuf_schema)
         return cls
 
     def serializable_decorator(cls: Any) -> Any:
@@ -126,6 +128,14 @@ def serializable(
         else:
             protobuf_schema.schema2type = cls
         return cls
+
+    def capnp_decorator(cls: Any) -> Any:
+        # register deserialize with the capnp registry
+        CAPNP_REGISTRY[cls.__name__] = cls._bytes2object
+        return cls
+
+    if capnp_bytes:
+        return capnp_decorator
 
     if generate_wrapper:
         return GenerateWrapper

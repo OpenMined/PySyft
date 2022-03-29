@@ -15,7 +15,7 @@ import syft as sy
 def get_permission(
     obj: Any, node: sy.VirtualMachine, client: sy.VirtualMachineClient
 ) -> None:
-    remote_obj = node.store[obj.id_at_location]
+    remote_obj = node.store.get(obj.id_at_location, proxy_only=True)
     remote_obj.read_permissions[client.verify_key] = obj.id_at_location
 
 
@@ -541,7 +541,7 @@ def test_list_iterator(
     remote_sy_obj.set_request_config({})
     rsy_iter = iter(remote_sy_obj)
 
-    for i in range(len(py_obj)):
+    for _ in range(len(py_obj)):
         py_elem = next(py_iter)
         sy_elem = next(sy_iter)
         rsy_elem = next(rsy_iter)
@@ -566,7 +566,7 @@ def test_dict_iterator(test_object: List, client: sy.VirtualMachineClient) -> No
     remote_sy_obj.set_request_config({})
     rsy_iter = iter(remote_sy_obj)
 
-    for i in range(len(py_obj)):
+    for _ in range(len(py_obj)):
         py_elem = next(py_iter)
         sy_elem = next(sy_iter)
         rsy_elem = next(rsy_iter)
@@ -591,7 +591,7 @@ def test_reversed_iterator(
     sy_iter = reversed(sy_obj)
     rsy_iter = reversed(remote_sy_obj)
 
-    for i in range(len(py_obj)):
+    for _ in range(len(py_obj)):
         py_elem = next(py_iter)
         sy_elem = next(sy_iter)
         rsy_elem = next(rsy_iter)

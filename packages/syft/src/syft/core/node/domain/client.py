@@ -29,6 +29,7 @@ from ...node.common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
 from ...pointer.pointer import Pointer
+from ...store.proxy_dataset import ProxyDataset
 from ...tensor.autodp.adp_tensor import ADPTensor
 from ...tensor.tensor import Tensor
 from ..abstract.node import AbstractNodeClient
@@ -53,6 +54,8 @@ from ..common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
 from ..common.node_service.simple.obj_exists import DoesObjectExistMessage
+from ..common.util import check_send_to_blob_storage
+from ..common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
@@ -555,6 +558,8 @@ class DomainClient(Client):
         name: Optional[str] = None,
         description: Optional[str] = None,
         skip_checks: bool = False,
+        chunk_size: int = 536870912,  # 500 MB
+        use_blob_storage: bool = False,
         **metadata: Dict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
@@ -630,11 +635,8 @@ class DomainClient(Client):
             "\rLoading dataset... checking asset types...                              "
         )
 
-        # relative
-        from ....lib.python.util import downcast
-
         if not skip_checks:
-            for asset_name, asset in assets.items():
+            for _, asset in assets.items():
 
                 if not isinstance(asset, Tensor) or not isinstance(
                     getattr(asset, "child", None), ADPTensor
@@ -669,6 +671,7 @@ class DomainClient(Client):
                     # if pref == "n":
                     #     raise Exception("Dataset loading cancelled.")
 
+        # serialize metadata
         metadata["name"] = bytes(name, "utf-8")  # type: ignore
         metadata["description"] = bytes(description, "utf-8")  # type: ignore
 
@@ -676,14 +679,38 @@ class DomainClient(Client):
             if isinstance(v, str):  # type: ignore
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
-        assets = downcast(assets)
-        metadata = downcast(metadata)
+        # If one of the assets needs to be send to blob_storage, then store all other
+        # assets to blob storage as well
+        # TODO: Determine use_blob_storage from the clients node metadata
+        send_assets_to_blob_storage = any(
+            [
+                check_send_to_blob_storage(obj=asset, use_blob_storage=use_blob_storage)
+                for asset in assets.values()
+            ]
+        )
 
-        binary_dataset = serialize(assets, to_bytes=True)
+        if send_assets_to_blob_storage:
+            # upload to blob storage
+            proxy_assets: Dict[str, ProxyDataset] = {}
+            # send each asset to blob storage and pack the results back
+            for asset_name, asset in assets.items():
+                proxy_obj = upload_to_s3_using_presigned(
+                    client=self,
+                    data=asset,
+                    chunk_size=chunk_size,
+                    asset_name=asset_name,
+                    dataset_name=name,
+                )
+                proxy_assets[asset_name] = proxy_obj
+
+            dataset_bytes = serialize(proxy_assets, to_bytes=True)
+        else:
+            # upload directly
+            dataset_bytes = serialize(assets, to_bytes=True)
 
         sys.stdout.write("\rLoading dataset... uploading...                        ")
         self.datasets.create_syft(
-            dataset=binary_dataset, metadata=metadata, platform="syft"
+            dataset=dataset_bytes, metadata=metadata, platform="syft"
         )
         sys.stdout.write(
             "\rLoading dataset... uploading... SUCCESS!                        "
