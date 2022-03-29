@@ -1,5 +1,9 @@
 FROM headscale/headscale:0.11
 
+# set UTC timezone
+ENV TZ=Etc/UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
+
 RUN DEBIAN_FRONTEND=noninteractive \
     apt-get update && apt-get install wireguard-tools python3 python3-pip -y
 
