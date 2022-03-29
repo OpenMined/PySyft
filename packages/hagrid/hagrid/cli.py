@@ -992,7 +992,6 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": GRID_SRC_VERSION[1],
         "USE_BLOB_STORAGE": use_blob_storage,
-        "STACK_API_KEY": 'pwgen -B1 12'
     }
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
