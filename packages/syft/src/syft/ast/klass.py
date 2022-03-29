@@ -32,6 +32,7 @@ from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_messages import (
     ResolvePointerTypeMessage,
 )
+from ..core.node.common.util import upload_to_s3_using_presigned
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
 from ..logger import traceback_and_raise
@@ -682,6 +683,8 @@ class Class(Callable):
             tags: Optional[List[str]] = None,
             searchable: Optional[bool] = None,
             id_at_location_override: Optional[UID] = None,
+            chunk_size: Optional[int] = None,
+            send_to_blob_storage: bool = False,
             **kwargs: Dict[str, Any],
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
 
@@ -708,6 +711,8 @@ class Class(Callable):
                     DeprecationWarning,
                 )
                 pointable = searchable
+
+            chunk_size = chunk_size if chunk_size is not None else 536870912  # 500 MB
 
             if not hasattr(self, "id"):
                 try:
@@ -756,10 +761,20 @@ class Class(Callable):
             else:
                 ptr.gc_enabled = True
 
-            # Step 2: create message which contains object to send
+            if send_to_blob_storage:
+                store_data = upload_to_s3_using_presigned(
+                    client=client,
+                    data=self,
+                    chunk_size=chunk_size,
+                    asset_name=id_at_location.no_dash,
+                )
+            else:
+                store_data = self
+
+            # Step 6: create message which contains object to send
             storable = StorableObject(
                 id=ptr.id_at_location,
-                data=self,
+                data=store_data,
                 tags=tags,
                 description=description,
                 search_permissions={VERIFYALL: None} if pointable else {},
@@ -769,10 +784,10 @@ class Class(Callable):
             immediate = kwargs.get("immediate", True)
 
             if immediate:
-                # Step 3: send message
+                # Step 7: send message
                 client.send_immediate_msg_without_reply(msg=obj_msg)
 
-                # Step 4: return pointer
+                # Step 8: return pointer
                 return ptr
             else:
                 return ptr, obj_msg

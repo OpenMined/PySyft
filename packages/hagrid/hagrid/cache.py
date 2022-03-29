@@ -18,6 +18,13 @@ arg_defaults = {
     "azure_resource_group": "openmined",
     "azure_location": "westus",
     "azure_size": "Standard_D2s_v3",
+    "gcp_zone": "us-central1-c",
+    "gcp_machine_type": "e2-standard-4",
+    "gcp_project_id": "",
+    "gcp_username": "",
+    "gcp_key_path": "~/.ssh/google_compute_engine",
+    "gcp_repo": "OpenMined/PySyft",
+    "gcp_branch": DEFAULT_BRANCH,
 }
 
 
@@ -47,6 +54,7 @@ class ArgCache:
         if key not in self.__dict__ and key in arg_defaults:
             return arg_defaults[key]
         else:
+            print(f"Can't find key {key} in ArgCache")
             super().__getattr__(key)  # type: ignore
 
 

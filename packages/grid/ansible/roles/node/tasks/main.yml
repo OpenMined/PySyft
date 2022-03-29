@@ -12,14 +12,6 @@
   import_tasks: docker.yml
   when: deploy_only is not defined
 
-# cronjob logs: $ tail -f /var/log/syslog | grep -i cron
-- name: PySyft Repo Update Cron Job
-  ansible.builtin.cron:
-    name: "Update PySyft Repo"
-    job: "{{ syft_dir }}/packages/grid/scripts/cron.sh {{ syft_dir }} {{ github_repo }} {{ repo_branch }} {{ om_user }} {{ om_group }} {{ node_type }} {{ node_name }} {{ build_dir }} {{ tls }} {{ cert_store_path }} {{ release }} 2>&1 | logger -t cron"
-  become: yes
-  when: vagrant is not defined
-
 - name: Archive Logs
   ansible.builtin.cron:
     minute: "0"
