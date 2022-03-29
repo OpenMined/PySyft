@@ -19,10 +19,8 @@ class DoesObjectExistMessage(NodeRunnableMessageWithReply):
         self.obj_id = obj_id
 
     def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> bool:
-
         try:
-            node.store[self.obj_id]  # type: ignore
-            return True
+            return bool(node.store.get_or_none(self.obj_id, proxy_only=True))  # type: ignore
         except Exception as e:
             info("Exception in DoesObjectExistMessage:" + str(e))
             return False

@@ -11,7 +11,7 @@ import syft
 
 # relative
 from ....util import aggressive_set_attr
-from .deserialize import CAPNP_REGISTRY
+from .capnp import CAPNP_REGISTRY
 
 module_type = type(syft)
 

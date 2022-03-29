@@ -3,16 +3,14 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-import os
-from pathlib import Path
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
 
 # third party
-import capnp
 from nacl.signing import VerifyKey
 import numpy as np
 
@@ -22,8 +20,11 @@ from ....core.adp.entity_list import EntityList
 from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
 from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
-from ...common.serde.deserialize import CAPNP_END_MAGIC_HEADER
-from ...common.serde.deserialize import CAPNP_START_MAGIC_HEADER
+from ...common.serde.capnp import CapnpModule
+from ...common.serde.capnp import chunk_bytes
+from ...common.serde.capnp import combine_bytes
+from ...common.serde.capnp import get_capnp_schema
+from ...common.serde.capnp import serde_magic_header
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...pointer.pointer import Pointer
@@ -40,10 +41,31 @@ from .single_entity_phi import SingleEntityPhiTensor
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
-    __name__ = "TensorWrappedNDimEntityPhiTensorPointer"
+class NDimEntityPhiTensorPointer(Pointer):
+    __name__ = "NDimEntityPhiTensorPointer"
     __module__ = "syft.core.tensor.autodp.ndim_entity_phi"
-    __attr_allowlist__ = ("min_vals", "max_vals", "entities")
+    __attr_allowlist__ = [
+        # default pointer attrs
+        "points_to_object_with_path",
+        "pointer_name",
+        "id_at_location",
+        "location",
+        "tags",
+        "description",
+        "object_type",
+        "attribute_name",
+        "public_shape",
+        "_exhausted",
+        "gc_enabled",
+        "is_enum",
+        # ndim attrs
+        "entities",
+        "min_vals",
+        "max_vals",
+        "client",
+        "public_dtype",
+    ]
+
     # TODO :should create serialization for Entity List
 
     def __init__(
@@ -52,7 +74,6 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         min_vals: np.typing.ArrayLike,
         max_vals: np.typing.ArrayLike,
         client: Any,
-        # scalar_manager: Optional[VirtualMachinePrivateScalarManager] = None,
         id_at_location: Optional[UID] = None,
         object_type: str = "",
         tags: Optional[List[str]] = None,
@@ -71,15 +92,14 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         self.min_vals = min_vals
         self.max_vals = max_vals
         self.entities = entities
-        # self.scalar_manager = scalar_manager
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
 
 @serializable(capnp_bytes=True)
 class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
-    PointerClassOverride = TensorWrappedNDimEntityPhiTensorPointer
-    __attr_allowlist__ = ["child", "min_vals", "max_vals", "entities"]
+    PointerClassOverride = NDimEntityPhiTensorPointer
+    # __attr_allowlist__ = ["child", "min_vals", "max_vals", "entities"]
     __slots__ = (
         "child",
         "min_vals",
@@ -112,10 +132,13 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         self.entities = entities
 
-        # if scalar_manager is None:
-        #     self.scalar_manager = VirtualMachinePrivateScalarManager()
-        # else:
-        #     self.scalar_manager = scalar_manager
+    @property
+    def proxy_public_kwargs(self) -> Dict[str, Any]:
+        return {
+            "min_vals": self.min_vals,
+            "max_vals": self.max_vals,
+            "entities": self.entities,
+        }
 
     @staticmethod
     def from_rows(rows: Sequence) -> NDimEntityPhiTensor:
@@ -159,13 +182,12 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         object_type: str = "",
         tags: Optional[List[str]] = None,
         description: str = "",
-    ) -> TensorWrappedNDimEntityPhiTensorPointer:
-        return TensorWrappedNDimEntityPhiTensorPointer(
+    ) -> NDimEntityPhiTensorPointer:
+        return NDimEntityPhiTensorPointer(
             # Arguments specifically for SEPhiTensor
             entities=self.entities,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            # scalar_manager=self.scalar_manager,
             # Arguments required for a Pointer to work
             client=client,
             id_at_location=id_at_location,
@@ -310,47 +332,8 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
-    @staticmethod
-    def get_capnp_schema() -> type:
-        here = os.path.dirname(__file__)
-        root_dir = Path(here) / ".." / ".." / ".." / ".." / ".." / "capnp"
-        return capnp.load(str(root_dir / "ndept.capnp"))
-
-    @staticmethod
-    def chunk_bytes(
-        data: Sequence, field_name: str, builder: capnp.lib.capnp._DynamicStructBuilder
-    ) -> List:
-        CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
-        list_size = len(data) // CHUNK_SIZE + 1
-        data_lst = builder.init(field_name, list_size)
-        idx = 0
-        while len(data) > CHUNK_SIZE:
-            data_lst[idx] = data[:CHUNK_SIZE]
-            data = data[CHUNK_SIZE:]
-            idx += 1
-        else:
-            data_lst[0] = data
-        return data_lst
-
-    @staticmethod
-    def combine_bytes(capnp_list: List[bytes]) -> bytes:
-        # TODO: make sure this doesn't copy, perhaps allocate a fixed size buffer
-        # and move the bytes into it as we go
-        bytes_value = b""
-        for value in capnp_list:
-            bytes_value += value
-        return bytes_value
-
-    @staticmethod
-    def serde_magic_header() -> str:
-        return (
-            f"{CAPNP_START_MAGIC_HEADER}"
-            + f"{NDimEntityPhiTensor.__name__}"
-            + f"{CAPNP_END_MAGIC_HEADER}"
-        )
-
     def _object2bytes(self) -> bytes:
-        schema = NDimEntityPhiTensor.get_capnp_schema()
+        schema = get_capnp_schema(schema_file="ndept.capnp")
 
         rows, rows_size = numpy_serialize(self.child, get_bytes=True)
         min_vals, min_vals_size = numpy_serialize(self.min_vals.data, get_bytes=True)
@@ -360,7 +343,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         )
         one_hot_lookup = self.entities.one_hot_lookup
 
-        ndept_struct: capnp.lib.capnp._StructModule = schema.NDEPT  # type: ignore
+        ndept_struct: CapnpModule = schema.NDEPT  # type: ignore
         ndept_msg = ndept_struct.new_message()
         metadata_schema = ndept_struct.TensorMetadata
         child_metadata = metadata_schema.new_message()
@@ -369,24 +352,24 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         entities_metadata = metadata_schema.new_message()
 
         # this is how we dispatch correct deserialization of bytes
-        ndept_msg.magicHeader = NDimEntityPhiTensor.serde_magic_header()
+        ndept_msg.magicHeader = serde_magic_header(type(self))
 
-        NDimEntityPhiTensor.chunk_bytes(rows, "child", ndept_msg)
+        chunk_bytes(rows, "child", ndept_msg)
         child_metadata.dtype = str(self.child.dtype)
         child_metadata.decompressedSize = rows_size
         ndept_msg.childMetadata = child_metadata
 
-        NDimEntityPhiTensor.chunk_bytes(min_vals, "minVals", ndept_msg)
+        chunk_bytes(min_vals, "minVals", ndept_msg)
         min_vals_metadata.dtype = str(self.min_vals.data.dtype)
         min_vals_metadata.decompressedSize = min_vals_size
         ndept_msg.minValsMetadata = min_vals_metadata
 
-        NDimEntityPhiTensor.chunk_bytes(max_vals, "maxVals", ndept_msg)
+        chunk_bytes(max_vals, "maxVals", ndept_msg)
         max_vals_metadata.dtype = str(self.max_vals.data.dtype)
         max_vals_metadata.decompressedSize = max_vals_size
         ndept_msg.maxValsMetadata = max_vals_metadata
 
-        NDimEntityPhiTensor.chunk_bytes(entities_indexed, "entitiesIndexed", ndept_msg)
+        chunk_bytes(entities_indexed, "entitiesIndexed", ndept_msg)
         entities_metadata.dtype = str(self.entities.entities_indexed.dtype)
         entities_metadata.decompressedSize = entities_indexed_size
         ndept_msg.entitiesIndexedMetadata = entities_metadata
@@ -397,18 +380,26 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 entity if not getattr(entity, "name", None) else entity.name  # type: ignore
             )
 
-        return ndept_msg.to_bytes()
+        # to pack or not to pack?
+        # return ndept_msg.to_bytes()
+        return ndept_msg.to_bytes_packed()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> NDimEntityPhiTensor:
-        schema = NDimEntityPhiTensor.get_capnp_schema()
-        ndept_struct: capnp.lib.capnp._StructModule = schema.NDEPT  # type: ignore
-        ndept_msg = ndept_struct.from_bytes(buf)
+        schema = get_capnp_schema(schema_file="ndept.capnp")
+        ndept_struct: CapnpModule = schema.NDEPT  # type: ignore
+        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        # to pack or not to pack?
+        # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
+        ndept_msg = ndept_struct.from_bytes_packed(
+            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        )
 
         child_metadata = ndept_msg.childMetadata
 
         child = numpy_deserialize(
-            NDimEntityPhiTensor.combine_bytes(ndept_msg.child),
+            combine_bytes(ndept_msg.child),
             child_metadata.decompressedSize,
             child_metadata.dtype,
         )
@@ -416,7 +407,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         min_vals_metadata = ndept_msg.minValsMetadata
         min_vals = lazyrepeatarray(
             numpy_deserialize(
-                NDimEntityPhiTensor.combine_bytes(ndept_msg.minVals),
+                combine_bytes(ndept_msg.minVals),
                 min_vals_metadata.decompressedSize,
                 min_vals_metadata.dtype,
             ),
@@ -426,7 +417,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         max_vals_metadata = ndept_msg.maxValsMetadata
         max_vals = lazyrepeatarray(
             numpy_deserialize(
-                NDimEntityPhiTensor.combine_bytes(ndept_msg.maxVals),
+                combine_bytes(ndept_msg.maxVals),
                 max_vals_metadata.decompressedSize,
                 max_vals_metadata.dtype,
             ),
@@ -435,7 +426,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         entities_metadata = ndept_msg.entitiesIndexedMetadata
         entities_indexed = numpy_deserialize(
-            NDimEntityPhiTensor.combine_bytes(ndept_msg.entitiesIndexed),
+            combine_bytes(ndept_msg.entitiesIndexed),
             entities_metadata.decompressedSize,
             entities_metadata.dtype,
         )

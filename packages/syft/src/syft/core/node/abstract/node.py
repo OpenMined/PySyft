@@ -8,6 +8,7 @@ from typing import Set
 # third party
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pydantic import BaseSettings
 
 # relative
 from ....logger import traceback_and_raise
@@ -49,6 +50,7 @@ class AbstractNode(Address):
     admin_verify_key_registry: Set[VerifyKey]
     cpl_ofcr_verify_key_registry: Set[VerifyKey]
     acc: Optional[Any]
+    settings: BaseSettings
 
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
@@ -62,10 +64,12 @@ class AbstractNode(Address):
         domain: Optional[Location] = None,
         device: Optional[Location] = None,
         vm: Optional[Location] = None,
+        settings: Optional[BaseSettings] = None,
     ):
         super().__init__(
             name=name, network=network, domain=domain, device=device, vm=vm
         )
+        self.settings = settings
 
     store: ObjectStore
     requests: List

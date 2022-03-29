@@ -1,8 +1,6 @@
 # stdlib
 import re
 from typing import Any
-from typing import Callable
-from typing import Dict
 
 # third party
 from google.protobuf.message import Message
@@ -11,14 +9,14 @@ from google.protobuf.message import Message
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
+from .capnp import CAPNP_END_MAGIC_HEADER_BYTES
+from .capnp import CAPNP_REGISTRY
+from .capnp import CAPNP_START_MAGIC_HEADER
+from .capnp import CAPNP_START_MAGIC_HEADER_BYTES
 from .types import Deserializeable
 
-CAPNP_START_MAGIC_HEADER = "capnp:"
-CAPNP_END_MAGIC_HEADER = ":capnp"
-CAPNP_START_MAGIC_HEADER_BYTES = CAPNP_START_MAGIC_HEADER.encode("utf-8")
-CAPNP_END_MAGIC_HEADER_BYTES = CAPNP_END_MAGIC_HEADER.encode("utf-8")
-
-CAPNP_REGISTRY: Dict[str, Callable] = {}
+PROTOBUF_START_MAGIC_HEADER = "protobuf:"
+PROTOBUF_START_MAGIC_HEADER_BYTES = PROTOBUF_START_MAGIC_HEADER.encode("utf-8")
 
 
 # WARNING: This code has more 🐉 Dragons than a game of D&D 🗡🧙🎲
@@ -69,8 +67,13 @@ def _deserialize(
     if isinstance(blob, bytes):
         try:
             return deserialize_capnp(buf=blob)
-        except Exception:  # nosec
+        except CapnpMagicBytesNotFound:  # nosec
+            # probably not capnp bytes
             pass
+        except Exception as e:
+            # capnp magic bytes found but another problem has occured
+            print("failed capnp deserialize", e)
+            raise e
 
     if from_bytes:
         data_message = DataMessage()
@@ -160,15 +163,40 @@ def _deserialize(
     return res
 
 
+class CapnpMagicBytesNotFound(Exception):
+    pass
+
+
 def deserialize_capnp(buf: bytes) -> Any:
-    start_index = buf.find(CAPNP_START_MAGIC_HEADER_BYTES)
+    # only search 100 bytes to prevent wasting time on large files
+    search_range = 100
+    header_bytes = buf[0:search_range]
+    chars = bytearray()
+    # filter header bytes
+    for i in header_bytes:
+        # only allow ascii letters or : in headers and class name to prevent lookup
+        # breaking somehow, when packing weird stuff like \x03 ends up in the string
+        # e.g. NDimEntityPhiTensor -> ND\x03imEntityPhiTensor
+        if i in range(65, 91) or i in range(97, 123) or i == 58:
+            chars.append(i)
+    header_bytes = bytes(chars)
+
+    proto_start_index = header_bytes.find(PROTOBUF_START_MAGIC_HEADER_BYTES)
+    start_index = header_bytes.find(CAPNP_START_MAGIC_HEADER_BYTES)
+    if proto_start_index != -1 and (proto_start_index < start_index):
+        # we have protobuf on the outside
+        raise CapnpMagicBytesNotFound(
+            f"protobuf Magic Header {PROTOBUF_START_MAGIC_HEADER} found in bytes"
+        )
     if start_index == -1:
-        raise Exception(
+        raise CapnpMagicBytesNotFound(
             f"capnp Magic Header {CAPNP_START_MAGIC_HEADER}" + "not found in bytes"
         )
     start_index += len(CAPNP_START_MAGIC_HEADER_BYTES)
-    end_index = buf.index(CAPNP_END_MAGIC_HEADER_BYTES)
-    class_name = buf[start_index:end_index].decode("utf-8")
+    end_index = header_bytes.index(CAPNP_END_MAGIC_HEADER_BYTES)
+    class_name_bytes = header_bytes[start_index:end_index]
+
+    class_name = class_name_bytes.decode("utf-8")
     if class_name not in CAPNP_REGISTRY:
         raise Exception(
             f"Found capnp Magic Header: {CAPNP_START_MAGIC_HEADER} "
