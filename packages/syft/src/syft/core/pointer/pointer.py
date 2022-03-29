@@ -95,6 +95,7 @@ import warnings
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 import numpy as np
+import requests
 
 # syft absolute
 import syft as sy
@@ -192,7 +193,9 @@ class Pointer(AbstractPointer):
     def __repr__(self) -> str:
         return f"<{self.__name__} -> {self.client.name}:{self.id_at_location.no_dash}>"
 
-    def _get(self, delete_obj: bool = True, verbose: bool = False) -> StorableObject:
+    def _get(
+        self, delete_obj: bool = True, verbose: bool = False, proxy_only: bool = False
+    ) -> StorableObject:
         """Method to download a remote object from a pointer object if you have the right
         permissions.
 
@@ -211,7 +214,20 @@ class Pointer(AbstractPointer):
             delete_obj=delete_obj,
         )
 
-        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg).data
+        obj = self.client.send_immediate_msg_with_reply(msg=obj_msg)
+        if not proxy_only and obj.obj.is_proxy:
+            presigned_url_path = obj.obj._data.url
+            presigned_url = self.client.url_from_path(presigned_url_path)
+            response = requests.get(presigned_url)
+
+            if response.status_code != 200:
+                raise Exception(
+                    f"Failed to get object from store. HTTP Status Code: {response.status_code}"
+                )
+            obj = _deserialize(response.content, from_bytes=True)
+        else:
+            obj = obj.data
+
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)
@@ -321,6 +337,7 @@ class Pointer(AbstractPointer):
         reason: str = "",
         delete_obj: bool = True,
         verbose: bool = False,
+        proxy_only: bool = False,
     ) -> Optional[StorableObject]:
         """Method to download a remote object from a pointer object if you have the right
         permissions. Optionally can block while waiting for approval.
@@ -328,6 +345,9 @@ class Pointer(AbstractPointer):
         :return: returns the downloaded data
         :rtype: Optional[StorableObject]
         """
+        if proxy_only and delete_obj:
+            delete_obj = False
+            print("Warning fetching proxy_only will not delete the real object")
 
         # relative
         from ..node.common.node_service.request_receiver.request_receiver_messages import (
@@ -340,7 +360,9 @@ class Pointer(AbstractPointer):
             )
 
         if not request_block:
-            result = self._get(delete_obj=delete_obj, verbose=verbose)
+            result = self._get(
+                delete_obj=delete_obj, verbose=verbose, proxy_only=proxy_only
+            )
         else:
             response_status = self.request(
                 reason=reason,
@@ -409,7 +431,6 @@ class Pointer(AbstractPointer):
         # TODO: we need _proto2object to include a reference to the node doing the
         # deserialization so that we can convert location into a client object. At present
         # it is an address object which will cause things to break later.
-
         points_to_type = sy.lib_ast.query(proto.points_to_object_with_path)
         pointer_type = getattr(points_to_type, proto.pointer_name)
 
