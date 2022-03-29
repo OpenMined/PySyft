@@ -13,10 +13,18 @@ from typing import Union
 import numpy as np
 import torch as th
 
+# syft absolute
+import syft as sy
+
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
 from ...util import inherit_tags
+from ..common.serde.capnp import CapnpModule
+from ..common.serde.capnp import chunk_bytes
+from ..common.serde.capnp import combine_bytes
+from ..common.serde.capnp import get_capnp_schema
+from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
@@ -330,7 +338,7 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
     return out
 
 
-@serializable(recursive_serde=True)
+@serializable(capnp_bytes=True)
 class Tensor(
     PassthroughTensor,
     AutogradTensorAncestor,
@@ -339,7 +347,7 @@ class Tensor(
     # MPCTensorAncestor,
 ):
 
-    __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    # __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
 
     PointerClassOverride = TensorPointer
 
@@ -409,10 +417,11 @@ class Tensor(
         tags: Optional[List[str]] = None,
         description: str = "",
     ) -> Pointer:
-
         # relative
         from .autodp.single_entity_phi import SingleEntityPhiTensor
         from .autodp.single_entity_phi import TensorWrappedSingleEntityPhiTensorPointer
+
+        # TODO:  Should create init pointer for NDimEntityPhiTensorPointer.
 
         if isinstance(self.child, SingleEntityPhiTensor):
             return TensorWrappedSingleEntityPhiTensorPointer(
@@ -445,3 +454,47 @@ class Tensor(
     def mpc_swap(self, other: Tensor) -> Tensor:
         self.child.child = other.child.child
         return self
+
+    def _object2bytes(self) -> bytes:
+        schema = get_capnp_schema(schema_file="tensor.capnp")
+        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
+        tensor_msg = tensor_struct.new_message()
+
+        # this is how we dispatch correct deserialization of bytes
+        tensor_msg.magicHeader = serde_magic_header(type(self))
+
+        chunk_bytes(sy.serialize(self.child, to_bytes=True), "child", tensor_msg)
+        chunk_bytes(
+            sy.serialize(self.public_shape, to_bytes=True), "publicShape", tensor_msg
+        )
+        chunk_bytes(
+            sy.serialize(self.public_dtype, to_bytes=True), "publicDtype", tensor_msg
+        )
+        chunk_bytes(sy.serialize(self.tag_name, to_bytes=True), "tagName", tensor_msg)
+
+        return tensor_msg.to_bytes_packed()
+
+    @staticmethod
+    def _bytes2object(buf: bytes) -> Tensor:
+        schema = get_capnp_schema(schema_file="tensor.capnp")
+        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
+        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        tensor_msg = tensor_struct.from_bytes_packed(
+            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        )
+
+        tensor = Tensor(
+            child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
+            public_shape=sy.deserialize(
+                combine_bytes(tensor_msg.publicShape), from_bytes=True
+            ),
+            public_dtype=sy.deserialize(
+                combine_bytes(tensor_msg.publicDtype), from_bytes=True
+            ),
+        )
+        tensor.tag_name = sy.deserialize(
+            combine_bytes(tensor_msg.tagName), from_bytes=True
+        )
+
+        return tensor
