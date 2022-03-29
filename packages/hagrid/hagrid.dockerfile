@@ -1,7 +1,11 @@
 FROM python:3.9-slim
 
+# set UTC timezone
+ENV TZ=Etc/UTC
+RUN ln -snf /usr/share/zoneinfo/$TZ /etc/localtime && echo $TZ > /etc/timezone
 
-RUN apt-get update && \
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt-get update && \
     apt-get install -yqq \
     git && \
     rm -rf /var/lib/apt/lists/*
