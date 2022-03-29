@@ -1,7 +1,7 @@
 FROM python:3.9-slim
 
-
-RUN apt-get update && \
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt-get update && \
     apt-get install -yqq \
     git && \
     rm -rf /var/lib/apt/lists/*

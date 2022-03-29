@@ -1,6 +1,7 @@
 FROM headscale/headscale:0.11
 
-RUN apt-get update && apt-get install wireguard-tools python3 python3-pip -y
+RUN DEBIAN_FRONTEND=noninteractive \
+    apt-get update && apt-get install wireguard-tools python3 python3-pip -y
 
 WORKDIR /headscale
 COPY ./requirements.txt /headscale/requirements.txt

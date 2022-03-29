@@ -1,6 +1,7 @@
 FROM python:3.9.9-slim as build
 
 RUN --mount=type=cache,target=/var/cache/apt \
+  DEBIAN_FRONTEND=noninteractive \
   apt-get update && \
   apt-get install -y --no-install-recommends curl python3-dev gcc make
 
