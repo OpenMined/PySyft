@@ -34,6 +34,7 @@ from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from .....io.address import Address
 from .....pointer.pointer import Pointer
+from .....store.proxy_dataset import ProxyDataset
 from ....abstract.node import AbstractNode
 from ..node_service import ImmediateNodeServiceWithReply
 
@@ -92,7 +93,6 @@ class ObjectSearchMessage(ImmediateSyftMessageWithReply):
             This method is purely an internal method. Please use syft.deserialize()
             if you wish to deserialize an object.
         """
-
         return ObjectSearchMessage(
             msg_id=sy.deserialize(blob=proto.msg_id),
             address=sy.deserialize(blob=proto.address),
@@ -217,14 +217,15 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
             )
 
         try:
-
             # if no object is specified, return all objects
+            # TODO change this to a get all keys and metadata method which does not
+            # require pulling out all data from the database
             if msg.obj_id is None:
                 objs = node.store.get_objects_of_type(obj_type=object)
 
             # if object id is specified - return just that object
             else:
-                objs = [node.store[msg.obj_id]]
+                objs = [node.store.get(msg.obj_id, proxy_only=True)]
 
             for obj in objs:
                 # if this tensor allows anyone to search for it, then one of its keys
@@ -237,18 +238,33 @@ class ImmediateObjectSearchService(ImmediateNodeServiceWithReply):
                     or verify_key == node.root_verify_key
                     or contains_all_in_permissions
                 ):
-                    if hasattr(obj.data, "init_pointer"):
-                        ptr_constructor = obj.data.init_pointer  # type: ignore
-                    else:
-                        ptr_constructor = obj2pointer_type(obj=obj.data)
+                    if obj.is_proxy:
+                        proxy_obj: ProxyDataset = obj.data  # type: ignore
+                        ptr_constructor = obj2pointer_type(
+                            fqn=proxy_obj.data_fully_qualified_name
+                        )
+                        ptr = ptr_constructor(
+                            client=node,
+                            id_at_location=obj.id,
+                            object_type=obj.object_type,
+                            tags=obj.tags,
+                            description=obj.description,
+                            **proxy_obj.obj_public_kwargs,
+                        )
 
-                    ptr = ptr_constructor(
-                        client=node,
-                        id_at_location=obj.id,
-                        object_type=obj.object_type,
-                        tags=obj.tags,
-                        description=obj.description,
-                    )
+                    else:
+                        if hasattr(obj.data, "init_pointer"):
+                            ptr_constructor = obj.data.init_pointer  # type: ignore
+                        else:
+                            ptr_constructor = obj2pointer_type(obj=obj.data)
+
+                        ptr = ptr_constructor(
+                            client=node,
+                            id_at_location=obj.id,
+                            object_type=obj.object_type,
+                            tags=obj.tags,
+                            description=obj.description,
+                        )
 
                     results.append(ptr)
         except Exception as e:
