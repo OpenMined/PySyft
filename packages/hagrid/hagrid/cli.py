@@ -45,9 +45,8 @@ from .lib import hagrid_root
 from .lib import is_editable_mode
 from .lib import name_tag
 from .lib import use_branch
-from .style import RichGroup
 from .rand_sec import generate_sec_random_password
-
+from .style import RichGroup
 
 
 @click.group(cls=RichGroup)
@@ -994,7 +993,7 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": GRID_SRC_VERSION[1],
         "USE_BLOB_STORAGE": use_blob_storage,
-        "STACK_API_KEY": generate_sec_random_password(15)
+        "STACK_API_KEY": generate_sec_random_password(15),
     }
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:

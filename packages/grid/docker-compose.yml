@@ -16,7 +16,7 @@ services:
       - SERVICE_NAME=tailscale
       - RELEASE=${RELEASE:-production}
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
-      - STACK_API_KEY= {STACK_API_KEY} 
+      - STACK_API_KEY= {STACK_API_KEY}
       - HTTP_PORT=$HTTP_PORT
       - HTTPS_PORT=$HTTPS_PORT
     volumes:
