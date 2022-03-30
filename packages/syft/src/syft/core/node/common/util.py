@@ -7,7 +7,7 @@ from typing import List
 # third party
 import boto3
 from botocore.client import Config
-from botocore.exception import ClientError as BotoClientError
+from botocore.exceptions import ClientError as BotoClientError
 from pydantic import BaseSettings
 import requests
 from tqdm import tqdm
