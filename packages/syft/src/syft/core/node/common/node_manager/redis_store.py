@@ -190,6 +190,7 @@ class RedisStore(ObjectStore):
         local_session.close()
 
     def delete(self, key: UID) -> None:
+        # TODO: add condition to delete data from blob store as well
         try:
             self.redis.delete(str(key.value))
             local_session = sessionmaker(bind=self.db)()
