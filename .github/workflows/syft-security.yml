@@ -20,7 +20,7 @@ jobs:
       matrix:
         os: [ubuntu-latest]
         python-version: [3.9]
-        torch-version: [1.10.0]
+        torch-version: [1.11.0]
 
     runs-on: ${{ matrix.os }}
     steps:
