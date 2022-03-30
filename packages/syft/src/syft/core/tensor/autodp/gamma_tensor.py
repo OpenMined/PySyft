@@ -38,7 +38,7 @@ from scipy.optimize import shgo
 
 # relative
 from ...adp.data_subject_ledger import DataSubjectLedger
-from ...adp.entity_list import EntityList
+from ...adp.data_subject_list import DataSubjectList
 from ...adp.vectorized_publish import vectorized_publish
 
 
@@ -91,7 +91,7 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
 @serializable(capnp_bytes=True)
 class GammaTensor:
     value: jnp.array
-    data_subjects: EntityList
+    data_subjects: DataSubjectList
     min_val: float = flax.struct.field(pytree_node=False)
     max_val: float = flax.struct.field(pytree_node=False)
     is_linear: bool = True
@@ -355,10 +355,10 @@ class GammaTensor:
         gamma_msg.inputsMetadata = inputs_metadata
 
         entities_indexed, entities_indexed_size = numpy_serialize(
-            self.data_subjects.entities_indexed, get_bytes=True
+            self.data_subjects.data_subjects_indexed, get_bytes=True
         )
         chunk_bytes(entities_indexed, "entitiesIndexed", gamma_msg)
-        entities_metadata.dtype = str(self.data_subjects.entities_indexed.dtype)
+        entities_metadata.dtype = str(self.data_subjects.data_subjects_indexed.dtype)
         entities_metadata.decompressedSize = entities_indexed_size
         gamma_msg.entitiesIndexedMetadata = entities_metadata
 
@@ -421,7 +421,7 @@ class GammaTensor:
             one_hot_lookup_metadata.dtype,
         )
 
-        data_subjects = EntityList(one_hot_lookup, entities_indexed)
+        data_subjects = DataSubjectList(one_hot_lookup, entities_indexed)
 
         min_val = gamma_msg.minVal
         max_val = gamma_msg.maxVal

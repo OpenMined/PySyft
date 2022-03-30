@@ -16,7 +16,7 @@ from numpy.typing import ArrayLike
 
 # relative
 from ..adp.entity import Entity
-from ..adp.entity_list import EntityList
+from ..adp.data_subject_list import DataSubjectList
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
@@ -500,12 +500,12 @@ class PhiTensorAncestor(TensorChainManager):
         #         " the tensor you're calling .private() on. Try again."
         #     )
 
-        if not isinstance(entities, EntityList):
+        if not isinstance(entities, DataSubjectList):
             one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
         else:
             one_hot_lookup, entities_indexed = (
                 entities.one_hot_lookup,
-                entities.entities_indexed,
+                entities.data_subjects_indexed,
             )
 
         # SKIP check temporarily
@@ -589,7 +589,7 @@ class PhiTensorAncestor(TensorChainManager):
 
         elif ndept and entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
-            if isinstance(entities, EntityList):
+            if isinstance(entities, DataSubjectList):
                 entity_list = entities
 
             if isinstance(min_val, (bool, int, float)):

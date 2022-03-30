@@ -38,7 +38,7 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
     for item in string_list:
         if not isinstance(item, (Entity, str)):
             raise Exception(
-                f"EntityList entities must be List[Union[str, Entity]]. {type(item)}"
+                f"DataSubjectList entities must be List[Union[str, Entity]]. {type(item)}"
             )
         name = item if isinstance(item, str) else item.name
         name_bytes = name.encode("utf-8")
@@ -52,9 +52,9 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
 
 
 @serializable(recursive_serde=True)
-class EntityList:
-    __attr_allowlist__ = ("one_hot_lookup", "entities_indexed")
-    __slots__ = ("one_hot_lookup", "entities_indexed")
+class DataSubjectList:
+    __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
+    __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
     # Temporarily remove as we are not using strings.
     # # one_hot_lookup is a numpy array of unicode strings which can't be serialized
@@ -65,61 +65,65 @@ class EntityList:
     def __init__(
         self,
         one_hot_lookup: np.ndarray[Union[Entity, str, np.integer]],
-        entities_indexed: np.ndaray,
+        data_subjects_indexed: np.ndaray,
     ) -> None:
         self.one_hot_lookup = one_hot_lookup
-        self.entities_indexed = entities_indexed
+        self.data_subjects_indexed = data_subjects_indexed
 
     @staticmethod
-    def from_series(entities_dataframe_slice: pd.Series) -> EntityList:
+    def from_series(entities_dataframe_slice: pd.Series) -> DataSubjectList:
         """Given a Pandas Series object (such as from
-        getting a column from a pandas DataFrame, return an EntityList"""
+        getting a column from a pandas DataFrame, return an DataSubjectList"""
 
-        # This will be the equivalent of the EntityList.entities_indexed
+        # This will be the equivalent of the DataSubjectList.data_subjects_indexed
         data_subjects = entities_dataframe_slice.to_numpy()
 
-        # This will be the equivalent of the EntityList.one_hot_indexed- a sorted array of all unique entities
-        unique_data_subjects = np.sort(entities_dataframe_slice.unique().to_numpy())
+        # This will be the equivalent of the DataSubjectList.one_hot_indexed- a sorted array of all unique entities
+        unique_data_subjects = entities_dataframe_slice.unique()
+        if not isinstance(unique_data_subjects, np.ndarray):
+            unique_data_subjects = unique_data_subjects.to_numpy()
+        # For small pd.Series, calling .unique() directly returns a ndarray array so calling .to_numpy is not necessary
+        unique_data_subjects = np.sort(unique_data_subjects)
 
-        return EntityList(
-            one_hot_lookup=unique_data_subjects, entities_indexed=data_subjects
+        return DataSubjectList(
+            one_hot_lookup=unique_data_subjects, data_subjects_indexed=data_subjects
         )
 
     @staticmethod
-    def from_objs(entities: Union[np.ndarray, list]) -> EntityList:
+    def from_objs(entities: Union[np.ndarray, list]) -> DataSubjectList:
         if isinstance(entities, list):
             entities = np.array(entities)
         one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
 
-        return EntityList(one_hot_lookup, entities_indexed)
+        return DataSubjectList(one_hot_lookup, entities_indexed)
 
     # def __getitem__(self, key: Union[int, slice, str]) -> Union[Entity, str]:
-    #     return self.one_hot_lookup[self.entities_indexed[key]]
+    #     return self.one_hot_lookup[self.data_subjects_indexed[key]]
 
-    def copy(self, order: Optional[str] = "K") -> EntityList:
-        return EntityList(
-            self.one_hot_lookup.copy(), self.entities_indexed.copy(order=order)
+    def copy(self, order: Optional[str] = "K") -> DataSubjectList:
+        return DataSubjectList(
+            self.one_hot_lookup.copy(), self.data_subjects_indexed.copy(order=order)
         )
 
     def __len__(self) -> int:
-        return len(self.entities_indexed)
+        return len(self.data_subjects_indexed)
 
     def __eq__(self, other: Any) -> bool:
-        if isinstance(other, EntityList):
-            if (self.entities_indexed == other.entities_indexed).all() and (  # type: ignore
+        if isinstance(other, DataSubjectList):
+            if (self.data_subjects_indexed == other.data_subjects_indexed).all() and (  # type: ignore
                 self.one_hot_lookup == other.one_hot_lookup
             ).all():
                 return True
             return False
         return self == other
 
-    def sum(self) -> EntityList:
+    def sum(self) -> DataSubjectList:
         # If sum is used without any arguments then the result is always a singular value
-        return EntityList(
+        return DataSubjectList(
             self.one_hot_lookup.copy(),
-            self.entities_indexed.reshape(1, len(self.entities_indexed)),
+            self.data_subjects_indexed.reshape(1, len(self.data_subjects_indexed)),
         )
 
     @property
     def shape(self) -> Tuple:
-        return self.entities_indexed.shape
+        return self.data_subjects_indexed.shape

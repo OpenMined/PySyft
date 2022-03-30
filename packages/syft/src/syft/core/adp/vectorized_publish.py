@@ -13,7 +13,7 @@ import numpy as np
 # relative
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
-from .entity_list import EntityList
+from .data_subject_list import DataSubjectList
 
 # def calculate_bounds_for_mechanism(
 #     value_array: np.ndarray, min_val_array: np.ndarray, max_val_array: np.ndarray
@@ -71,7 +71,7 @@ def vectorized_publish(
     min_vals: np.ndarray,
     max_vals: np.ndarray,
     values: np.ndarray,
-    data_subjects: EntityList,
+    data_subjects: DataSubjectList,
     ledger: DataSubjectLedger,
     is_linear: bool = True,
     sigma: float = 1.5,
@@ -87,8 +87,6 @@ def vectorized_publish(
     # unique_data_subjects = data_subjects.one_hot_lookup
     # unique_data_subject_indices = np.arange(
 
-    print("Obtained data subject indices")
-
     print("RDP Params Calculation")
 
     t1 = time()
@@ -103,7 +101,7 @@ def vectorized_publish(
     else:
         raise Exception("gamma_tensor.lipschitz_bound property would be used here")
 
-    input_entities = data_subjects.entities_indexed[0].reshape(-1)
+    input_entities = data_subjects.data_subjects_indexed[0].reshape(-1)
     t2 = time()
     print("RDP Param calculation time", t2 - t1)
 

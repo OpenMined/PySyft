@@ -190,7 +190,7 @@ def extend_tweet_data(data: Any, multiplier: int) -> Any:
     new_data.child.child = new_data.child.child.repeat(multiplier)
     new_data.child.entities = EntityList.from_objs(
         np.array(
-            ["φhishan"] * multiplier * len(new_data.child.entities.entities_indexed)
+            ["φhishan"] * multiplier * len(new_data.child.entities.data_subjects_indexed)
         )
     )
     return new_data

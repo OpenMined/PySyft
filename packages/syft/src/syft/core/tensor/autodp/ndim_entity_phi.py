@@ -17,7 +17,7 @@ import numpy as np
 # relative
 from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.entity import Entity
-from ....core.adp.entity_list import EntityList
+from ....core.adp.data_subject_list import DataSubjectList
 from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
 from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ...common.serde.capnp import CapnpModule
@@ -71,7 +71,7 @@ class NDimEntityPhiTensorPointer(Pointer):
 
     def __init__(
         self,
-        entities: EntityList,
+        entities: DataSubjectList,
         min_vals: np.typing.ArrayLike,
         max_vals: np.typing.ArrayLike,
         client: Any,
@@ -111,7 +111,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     def __init__(
         self,
         child: Sequence,
-        entities: Union[List[Entity], EntityList],
+        entities: Union[List[Entity], DataSubjectList],
         min_vals: np.ndarray,
         max_vals: np.ndarray,
         row_type: SingleEntityPhiTensor = SingleEntityPhiTensor,  # type: ignore
@@ -128,8 +128,8 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         self.min_vals = min_vals
         self.max_vals = max_vals
 
-        if not isinstance(entities, EntityList):
-            entities = EntityList.from_objs(entities)
+        if not isinstance(entities, DataSubjectList):
+            entities = DataSubjectList.from_objs(entities)
 
         self.entities = entities
 
@@ -165,7 +165,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         for row in rows:
             entity_list.append(row.entity)
             child_list.append(row.child)
-        entities = EntityList.from_objs(entities=entity_list)
+        entities = DataSubjectList.from_objs(entities=entity_list)
         child = np.stack(child_list)
 
         # use new constructor
@@ -234,7 +234,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         #     self.shape
         # )
 
-        # TODO: update InitialGammaTensor to handle EntityList
+        # TODO: update InitialGammaTensor to handle DataSubjectList
         # TODO: check if values needs to be a JAX array or if numpy will suffice
 
         return GammaTensor(
@@ -343,7 +343,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 child=self.child.sum(),
                 min_vals=self.min_vals.sum(axis=None),
                 max_vals=self.max_vals.sum(axis=None),
-                entities=EntityList.from_objs(
+                entities=DataSubjectList.from_objs(
                     self.entities.one_hot_lookup[0]
                 ),  # Need to check this
             )
@@ -362,7 +362,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         min_vals, min_vals_size = numpy_serialize(self.min_vals.data, get_bytes=True)
         max_vals, max_vals_size = numpy_serialize(self.max_vals.data, get_bytes=True)
         entities_indexed, entities_indexed_size = numpy_serialize(
-            self.entities.entities_indexed, get_bytes=True
+            self.entities.data_subjects_indexed, get_bytes=True
         )
         one_hot_lookup, one_hot_lookup_size = numpy_serialize(
             self.entities.one_hot_lookup, get_bytes=True
@@ -396,7 +396,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         ndept_msg.maxValsMetadata = max_vals_metadata
 
         chunk_bytes(entities_indexed, "entitiesIndexed", ndept_msg)
-        entities_metadata.dtype = str(self.entities.entities_indexed.dtype)
+        entities_metadata.dtype = str(self.entities.data_subjects_indexed.dtype)
         entities_metadata.decompressedSize = entities_indexed_size
         ndept_msg.entitiesIndexedMetadata = entities_metadata
 
@@ -469,7 +469,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             one_hot_lookup_metadata.dtype,
         )
 
-        entity_list = EntityList(one_hot_lookup, entities_indexed)
+        entity_list = DataSubjectList(one_hot_lookup, entities_indexed)
 
         return NDimEntityPhiTensor(
             child=child, min_vals=min_vals, max_vals=max_vals, entities=entity_list
