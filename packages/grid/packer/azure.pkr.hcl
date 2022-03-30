@@ -41,14 +41,14 @@ source "azure-arm" "domain" {
   subscription_id                   = "${var.subscription_id}"
   tenant_id                         = "${var.tenant}"
   vm_size                           = "Standard_D4s_v3"
-  os_disk_size_gb                   = 64
+  os_disk_size_gb                   = 128
   # vhd
   # capture_container_name            = "openmined-domain-ubuntu2004" # vhd
   # capture_name_prefix               = "openmined-domain" # vhd
   # resource_group_name               = "openmined-images" # vhd
   # storage_account                   = "openminedimgs" # vhd
   # managed image
-  managed_image_name                = "openmined-domain-ubuntu2004-1" # managed image
+  managed_image_name                = "openmined-domain-ubuntu2004-3" # managed image
   managed_image_resource_group_name = "openmined-images" # managed image
 }
 
