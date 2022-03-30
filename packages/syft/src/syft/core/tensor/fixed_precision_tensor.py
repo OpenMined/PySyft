@@ -9,6 +9,10 @@ from typing import Union
 # third party
 import numpy as np
 
+# syft absolute
+from syft.core.tensor.config import DEFAULT_FLOAT_NUMPY_TYPE
+from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
+
 # relative
 from ..common.serde.serializable import serializable
 from .passthrough import PassthroughTensor  # type: ignore
@@ -30,9 +34,9 @@ class FixedPrecisionTensor(PassthroughTensor):
         self._scale = base**precision
         if value is not None:
             # TODO :Should modify to be compatiable with torch.
-            value = np.array(value, dtype=np.int32)
+            value = np.array(value, DEFAULT_INT_NUMPY_TYPE)
             fpt_value = self._scale * value
-            encoded_value = fpt_value.astype(np.int32)
+            encoded_value = fpt_value.astype(DEFAULT_INT_NUMPY_TYPE)
             super().__init__(encoded_value)
         else:
             super().__init__(None)
@@ -70,11 +74,16 @@ class FixedPrecisionTensor(PassthroughTensor):
 
         value = self.child.child if isinstance(self.child, ShareTensor) else self.child
 
-        correction = (value < 0).astype(np.int32)
+        correction = (value < 0).astype(DEFAULT_INT_NUMPY_TYPE)
         dividend = value // self._scale - correction
         remainder = value % self._scale
-        remainder += (remainder == 0).astype(np.int32) * self._scale * correction
-        value = dividend.astype(np.float32) + remainder.astype(np.float32) / self._scale
+        remainder += (
+            (remainder == 0).astype(DEFAULT_INT_NUMPY_TYPE) * self._scale * correction
+        )
+        value = (
+            dividend.astype(DEFAULT_FLOAT_NUMPY_TYPE)
+            + remainder.astype(DEFAULT_FLOAT_NUMPY_TYPE) / self._scale
+        )
         return value
 
     def sanity_check(

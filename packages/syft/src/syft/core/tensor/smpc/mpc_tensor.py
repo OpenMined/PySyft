@@ -19,6 +19,9 @@ import numpy as np
 import numpy.typing as npt
 import torch
 
+# syft absolute
+from syft.core.tensor.config import DEFAULT_RING_SIZE
+
 # relative
 from . import utils
 from .... import logger
@@ -152,8 +155,8 @@ class MPCTensor(PassthroughTensor):
         if ring_size is not None:
             return ring_size
 
-        logger.warning("Ring size was not found! Defaulting to 2**32.")
-        return 2**32
+        logger.warning(f"Ring size was not found! Defaulting to {DEFAULT_RING_SIZE}.")
+        return DEFAULT_RING_SIZE
 
     @staticmethod
     def get_parties_info(parties: Iterable[Any]) -> List[GridURL]:

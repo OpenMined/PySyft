@@ -17,6 +17,9 @@ from typing import Tuple
 # third party
 import numpy as np
 
+# syft absolute
+from syft.core.tensor.config import DEFAULT_RING_SIZE
+
 # relative
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
@@ -37,7 +40,7 @@ def _get_triples(
     a_shape: Tuple[int],
     b_shape: Tuple[int],
     nr_instances: int = 1,
-    ring_size: int = 2**32,
+    ring_size: int = DEFAULT_RING_SIZE,
     **kwargs: Dict[Any, Any],
 ) -> Tuple[Tuple[Tuple[ShareTensor, ShareTensor, ShareTensor]]]:
     """Get triples.
@@ -325,7 +328,7 @@ def count_wraps_rand(
     shape: Tuple[int],
     parties_info: List[Any],
     nr_instances: int = 1,
-    ring_size: int = 2**32,
+    ring_size: int = DEFAULT_RING_SIZE,
 ) -> List[Tuple[Tuple[ShareTensor, ShareTensor]]]:
     """Count wraps random.
     The Trusted Third Party (TTP) or Crypto provider should generate:

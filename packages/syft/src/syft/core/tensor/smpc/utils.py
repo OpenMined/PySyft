@@ -13,8 +13,12 @@ from typing import cast
 # third party
 import numpy as np
 
+# syft absolute
+from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
+
 RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
     2**32: np.dtype("int32"),
+    2**64: np.dtype("int64"),
     2: np.dtype("bool"),  # Special case: need to do reconstruct and share with XOR
 }
 
@@ -103,7 +107,7 @@ def count_wraps(share_list: List[np.ndarray]) -> np.ndarray:
     Returns:
         torch.Tensor: The number of wraparounds.
     """
-    res = np.zeros_like(share_list[0], dtype=np.int32)
+    res = np.zeros_like(share_list[0], dtype=DEFAULT_INT_NUMPY_TYPE)
     prev_share = share_list[0]
     for cur_share in share_list[1:]:
         next_share = cur_share + prev_share

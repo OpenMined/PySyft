@@ -22,6 +22,7 @@ import torch
 # syft absolute
 # absolute
 import syft as sy
+from syft.core.tensor.config import DEFAULT_RING_SIZE
 
 # relative
 from . import utils
@@ -70,6 +71,18 @@ RING_SIZE_TO_OP = {
     },
     2
     ** 32: {
+        "add": operator.add,
+        "sub": operator.sub,
+        "mul": operator.mul,
+        "lt": operator.lt,
+        "gt": operator.gt,
+        "ge": operator.ge,
+        "le": operator.le,
+        "eq": operator.eq,
+        "ne": operator.ne,
+    },
+    2
+    ** 64: {
         "add": operator.add,
         "sub": operator.sub,
         "mul": operator.mul,
@@ -182,7 +195,9 @@ class ShareTensor(PassthroughTensor):
 
     @staticmethod
     @lru_cache(32)
-    def compute_min_max_from_ring(ring_size: int = 2**32) -> Tuple[int, int]:
+    def compute_min_max_from_ring(
+        ring_size: int = DEFAULT_RING_SIZE,
+    ) -> Tuple[int, int]:
         if ring_size == 2:
             min_value, max_value = 0, 1
         else:
@@ -263,7 +278,7 @@ class ShareTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         rank: int,
         parties_info: List[GridURL],
-        ring_size: int = 2**32,
+        ring_size: int = DEFAULT_RING_SIZE,
         seed_przs: Optional[int] = None,
         generator_przs: Optional[Any] = None,
         init_clients: bool = True,
@@ -351,7 +366,7 @@ class ShareTensor(PassthroughTensor):
         parties_info: List[GridURL],
         seed_przs: int,
         share_wrapper: Any,
-        ring_size: int = 2**32,
+        ring_size: int = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
 
         if value is not None:
@@ -771,10 +786,6 @@ class ShareTensor(PassthroughTensor):
 
             res = _self.copy_tensor()
 
-            # TODO : Some operations return np.int64 by default, should modify
-            # when we have support for np.int64 or do explicit casting.
-            if method_name == "trace":
-                new_share = np.array(new_share, dtype=np.int32)
             res.child = new_share
 
             return res
