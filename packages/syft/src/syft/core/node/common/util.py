@@ -18,6 +18,7 @@ from ....util import size_mb
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...store.proxy_dataset import ProxyDataset
+from .exceptions import DatasetUploadError
 
 MIN_BLOB_UPLOAD_SIZE_MB = 1
 
@@ -177,14 +178,13 @@ def upload_to_s3_using_presigned(
 
         res = requests.put(client_url, data=data_chunk)
 
-        # TODO: Replace with some error message if it fails.
-
-        if res.status_code != 200:
-            raise Exception(
-                f"Uploading Chunk {part} failed. "
-                + f"HTTP Status Code: {res.status_code}"
-                + f"HTTP Content: {str(res.content)}"
+        if not res.ok:  # raise an error if upload fails
+            error_message = (
+                f"\n\nFailed to upload `{asset_name}` to store\n"
+                + f"Status code: {res.status_code} {res.reason}\n"
+                + f"Error: {str(res.text)}"
             )
+            raise DatasetUploadError(message=error_message)
         etag = res.headers["ETag"]
         etag_chunk_no_pairs.append(
             {"ETag": etag, "PartNumber": part_no}
@@ -243,7 +243,7 @@ def check_send_to_blob_storage(obj: Any, use_blob_storage: bool = False) -> bool
         use_blob_storage (bool, optional): Explicit flag to send the data to blob storage. Defaults to False.
 
     Returns:
-        bool: _description_
+        bool: Returns True if obj can be stored in blob store else returns False.
     """
     # relative
     from ...tensor import Tensor

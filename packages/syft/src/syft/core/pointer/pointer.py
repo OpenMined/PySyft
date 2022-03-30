@@ -112,6 +112,7 @@ from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.exceptions import DatasetDownloadError
 from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
@@ -219,10 +220,12 @@ class Pointer(AbstractPointer):
             presigned_url = self.client.url_from_path(presigned_url_path)
             response = requests.get(presigned_url)
 
-            if response.status_code != 200:
-                raise Exception(
-                    f"Failed to get object from store. HTTP Status Code: {response.status_code}"
+            if not response.ok:
+                error_msg = (
+                    f"\nFailed to get object {self.id_at_location} from store\n."
+                    + f"Status Code: {response.status_code} {response.reason}"
                 )
+                raise DatasetDownloadError(error_msg)
             obj = _deserialize(response.content, from_bytes=True)
         else:
             obj = obj.data

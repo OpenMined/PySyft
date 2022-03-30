@@ -32,6 +32,7 @@ from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_messages import (
     ResolvePointerTypeMessage,
 )
+from ..core.node.common.util import check_send_to_blob_storage
 from ..core.node.common.util import upload_to_s3_using_presigned
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
@@ -761,7 +762,12 @@ class Class(Callable):
             else:
                 ptr.gc_enabled = True
 
-            if send_to_blob_storage:
+            # check if the obj can be stored in blob store
+            store_obj_in_blob_store = check_send_to_blob_storage(
+                obj=self, use_blob_storage=send_to_blob_storage
+            )
+
+            if store_obj_in_blob_store:
                 store_data = upload_to_s3_using_presigned(
                     client=client,
                     data=self,
