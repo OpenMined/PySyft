@@ -762,7 +762,17 @@ class Class(Callable):
             else:
                 ptr.gc_enabled = True
 
-            # check if the obj can be stored in blob store
+            # Check if the client has blob storage enabled
+            # blob storage can only be used if client node has blob storage enabled.
+            if send_to_blob_storage and not client.settings.get(
+                "use_blob_storage", False
+            ):
+                sys.stdout.write(
+                    "\n**Warning**: Blob Storage is disabled on this client node. Switching to database store.\n"
+                )
+                send_to_blob_storage = False
+
+            # Check if the obj satisfies the min requirements for it to be stored in blob store
             store_obj_in_blob_store = check_send_to_blob_storage(
                 obj=self, use_blob_storage=send_to_blob_storage
             )

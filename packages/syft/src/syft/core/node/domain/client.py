@@ -679,9 +679,15 @@ class DomainClient(Client):
             if isinstance(v, str):  # type: ignore
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
+        # blob storage can only be used if domain node has blob storage enabled.
+        if use_blob_storage and not self.settings.get("use_blob_storage", False):
+            print(
+                "\n\n**Warning**: Blob Storage is disabled on this domain. Switching to database store.\n"
+            )
+            use_blob_storage = False
+
         # If one of the assets needs to be send to blob_storage, then store all other
         # assets to blob storage as well
-        # TODO: Determine use_blob_storage from the clients node metadata
         send_assets_to_blob_storage = any(
             [
                 check_send_to_blob_storage(obj=asset, use_blob_storage=use_blob_storage)

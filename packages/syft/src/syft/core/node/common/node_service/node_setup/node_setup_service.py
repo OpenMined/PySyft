@@ -113,6 +113,7 @@ def get_setup(
 
     _setup = model_to_json(node.setup.first(domain_name=node.name))
     _setup["tags"] = loads(_setup["tags"])
+    _setup["use_blob_storage"] = getattr(node.settings, "USE_BLOB_STORAGE", False)
     if node.network:
         _setup["domains"] = len(node.node.all())
     return GetSetUpResponse(
