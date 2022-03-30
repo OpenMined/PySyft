@@ -11,7 +11,6 @@ def generate_sec_random_password(length):
         )
 
     alphabet = string.ascii_letters + string.digits + string.punctuation
-    print(alphabet)
 
     # original Python 2 (urandom returns str)
     # return "".join(chars[ord(c) % len(chars)] for c in urandom(length))
