@@ -48,7 +48,7 @@ jobs:
         if: ${{needs.hagrid-hash-challenge.outputs.current_hash}} != ${{needs.hagrid-hash-challenge.outputs.previous_hash}}
         run: |
           python3 hagrid/__init__.py
-          bump2version prenum --allow-dirty --no-commit
+          bump2version patch --allow-dirty --no-commit
           tox -e lint || true
           python3 hagrid/__init__.py
         working-directory: ./packages/hagrid
