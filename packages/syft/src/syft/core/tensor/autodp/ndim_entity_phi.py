@@ -16,8 +16,8 @@ import numpy as np
 
 # relative
 from ....core.adp.data_subject_ledger import DataSubjectLedger
-from ....core.adp.entity import Entity
 from ....core.adp.data_subject_list import DataSubjectList
+from ....core.adp.entity import Entity
 from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
 from ....lib.numpy.array import arrow_serialize as numpy_serialize
 from ...common.serde.capnp import CapnpModule

@@ -15,8 +15,8 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # relative
-from ..adp.entity import Entity
 from ..adp.data_subject_list import DataSubjectList
+from ..adp.entity import Entity
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
