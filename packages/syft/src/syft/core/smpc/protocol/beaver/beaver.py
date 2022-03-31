@@ -13,14 +13,13 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Tuple
+from typing import Union
 
 # third party
 import numpy as np
 
-# syft absolute
-from syft.core.tensor.config import DEFAULT_RING_SIZE
-
 # relative
+from ....tensor.config import DEFAULT_RING_SIZE
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.utils import RING_SIZE_TO_TYPE
@@ -174,7 +173,7 @@ def mul_store_add(
     primitives: List[Any],
     a_shape: Tuple[int],
     b_shape: Tuple[int],
-    ring_size: int,
+    ring_size: Union[int, str],
 ) -> None:
     """Add the primitives required for the "mul" operation to the CryptoStore.
 
@@ -184,6 +183,7 @@ def mul_store_add(
         a_shape (Tuple[int]): the shape of the first operand
         b_shape (Tuple[int]): the shape of the second operand
     """
+    ring_size = int(ring_size)
     config_key = f"beaver_mul_{a_shape}_{b_shape}_{ring_size}"
     if config_key in store:
         store[config_key].extend(list(primitives))
@@ -259,7 +259,7 @@ def matmul_store_add(
     primitives: List[Any],
     a_shape: Tuple[int],
     b_shape: Tuple[int],
-    ring_size: int,
+    ring_size: Union[int, str],
 ) -> None:
     """Add the primitives required for the "matmul" operation to the CryptoStore.
 
@@ -270,6 +270,7 @@ def matmul_store_add(
         b_shape (Tuple[int]): The shape of the second operand.
 
     """
+    ring_size = int(ring_size)
     config_key = f"beaver_matmul_{a_shape}_{b_shape}_{ring_size}"
     if config_key in store:
         store[config_key].extend(list(primitives))
@@ -403,7 +404,7 @@ def wraps_store_add(
     store: Dict[str, List[Any]],
     primitives: List[Any],
     shape: Tuple[int],
-    ring_size: int,
+    ring_size: Union[int, str],
 ) -> None:
     """Add the primitives required for the public division operation to the CryptoStore.
 
@@ -413,7 +414,7 @@ def wraps_store_add(
         shape (Tuple[int]): the shape of the numerator
         ring_size (int): Ring size of the operation.
     """
-
+    ring_size = int(ring_size)
     config_key = f"beaver_wraps_{shape}_{ring_size}"
     if config_key in store:
         store[config_key].extend(list(primitives))

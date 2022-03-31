@@ -13,8 +13,8 @@ from typing import cast
 # third party
 import numpy as np
 
-# syft absolute
-from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
+# relative
+from ..config import DEFAULT_INT_NUMPY_TYPE
 
 RING_SIZE_TO_TYPE: Dict[int, np.dtype] = {
     2**32: np.dtype("int32"),

@@ -9,12 +9,10 @@ from typing import Union
 # third party
 import numpy as np
 
-# syft absolute
-from syft.core.tensor.config import DEFAULT_FLOAT_NUMPY_TYPE
-from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
-
 # relative
 from ..common.serde.serializable import serializable
+from .config import DEFAULT_FLOAT_NUMPY_TYPE
+from .config import DEFAULT_INT_NUMPY_TYPE
 from .passthrough import PassthroughTensor  # type: ignore
 from .passthrough import is_acceptable_simple_type  # type: ignore
 from .smpc import context
@@ -26,7 +24,7 @@ class FixedPrecisionTensor(PassthroughTensor):
     __attr_allowlist__ = ("child", "_base", "_precision", "_scale")
 
     def __init__(
-        self, value: Optional[Any] = None, base: int = 2, precision: int = 9
+        self, value: Optional[Any] = None, base: int = 2, precision: int = 16
     ) -> None:
 
         self._base = base

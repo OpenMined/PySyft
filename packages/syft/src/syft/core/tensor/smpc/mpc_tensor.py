@@ -19,15 +19,13 @@ import numpy as np
 import numpy.typing as npt
 import torch
 
-# syft absolute
-from syft.core.tensor.config import DEFAULT_RING_SIZE
-
 # relative
 from . import utils
 from .... import logger
 from ....ast.klass import get_run_class_method
 from ....grid import GridURL
 from ...smpc.protocol.spdz import spdz
+from ..config import DEFAULT_RING_SIZE
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
@@ -311,7 +309,7 @@ class MPCTensor(PassthroughTensor):
                     shape=shape,
                     seed_przs=seed_przs,
                     share_wrapper=share_wrapper_pointer,
-                    ring_size=ring_size,
+                    ring_size=str(ring_size),
                 )
 
             else:
@@ -322,9 +320,11 @@ class MPCTensor(PassthroughTensor):
                         value=value,
                         shape=shape,
                         seed_przs=seed_przs,
-                        ring_size=ring_size,
+                        ring_size=str(ring_size),
                     )
                 )
+
+            # Converted ring size to string as it exceeds 64 bit.
 
             shares.append(remote_share)
 
@@ -336,7 +336,7 @@ class MPCTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         seed_przs: int,
         parties_info: List[GridURL],
-        ring_size: int = 2**32,
+        ring_size: int = DEFAULT_RING_SIZE,
     ) -> List[ShareTensor]:
         shares = []
         nr_parties = len(parties_info)

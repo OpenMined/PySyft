@@ -13,10 +13,6 @@ from typing import Union
 import numpy as np
 import torch as th
 
-# syft absolute
-from syft.core.tensor.config import DEFAULT_FLOAT_NUMPY_TYPE
-from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
-
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
@@ -28,6 +24,8 @@ from ..node.common.action.run_class_method_action import RunClassMethodAction
 from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
+from .config import DEFAULT_FLOAT_NUMPY_TYPE
+from .config import DEFAULT_INT_NUMPY_TYPE
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
 from .smpc import utils

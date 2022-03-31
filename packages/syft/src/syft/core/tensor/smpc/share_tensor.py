@@ -22,7 +22,6 @@ import torch
 # syft absolute
 # absolute
 import syft as sy
-from syft.core.tensor.config import DEFAULT_RING_SIZE
 
 # relative
 from . import utils
@@ -33,6 +32,7 @@ from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...smpc.store.crypto_store import CryptoStore
+from ..config import DEFAULT_RING_SIZE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import PassthroughTensor  # type: ignore
 
@@ -278,12 +278,12 @@ class ShareTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         rank: int,
         parties_info: List[GridURL],
-        ring_size: int = DEFAULT_RING_SIZE,
+        ring_size: Union[int, str] = DEFAULT_RING_SIZE,
         seed_przs: Optional[int] = None,
         generator_przs: Optional[Any] = None,
         init_clients: bool = True,
     ) -> "ShareTensor":
-
+        ring_size = int(ring_size)
         nr_parties = len(parties_info)
 
         # Try:
@@ -366,9 +366,9 @@ class ShareTensor(PassthroughTensor):
         parties_info: List[GridURL],
         seed_przs: int,
         share_wrapper: Any,
-        ring_size: int = DEFAULT_RING_SIZE,
+        ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
-
+        ring_size = int(ring_size)
         if value is not None:
             share = ShareTensor.generate_przs(
                 value=value.child,
@@ -799,11 +799,15 @@ class ShareTensor(PassthroughTensor):
         return object.__getattribute__(self, attr_name)
 
     def _object2proto(self) -> ShareTensor_PB:
+        # This works only for unsigned types.
+        length_rs = self.ring_size.bit_length()
+        rs_bytes = self.ring_size.to_bytes((length_rs + 7) // 8, byteorder="big")
+
         proto_init_kwargs = {
             "rank": self.rank,
             "parties_info": [serialize(party) for party in self.parties_info],
             "seed_przs": self.seed_przs,
-            "ring_size": sy.serialize(self.ring_size, to_bytes=True),
+            "ring_size": rs_bytes,
         }
         if isinstance(self.child, np.ndarray):
             proto_init_kwargs["array"] = serialize(self.child)
@@ -820,7 +824,7 @@ class ShareTensor(PassthroughTensor):
             "rank": proto.rank,
             "parties_info": [deserialize(party) for party in proto.parties_info],
             "seed_przs": proto.seed_przs,
-            "ring_size": int(sy.deserialize(proto.ring_size, from_bytes=True)),
+            "ring_size": int.from_bytes(proto.ring_size, "big"),
         }
         if proto.HasField("tensor"):
             init_kwargs["value"] = deserialize(proto.tensor)
