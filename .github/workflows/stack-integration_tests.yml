@@ -220,6 +220,9 @@ jobs:
           pip install --upgrade --user pip
         shell: cmd
 
+      - name: Add msbuild to PATH
+        uses: microsoft/setup-msbuild@v1.1
+
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
@@ -315,6 +318,12 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install --upgrade --user pip
+
+      - name: Install build essentials
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y build-essential
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
