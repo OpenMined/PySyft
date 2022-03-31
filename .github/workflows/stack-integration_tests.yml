@@ -325,6 +325,18 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y build-essential
 
+      - name: Setup Cmake
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          wget https://cmake.org/files/v3.10/cmake-3.10.2.tar.gz
+          tar -xzf cmake-3.10.2.tar.gz
+          cd cmake-3.10.2
+          ./bootstrap --prefix=/usr/local
+          make
+          sudo make install
+          cd ..
+          rm -rf cmake-3.10.2*
+
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
