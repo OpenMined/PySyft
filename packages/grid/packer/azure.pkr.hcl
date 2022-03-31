@@ -47,7 +47,7 @@ source "azure-arm" "domain" {
   # resource_group_name               = "openmined-images" # vhd
   # storage_account                   = "openminedimgs" # vhd
   # managed image
-  managed_image_name                = "openmined-domain-ubuntu2004-3" # managed image
+  managed_image_name                = "openmined-domain-ubuntu2004-4" # managed image
   managed_image_resource_group_name = "openmined-images" # managed image
 }
 
