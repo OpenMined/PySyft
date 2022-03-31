@@ -58,7 +58,7 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
         # TODO : Move to permissions
         # if not node.users.can_upload_data(verify_key=verify_key):
         #    return {"message": "You're not authorized to do this."}
-
+        
         key = f"{self.payload.filename}"
         s3_client = get_s3_client(settings=node.settings)
         result = s3_client.create_multipart_upload(Bucket=node.id.no_dash, Key=key)
@@ -135,60 +135,6 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
             UploadId=self.payload.upload_id,
         )
         return UploadDataCompleteMessage.Reply()
-
-    def get_permissions(self) -> List[Type[BasePermission]]:
-        """Returns the list of permission classes."""
-        return [NoRestriction]
-
-
-@serializable(recursive_serde=True)
-@final
-class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry):
-
-    # Pydantic Inner class to define expected request payload fields.
-    class Request(RequestPayload):
-        """Payload fields and types used during a User Creation Request."""
-
-        id_at_location: str
-
-    # Pydantic Inner class to define expected reply payload fields.
-    class Reply(ReplyPayload):
-        """Payload fields and types used during a User Creation Response."""
-
-        message: str = "Deleted Successfully."
-        object_delete = True
-
-    request_payload_type = (
-        Request  # Converts generic syft dict into a CreateUserMessage.Request object.
-    )
-    reply_payload_type = (
-        Reply  # Creates a proper Reply payload message structure as a response.
-    )
-
-    def run(  # type: ignore
-        self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
-    ) -> ReplyPayload:  # type: ignore
-
-        # TODO: We can have it run async and have a cron/periodic task to clean up failed deletes.
-
-        # relative
-        from ......logger import critical
-        from ......logger import debug
-
-        try:
-            debug(
-                f"Calling delete on Object with ID {self.payload.id_at_location} in store."
-            )
-            id_at_location = UID.from_string(self.payload.id_at_location)
-            if not node.store.is_dataset(key=id_at_location):  # type: ignore
-                node.store.delete(key=id_at_location)
-        except Exception as e:
-            log = (
-                f"> GetObjectAction delete exception {self.payload.id_at_location} {e}"
-            )
-            critical(log)
-
-        return ObjectDeleteMessage.Reply()
 
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""

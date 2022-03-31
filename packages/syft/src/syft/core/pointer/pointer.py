@@ -232,7 +232,7 @@ class Pointer(AbstractPointer):
 
         if delete_obj:
             # relative
-            from ..node.common.node_service.upload_service.upload_service_messages import (
+            from ..node.common.node_service.object_delete.object_delete_message import (
                 ObjectDeleteMessage,
             )
 
