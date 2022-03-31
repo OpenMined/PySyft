@@ -7,7 +7,6 @@ from typing import List
 # third party
 import boto3
 from botocore.client import Config
-from botocore.exceptions import ClientError as BotoClientError
 from pydantic import BaseSettings
 import requests
 from tqdm import tqdm
@@ -255,22 +254,3 @@ def check_send_to_blob_storage(obj: Any, use_blob_storage: bool = False) -> bool
     ):
         return True
     return False
-
-
-def delete_from_s3(domain_id: UID, filename: str, settings: BaseSettings) -> None:
-    """Deletes the object from SeaweedFS/blob store.
-
-    Args:
-        domain_id (UID): UID of the domain node
-        filename (str): `name` of the proxy dataset
-        settings (BaseSettings): base settings of the PyGrid server
-
-    Raises:
-        BotoClientError: Object deletion fails due to error on SeaweedFS service
-    """
-    s3_client = get_s3_client(settings=settings)
-
-    try:
-        s3_client.delete_object(Bucket=domain_id.no_dash, Key=filename)
-    except BotoClientError as error:
-        raise error

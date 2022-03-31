@@ -230,6 +230,23 @@ class Pointer(AbstractPointer):
         else:
             obj = obj.data
 
+        if delete_obj:
+            # relative
+            from ..node.common.node_service.upload_service.upload_service_messages import (
+                ObjectDeleteMessage,
+            )
+
+            # TODO: Fix circular import
+            # This deletes the data from both database and blob store
+            self.client.datasets.perform_api_request_generic(
+                syft_msg=ObjectDeleteMessage,
+                content={
+                    "id_at_location": self.id_at_location.to_string(),
+                    "address": self.client.address,
+                    "reply_to": self.client.address,
+                },
+            )
+
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
             return enum_class(obj)
