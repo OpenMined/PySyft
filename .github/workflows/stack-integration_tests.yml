@@ -222,7 +222,8 @@ jobs:
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
-        vs-version: "15.0"
+        with:
+          vs-version: "14.0"
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
