@@ -14,12 +14,11 @@ from typing_extensions import final
 # relative
 from ......grid import GridURL
 from .....common.serde.serializable import serializable
-from .....common.uid import UID
 from ....domain.domain_interface import DomainInterface
 from ....domain.registry import DomainMessageRegistry
 from ...permissions.permissions import BasePermission
 from ...permissions.user_permissions import NoRestriction
-from ...util import get_s3_client, get_s3_resource
+from ...util import get_s3_client
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
 from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
@@ -58,7 +57,7 @@ class UploadDataMessage(SyftMessage, DomainMessageRegistry):
         # TODO : Move to permissions
         # if not node.users.can_upload_data(verify_key=verify_key):
         #    return {"message": "You're not authorized to do this."}
-        
+
         key = f"{self.payload.filename}"
         s3_client = get_s3_client(settings=node.settings)
         result = s3_client.create_multipart_upload(Bucket=node.id.no_dash, Key=key)
@@ -141,20 +140,20 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
         return [NoRestriction]
 
 
-
 @serializable(recursive_serde=True)
 @final
-class DeleteIncompleteDataUploadMessage(SyftMessage, DomainMessageRegistry):
+class AbortDataUploadMessage(SyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
-        """Payload fields and types used during a User Creation Request."""
+        """Payload fields and types used during Deletion of Incomplete Data Upload Request."""
 
         upload_id: str
-    
+        asset_name: str
+
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
-        """Payload fields and types used during a User Creation Response."""
+        """Payload fields and types used during a Deletion of Incomplete Data Upload Response."""
 
         message: str = "Deletion Complete!"
 
@@ -174,10 +173,14 @@ class DeleteIncompleteDataUploadMessage(SyftMessage, DomainMessageRegistry):
         # if not user_role.can_upload_data:
         #    return {"message": "You're not authorized to do this."}
 
-        client: boto3.client.S3 = get_s3_resource(settings=node.settings)
-        bucket = client.Bucket(node.id.no_dash)
-        prefix_string = f"/uploads{self.payload.upload_id}"
-        bucket.objects.filter(Prefix=prefix_string).delete()
+        client: boto3.client.S3 = get_s3_client(settings=node.settings)
+
+        # Abort multipart upload
+        client.abort_multipart_upload(
+            UploadId=self.payload.upload_id,
+            Key=self.payload.asset_name,
+            Bucket=node.id.no_dash,
+        )
         return UploadDataCompleteMessage.Reply()
 
     def get_permissions(self) -> List[Type[BasePermission]]:

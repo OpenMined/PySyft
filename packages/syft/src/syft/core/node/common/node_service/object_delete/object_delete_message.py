@@ -4,7 +4,6 @@ from typing import Optional
 from typing import Type
 
 # third party
-import boto3
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
@@ -38,7 +37,7 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry):
         object_delete = True
 
     request_payload_type = (
-        Request  # Converts generic syft dict into a CreateUserMessage.Request object.
+        Request  # Converts generic syft dict into a ObjectDeleteMessage Request object.
     )
     reply_payload_type = (
         Reply  # Creates a proper Reply payload message structure as a response.

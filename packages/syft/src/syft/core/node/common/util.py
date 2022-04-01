@@ -4,8 +4,6 @@ from typing import Any
 from typing import Generator
 from typing import List
 
-from sympy import E
-
 # third party
 import boto3
 from botocore.client import Config
@@ -110,16 +108,31 @@ def upload_result_to_s3(
     return proxy_obj
 
 
-def delete_incomplete_s3_object_upload(client: Any, name: str) -> None:
-    from .node_service.upload_service.upload_service_messages import DeleteIncompleteDataUploadMessage
-    # Step 2 - Send a message to PyGrid to inform of the data being uploaded,
-    # and get presigned url for each chunk of data being uploaded.
-    upload_response = client.datasets.perform_api_request_generic(
-        syft_msg=DeleteIncompleteDataUploadMessage,
+def abort_s3_object_upload(
+    client: boto3.client, upload_id: str, asset_name: str
+) -> None:
+    """Abort upload to s3 for the given asset.
+
+    Args:
+        client (boto3.client): boto3 client.
+        upload_id (str): upload id generated for mutlipart upload.
+        asset_name (str): name of the data/asset.
+    """
+    # relative
+    from .node_service.upload_service.upload_service_messages import (
+        AbortDataUploadMessage,
+    )
+
+    # Send a message to PyGrid to abort the data being uploaded to s3.
+    # TODO: make this call async -> could use celery .delay method to do
+    _ = client.datasets.perform_api_request_generic(
+        syft_msg=AbortDataUploadMessage,
         content={
-            "upload_id": name,
+            "upload_id": upload_id,
+            "asset_name": asset_name,
         },
     )
+
 
 def upload_to_s3_using_presigned(
     client: Any,
@@ -159,29 +172,25 @@ def upload_to_s3_using_presigned(
     from .node_service.upload_service.upload_service_messages import UploadDataMessage
 
     dataset_name = str(dataset_name)
-    
-    # Somehow they're different
-    id_at_location = str(asset_name.value)
-    asset_name = asset_name
 
     # Step 1 - Convert data to be uploaded to binary
     binary_dataset: bytes = serialize(data, to_bytes=True)  # type: ignore
     file_size = len(binary_dataset)
 
-    try:
-        # Step 2 - Send a message to PyGrid to inform of the data being uploaded,
-        # and get presigned url for each chunk of data being uploaded.
-        upload_response = client.datasets.perform_api_request_generic(
-            syft_msg=UploadDataMessage,
-            content={
-                "filename": f"{dataset_name}/{asset_name}",
-                "file_size": file_size,
-                "chunk_size": chunk_size,
-                "address": client.address,
-                "reply_to": client.address,
-            },
-        )
+    # Step 2 - Send a message to PyGrid to inform of the data being uploaded,
+    # and get presigned url for each chunk of data being uploaded.
+    upload_response = client.datasets.perform_api_request_generic(
+        syft_msg=UploadDataMessage,
+        content={
+            "filename": f"{dataset_name}/{asset_name}",
+            "file_size": file_size,
+            "chunk_size": chunk_size,
+            "address": client.address,
+            "reply_to": client.address,
+        },
+    )
 
+    try:
         # Step 3 - Starts to upload binary data into Seaweed.
         binary_buffer = BytesIO(binary_dataset)
         parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
@@ -233,8 +242,10 @@ def upload_to_s3_using_presigned(
             obj_public_kwargs=obj_public_kwargs,
         )
     except (Exception, KeyboardInterrupt) as e:
-        file_name = f'{dataset_name}/{id_at_location}'
-        delete_incomplete_s3_object_upload(client=client, name=file_name)
+        upload_id = upload_response.payload.upload_id
+        abort_s3_object_upload(
+            client=client, upload_id=upload_id, asset_name=asset_name
+        )
         raise e
 
     return proxy_data
@@ -257,22 +268,6 @@ def get_s3_client(settings: BaseSettings) -> "boto3.client.S3":
         print(f"Failed to create S3 Client with {s3_endpoint} {s3_port} {s3_grid_url}")
         raise e
 
-def get_s3_resource(settings: BaseSettings) -> "boto3.resource.s3":
-    try:
-        s3_endpoint = settings.S3_ENDPOINT
-        s3_port = settings.S3_PORT
-        s3_grid_url = GridURL(host_or_ip=s3_endpoint, port=s3_port)
-        return boto3.resource(
-            "s3",
-            endpoint_url=s3_grid_url.url,
-            aws_access_key_id=settings.S3_ROOT_USER,
-            aws_secret_access_key=settings.S3_ROOT_PWD,
-            config=Config(signature_version="s3v4"),
-            region_name=settings.S3_REGION,
-        )
-    except Exception as e:
-        print(f"Failed to create S3 Resource with {s3_endpoint} {s3_port} {s3_grid_url}")
-        raise e
 
 def check_send_to_blob_storage(obj: Any, use_blob_storage: bool = False) -> bool:
     """Check if the data needs to be send to Seaweed storage depending upon its size and type.
