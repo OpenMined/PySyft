@@ -12,7 +12,7 @@ Parameters:
   * --rept_rows: number of rows for the rept scenario
   * --rept_cols: number of cols for the rept scenario
   * --rept_dimension: dimension of the row tensor
-* PERF_ARGS: 
+* PERF_ARGS:
       These arguments are inherited from the pyperf runner class, for more info: https://pyperf.readthedocs.io/en/latest/runner.html
 
 ### Examples
