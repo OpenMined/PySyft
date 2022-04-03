@@ -144,3 +144,13 @@ class FixedPrecisionTensor(PassthroughTensor):
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child / other
         return res
+
+    def transpose(self, *args, **kwargs) -> FixedPrecisionTensor:
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = self.child.transpose(*args, **kwargs)
+        return res
+    
+    @property
+    def T(self) -> FixedPrecisionTensor:
+        return self.transpose()
+    
