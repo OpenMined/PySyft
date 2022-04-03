@@ -1,5 +1,6 @@
 # stdlib
 from copy import deepcopy
+import operator
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -27,7 +28,7 @@ def get_id_at_location_from_op(seed: int, operation_str: str) -> UID:
     return UID(UUID(bytes=generator.bytes(16)))
 
 
-def private_mul(x: ShareTensor, y: ShareTensor) -> ShareTensor:
+def private_mul(x: ShareTensor, y: ShareTensor, op_str: str) -> ShareTensor:
     """Performs SMPC Private Multiplication using Beaver Triples.
 
     Args:
@@ -55,7 +56,7 @@ def private_mul(x: ShareTensor, y: ShareTensor) -> ShareTensor:
     # TODO: Make beaver retrieval context less, this might fail when there are several
     # parallel multiplications.
     a_share, b_share, c_share = crypto_store_retrieve_object(
-        "beaver_mul",
+        f"beaver_{op_str}",
         a_shape=a_shape,
         b_shape=b_shape,
         ring_size=ring_size,
@@ -69,7 +70,7 @@ def private_mul(x: ShareTensor, y: ShareTensor) -> ShareTensor:
     spdz_mask(x, y, eps_id, delta_id, a_share, b_share, node)
 
     # Phase 2: Share Reconstruction Phase:
-    res = spdz_multiply(x, y, eps_id, delta_id, a_share, b_share, c_share, node)
+    res = spdz_multiply(x, y, op_str, eps_id, delta_id, a_share, b_share, c_share, node)
 
     return res
 
@@ -110,6 +111,7 @@ def spdz_mask(
 def spdz_multiply(
     x: ShareTensor,
     y: ShareTensor,
+    op_str: str,
     eps_id: UID,
     delta_id: UID,
     a_share: ShareTensor,
@@ -120,25 +122,24 @@ def spdz_multiply(
 
     nr_parties = x.nr_parties
 
-    ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
-
     eps = beaver_retrieve_object(node, eps_id, nr_parties)  # type: ignore
     delta = beaver_retrieve_object(node, delta_id, nr_parties)  # type: ignore
 
-    eps = sum(eps.data)  # type: ignore
-    delta = sum(delta.data)  # type:ignore
+    eps: ShareTensor = sum(eps.data)  # type: ignore
+    delta: ShareTensor = sum(delta.data)  # type: ignore
 
-    eps_b = eps * b_share.child
-    delta_a = delta * a_share.child  # Symmetric only for mul
+    op = getattr(operator, op_str)
 
-    tensor = c_share + eps_b + delta_a
+    eps_b = op(eps.child, b_share.child)  # type: ignore
+    delta_a = op(a_share.child, delta.child)  # type: ignore
+
+    tensor = c_share.child + eps_b + delta_a
     if x.rank == 0:
-        mul_op = ShareTensor.get_op(ring_size, "mul")
-        eps_delta = mul_op(eps.child, delta.child)  # type: ignore
+        eps_delta = op(eps.child, delta.child)  # type: ignore
         tensor = tensor + eps_delta
 
     share = x.copy_tensor()
-    share.child = tensor.child  # As we do not use fixed point we neglect truncation.
+    share.child = tensor
 
     return share
 

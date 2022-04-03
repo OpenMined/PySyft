@@ -118,10 +118,20 @@ class FixedPrecisionTensor(PassthroughTensor):
     def __mul__(self, other: Any) -> FixedPrecisionTensor:
         other = self.sanity_check(other)
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT[
-            "seed_id_locations"
-        ]
+        context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT.get(
+            "seed_id_locations", None
+        )
         res.child = self.child * other.child
+        res = res / self.scale
+        return res
+
+    def __matmul__(self, other: Any) -> FixedPrecisionTensor:
+        other = self.sanity_check(other)
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT.get(
+            "seed_id_locations", None
+        )
+        res.child = self.child @ other.child
         res = res / self.scale
         return res
 

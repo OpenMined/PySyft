@@ -228,6 +228,19 @@ class TensorPointer(Pointer):
         """
         return TensorPointer._apply_op(self, other, "mul")
 
+    def __matmul__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "matmul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "matmul")
+
     def __lt__(
         self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
     ) -> Union[TensorPointer, MPCTensor]:

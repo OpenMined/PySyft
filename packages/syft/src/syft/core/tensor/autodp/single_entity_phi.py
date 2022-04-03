@@ -311,6 +311,24 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
         """
         return TensorWrappedSingleEntityPhiTensorPointer._apply_op(self, other, "mul")
 
+    def __matmul__(
+        self,
+        other: Union[
+            TensorWrappedSingleEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+        ],
+    ) -> Union[TensorWrappedSingleEntityPhiTensorPointer, MPCTensor]:
+        """Apply the "matmul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedSingleEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedSingleEntityPhiTensorPointer._apply_op(
+            self, other, "matmul"
+        )
+
     def __lt__(
         self,
         other: Union[

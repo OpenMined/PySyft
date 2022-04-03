@@ -309,7 +309,8 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __matmul__(
         self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
-        return self.manual_dot(other)
+
+        return self.__class__(self.child @ other.child)
 
     def __rmatmul__(
         self, other: Union[Type[PassthroughTensor], np.ndarray]

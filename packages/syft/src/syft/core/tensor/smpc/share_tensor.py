@@ -74,6 +74,7 @@ RING_SIZE_TO_OP = {
         "add": operator.add,
         "sub": operator.sub,
         "mul": operator.mul,
+        "matmul": operator.matmul,
         "lt": operator.lt,
         "gt": operator.gt,
         "ge": operator.ge,
@@ -86,6 +87,7 @@ RING_SIZE_TO_OP = {
         "add": operator.add,
         "sub": operator.sub,
         "mul": operator.mul,
+        "matmul": operator.matmul,
         "lt": operator.lt,
         "gt": operator.gt,
         "ge": operator.ge,
@@ -450,7 +452,7 @@ class ShareTensor(PassthroughTensor):
                     if self.rank == 0
                     else deepcopy(self.child)
                 )
-            elif op_str == "mul":
+            elif op_str in ["mul", "matmul"]:
                 value = op(self.child, np.array(y, numpy_type))
             else:
                 raise ValueError(f"{op_str} not supported")
@@ -517,7 +519,7 @@ class ShareTensor(PassthroughTensor):
         from ...node.common.action.smpc_action_functions import private_mul
 
         if isinstance(y, ShareTensor):
-            new_share = private_mul(self, y)
+            new_share = private_mul(self, y, "mul")
         else:
             new_share = self.apply_function(y, "mul")
 
@@ -563,15 +565,19 @@ class ShareTensor(PassthroughTensor):
         """Apply the "matmul" operation between "self" and "y".
 
         Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self @ y.
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self @ y
 
         Returns:
-            ShareTensor: Result of the operation.
+            ShareTensor. Result of the operation.
         """
-        if isinstance(y, ShareTensor):
-            raise ValueError("Private matmul not supported yet")
+        # relative
+        from ...node.common.action.smpc_action_functions import private_mul
 
-        new_share = ShareTensor.apply_function(self, y, "matmul")
+        if isinstance(y, ShareTensor):
+            new_share = private_mul(self, y, "matmul")
+        else:
+            new_share = self.apply_function(y, "matmul")
+
         return new_share
 
     def rmatmul(self, y: torch.Tensor) -> "ShareTensor":

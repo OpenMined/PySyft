@@ -731,6 +731,41 @@ class MPCTensor(PassthroughTensor):
 
         return res
 
+    def matmul(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        # relative
+        from ..tensor import TensorPointer
+
+        self, y = MPCTensor.sanity_checks(self, y)
+        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
+        op = "__matmul__"
+        res_shares: List[Any] = []
+        if isinstance(y, MPCTensor):
+            res_shares = spdz.mul_master(self, y, "matmul", **kwargs)
+        else:
+            if not isinstance(self.child[0], TensorPointer):
+                res_shares = [
+                    getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
+                ]
+            else:
+
+                attr_path_and_name = f"{self.child[0].path_and_name}.{op}"
+                tensor_op = get_run_class_method(attr_path_and_name, SMPC=True)
+                for share in self.child:
+                    res_shares.append(tensor_op(share, share, y, **kwargs))
+
+        y_shape = getattr(y, "shape", (1,))
+        new_shape = utils.get_shape("matmul", self.mpc_shape, y_shape)
+        res = MPCTensor(
+            parties=self.parties,
+            shares=res_shares,
+            shape=new_shape,
+            ring_size=self.ring_size,
+        )
+
+        return res
+
     def lt(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
@@ -774,21 +809,6 @@ class MPCTensor(PassthroughTensor):
         mpc_res = 1 - MPCTensor.eq(self, y)
 
         return mpc_res  # type: ignore
-
-    def matmul(
-        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
-    ) -> MPCTensor:
-        """Apply the "matmul" operation between "self" and "y"
-        Args:
-            y (Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]): self @ y
-        Returns:
-            MPCTensor: Result of the opeartion.
-        """
-        if isinstance(y, ShareTensor):
-            raise ValueError("Private matmul not supported yet")
-
-        res = self.__apply_op(y, "matmul")
-        return res
 
     def put(
         self,
