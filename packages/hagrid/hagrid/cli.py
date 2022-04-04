@@ -141,6 +141,13 @@ def clean(location: str) -> None:
     help="Optional: enable or disable forcing re-build",
 )
 @click.option(
+    "--provision",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: enable or disable provisioning VMs",
+)
+@click.option(
     "--auth_type",
     default=None,
     type=click.Choice(["key", "password"], case_sensitive=False),
@@ -368,8 +375,9 @@ def login_azure() -> bool:
 
 def check_azure_cli_installed() -> bool:
     try:
-        subprocess.call(["az"])
-        print("Azure cli installed!")
+        subprocess.call(
+            ["az", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+        )
     except FileNotFoundError:
         msg = "\nYou don't appear to have the Azure CLI installed!!! \n\n\
 Please install it and then retry your command.\
@@ -505,6 +513,8 @@ def create_launch_cmd(
         parsed_kwargs["upload_tls_cert"] = kwargs["upload_tls_cert"]
     if "upload_tls_key" in kwargs:
         parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
+    if "provision" in kwargs:
+        parsed_kwargs["provision"] = str_to_bool(cast(str, kwargs["provision"]))
 
     if host in ["docker"]:
 
@@ -1259,6 +1269,16 @@ def create_launch_gcp_cmd(
     if not host_up:
         raise Exception(f"Something went wrong launching the VM at IP: {host_ip}.")
 
+    if "provision" in kwargs and not kwargs["provision"]:
+        print("Skipping automatic provisioning.")
+        print("VM created with:")
+        print(f"IP: {host_ip}")
+        print(f"User: {auth.username}")
+        print(f"Key: {auth.key_path}")
+        print("\nConnect with:")
+        print(f"ssh -i {auth.key_path} {auth.username}@{host_ip}")
+        sys.exit(0)
+
     # replace
     host_term.parse_input(host_ip)
     verb.set_named_term_type(name="host", new_term=host_term)
@@ -1371,6 +1391,16 @@ def create_launch_azure_cmd(
     # replace
     host_term.parse_input(host_ip)
     verb.set_named_term_type(name="host", new_term=host_term)
+
+    if "provision" in kwargs and not kwargs["provision"]:
+        print("Skipping automatic provisioning.")
+        print("VM created with:")
+        print(f"IP: {host_ip}")
+        print(f"User: {username}")
+        print(f"Key: {key_path}")
+        print("Connect with: \n")
+        print(f"ssh -i {key_path} {username}@{host_ip}")
+        sys.exit(0)
 
     extra_kwargs = {
         "repo": repo,
