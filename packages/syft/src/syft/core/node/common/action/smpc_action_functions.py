@@ -341,6 +341,8 @@ def local_decomposition(
                 sh.child = deepcopy(share.child.astype(numpy_type))
 
             if tensor_values is not None:
+                if ring_size != 2:
+                    sh.child = tensor_values.child.child.encode(sh.child)
                 tensor_values.child.child.child = sh
                 data = tensor_values
             else:

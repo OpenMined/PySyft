@@ -34,12 +34,16 @@ class FixedPrecisionTensor(PassthroughTensor):
         self._scale = base**precision
         if value is not None:
             # TODO :Should modify to be compatiable with torch.
-            value = np.array(value, DEFAULT_INT_NUMPY_TYPE)
-            fpt_value = self._scale * value
-            encoded_value = fpt_value.astype(DEFAULT_INT_NUMPY_TYPE)
-            super().__init__(encoded_value)
+            
+            super().__init__(self.encode(value))
         else:
             super().__init__(None)
+
+    def encode(self,value) -> Any:
+        value = np.array(value, DEFAULT_INT_NUMPY_TYPE)
+        fpt_value = self._scale * value
+        encoded_value = fpt_value.astype(DEFAULT_INT_NUMPY_TYPE)
+        return encoded_value
 
     @property
     def precision(self) -> int:
