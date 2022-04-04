@@ -47,7 +47,7 @@ source "azure-arm" "domain" {
   # resource_group_name               = "openmined-images" # vhd
   # storage_account                   = "openminedimgs" # vhd
   # managed image
-  managed_image_name                = "openmined-domain-ubuntu2004-4" # managed image
+  managed_image_name                = "openmined-domain-ubuntu2004-5" # managed image
   managed_image_resource_group_name = "openmined-images" # managed image
 }
 
@@ -57,7 +57,7 @@ build {
 
   provisioner "ansible" {
     playbook_file = "../ansible/site.yml"
-    extra_arguments = [ "-v", "-e", "packer=true", "-e", "repo_branch=0.6.0" ]
+    extra_arguments = [ "-v", "-e", "packer=true", "-e", "repo_branch=0.7.0" ]
   }
 
   provisioner "shell" {
