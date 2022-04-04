@@ -544,7 +544,7 @@ class ShareTensor(PassthroughTensor):
 
         return new_share
 
-    def bit_decomposition(self, ring_size: int, bitwise: bool) -> None:
+    def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:
         """Apply the "decomposition" operation on self
 
         Args:
@@ -556,6 +556,8 @@ class ShareTensor(PassthroughTensor):
         """
         # relative
         from ...node.common.action.smpc_action_functions import _decomposition
+
+        ring_size = int(ring_size)
 
         _decomposition(self, ring_size, bitwise)
 

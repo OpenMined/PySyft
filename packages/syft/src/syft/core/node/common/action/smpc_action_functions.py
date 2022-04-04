@@ -1,6 +1,6 @@
 # stdlib
 from copy import deepcopy
-import operator
+from functools import reduce
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -121,6 +121,7 @@ def spdz_multiply(
 ) -> ShareTensor:
 
     nr_parties = x.nr_parties
+    ring_size = x.ring_size
 
     eps = beaver_retrieve_object(node, eps_id, nr_parties)  # type: ignore
     delta = beaver_retrieve_object(node, delta_id, nr_parties)  # type: ignore
@@ -128,15 +129,16 @@ def spdz_multiply(
     eps: ShareTensor = sum(eps.data)  # type: ignore
     delta: ShareTensor = sum(delta.data)  # type: ignore
 
-    op = getattr(operator, op_str)
+    op = ShareTensor.get_op(ring_size, op_str)
+    add_op = ShareTensor.get_op(ring_size, "add")
 
     eps_b = op(eps.child, b_share.child)  # type: ignore
     delta_a = op(a_share.child, delta.child)  # type: ignore
 
-    tensor = c_share.child + eps_b + delta_a
+    tensor = reduce(add_op, [c_share.child, eps_b, delta_a])
     if x.rank == 0:
         eps_delta = op(eps.child, delta.child)  # type: ignore
-        tensor = tensor + eps_delta
+        tensor = add_op(tensor, eps_delta)
 
     share = x.copy_tensor()
     share.child = tensor

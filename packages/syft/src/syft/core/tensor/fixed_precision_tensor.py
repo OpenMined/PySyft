@@ -3,6 +3,8 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Union
 
@@ -95,9 +97,12 @@ class FixedPrecisionTensor(PassthroughTensor):
                     + "computation on FixedPrecisionTensor"
                 )
         elif is_acceptable_simple_type(other):
-            other = FixedPrecisionTensor(
-                value=other, base=self.base, precision=self.precision
-            )
+            if isinstance(other, np.ndarray) and other.dtype == np.dtype("bool"):
+                pass
+            else:
+                other = FixedPrecisionTensor(
+                    value=other, base=self.base, precision=self.precision
+                )
         else:
             raise ValueError(f"Invalid type for FixedPrecisionTensor: {type(other)}")
 
@@ -145,12 +150,13 @@ class FixedPrecisionTensor(PassthroughTensor):
         res.child = self.child / other
         return res
 
-    def transpose(self, *args, **kwargs) -> FixedPrecisionTensor:
+    def transpose(
+        self, *args: List[Any], **kwargs: Dict[Any, Any]
+    ) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child.transpose(*args, **kwargs)
         return res
-    
+
     @property
     def T(self) -> FixedPrecisionTensor:
         return self.transpose()
-    

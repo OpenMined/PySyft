@@ -16,6 +16,7 @@ from typing import TYPE_CHECKING
 
 # relative
 from .....ast.klass import get_run_class_method
+from ....tensor.config import DEFAULT_RING_SIZE
 from ....tensor.smpc import utils
 from ...store import CryptoPrimitiveProvider
 
@@ -54,8 +55,6 @@ def mul_master(
     shape_x = tuple(x.shape)  # type: ignore
     shape_y = tuple(y.shape)  # type: ignore
     result_shape = utils.get_shape(op_str, shape_x, shape_y)
-    print("shape x", shape_x)
-    print("result shape", result_shape)
     if ring_size != 2:
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
@@ -164,13 +163,14 @@ def MSB(x: MPCTensor) -> MPCTensor:
     Returns:
         msb (MPCTensor): returns arithmetic shares of the MSB.
     """
-    ring_size = 2**32  # TODO : Should extract ring_size elsewhere for generality.
+    ring_size = DEFAULT_RING_SIZE
     decomposed_shares = ABY3.bit_decomposition(x)
 
     for share in decomposed_shares:
         share.block
 
     msb_share = decomposed_shares[-1]
+
     msb = ABY3.bit_injection(msb_share, ring_size)
 
     return msb

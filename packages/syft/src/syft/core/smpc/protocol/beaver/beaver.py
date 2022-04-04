@@ -321,6 +321,7 @@ def matmul_store_get(
 
 
 # Trusted Third Party (TTP) Operations for Public Division
+# Code Adapted from Crypten Project:  https://github.com/facebookresearch/CrypTen
 
 
 @register_primitive_generator("beaver_wraps")
