@@ -12,6 +12,7 @@ from .....common.serde.serializable import serializable
 from .....common.uid import UID
 from ....domain.domain_interface import DomainInterface
 from ....domain.registry import DomainMessageRegistry
+from ....vm.registry import VMMessageRegistry
 from ...permissions.permissions import BasePermission
 from ...permissions.user_permissions import NoRestriction
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
@@ -21,7 +22,7 @@ from ..generic_payload.syft_message import RequestPayload
 
 @serializable(recursive_serde=True)
 @final
-class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry):
+class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
@@ -34,7 +35,6 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry):
         """Payload fields and types used during a User Creation Response."""
 
         message: str = "Deleted Successfully."
-        object_delete = True
 
     request_payload_type = (
         Request  # Converts generic syft dict into a ObjectDeleteMessage Request object.
@@ -61,9 +61,7 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry):
             if not node.store.is_dataset(key=id_at_location):  # type: ignore
                 node.store.delete(key=id_at_location)
         except Exception as e:
-            log = (
-                f"> GetObjectAction delete exception {self.payload.id_at_location} {e}"
-            )
+            log = f"> ObjectDeleteMessage delete exception {self.payload.id_at_location} {e}"
             critical(log)
 
         return ObjectDeleteMessage.Reply()

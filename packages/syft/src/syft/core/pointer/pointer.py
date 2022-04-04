@@ -232,20 +232,24 @@ class Pointer(AbstractPointer):
 
         if delete_obj:
             # relative
+            from ..node.common.node_service.generic_payload.syft_message import (
+                NewSyftMessage,
+            )
             from ..node.common.node_service.object_delete.object_delete_message import (
                 ObjectDeleteMessage,
             )
 
             # TODO: Fix circular import
             # This deletes the data from both database and blob store
-            self.client.datasets.perform_api_request_generic(
-                syft_msg=ObjectDeleteMessage,
-                content={
+            obj_del_msg: NewSyftMessage = ObjectDeleteMessage(
+                address=self.client.address,
+                reply_to=self.client.address,
+                kwargs={
                     "id_at_location": self.id_at_location.to_string(),
-                    "address": self.client.address,
-                    "reply_to": self.client.address,
                 },
-            )
+            ).sign(signing_key=self.client.signing_key)
+
+            self.client.send_immediate_msg_with_reply(msg=obj_del_msg)
 
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
