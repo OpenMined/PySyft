@@ -355,6 +355,39 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             inputs=self.child,
         )
 
+    def __ne__(  # type: ignore
+        self, other: Any
+    ) -> Union[NDimEntityPhiTensor, IntermediateGammaTensor, GammaTensor]:
+        # TODO: what about entities and min / max values?
+        if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
+            gamma_output = False
+            if is_acceptable_simple_type(other):
+                result = self.child != other
+            else:
+                # check entities match, if they dont gamma_output = True
+                #
+                result = self.child != other.child
+                if isinstance(result, InitialGammaTensor):
+                    gamma_output = True
+            if not gamma_output:
+                return self.copy_with(child=result)
+            else:
+                return self.copy_with(child=result).gamma
+        else:
+            raise Exception(
+                "Tensor dims do not match for __eq__: "
+                + f"{len(self.child)} != {len(other.child)}"
+            )
+
+    def __neg__(self) -> NDimEntityPhiTensor:
+
+        return NDimEntityPhiTensor(
+            child=self.child * -1,
+            min_vals=self.max_vals * -1,
+            max_vals=self.min_vals * -1,
+            entities=self.entities,
+        )
+
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="ndept.capnp")
 

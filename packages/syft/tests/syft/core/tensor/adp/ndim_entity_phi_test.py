@@ -281,3 +281,46 @@ def test_sum(
 
     assert tensor.sum().child == tensor_sum
     assert zeros_tensor.sum().child == 0
+
+
+def test_ne_vals(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test inequality between two different NDimEntityPhiTensors"""
+    # TODO: Add tests for GammaTensor when having same values but different entites.
+    reference_tensor = NDEPT(
+        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+    )
+
+    comparison_tensor = NDEPT(
+        child=reference_data + 1,
+        entities=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    assert (
+        reference_tensor != comparison_tensor
+    ).all(), "Inequality between different NDEPTs fails"
+
+
+def test_neg(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test neg for NDEPT"""
+    reference_tensor = NDEPT(
+        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+    )
+
+    neg_tensor = reference_tensor.__neg__()
+
+    assert (neg_tensor.child == reference_tensor.child * -1).all()
+    assert (neg_tensor.min_vals == reference_tensor.max_vals * -1).all()
+    assert (neg_tensor.max_vals == reference_tensor.min_vals * -1).all()
+    assert neg_tensor.shape == reference_tensor.shape

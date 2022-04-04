@@ -137,6 +137,27 @@ class lazyrepeatarray:
 
         return self == other
 
+    def __le__(self, other: Any) -> lazyrepeatarray:  # type: ignore
+        if isinstance(other, lazyrepeatarray):
+            if self.shape == other.shape:
+                return lazyrepeatarray(data=self.data <= other.data, shape=self.shape)
+            else:
+                result = (self.to_numpy() <= other.to_numpy()).all()
+                return lazyrepeatarray(data=np.array([result]), shape=result.shape)
+        if isinstance(other, np.ndarray):
+            try:
+                _ = np.broadcast_shapes(self.shape, other.shape)
+                result = (self.to_numpy() <= other).all()
+                return lazyrepeatarray(data=np.array([result]), shape=other.shape)
+            except Exception as e:
+                print(
+                    "Failed to compare lazyrepeatarray with "
+                    + f"{self.shape} == {other.shape} to numpy by broadcasting. {e}"
+                )
+                raise e
+
+        return self <= other
+
     @property
     def dtype(self) -> np.dtype:
         return self.data.dtype
