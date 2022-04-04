@@ -24,23 +24,14 @@ jobs:
       uses: actions/setup-python@v2
       with:
         python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
+
+    - name: Install tox
       run: |
-        pip install --upgrade pip
-        pip install sphinx==4.3.0
-        pip install ipython==8.1.0
-        pip install sphinx-panels==0.6.0
-        pip install pydata-sphinx-theme==0.7.2
-        pip install sphinx-copybutton==0.4.0
-        pip install sphinx-autoapi==1.8.4
-        pip install sphinx-code-include==1.1.1
-        pip install sphinx==4.3.0
-        pip install pydata-sphinx-theme==0.7.2
+        pip install tox --upgrade
 
     - name: Build the docs
       run: |
-        make html
-      working-directory: docs/
+        tox -e syft.docs
 
     - name: Deploy the docs
       uses: s0/git-publish-subdir-action@develop
