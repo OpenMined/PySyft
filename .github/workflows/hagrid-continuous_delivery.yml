@@ -18,13 +18,16 @@ jobs:
       current_hash: ${{ steps.get_hash.outputs.current_hash }}
       previous_hash: ${{ steps.get_hash.outputs.previous_hash }}
     steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN }}
       - name: Install checksumdir
         run: |
           pip install --upgrade checksumdir
       - name: Get the hashes
         id: get-hashes
         run: |
-          current_hash=$(checksumdir packages/hagrid)
+          current_hash=$(checksumdir ./packages/hagrid)
           echo "::set-output name=current_hash::$current_hash"
           previous_hash=$(cat ./scripts/hagrid_hash)
 
