@@ -11,6 +11,7 @@ on:
       - dev
       - main
       - "0.6.0"
+      - "0.7.0"
   workflow_dispatch:
     inputs:
       none:
@@ -74,7 +75,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.1.1
+          DOCKER_COMPOSE_VERSION=v2.3.4
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -140,7 +141,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.1.1
+          DOCKER_COMPOSE_VERSION=v2.3.4
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
 
@@ -234,9 +235,9 @@ jobs:
         run: |
           pip install -e packages/hagrid
           set HAGRID_ART=false
-          hagrid launch test_network_1 network to docker:9081 --tail=false --headless=true
-          hagrid launch test_domain_1 domain to docker:9082 --tail=false --headless=true
-          hagrid launch test_domain_2 domain to docker:9083 --tail=false --build=false --headless=true
+          hagrid launch test_network_1 network to docker:9081 --tail=false --headless=true --test
+          hagrid launch test_domain_1 domain to docker:9082 --tail=false --headless=true --test
+          hagrid launch test_domain_2 domain to docker:9083 --tail=false --build=false --headless=true --test
           bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_network_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
@@ -336,7 +337,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.1.1
+          DOCKER_COMPOSE_VERSION=v2.3.4
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker rm `docker ps -aq` --force || true
@@ -401,7 +402,7 @@ jobs:
         shell: bash
         run: |
           # replace minikube with an older version
-          wget https://github.com/kubernetes/minikube/releases/download/v1.23.2/minikube-linux-amd64
+          wget https://github.com/kubernetes/minikube/releases/download/v1.25.2/minikube-linux-amd64
           mv minikube-linux-amd64 minikube
           chmod +x minikube
           export PATH=`pwd`:$PATH
@@ -479,7 +480,7 @@ jobs:
         shell: bash
         run: |
           mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.1.1
+          DOCKER_COMPOSE_VERSION=v2.3.4
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker rm `docker ps -aq` --force || true

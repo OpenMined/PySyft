@@ -26,7 +26,9 @@ from ....io.address import Address
 from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..util import check_send_to_blob_storage
 from ..util import listify
+from ..util import upload_result_to_s3
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
 
@@ -137,6 +139,20 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         # If we have no permission (None or {}) we add some default permissions based on a permission list
         if result_read_permissions is None:
             result_read_permissions = {}
+
+        # TODO: Upload object to seaweed store, instead of storing in redis
+        # create a proxy object class and store it here.
+        if check_send_to_blob_storage(
+            obj=result,
+            use_blob_storage=getattr(node.settings, "USE_BLOB_STORAGE", False),
+        ):
+            result = upload_result_to_s3(
+                asset_name=self.id_at_location.no_dash,
+                dataset_name="",
+                domain_id=node.id,
+                data=result,
+                settings=node.settings,
+            )
 
         if not isinstance(result, StorableObject):
             result = StorableObject(

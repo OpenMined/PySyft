@@ -53,14 +53,13 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         return RunClassMethodAction.intersect_keys(left, right)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-
         static_attribute_solver = node.lib_ast.query(self.path)
 
         if self.action == StaticAttributeAction.SET:
             if self.set_arg is None:
                 raise ValueError("MAKE PROPER SCHEMA")
 
-            resolved_arg = node.store.get_object(key=self.set_arg.id_at_location)
+            resolved_arg = node.store.get(key=self.set_arg.id_at_location)
             result = static_attribute_solver.solve_set_value(resolved_arg)
         elif self.action == StaticAttributeAction.GET:
             result = static_attribute_solver.solve_get_value()

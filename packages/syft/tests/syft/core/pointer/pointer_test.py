@@ -220,7 +220,7 @@ def test_printing_remote_creation(
         out = elem.get(delete_obj=False)
         validate_output(out, elem)
 
-    for idx, elem in enumerate(create_data_types(client)):
+    for _, elem in enumerate(create_data_types(client)):
         validate_permission_error(elem)
 
 

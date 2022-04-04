@@ -71,10 +71,10 @@ def mul_master(
 
     # TODO: Should modify to parallel execution.
     if not isinstance(x.child[0], TensorPointer):
-        res_shares = [
-            getattr(a, "__mul__")(a, b, shape_x, shape_y, **kwargs)
-            for a, b in zip(x.child, y.child)
-        ]
+        res_shares = []
+        for a, b in zip(x.child, y.child):
+            if hasattr(a, "__mul__"):
+                res_shares.append(a.__mul__(a, b, shape_x, shape_y, **kwargs))
     else:
         res_shares = []
         attr_path_and_name = f"{x.child[0].path_and_name}.__{op_str}__"

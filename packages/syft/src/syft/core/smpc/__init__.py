@@ -26,9 +26,7 @@ def create_smpc_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
 
     Returns:
         The constructed SMPC AST.
-
     """
-
     ast = Globals(client)
 
     modules = [

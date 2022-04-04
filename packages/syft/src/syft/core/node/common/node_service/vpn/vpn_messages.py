@@ -20,6 +20,7 @@ from typing_extensions import final
 
 # relative
 from ......grid import GridURL
+from ......logger import critical
 from ......util import verify_tls
 from .....common.serde.serializable import serializable
 from ....abstract.node import AbstractNode
@@ -87,29 +88,37 @@ class VPNConnectMessageWithReply(GenericPayloadMessageWithReply):
 def connect_with_key(
     tailscale_host: str, headscale_host: str, vpn_auth_key: str
 ) -> Tuple[bool, str]:
-    data = {
-        "args": [
-            "-login-server",
-            f"{headscale_host}",
-            "--reset",
-            "--force-reauth",
-            "--authkey",
-            f"{vpn_auth_key}",
-        ],
-        "timeout": 60,
-    }
+    try:
+        # we need --accept-dns=false because magicDNS replaces /etc/resolv.conf which
+        # breaks using tailscale in network_mode with docker compose because the
+        # /etc/resolv.conf has the mDNS ip nameserver 127.0.0.11
+        data = {
+            "args": [
+                "-login-server",
+                f"{headscale_host}",
+                "--reset",
+                "--force-reauth",
+                "--authkey",
+                f"{vpn_auth_key}",
+                "--accept-dns=false",
+            ],
+            "timeout": 60,
+        }
 
-    command_url = f"{tailscale_host}/commands/up"
+        command_url = f"{tailscale_host}/commands/up"
 
-    headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
-    resp = requests.post(command_url, json=data, headers=headers)
-    report = get_result(json=resp.json())
-    report_dict = json.loads(report)
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
+        report = get_result(json=resp.json())
+        report_dict = json.loads(report)
 
-    if int(report_dict["returncode"]) == 0:
-        return (True, "")
-    else:
-        return (False, report_dict.get("report", ""))
+        if int(report_dict["returncode"]) == 0:
+            return (True, "")
+        else:
+            return (False, report_dict.get("report", ""))
+    except Exception as e:
+        critical(f"Failed to connect to VPN. {e}")
+        raise e
 
 
 @serializable(recursive_serde=True)
@@ -224,7 +233,7 @@ def generate_key(headscale_host: str) -> Tuple[bool, str]:
         resp = requests.post(command_url, json=data, headers=headers)
         report = get_result(json=resp.json())
         result_dict = dict(extract_nested_json(report))
-        result = result_dict["Key"]
+        result = result_dict["key"]
 
         # check if we got a key
         if len(result) == 48:

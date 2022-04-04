@@ -137,19 +137,19 @@ def update_user_msg(
         node.users.set(user_id=str(msg.user_id), budget=msg.budget)
 
     # Change Email Request
-    elif msg.email:
+    if msg.email:
         node.users.set(user_id=str(msg.user_id), email=msg.email)
 
     # Change Password Request
-    elif msg.password:
+    if msg.password:
         node.users.set(user_id=str(msg.user_id), password=msg.password)
 
     # Change Name Request
-    elif msg.name:
+    if msg.name:
         node.users.set(user_id=str(msg.user_id), name=msg.name)
 
     # Change Role Request
-    elif msg.role:
+    if msg.role:
         target_user = node.users.first(id=msg.user_id)
         _allowed = (
             msg.role != node.roles.owner_role.name  # Target Role != Owner

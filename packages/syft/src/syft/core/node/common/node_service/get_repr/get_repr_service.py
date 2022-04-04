@@ -27,7 +27,7 @@ class GetReprService(ImmediateNodeServiceWithReply):
                 "Can't process an GetReprService with no verification key."
             )
 
-        obj = node.store[msg.id_at_location]
+        obj = node.store.get(msg.id_at_location, proxy_only=True)
         contains_all_in_permissions = any(
             key is VERIFYALL for key in obj.read_permissions.keys()
         )

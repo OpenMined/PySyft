@@ -19,7 +19,7 @@ from syft.proto.core.common import (
 
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b'\n\x1bproto/core/adp/entity.proto\x12\rsyft.core.adp\x1a%proto/core/common/common_object.proto"9\n\x06\x45ntity\x12\x0c\n\x04name\x18\x01 \x01(\t\x12!\n\x02id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID"^\n\x10\x44\x61taSubjectGroup\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\'\n\x08\x65ntities\x18\x02 \x03(\x0b\x32\x15.syft.core.adp.Entityb\x06proto3'
+    b'\n\x1bproto/core/adp/entity.proto\x12\rsyft.core.adp\x1a%proto/core/common/common_object.proto"\x16\n\x06\x45ntity\x12\x0c\n\x04name\x18\x01 \x01(\t"^\n\x10\x44\x61taSubjectGroup\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\'\n\x08\x65ntities\x18\x02 \x03(\x0b\x32\x15.syft.core.adp.Entityb\x06proto3'
 )
 
 
@@ -51,7 +51,7 @@ if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
     _ENTITY._serialized_start = 85
-    _ENTITY._serialized_end = 142
-    _DATASUBJECTGROUP._serialized_start = 144
-    _DATASUBJECTGROUP._serialized_end = 238
+    _ENTITY._serialized_end = 107
+    _DATASUBJECTGROUP._serialized_start = 109
+    _DATASUBJECTGROUP._serialized_end = 203
 # @@protoc_insertion_point(module_scope)

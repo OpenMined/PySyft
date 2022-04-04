@@ -53,7 +53,7 @@ class PhiScalar(BaseScalar, IntermediatePhiScalar):
         # we need to be able to reference this object in string form. The library
         # doesn't know how to process things that aren't strings
         if ssid is None:
-            ssid = "_" + self.id.no_dash + "_" + self.entity.id.no_dash
+            ssid = "_" + self.id.no_dash + "_" + self.entity.to_string()
 
         self.ssid = ssid
 

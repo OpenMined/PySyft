@@ -8,6 +8,7 @@ on:
       - dev
       - main
       - "0.6.0"
+      - "0.7.0"
 
 defaults:
   run:
@@ -71,10 +72,7 @@ jobs:
         if: steps.changes.outputs.syft == 'true'
         run: |
           bandit -r src
-          # temporarily ignore unpatched numpy issue because devs don't agree
-          # https://github.com/pyupio/safety-db/issues/2349
-          # https://github.com/numpy/numpy/issues/19038
-          safety check -i 44715
+          safety check
 
       - name: Generate requirements.txt for snyk
         if: steps.changes.outputs.syft == 'true'

@@ -50,7 +50,7 @@ def smpc_basic_op(
     self_id: UID,
     other_id: UID,
     seed_id_locations: int,
-    node: Any,
+    node: AbstractNode,
 ) -> List[SMPCActionMessage]:
     # relative
     from ..... import Tensor
@@ -59,7 +59,7 @@ def smpc_basic_op(
 
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
-    other = node.store[other_id].data
+    other = node.store.get(other_id).data
 
     actions = []
     if isinstance(other, (ShareTensor, Tensor)):
@@ -195,7 +195,7 @@ def spdz_mask(
     )
     beaver_action.execute_action(node, None)
 
-    for rank, client in enumerate(clients):
+    for _, client in enumerate(clients):
         if client != curr_client:
             beaver_action.address = client.address
             client.send_immediate_msg_without_reply(msg=beaver_action)
@@ -208,7 +208,7 @@ def smpc_mul(
     a_shape_id: Optional[UID] = None,
     b_shape_id: Optional[UID] = None,
     seed_id_locations: Optional[int] = None,
-    node: Optional[Any] = None,
+    node: Optional[AbstractNode] = None,
 ) -> SMPCActionSeqBatchMessage:
     """Generator for the smpc_mul with a public value"""
     # relative
@@ -220,12 +220,12 @@ def smpc_mul(
         )
     generator = np.random.default_rng(seed_id_locations)
     result_id = UID(UUID(bytes=generator.bytes(16)))
-    other = node.store[other_id].data
+    other = node.store.get(other_id).data
 
     actions = []
-    if isinstance(other, (ShareTensor, Tensor)):
+    if isinstance(other, (ShareTensor, Tensor)) and (a_shape_id and b_shape_id):
         # crypto_store = ShareTensor.crypto_store
-        # _self = node.store[self_id].data
+        # _self = node.store.get(self_id).data
         # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
         if isinstance(other, ShareTensor):
             ring_size = other.ring_size
@@ -235,8 +235,8 @@ def smpc_mul(
         mask_result = UID(UUID(bytes=generator.bytes(16)))
         eps_id = UID(UUID(bytes=generator.bytes(16)))
         delta_id = UID(UUID(bytes=generator.bytes(16)))
-        a_shape = node.store[a_shape_id].data
-        b_shape = node.store[b_shape_id].data
+        a_shape = node.store.get(a_shape_id).data  # type: ignore
+        b_shape = node.store.get(b_shape_id).data  # type: ignore
         crypto_store = ShareTensor.crypto_store
         a_share, b_share, c_share = crypto_store.get_primitives_from_store(
             "beaver_mul",
@@ -440,8 +440,8 @@ _MAP_ACTION_TO_FUNCTION: Dict[str, Callable[..., Any]] = {
 #     result_id = UID(UUID(bytes=generator.bytes(16)))
 #     sub_result = UID(UUID(bytes=generator.bytes(16)))
 
-#     x = node.store[self_id].data  # noqa
-#     y = node.store[other_id].data
+#     x = node.store.get(self_id).data  # noqa
+#     y = node.store.get(other_id).data
 
 #     if not isinstance(y, ShareTensor):
 #         raise ValueError("Only private compare works at the moment")

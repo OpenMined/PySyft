@@ -160,7 +160,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                     prime_list = factorint(term).items()
 
                 for prime, n_times in prime_list:
-                    input_scalar = self.scalar_manager.prime2symbol[prime]
+                    input_scalar = self.scalar_manager.prime2symbol[int(prime)]
                     right = input_scalar * n_times * coeff
                     input_mp.append(right)
 
@@ -786,10 +786,8 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 )  # type: ignore
                 terms.append(new_term)
 
-            for other_dim in range(self.term_tensor.shape[-1]):
-                new_term = np.expand_dims(
-                    other.term_tensor[..., self_dim], -1
-                )  # type: ignore
+            for _ in range(self.term_tensor.shape[-1]):
+                new_term = np.expand_dims(other.term_tensor[..., self_dim], -1)  # type: ignore
                 terms.append(new_term)
 
             term_tensor = np.concatenate(terms, axis=-1)  # type: ignore
@@ -810,7 +808,7 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
                 )
                 coeffs.append(new_coeff)
 
-            for other_dim in range(self.coeff_tensor.shape[-1]):
+            for _ in range(self.coeff_tensor.shape[-1]):
                 new_coeff = np.expand_dims(  # type: ignore
                     other.coeff_tensor[..., self_dim] * self.bias_tensor, -1
                 )
@@ -1181,15 +1179,13 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
             for index, value in zip(indices, values):
                 new_values[index] = value
 
-            output_tensor = InitialGammaTensor(
+            _ = InitialGammaTensor(
                 values=new_values,
                 entities=self._entities(),
                 min_vals=self._min_values(),
                 max_vals=self._max_values(),
                 scalar_manager=self.scalar_manager,
             )
-
-            self.__dict__ == output_tensor.__dict__
 
         else:
             raise NotImplementedError

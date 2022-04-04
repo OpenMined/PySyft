@@ -119,7 +119,7 @@ def create_request_msg(
         request_type=request_type,
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         object_type=object_type,
-        tags=node.store[object_uid]._tags,
+        tags=node.store.get(object_uid, proxy_only=True)._tags,
     )
     request_json = model_to_json(request_obj)
 
@@ -303,7 +303,7 @@ def update_request_msg(
                 budget=current_user.budget + _req.requested_budget,
             )
         else:
-            tmp_obj = node.store[UID.from_string(_req.object_id)]
+            tmp_obj = node.store.get(UID.from_string(_req.object_id), proxy_only=True)
             tmp_obj.read_permissions[
                 VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
             ] = _req.id
@@ -550,7 +550,9 @@ def build_request_message(
         request_type="data",
         verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         object_type=msg.object_type,
-        tags=node.store[msg.object_id]._tags if "budget" not in msg.object_type else [],
+        tags=node.store.get(msg.object_id, proxy_only=True)._tags
+        if "budget" not in msg.object_type
+        else [],
     )
 
 
@@ -580,7 +582,9 @@ def accept_or_deny_request(
                     budget=current_user.budget + _req.requested_budget,
                 )
             else:
-                tmp_obj = node.store[UID.from_string(_req.object_id)]
+                tmp_obj = node.store.get(
+                    UID.from_string(_req.object_id), proxy_only=True
+                )
                 tmp_obj.read_permissions[
                     VerifyKey(_req.verify_key.encode("utf-8"), encoder=HexEncoder)
                 ] = _req.id

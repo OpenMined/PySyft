@@ -25,6 +25,7 @@ from typing import Union
 from forbiddenfruit import curse
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+from pympler.asizeof import asizeof
 import requests
 
 # syft absolute
@@ -183,19 +184,21 @@ def aggressive_set_attr(obj: object, name: str, attr: object) -> None:
         curse(obj, name, attr)
 
 
-def obj2pointer_type(obj: object) -> type:
-    fqn = None
-    try:
-        fqn = get_fully_qualified_name(obj=obj)
-    except Exception as e:
-        # sometimes the object doesn't have a __module__ so you need to use the type
-        # like: collections.OrderedDict
-        debug(f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}")
-        fqn = get_fully_qualified_name(obj=type(obj))
+def obj2pointer_type(obj: Optional[object] = None, fqn: Optional[str] = None) -> type:
+    if fqn is None:
+        try:
+            fqn = get_fully_qualified_name(obj=obj)
+        except Exception as e:
+            # sometimes the object doesn't have a __module__ so you need to use the type
+            # like: collections.OrderedDict
+            debug(
+                f"Unable to get get_fully_qualified_name of {type(obj)} trying type. {e}"
+            )
+            fqn = get_fully_qualified_name(obj=type(obj))
 
-    # TODO: fix for other types
-    if obj is None:
-        fqn = "syft.lib.python._SyNone"
+        # TODO: fix for other types
+        if obj is None:
+            fqn = "syft.lib.python._SyNone"
 
     try:
         ref = syft.lib_ast.query(fqn, obj_type=type(obj))
@@ -640,3 +643,7 @@ def concurrency_override(count: int = 1) -> Iterator:
         yield None
     finally:
         os.environ["FORCE_CONCURRENCY_COUNT"] = "0"
+
+
+def size_mb(obj: Any) -> int:
+    return asizeof(obj) / (1024 * 1024)  # MBs

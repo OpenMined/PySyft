@@ -160,7 +160,7 @@ class GetObjectAction(ImmediateActionWithReply):
     ) -> ImmediateSyftMessageWithoutReply:
         try:
             try:
-                storable_object = node.store[self.id_at_location]
+                storable_object = node.store.get(self.id_at_location, proxy_only=True)
             except Exception as e:
                 log = (
                     f"Unable to Get Object with ID {self.id_at_location} from store. "
@@ -180,7 +180,12 @@ class GetObjectAction(ImmediateActionWithReply):
                 )
                 traceback_and_raise(AuthorizationException(log))
 
-            obj = validate_type(storable_object.clean_copy(), StorableObject)
+            obj = validate_type(
+                storable_object.clean_copy(settings=node.settings), StorableObject
+            )
+
+            if obj.is_proxy:
+                obj.data.generate_presigned_url(settings=node.settings, public_url=True)
 
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 

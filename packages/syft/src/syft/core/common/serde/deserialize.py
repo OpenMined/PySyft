@@ -9,7 +9,14 @@ from google.protobuf.message import Message
 from ....logger import traceback_and_raise
 from ....proto.util.data_message_pb2 import DataMessage
 from ....util import index_syft_by_module_name
+from .capnp import CAPNP_END_MAGIC_HEADER_BYTES
+from .capnp import CAPNP_REGISTRY
+from .capnp import CAPNP_START_MAGIC_HEADER
+from .capnp import CAPNP_START_MAGIC_HEADER_BYTES
 from .types import Deserializeable
+
+PROTOBUF_START_MAGIC_HEADER = "protobuf:"
+PROTOBUF_START_MAGIC_HEADER_BYTES = PROTOBUF_START_MAGIC_HEADER.encode("utf-8")
 
 
 # WARNING: This code has more 🐉 Dragons than a game of D&D 🗡🧙🎲
@@ -54,6 +61,18 @@ def _deserialize(
         "to deserialize is not supported in this version."
     )
 
+    # try to decode capnp first
+    if isinstance(blob, bytes):
+        try:
+            return deserialize_capnp(buf=blob)
+        except CapnpMagicBytesNotFound:  # nosec
+            # probably not capnp bytes
+            pass
+        except Exception as e:
+            # capnp magic bytes found but another problem has occured
+            print("failed capnp deserialize", e)
+            raise e
+
     if from_bytes:
         data_message = DataMessage()
         data_message.ParseFromString(blob)
@@ -97,7 +116,6 @@ def _deserialize(
         )  # type: ignore
         obj_type = getattr(obj_type, "_sy_serializable_wrapper_type", obj_type)
     elif isinstance(obj_type, list):
-
         if isinstance(blob, rs_get_protobuf_schema()):
             res = rs_proto2object(proto=blob)
             if getattr(res, "temporary_box", False) and hasattr(res, "upcast"):
@@ -143,3 +161,45 @@ def _deserialize(
         return res.upcast()
 
     return res
+
+
+class CapnpMagicBytesNotFound(Exception):
+    pass
+
+
+def deserialize_capnp(buf: bytes) -> Any:
+    # only search 100 bytes to prevent wasting time on large files
+    search_range = 100
+    header_bytes = buf[0:search_range]
+    chars = bytearray()
+    # filter header bytes
+    for i in header_bytes:
+        # only allow ascii letters or : in headers and class name to prevent lookup
+        # breaking somehow, when packing weird stuff like \x03 ends up in the string
+        # e.g. NDimEntityPhiTensor -> ND\x03imEntityPhiTensor
+        if i in range(65, 91) or i in range(97, 123) or i == 58:
+            chars.append(i)
+    header_bytes = bytes(chars)
+
+    proto_start_index = header_bytes.find(PROTOBUF_START_MAGIC_HEADER_BYTES)
+    start_index = header_bytes.find(CAPNP_START_MAGIC_HEADER_BYTES)
+    if proto_start_index != -1 and (proto_start_index < start_index):
+        # we have protobuf on the outside
+        raise CapnpMagicBytesNotFound(
+            f"protobuf Magic Header {PROTOBUF_START_MAGIC_HEADER} found in bytes"
+        )
+    if start_index == -1:
+        raise CapnpMagicBytesNotFound(
+            f"capnp Magic Header {CAPNP_START_MAGIC_HEADER}" + "not found in bytes"
+        )
+    start_index += len(CAPNP_START_MAGIC_HEADER_BYTES)
+    end_index = header_bytes.index(CAPNP_END_MAGIC_HEADER_BYTES)
+    class_name_bytes = header_bytes[start_index:end_index]
+
+    class_name = class_name_bytes.decode("utf-8")
+    if class_name not in CAPNP_REGISTRY:
+        raise Exception(
+            f"Found capnp Magic Header: {CAPNP_START_MAGIC_HEADER} "
+            + f"and Class {class_name} but no mapping in capnp registry {CAPNP_REGISTRY}"
+        )
+    return CAPNP_REGISTRY[class_name](buf=buf)

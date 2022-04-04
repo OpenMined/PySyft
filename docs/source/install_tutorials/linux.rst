@@ -1,5 +1,8 @@
+.. _linux_install:
+
+==================================
 Installation on Linux (>=20.04.03)
-**********************************
+==================================
 
 .. toctree::
    :maxdepth: 3
@@ -141,6 +144,7 @@ The hardest part is done! To install the OpenMined stack that you need in order 
 
    $ pip install syft
    $ pip install hagrid
+
 
 PySyft is a library which contains the tools to run privacy preserving machine learning.
 Hagrid is a commandline tool that speeds up the deployment of PyGrid, the provider of a peer-to-peer network of
