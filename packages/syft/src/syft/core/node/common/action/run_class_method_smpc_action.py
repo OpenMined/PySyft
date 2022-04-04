@@ -136,6 +136,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             "node": node,
             "read_permissions": result_read_permissions,
         }
+        print("Path and name", self.path)
         result = method(*upcasted_args, **upcasted_kwargs)
 
         id_at_location = self.id_at_location

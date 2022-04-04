@@ -44,7 +44,6 @@ def mul_master(
     Returns:
         MPCTensor: Result of the multiplication.
     """
-
     # relative
     from ....tensor.tensor import TensorPointer
 
@@ -124,29 +123,31 @@ def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     res_shares.block
     # time.sleep(2)
     msb = MSB(res_shares)
+
+    # return msb
     tensor_shares = []
     final_shares = []
 
-    if isinstance(x, MPCTensor):
-        if isinstance(x.child[0], TensorPointer):
-            for t1, t2 in zip(x.child, y.child):
-                tensor_shares.append(t1.__lt__(t2))
+    # if isinstance(x, MPCTensor):
+    #     if isinstance(x.child[0], TensorPointer):
+    #         for t1, t2 in zip(x.child, y.child):
+    #             tensor_shares.append(t1.__lt__(t2))
 
-            for p1, p2 in zip(tensor_shares, msb.child):
-                p2.block
-                final_shares.append(p1.mpc_swap(p2))
+    #         for p1, p2 in zip(tensor_shares, msb.child):
+    #             p2.block
+    #             final_shares.append(p1.mpc_swap(p2))
 
-            msb.child = final_shares
-    else:
-        if isinstance(y.child[0], TensorPointer):  # type: ignore
-            for t1 in y.child:
-                tensor_shares.append(t1.__lt__(x))
+    #         msb.child = final_shares
+    # else:
+    #     if isinstance(y.child[0], TensorPointer):  # type: ignore
+    #         for t1 in y.child:
+    #             tensor_shares.append(t1.__lt__(x))
 
-            for p1, p2 in zip(tensor_shares, msb.child):
-                p2.block
-                final_shares.append(p1.mpc_swap(p2))
+    #         for p1, p2 in zip(tensor_shares, msb.child):
+    #             p2.block
+    #             final_shares.append(p1.mpc_swap(p2))
 
-            msb.child = final_shares
+    #         msb.child = final_shares
 
     return msb
 
@@ -165,11 +166,13 @@ def MSB(x: MPCTensor) -> MPCTensor:
     """
     ring_size = DEFAULT_RING_SIZE
     decomposed_shares = ABY3.bit_decomposition(x)
+    # return decomposed_shares
 
     for share in decomposed_shares:
         share.block
 
     msb_share = decomposed_shares[-1]
+    msb_share.block
 
     msb = ABY3.bit_injection(msb_share, ring_size)
 

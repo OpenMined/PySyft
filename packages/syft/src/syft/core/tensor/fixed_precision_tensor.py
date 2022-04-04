@@ -97,37 +97,48 @@ class FixedPrecisionTensor(PassthroughTensor):
                     + "computation on FixedPrecisionTensor"
                 )
         elif is_acceptable_simple_type(other):
-            if isinstance(other, np.ndarray) and other.dtype == np.dtype("bool"):
-                pass
-            else:
-                other = FixedPrecisionTensor(
-                    value=other, base=self.base, precision=self.precision
-                )
+            other = FixedPrecisionTensor(
+                value=other, base=self.base, precision=self.precision
+            )
         else:
             raise ValueError(f"Invalid type for FixedPrecisionTensor: {type(other)}")
 
         return other
 
     def __add__(self, other: Any) -> FixedPrecisionTensor:
-        other = self.sanity_check(other)
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        res.child = self.child + other.child
+        if isinstance(other, np.ndarray) and other.dtype == np.dtype("bool"):
+            res.child = self.child + other
+        else:
+            other = self.sanity_check(other)
+            res.child = self.child + other.child
         return res
 
     def __sub__(self, other: Any) -> FixedPrecisionTensor:
-        other = self.sanity_check(other)
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        res.child = self.child - other.child
+        if isinstance(other, np.ndarray) and other.dtype == np.dtype("bool"):
+            res.child = self.child - other
+        else:
+            other = self.sanity_check(other)
+            res.child = self.child - other.child
         return res
 
     def __mul__(self, other: Any) -> FixedPrecisionTensor:
-        other = self.sanity_check(other)
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT.get(
-            "seed_id_locations", None
-        )
-        res.child = self.child * other.child
-        res = res / self.scale
+        if isinstance(other, np.ndarray) and other.dtype == np.dtype("bool"):
+            res.child = self.child * other
+        else:
+            if isinstance(other, FixedPrecisionTensor):
+                other = self.sanity_check(other)
+
+                context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT.get(
+                    "seed_id_locations", None
+                )
+                res.child = self.child * other.child
+
+                res = res / self.scale
+            else:
+                res.child = self.child * other
         return res
 
     def __matmul__(self, other: Any) -> FixedPrecisionTensor:
@@ -160,3 +171,9 @@ class FixedPrecisionTensor(PassthroughTensor):
     @property
     def T(self) -> FixedPrecisionTensor:
         return self.transpose()
+
+    # TODO: Remove after moving private compare to sharetensor level
+    def __lt__(self, other) -> FixedPrecisionTensor:
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = self.child < other.child
+        return res

@@ -540,7 +540,10 @@ class ShareTensor(PassthroughTensor):
         if not isinstance(y, (int, np.integer)):
             raise ValueError("Current Division only works for integers")
         else:
-            new_share = public_divide(self, y)
+            if self.ring_size != 2:
+                new_share = public_divide(self, y)
+            else:
+                new_share = self.copy_tensor()
 
         return new_share
 

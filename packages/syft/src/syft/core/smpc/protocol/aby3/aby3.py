@@ -97,7 +97,7 @@ class ABY3:
             res_shares.append(mpc)
 
         # TODO: Should modify to xor at mpc tensor level
-        arith_share = reduce(lambda a, b: a + b - (2 * a * b), res_shares)
+        arith_share = reduce(lambda a, b: a + b - (a * b * 2), res_shares)
 
         return arith_share
 
@@ -202,7 +202,7 @@ class ABY3:
             c: Union[MPCTensor, np.ndarray],
         ) -> MPCTensor:
 
-            return (a + c + one) * (b + c) + b
+            return (a + c + np.array(1, dtype=bool)) * (b + c) + b
 
         for idx in tqdm(range(ring_bits), desc="Computing..."):
             s = a[idx] + b[idx] + carry
@@ -211,7 +211,6 @@ class ABY3:
                 # time.sleep(1)
                 carry.block
             result.append(s)
-
         return result
 
     @staticmethod
@@ -268,7 +267,7 @@ class ABY3:
                     shares=bit_sh, shape=shape, parties=parties, ring_size=2
                 )
                 res_shares[i].append(mpc)
-
+        # return res_shares
         if nr_parties == 2:
             # Specialized for two parties
             bin_share = ABY3.full_adder_spdz_compiler(res_shares[0], res_shares[1])

@@ -312,6 +312,9 @@ def local_decomposition(
     # Skip the first ID ,as it is used for None return type in run class method.
     _ = UID(UUID(bytes=generator.bytes(16)))
 
+    tensor_values = context.tensor_values if context.tensor_values else None
+    context.tensor_values = None
+
     rank = x.rank
     nr_parties = x.nr_parties
     numpy_type = utils.RING_SIZE_TO_TYPE[ring_size]
@@ -337,12 +340,18 @@ def local_decomposition(
             else:
                 sh.child = deepcopy(share.child.astype(numpy_type))
 
-            data = sh
+            if tensor_values is not None:
+                tensor_values.child.child.child = sh
+                data = tensor_values
+            else:
+                data = sh
+
             store_obj = StorableObject(
                 id=id_at_location,
                 data=data,
                 read_permissions=read_permissions,
             )
+
             node.store[id_at_location] = store_obj
 
 

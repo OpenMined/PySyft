@@ -28,6 +28,7 @@ from .config import DEFAULT_FLOAT_NUMPY_TYPE
 from .config import DEFAULT_INT_NUMPY_TYPE
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
+from .smpc import context
 from .smpc import utils
 from .smpc.mpc_tensor import MPCTensor
 
@@ -436,8 +437,11 @@ class Tensor(
                 public_dtype=getattr(self, "public_dtype", None),
             )
 
-    def bit_decomposition(self) -> Tensor:
-        raise ValueError("Should not reach this point")
+    # TODO: remove after moving private compare to sharetensor level
+    def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:
+        context.tensor_values = self
+        self.child.child.child.bit_decomposition(ring_size, bitwise)
+        return None
 
     def mpc_swap(self, other: Tensor) -> Tensor:
         self.child.child = other.child.child
