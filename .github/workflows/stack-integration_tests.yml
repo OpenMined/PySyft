@@ -223,8 +223,8 @@ jobs:
 
       - name: Add msbuild to PATH
         uses: microsoft/setup-msbuild@v1.1
-        with:
-          vs-version: "14.0"
+        # with:
+        #   vs-version: "14.0"
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -325,7 +325,7 @@ jobs:
       - name: Install build essentials
         if: steps.changes.outputs.stack == 'true'
         run: |
-          apt-get update && apt-get install -y cmake libssl-dev build-essential
+          sudo apt-get update && sudo apt-get install -y cmake libssl-dev build-essential
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
