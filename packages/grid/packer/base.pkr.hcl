@@ -7,8 +7,8 @@ source "virtualbox-iso" "ubuntu2004" {
   boot_wait              = "5s"
   guest_os_type          = "ubuntu-64"
   http_directory         = "cloud-config"
-  iso_checksum           = "file:http://no.releases.ubuntu.com/20.04.2/SHA256SUMS"
-  iso_url                = "http://no.releases.ubuntu.com/20.04.2/ubuntu-20.04.2-live-server-amd64.iso"
+  iso_checksum           = "file:http://no.releases.ubuntu.com/20.04.4/SHA256SUMS"
+  iso_url                = "http://no.releases.ubuntu.com/20.04.4/ubuntu-20.04.4-live-server-amd64.iso"
   memory                 = 4096
   disk_size              = 64000
   output_directory       = "output-base"

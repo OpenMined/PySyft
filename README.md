@@ -388,9 +388,11 @@ $ hagrid launch node_name domain to 123.x.x.x --tls --upload_tls_key=/path/to/ce
 
 ## Deploy to Cloud
 
-### Azure 1-click Quickstart Template
+### Azure Marketplace 1-click Deploy
 
-[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2FPySyft%2Fdev%2Fpackages%2Fgrid%2Fquickstart%2Ftemplate.json)
+[![Deploy To Azure](https://raw.githubusercontent.com/Azure/azure-quickstart-templates/master/1-CONTRIBUTION-GUIDE/images/deploytoazure.svg?sanitize=true)](https://azuremarketplace.microsoft.com/en-us/marketplace/apps/madhavajay1632269232059.openmined_mj_grid_domain_ubuntu_1?tab=Overview)
+
+We also have an example [Quickstart Template](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2FOpenMined%2FPySyft%2Fdev%2Fpackages%2Fgrid%2Fquickstart%2Ftemplate.json) for use in your own automation pipelines.
 
 ### Deploy from CLI to Azure
 
@@ -528,7 +530,6 @@ This will create a file called `azure_vars.json` which will look something like 
 {
   "appId": "21b92977-8ad0-467c-ae3a-47c864418126",
   "displayName": "openmined-images",
-  "name": "21b92977-8ad0-467c-ae3a-47c864418126",
   "password": "xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx",
   "tenant": "e3f9defa-1378-49b3-aed7-3dcacb468c41"
 }

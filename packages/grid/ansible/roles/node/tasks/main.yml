@@ -8,6 +8,10 @@
   import_tasks: system.yml
   when: deploy_only is not defined
 
+- name: Apply security updates
+  import_tasks: security.yml
+  when: deploy_only is not defined
+
 - name: Install docker
   import_tasks: docker.yml
   when: deploy_only is not defined
