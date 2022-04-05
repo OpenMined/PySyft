@@ -255,7 +255,7 @@ jobs:
       - name: Install capnp
         uses: crazy-max/ghaction-chocolatey@v1
         with:
-          args: install capnproto --version=0.8.0 -y
+          args: install capnproto --version=0.9.1 --force -y
 
       - name: Start stacks
         if: steps.changes.outputs.stack == 'true'
