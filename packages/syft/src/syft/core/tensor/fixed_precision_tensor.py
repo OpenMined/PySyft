@@ -34,12 +34,12 @@ class FixedPrecisionTensor(PassthroughTensor):
         self._scale = base**precision
         if value is not None:
             # TODO :Should modify to be compatiable with torch.
-            
+
             super().__init__(self.encode(value))
         else:
             super().__init__(None)
 
-    def encode(self,value) -> Any:
+    def encode(self, value) -> Any:
         value = np.array(value, DEFAULT_INT_NUMPY_TYPE)
         fpt_value = self._scale * value
         encoded_value = fpt_value.astype(DEFAULT_INT_NUMPY_TYPE)
@@ -132,27 +132,27 @@ class FixedPrecisionTensor(PassthroughTensor):
         if isinstance(other, np.ndarray) and other.dtype == np.dtype("bool"):
             res.child = self.child * other
         else:
-            if isinstance(other, FixedPrecisionTensor):
-                other = self.sanity_check(other)
+            other = self.sanity_check(other)
+            context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT.get(
+                "seed_id_locations", None
+            )
+            res.child = self.child * other.child
+            res = res / self.scale
 
-                context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT.get(
-                    "seed_id_locations", None
-                )
-                res.child = self.child * other.child
-
-                res = res / self.scale
-            else:
-                res.child = self.child * other
         return res
 
     def __matmul__(self, other: Any) -> FixedPrecisionTensor:
-        other = self.sanity_check(other)
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT.get(
-            "seed_id_locations", None
-        )
-        res.child = self.child @ other.child
-        res = res / self.scale
+        if isinstance(other, np.ndarray) and other.dtype == np.dtype("bool"):
+            raise ValueError("Should not get  a boolan array to matmul")
+        else:
+            other = self.sanity_check(other)
+            context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT.get(
+                "seed_id_locations", None
+            )
+            res.child = self.child @ other.child
+            res = res / self.scale
+
         return res
 
     def __truediv__(

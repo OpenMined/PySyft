@@ -19,6 +19,9 @@ import numpy as np
 import numpy.typing as npt
 import torch
 
+# syft absolute
+from syft.core.smpc.store import CryptoPrimitiveProvider
+
 # relative
 from . import utils
 from .... import logger
@@ -706,9 +709,21 @@ class MPCTensor(PassthroughTensor):
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
         res_shares: List[Any] = []
+        y_shape = getattr(y, "shape", (1,))
+        new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "mul", **kwargs)
         else:
+            CryptoPrimitiveProvider.generate_primitives(
+                "beaver_wraps",
+                parties=self.parties,
+                g_kwargs={
+                    "shape": new_shape,
+                    "parties_info": self.parties_info,
+                },
+                p_kwargs={"shape": new_shape},
+                ring_size=self.ring_size,
+            )
             if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
                     getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
@@ -720,8 +735,6 @@ class MPCTensor(PassthroughTensor):
                 for share in self.child:
                     res_shares.append(tensor_op(share, share, y, **kwargs))
 
-        y_shape = getattr(y, "shape", (1,))
-        new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
         res = MPCTensor(
             parties=self.parties,
             shares=res_shares,
@@ -741,9 +754,21 @@ class MPCTensor(PassthroughTensor):
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__matmul__"
         res_shares: List[Any] = []
+        y_shape = getattr(y, "shape", (1,))
+        new_shape = utils.get_shape("matmul", self.mpc_shape, y_shape)
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "matmul", **kwargs)
         else:
+            CryptoPrimitiveProvider.generate_primitives(
+                "beaver_wraps",
+                parties=self.parties,
+                g_kwargs={
+                    "shape": new_shape,
+                    "parties_info": self.parties_info,
+                },
+                p_kwargs={"shape": new_shape},
+                ring_size=self.ring_size,
+            )
             if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
                     getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
@@ -755,8 +780,6 @@ class MPCTensor(PassthroughTensor):
                 for share in self.child:
                     res_shares.append(tensor_op(share, share, y, **kwargs))
 
-        y_shape = getattr(y, "shape", (1,))
-        new_shape = utils.get_shape("matmul", self.mpc_shape, y_shape)
         res = MPCTensor(
             parties=self.parties,
             shares=res_shares,
