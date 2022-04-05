@@ -49,11 +49,15 @@ COPY grid/backend/docker-scripts/start.sh /start.sh
 COPY grid/backend/docker-scripts/gunicorn_conf.py /gunicorn_conf.py
 COPY grid/backend/docker-scripts/start-reload.sh /start-reload.sh
 COPY grid/backend/worker-start.sh /worker-start.sh
+COPY grid/backend/beat-start.sh /beat-start.sh
 COPY grid/backend/worker-start-reload.sh /worker-start-reload.sh
+COPY grid/backend/beat-start-reload.sh /beat-start-reload.sh
 
 RUN chmod +x /start.sh
 RUN chmod +x /start-reload.sh
 RUN chmod +x /worker-start.sh
+RUN chmod +x /beat-start.sh
+RUN chmod +x /beat-start-reload.sh
 RUN chmod +x /worker-start-reload.sh
 
 COPY --from=build /root/.local /root/.local

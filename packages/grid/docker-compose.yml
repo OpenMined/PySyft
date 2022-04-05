@@ -189,6 +189,34 @@ services:
       - "traefik.http.services.${STACK_NAME?Variable not set}-backend-stream.loadbalancer.server.port=8011"
     network_mode: service:proxy
 
+  celerybeat:
+    restart: always
+    image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
+    depends_on:
+      - db
+      - queue
+    env_file:
+      - .env
+    environment:
+      - SERVICE_NAME=celeryworker
+      - RELEASE=${RELEASE:-production}
+      - VERSION=${VERSION}
+      - VERSION_HASH=${VERSION_HASH}
+      - NODE_TYPE=${NODE_TYPE?Variable not set}
+      - DOMAIN_NAME=${DOMAIN_NAME?Variable not set}
+      - C_FORCE_ROOT=1
+      - STACK_API_KEY=${STACK_API_KEY}
+      - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /beat-start.sh"
+    build:
+      context: ../
+      dockerfile: ./grid/backend/backend.dockerfile
+      target: "backend"
+    network_mode: service:proxy
+
   celeryworker:
     restart: always
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
