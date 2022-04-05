@@ -62,7 +62,7 @@ def cleanup_incomplete_uploads_from_blob_store() -> bool:
 @celery_app.on_after_configure.connect
 def setup_periodic_task(sender, **kwargs) -> None:  # type: ignore
     celery_app.add_periodic_task(
-        20,  # Run every hour
+        3600,  # Run every hour
         cleanup_incomplete_uploads_from_blob_store.s(),
         name="Clean incomplete uploads in Seaweed",
     )
