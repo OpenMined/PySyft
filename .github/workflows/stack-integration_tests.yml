@@ -227,6 +227,21 @@ jobs:
           pip install tox --upgrade
         shell: cmd
 
+      - name: Install cmake
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Install visualstudio build tools
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualcpp-build-tools visualstudio2017buildtools visualstudio2022community -y
+
+      - name: Install capnp
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install capnproto --version=0.8.0 -y
+
       - name: Start stacks
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
@@ -234,6 +249,7 @@ jobs:
           HAGRID_ART: false
         run: |
           pip install -e packages/hagrid
+          pip install cython
           pip install numpy==1.22.3
           pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
           set HAGRID_ART=false
