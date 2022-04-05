@@ -221,11 +221,6 @@ jobs:
           pip install --upgrade --user pip
         shell: cmd
 
-      - name: Add msbuild to PATH
-        uses: microsoft/setup-msbuild@v1.1
-        # with:
-        #   vs-version: "14.0"
-
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
@@ -239,6 +234,8 @@ jobs:
           HAGRID_ART: false
         run: |
           pip install -e packages/hagrid
+          pip install numpy==1.22.3
+          pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
           set HAGRID_ART=false
           hagrid launch test_network_1 network to docker:9081 --tail=false --headless=true --test
           hagrid launch test_domain_1 domain to docker:9082 --tail=false --headless=true --test
