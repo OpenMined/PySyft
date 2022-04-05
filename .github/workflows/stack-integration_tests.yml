@@ -325,22 +325,7 @@ jobs:
       - name: Install build essentials
         if: steps.changes.outputs.stack == 'true'
         run: |
-          apt-get update
-          apt-get install -y build-essential
-          apt-get install -y libssl-dev
-          apt-get install -y cmake
-
-      # - name: Setup Cmake
-      #   if: steps.changes.outputs.stack == 'true'
-      #   run: |
-      #     wget https://cmake.org/files/v3.10/cmake-3.10.2.tar.gz
-      #     tar -xzf cmake-3.10.2.tar.gz
-      #     cd cmake-3.10.2
-      #     ./bootstrap --prefix=/usr/local
-      #     make
-      #     sudo make install
-      #     cd ..
-      #     rm -rf cmake-3.10.2*
+          apt-get update && apt-get install -y cmake libssl-dev build-essential
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'

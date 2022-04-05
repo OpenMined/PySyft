@@ -85,6 +85,8 @@ jobs:
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
+          pip install numpy==1.22.3
+          pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
 
       - name: Check import works without dev packages
         if: steps.changes.outputs.syft == 'true'
