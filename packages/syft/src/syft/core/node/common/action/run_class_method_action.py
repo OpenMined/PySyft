@@ -156,7 +156,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
-        # resolved_self_previous_bytes: Optional[bytes] = None
+        resolved_self_previous_bytes: Optional[bytes] = None
         if self.is_static:
             result = method(*upcasted_args, **upcasted_kwargs)
         else:
@@ -165,9 +165,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     ValueError(f"Method {method} called, but self is None.")
                 )
 
-            # resolved_self_previous_bytes = sy.serialize(
-            #     resolved_self.data, to_bytes=True
-            # )
+            resolved_self_previous_bytes = sy.serialize(
+                resolved_self.data, to_bytes=True
+            )
             method_name = self.path.split(".")[-1]
 
             target_method = getattr(resolved_self.data, method_name, None)
@@ -212,17 +212,17 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))
 
-        # TODO: RESTORE THIS IF STATEMENT AND THE resolved_self_previous_bytes BEFORE merging to dev!
+        # TODO: Find a better way to do this, a serialization is compute intesive.
         # check if resolved_self has changed and if so mark as mutating_internal
         # this prevents someone from mutating an object they own with something they
         # do not own and the read_permissions not flowing backwards
-        # if (
-        # resolved_self_previous_bytes is not None
-        # resolved_self is not None
-        # and resolved_self_previous_bytes
-        # != sy.serialize(resolved_self.data, to_bytes=True)
-        # ):
-        #     mutating_internal = True
+        if (
+            resolved_self_previous_bytes is not None
+            and resolved_self is not None
+            and resolved_self_previous_bytes
+            != sy.serialize(resolved_self.data, to_bytes=True)
+        ):
+            mutating_internal = True
 
         if verify_key not in result_write_permissions:
             # User does not have permission write permissions to this pointer.

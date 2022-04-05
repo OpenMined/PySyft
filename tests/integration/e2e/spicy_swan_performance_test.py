@@ -16,8 +16,8 @@ import pytest
 # syft absolute
 import syft as sy
 from syft import Domain
+from syft.core.adp.data_subject_list import DataSubjectList
 from syft.core.adp.entity import Entity
-from syft.core.adp.entity_list import EntityList
 from syft.core.node.common.node_service.user_manager.user_messages import (
     UpdateUserMessage,
 )
@@ -188,7 +188,7 @@ DOMAIN1_PORT = 9082
 def extend_tweet_data(data: Any, multiplier: int) -> Any:
     new_data = data.copy()
     new_data.child.child = new_data.child.child.repeat(multiplier)
-    new_data.child.entities = EntityList.from_objs(
+    new_data.child.entities = DataSubjectList.from_objs(
         np.array(
             ["φhishan"]
             * multiplier

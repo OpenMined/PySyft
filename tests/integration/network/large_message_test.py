@@ -11,8 +11,8 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.adp.data_subject_list import DataSubjectList
 from syft.core.adp.entity import Entity
-from syft.core.adp.entity_list import EntityList
 from syft.core.store.proxy_dataset import ProxyDataset
 from syft.util import size_mb
 
@@ -136,9 +136,10 @@ def test_large_blob_upload() -> None:
             entity_name = "ϕhishan"
             # Since one_hot_lookup is an array of ints, so hashing the entity_name to int
             one_hot_lookup = np.array([hash(entity_name)])
-            entities_indexed = np.zeros(reference_data.shape[0], dtype=np.uint32)
-            entities = EntityList(
-                one_hot_lookup=one_hot_lookup, entities_indexed=entities_indexed
+            data_subjects_indexed = np.zeros(reference_data.shape[0], dtype=np.uint32)
+            entities = DataSubjectList(
+                one_hot_lookup=one_hot_lookup,
+                data_subjects_indexed=data_subjects_indexed,
             )
 
         tweets_data = sy.Tensor(reference_data).private(
