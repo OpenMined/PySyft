@@ -232,10 +232,25 @@ jobs:
         with:
           args: install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
-      - name: Install visualstudio build tools
+      - name: Install visualcpp-build-tools
         uses: crazy-max/ghaction-chocolatey@v1
         with:
-          args: install visualcpp-build-tools visualstudio2017buildtools visualstudio2022community -y
+          args: install visualcpp-build-tools -y
+
+      - name: Install visualstudio2017buildtools
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2017buildtools -y
+
+      - name: Install visualstudio2022community
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2022community -y
+
+      - name: Install vcredist2017
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install vcredist2017 -y
 
       - name: Install capnp
         uses: crazy-max/ghaction-chocolatey@v1
