@@ -227,35 +227,51 @@ jobs:
           pip install tox --upgrade
         shell: cmd
 
+      - name: Check python version
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -VV
+        shell: cmd
+
+      - name: Show choco installed packages
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: list --localonly
+
       - name: Install cmake
         uses: crazy-max/ghaction-chocolatey@v1
         with:
-          args: install cmake --installargs 'ADD_CMAKE_TO_PATH=System' -y
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
-      - name: Install visualcpp-build-tools
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install visualcpp-build-tools -y
+      # - name: Install visualcpp-build-tools
+      #   uses: crazy-max/ghaction-chocolatey@v1
+      #   with:
+      #     args: install visualcpp-build-tools -y
 
-      - name: Install visualstudio2017buildtools
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install visualstudio2017buildtools -y
+      # - name: Install visualstudio2017buildtools
+      #   uses: crazy-max/ghaction-chocolatey@v1
+      #   with:
+      #     args: install visualstudio2017buildtools -y
 
-      - name: Install visualstudio2022community
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install visualstudio2022community -y
+      # - name: Install visualstudio2022community
+      #   uses: crazy-max/ghaction-chocolatey@v1
+      #   with:
+      #     args: install visualstudio2022community -y
 
-      - name: Install vcredist2017
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install vcredist2017 -y
+      # - name: Install vcredist2017
+      #   uses: crazy-max/ghaction-chocolatey@v1
+      #   with:
+      #     args: install vcredist2017 -y
 
-      - name: Install capnp
-        uses: crazy-max/ghaction-chocolatey@v1
-        with:
-          args: install capnproto --version=0.9.1 --force -y
+      # - name: Install windows-sdk-10.0
+      #   uses: crazy-max/ghaction-chocolatey@v1
+      #   with:
+      #     args: install windows-sdk-10.0 -y
+
+      # - name: Install capnp
+      #   uses: crazy-max/ghaction-chocolatey@v1
+      #   with:
+      #     args: install capnproto --version=0.9.1 --force -y
 
       - name: Start stacks
         if: steps.changes.outputs.stack == 'true'
