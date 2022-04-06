@@ -21,11 +21,14 @@ from syft.core.adp.entity_list import EntityList
 from syft.core.node.common.node_service.user_manager.user_messages import (
     UpdateUserMessage,
 )
+from syft.core.node.common.util import MIN_BLOB_UPLOAD_SIZE_MB
+from syft.core.store.proxy_dataset import ProxyDataset
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.util import download_file
 from syft.util import get_root_data_path
 from syft.util import get_tracer
+from syft.util import size_mb
 
 
 def download_spicy_bird_benchmark(
@@ -52,22 +55,17 @@ def upload_subset(
     df: pd.DataFrame,
     size_name: str,
     unique_key: str,
-    start_index: int,
-    end_index: int,
-    count: int,
     entity_count: Optional[int] = None,
     ndept: bool = False,
     multiplier: int = 1,
-) -> None:
-    name = f"Tweets - {size_name} - {unique_key} - {count}"
-    impressions = ((np.array(list(df["impressions"][start_index:end_index])))).astype(
-        np.int32
-    )
+) -> tuple:
+    name = f"Tweets - {size_name} - {unique_key}"
+    impressions = ((np.array(list(df["impressions"])))).astype(np.int32)
 
     if entity_count is not None:
         user_id = list(df["user_id"].unique()[0:entity_count])
     else:
-        user_id = list(df["user_id"][start_index:end_index])
+        user_id = list(df["user_id"].unique())
 
     entities = list()
     for i in range(len(impressions)):
@@ -96,12 +94,17 @@ def upload_subset(
     if ndept:
         assert isinstance(tweets_data.child, NDEPT)
 
+    tweets_data_size_mb = size_mb(tweets_data)
+
     # blocking
     domain.load_dataset(
         assets={f"{size_name}_tweets": tweets_data},
         name=name,
         description=f"{name} - {datetime.now()}",
+        use_blob_storage=True,
     )
+
+    return tweets_data_size_mb, tweets_data.shape
 
 
 def time_upload(
@@ -109,63 +112,33 @@ def time_upload(
     size_name: str,
     unique_key: str,
     df: pd.DataFrame,
-    chunk_size: int = 1_000_000,
     entity_count: Optional[int] = None,
     ndept: bool = False,
     multiplier: int = 1,
-) -> float:
+) -> Tuple:
     start_time = time.time()
 
-    # iterate over number of chunks - 1
-    count = 0
-    last_val = 0
-    for i in range(0, df.shape[0] - chunk_size, chunk_size):
-        count = count + 1
-        last_val += chunk_size
-        upload_subset(
-            domain=domain,
-            df=df,
-            size_name=size_name,
-            unique_key=unique_key,
-            start_index=i,
-            end_index=i + chunk_size,
-            count=count,
-            entity_count=entity_count,
-            ndept=ndept,
-            multiplier=multiplier,
-        )
-
-    # upload final chunk
-    upload_subset(
+    data_size_mb, data_shape = upload_subset(
         domain=domain,
         df=df,
         size_name=size_name,
         unique_key=unique_key,
-        start_index=last_val,
-        end_index=df.shape[0],
-        count=count + 1,
-        entity_count=entity_count,
         ndept=ndept,
+        entity_count=entity_count,
         multiplier=multiplier,
     )
-    return time.time() - start_time
+    return data_size_mb, data_shape, (time.time() - start_time)
 
 
 def time_sum(
-    domain: Domain, chunk_indexes: List[int], size_name: str, timeout: int = 300
+    domain: Domain, chunk_index: int, size_name: str, timeout: int = 300
 ) -> Tuple[float, Any]:
-    total_time = 0
 
-    res = None
-    for chunk_index in chunk_indexes:
-        # get the dataset asset for size_name at chunk_index
-        dataset = domain.datasets[chunk_index][f"{size_name}_tweets"]
-        start_time = time.time()
-        if res is None:
-            res = dataset.sum()
-        else:
-            res += dataset.sum()
-        total_time += time.time() - start_time
+    # get the dataset asset for size_name at chunk_index
+    dataset = domain.datasets[chunk_index][f"{size_name}_tweets"]
+    start_time = time.time()
+    res = dataset.sum()
+    total_time = time.time() - start_time
 
     # make sure to block
     res.block_with_timeout(timeout)
@@ -173,16 +146,8 @@ def time_sum(
     return total_time, res
 
 
-def get_all_chunks(domain: Domain, unique_key: str) -> List[int]:
-    ids = []
-    for i in domain.datasets:
-        if unique_key in i.name:
-            ids.append(i.key)
-    return ids
-
-
-DOMAIN1_PORT = 9082
-# DOMAIN1_PORT = 8081
+# DOMAIN1_PORT = 9082
+DOMAIN1_PORT = 8081
 
 
 def extend_tweet_data(data: Any, multiplier: int) -> Any:
@@ -194,6 +159,21 @@ def extend_tweet_data(data: Any, multiplier: int) -> Any:
         )
     )
     return new_data
+
+
+def get_dataset_index(domain: Domain, dataset_name: str) -> Optional[int]:
+    for i in domain.datasets:
+        if dataset_name == i.name:
+            return i.key
+    return None
+
+
+def time_dataset_download(domain: Domain, dataset_index: int, asset_name: str):
+    dataset_ptr = domain.datasets[dataset_index][asset_name]
+    start_time = time.time()
+    dataset_ptr.get()
+    total_time = time.time() - start_time
+    return total_time
 
 
 @pytest.mark.e2e
@@ -214,35 +194,66 @@ def test_benchmark_datasets() -> None:
 
     budget_before = domain.privacy_budget
 
-    benchmark_report = {}
+    benchmark_report: dict = {}
+
     for size_name in reversed(ordered_sizes):
         timeout = 300
         unique_key = str(hash(time.time()))
         benchmark_report[size_name] = {}
         df = pd.read_parquet(files[size_name])
 
-        # make smaller
-        # df = df[0:100]
+        # Currently restricting it to 1000 entities, we might
+        # not need to do this once we're done with Jax Refactor PR:6353
         entity_count = 1000
 
         with tracer.start_as_current_span("upload"):
-            upload_time = time_upload(
+            upload_size_mb, data_shape, upload_time = time_upload(
                 domain=domain,
                 size_name=size_name,
                 unique_key=unique_key,
                 df=df,
                 entity_count=entity_count,
             )
+
         benchmark_report[size_name]["upload_secs"] = upload_time
-        all_chunks = get_all_chunks(domain=domain, unique_key=unique_key)
+        benchmark_report[size_name]["upload_size_mb"] = upload_size_mb
+
+        dataset_name = f"Tweets - {size_name} - {unique_key}"
+        asset_name = f"{size_name}_tweets"
+
+        dataset_index = get_dataset_index(domain=domain, dataset_name=dataset_name)
+
+        assert dataset_index is not None
+
+        if upload_size_mb > MIN_BLOB_UPLOAD_SIZE_MB:
+            # make sure new object is also in blob storage
+            dataset = domain.datasets[dataset_index][asset_name]
+            dataset_proxy = dataset.get(proxy_only=True)
+            assert isinstance(dataset_proxy, ProxyDataset)
+            assert "http" not in dataset_proxy.url  # no protocol
+            assert ":" not in dataset_proxy.url  # no port
+            assert dataset_proxy.url.startswith("/blob/")
+            assert dataset_proxy.shape == data_shape
+
+        with tracer.start_as_current_span("download"):
+            download_time = time_dataset_download(
+                domain=domain, dataset_index=dataset_index, asset_name=asset_name
+            )
+        benchmark_report[size_name]["dataset_download_secs"] = download_time
+
         with tracer.start_as_current_span("sum"):
             sum_time, sum_ptr = time_sum(
                 domain=domain,
-                chunk_indexes=all_chunks,
+                chunk_index=dataset_index,
                 size_name=size_name,
                 timeout=timeout,
             )
         benchmark_report[size_name]["sum_secs"] = sum_time
+
+        if upload_size_mb > MIN_BLOB_UPLOAD_SIZE_MB:
+            # make sure new sum object created is also in blob storage
+            sum_proxy = sum_ptr.get(proxy_only=True)
+            assert isinstance(sum_proxy, ProxyDataset)
 
         start_time = time.time()
         with tracer.start_as_current_span("publish"):
@@ -267,8 +278,11 @@ def test_benchmark_datasets() -> None:
     domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
 
     assert benchmark_report[key_size]["upload_secs"] <= 120
+    assert benchmark_report[key_size]["dataset_download_secs"] <= 60
     assert benchmark_report[key_size]["sum_secs"] <= 1
     assert benchmark_report[key_size]["publish_secs"] <= 10
+
+    print(benchmark_report)
 
 
 # @pytest.mark.e2e

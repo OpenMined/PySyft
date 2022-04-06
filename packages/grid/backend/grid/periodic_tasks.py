@@ -40,6 +40,7 @@ def cleanup_incomplete_uploads_from_blob_store() -> bool:
 
         obj_part_expired = False
         for part in object_parts:
+            # Normalize upload time to UTC timezone
             part_upload_time = pytz.timezone("UTC").normalize(part["LastModified"])
 
             # If upload time of any part of the object

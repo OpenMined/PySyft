@@ -228,6 +228,10 @@ class Pointer(AbstractPointer):
                 raise DatasetDownloadError(error_msg)
             obj = _deserialize(response.content, from_bytes=True)
         else:
+            if proxy_only:
+                print(
+                    "**Warning**: Proxy data class does not exist for this object. Fetching the real data."
+                )
             obj = obj.data
 
         if delete_obj:
