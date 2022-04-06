@@ -37,8 +37,7 @@ jobs:
     strategy:
       max-parallel: 3
       matrix:
-        # os: [windows-latest, ubuntu-latest, macos-latest]
-        os: [macos-latest]
+        os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10"]
         torch-version: [1.11.0]
 
@@ -83,9 +82,9 @@ jobs:
       - name: Install Dependencies
         if: steps.changes.outputs.syft == 'true'
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T QIRD24Tr75LsG5nWd3oOjW RCd3oeo396iiTARoa7AeiH au.relay.tunshell.com
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          pip install pycapnp
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
           pip install numpy==1.22.3
           pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
