@@ -21,7 +21,7 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-          token: ${{ secrets.HAGRID_BUMP_TOKEN }}
+          token: ${{ secrets.SYFT_BUMP_TOKEN }}
       - name: Install checksumdir
         run: |
           pip install --upgrade checksumdir
@@ -69,8 +69,8 @@ jobs:
       - name: Build and publish
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          TWINE_USERNAME: ${{ secrets.HAGRID_PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.HAGRID_BUMP_TOKEN }}
         run: |
           tox -e hagrid.publish
           twine upload packages/hagrid/dist/*
