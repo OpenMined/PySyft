@@ -62,6 +62,7 @@ jobs:
           author_email: madhava@openmined.org
           message: "bump version"
           add: "['./packages/hagrid/.bumpversion.cfg','./packages/hagrid/hagrid/__init__.py', './scripts/hagrid_hash']"
+          pull_strategy: NO-PULL
 
       - name: Build and publish
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}

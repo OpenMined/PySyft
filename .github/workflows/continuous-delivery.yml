@@ -34,6 +34,7 @@ jobs:
           author_email: madhava@openmined.org
           message: "bump version"
           add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
+          pull_strategy: NO-PULL
 
       - name: Build and publish
         env:
