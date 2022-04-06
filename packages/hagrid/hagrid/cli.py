@@ -17,6 +17,7 @@ from typing import cast
 
 # third party
 import click
+from tabulate import tabulate
 
 # relative
 from . import __version__
@@ -38,7 +39,10 @@ from .land import get_land_verb
 from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
 from .lib import GRID_SRC_VERSION
+from .lib import check_api_metadata
 from .lib import check_docker_version
+from .lib import check_ip
+from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import hagrid_root
@@ -1602,3 +1606,33 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 cli.add_command(debug)
+
+
+@click.command(help="Check health of an IP address or a resource group")
+@click.argument("ip_address", type=str)
+def check(ip_address: str) -> None:
+    if check_ip(ip_address):
+        base_ip_status = "✅"
+    else:
+        base_ip_status = "❌"
+
+    if check_login_page(ip_address):
+        login_page_status = "✅"
+    else:
+        login_page_status = "❌"
+
+    if check_api_metadata(ip_address):
+        backend_status = "✅"
+    else:
+        backend_status = "❌"
+
+    table = [
+        ["IP address", ip_address],
+        ["Base", base_ip_status],
+        ["Login Page", login_page_status],
+        ["Backend", backend_status],
+    ]
+    print(tabulate(table, headers="firstrow"))
+
+
+cli.add_command(check)
