@@ -133,6 +133,15 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         )
         self._pending_save = False
 
+    def __eq__(self, other: Any) -> bool:
+        if not isinstance(other, DataSubjectLedger):
+            return self == other
+        return (
+            self._update_number == other._update_number
+            and self._timestamp_of_last_update == other._timestamp_of_last_update
+            and all(self._rdp_constants == other._rdp_constants)
+        )
+
     @property
     def delta(self) -> float:
         FIXED_DELTA: Final = 1e-6
@@ -171,27 +180,17 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     ) -> np.ndarray:
         # coerce to np.int64
         entity_ids_query: np.ndarray = unique_entity_ids_query.astype(np.int64)
-
-        print("RDP constants calculation Batch")
-
-        t1 = time.time()
         # calculate constants
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
-        t2 = time.time()
-        print("Get Batch RDP Constants Time", t2 - t1)
 
-        print("start Overbudgetted entities calculation")
         # here we iteratively attempt to calculate the overbudget mask and save
         # changes to the database
-        t1 = time.time()
         mask = self._get_overbudgeted_entities(
             node=node,
             rdp_constants=rdp_constants,
         )
-        t2 = time.time()
-        print("Overbudgeted Entitities time ", t2 - t1)
 
         # at this point we are confident that the database budget field has been updated
         # so now we should flush the _rdp_constants that we have calculated to storage
@@ -220,11 +219,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             )
             new_entries.append(eps)
             new_alphas.append(alph)
-        # print("The values of epsilon created were: ")
-        # print(new_entries)
 
-        # print("The values of alpha  used  for these epsilon were:")
-        # print(new_alphas)
         self._cache_constant2epsilon = np.concatenate(
             [self._cache_constant2epsilon, np.array(new_entries)]
         )
@@ -236,9 +231,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return func
 
     def _get_alpha_search_function(self, rdp_compose_func: Callable) -> Callable:
-        # if len(self.deltas) > 0:
-        # delta = np.max(self.deltas)
-        # else:
         log_delta = np.log(self.delta)
 
         def fun(alpha: float) -> float:  # the input is the RDP's \alpha
@@ -270,7 +262,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         self, entity_ids_query: jnp.ndarray, rdp_params: RDPParams, private: bool = True
     ) -> jnp.ndarray:
         constant = compute_rdp_constant(rdp_params, private)
-        print("rdp_constants", type(self._rdp_constants), self._rdp_constants.shape)
         if self._rdp_constants.size == 0:
             self._rdp_constants = np.zeros_like(np.asarray(constant, constant.dtype))
         self._rdp_constants = first_try_branch(
@@ -280,63 +271,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             int(jnp.max(entity_ids_query)),
         )
         return constant
-
-    # def _get_batch_rdp_constants(
-    #     self, entity_ids_query: np.ndarray, rdp_params: RDPParams, private: bool = True
-    # ) -> np.ndarray:
-    #     if self._pending_save:
-    #         raise Exception(
-    #             "We need to save the DataSubjectLedger before querying again"
-    #         )
-    #     self._pending_save = True
-
-    #     t1 = time.time()
-    #     constant = compute_rdp_constant(rdp_params, private)
-
-    #     t2 = time.time()
-    #     print("First Block ", t2 - t1)
-    #     # update our serialized format with the calculated constants
-    #     # extend to and += _rdp_constants
-    #     # TODO: test take and put because these are hairy
-    #     # TODO: figure out what is faster between max() and take / put
-    #     t1 = time.time()
-
-    #     try:
-    #         # add the calculated constants back to the cached _rdp_constants
-    #         summed_constant = constant + self._rdp_constants.take(entity_ids_query)
-    #         self._rdp_constants.put(entity_ids_query, summed_constant)
-    #     except IndexError:
-    #         new_length = np.max(
-    #             entity_ids_query
-    #         )  # the highest int is the highest entity id
-
-    #         old_length = len(self._rdp_constants)
-    #         if new_length <= old_length:
-    #             raise Exception(
-    #                 "We have an IndexError but _rdp_constants is big enough."
-    #                 + f"{new_length} {old_length}"
-    #             )
-    #         # figure out how many more spots we need in the array
-    #         pad_length = new_length - old_length
-    #         # if entity_ids_query is not 0 indexed, e.g. starts at 1, we will have
-    #         # 1 extra length required hence the pad_length + 1
-    #         # if not, we have 1 extra slot so who cares
-    #         self._rdp_constants = np.pad(
-    #             self._rdp_constants, pad_width=(0, pad_length + 1), constant_values=0
-    #         )
-
-    #         # one more time... lets celebrate
-    #         try:
-    #             summed_constant = constant + self._rdp_constants.take(entity_ids_query)
-    #             self._rdp_constants.put(entity_ids_query, summed_constant)
-    #         except IndexError as e:
-    #             print("Something really bad happened with np.pad.")
-    #             raise e
-
-    #     t2 = time.time()
-    #     print("Second Batch", t2 - t1)
-
-    #     return constant
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
         rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
@@ -371,16 +305,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         When we replace the entity2ledger with something else, we could perhaps directly
         add it into this method
         """
-        print("rdp_constants")
-        # print(min(rdp_constants))
-        # Get the privacy budget spent by all the entities
-
-        t1 = time.time()
         epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants)
-        t2 = time.time()
-        print("GET Epsilon Spend time", t2 - t1)
 
-        t1 = time.time()
         # try first time
         (
             highest_possible_spend,
@@ -389,17 +315,10 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         ) = self._calculate_mask_for_current_budget(
             node=node, epsilon_spend=epsilon_spend
         )
-        t2 = time.time()
-        print("Mask calculation time , ", t2 - t1)
-        print("Type of Mask", type(mask))
-        print("highest_possible_spend", type(highest_possible_spend))
-        print("user budget", type(user_budget))
+
         mask = np.array(mask, copy=False)
         highest_possible_spend = float(highest_possible_spend)
         user_budget = float(user_budget)
-        print("New Type mask", mask)
-        print("new high", highest_possible_spend)
-        print(" new user budget", user_budget)
 
         if highest_possible_spend > 0:
             # go spend it in the db
@@ -410,18 +329,14 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
                 )
                 attempts += 1
                 try:
-                    t1 = time.time()
                     user_budget = self.spend_epsilon(
                         node=node,
                         epsilon_spend=highest_possible_spend,
                         old_user_budget=user_budget,
                     )
-                    t2 = time.time()
-                    print("Spend Epsilon time", t2 - t1)
                     break
-                except RefreshBudgetException as e:
+                except RefreshBudgetException:  # nosec
                     # this is the only exception we allow to retry
-                    print("got refresh budget error", e)
                     (
                         highest_possible_spend,
                         user_budget,
@@ -473,11 +388,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         dsl_msg.constantsMetadata = constants_metadata
 
         dsl_msg.updateNumber = self._update_number
-        print(
-            self._timestamp_of_last_update,
-            "self._timestamp_of_last_update",
-            type(self._timestamp_of_last_update),
-        )
         dsl_msg.timestamp = self._timestamp_of_last_update
 
         return dsl_msg.to_bytes_packed()

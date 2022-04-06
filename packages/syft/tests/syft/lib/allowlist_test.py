@@ -395,7 +395,7 @@ for op in BASIC_OPS:
 #     TEST_DATA = TEST_DATA[start_offset:end_offset]
 
 
-def intify(seq: Union[List[Any], Any]) -> List[Any]:
+def intify(seq: Union[ListType[Any], Any]) -> ListType[Any]:
     if isinstance(seq, list):
         replacement = []
         for x in seq:
