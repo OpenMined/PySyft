@@ -1,6 +1,8 @@
 name: HAGrid Continuous Delivery
 
 on:
+  workflow_call:
+
   schedule:
     - cron: "00 03 * * *"
   workflow_dispatch:
@@ -33,7 +35,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.x"
+          python-version: "3.10"
 
       - name: Install dependencies
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
@@ -62,12 +64,13 @@ jobs:
           author_email: madhava@openmined.org
           message: "bump version"
           add: "['./packages/hagrid/.bumpversion.cfg','./packages/hagrid/hagrid/__init__.py', './scripts/hagrid_hash']"
+          pull_strategy: NO-PULL
 
       - name: Build and publish
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
         env:
-          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.HAGRID_BUMP_TOKEN }}
         run: |
           tox -e hagrid.publish
           twine upload packages/hagrid/dist/*
