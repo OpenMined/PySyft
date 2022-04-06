@@ -69,7 +69,7 @@ jobs:
       - name: Build and publish
         if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
         env:
-          TWINE_USERNAME: ${{ secrets.HAGRID_PYPI_USERNAME }}
+          TWINE_USERNAME: __token__
           TWINE_PASSWORD: ${{ secrets.HAGRID_BUMP_TOKEN }}
         run: |
           tox -e hagrid.publish
