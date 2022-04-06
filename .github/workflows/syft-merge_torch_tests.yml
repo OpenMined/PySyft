@@ -11,7 +11,7 @@ name: Syft Merge Tests
 on:
   workflow_call:
 
-  pull_request:
+  push:
     branches:
       - main
       - dev
