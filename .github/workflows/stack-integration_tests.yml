@@ -24,7 +24,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{matrix.os}}
 
@@ -90,7 +90,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{matrix.os}}
 
@@ -166,7 +166,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [Windows-10]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: [self-hosted, windows]
 
@@ -227,6 +227,33 @@ jobs:
           pip install tox --upgrade
         shell: cmd
 
+      - name: Check python version
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -VV
+        shell: cmd
+
+      - name: Show choco installed packages
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: list --localonly
+
+      - name: Install cmake
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          cmake --version
+        shell: cmd
+
+      - name: Install visualcpp-build-tools
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
+
       - name: Start stacks
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
@@ -234,6 +261,10 @@ jobs:
           HAGRID_ART: false
         run: |
           pip install -e packages/hagrid
+          pip install cython
+          pip install pycapnp
+          pip install numpy==1.22.3
+          pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
           set HAGRID_ART=false
           hagrid launch test_network_1 network to docker:9081 --tail=false --headless=true --test
           hagrid launch test_domain_1 domain to docker:9082 --tail=false --headless=true --test
@@ -272,7 +303,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: [self-hosted, linux]
 
@@ -317,6 +348,11 @@ jobs:
         run: |
           pip install --upgrade --user pip
 
+      - name: Install build essentials
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake libssl-dev build-essential
+
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
@@ -351,7 +387,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{ matrix.os }}
 
@@ -416,7 +452,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{matrix.os}}
     steps:

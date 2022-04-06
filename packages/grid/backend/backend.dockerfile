@@ -1,4 +1,4 @@
-FROM python:3.9.9-slim as build
+FROM python:3.10.4-slim as build
 
 # set UTC timezone
 ENV TZ=Etc/UTC
@@ -13,23 +13,20 @@ RUN --mount=type=cache,target=/var/cache/apt \
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
 
-# Allow installing dev dependencies to run tests
-RUN --mount=type=cache,target=/root/.cache \
-  pip install --user "uvicorn[standard]" gunicorn
-
 RUN if [ $(uname -m) = "x86_64" ]; then \
-  pip install --user torch==1.10.0+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
+  pip install --user torch==1.11.0+cpu -f https://download.pytorch.org/whl/torch_stable.html; \
   fi
 
 # apple m1 build PyNaCl for aarch64
 RUN if [ $(uname -m) != "x86_64" ]; then \
   pip install --user pytest-xdist[psutil]; \
-  pip install --user pycapnp==1.1.0; \
+  pip install --user torch==1.11.0 -f https://download.pytorch.org/whl/torch_stable.html; \
+  fi
+
+RUN pip install --user pycapnp==1.1.0; \
   pip install --user numpy==1.22.3; \
   pip install --user primesieve==2.3.0 --force-reinstall --no-cache-dir; \
-  python -c "from primesieve.numpy._numpy import primes"; \
-  pip install --user torch==1.10.0 -f https://download.pytorch.org/whl/torch_stable.html; \
-  fi
+  python -c "from primesieve.numpy._numpy import primes";
 
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
@@ -40,13 +37,13 @@ RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit
   chmod +x /usr/local/bin/waitforit
 
 # Backend
-FROM python:3.9.9-slim as backend
+FROM python:3.10.4-slim as backend
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
 # copy start scripts and gunicorn conf
 COPY grid/backend/docker-scripts/start.sh /start.sh
-COPY grid/backend/docker-scripts/gunicorn_conf.py /gunicorn_conf.py
+# COPY grid/backend/docker-scripts/gunicorn_conf.py /gunicorn_conf.py
 COPY grid/backend/docker-scripts/start-reload.sh /start-reload.sh
 COPY grid/backend/worker-start.sh /worker-start.sh
 COPY grid/backend/beat-start.sh /beat-start.sh
