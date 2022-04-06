@@ -1,4 +1,4 @@
-FROM python:3.9-slim
+FROM python:3.10.4-slim
 
 # set UTC timezone
 ENV TZ=Etc/UTC
