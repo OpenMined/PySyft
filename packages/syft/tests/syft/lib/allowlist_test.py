@@ -395,6 +395,20 @@ for op in BASIC_OPS:
 #     TEST_DATA = TEST_DATA[start_offset:end_offset]
 
 
+def intify(seq: Union[List[Any], Any]) -> List[Any]:
+    if isinstance(seq, list):
+        replacement = []
+        for x in seq:
+            if isinstance(x, list):
+                x = intify(x)
+                replacement.append(x)
+            else:
+                replacement.append(int(x))
+        return replacement
+    else:
+        return int(seq)
+
+
 @pytest.mark.torch
 @pytest.mark.parametrize("arrow_backend", [False, True])
 @pytest.mark.parametrize(
@@ -438,6 +452,10 @@ def test_all_allowlisted_tensor_methods(
         requires_grad = False
         if op_name in ["backward", "retain_grad", "grad"]:
             requires_grad = True
+
+        if str(t_type).startswith("torch.uint") or str(t_type).startswith("torch.int"):
+            self_tensor = intify(self_tensor)
+
         self_tensor, self_tensor_copy = (
             th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
             th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad),
@@ -454,6 +472,10 @@ def test_all_allowlisted_tensor_methods(
         elif _args == "self":
             args = [th.tensor(self_tensor, dtype=t_type, requires_grad=requires_grad)]
         elif isinstance(_args, list):
+            if str(t_type).startswith("torch.uint") or str(t_type).startswith(
+                "torch.int"
+            ):
+                _args = intify(_args)
             args = [th.tensor(_args, dtype=t_type)]
         elif isinstance(_args, dict):
             args = {}
@@ -463,6 +485,10 @@ def test_all_allowlisted_tensor_methods(
             for k, v in _args.items():
                 arg_type = t_type
                 real_k = k
+                if str(t_type).startswith("torch.uint") or str(t_type).startswith(
+                    "torch.int"
+                ):
+                    v = intify(v)
                 if isinstance(v, list):
                     if "_DTYPE_" in real_k:
                         parts = real_k.split("_DTYPE_")
