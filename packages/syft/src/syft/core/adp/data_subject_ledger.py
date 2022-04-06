@@ -175,7 +175,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         self,
         unique_entity_ids_query: np.ndarray,
         rdp_params: RDPParams,
-        node: Any,
+        get_budget_for_user: Callable,
+        deduct_epsilon_for_user: Callable,
         private: bool = True,
     ) -> np.ndarray:
         # coerce to np.int64
@@ -188,16 +189,17 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # here we iteratively attempt to calculate the overbudget mask and save
         # changes to the database
         mask = self._get_overbudgeted_entities(
-            node=node,
+            get_budget_for_user=get_budget_for_user,
+            deduct_epsilon_for_user=deduct_epsilon_for_user,
             rdp_constants=rdp_constants,
         )
 
         # at this point we are confident that the database budget field has been updated
         # so now we should flush the _rdp_constants that we have calculated to storage
-        if self._write_ledger(node=node):
+        if self._write_ledger():
             return mask
 
-    def _write_ledger(self, node: Any) -> bool:
+    def _write_ledger(self) -> bool:
 
         self._update_number += 1
         try:
@@ -288,15 +290,16 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return eps_spend
 
     def _calculate_mask_for_current_budget(
-        self, node: Any, epsilon_spend: np.ndarray
+        self, get_budget_for_user: Callable, epsilon_spend: np.ndarray
     ) -> Tuple[float, float, np.ndarray]:
-        user_budget = node.users.get_budget_for_user(verify_key=self.user_key)
+        user_budget = get_budget_for_user(verify_key=self.user_key)
         # create a mask of True and False where true is over current user_budget
         return get_budgets_and_mask(epsilon_spend, user_budget)
 
     def _get_overbudgeted_entities(
         self,
-        node: Any,
+        get_budget_for_user: Callable,
+        deduct_epsilon_for_user: Callable,
         rdp_constants: np.ndarray,
     ) -> Tuple[np.ndarray]:
         """TODO:
@@ -313,7 +316,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             user_budget,
             mask,
         ) = self._calculate_mask_for_current_budget(
-            node=node, epsilon_spend=epsilon_spend
+            get_budget_for_user=get_budget_for_user, epsilon_spend=epsilon_spend
         )
 
         mask = np.array(mask, copy=False)
@@ -330,7 +333,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
                 attempts += 1
                 try:
                     user_budget = self.spend_epsilon(
-                        node=node,
+                        deduct_epsilon_for_user=deduct_epsilon_for_user,
                         epsilon_spend=highest_possible_spend,
                         old_user_budget=user_budget,
                     )
@@ -342,7 +345,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
                         user_budget,
                         mask,
                     ) = self._calculate_mask_for_current_budget(
-                        node=node, epsilon_spend=epsilon_spend
+                        get_budget_for_user=get_budget_for_user,
+                        epsilon_spend=epsilon_spend,
                     )
                 except Exception as e:
                     print(f"Problem spending epsilon. {e}")
@@ -355,13 +359,13 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
     def spend_epsilon(
         self,
-        node: Any,
+        deduct_epsilon_for_user: Callable,
         epsilon_spend: float,
         old_user_budget: float,
     ) -> float:
         # get the budget
         print("got user budget", old_user_budget, "epsilon_spent", epsilon_spend)
-        node.users.deduct_epsilon_for_user(
+        deduct_epsilon_for_user(
             verify_key=self.user_key,
             old_budget=old_user_budget,
             epsilon_spend=epsilon_spend,

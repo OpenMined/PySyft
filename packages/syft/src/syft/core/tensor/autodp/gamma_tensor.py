@@ -212,7 +212,8 @@ class GammaTensor:
 
     def publish(
         self,
-        node: Any,
+        get_budget_for_user: Callable,
+        deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
         output_func: Callable = np.sum,
@@ -231,7 +232,8 @@ class GammaTensor:
             sigma=sigma,
             output_func=output_func,
             ledger=ledger,
-            node=node,
+            get_budget_for_user=get_budget_for_user,
+            deduct_epsilon_for_user=deduct_epsilon_for_user,
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:

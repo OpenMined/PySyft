@@ -1,7 +1,6 @@
 # stdlib
 from random import gauss
 from time import time
-from typing import Any
 from typing import Callable
 from typing import Tuple
 
@@ -67,15 +66,16 @@ def calculate_bounds_for_mechanism(
 
 
 def vectorized_publish(
-    node: Any,
     min_vals: np.ndarray,
     max_vals: np.ndarray,
     values: np.ndarray,
     data_subjects: DataSubjectList,
     ledger: DataSubjectLedger,
+    get_budget_for_user: Callable,
+    deduct_epsilon_for_user: Callable,
     is_linear: bool = True,
     sigma: float = 1.5,
-    output_func: Callable = np.sum
+    output_func: Callable = np.sum,
     # private: bool = False
 ) -> np.ndarray:
     # TODO convert values to np.int64
@@ -125,7 +125,8 @@ def vectorized_publish(
             unique_entity_ids_query=input_entities,
             rdp_params=rdp_params,
             private=True,
-            node=node,
+            get_budget_for_user=get_budget_for_user,
+            deduct_epsilon_for_user=deduct_epsilon_for_user,
         )
         # here we have the final mask and highest possible spend has been applied
         # to the data scientists budget field in the database

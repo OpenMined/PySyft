@@ -196,7 +196,7 @@ def test_serde(
 ) -> None:
     """Test basic serde for NDEPT"""
     tensor1 = NDEPT(
-        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+        child=reference_data, entities=[0], max_vals=upper_bound, min_vals=lower_bound
     )
 
     ser = sy.serialize(tensor1)

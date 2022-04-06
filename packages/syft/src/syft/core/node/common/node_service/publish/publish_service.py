@@ -63,7 +63,10 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                         raise e
 
                     result = publish_object.child.publish(
-                        node=node, ledger=ledger, sigma=msg.sigma
+                        deduct_epsilon_for_user=node.users.deduct_epsilon_for_user,
+                        get_budget_for_user=node.users.get_budget_for_user,
+                        ledger=ledger,
+                        sigma=msg.sigma,
                     )
                     # result = publish_object.data.publish(
                     #     acc=node.acc, sigma=msg.sigma, user_key=verify_key

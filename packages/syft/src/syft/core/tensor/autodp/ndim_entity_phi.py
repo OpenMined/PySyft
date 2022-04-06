@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from collections.abc import Sequence
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -245,11 +246,21 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         )
 
     def publish(
-        self, node: Any, ledger: DataSubjectLedger, sigma: float, user_key: VerifyKey
+        self,
+        get_budget_for_user: Callable,
+        deduct_epsilon_for_user: Callable,
+        ledger: DataSubjectLedger,
+        sigma: float,
+        user_key: VerifyKey,
     ) -> AcceptableSimpleType:
         print("PUBLISHING TO GAMMA:")
         print(self.child)
-        return self.gamma.publish(node=node, ledger=ledger, sigma=sigma)
+        return self.gamma.publish(
+            get_budget_for_user=get_budget_for_user,
+            deduct_epsilon_for_user=deduct_epsilon_for_user,
+            ledger=ledger,
+            sigma=sigma,
+        )
 
     @property
     def value(self) -> np.ndarray:

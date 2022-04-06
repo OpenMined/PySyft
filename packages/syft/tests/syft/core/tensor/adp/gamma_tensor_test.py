@@ -1,3 +1,6 @@
+# stdlib
+from typing import Any
+
 # third party
 import numpy as np
 import pytest
@@ -40,7 +43,7 @@ def dims() -> int:
 def reference_data(highest, dims) -> np.ndarray:
     """This generates random data to test the equality operators"""
     reference_data = np.random.randint(
-        low=-highest, high=highest, size=(dims, dims), dtype=np.int32
+        low=-highest, high=highest, size=(dims, dims), dtype=np.int64
     )
     assert dims > 1, "Tensor not large enough"
     return reference_data
@@ -113,7 +116,20 @@ def test_gamma_publish(
     print(ledger_store.kv_store)
     user_key = b"1231"
     ledger = DataSubjectLedger.get_or_create(store=ledger_store, user_key=user_key)
-    results = gamma_tensor1.publish(ledger=ledger, sigma=0.1)
+
+    def get_budget_for_user(*args: Any, **kwargs: Any) -> float:
+        return 999999
+
+    def deduct_epsilon_for_user(*args: Any, **kwargs: Any) -> bool:
+        return True
+
+    results = gamma_tensor1.publish(
+        get_budget_for_user=get_budget_for_user,
+        deduct_epsilon_for_user=deduct_epsilon_for_user,
+        ledger=ledger,
+        sigma=0.1,
+    )
+    print(results)
     print(results, results.dtype)
     print(ledger_store.kv_store)
 
