@@ -1,6 +1,8 @@
 name: HAGrid Continuous Delivery
 
 on:
+  workflow_call:
+
   schedule:
     - cron: "00 03 * * *"
   workflow_dispatch:
