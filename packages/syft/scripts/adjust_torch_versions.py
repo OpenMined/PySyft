@@ -20,7 +20,8 @@ VERSIONS_LUT: Dict[str, Dict[str, Any]] = {
     "1.8.1": dict(torchvision="0.9.1", torchcsprng="0.2.1"),
     "1.9.0": dict(torchvision="0.10.0", torchcsprng="0.2.1"),
     "1.9.1": dict(torchvision="0.10.1", torchcsprng="0.2.1"),
-    "1.11.0": dict(torchvision="0.11.1", torchcsprng="0.2.1"),
+    "1.10.2": dict(torchvision="0.11.3", torchcsprng="0.2.1"),
+    "1.11.0": dict(torchvision="0.12.0", torchcsprng="0.2.1"),
 }
 
 system = platform.system()
@@ -44,10 +45,10 @@ def main(path_req: str, torch_version: str, gpu: str = "cpu") -> None:
 
         if (
             lib == "torchcsprng"
-            and sys.version_info >= (3, 9)
-            and lib_version < version.parse("0.2.0")
+            and sys.version_info >= (3, 10)
+            and lib_version <= version.parse("0.2.1")
         ):
-            replace = ""  # no torchcsprng < 0.2.0 for python 3.9
+            replace = ""  # no torchcsprng <= 0.2.1 for python 3.10
 
         req = re.sub(
             rf"{lib}[<>=].*\n",
