@@ -24,7 +24,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: "3.10"
+        python-version: ["3.10"]
 
     runs-on: ${{matrix.os}}
 
@@ -90,7 +90,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: "3.10"
+        python-version: ["3.10"]
 
     runs-on: ${{matrix.os}}
 
@@ -166,7 +166,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [Windows-10]
-        python-version: "3.10"
+        python-version: ["3.10"]
 
     runs-on: [self-hosted, windows]
 
@@ -303,7 +303,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: "3.10"
+        python-version: ["3.10"]
 
     runs-on: [self-hosted, linux]
 
@@ -387,7 +387,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: "3.10"
+        python-version: ["3.10"]
 
     runs-on: ${{ matrix.os }}
 
@@ -452,7 +452,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: "3.10"
+        python-version: ["3.10"]
 
     runs-on: ${{matrix.os}}
     steps:
