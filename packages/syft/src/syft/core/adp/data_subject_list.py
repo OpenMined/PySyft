@@ -18,8 +18,11 @@ from .entity import Entity
 
 # allow us to serialize and deserialize np.arrays with strings inside as two np.arrays
 # one containing the uint8 bytes and the other the offsets between strings
+# TODO: Should move to a vectorized version.
 def numpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
-    string_array, index_array = string_index
+    index_length = int(string_index[-1])
+    index_array = string_index[-(index_length + 1) : -1]  # noqa
+    string_array: np.ndarray = string_index[: -(index_length + 1)]
     output_bytes: bytes = string_array.astype(np.uint8).tobytes()
     output_list = []
     last_offset = 0
@@ -47,8 +50,11 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
         bytes_list.append(name_bytes)
 
     np_bytes = np.frombuffer(b"".join(bytes_list), dtype=np.uint8)
-    np_indexes = np.array(indexes)
-    return (np_bytes, np_indexes)
+    np_bytes = np_bytes.astype(np.uint64)
+    np_indexes = np.array(indexes, dtype=np.uint64)
+    index_length = np.array([len(np_indexes)], dtype=np.uint64)
+    output_array = np.concatenate([np_bytes, np_indexes, index_length])
+    return output_array
 
 
 @serializable(recursive_serde=True)

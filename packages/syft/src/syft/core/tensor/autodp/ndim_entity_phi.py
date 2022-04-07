@@ -18,6 +18,8 @@ import numpy as np
 # relative
 from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.data_subject_list import DataSubjectList
+from ....core.adp.data_subject_list import liststrtonumpyutf8
+from ....core.adp.data_subject_list import numpyutf8tolist
 from ....core.adp.entity import Entity
 from ....lib.numpy.array import capnp_deserialize
 from ....lib.numpy.array import capnp_serialize
@@ -411,7 +413,10 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         ndept_msg.dataSubjectsIndexed = capnp_serialize(
             self.entities.data_subjects_indexed
         )
-        ndept_msg.oneHotLookup = capnp_serialize(self.entities.one_hot_lookup)
+
+        ndept_msg.oneHotLookup = capnp_serialize(
+            liststrtonumpyutf8(self.entities.one_hot_lookup)
+        )
 
         # to pack or not to pack?
         # to_bytes = ndept_msg.to_bytes()
@@ -434,7 +439,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         min_vals = capnp_deserialize(ndept_msg.minVals)
         max_vals = capnp_deserialize(ndept_msg.maxVals)
         data_subjects_indexed = capnp_deserialize(ndept_msg.dataSubjectsIndexed)
-        one_hot_lookup = capnp_deserialize(ndept_msg.oneHotLookup)
+        one_hot_lookup = numpyutf8tolist(capnp_deserialize(ndept_msg.oneHotLookup))
 
         entity_list = DataSubjectList(one_hot_lookup, data_subjects_indexed)
 
