@@ -13,11 +13,11 @@ from typing import TYPE_CHECKING
 from typing import Tuple
 
 # relative
-from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
-from ....lib.numpy.array import arrow_serialize as numpy_serialize
+from ....lib.numpy.array import capnp_deserialize
+from ....lib.numpy.array import capnp_serialize
+from ...adp.data_subject_list import liststrtonumpyutf8
+from ...adp.data_subject_list import numpyutf8tolist
 from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
 from ...common.serde.capnp import get_capnp_schema
 from ...common.serde.capnp import serde_magic_header
 from ...common.serde.serializable import serializable
@@ -324,56 +324,24 @@ class GammaTensor:
 
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
-        gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
 
+        gamma_tensor_struct: CapnpModule = schema.GammaTensor  # type: ignore
         gamma_msg = gamma_tensor_struct.new_message()
-        metadata_schema = gamma_tensor_struct.TensorMetadata
-        value_metadata = metadata_schema.new_message()
-        inputs_metadata = metadata_schema.new_message()
-        entities_metadata = metadata_schema.new_message()
-        one_hot_lookup_metadata = metadata_schema.new_message()
+        # this is how we dispatch correct deserialization of bytes
+        gamma_msg.magicHeader = serde_magic_header(type(self))
 
         # what is the difference between inputs and value which do we serde
         # do we need to serde func? if so how?
         # what about the state dict?
 
-        # this is how we dispatch correct deserialization of bytes
-        gamma_msg.magicHeader = serde_magic_header(type(self))
-
-        value, value_size = numpy_serialize(
-            jax2numpy(self.value, dtype=self.value.dtype), get_bytes=True
+        gamma_msg.value = capnp_serialize(jax2numpy(self.value, dtype=self.value.dtype))
+        gamma_msg.inputs = capnp_serialize(jax2numpy(self.inputs, self.inputs.dtype))
+        gamma_msg.dataSubjectsIndexed = capnp_serialize(
+            self.data_subjects.data_subjects_indexed
         )
-        chunk_bytes(value, "value", gamma_msg)
-        value_metadata.dtype = str(self.value.dtype)
-        value_metadata.decompressedSize = value_size
-        gamma_msg.valueMetadata = value_metadata
-
-        inputs, inputs_size = numpy_serialize(
-            jax2numpy(self.inputs, dtype=self.inputs.dtype), get_bytes=True
+        gamma_msg.oneHotLookup = capnp_serialize(
+            liststrtonumpyutf8(self.data_subjects.one_hot_lookup)
         )
-        chunk_bytes(inputs, "inputs", gamma_msg)
-        inputs_metadata.dtype = str(self.inputs.dtype)
-        inputs_metadata.decompressedSize = inputs_size
-        gamma_msg.inputsMetadata = inputs_metadata
-
-        entities_indexed, entities_indexed_size = numpy_serialize(
-            self.data_subjects.data_subjects_indexed, get_bytes=True
-        )
-        chunk_bytes(entities_indexed, "entitiesIndexed", gamma_msg)
-        entities_metadata.dtype = str(self.data_subjects.data_subjects_indexed.dtype)
-        entities_metadata.decompressedSize = entities_indexed_size
-        gamma_msg.entitiesIndexedMetadata = entities_metadata
-
-        one_hot_lookup, one_hot_lookup_size = numpy_serialize(
-            self.data_subjects.one_hot_lookup, get_bytes=True
-        )
-        chunk_bytes(one_hot_lookup, "oneHotLookup", gamma_msg)
-        one_hot_lookup_metadata.dtype = str(self.data_subjects.one_hot_lookup.dtype)
-        one_hot_lookup_metadata.decompressedSize = one_hot_lookup_size
-        gamma_msg.oneHotLookupMetadata = one_hot_lookup_metadata
-
-        print(self.min_val)
-
         gamma_msg.minVal = self.min_val
         gamma_msg.maxVal = self.max_val
         gamma_msg.isLinear = self.is_linear
@@ -393,49 +361,22 @@ class GammaTensor:
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
-        value_metadata = gamma_msg.valueMetadata
-
-        value = numpy_deserialize(
-            combine_bytes(gamma_msg.value),
-            value_metadata.decompressedSize,
-            value_metadata.dtype,
-        )
-
-        inputs_metadata = gamma_msg.inputsMetadata
-
-        inputs = numpy_deserialize(
-            combine_bytes(gamma_msg.inputs),
-            inputs_metadata.decompressedSize,
-            inputs_metadata.dtype,
-        )
-
-        entities_metadata = gamma_msg.entitiesIndexedMetadata
-        entities_indexed = numpy_deserialize(
-            combine_bytes(gamma_msg.entitiesIndexed),
-            entities_metadata.decompressedSize,
-            entities_metadata.dtype,
-        )
-
-        one_hot_lookup_metadata = gamma_msg.oneHotLookupMetadata
-        one_hot_lookup = numpy_deserialize(
-            combine_bytes(gamma_msg.oneHotLookup),
-            one_hot_lookup_metadata.decompressedSize,
-            one_hot_lookup_metadata.dtype,
-        )
-
-        data_subjects = DataSubjectList(one_hot_lookup, entities_indexed)
-
+        value = capnp_deserialize(gamma_msg.value)
+        inputs = capnp_deserialize(gamma_msg.inputs)
+        data_subjects_indexed = capnp_deserialize(gamma_msg.dataSubjectsIndexed)
+        one_hot_lookup = numpyutf8tolist(capnp_deserialize(gamma_msg.oneHotLookup))
+        data_subjects = DataSubjectList(one_hot_lookup, data_subjects_indexed)
         min_val = gamma_msg.minVal
         max_val = gamma_msg.maxVal
         is_linear = gamma_msg.isLinear
         id_str = gamma_msg.id
 
         return GammaTensor(
-            value=numpy2jax(value, dtype=value_metadata.dtype),
+            value=numpy2jax(value, dtype=value.dtype),
             data_subjects=data_subjects,
             min_val=min_val,
             max_val=max_val,
             is_linear=is_linear,
-            inputs=numpy2jax(inputs, dtype=inputs_metadata.dtype),
+            inputs=numpy2jax(inputs, dtype=inputs.dtype),
             id=id_str,
         )

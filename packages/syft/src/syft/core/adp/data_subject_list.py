@@ -83,16 +83,16 @@ class DataSubjectList:
 
         # This will be the equivalent of the DataSubjectList.data_subjects_indexed
         data_subjects = entities_dataframe_slice.to_numpy()
+        unique_data_subjects, data_subjects_indexed = np.unique(
+            data_subjects, return_inverse=True
+        )
 
         # This will be the equivalent of the DataSubjectList.one_hot_indexed- a sorted array of all unique entities
-        unique_data_subjects = entities_dataframe_slice.unique()
-        if not isinstance(unique_data_subjects, np.ndarray):
-            unique_data_subjects = unique_data_subjects.to_numpy()
-        # For small pd.Series, calling .unique() directly returns a ndarray array so calling .to_numpy is not necessary
-        unique_data_subjects = np.sort(unique_data_subjects)
+        unique_data_subjects = unique_data_subjects.astype(np.str_)
 
         return DataSubjectList(
-            one_hot_lookup=unique_data_subjects, data_subjects_indexed=data_subjects
+            one_hot_lookup=unique_data_subjects,
+            data_subjects_indexed=data_subjects_indexed,
         )
 
     @staticmethod
