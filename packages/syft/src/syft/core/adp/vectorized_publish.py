@@ -1,5 +1,5 @@
 # stdlib
-from random import gauss
+import secrets
 from time import time
 from typing import Callable
 from typing import Tuple
@@ -140,7 +140,8 @@ def vectorized_publish(
         filtered_inputs = values * (
             1 - mask
         )  # + gauss(0, sigma)  # Double check that noise has mean of 0
-        output = np.asarray(output_func(filtered_inputs) + gauss(0, sigma))
+        noise = secrets.SystemRandom().gauss(0, sigma)
+        output = np.asarray(output_func(filtered_inputs) + noise)
         print("got output", type(output), output.dtype)
         return output
     except Exception as e:
