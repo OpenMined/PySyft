@@ -15,11 +15,6 @@ from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 
 
 @pytest.fixture
-def ishan() -> Entity:
-    return Entity(name="φhishan")
-
-
-@pytest.fixture
 def highest() -> int:
     return 50
 
@@ -68,17 +63,21 @@ def test_gamma_serde(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: Entity,
 ) -> None:
     """Test basic serde for GammaTensor"""
     tensor1 = NDEPT(
         child=reference_data,
-        entities=[0, 1],
+        entities=np.random.choice([0, 1], reference_data.shape),
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-
+    assert tensor1.entities.data_subjects_indexed.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.sum()
+
+    # Checks to ensure gamma tensor was properly created
+    assert isinstance(gamma_tensor1, GammaTensor)
+    assert (gamma_tensor1.value == reference_data.sum())
+    assert (gamma_tensor1.inputs == reference_data).all()
 
     ser = sy.serialize(gamma_tensor1, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
@@ -100,7 +99,6 @@ def test_gamma_publish(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
-    ishan: Entity,
 ) -> None:
     """Test basic serde for GammaTensor"""
     tensor1 = NDEPT(
