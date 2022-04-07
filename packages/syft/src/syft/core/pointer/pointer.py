@@ -112,6 +112,7 @@ from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.exceptions import AuthorizationError
 from ..node.common.exceptions import DatasetDownloadError
 from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
@@ -253,7 +254,10 @@ class Pointer(AbstractPointer):
                 },
             ).sign(signing_key=self.client.signing_key)
 
-            self.client.send_immediate_msg_with_reply(msg=obj_del_msg)
+            try:
+                self.client.send_immediate_msg_with_reply(msg=obj_del_msg)
+            except AuthorizationError:
+                print("**Warning:** You don't have delete permissions to the object.")
 
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref

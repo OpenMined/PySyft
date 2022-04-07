@@ -83,6 +83,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
         result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
+        result_write_permissions: Union[None, Dict[VerifyKey, UID]] = None
 
         resolved_args = list()
         tag_args = []
@@ -97,6 +98,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
+            )
+            result_write_permissions = self.intersect_keys(
+                result_write_permissions, r_arg.write_permissions
             )
             resolved_args.append(r_arg.data)
             tag_args.append(r_arg)
@@ -114,6 +118,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
+            )
+            result_write_permissions = self.intersect_keys(
+                result_write_permissions, r_arg.write_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data
             tag_kwargs[arg_name] = r_arg
@@ -141,6 +148,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         if result_read_permissions is None:
             result_read_permissions = {}
 
+        if result_write_permissions is None:
+            result_write_permissions = {}
+
         # TODO: Upload object to seaweed store, instead of storing in redis
         # create a proxy object class and store it here.
         if check_send_to_blob_storage(
@@ -160,6 +170,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 id=self.id_at_location,
                 data=result,
                 read_permissions=result_read_permissions,
+                write_permissions=result_write_permissions,
             )
 
         inherit_tags(
