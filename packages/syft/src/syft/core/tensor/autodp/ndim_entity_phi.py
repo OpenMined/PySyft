@@ -19,11 +19,9 @@ import numpy as np
 from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.data_subject_list import DataSubjectList
 from ....core.adp.entity import Entity
-from ....lib.numpy.array import arrow_deserialize as numpy_deserialize
-from ....lib.numpy.array import arrow_serialize as numpy_serialize
+from ....lib.numpy.array import capnp_deserialize
+from ....lib.numpy.array import capnp_serialize
 from ...common.serde.capnp import CapnpModule
-from ...common.serde.capnp import chunk_bytes
-from ...common.serde.capnp import combine_bytes
 from ...common.serde.capnp import get_capnp_schema
 from ...common.serde.capnp import serde_magic_header
 from ...common.serde.serializable import serializable
@@ -402,57 +400,18 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="ndept.capnp")
 
-        rows, rows_size = numpy_serialize(self.child, get_bytes=True)
-        min_vals, min_vals_size = numpy_serialize(self.min_vals.data, get_bytes=True)
-        max_vals, max_vals_size = numpy_serialize(self.max_vals.data, get_bytes=True)
-        entities_indexed, entities_indexed_size = numpy_serialize(
-            self.entities.data_subjects_indexed, get_bytes=True
-        )
-        one_hot_lookup, one_hot_lookup_size = numpy_serialize(
-            self.entities.one_hot_lookup, get_bytes=True
-        )
-
         ndept_struct: CapnpModule = schema.NDEPT  # type: ignore
         ndept_msg = ndept_struct.new_message()
-        metadata_schema = ndept_struct.TensorMetadata
-        child_metadata = metadata_schema.new_message()
-        min_vals_metadata = metadata_schema.new_message()
-        max_vals_metadata = metadata_schema.new_message()
-        entities_metadata = metadata_schema.new_message()
-        one_hot_lookup_metadata = metadata_schema.new_message()
-
         # this is how we dispatch correct deserialization of bytes
         ndept_msg.magicHeader = serde_magic_header(type(self))
 
-        chunk_bytes(rows, "child", ndept_msg)
-        child_metadata.dtype = str(self.child.dtype)
-        child_metadata.decompressedSize = rows_size
-        ndept_msg.childMetadata = child_metadata
-
-        chunk_bytes(min_vals, "minVals", ndept_msg)
-        min_vals_metadata.dtype = str(self.min_vals.data.dtype)
-        min_vals_metadata.decompressedSize = min_vals_size
-        ndept_msg.minValsMetadata = min_vals_metadata
-
-        chunk_bytes(max_vals, "maxVals", ndept_msg)
-        max_vals_metadata.dtype = str(self.max_vals.data.dtype)
-        max_vals_metadata.decompressedSize = max_vals_size
-        ndept_msg.maxValsMetadata = max_vals_metadata
-
-        chunk_bytes(entities_indexed, "entitiesIndexed", ndept_msg)
-        entities_metadata.dtype = str(self.entities.data_subjects_indexed.dtype)
-        entities_metadata.decompressedSize = entities_indexed_size
-        ndept_msg.entitiesIndexedMetadata = entities_metadata
-
-        # oneHotLookupList = ndept_msg.init("oneHotLookup", len(one_hot_lookup))
-        # for i, entity in enumerate(one_hot_lookup):
-        #     oneHotLookupList[i] = (
-        #         entity if not getattr(entity, "name", None) else entity.name  # type: ignore
-        #     )
-        chunk_bytes(one_hot_lookup, "oneHotLookup", ndept_msg)
-        one_hot_lookup_metadata.dtype = str(self.entities.one_hot_lookup.dtype)
-        one_hot_lookup_metadata.decompressedSize = one_hot_lookup_size
-        ndept_msg.oneHotLookupMetadata = one_hot_lookup_metadata
+        ndept_msg.child = capnp_serialize(self.child)
+        ndept_msg.minVals = capnp_serialize(self.min_vals.data)
+        ndept_msg.maxVals = capnp_serialize(self.max_vals.data)
+        ndept_msg.dataSubjectsIndexed = capnp_serialize(
+            self.entities.data_subjects_indexed
+        )
+        ndept_msg.oneHotLookup = capnp_serialize(self.entities.one_hot_lookup)
 
         # to pack or not to pack?
         # to_bytes = ndept_msg.to_bytes()
@@ -471,49 +430,13 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
-        child_metadata = ndept_msg.childMetadata
+        child = capnp_deserialize(ndept_msg.child)
+        min_vals = capnp_deserialize(ndept_msg.minVals)
+        max_vals = capnp_deserialize(ndept_msg.maxVals)
+        data_subjects_indexed = capnp_deserialize(ndept_msg.dataSubjectsIndexed)
+        one_hot_lookup = capnp_deserialize(ndept_msg.oneHotLookup)
 
-        child = numpy_deserialize(
-            combine_bytes(ndept_msg.child),
-            child_metadata.decompressedSize,
-            child_metadata.dtype,
-        )
-
-        min_vals_metadata = ndept_msg.minValsMetadata
-        min_vals = lazyrepeatarray(
-            numpy_deserialize(
-                combine_bytes(ndept_msg.minVals),
-                min_vals_metadata.decompressedSize,
-                min_vals_metadata.dtype,
-            ),
-            child.shape,
-        )
-
-        max_vals_metadata = ndept_msg.maxValsMetadata
-        max_vals = lazyrepeatarray(
-            numpy_deserialize(
-                combine_bytes(ndept_msg.maxVals),
-                max_vals_metadata.decompressedSize,
-                max_vals_metadata.dtype,
-            ),
-            child.shape,
-        )
-
-        entities_metadata = ndept_msg.entitiesIndexedMetadata
-        entities_indexed = numpy_deserialize(
-            combine_bytes(ndept_msg.entitiesIndexed),
-            entities_metadata.decompressedSize,
-            entities_metadata.dtype,
-        )
-        # one_hot_lookup = np.array(ndept_msg.oneHotLookup)
-        one_hot_lookup_metadata = ndept_msg.oneHotLookupMetadata
-        one_hot_lookup = numpy_deserialize(
-            combine_bytes(ndept_msg.oneHotLookup),
-            one_hot_lookup_metadata.decompressedSize,
-            one_hot_lookup_metadata.dtype,
-        )
-
-        entity_list = DataSubjectList(one_hot_lookup, entities_indexed)
+        entity_list = DataSubjectList(one_hot_lookup, data_subjects_indexed)
 
         return NDimEntityPhiTensor(
             child=child, min_vals=min_vals, max_vals=max_vals, entities=entity_list

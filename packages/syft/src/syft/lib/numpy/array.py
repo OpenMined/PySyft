@@ -3,11 +3,16 @@ from typing import Tuple
 from typing import Union
 
 # third party
+from capnp.lib.capnp import _DynamicStructBuilder
 import numpy as np
 import pyarrow as pa
 import torch
 
 # relative
+from ...core.common.serde.capnp import CapnpModule
+from ...core.common.serde.capnp import chunk_bytes
+from ...core.common.serde.capnp import combine_bytes
+from ...core.common.serde.capnp import get_capnp_schema
 from ...core.common.serde.serializable import serializable
 from ...experimental_flags import ApacheArrowCompression
 from ...experimental_flags import flags
@@ -40,6 +45,35 @@ DTYPE_REFACTOR = {
     np.dtype("uint32"): np.int32,
     np.dtype("uint64"): np.int64,
 }
+
+
+# TODO: move to sy.serialize interface, when protobuf for numpy is removed.
+def capnp_serialize(obj: np.ndarray) -> _DynamicStructBuilder:
+    schema = get_capnp_schema(schema_file="array.capnp")
+    array_struct: CapnpModule = schema.Array  # type: ignore
+    array_msg = array_struct.new_message()
+    metadata_schema = array_struct.TensorMetadata
+    array_metadata = metadata_schema.new_message()
+
+    obj_bytes, obj_decompressed_size = arrow_serialize(obj, get_bytes=True)
+    chunk_bytes(obj_bytes, "array", array_msg)
+    array_metadata.dtype = str(obj.dtype)
+    array_metadata.decompressedSize = obj_decompressed_size
+
+    array_msg.arrayMetadata = array_metadata
+
+    return array_msg
+
+
+def capnp_deserialize(array_msg: _DynamicStructBuilder) -> np.ndarray:
+    array_metadata = array_msg.arrayMetadata
+    obj = arrow_deserialize(
+        combine_bytes(array_msg.array),
+        decompressed_size=array_metadata.decompressedSize,
+        dtype=array_metadata.dtype,
+    )
+
+    return obj
 
 
 def arrow_serialize(
