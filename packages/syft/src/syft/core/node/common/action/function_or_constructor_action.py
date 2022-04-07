@@ -99,6 +99,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
+
+            # TODO: Verify if this the behavior we want with the resultant object
+            # Should the result also inherit the write permissions of the original object ??
             result_write_permissions = self.intersect_keys(
                 result_write_permissions, r_arg.write_permissions
             )

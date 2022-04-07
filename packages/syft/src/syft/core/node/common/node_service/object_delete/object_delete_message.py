@@ -14,7 +14,7 @@ from ....domain.domain_interface import DomainInterface
 from ....domain.registry import DomainMessageRegistry
 from ....vm.registry import VMMessageRegistry
 from ...permissions.permissions import BasePermission
-from ...permissions.user_permissions import UserHasWritePermissionToData
+from ...permissions.user_permissions import NoRestriction
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
 from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
@@ -68,4 +68,5 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry)
 
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""
-        return [UserHasWritePermissionToData]
+        # Needs to be replaced with UserHasWritePermissionToData once who has permissions to delete is sorted
+        return [NoRestriction]
