@@ -17,6 +17,7 @@ from typing import cast
 
 # third party
 import click
+import rich
 
 # relative
 from . import __version__
@@ -38,7 +39,10 @@ from .land import get_land_verb
 from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
 from .lib import GRID_SRC_VERSION
+from .lib import check_api_metadata
 from .lib import check_docker_version
+from .lib import check_host
+from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import hagrid_root
@@ -139,6 +143,13 @@ def clean(location: str) -> None:
     required=False,
     type=str,
     help="Optional: enable or disable forcing re-build",
+)
+@click.option(
+    "--provision",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: enable or disable provisioning VMs",
 )
 @click.option(
     "--auth_type",
@@ -368,9 +379,12 @@ def login_azure() -> bool:
 
 def check_azure_cli_installed() -> bool:
     try:
-        subprocess.call(["az"])
-        print("Azure cli installed!")
-    except FileNotFoundError:
+        result = subprocess.run(
+            ["az", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+        )
+        if result.returncode != 0:
+            raise FileNotFoundError("az not installed")
+    except Exception:  # nosec
         msg = "\nYou don't appear to have the Azure CLI installed!!! \n\n\
 Please install it and then retry your command.\
 \n\nInstallation Instructions: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli\n"
@@ -505,6 +519,8 @@ def create_launch_cmd(
         parsed_kwargs["upload_tls_cert"] = kwargs["upload_tls_cert"]
     if "upload_tls_key" in kwargs:
         parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
+    if "provision" in kwargs:
+        parsed_kwargs["provision"] = str_to_bool(cast(str, kwargs["provision"]))
 
     if host in ["docker"]:
 
@@ -562,7 +578,6 @@ def create_launch_cmd(
                 f"Launching a VM locally requires: {' '.join(errors)}"
             )
     elif host in ["azure"]:
-
         check_azure_cli_installed()
 
         while not check_azure_authed():
@@ -1146,8 +1161,9 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
     return None
 
 
-def check_ip_for_ssh(host_ip: str, wait_time: int = 5) -> bool:
-    print(f"Checking VM at {host_ip} is up")
+def check_ip_for_ssh(host_ip: str, wait_time: int = 5, silent: bool = False) -> bool:
+    if not silent:
+        print(f"Checking VM at {host_ip} is up")
     checks = int(600 / wait_time)  # 10 minutes in 5 second chunks
     first_run = True
     while checks > 0:
@@ -1158,14 +1174,17 @@ def check_ip_for_ssh(host_ip: str, wait_time: int = 5) -> bool:
             result = sock.connect_ex((host_ip, 22))
             sock.close()
             if result == 0:
-                print(f"VM at {host_ip} is up!")
+                if not silent:
+                    print(f"VM at {host_ip} is up!")
                 return True
             else:
                 if first_run:
-                    print("Waiting for VM to start", end="", flush=True)
+                    if not silent:
+                        print("Waiting for VM to start", end="", flush=True)
                     first_run = False
                 else:
-                    print(".", end="", flush=True)
+                    if not silent:
+                        print(".", end="", flush=True)
         except Exception:  # nosec
             pass
     return False
@@ -1258,6 +1277,16 @@ def create_launch_gcp_cmd(
     host_up = check_ip_for_ssh(host_ip=host_ip)
     if not host_up:
         raise Exception(f"Something went wrong launching the VM at IP: {host_ip}.")
+
+    if "provision" in kwargs and not kwargs["provision"]:
+        print("Skipping automatic provisioning.")
+        print("VM created with:")
+        print(f"IP: {host_ip}")
+        print(f"User: {auth.username}")
+        print(f"Key: {auth.key_path}")
+        print("\nConnect with:")
+        print(f"ssh -i {auth.key_path} {auth.username}@{host_ip}")
+        sys.exit(0)
 
     # replace
     host_term.parse_input(host_ip)
@@ -1371,6 +1400,16 @@ def create_launch_azure_cmd(
     # replace
     host_term.parse_input(host_ip)
     verb.set_named_term_type(name="host", new_term=host_term)
+
+    if "provision" in kwargs and not kwargs["provision"]:
+        print("Skipping automatic provisioning.")
+        print("VM created with:")
+        print(f"IP: {host_ip}")
+        print(f"User: {username}")
+        print(f"Key: {key_path}")
+        print("\nConnect with:")
+        print(f"ssh -i {key_path} {username}@{host_ip}")
+        sys.exit(0)
 
     extra_kwargs = {
         "repo": repo,
@@ -1572,3 +1611,49 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 cli.add_command(debug)
+
+
+@click.command(help="Check health of an IP address or a resource group")
+@click.argument("ip_address", type=str)
+def check(ip_address: str) -> None:
+    if check_host(ip_address, silent=True):
+        base_host_status = "✅"
+    else:
+        base_host_status = "❌"
+
+    if check_login_page(ip_address, silent=True):
+        login_page_status = "✅"
+    else:
+        login_page_status = "❌"
+
+    if check_api_metadata(ip_address, silent=True):
+        backend_status = "✅"
+    else:
+        backend_status = "❌"
+
+    if check_ip_for_ssh(ip_address, silent=True):
+        ssh_status = "✅"
+    else:
+        ssh_status = "❌"
+
+    console = rich.get_console()
+    console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
+
+    table_contents = [
+        ["🔌", "Host", f"{ip_address}", base_host_status],
+        ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
+        ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
+        ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
+    ]
+
+    table = rich.table.Table()
+
+    table.add_column("PyGrid", style="magenta")
+    table.add_column("Info", justify="left")
+    table.add_column("", justify="left")
+    for row in table_contents:
+        table.add_row(row[1], row[2], row[3])
+    console.print(table)
+
+
+cli.add_command(check)

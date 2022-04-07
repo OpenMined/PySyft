@@ -16,6 +16,7 @@ on:
       - main
       - dev
       - "0.6.0"
+      - "0.7.0"
     paths:
       - ".github/workflows/syft-*.yml"
       - "packages/syft/**.py"
@@ -37,8 +38,8 @@ jobs:
       max-parallel: 3
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
-        python-version: [3.9]
-        torch-version: [1.10.0]
+        python-version: ["3.10"]
+        torch-version: [1.11.0]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -83,7 +84,10 @@ jobs:
         run: |
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
+          pip install pycapnp
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
+          pip install numpy==1.22.3
+          pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
 
       - name: Check import works without dev packages
         if: steps.changes.outputs.syft == 'true'

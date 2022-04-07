@@ -10,42 +10,42 @@ jobs:
     steps:
       - uses: actions/checkout@v2
         with:
-           token: ${{ secrets.SYFT_BUMP_TOKEN }}
+          token: ${{ secrets.SYFT_BUMP_TOKEN }}
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
-          python-version: "3.x"
+          python-version: "3.10"
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
           pip install --upgrade setuptools wheel twine tox bump2version
       - name: Bump the Version
         run: |
-           ls **/VERSION | xargs -I {} python {}
-           cat packages/grid/devspace.yaml | grep '0\.'
-           bump2version prenum --allow-dirty --no-commit
-           tox -e lint || true
-           ls **/VERSION | xargs -I {} python {}
-           cat packages/grid/devspace.yaml | grep '0\.'
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
+          bump2version prenum --allow-dirty --no-commit
+          tox -e lint || true
+          ls **/VERSION | xargs -I {} python {}
+          cat packages/grid/devspace.yaml | grep '0\.'
       - name: Commit changes
         uses: EndBug/add-and-commit@v7
         with:
-           author_name: Madhava Jay
-           author_email: madhava@openmined.org
-           message: "bump version"
-           add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/backend/pyproject.toml', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
+          author_name: Madhava Jay
+          author_email: madhava@openmined.org
+          message: "bump version"
+          add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
+          pull_strategy: NO-PULL
 
       - name: Build and publish
         env:
-           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
-           TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
         run: |
-           tox -e syft.publish
-           twine upload packages/syft/dist/*
+          tox -e syft.publish
+          twine upload packages/syft/dist/*
 
       - name: Set Grid package version
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
-
 
       - name: Set up QEMU
         uses: docker/setup-qemu-action@v1
@@ -76,7 +76,6 @@ jobs:
           file: ./packages/grid/backend/backend.dockerfile
           push: true
           tags: ${{ steps.meta_grid_backend.outputs.tags }}
-
 
       - name: Docker meta for Grid-Frontend
         id: meta_grid_frontend
