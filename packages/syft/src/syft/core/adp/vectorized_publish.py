@@ -52,16 +52,14 @@ def calculate_bounds_for_mechanism(
     max_val_array: jnp.ndarray,
     sigma: float,
 ) -> Tuple[jnp.ndarray, jnp.ndarray, jnp.array, jnp.array]:
-
     ones_like = jnp.ones_like(value_array)
-
     one_dim = jnp.reshape(ones_like, -1)
 
     worst_case_l2_norm = (
-        jnp.sqrt(jnp.sum(jnp.square(max_val_array - min_val_array))) * ones_like
+        jnp.sqrt(jnp.sum(jnp.square(max_val_array - min_val_array))) * one_dim
     )
 
-    l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) * ones_like
+    l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) * one_dim
     return l2_norm, worst_case_l2_norm, one_dim * sigma, one_dim
 
 
@@ -87,7 +85,7 @@ def vectorized_publish(
     # unique_data_subjects = data_subjects.one_hot_lookup
     # unique_data_subject_indices = np.arange(
 
-    print("RDP Params Calculation")
+    print("Starting RDP Params Calculation")
 
     t1 = time()
     # Calculate everything needed for RDP
@@ -103,13 +101,8 @@ def vectorized_publish(
 
     input_entities = data_subjects.data_subjects_indexed[0].reshape(-1)
     t2 = time()
-    print("RDP Param calculation time", t2 - t1)
+    print("Obtained RDP Params, calculation time", t2 - t1)
 
-    print("Obtained all parameters for RDP")
-
-    print("Initialized ledger!")
-
-    print("Max Sigma, Min Sigma", np.max(sigmas), np.min(sigmas))
     # Query budget spend of all unique entities
     rdp_params = RDPParams(
         sigmas=sigmas,
@@ -128,6 +121,9 @@ def vectorized_publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
         )
+        # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
+        reshaped_mask = mask.reshape(values.shape)
+        print("Fixed mask shape!")
         # here we have the final mask and highest possible spend has been applied
         # to the data scientists budget field in the database
 
@@ -138,7 +134,7 @@ def vectorized_publish(
 
         # multiply values by the inverted mask
         filtered_inputs = values * (
-            1 - mask
+            1 - reshaped_mask
         )  # + gauss(0, sigma)  # Double check that noise has mean of 0
         noise = secrets.SystemRandom().gauss(0, sigma)
         output = np.asarray(output_func(filtered_inputs) + noise)

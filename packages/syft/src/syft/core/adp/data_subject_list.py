@@ -104,7 +104,8 @@ class DataSubjectList:
         if isinstance(entities, list):
             entities = np.array(entities)
         one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
-
+        if entities_indexed.shape != entities.shape:
+            entities_indexed.resize(entities.shape)
         return DataSubjectList(one_hot_lookup, entities_indexed)
 
     # def __getitem__(self, key: Union[int, slice, str]) -> Union[Entity, str]:
@@ -131,7 +132,7 @@ class DataSubjectList:
         # If sum is used without any arguments then the result is always a singular value
         return DataSubjectList(
             self.one_hot_lookup.copy(),
-            self.data_subjects_indexed.reshape(1, len(self.data_subjects_indexed)),
+            self.data_subjects_indexed.flatten(),
         )
 
     @property

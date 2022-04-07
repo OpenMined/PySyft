@@ -71,7 +71,9 @@ def first_try_branch(
     entity_ids_query: np.ndarray,
     max_entity: int,
 ) -> jax.numpy.DeviceArray:
-    summed_constant = constant + rdp_constants.take(entity_ids_query)
+    summed_constant = constant.take(entity_ids_query) + rdp_constants.take(
+        entity_ids_query
+    )
     if max_entity < len(rdp_constants):
         return rdp_constants.at[entity_ids_query].set(summed_constant)
     else:
@@ -266,6 +268,10 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         constant = compute_rdp_constant(rdp_params, private)
         if self._rdp_constants.size == 0:
             self._rdp_constants = np.zeros_like(np.asarray(constant, constant.dtype))
+        print("constant: ", constant)
+        print("_rdp_constants: ", self._rdp_constants)
+        print("entity ids query", entity_ids_query)
+        print(jnp.max(entity_ids_query))
         self._rdp_constants = first_try_branch(
             constant,
             self._rdp_constants,

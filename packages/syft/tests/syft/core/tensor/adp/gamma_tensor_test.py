@@ -10,6 +10,7 @@ import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.entity import Entity
 from syft.core.adp.ledger_store import DictLedgerStore
+from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 
 
@@ -104,14 +105,16 @@ def test_gamma_publish(
     """Test basic serde for GammaTensor"""
     tensor1 = NDEPT(
         child=reference_data,
-        entities=[0, 1],
+        entities=np.random.choice([0, 1], reference_data.shape),
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-
+    assert tensor1.entities.data_subjects_indexed.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.sum()
+    assert isinstance(gamma_tensor1, GammaTensor)
+    assert reference_data.sum() == gamma_tensor1.value
+    assert (reference_data == gamma_tensor1.inputs).all()
 
-    print("gamma_tensor1", type(gamma_tensor1))
     ledger_store = DictLedgerStore()
     print(ledger_store.kv_store)
     user_key = b"1231"
@@ -136,5 +139,4 @@ def test_gamma_publish(
     # results = gamma_tensor1.publish(ledger=ledger, sigma=0.1)
     # print(results, results.dtype)
     # print(ledger_store.kv_store)
-
-    assert False
+    # assert False
