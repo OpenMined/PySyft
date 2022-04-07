@@ -524,7 +524,7 @@ class PhiTensorAncestor(TensorChainManager):
             )
 
         # PHASE 2: CREATE CHILD
-        if len(entities) == 1:
+        if not ndept and len(entities) == 1:
             # if there's only one entity - push a SingleEntityPhiTensor
             if isinstance(min_val, (float, int)):
                 min_vals = (self.child * 0) + min_val

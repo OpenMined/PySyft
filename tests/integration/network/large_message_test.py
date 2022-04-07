@@ -134,13 +134,7 @@ def test_large_blob_upload() -> None:
             entities = [Entity(name="ϕhishan") * reference_data.shape[0]]
         else:
             entity_name = "ϕhishan"
-            # Since one_hot_lookup is an array of ints, so hashing the entity_name to int
-            one_hot_lookup = np.array([hash(entity_name)])
-            data_subjects_indexed = np.zeros(reference_data.shape[0], dtype=np.uint32)
-            entities = DataSubjectList(
-                one_hot_lookup=one_hot_lookup,
-                data_subjects_indexed=data_subjects_indexed,
-            )
+            entities = DataSubjectList.from_objs([entity_name] * (multiplier * ndim))
 
         tweets_data = sy.Tensor(reference_data).private(
             min_val=0, max_val=30, entities=entities, ndept=ndept
