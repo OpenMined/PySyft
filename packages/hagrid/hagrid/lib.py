@@ -246,21 +246,18 @@ def get_version_module() -> Tuple[str, str]:
 
 
 # Check base route of an IP address
-def check_ip(ip: str) -> bool:
+def check_host(ip: str, silent: bool = False) -> bool:
     try:
-        url = f"http://{ip}"
-        response = requests.get(url)
-        if response.status_code == 200:
-            return True
-        else:
-            return False
+        socket.gethostbyname(ip)
+        return True
     except Exception as e:
-        print(f"Failed to check ip {ip}. {e}")
+        if not silent:
+            print(f"Failed to resolve host {ip}. {e}")
         return False
 
 
 # Check status of login page
-def check_login_page(ip: str) -> bool:
+def check_login_page(ip: str, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/login"
         response = requests.get(url)
@@ -269,12 +266,13 @@ def check_login_page(ip: str) -> bool:
         else:
             return False
     except Exception as e:
-        print(f"Failed to check login page {ip}. {e}")
+        if not silent:
+            print(f"Failed to check login page {ip}. {e}")
         return False
 
 
 # Check api metadata
-def check_api_metadata(ip: str) -> bool:
+def check_api_metadata(ip: str, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/api/v1/syft/metadata"
         response = requests.get(url)
@@ -283,7 +281,8 @@ def check_api_metadata(ip: str) -> bool:
         else:
             return False
     except Exception as e:
-        print(f"Failed to check api metadata {ip}. {e}")
+        if not silent:
+            print(f"Failed to check api metadata {ip}. {e}")
         return False
 
 
