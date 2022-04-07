@@ -14,7 +14,7 @@ from ....domain.domain_interface import DomainInterface
 from ....domain.registry import DomainMessageRegistry
 from ....vm.registry import VMMessageRegistry
 from ...permissions.permissions import BasePermission
-from ...permissions.user_permissions import NoRestriction
+from ...permissions.user_permissions import UserHasWritePermissionToData
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
 from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
@@ -55,7 +55,7 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry)
 
         try:
             debug(
-                f"Calling delete on Object with ID {self.payload.id_at_location} in store."
+                f"Calling delete on Object with ID {self.payload.id_at_location} in store."  # ignore
             )
             id_at_location = UID.from_string(self.payload.id_at_location)
             if not node.store.is_dataset(key=id_at_location):  # type: ignore
@@ -68,4 +68,4 @@ class ObjectDeleteMessage(SyftMessage, DomainMessageRegistry, VMMessageRegistry)
 
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""
-        return [NoRestriction]
+        return [UserHasWritePermissionToData]
