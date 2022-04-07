@@ -1407,7 +1407,7 @@ def create_launch_azure_cmd(
         print(f"IP: {host_ip}")
         print(f"User: {username}")
         print(f"Key: {key_path}")
-        print("Connect with: \n")
+        print("\nConnect with:")
         print(f"ssh -i {key_path} {username}@{host_ip}")
         sys.exit(0)
 
