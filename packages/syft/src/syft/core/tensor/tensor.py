@@ -11,6 +11,7 @@ from typing import Union
 
 # third party
 import numpy as np
+import pandas as pd
 import torch as th
 
 # syft absolute
@@ -368,6 +369,10 @@ class Tensor(
                 "Converting PyTorch tensor to numpy tensor for internal representation..."
             )
             child = to32bit(child.numpy())
+
+        # Added for convenience- might need to double check if dtype changes?
+        if isinstance(child, pd.Series):
+            child = child.to_numpy()
 
         if (
             not isinstance(child, PassthroughTensor)

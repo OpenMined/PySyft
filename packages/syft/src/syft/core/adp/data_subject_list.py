@@ -82,11 +82,16 @@ class DataSubjectList:
         getting a column from a pandas DataFrame, return an DataSubjectList"""
 
         # This will be the equivalent of the DataSubjectList.data_subjects_indexed
-        data_subjects = (
-            entities_dataframe_slice.to_numpy()
-            if not isinstance(entities_dataframe_slice, np.ndarray)
-            else entities_dataframe_slice
-        )
+        if not isinstance(entities_dataframe_slice, np.ndarray):
+            data_subjects = entities_dataframe_slice.to_numpy()
+        else:
+            data_subjects = entities_dataframe_slice
+
+        # data_subjects = (
+        #     entities_dataframe_slice.to_numpy()
+        #     if not isinstance(entities_dataframe_slice, np.ndarray)
+        #     else entities_dataframe_slice
+        # )
         unique_data_subjects, data_subjects_indexed = np.unique(
             data_subjects, return_inverse=True
         )
