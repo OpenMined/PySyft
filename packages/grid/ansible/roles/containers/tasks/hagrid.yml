@@ -14,7 +14,7 @@
 
 - name: Copy code checkout to build
   ansible.builtin.copy:
-    src: "{{ syft_dir }}"
+    src: "{{ syft_dir }}/"
     dest: "{{ build_dir }}"
     force: yes
     remote_src: yes
