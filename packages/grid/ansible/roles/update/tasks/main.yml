@@ -28,7 +28,6 @@
 
 - name: Run containers.sh on startup
   ansible.builtin.template:
-    disabled: "{{ not install | bool }}"
     src: "../../../../scripts/rc.local.j2"
     dest: /etc/rc.local
     owner: root
