@@ -101,8 +101,6 @@ class NetworkClient(Client):
             )
         )
 
-        return None
-
     @property
     def device(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a device
@@ -126,8 +124,6 @@ class NetworkClient(Client):
             )
         )
 
-        return None
-
     @property
     def vm(self) -> Optional[Location]:
         """This client points to a node, if that node lives within a vm
@@ -148,8 +144,6 @@ class NetworkClient(Client):
         traceback_and_raise(
             Exception("This client points to a network, you don't need a VM Location.")
         )
-
-        return None
 
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.name}>"

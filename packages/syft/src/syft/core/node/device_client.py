@@ -93,7 +93,5 @@ class DeviceClient(Client):
             Exception("This client points to a Device, you don't need a VM Location.")
         )
 
-        return None
-
     def __repr__(self) -> str:
         return f"<{type(self).__name__}: {self.device}>"
