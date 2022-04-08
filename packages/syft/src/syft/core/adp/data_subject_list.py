@@ -101,8 +101,8 @@ class DataSubjectList:
 
     @staticmethod
     def from_objs(entities: Union[np.ndarray, list]) -> DataSubjectList:
-        if isinstance(entities, list):
-            entities = np.array(entities)
+
+        entities = np.array(entities, copy=False)
         one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
         if entities_indexed.shape != entities.shape:
             entities_indexed.resize(entities.shape)
