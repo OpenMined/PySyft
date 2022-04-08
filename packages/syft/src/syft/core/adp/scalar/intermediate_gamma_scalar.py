@@ -215,7 +215,7 @@ class IntermediateGammaScalar(IntermediateScalar):
         data_dependent: bool = True,
         force_all_searches: bool = False,
         try_hessian_shortcut: bool = False,
-    ) -> TypeList[optimize.OptimizeResult]:
+    ) -> TypeTuple[TypeList[float], Any]:
         return max_lipschitz_via_jacobian(
             scalars=[self],
             input_entity=input_entity,
@@ -227,14 +227,8 @@ class IntermediateGammaScalar(IntermediateScalar):
     @property
     def max_lipschitz(self) -> float:
         result = self.max_lipschitz_via_jacobian()[0][-1]
-        if isinstance(result, float):
-            return -result
-        else:
-            return -float(result.fun)
+        return -result
 
     def max_lipschitz_wrt_entity(self, entity: Entity) -> float:
         result = self.max_lipschitz_via_jacobian(input_entity=entity)[0][-1]
-        if isinstance(result, float):
-            return -result
-        else:
-            return -float(result.fun)
+        return -result
