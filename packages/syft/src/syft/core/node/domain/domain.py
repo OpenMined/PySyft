@@ -79,7 +79,7 @@ from ..common.node_service.vpn.vpn_service import VPNStatusService
 from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
-from .client import DomainClient
+from .domain_client import DomainClient
 from .service import DomainServiceClass
 
 

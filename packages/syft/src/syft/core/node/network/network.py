@@ -55,7 +55,7 @@ from ..common.node_service.vpn.vpn_service import VPNRegisterService
 from ..common.node_service.vpn.vpn_service import VPNStatusService
 from ..domain.client import DomainClient
 from ..domain.domain import Domain
-from .client import NetworkClient
+from .network_client import NetworkClient
 
 
 class Network(Node):

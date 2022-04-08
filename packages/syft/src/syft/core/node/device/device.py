@@ -17,9 +17,9 @@ from ...io.location import Location
 from ...io.location import SpecificLocation
 from ..common.node import Node
 from ..common.node_manager.dict_store import DictStore
-from ..vm.client import VirtualMachineClient
 from ..vm.vm import VirtualMachine
-from .client import DeviceClient
+from ..vm.vm_client import VirtualMachineClient
+from .device_client import DeviceClient
 
 
 @final
