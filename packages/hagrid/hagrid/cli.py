@@ -2,9 +2,11 @@
 from datetime import datetime
 import json
 import os
+from os import urandom
 import re
 import socket
 import stat
+import string
 import subprocess
 import sys
 import time
@@ -50,6 +52,18 @@ from .lib import is_editable_mode
 from .lib import name_tag
 from .lib import use_branch
 from .style import RichGroup
+
+
+def get_azure_image(short_name: str) -> str:
+    prebuild_070 = (
+        "madhavajay1632269232059:openmined_mj_grid_domain_ubuntu_1:domain_070:latest"
+    )
+    fresh_ubuntu = "Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest"
+    if short_name == "default":
+        return fresh_ubuntu
+    elif short_name == "domain_0.7.0":
+        return prebuild_070
+    raise Exception(f"Image name doesn't exist: {short_name}. Try: default or 0.7.0")
 
 
 @click.group(cls=RichGroup)
@@ -138,6 +152,11 @@ def clean(location: str) -> None:
     help="Optional: print the cmd without running it",
 )
 @click.option(
+    "--jupyter",
+    is_flag=True,
+    help="Optional: enable Jupyter Notebooks",
+)
+@click.option(
     "--build",
     default="true",
     required=False,
@@ -199,6 +218,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: flag to use blob storage",
 )
+@click.option(
+    "--image_name",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: image to use for the VM",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -230,6 +256,21 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
                 subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
+    display_jupyter_token(cmd)
+
+
+def display_jupyter_token(cmd: str) -> None:
+    token = extract_jupyter_token(cmd=cmd)
+    if token is not None:
+        print(f"Jupyter Token: {token}")
+
+
+def extract_jupyter_token(cmd: str) -> Optional[str]:
+    matcher = r"jupyter_token='(.+?)'"
+    token = re.findall(matcher, cmd)
+    if len(token) == 1:
+        return token[0]
+    return None
 
 
 def hide_password(cmd: str) -> str:
@@ -521,6 +562,16 @@ def create_launch_cmd(
         parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
     if "provision" in kwargs:
         parsed_kwargs["provision"] = str_to_bool(cast(str, kwargs["provision"]))
+
+    if "image_name" in kwargs and kwargs["image_name"] is not None:
+        parsed_kwargs["image_name"] = kwargs["image_name"]
+    else:
+        parsed_kwargs["image_name"] = "default"
+
+    if "jupyter" in kwargs and kwargs["jupyter"] is not None:
+        parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
+    else:
+        parsed_kwargs["jupyter"] = False
 
     if host in ["docker"]:
 
@@ -1199,14 +1250,19 @@ def check_ip_for_ssh(host_ip: str, wait_time: int = 5, silent: bool = False) -> 
 
 
 def make_vm_azure(
-    node_name: str, resource_group: str, username: str, key_path: str, size: str
+    node_name: str,
+    resource_group: str,
+    username: str,
+    key_path: str,
+    size: str,
+    image_name: str,
 ) -> Optional[str]:
+    disk_size_gb = "200"
     public_key_path = private_to_public_key(
         private_key_path=key_path, username=username
     )
-
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
-    cmd += "--image Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest "
+    cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
     cmd += "--public-ip-sku Standard --authentication-type ssh "
     cmd += f"--ssh-key-values {public_key_path} --admin-username {username}"
     host_ip: Optional[str] = None
@@ -1376,13 +1432,15 @@ def create_launch_azure_cmd(
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
 ) -> str:
-    # resource group
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
     # vm
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
-    host_ip = make_vm_azure(snake_name, resource_group, username, key_path, size)
+    image_name = get_azure_image(kwargs["image_name"])
+    host_ip = make_vm_azure(
+        snake_name, resource_group, username, key_path, size, image_name
+    )
 
     # open port 80
     open_port_vm_azure(
@@ -1401,6 +1459,16 @@ def create_launch_azure_cmd(
         port=443,
         priority=501,
     )
+
+    if kwargs["jupyter"]:
+        # open port 8888
+        open_port_vm_azure(
+            resource_group=resource_group,
+            node_name=snake_name,
+            port_name="Jupyter",
+            port=8888,
+            priority=502,
+        )
 
     # get old host
     host_term = verb.get_named_term_hostgrammar(name="host")
@@ -1562,6 +1630,12 @@ def create_launch_custom_cmd(
             and len(kwargs["upload_tls_cert"]) > 0
         ):
             ANSIBLE_ARGS["upload_tls_cert"] = kwargs["upload_tls_cert"]
+
+        if kwargs["jupyter"] is True:
+            ANSIBLE_ARGS["jupyter"] = "true"
+            ANSIBLE_ARGS["jupyter_token"] = generate_sec_random_password(
+                length=48, alphabet=HEX_LOWER_ALPHABET
+            )
 
         if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
             options = kwargs["ansible_extras"].split(",")
@@ -1800,3 +1874,19 @@ def check(ip_address: str) -> None:
 
 
 cli.add_command(check)
+
+DEFAULT_ALPHABET = string.ascii_letters + string.digits + string.punctuation
+HEX_LOWER_ALPHABET = "".join(sorted(list(set(string.hexdigits.lower()))))
+
+
+def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) -> str:
+    if not isinstance(length, int) or length < 10:
+        raise ValueError(
+            "Password should have a positive safe length of at least 10 characters!"
+        )
+
+    # original Python 2 (urandom returns str)
+    # return "".join(chars[ord(c) % len(chars)] for c in urandom(length))
+
+    # Python 3 (urandom returns bytes)
+    return "".join(alphabet[c % len(alphabet)] for c in urandom(length))

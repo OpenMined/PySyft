@@ -1,10 +1,14 @@
 ---
 - name: Install HAGrid
+  retries: 3
+  delay: 3
   shell: "runuser -l {{ om_user }} -c 'pip install -e {{ build_dir }}/packages/hagrid'"
   become: yes
   when: vagrant is not defined and install == "true"
 
 - name: Install HAGrid
+  retries: 3
+  delay: 3
   shell: "runuser -l {{ om_user }} -c 'pip install -e {{ syft_dir }}/packages/hagrid'"
   become: yes
   when: vagrant is defined and install == "true"
