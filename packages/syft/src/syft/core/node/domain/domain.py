@@ -217,22 +217,25 @@ class Domain(Node):
         return self
 
     def loud_print(self) -> None:
-        install_path = os.path.abspath(
-            os.path.join(os.path.realpath(__file__), "../../../../img/")
-        )
-        ascii_magic.to_terminal(
-            ascii_magic.from_image_file(
-                img_path=install_path + "/pygrid.png", columns=83
+        try:
+            install_path = os.path.abspath(
+                os.path.join(os.path.realpath(__file__), "../../../../img/")
             )
-        )
+            ascii_magic.to_terminal(
+                ascii_magic.from_image_file(
+                    img_path=install_path + "/pygrid.png", columns=83
+                )
+            )
 
-        print(
-            r"""
-                                                     __
-                                                    |  \  _   _   _  .  _
-                                                    |__/ (_) ||| (_| | | )
-"""
-        )
+            print(
+                r"""
+                                                         __
+                                                        |  \  _   _   _  .  _
+                                                        |__/ (_) ||| (_| | | )
+    """
+            )
+        except Exception:
+            print("DOMAIN (broken file path)")
 
     @property
     def icon(self) -> str:

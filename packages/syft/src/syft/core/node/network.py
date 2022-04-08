@@ -177,8 +177,8 @@ class Network(Node):
                                                         | \| (- |_ \)/ (_) |  |(
     """
             )
-        except Exception as e:
-            print('NETOWRK NODE (print fail backup)')
+        except Exception:
+            print("NETOWRK NODE (print fail backup)")
 
     @property
     def icon(self) -> str:
