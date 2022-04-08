@@ -1,6 +1,6 @@
 ---
 - name: Install Tox
-  shell: "runuser -l {{ om_user }} -c 'pip install tox"
+  shell: "runuser -l {{ om_user }} -c 'pip install tox'"
   become: yes
   when: vagrant is not defined and install == "true" and jupyter == "true"
 
