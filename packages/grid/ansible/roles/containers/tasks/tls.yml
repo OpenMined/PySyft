@@ -7,6 +7,7 @@
     mode: 0600
     owner: "{{ om_user }}"
     group: "{{ om_group }}"
+  when: install == "true"
 
 - name: Install key.pem
   copy:
@@ -15,7 +16,7 @@
     owner: "{{ om_user }}"
     group: "{{ om_user }}"
     mode: 0600
-  when: upload_tls_key != ""
+  when: upload_tls_key != "" and install == "true"
 
 - name: Install cert.pem
   copy:
@@ -24,4 +25,4 @@
     owner: "{{ om_user }}"
     group: "{{ om_user }}"
     mode: 0600
-  when: upload_tls_cert != ""
+  when: upload_tls_cert != "" and install == "true"
