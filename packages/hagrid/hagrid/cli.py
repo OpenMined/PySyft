@@ -1147,6 +1147,14 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
     return None
 
 
+def is_valid_ip(host_or_ip: str) -> bool:
+    matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
+    ips = re.findall(matcher, host_or_ip.strip())
+    if len(ips) == 1:
+        return True
+    return False
+
+
 def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
     output = stdout.decode("utf-8")
 
@@ -1423,6 +1431,56 @@ def create_launch_azure_cmd(
     return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
 
 
+def create_ansible_land_cmd(
+    verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
+) -> str:
+    try:
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        print("Landing PyGrid node on port " + str(host_term.port) + "!\n")
+
+        print("  - PORT: " + str(host_term.port))
+        print("\n")
+
+        playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
+        ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+        auth = cast(AuthCredentials, auth)
+
+        if not os.path.exists(playbook_path):
+            print(f"Can't find playbook site.yml at: {playbook_path}")
+        cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook "
+        if host_term.host == "localhost":
+            cmd += "--connection=local "
+        cmd += f"-i {host_term.host}, {playbook_path}"
+        if host_term.host != "localhost" and kwargs["auth_type"] == "key":
+            cmd += f" --private-key {auth.key_path} --user {auth.username}"
+        elif host_term.host != "localhost" and kwargs["auth_type"] == "password":
+            cmd += f" -c paramiko --user {auth.username}"
+
+        ANSIBLE_ARGS = {"install": "false"}
+
+        if host_term.host != "localhost" and kwargs["auth_type"] == "password":
+            ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]
+
+        if host_term.host == "localhost":
+            ANSIBLE_ARGS["local"] = "true"
+
+        if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
+            options = kwargs["ansible_extras"].split(",")
+            for option in options:
+                parts = option.strip().split("=")
+                if len(parts) == 2:
+                    ANSIBLE_ARGS[parts[0]] = parts[1]
+
+        for k, v in ANSIBLE_ARGS.items():
+            cmd += f" -e \"{k}='{v}'\""
+
+        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+        return cmd
+    except Exception as e:
+        print(f"Failed to construct custom deployment cmd: {cmd}. {e}")
+        raise e
+
+
 def create_launch_custom_cmd(
     verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
 ) -> str:
@@ -1527,16 +1585,85 @@ def create_launch_custom_cmd(
 
 def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
-    host = host_term.host
-
-    if verb.get_named_term_grammar("node_name").input == "all":
-        # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
-        return "docker rm `docker ps -aq` --force"
+    host = host_term.host if host_term.host is not None else ""
 
     if host in ["docker"]:
+        if verb.get_named_term_grammar("node_name").input == "all":
+            # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+            return "docker rm `docker ps -aq` --force"
+
         version = check_docker_version()
         if version:
             return create_land_docker_cmd(verb=verb)
+    elif host == "localhost" or is_valid_ip(host):
+        parsed_kwargs = {}
+        if DEPENDENCIES["ansible-playbook"]:
+            if host != "localhost":
+                parsed_kwargs["username"] = ask(
+                    question=Question(
+                        var_name="username",
+                        question=f"Username for {host} with sudo privledges?",
+                        default=arg_cache.username,
+                        kind="string",
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                parsed_kwargs["auth_type"] = ask(
+                    question=Question(
+                        var_name="auth_type",
+                        question="Do you want to login with a key or password",
+                        default=arg_cache.auth_type,
+                        kind="option",
+                        options=["key", "password"],
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                if parsed_kwargs["auth_type"] == "key":
+                    parsed_kwargs["key_path"] = ask(
+                        question=Question(
+                            var_name="key_path",
+                            question=f"Private key to access {parsed_kwargs['username']}@{host}?",
+                            default=arg_cache.key_path,
+                            kind="path",
+                            cache=True,
+                        ),
+                        kwargs=kwargs,
+                    )
+                elif parsed_kwargs["auth_type"] == "password":
+                    parsed_kwargs["password"] = ask(
+                        question=Question(
+                            var_name="password",
+                            question=f"Password for {parsed_kwargs['username']}@{host}?",
+                            kind="password",
+                        ),
+                        kwargs=kwargs,
+                    )
+
+            auth = None
+            if host != "localhost":
+                if parsed_kwargs["auth_type"] == "key":
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["key_path"],
+                    )
+                else:
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["password"],
+                    )
+                if not auth.valid:
+                    raise Exception(f"Login Credentials are not valid. {auth}")
+            parsed_kwargs["ansible_extras"] = kwargs["ansible_extras"]
+            return create_ansible_land_cmd(verb=verb, auth=auth, kwargs=parsed_kwargs)
+        else:
+            errors = []
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            raise MissingDependency(
+                f"Launching a Custom VM requires: {' '.join(errors)}"
+            )
 
     host_options = ", ".join(allowed_hosts)
     raise MissingDependency(
@@ -1560,8 +1687,21 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
 
 @click.command(help="Stop a running PyGrid domain/network node.")
 @click.argument("args", type=str, nargs=-1)
+@click.option(
+    "--cmd",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: print the cmd without running it",
+)
+@click.option(
+    "--ansible_extras",
+    default="",
+    type=str,
+)
 def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_land_verb()
+
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -1569,16 +1709,19 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(e)
         return
 
-    # if len(args) == 0:
-    #     print("use interactive menu to select node?")
-
     try:
         cmd = create_land_cmd(verb=verb, kwargs=kwargs)
     except Exception as e:
         print(f"{e}")
         return
-    print("Running: \n", cmd)
-    subprocess.call(cmd, shell=True)
+    print("Running: \n", hide_password(cmd=cmd))
+
+    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+        print("Running: \n", cmd)
+        try:
+            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
+        except Exception as e:
+            print(f"Failed to run cmd: {cmd}. {e}")
 
 
 cli.add_command(launch)

@@ -5,7 +5,7 @@
     chdir: "{{ syft_dir }}/scripts"
   become_user: "{{ om_user }}"
   ignore_errors: yes
-  when: docker_volume_destroy is not defined
+  when: docker_volume_destroy is not defined and install == "true"
 
 - name: Kill Docker Containers
   shell: "docker rm $(docker ps -qa) --force || true"
@@ -17,19 +17,20 @@
   args:
     chdir: "{{ build_dir }}/packages/grid"
   become_user: "{{ om_user }}"
-  when: vagrant is not defined
+  when: vagrant is not defined and install == "true"
 
 - name: Build Docker Images
   shell: "docker compose build"
   args:
     chdir: "{{ syft_dir }}/packages/grid"
   become_user: "{{ om_user }}"
-  when: vagrant is defined
+  when: vagrant is defined and install == "true"
 
 - name: Remove old Docker Images
   shell: "docker rmi $(docker images -qa -f 'dangling=true') || true"
   become_user: "{{ om_user }}"
   ignore_errors: yes
+  when: install == "true"
 
 - name: Remove Docker Volumes
   shell: "docker volume prune -f"
@@ -41,10 +42,10 @@
   shell:
     cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tail=false'
   become: yes
-  when: tls == "false"
+  when: tls == "false" and install == "true"
 
 - name: Start Docker Containers with TLS
   shell:
     cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tail=false --tls --cert_store_path={{ cert_store_path }}'
   become: yes
-  when: tls == "true"
+  when: tls == "true" and install == "true"
