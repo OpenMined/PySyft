@@ -11,7 +11,7 @@ from ....core.node.common.node_service.generic_payload.syft_message import (
     NewSyftMessage as SyftMessage,
 )
 from ....core.node.common.node_service.node_service import NodeService
-from .registry import DomainMessageRegistry
+from .domain_msg_registry import DomainMessageRegistry
 
 
 class DomainServiceClass(NodeService):

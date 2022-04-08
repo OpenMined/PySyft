@@ -80,7 +80,7 @@ from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
 from .domain_client import DomainClient
-from .service import DomainServiceClass
+from .domain_service import DomainServiceClass
 
 
 class Domain(Node):
