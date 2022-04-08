@@ -16,46 +16,46 @@ import names
 import pandas as pd
 
 # relative
-from ....logger import traceback_and_raise
-from ....util import validate_field
-from ...common.message import SyftMessage
-from ...common.serde.serialize import _serialize as serialize  # noqa: F401
-from ...common.uid import UID
-from ...io.address import Address
-from ...io.location import Location
-from ...io.location.specific import SpecificLocation
-from ...io.route import Route
-from ...node.common.node_service.network_search.network_search_messages import (
+from ...logger import traceback_and_raise
+from ...util import validate_field
+from ..common.message import SyftMessage
+from ..common.serde.serialize import _serialize as serialize  # noqa: F401
+from ..common.uid import UID
+from ..io.address import Address
+from ..io.location import Location
+from ..io.location.specific import SpecificLocation
+from ..io.route import Route
+from ..node.common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
-from ...pointer.pointer import Pointer
-from ...store.proxy_dataset import ProxyDataset
-from ...tensor.autodp.adp_tensor import ADPTensor
-from ...tensor.tensor import Tensor
-from ..abstract.node import AbstractNodeClient
-from ..common.action.exception_action import ExceptionMessage
-from ..common.client import Client
-from ..common.client_manager.association_api import AssociationRequestAPI
-from ..common.client_manager.dataset_api import DatasetRequestAPI
-from ..common.client_manager.role_api import RoleRequestAPI
-from ..common.client_manager.user_api import UserRequestAPI
-from ..common.client_manager.vpn_api import VPNAPI
-from ..common.node_service.get_remaining_budget.get_remaining_budget_messages import (
+from ..pointer.pointer import Pointer
+from ..store.proxy_dataset import ProxyDataset
+from ..tensor.autodp.adp_tensor import ADPTensor
+from ..tensor.tensor import Tensor
+from .abstract.node import AbstractNodeClient
+from .common.action.exception_action import ExceptionMessage
+from .common.client import Client
+from .common.client_manager.association_api import AssociationRequestAPI
+from .common.client_manager.dataset_api import DatasetRequestAPI
+from .common.client_manager.role_api import RoleRequestAPI
+from .common.client_manager.user_api import UserRequestAPI
+from .common.client_manager.vpn_api import VPNAPI
+from .common.node_service.get_remaining_budget.get_remaining_budget_messages import (
     GetRemainingBudgetMessage,
 )
-from ..common.node_service.node_setup.node_setup_messages import GetSetUpMessage
-from ..common.node_service.object_request.object_request_messages import (
+from .common.node_service.node_setup.node_setup_messages import GetSetUpMessage
+from .common.node_service.object_request.object_request_messages import (
     CreateBudgetRequestMessage,
 )
-from ..common.node_service.object_transfer.object_transfer_messages import (
+from .common.node_service.object_transfer.object_transfer_messages import (
     LoadObjectMessage,
 )
-from ..common.node_service.request_receiver.request_receiver_messages import (
+from .common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
-from ..common.node_service.simple.obj_exists import DoesObjectExistMessage
-from ..common.util import check_send_to_blob_storage
-from ..common.util import upload_to_s3_using_presigned
+from .common.node_service.simple.obj_exists import DoesObjectExistMessage
+from .common.util import check_send_to_blob_storage
+from .common.util import upload_to_s3_using_presigned
 from .enums import PyGridClientEnums
 from .enums import RequestAPIFields
 
@@ -74,7 +74,7 @@ class RequestQueueClient(AbstractNodeClient):
     def requests(self) -> List[RequestMessage]:
 
         # relative
-        from ..common.node_service.object_request.object_request_messages import (
+        from .common.node_service.object_request.object_request_messages import (
             GetAllRequestsMessage,
         )
 

@@ -60,7 +60,7 @@ from .object_request_messages import UpdateRequestResponse
 
 if TYPE_CHECKING:
     # relative
-    from ....domain.domain import Domain
+    from ....domain import Domain
 
 
 def create_request_msg(

@@ -5,12 +5,12 @@ from typing import Optional
 from nacl.signing import VerifyKey
 
 # relative
-from ....core.node.abstract.node_service_interface import NodeServiceInterface
-from ....core.node.common.node_service.auth import service_auth
-from ....core.node.common.node_service.generic_payload.syft_message import (
+from ...core.node.abstract.node_service_interface import NodeServiceInterface
+from ...core.node.common.node_service.auth import service_auth
+from ...core.node.common.node_service.generic_payload.syft_message import (
     NewSyftMessage as SyftMessage,
 )
-from ....core.node.common.node_service.node_service import NodeService
+from ...core.node.common.node_service.node_service import NodeService
 from .domain_msg_registry import DomainMessageRegistry
 
 

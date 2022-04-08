@@ -53,8 +53,8 @@ from .common.node_service.vpn.vpn_service import VPNConnectService
 from .common.node_service.vpn.vpn_service import VPNJoinService
 from .common.node_service.vpn.vpn_service import VPNRegisterService
 from .common.node_service.vpn.vpn_service import VPNStatusService
-from .domain.domain import Domain
-from .domain.domain_client import DomainClient
+from .domain import Domain
+from .domain_client import DomainClient
 from .network_client import NetworkClient
 
 

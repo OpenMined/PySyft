@@ -16,7 +16,7 @@ from pandas import DataFrame
 from .....experimental_flags import flags
 from ....common.message import SyftMessage  # type: ignore
 from ...abstract.node import AbstractNodeClient
-from ...domain.enums import RequestAPIFields
+from ...enums import RequestAPIFields
 from ..action.exception_action import ExceptionMessage
 from ..node_service.generic_payload.messages import GenericPayloadMessageWithReply
 from ..node_service.generic_payload.syft_message import NewSyftMessage
