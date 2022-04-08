@@ -1,6 +1,6 @@
 ---
 - name: Install Tox
-  shell: "pip install tox"
+  shell: "runuser -l {{ om_user }} -c 'pip install tox"
   become: yes
   when: vagrant is not defined and install == "true" and jupyter == "true"
 
@@ -8,6 +8,6 @@
   ansible.builtin.cron:
     disabled: "{{ not install | bool }}"
     name: "Jupyter Notebooks server"
-    job: "{{ syft_dir }}/packages/grid/scripts/jupyter.sh {{ syft_dir }} {{ jupyter_token }}"
+    job: "{{ syft_dir }}/packages/grid/scripts/jupyter.sh {{ syft_dir }} {{ om_user }} {{ jupyter_token }}"
   become: yes
   when: vagrant is not defined and jupyter == "true"
