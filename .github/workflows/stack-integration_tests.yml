@@ -260,6 +260,8 @@ jobs:
         env:
           HAGRID_ART: false
         run: |
+          pip install jaxlib[cpu]==0.3.2 -f https://whls.blob.core.windows.net/unstable/index.html --use-deprecated legacy-resolver
+          pip install jax==0.3.2 -f https://whls.blob.core.windows.net/unstable/index.html --use-deprecated legacy-resolver
           pip install -e packages/hagrid
           pip install cython
           pip install pycapnp

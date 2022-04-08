@@ -8,7 +8,6 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
-from syft.core.adp.entity import Entity
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
@@ -67,7 +66,7 @@ def test_gamma_serde(
     """Test basic serde for GammaTensor"""
     tensor1 = NDEPT(
         child=reference_data,
-        entities=np.random.choice([0, 1], reference_data.shape),
+        entities=np.random.choice(["0", "1"], reference_data.shape),
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
@@ -76,7 +75,7 @@ def test_gamma_serde(
 
     # Checks to ensure gamma tensor was properly created
     assert isinstance(gamma_tensor1, GammaTensor)
-    assert (gamma_tensor1.value == reference_data.sum())
+    assert gamma_tensor1.value == reference_data.sum()
     assert (gamma_tensor1.inputs == reference_data).all()
 
     ser = sy.serialize(gamma_tensor1, to_bytes=True)
@@ -133,8 +132,3 @@ def test_gamma_publish(
     print(results)
     print(results, results.dtype)
     print(ledger_store.kv_store)
-
-    # results = gamma_tensor1.publish(ledger=ledger, sigma=0.1)
-    # print(results, results.dtype)
-    # print(ledger_store.kv_store)
-    # assert False
