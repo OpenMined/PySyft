@@ -161,21 +161,24 @@ class Network(Node):
         self.set_node_uid()
 
     def loud_print(self) -> None:
-        install_path = os.path.abspath(
-            os.path.join(os.path.realpath(__file__), "../../../../img/")
-        )
-        ascii_magic.to_terminal(
-            ascii_magic.from_image_file(
-                img_path=install_path + "/pygrid.png", columns=83
+        try:
+            install_path = os.path.abspath(
+                os.path.join(os.path.realpath(__file__), "../../../img/")
             )
-        )
+            ascii_magic.to_terminal(
+                ascii_magic.from_image_file(
+                    img_path=install_path + "/pygrid.png", columns=83
+                )
+            )
 
-        print(
-            r"""
-                                                    |\ |  _ |_      _   _ |
-                                                    | \| (- |_ \)/ (_) |  |(
-"""
-        )
+            print(
+                r"""
+                                                        |\ |  _ |_      _   _ |
+                                                        | \| (- |_ \)/ (_) |  |(
+    """
+            )
+        except Exception as e:
+            print('NETOWRK NODE (print fail backup)')
 
     @property
     def icon(self) -> str:
