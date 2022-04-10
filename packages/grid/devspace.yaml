@@ -29,6 +29,8 @@ vars:
     command: "python ../../VERSION hash"
   - name: NODE_TYPE
     value: "network"
+  - name: GENERATE_SECURE_RANDOM_PASSWORD
+    value: "python ../hagrid/hagrid/rand_sec.py"
 
 images:
   backend:
