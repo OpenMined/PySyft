@@ -97,7 +97,7 @@ class GammaTensor:
     is_linear: bool = True
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
     id: str = flax.struct.field(
-        pytree_node=False, default_factory=lambda: str(randint(0, 2**32 - 1))
+        pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
     inputs: jnp.array = np.array([], dtype=np.int64)
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
