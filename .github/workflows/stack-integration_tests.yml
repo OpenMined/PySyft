@@ -285,19 +285,19 @@ jobs:
           tox -e stack.test.integration.windows
         shell: cmd
 
-      # - name: Stop all running containers
-      #   if: steps.changes.outputs.stack == 'true'
-      #   continue-on-error: true
-      #   run: |
-      #     powershell.exe -command "docker rm $(docker ps -aq) --force"
-      #   shell: cmd
+      - name: Stop all running containers
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker rm $(docker ps -aq) --force"
+        shell: cmd
 
-      # - name: Prune all volumes
-      #   if: steps.changes.outputs.stack == 'true'
-      #   continue-on-error: true
-      #   run: |
-      #     powershell.exe -command "docker volume prune --force"
-      #   shell: cmd
+      - name: Prune all volumes
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker volume prune --force"
+        shell: cmd
 
   stack-integration-tests-smpc:
     strategy:

@@ -222,7 +222,7 @@ class GammaTensor:
         # into vectorized_publish
         if sigma is None:
             sigma = self.value.mean() / 4
-        print("Publish inputs", self.inputs, self.inputs.dtype)
+
         return vectorized_publish(
             min_vals=self.min_val,
             max_vals=self.max_val,
