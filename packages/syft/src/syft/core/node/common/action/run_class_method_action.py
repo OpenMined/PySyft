@@ -240,7 +240,6 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 resolved_self.write_permissions = result_write_permissions
 
         context.OBJ_CACHE[str(self.id_at_location.no_dash)] = result
-        print("Stored CACHE : ", context.OBJ_CACHE)
 
         # TODO: Upload object to seaweed store, instead of storing in redis
         # create a proxy object class and store it here.

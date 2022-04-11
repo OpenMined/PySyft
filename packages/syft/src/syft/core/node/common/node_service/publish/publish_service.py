@@ -39,10 +39,8 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                     "PublishScalarsService:36: TRY: publish_object = node.store.get(publish_id)"
                 )
                 if publish_id.no_dash in context.OBJ_CACHE:
-                    print("Cache HIT --------------")
                     publish_object = context.OBJ_CACHE[publish_id.no_dash]
                 else:
-                    print("Cache Miss _v_")
                     publish_object = node.store.get(publish_id)
                 print(
                     "PublishScalarsService:38: SUCCESS: publish_object = node.store.get(publish_id)"
