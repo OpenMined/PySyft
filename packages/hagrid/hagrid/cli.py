@@ -1890,3 +1890,67 @@ def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) 
 
     # Python 3 (urandom returns bytes)
     return "".join(alphabet[c % len(alphabet)] for c in urandom(length))
+
+
+def ssh_into_remote_machine(
+    host_ip: str, private_key_path: str, username: str, cmd: str = ""
+) -> None:
+    """Access or execute command on the remote machine.
+
+    Args:
+        host_ip (str): ip address of the VM
+        private_key_path (str): private key of the VM
+        username (str): username on the VM
+        cmd (str, optional): Command to execute on the remote machine. Defaults to "".
+    """
+    try:
+        subprocess.call(
+            ["ssh", "-i", f"{private_key_path}", f"{username}@{host_ip}", cmd]
+        )
+    except Exception as e:
+        raise e
+
+
+@click.command(help="SSH into the IP address or a resource group")
+@click.argument("ip_address", type=str)
+@click.option(
+    "--cmd",
+    type=str,
+    required=False,
+    default="",
+    help="Optional: command to execute on the remote machine.",
+)
+def ssh(ip_address: str, cmd: str) -> None:
+    kwargs: dict = {}
+    if check_ip_for_ssh(ip_address, wait_time=5, silent=False):
+        azure_key_path = ask(
+            question=Question(
+                var_name="azure_key_path",
+                question="What is the path to the private key of the VM?",
+                default=arg_cache.azure_key_path,
+                kind="string",
+                cache=True,
+            ),
+            kwargs=kwargs,
+        )
+        azure_username = ask(
+            question=Question(
+                var_name="azure_username",
+                question="What is the username for the VM?",
+                default=arg_cache.azure_username,
+                kind="string",
+                cache=True,
+            ),
+            kwargs=kwargs,
+        )
+
+        # SSH into the remote and execute the command
+        ssh_into_remote_machine(
+            host_ip=ip_address,
+            private_key_path=azure_key_path,
+            username=azure_username,
+            cmd=cmd,
+        )
+
+
+cli.add_command(ssh)
