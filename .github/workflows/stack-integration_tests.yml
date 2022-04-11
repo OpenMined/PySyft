@@ -260,7 +260,6 @@ jobs:
         env:
           HAGRID_ART: false
         run: |
-          pip install https://whls.blob.core.windows.net/unstable/cpu/jaxlib-0.3.5-cp310-none-win_amd64.whl
           pip install -e packages/hagrid
           pip install cython
           pip install pycapnp
