@@ -13,6 +13,7 @@ from .....adp.data_subject_ledger import DataSubjectLedger  # type: ignore
 from .....adp.publish import publish  # type: ignore
 from .....common.uid import UID  # type: ignore
 from .....store.storeable_object import StorableObject  # type: ignore
+from .....tensor.autodp.single_entity_phi import SingleEntityPhiTensor  # type: ignore
 from .....tensor.tensor import PassthroughTensor  # type: ignore
 from ....abstract.node import AbstractNode  # type: ignore
 from ...action import context  # type: ignore
@@ -62,15 +63,21 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                         print(f"Failed to get a ledger. {e}")
                         raise e
 
-                    result = publish_object.child.publish(
-                        deduct_epsilon_for_user=node.users.deduct_epsilon_for_user,
-                        get_budget_for_user=node.users.get_budget_for_user,
-                        ledger=ledger,
-                        sigma=msg.sigma,
-                    )
-                    # result = publish_object.data.publish(
-                    #     acc=node.acc, sigma=msg.sigma, user_key=verify_key
-                    # )
+                    if hasattr(publish_object, "child") and isinstance(
+                        publish_object.child, SingleEntityPhiTensor
+                    ):
+                        result = publish_object.child.publish(
+                            acc=node.acc, sigma=msg.sigma, user_key=verify_key
+                        )
+                    else:
+
+                        result = publish_object.child.publish(
+                            deduct_epsilon_for_user=node.users.deduct_epsilon_for_user,
+                            get_budget_for_user=node.users.get_budget_for_user,
+                            ledger=ledger,
+                            sigma=msg.sigma,
+                        )
+
                     print("PublishScalarsService:44: SUCCESS: publish_object.publish()")
                 else:
                     print("PublishScalarsService:46: TRY: publish([publish_object])")

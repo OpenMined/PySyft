@@ -34,9 +34,6 @@ def get_user_details(unique_email: str) -> Dict[str, Any]:
     }
 
 
-# Skipping for now, will be re enabled after  FPT PR merge,
-# as we do not have SMPC support for NDEPT
-@pytest.mark.skip
 @pytest.mark.e2e
 def test_end_to_end_smpc_adp_trade_demo() -> None:
     # make a unique email so we can run the test isolated
