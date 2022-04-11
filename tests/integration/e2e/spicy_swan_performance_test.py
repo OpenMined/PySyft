@@ -53,6 +53,7 @@ def upload_subset(
 ) -> None:
     name = f"Tweets - {size_name} - {unique_key}"
     impressions = np.array(list(df["impressions"]))
+    print("Impressions type", impressions, impressions.dtype)
 
     user_id = df["user_id"]
 
