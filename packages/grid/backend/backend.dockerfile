@@ -26,8 +26,7 @@ RUN if [ $(uname -m) != "x86_64" ]; then \
 RUN pip install --user pycapnp==1.1.0; \
   pip install --user numpy==1.22.3; \
   pip install --user primesieve==2.3.0 --force-reinstall --no-cache-dir; \
-  pip install jaxlib[cpu]==0.3.2 -f https://whls.blob.core.windows.net/unstable/index.html --use-deprecated legacy-resolver; \
-  pip install jax==0.3.2 -f https://whls.blob.core.windows.net/unstable/index.html --use-deprecated legacy-resolver; \
+  pip install https://whls.blob.core.windows.net/unstable/cpu/jaxlib-0.3.5-cp310-none-win_amd64.whl; \
   python -c "from primesieve.numpy._numpy import primes";
 
 RUN --mount=type=cache,target=/root/.cache \
