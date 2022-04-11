@@ -358,6 +358,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                     self.entities.one_hot_lookup[0]
                 ),  # Need to check this
             )
+
         return GammaTensor(
             value=np.array(self.child.sum()),
             data_subjects=self.entities.sum(),
