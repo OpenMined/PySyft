@@ -28,11 +28,9 @@ from scipy.optimize import minimize_scalar
 
 # relative
 from ...core.node.common.node_manager.user_manager import RefreshBudgetException
-from ...lib.numpy.array import arrow_deserialize as numpy_deserialize
-from ...lib.numpy.array import arrow_serialize as numpy_serialize
+from ...lib.numpy.array import capnp_deserialize
+from ...lib.numpy.array import capnp_serialize
 from ..common.serde.capnp import CapnpModule
-from ..common.serde.capnp import chunk_bytes
-from ..common.serde.capnp import combine_bytes
 from ..common.serde.capnp import get_capnp_schema
 from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
@@ -384,19 +382,11 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
         dsl_struct: CapnpModule = schema.DataSubjectLedger  # type: ignore
         dsl_msg = dsl_struct.new_message()
-        metadata_schema = dsl_struct.TensorMetadata
-        constants_metadata = metadata_schema.new_message()
-
         # this is how we dispatch correct deserialization of bytes
         dsl_msg.magicHeader = serde_magic_header(type(self))
-
         self._rdp_constants = np.array(self._rdp_constants, copy=False)
-        constants, constants_size = numpy_serialize(self._rdp_constants, get_bytes=True)
-        chunk_bytes(constants, "constants", dsl_msg)
-        constants_metadata.dtype = str(self._rdp_constants.dtype)
-        constants_metadata.decompressedSize = constants_size
-        dsl_msg.constantsMetadata = constants_metadata
 
+        dsl_msg.constants = capnp_serialize(self._rdp_constants)
         dsl_msg.updateNumber = self._update_number
         dsl_msg.timestamp = self._timestamp_of_last_update
 
@@ -414,13 +404,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
-        constants_metadata = dsl_msg.constantsMetadata
-
-        constants = numpy_deserialize(
-            combine_bytes(dsl_msg.constants),
-            constants_metadata.decompressedSize,
-            constants_metadata.dtype,
-        )
+        constants = capnp_deserialize(dsl_msg.constants)
         update_number = dsl_msg.updateNumber
         timestamp_of_last_update = dsl_msg.timestamp
 
