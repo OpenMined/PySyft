@@ -208,10 +208,8 @@ class RedisStore(ObjectStore):
                 # Retrieve proxy dataset from store
                 obj = self.get(key=key, proxy_only=True)
                 proxy_dataset = obj.data
-                proxy_dataset.delete_s3_data(
-                    settings=self.settings
-                ) if proxy_dataset else None
-                print(proxy_dataset)
+                if proxy_dataset:
+                    proxy_dataset.delete_s3_data(settings=self.settings)
 
             self.redis.delete(str(key.value))
             local_session.delete(metadata_to_delete)

@@ -67,8 +67,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def intersect_keys(
-        left: Union[Dict[VerifyKey, UID], None], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        left: Union[Dict[VerifyKey, Optional[UID]], None],
+        right: Dict[VerifyKey, Optional[UID]],
+    ) -> Dict[VerifyKey, Optional[UID]]:
         # TODO: duplicated in run_class_method_action.py
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
@@ -82,8 +83,10 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
-        result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
-        result_write_permissions: Union[None, Dict[VerifyKey, UID]] = None
+        result_read_permissions: Union[None, Dict[VerifyKey, Optional[UID]]] = None
+        result_write_permissions: Union[None, Dict[VerifyKey, Optional[UID]]] = {
+            verify_key: None
+        }
 
         resolved_args = list()
         tag_args = []
@@ -100,11 +103,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
                 result_read_permissions, r_arg.read_permissions
             )
 
-            # TODO: Verify if this the behavior we want with the resultant object
-            # Should the result also inherit the write permissions of the original object ??
-            result_write_permissions = self.intersect_keys(
-                result_write_permissions, r_arg.write_permissions
-            )
             resolved_args.append(r_arg.data)
             tag_args.append(r_arg)
 
@@ -121,9 +119,6 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
-            )
-            result_write_permissions = self.intersect_keys(
-                result_write_permissions, r_arg.write_permissions
             )
             resolved_kwargs[arg_name] = r_arg.data
             tag_kwargs[arg_name] = r_arg

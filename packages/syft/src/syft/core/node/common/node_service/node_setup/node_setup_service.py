@@ -113,6 +113,8 @@ def get_setup(
 
     _setup = model_to_json(node.setup.first(domain_name=node.name))
     _setup["tags"] = loads(_setup["tags"])
+    # TODO: Make this a little more defensive so we dont accidentally spill secrets
+    # from node.settings. Perhaps we should add a public settings interface
     _setup["use_blob_storage"] = getattr(node.settings, "USE_BLOB_STORAGE", False)
     if node.network:
         _setup["domains"] = len(node.node.all())

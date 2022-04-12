@@ -62,8 +62,10 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         self.map_to_dyn = map_to_dyn
 
     def intersect_keys(
-        self, left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        self,
+        left: Dict[VerifyKey, Optional[UID]],
+        right: Dict[VerifyKey, Optional[UID]],
+    ) -> Dict[VerifyKey, Optional[UID]]:
         return RunClassMethodAction.intersect_keys(left, right)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
