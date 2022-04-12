@@ -70,20 +70,6 @@ services:
       - JAEGER_HOST=docker-host
       - JAEGER_PORT=6831
 
-  celerybeat:
-    volumes:
-      - ./backend/grid:/app/grid
-      - ./backend/alembic:/app/alembic
-      - ../syft:/app/syft
-      - ./data/package-cache:/root/.cache
-      # - ./profile:/tmp/profile
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /beat-start-reload.sh"
-    # command: "sleep 99999"
-    environment:
-      - PROFILE=true
-      - JAEGER_HOST=docker-host
-      - JAEGER_PORT=6831
-
   celeryworker:
     volumes:
       - ./backend/grid:/app/grid
