@@ -27,7 +27,7 @@ def get_capnp_schema(schema_file: str) -> type:
 
 def chunk_bytes(
     data: Sequence, field_name: str, builder: capnp.lib.capnp._DynamicStructBuilder
-) -> List:
+) -> None:
     CHUNK_SIZE = int(5.12e8)  # capnp max for a List(Data) field
     list_size = len(data) // CHUNK_SIZE + 1
     data_lst = builder.init(field_name, list_size)
@@ -36,8 +36,6 @@ def chunk_bytes(
         START_INDEX = idx * CHUNK_SIZE
         END_INDEX = min(START_INDEX + CHUNK_SIZE, len(data))
         data_lst[idx] = data[START_INDEX:END_INDEX]
-
-    return data_lst
 
 
 def combine_bytes(capnp_list: List[bytes]) -> bytes:
