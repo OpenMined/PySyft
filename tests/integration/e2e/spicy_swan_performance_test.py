@@ -25,7 +25,6 @@ from syft.core.store.proxy_dataset import ProxyDataset
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 from syft.util import download_file
 from syft.util import get_root_data_path
-from syft.util import get_tracer
 from syft.util import size_mb
 
 
@@ -55,9 +54,10 @@ def upload_subset(
     unique_key: str,
 ) -> tuple:
     name = f"Tweets - {size_name} - {unique_key}"
-    impressions = ((np.array(list(df["impressions"])))).astype(np.int64)
+    impressions = df["impressions"].to_numpy(dtype=np.int64)
 
     user_id = df["user_id"]
+
     entities = DataSubjectList.from_series(user_id)
 
     tweets_data = sy.Tensor(impressions).private(
@@ -133,7 +133,6 @@ def time_dataset_download(domain: Domain, dataset_index: int, asset_name: str):
 
 @pytest.mark.e2e
 def test_benchmark_datasets() -> None:
-    tracer = get_tracer("test_benchmark_datasets")
 
     # 1M takes about 5 minutes right now for all the extra serde so lets use 100K
     # in the integration test
@@ -157,13 +156,9 @@ def test_benchmark_datasets() -> None:
         benchmark_report[size_name] = {}
         df = pd.read_parquet(files[size_name])
 
-        with tracer.start_as_current_span("upload"):
-            upload_size_mb, data_shape, upload_time = time_upload(
-                domain=domain,
-                size_name=size_name,
-                unique_key=unique_key,
-                df=df,
-            )
+        upload_size_mb, data_shape, upload_time = time_upload(
+            domain=domain, size_name=size_name, unique_key=unique_key, df=df
+        )
 
         benchmark_report[size_name]["upload_secs"] = upload_time
         benchmark_report[size_name]["upload_size_mb"] = upload_size_mb
@@ -185,19 +180,17 @@ def test_benchmark_datasets() -> None:
             assert dataset_proxy.url.startswith("/blob/")
             assert dataset_proxy.shape == data_shape
 
-        with tracer.start_as_current_span("download"):
-            download_time = time_dataset_download(
-                domain=domain, dataset_index=dataset_index, asset_name=asset_name
-            )
+        download_time = time_dataset_download(
+            domain=domain, dataset_index=dataset_index, asset_name=asset_name
+        )
         benchmark_report[size_name]["dataset_download_secs"] = download_time
 
-        with tracer.start_as_current_span("sum"):
-            sum_time, sum_ptr = time_sum(
-                domain=domain,
-                chunk_index=dataset_index,
-                size_name=size_name,
-                timeout=timeout,
-            )
+        sum_time, sum_ptr = time_sum(
+            domain=domain,
+            chunk_index=dataset_index,
+            size_name=size_name,
+            timeout=timeout,
+        )
         benchmark_report[size_name]["sum_secs"] = sum_time
 
         if upload_size_mb > MIN_BLOB_UPLOAD_SIZE_MB:
@@ -206,11 +199,10 @@ def test_benchmark_datasets() -> None:
             assert isinstance(sum_proxy, ProxyDataset)
 
         start_time = time.time()
-        with tracer.start_as_current_span("publish"):
-            publish_ptr = sum_ptr.publish(sigma=0.5)
-            publish_ptr.block_with_timeout(timeout)
-            result = publish_ptr.get(delete_obj=False)
-            print("result", result)
+        publish_ptr = sum_ptr.publish(sigma=0.5)
+        publish_ptr.block_with_timeout(timeout)
+        result = publish_ptr.get(delete_obj=False)
+        print("result", result)
 
         benchmark_report[size_name]["publish_secs"] = time.time() - start_time
         break
@@ -231,87 +223,3 @@ def test_benchmark_datasets() -> None:
     assert benchmark_report[key_size]["dataset_download_secs"] <= 60
     assert benchmark_report[key_size]["sum_secs"] <= 1
     assert benchmark_report[key_size]["publish_secs"] <= 10
-
-    print(benchmark_report)
-
-
-# @pytest.mark.e2e
-# def test_ndept() -> None:
-#     tracer = get_tracer("test_benchmark_datasets")
-
-#     # 1M takes about 5 minutes right now for all the extra serde so lets use 100K
-#     # in the integration test
-#     key_size = "1M"
-#     files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
-#     domain = sy.login(
-#         email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
-#     )
-
-#     # Upgrade admins budget
-#     content = {"user_id": 1, "budget": 9999999}
-#     domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
-
-#     budget_before = domain.privacy_budget
-
-#     benchmark_report = {}
-#     # for size_name in reversed(ordered_sizes):
-#     # for multiplier in [1, 10, 100, 1000]:
-#     for multiplier in [1000]:
-#         size_name = f"{multiplier}M"
-#         if multiplier == 1000:
-#             size_name = "1B"
-#         # timeout = 300
-#         unique_key = str(hash(time.time()))
-#         benchmark_report[size_name] = {}
-#         df = pd.read_parquet(files["1M"])
-#         # make smaller
-#         # df = df[0:100]
-#         entity_count = 1000
-
-#         with tracer.start_as_current_span("upload"):
-#             upload_time = time_upload(
-#                 domain=domain,
-#                 size_name=size_name,
-#                 unique_key=unique_key,
-#                 df=df,
-#                 entity_count=entity_count,
-#                 ndept=True,
-#                 multiplier=multiplier,
-#             )
-#         benchmark_report[size_name]["upload_secs"] = upload_time
-#         # all_chunks = get_all_chunks(domain=domain, unique_key=unique_key)
-#         # with tracer.start_as_current_span("sum"):
-#         #     sum_time, sum_ptr = time_sum(
-#         #         domain=domain,
-#         #         chunk_indexes=all_chunks,
-#         #         size_name=size_name,
-#         #         timeout=timeout,
-#         #     )
-#         # benchmark_report[size_name]["sum_secs"] = sum_time
-
-#         # start_time = time.time()
-#         # with tracer.start_as_current_span("publish"):
-#         #     publish_ptr = sum_ptr.publish(sigma=0.5)
-#         #     publish_ptr.block_with_timeout(timeout)
-#         #     result = publish_ptr.get(delete_obj=False)
-#         #     print("result", result)
-
-#         # benchmark_report[size_name]["publish_secs"] = time.time() - start_time
-#         # break
-
-#     budget_after = domain.privacy_budget
-#     print(benchmark_report)
-
-#     # no budget is spent even if the amount is checked
-#     diff = budget_before - budget_after
-#     print(f"Used {diff} Privacy Budget")
-#     # assert budget_before != budget_after
-
-#     # Revert admins budget
-#     content = {"user_id": 1, "budget": 5.55}
-#     domain._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
-
-#     # assert benchmark_report["1M"]["upload_secs"] <= 20
-#     # assert benchmark_report[key_size]["sum_secs"] <= 1
-#     # assert benchmark_report[key_size]["publish_secs"] <= 10
-#     assert False
