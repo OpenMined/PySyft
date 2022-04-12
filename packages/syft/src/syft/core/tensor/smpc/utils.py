@@ -96,6 +96,9 @@ def get_ring_size(
     return x_ring_size
 
 
+# Code Adapted from Crypten Project:  https://github.com/facebookresearch/CrypTen
+
+
 def count_wraps(share_list: List[np.ndarray]) -> np.ndarray:
     """Count overflows and underflows if we reconstruct the original value.
 

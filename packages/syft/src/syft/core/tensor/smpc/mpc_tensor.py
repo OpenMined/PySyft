@@ -19,15 +19,13 @@ import numpy as np
 import numpy.typing as npt
 import torch
 
-# syft absolute
-from syft.core.smpc.store import CryptoPrimitiveProvider
-
 # relative
 from . import utils
 from .... import logger
 from ....ast.klass import get_run_class_method
 from ....grid import GridURL
 from ...smpc.protocol.spdz import spdz
+from ...smpc.store import CryptoPrimitiveProvider
 from ..config import DEFAULT_RING_SIZE
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
@@ -428,8 +426,8 @@ class MPCTensor(PassthroughTensor):
 
         if check_fpt(result):
             return result.decode()
-        else:
-            return result.child
+
+        return result.child
 
     get = reconstruct
 

@@ -40,9 +40,7 @@ class FixedPrecisionTensor(PassthroughTensor):
             super().__init__(None)
 
     def encode(self, value) -> Any:
-        value = np.array(value, DEFAULT_INT_NUMPY_TYPE)
-        fpt_value = self._scale * value
-        encoded_value = fpt_value.astype(DEFAULT_INT_NUMPY_TYPE)
+        encoded_value = np.array(self._scale * value, DEFAULT_INT_NUMPY_TYPE)
         return encoded_value
 
     @property
