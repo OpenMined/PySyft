@@ -23,6 +23,8 @@ vars:
     value: headscale
   - name: SERVICE_NAME_TAILSCALE
     value: tailscale
+  - name: SERVICE_NAME_TRAEFIK
+    value: proxy
   - name: VERSION
     command: "python ../../VERSION"
   - name: VERSION_HASH
@@ -327,6 +329,25 @@ deployments:
       componentChart: true
       values:
         containers:
+          # - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}
+          - image: traefik:v2.5
+            volumeMounts:
+              - containerPath: /etc/traefik/traefik.yml
+                volume:
+                  - name: traefik-main-config
+                  configMap:
+                    name: traefik-main-config
+            # securityContext:
+            #   capabilities:
+            #     add: ["NET_ADMIN", "SYS_MODULE"]
+            #   privileged: true
+            command:
+              - sleep
+            args:
+              - "99999"
+            env:
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_TRAEFIK}
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
             securityContext:
               capabilities:
@@ -346,9 +367,14 @@ deployments:
         volumes:
           - name: tailscale-data
             size: "100Mi"
+          - name: traefik-main-config
+            configMap:
+              name: traefik-main-config
         service:
           name: ${SERVICE_NAME_TAILSCALE}
           ports:
+            - name: proxy
+              port: 80
             - name: api
               port: 4000
 
@@ -412,74 +438,80 @@ dev:
         - port: 8088
           remotePort: 4000
 
-  sync:
-    - name: backendsyft
-      disableDownload: true
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
-      localSubPath: ../syft
-      containerPath: /app/syft
-      excludePaths: ["../syft/examples", "../syft/tests"]
-    - name: backendapp
-      disableDownload: true
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
-      localSubPath: ./backend/grid
-      containerPath: /app/grid
-      excludePaths: []
-    - name: backendcache
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
-      localSubPath: ./data/package-cache
-      containerPath: /root/.cache
-      excludePaths: []
-    - name: backend-streamsyft
-      disableDownload: true
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
-      localSubPath: ../syft
-      containerPath: /app/syft
-      excludePaths: ["../syft/examples", "../syft/tests"]
-    - name: backend-streamapp
-      disableDownload: true
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
-      localSubPath: ./backend/grid
-      containerPath: /app/grid
-      excludePaths: []
-    - name: backend-streamcache
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
-      localSubPath: ./data/package-cache
-      containerPath: /root/.cache
-      excludePaths: []
-    - name: backend-workersyft
-      disableDownload: true
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
-      localSubPath: ../syft
-      containerPath: /app/syft
-      excludePaths: ["../syft/examples", "../syft/tests"]
-    - name: backend-workerapp
-      disableDownload: true
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
-      localSubPath: ./backend/grid
-      containerPath: /app/grid
-      excludePaths: []
-    - name: backend-workercache
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
-      localSubPath: ./data/package-cache
-      containerPath: /root/.cache
-      excludePaths: []
-    - name: frontend
-      disableDownload: true
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_FRONTEND}
-      localSubPath: ./frontend/src
-      containerPath: /app/src
-      excludePaths: []
+  # sync:
+  # - name: traefik
+  #   disableDownload: true
+  #   labelSelector:
+  #     app.kubernetes.io/component: ${SERVICE_NAME_TAILSCALE}
+  #   localSubPath: traefik/k8s
+  #   containerPath: /etc/traefik
+  #   - name: backendsyft
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+  #     localSubPath: ../syft
+  #     containerPath: /app/syft
+  #     excludePaths: ["../syft/examples", "../syft/tests"]
+  #   - name: backendapp
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+  #     localSubPath: ./backend/grid
+  #     containerPath: /app/grid
+  #     excludePaths: []
+  #   - name: backendcache
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND}
+  #     localSubPath: ./data/package-cache
+  #     containerPath: /root/.cache
+  #     excludePaths: []
+  #   - name: backend-streamsyft
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+  #     localSubPath: ../syft
+  #     containerPath: /app/syft
+  #     excludePaths: ["../syft/examples", "../syft/tests"]
+  #   - name: backend-streamapp
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+  #     localSubPath: ./backend/grid
+  #     containerPath: /app/grid
+  #     excludePaths: []
+  #   - name: backend-streamcache
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_STREAM}
+  #     localSubPath: ./data/package-cache
+  #     containerPath: /root/.cache
+  #     excludePaths: []
+  #   - name: backend-workersyft
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
+  #     localSubPath: ../syft
+  #     containerPath: /app/syft
+  #     excludePaths: ["../syft/examples", "../syft/tests"]
+  #   - name: backend-workerapp
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
+  #     localSubPath: ./backend/grid
+  #     containerPath: /app/grid
+  #     excludePaths: []
+  #   - name: backend-workercache
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_BACKEND_WORKER}
+  #     localSubPath: ./data/package-cache
+  #     containerPath: /root/.cache
+  #     excludePaths: []
+  #   - name: frontend
+  #     disableDownload: true
+  #     labelSelector:
+  #       app.kubernetes.io/component: ${SERVICE_NAME_FRONTEND}
+  #     localSubPath: ./frontend/src
+  #     containerPath: /app/src
+  #     excludePaths: []
 profiles:
   - name: domain
     patches:

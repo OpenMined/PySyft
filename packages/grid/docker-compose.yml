@@ -34,7 +34,7 @@ services:
 
   proxy:
     restart: always
-    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}
+    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default

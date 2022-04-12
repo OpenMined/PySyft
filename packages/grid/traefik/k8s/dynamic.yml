@@ -1,0 +1,30 @@
+http:
+  services:
+    frontend:
+      loadBalancer:
+        servers:
+          - url: "http://frontend"
+    backend:
+      loadBalancer:
+        servers:
+          - url: "http://backend"
+    backend-stream:
+      loadBalancer:
+        servers:
+          - url: "http://backend-stream"
+  routers:
+    frontend:
+      rule: "PathPrefix(`/`)"
+      entryPoints:
+        - "web"
+      service: "frontend"
+    backend:
+      rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+      entryPoints:
+        - "web"
+      service: "backend"
+    backend-stream:
+      rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+      entryPoints:
+        - "web"
+      service: "backend-stream"
