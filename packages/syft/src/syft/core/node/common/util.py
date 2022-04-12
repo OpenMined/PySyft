@@ -142,7 +142,6 @@ def upload_to_s3_using_presigned(
     dataset_name: str = "",
 ) -> ProxyDataset:
     """Perform a multipart upload of data to Seaweed using boto3 presigned urls.
-
     The main steps involve:
     - Converting the data to binary data
     - Chunking the binary into smaller chunks
@@ -150,17 +149,14 @@ def upload_to_s3_using_presigned(
     - Upload data to Seaweed via PUT request
     - Send a acknowledge to Seaweed via PyGrid when all chunks are successfully uploaded
     - Create a ProxyDataset to store metadata of the uploaded data
-
     Args:
         client (Any): Client to send object to
         data (Any): Data to be uploaded to Seaweed
         chunk_size (int): smallest size of the data to be uploaded in bytes
         asset_name (str): name of the data being uploaded
         dataset_name Optional[(str)]: name of the dataset to which the data belongs
-
     Raises:
         Exception: If upload of data chunks to Seaweed fails.
-
     Returns:
         ProxyDataset: Class to store metadata about the data that is uploaded to Seaweed.
     """

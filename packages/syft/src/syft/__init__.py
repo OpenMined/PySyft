@@ -40,6 +40,7 @@ from pkg_resources import get_distribution  # noqa: F401
 # relative
 # Package Imports
 from . import filterwarnings  # noqa: F401
+from . import jax_settings  # noqa: F401
 from . import lib  # noqa: F401
 from . import logger  # noqa: F401
 
