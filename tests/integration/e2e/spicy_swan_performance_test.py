@@ -17,14 +17,12 @@ import pytest
 import syft as sy
 from syft import Domain
 from syft.core.adp.data_subject_list import DataSubjectList
-from syft.core.adp.entity import Entity
 from syft.core.node.common.node_service.user_manager.user_messages import (
     UpdateUserMessage,
 )
 from syft.core.node.common.util import MIN_BLOB_UPLOAD_SIZE_MB
 from syft.core.store.proxy_dataset import ProxyDataset
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
-from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.util import download_file
 from syft.util import get_root_data_path
 from syft.util import get_tracer
@@ -55,44 +53,18 @@ def upload_subset(
     df: pd.DataFrame,
     size_name: str,
     unique_key: str,
-    entity_count: Optional[int] = None,
-    ndept: bool = False,
-    multiplier: int = 1,
 ) -> tuple:
     name = f"Tweets - {size_name} - {unique_key}"
-    impressions = ((np.array(list(df["impressions"])))).astype(np.int32)
+    impressions = ((np.array(list(df["impressions"])))).astype(np.int64)
 
-    if entity_count is not None:
-        user_id = list(df["user_id"].unique()[0:entity_count])
-    else:
-        user_id = list(df["user_id"].unique())
-
-    entities = list()
-    for i in range(len(impressions)):
-        uid = i % len(user_id)
-        entities.append(Entity(name=f"User {user_id[uid]}"))
-
-    assert len(set(entities)) == entity_count
+    user_id = df["user_id"]
+    entities = DataSubjectList.from_series(user_id)
 
     tweets_data = sy.Tensor(impressions).private(
-        min_val=0, max_val=30, entities=entities, ndept=ndept
+        min_val=0, max_val=30, entities=entities, ndept=True
     )
 
-    if multiplier > 1:
-        old_length = len(tweets_data)
-        tweets_data = extend_tweet_data(data=tweets_data, multiplier=multiplier)
-        assert old_length * multiplier == len(tweets_data)
-
-    if not ndept:
-        assert isinstance(tweets_data.child, REPT)
-        print(
-            "tweets_data serde_concurrency default", tweets_data.child.serde_concurrency
-        )
-        tweets_data.child.serde_concurrency = 1
-        print("tweets_data serde_concurrency", tweets_data.child.serde_concurrency)
-
-    if ndept:
-        assert isinstance(tweets_data.child, NDEPT)
+    assert isinstance(tweets_data.child, NDEPT)
 
     tweets_data_size_mb = size_mb(tweets_data)
 
@@ -112,9 +84,6 @@ def time_upload(
     size_name: str,
     unique_key: str,
     df: pd.DataFrame,
-    entity_count: Optional[int] = None,
-    ndept: bool = False,
-    multiplier: int = 1,
 ) -> Tuple:
     start_time = time.time()
 
@@ -123,9 +92,6 @@ def time_upload(
         df=df,
         size_name=size_name,
         unique_key=unique_key,
-        ndept=ndept,
-        entity_count=entity_count,
-        multiplier=multiplier,
     )
     return data_size_mb, data_shape, (time.time() - start_time)
 
@@ -148,17 +114,6 @@ def time_sum(
 
 DOMAIN1_PORT = 9082
 # DOMAIN1_PORT = 8081
-
-
-def extend_tweet_data(data: Any, multiplier: int) -> Any:
-    new_data = data.copy()
-    new_data.child.child = new_data.child.child.repeat(multiplier)
-    new_data.child.entities = DataSubjectList.from_objs(
-        np.array(
-            ["φhishan"] * multiplier * len(new_data.child.entities.entities_indexed)
-        )
-    )
-    return new_data
 
 
 def get_dataset_index(domain: Domain, dataset_name: str) -> Optional[int]:
@@ -202,17 +157,12 @@ def test_benchmark_datasets() -> None:
         benchmark_report[size_name] = {}
         df = pd.read_parquet(files[size_name])
 
-        # Currently restricting it to 1000 entities, we might
-        # not need to do this once we're done with Jax Refactor PR:6353
-        entity_count = 1000
-
         with tracer.start_as_current_span("upload"):
             upload_size_mb, data_shape, upload_time = time_upload(
                 domain=domain,
                 size_name=size_name,
                 unique_key=unique_key,
                 df=df,
-                entity_count=entity_count,
             )
 
         benchmark_report[size_name]["upload_secs"] = upload_time
