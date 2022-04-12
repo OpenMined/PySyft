@@ -625,7 +625,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         )
         coeff_tensor = np.ones_like(term_tensor)
         bias_tensor = np.zeros((1,), dtype=np.int32)
-        value_tensor = np.sum(flat_values, axis=0)
+        value_tensor = sum(flat_values)
 
         result = IGT(
             value_tensor=value_tensor,

@@ -309,7 +309,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __matmul__(
         self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
-        return self.manual_dot(other)
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child @ other)
+
+        return self.__class__(self.child @ other.child)
 
     def __rmatmul__(
         self, other: Union[Type[PassthroughTensor], np.ndarray]
@@ -572,6 +575,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
                 mode=mode,
             )
         )
+
+    def decode(self) -> AcceptableSimpleType:
+        return self.child.decode()
 
     def astype(self, np_type: np.dtype) -> PassthroughTensor:
         return self.__class__(self.child.astype(np_type))

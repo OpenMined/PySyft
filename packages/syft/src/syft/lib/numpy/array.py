@@ -125,7 +125,7 @@ def serialize_numpy_array(obj: np.ndarray) -> NumpyProto:
 
 def deserialize_numpy_array(proto: NumpyProto) -> np.ndarray:
     if proto.HasField("arrow_data"):
-        return arrow_deserialize(proto.arrow_data, proto.decompressed_size)
+        return arrow_deserialize(proto.arrow_data, proto.decompressed_size, proto.dtype)
     else:
         return protobuf_deserialize(proto)
 

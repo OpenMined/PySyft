@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from copy import deepcopy
 import functools
 from functools import lru_cache
 import operator
@@ -31,6 +32,8 @@ from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ...smpc.store.crypto_store import CryptoStore
+from ..config import DEFAULT_RING_SIZE
+from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import PassthroughTensor  # type: ignore
 
 METHODS_FORWARD_ALL_SHARES = {
@@ -71,6 +74,20 @@ RING_SIZE_TO_OP = {
         "add": operator.add,
         "sub": operator.sub,
         "mul": operator.mul,
+        "matmul": operator.matmul,
+        "lt": operator.lt,
+        "gt": operator.gt,
+        "ge": operator.ge,
+        "le": operator.le,
+        "eq": operator.eq,
+        "ne": operator.ne,
+    },
+    2
+    ** 64: {
+        "add": operator.add,
+        "sub": operator.sub,
+        "mul": operator.mul,
+        "matmul": operator.matmul,
         "lt": operator.lt,
         "gt": operator.gt,
         "ge": operator.ge,
@@ -180,7 +197,9 @@ class ShareTensor(PassthroughTensor):
 
     @staticmethod
     @lru_cache(32)
-    def compute_min_max_from_ring(ring_size: int = 2**32) -> Tuple[int, int]:
+    def compute_min_max_from_ring(
+        ring_size: int = DEFAULT_RING_SIZE,
+    ) -> Tuple[int, int]:
         if ring_size == 2:
             min_value, max_value = 0, 1
         else:
@@ -261,12 +280,12 @@ class ShareTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         rank: int,
         parties_info: List[GridURL],
-        ring_size: int = 2**32,
+        ring_size: Union[int, str] = DEFAULT_RING_SIZE,
         seed_przs: Optional[int] = None,
         generator_przs: Optional[Any] = None,
         init_clients: bool = True,
     ) -> "ShareTensor":
-
+        ring_size = int(ring_size)
         nr_parties = len(parties_info)
 
         # Try:
@@ -311,7 +330,7 @@ class ShareTensor(PassthroughTensor):
         else:
             generator_shares = np.random.default_rng(seed_przs)
 
-        if isinstance(value.child, ShareTensor):
+        if isinstance(value.child, (ShareTensor, FixedPrecisionTensor)):
             value = value.child
 
         share = ShareTensor(
@@ -349,9 +368,9 @@ class ShareTensor(PassthroughTensor):
         parties_info: List[GridURL],
         seed_przs: int,
         share_wrapper: Any,
-        ring_size: int = 2**32,
+        ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
-
+        ring_size = int(ring_size)
         if value is not None:
             share = ShareTensor.generate_przs(
                 value=value.child,
@@ -371,7 +390,7 @@ class ShareTensor(PassthroughTensor):
                 ring_size=ring_size,
             )
 
-        share_wrapper.child.child = share
+        share_wrapper.child.child.child = share
 
         return share_wrapper
 
@@ -402,7 +421,9 @@ class ShareTensor(PassthroughTensor):
             raise ValueError("Torch tensor should have type int, but found float")
 
     def apply_function(
-        self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"], op_str: str
+        self,
+        y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"],
+        op_str: str,
     ) -> "ShareTensor":
         """Apply a given operation.
 
@@ -413,6 +434,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor: Result of the operation.
         """
+        ShareTensor.sanity_check(y)
 
         op = ShareTensor.get_op(self.ring_size, op_str)
         numpy_type = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
@@ -420,11 +442,20 @@ class ShareTensor(PassthroughTensor):
             raise ValueError(f"Do not know numpy type for ring size {self.ring_size}")
 
         if isinstance(y, ShareTensor):
-            utils.get_ring_size(self.ring_size, y.ring_size)
+            utils.get_ring_size(self.ring_size, y.ring_size)  # sanity check
             value = op(self.child, y.child)
         else:
-            # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
-            value = op(self.child, np.array(y, numpy_type))  # TODO: change to np.int64
+            if op_str in {"add", "sub"}:
+                # TODO: Converting y to numpy because doing "numpy op torch tensor" raises exception
+                value = (
+                    op(self.child, np.array(y, numpy_type))
+                    if self.rank == 0
+                    else deepcopy(self.child)
+                )
+            elif op_str in ["mul", "matmul"]:
+                value = op(self.child, np.array(y, numpy_type))
+            else:
+                raise ValueError(f"{op_str} not supported")
 
         res = self.copy_tensor()
         res.child = value
@@ -441,11 +472,7 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-
-        ShareTensor.sanity_check(y)
-
         new_share = self.apply_function(y, "add")
-
         return new_share
 
     def sub(
@@ -459,8 +486,6 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-
-        ShareTensor.sanity_check(y)
         new_share = self.apply_function(y, "sub")
         return new_share
 
@@ -475,8 +500,6 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-
-        ShareTensor.sanity_check(y)
         new_self = self.mul(-1)
         new_share = new_self.apply_function(y, "add")
         return new_share
@@ -492,14 +515,54 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        # if isinstance(y, ShareTensor):
-        #     raise ValueError(
-        #         "We should not reach this point for private multiplication. Only public one"
-        #     )
+        # relative
+        from ...node.common.action.smpc_action_functions import private_mul
 
-        ShareTensor.sanity_check(y)
-        new_share = self.apply_function(y, "mul")
+        if isinstance(y, ShareTensor):
+            new_share = private_mul(self, y, "mul")
+        else:
+            new_share = self.apply_function(y, "mul")
+
         return new_share
+
+    def truediv(self, y: Union[int, float, np.ndarray, "ShareTensor"]) -> "ShareTensor":
+        """Apply the "division" operation between "self" and "y".
+
+        Args:
+            y (Union[int, float, np.ndarray, "ShareTensor"]): self / y
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # relative
+        from ...node.common.action.smpc_action_functions import public_divide
+
+        if not isinstance(y, (int, np.integer)):
+            raise ValueError("Current Division only works for integers")
+        else:
+            if self.ring_size != 2:
+                new_share = public_divide(self, y)
+            else:
+                new_share = self.copy_tensor()
+
+        return new_share
+
+    def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:
+        """Apply the "decomposition" operation on self
+
+        Args:
+            ring_size (int): Ring size to decompose the shares
+            bitwise (bool): Flag for bitwise decomposition.
+
+        Returns:
+            ShareTensor. Result of the operation.
+        """
+        # relative
+        from ...node.common.action.smpc_action_functions import _decomposition
+
+        ring_size = int(ring_size)
+
+        _decomposition(self, ring_size, bitwise)
 
     def matmul(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
@@ -507,16 +570,19 @@ class ShareTensor(PassthroughTensor):
         """Apply the "matmul" operation between "self" and "y".
 
         Args:
-            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self @ y.
+            y (Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]): self @ y
 
         Returns:
-            ShareTensor: Result of the operation.
+            ShareTensor. Result of the operation.
         """
-        if isinstance(y, ShareTensor):
-            raise ValueError("Private matmul not supported yet")
+        # relative
+        from ...node.common.action.smpc_action_functions import private_mul
 
-        ShareTensor.sanity_check(y)
-        new_share = self.apply_function(y, "matmul")
+        if isinstance(y, ShareTensor):
+            new_share = private_mul(self, y, "matmul")
+        else:
+            new_share = self.apply_function(y, "matmul")
+
         return new_share
 
     def rmatmul(self, y: torch.Tensor) -> "ShareTensor":
@@ -531,8 +597,7 @@ class ShareTensor(PassthroughTensor):
         if isinstance(y, ShareTensor):
             raise ValueError("Private matmul not supported yet")
 
-        ShareTensor.sanity_check(y)
-        new_share = y.apply_function(self, "matmul")
+        new_share = ShareTensor.apply_function(self, y, "matmul")
         return new_share
 
     def lt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -547,8 +612,7 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
-        new_share = self.apply_function(y, "lt")
+        new_share = ShareTensor.apply_function(self, y, "lt")
         return new_share
 
     def gt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -563,8 +627,7 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
-        new_share = self.apply_function(y, "gt")
+        new_share = ShareTensor.apply_function(self, y, "gt")
         return new_share
 
     def ge(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -579,8 +642,7 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
-        new_share = self.apply_function(y, "ge")
+        new_share = ShareTensor.apply_function(self, y, "ge")
         return new_share
 
     def le(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -595,8 +657,7 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
-        new_share = self.apply_function(y, "le")
+        new_share = ShareTensor.apply_function(self, y, "le")
         return new_share
 
     def ne(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
@@ -611,22 +672,8 @@ class ShareTensor(PassthroughTensor):
         # raise ValueError(
         #     "It should not reach this point since we generate SMPCAction for this"
         # )
-        ShareTensor.sanity_check(y)
-        new_share = self.apply_function(y, "ne")
+        new_share = ShareTensor.apply_function(self, y, "ne")
         return new_share
-
-    def bit_decomposition(self) -> "ShareTensor":
-        """Apply the "decomposition" operation on self
-
-        Args:
-            None
-
-        Returns:
-            ShareTensor. Result of the operation.
-        """
-        raise ValueError(
-            "It should not reach this point since we generate SMPCAction for this"
-        )
 
     def eq(self, other: Any) -> bool:
         """Equal operator.
@@ -750,10 +797,6 @@ class ShareTensor(PassthroughTensor):
 
             res = _self.copy_tensor()
 
-            # TODO : Some operations return np.int64 by default, should modify
-            # when we have support for np.int64 or do explicit casting.
-            if method_name == "trace":
-                new_share = np.array(new_share, dtype=np.int32)
             res.child = new_share
 
             return res
@@ -767,11 +810,15 @@ class ShareTensor(PassthroughTensor):
         return object.__getattribute__(self, attr_name)
 
     def _object2proto(self) -> ShareTensor_PB:
+        # This works only for unsigned types.
+        length_rs = self.ring_size.bit_length()
+        rs_bytes = self.ring_size.to_bytes((length_rs + 7) // 8, byteorder="big")
+
         proto_init_kwargs = {
             "rank": self.rank,
             "parties_info": [serialize(party) for party in self.parties_info],
             "seed_przs": self.seed_przs,
-            "ring_size": sy.serialize(self.ring_size, to_bytes=True),
+            "ring_size": rs_bytes,
         }
         if isinstance(self.child, np.ndarray):
             proto_init_kwargs["array"] = serialize(self.child)
@@ -788,7 +835,7 @@ class ShareTensor(PassthroughTensor):
             "rank": proto.rank,
             "parties_info": [deserialize(party) for party in proto.parties_info],
             "seed_przs": proto.seed_przs,
-            "ring_size": int(sy.deserialize(proto.ring_size, from_bytes=True)),
+            "ring_size": int.from_bytes(proto.ring_size, "big"),
         }
         if proto.HasField("tensor"):
             init_kwargs["value"] = deserialize(proto.tensor)
@@ -813,6 +860,7 @@ class ShareTensor(PassthroughTensor):
     __rmul__ = mul
     __matmul__ = matmul
     __rmatmul__ = rmatmul
+    __truediv__ = truediv
     __lt__ = lt
     __gt__ = gt
     __ge__ = ge

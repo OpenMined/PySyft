@@ -108,7 +108,6 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
     """
     # relative
     from ..core.node.common.action import smpc_action_functions
-    from ..core.node.common.action.smpc_action_functions import MAP_FUNC_TO_ACTION
 
     def run_class_smpc_method(
         __self: Any,
@@ -129,8 +128,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             raise ValueError(
                 "There should be a `seed_id_locations` kwargs when doing an operation for MPCTensor"
             )
-
-        kwargs["seed_id_locations"] = str(seed_id_locations)
+        kwargs.pop("seed_id_locations")
 
         op = attr_path_and_name.split(".")[-1]
         id_at_location = smpc_action_functions.get_id_at_location_from_op(
@@ -168,6 +166,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             args=pointer_args,
             kwargs=pointer_kwargs,
             id_at_location=result.id_at_location,
+            seed_id_locations=seed_id_locations,
             address=__self.client.address,
         )
         __self.client.send_immediate_msg_without_reply(msg=cmd)
@@ -246,7 +245,8 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]
     if SMPC or (
-        "ShareTensor" in attr_path_and_name and method_name in MAP_FUNC_TO_ACTION
+        "ShareTensor" in attr_path_and_name
+        and method_name in smpc_action_functions.ACTION_FUNCTIONS
     ):
         return run_class_smpc_method
 

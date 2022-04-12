@@ -24,8 +24,11 @@ from ..node.common.action.run_class_method_action import RunClassMethodAction
 from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
+from .config import DEFAULT_FLOAT_NUMPY_TYPE
+from .config import DEFAULT_INT_NUMPY_TYPE
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
+from .smpc import context
 from .smpc import utils
 from .smpc.mpc_tensor import MPCTensor
 
@@ -226,6 +229,19 @@ class TensorPointer(Pointer):
         """
         return TensorPointer._apply_op(self, other, "mul")
 
+    def __matmul__(
+        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "matmul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "matmul")
+
     def __lt__(
         self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
     ) -> Union[TensorPointer, MPCTensor]:
@@ -311,25 +327,6 @@ class TensorPointer(Pointer):
         return TensorPointer._apply_op(self, other, "ne")
 
 
-def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
-
-    if np_array.dtype == np.int64:
-        if verbose:
-            print("Casting internal tensor to int32")
-        out = np_array.astype(np.int32)
-
-    elif np_array.dtype == np.float64:
-
-        if verbose:
-            print("Casting internal tensor to float32")
-        out = np_array.astype(np.float32)
-
-    else:
-        out = np_array
-
-    return out
-
-
 @serializable(recursive_serde=True)
 class Tensor(
     PassthroughTensor,
@@ -351,14 +348,14 @@ class Tensor(
     ) -> None:
         """data must be a list of numpy array"""
 
-        if isinstance(child, (list, np.int32)):
-            child = to32bit(np.array(child), verbose=False)
+        if isinstance(child, list) or np.isscalar(child):
+            child = np.array(child)
 
         if isinstance(child, th.Tensor):
             print(
                 "Converting PyTorch tensor to numpy tensor for internal representation..."
             )
-            child = to32bit(child.numpy())
+            child = child.numpy()
 
         if not isinstance(child, PassthroughTensor) and not isinstance(
             child, np.ndarray
@@ -369,7 +366,8 @@ class Tensor(
             )
 
         if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
-            getattr(child, "dtype", None) not in [np.int32, np.bool_]
+            getattr(child, "dtype", None)
+            not in [DEFAULT_INT_NUMPY_TYPE, DEFAULT_FLOAT_NUMPY_TYPE, np.bool]
             and getattr(child, "dtype", None) is not None
         ):
             raise TypeError(
@@ -377,9 +375,9 @@ class Tensor(
                 + str(type(child))
                 + " with child.dtype == "
                 + str(getattr(child, "dtype", None))
-                + ". Syft tensor objects only support np.int32 objects at this time. Please pass in either "
-                "a list of int objects or a np.int32 array. We apologise for the inconvenience and will "
-                "be adding support for more types very soon!"
+                + ". Syft tensor objects only supports numpy objects of "
+                + f"{DEFAULT_INT_NUMPY_TYPE,DEFAULT_FLOAT_NUMPY_TYPE,np.bool_}. "
+                + "Please pass in either the supported types or change the default types in syft/core/tensor/config.py "
             )
 
         kwargs = {"child": child}
@@ -439,8 +437,11 @@ class Tensor(
                 public_dtype=getattr(self, "public_dtype", None),
             )
 
-    def bit_decomposition(self) -> Tensor:
-        raise ValueError("Should not reach this point")
+    # TODO: remove after moving private compare to sharetensor level
+    def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:
+        context.tensor_values = self
+        self.child.child.child.bit_decomposition(ring_size, bitwise)
+        return None
 
     def mpc_swap(self, other: Tensor) -> Tensor:
         self.child.child = other.child.child

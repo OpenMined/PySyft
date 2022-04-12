@@ -25,6 +25,8 @@ from .... import logger
 from ....ast.klass import get_run_class_method
 from ....grid import GridURL
 from ...smpc.protocol.spdz import spdz
+from ...smpc.store import CryptoPrimitiveProvider
+from ..config import DEFAULT_RING_SIZE
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..util import implements  # type: ignore
@@ -152,8 +154,8 @@ class MPCTensor(PassthroughTensor):
         if ring_size is not None:
             return ring_size
 
-        logger.warning("Ring size was not found! Defaulting to 2**32.")
-        return 2**32
+        logger.warning(f"Ring size was not found! Defaulting to {DEFAULT_RING_SIZE}.")
+        return DEFAULT_RING_SIZE
 
     @staticmethod
     def get_parties_info(parties: Iterable[Any]) -> List[GridURL]:
@@ -308,7 +310,7 @@ class MPCTensor(PassthroughTensor):
                     shape=shape,
                     seed_przs=seed_przs,
                     share_wrapper=share_wrapper_pointer,
-                    ring_size=ring_size,
+                    ring_size=str(ring_size),
                 )
 
             else:
@@ -319,9 +321,11 @@ class MPCTensor(PassthroughTensor):
                         value=value,
                         shape=shape,
                         seed_przs=seed_przs,
-                        ring_size=ring_size,
+                        ring_size=str(ring_size),
                     )
                 )
+
+            # Converted ring size to string as it exceeds 64 bit.
 
             shares.append(remote_share)
 
@@ -333,7 +337,7 @@ class MPCTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         seed_przs: int,
         parties_info: List[GridURL],
-        ring_size: int = 2**32,
+        ring_size: int = DEFAULT_RING_SIZE,
     ) -> List[ShareTensor]:
         shares = []
         nr_parties = len(parties_info)
@@ -386,22 +390,8 @@ class MPCTensor(PassthroughTensor):
         return self
 
     def reconstruct(self, delete_obj: bool = True) -> np.ndarray:
-        # TODO: It might be that the resulted shares (if we run any computation) might
-        # not be available at this point. We need to have this fail well with a nice
-        # description as to which node wasn't able to be reconstructued.
-        # Captured: https://app.clubhouse.io/openmined/story/1128/tech-debt-for-adp-smpc-demo?\
-        # stories_sort_by=priority&stories_group_by=WORKFLOW_STATE
-
-        # for now we need to convert the values coming back to int32
-        # sometimes they are floats coming from DP
-        def convert_child_numpy_type(tensor: Any, np_type: type) -> Any:
-            if isinstance(tensor, np.ndarray):
-                return np.array(tensor, np_type)
-            if hasattr(tensor, "child"):
-                tensor.child = convert_child_numpy_type(
-                    tensor=tensor.child, np_type=np_type
-                )
-            return tensor
+        # relative
+        from ..fixed_precision_tensor import FixedPrecisionTensor
 
         dtype = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
 
@@ -419,26 +409,30 @@ class MPCTensor(PassthroughTensor):
         local_shares = []
         for share in self.child:
             res = share.get() if delete_obj else share.get_copy()
-            res = convert_child_numpy_type(res, dtype)
             local_shares.append(res)
-
-        is_share_tensor = isinstance(local_shares[0], ShareTensor)
-
-        if is_share_tensor:
-            local_shares = [share.child for share in local_shares]
 
         result = local_shares[0]
         op = ShareTensor.get_op(self.ring_size, "add")
         for share in local_shares[1:]:
             result = op(result, share)
 
-        if hasattr(result, "child") and isinstance(result.child, ShareTensor):
-            return result.child.child
+        def check_fpt(value: Any) -> bool:
+            if isinstance(value, FixedPrecisionTensor):
+                return True
+            if hasattr(value, "child"):
+                return check_fpt(value.child)
+            else:
+                return False
 
-        return result
+        if check_fpt(result):
+            return result.decode()
+
+        return result.child
 
     get = reconstruct
-    get_copy = functools.partial(reconstruct, delete_obj=False)
+
+    def get_copy(self) -> np.ndarray:
+        return self.reconstruct(delete_obj=False)
 
     @staticmethod
     def hook_method(__self: MPCTensor, method_name: str) -> Callable[..., Any]:
@@ -713,9 +707,21 @@ class MPCTensor(PassthroughTensor):
         kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
         op = "__mul__"
         res_shares: List[Any] = []
+        y_shape = getattr(y, "shape", (1,))
+        new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "mul", **kwargs)
         else:
+            CryptoPrimitiveProvider.generate_primitives(
+                "beaver_wraps",
+                parties=self.parties,
+                g_kwargs={
+                    "shape": new_shape,
+                    "parties_info": self.parties_info,
+                },
+                p_kwargs={"shape": new_shape},
+                ring_size=self.ring_size,
+            )
             if not isinstance(self.child[0], TensorPointer):
                 res_shares = [
                     getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
@@ -727,8 +733,51 @@ class MPCTensor(PassthroughTensor):
                 for share in self.child:
                     res_shares.append(tensor_op(share, share, y, **kwargs))
 
+        res = MPCTensor(
+            parties=self.parties,
+            shares=res_shares,
+            shape=new_shape,
+            ring_size=self.ring_size,
+        )
+
+        return res
+
+    def matmul(
+        self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
+    ) -> MPCTensor:
+        # relative
+        from ..tensor import TensorPointer
+
+        self, y = MPCTensor.sanity_checks(self, y)
+        kwargs: Dict[Any, Any] = {"seed_id_locations": secrets.randbits(64)}
+        op = "__matmul__"
+        res_shares: List[Any] = []
         y_shape = getattr(y, "shape", (1,))
-        new_shape = utils.get_shape("mul", self.mpc_shape, y_shape)
+        new_shape = utils.get_shape("matmul", self.mpc_shape, y_shape)
+        if isinstance(y, MPCTensor):
+            res_shares = spdz.mul_master(self, y, "matmul", **kwargs)
+        else:
+            CryptoPrimitiveProvider.generate_primitives(
+                "beaver_wraps",
+                parties=self.parties,
+                g_kwargs={
+                    "shape": new_shape,
+                    "parties_info": self.parties_info,
+                },
+                p_kwargs={"shape": new_shape},
+                ring_size=self.ring_size,
+            )
+            if not isinstance(self.child[0], TensorPointer):
+                res_shares = [
+                    getattr(a, op)(a, b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
+                ]
+            else:
+
+                attr_path_and_name = f"{self.child[0].path_and_name}.{op}"
+                tensor_op = get_run_class_method(attr_path_and_name, SMPC=True)
+                for share in self.child:
+                    res_shares.append(tensor_op(share, share, y, **kwargs))
+
         res = MPCTensor(
             parties=self.parties,
             shares=res_shares,
@@ -781,21 +830,6 @@ class MPCTensor(PassthroughTensor):
         mpc_res = 1 - MPCTensor.eq(self, y)
 
         return mpc_res  # type: ignore
-
-    def matmul(
-        self, y: Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]
-    ) -> MPCTensor:
-        """Apply the "matmul" operation between "self" and "y"
-        Args:
-            y (Union[int, float, np.ndarray, torch.tensor, "MPCTensor"]): self @ y
-        Returns:
-            MPCTensor: Result of the opeartion.
-        """
-        if isinstance(y, ShareTensor):
-            raise ValueError("Private matmul not supported yet")
-
-        res = self.__apply_op(y, "matmul")
-        return res
 
     def put(
         self,

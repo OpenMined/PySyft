@@ -441,14 +441,11 @@ class PhiTensorAncestor(TensorChainManager):
         # PHASE 1: RUN CHECKS
 
         # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
-        if (
-            not isinstance(self.child, np.ndarray)
-            or getattr(self.child, "dtype", None) != np.int32
-        ):
+        if not isinstance(self.child, np.ndarray):
 
             msg = (
                 "At present, you can only call .private() "
-                + "on syft.Tensor objects wrapping np.int32 arrays. You called it on a "
+                + "on syft.Tensor objects wrapping numpy arrays. You called it on a "
                 + "syft.Tensor wrapping a "
                 + str(type(self.child))
             )
