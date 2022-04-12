@@ -13,7 +13,7 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # relative
-from . import context
+# from . import context
 from ..... import lib
 from .....logger import traceback_and_raise
 from .....logger import warning
@@ -239,7 +239,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 resolved_self.read_permissions = result_read_permissions
                 resolved_self.write_permissions = result_write_permissions
 
-        context.OBJ_CACHE[str(self.id_at_location.no_dash)] = result
+        # in memory lookup for publish_service.py:40
+        # context.OBJ_CACHE[str(self.id_at_location.no_dash)] = result
 
         # TODO: Upload object to seaweed store, instead of storing in redis
         # create a proxy object class and store it here.

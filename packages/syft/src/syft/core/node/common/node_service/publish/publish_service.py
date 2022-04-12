@@ -16,7 +16,8 @@ from .....store.storeable_object import StorableObject  # type: ignore
 from .....tensor.autodp.single_entity_phi import SingleEntityPhiTensor  # type: ignore
 from .....tensor.tensor import PassthroughTensor  # type: ignore
 from ....abstract.node import AbstractNode  # type: ignore
-from ...action import context  # type: ignore
+
+# from ...action import context  # type: ignore
 from ..node_service import ImmediateNodeServiceWithoutReply  # type: ignore
 from .publish_messages import PublishScalarsAction  # type: ignore
 
@@ -38,10 +39,11 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                 print(
                     "PublishScalarsService:36: TRY: publish_object = node.store.get(publish_id)"
                 )
-                if publish_id.no_dash in context.OBJ_CACHE:
-                    publish_object = context.OBJ_CACHE[publish_id.no_dash]
-                else:
-                    publish_object = node.store.get(publish_id)
+                # in memory cache for faster fetch of large objects
+                # if publish_id.no_dash in context.OBJ_CACHE:
+                #     publish_object = context.OBJ_CACHE[publish_id.no_dash]
+                # else:
+                publish_object = node.store.get(publish_id)
                 print(
                     "PublishScalarsService:38: SUCCESS: publish_object = node.store.get(publish_id)"
                 )

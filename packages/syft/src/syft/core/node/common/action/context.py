@@ -1,1 +1,0 @@
-OBJ_CACHE: dict = {}

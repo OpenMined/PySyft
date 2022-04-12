@@ -33,7 +33,7 @@ class RedisStore(ObjectStore):
         self.settings = settings
         try:
             self.redis: redis.client.Redis = redis.Redis(
-                host="redis",
+                host=settings.REDIS_HOST,
                 port=self.settings.REDIS_PORT,
                 db=self.settings.STORE_DB_ID,
             )

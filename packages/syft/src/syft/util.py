@@ -374,6 +374,7 @@ right_name = [
     "koller",
     "krizhevsky",
     "larochelle",
+    "lattner",
     "lecun",
     "li",
     "lim",

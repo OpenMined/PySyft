@@ -403,8 +403,6 @@ class UserManager(DatabaseManager):
     def get_budget_for_user(self, verify_key: VerifyKey) -> float:
         encoded_vk = verify_key.encode(encoder=HexEncoder).decode("utf-8")
         user = self.first(verify_key=encoded_vk)
-        print("user", user, type(user))
-        print("user budget", user.budget)
         if user is None:
             raise Exception(f"No user for verify_key: {verify_key}")
         return user.budget
@@ -433,7 +431,6 @@ class UserManager(DatabaseManager):
 
             user.budget = user.budget - epsilon_spend
             session_local.add(user)
-            print(f"User budget has been updated from {old_budget} to {user.budget}")
 
         session_local.commit()
         session_local.close()

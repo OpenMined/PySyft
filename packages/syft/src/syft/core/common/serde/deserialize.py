@@ -168,7 +168,7 @@ class CapnpMagicBytesNotFound(Exception):
 
 
 def deserialize_capnp(buf: bytes) -> Any:
-    # only search 100 bytes to prevent wasting time on large files
+    # only search 1000 bytes to prevent wasting time on large files
     search_range = 1000
     header_bytes = buf[0:search_range]
     chars = bytearray()
