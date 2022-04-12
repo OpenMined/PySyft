@@ -17,7 +17,7 @@ arg_defaults = {
     "azure_key_path": "~/.ssh/id_rsa",
     "azure_resource_group": "openmined",
     "azure_location": "westus",
-    "azure_size": "Standard_D2s_v3",
+    "azure_size": "Standard_D4s_v3",
     "gcp_zone": "us-central1-c",
     "gcp_machine_type": "e2-standard-4",
     "gcp_project_id": "",

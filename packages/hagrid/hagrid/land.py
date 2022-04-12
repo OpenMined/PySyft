@@ -22,7 +22,7 @@ def get_land_verb() -> GrammarVerb:
             "type": "preposition",
             "klass": GrammarTerm,
             "default": "at",
-            "options": ["at"],
+            "options": ["at", "on"],
         },
         {
             "name": "host",
