@@ -2,8 +2,11 @@
 from datetime import datetime
 import json
 import os
+from os import urandom
 import re
+import socket
 import stat
+import string
 import subprocess
 import sys
 import time
@@ -16,6 +19,7 @@ from typing import cast
 
 # third party
 import click
+import rich
 
 # relative
 from . import __version__
@@ -37,7 +41,10 @@ from .land import get_land_verb
 from .launch import get_launch_verb
 from .lib import GRID_SRC_PATH
 from .lib import GRID_SRC_VERSION
+from .lib import check_api_metadata
 from .lib import check_docker_version
+from .lib import check_host
+from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import hagrid_root
@@ -45,6 +52,18 @@ from .lib import is_editable_mode
 from .lib import name_tag
 from .lib import use_branch
 from .style import RichGroup
+
+
+def get_azure_image(short_name: str) -> str:
+    prebuild_070 = (
+        "madhavajay1632269232059:openmined_mj_grid_domain_ubuntu_1:domain_070:latest"
+    )
+    fresh_ubuntu = "Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest"
+    if short_name == "default":
+        return fresh_ubuntu
+    elif short_name == "domain_0.7.0":
+        return prebuild_070
+    raise Exception(f"Image name doesn't exist: {short_name}. Try: default or 0.7.0")
 
 
 @click.group(cls=RichGroup)
@@ -133,11 +152,23 @@ def clean(location: str) -> None:
     help="Optional: print the cmd without running it",
 )
 @click.option(
+    "--jupyter",
+    is_flag=True,
+    help="Optional: enable Jupyter Notebooks",
+)
+@click.option(
     "--build",
     default="true",
     required=False,
     type=str,
     help="Optional: enable or disable forcing re-build",
+)
+@click.option(
+    "--provision",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: enable or disable provisioning VMs",
 )
 @click.option(
     "--auth_type",
@@ -180,6 +211,20 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: local path to TLS private key to upload and store at --cert_store_path",
 )
+@click.option(
+    "--use_blob_storage",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: flag to use blob storage",
+)
+@click.option(
+    "--image_name",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: image to use for the VM",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -211,6 +256,21 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
                 subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
+    display_jupyter_token(cmd)
+
+
+def display_jupyter_token(cmd: str) -> None:
+    token = extract_jupyter_token(cmd=cmd)
+    if token is not None:
+        print(f"Jupyter Token: {token}")
+
+
+def extract_jupyter_token(cmd: str) -> Optional[str]:
+    matcher = r"jupyter_token='(.+?)'"
+    token = re.findall(matcher, cmd)
+    if len(token) == 1:
+        return token[0]
+    return None
 
 
 def hide_password(cmd: str) -> str:
@@ -360,15 +420,53 @@ def login_azure() -> bool:
 
 def check_azure_cli_installed() -> bool:
     try:
-        subprocess.call(["az"])
-        print("Azure cli installed!")
-    except FileNotFoundError:
+        result = subprocess.run(
+            ["az", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
+        )
+        if result.returncode != 0:
+            raise FileNotFoundError("az not installed")
+    except Exception:  # nosec
         msg = "\nYou don't appear to have the Azure CLI installed!!! \n\n\
 Please install it and then retry your command.\
 \n\nInstallation Instructions: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli\n"
         raise FileNotFoundError(msg)
 
     return True
+
+
+def check_gcloud_cli_installed() -> bool:
+    try:
+        subprocess.call(["gcloud", "version"])
+        print("Gcloud cli installed!")
+    except FileNotFoundError:
+        msg = "\nYou don't appear to have the gcloud CLI tool installed! \n\n\
+Please install it and then retry again.\
+\n\nInstallation Instructions: https://cloud.google.com/sdk/docs/install-sdk \n"
+        raise FileNotFoundError(msg)
+
+    return True
+
+
+def check_gcloud_authed() -> bool:
+    try:
+        result = subprocess.run(
+            ["gcloud", "auth", "print-identity-token"], stdout=subprocess.PIPE
+        )
+        if result.returncode == 0:
+            return True
+    except Exception:
+        pass
+    return False
+
+
+def login_gcloud() -> bool:
+    cmd = "gcloud auth login"
+    try:
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        return True
+    except Exception:
+        pass
+    return False
 
 
 def str_to_bool(bool_str: Optional[str]) -> bool:
@@ -380,6 +478,23 @@ def str_to_bool(bool_str: Optional[str]) -> bool:
 
 
 ART = str_to_bool(os.environ.get("HAGRID_ART", "True"))
+
+
+def generate_gcloud_key_at_path(key_path: str) -> str:
+    key_path = os.path.expanduser(key_path)
+    if os.path.exists(key_path):
+        raise Exception(f"Can't generate key since path already exists. {key_path}")
+    else:
+        # triggers a key check
+        cmd = "gcloud compute ssh '' --dry-run"
+        try:
+            subprocess.check_call(cmd, shell=True)
+        except Exception:  # nosec
+            pass
+        if not os.path.exists(key_path):
+            raise Exception(f"gcloud failed to generate ssh-key at: {key_path}")
+
+    return key_path
 
 
 def generate_key_at_path(key_path: str) -> str:
@@ -418,6 +533,10 @@ def create_launch_cmd(
         build = False
     parsed_kwargs["build"] = build
 
+    parsed_kwargs["use_blob_storage"] = (
+        kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
+    )
+
     headless = False
     if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
         headless = True
@@ -441,6 +560,18 @@ def create_launch_cmd(
         parsed_kwargs["upload_tls_cert"] = kwargs["upload_tls_cert"]
     if "upload_tls_key" in kwargs:
         parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
+    if "provision" in kwargs:
+        parsed_kwargs["provision"] = str_to_bool(cast(str, kwargs["provision"]))
+
+    if "image_name" in kwargs and kwargs["image_name"] is not None:
+        parsed_kwargs["image_name"] = kwargs["image_name"]
+    else:
+        parsed_kwargs["image_name"] = "default"
+
+    if "jupyter" in kwargs and kwargs["jupyter"] is not None:
+        parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
+    else:
+        parsed_kwargs["jupyter"] = False
 
     if host in ["docker"]:
 
@@ -498,7 +629,6 @@ def create_launch_cmd(
                 f"Launching a VM locally requires: {' '.join(errors)}"
             )
     elif host in ["azure"]:
-
         check_azure_cli_installed()
 
         while not check_azure_authed():
@@ -635,7 +765,143 @@ def create_launch_cmd(
             msg += "The pip based instructions seem to be a bit buggy if you're using a conda environment"
             msg += "\n"
             raise MissingDependency(msg)
-    elif host in ["aws", "gcp"]:
+
+    elif host in ["gcp"]:
+        check_gcloud_cli_installed()
+
+        while not check_gcloud_authed():
+            print("You need to log into Google Cloud")
+            login_gcloud()
+
+        if DEPENDENCIES["ansible-playbook"]:
+            project_id = ask(
+                question=Question(
+                    var_name="gcp_project_id",
+                    question="What PROJECT ID do you want to use?",
+                    default=arg_cache.gcp_project_id,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            zone = ask(
+                question=Question(
+                    var_name="gcp_zone",
+                    question="What zone do you want your VM in?",
+                    default=arg_cache.gcp_zone,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            machine_type = ask(
+                question=Question(
+                    var_name="gcp_machine_type",
+                    question="What size machine?",
+                    default=arg_cache.gcp_machine_type,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            username = ask(
+                question=Question(
+                    var_name="gcp_username",
+                    question="What is your shell username?",
+                    default=arg_cache.gcp_username,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            key_path_question = Question(
+                var_name="gcp_key_path",
+                question=f"Private key to access user@{host}?",
+                default=arg_cache.gcp_key_path,
+                kind="path",
+                cache=True,
+            )
+            try:
+                key_path = ask(
+                    key_path_question,
+                    kwargs=kwargs,
+                )
+            except QuestionInputPathError as e:
+                print(e)
+                key_path = str(e).split("is not a valid path")[0].strip()
+
+                create_key_question = Question(
+                    var_name="gcp_key_path",
+                    question=f"Key {key_path} does not exist. Do you want gcloud to make it? (y/n)",
+                    default="y",
+                    kind="yesno",
+                )
+                create_key = ask(
+                    create_key_question,
+                    kwargs=kwargs,
+                )
+                if create_key == "y":
+                    key_path = generate_gcloud_key_at_path(key_path=key_path)
+                else:
+                    raise QuestionInputError(
+                        "Unable to create VM without a private key"
+                    )
+
+            repo = ask(
+                Question(
+                    var_name="gcp_repo",
+                    question="Repo to fetch source from?",
+                    default=arg_cache.gcp_repo,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+            branch = ask(
+                Question(
+                    var_name="gcp_branch",
+                    question="Branch to monitor for updates?",
+                    default=arg_cache.gcp_branch,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+
+            use_branch(branch=branch)
+
+            auth = AuthCredentials(username=username, key_path=key_path)
+
+            return create_launch_gcp_cmd(
+                verb=verb,
+                project_id=project_id,
+                zone=zone,
+                machine_type=machine_type,
+                repo=repo,
+                auth=auth,
+                branch=branch,
+                ansible_extras=kwargs["ansible_extras"],
+                kwargs=parsed_kwargs,
+            )
+        else:
+            errors = []
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            msg = "\nERROR!!! MISSING DEPENDENCY!!!"
+            msg += f"\n\nLaunching a Cloud VM requires: {' '.join(errors)}"
+            msg += "\n\nPlease follow installation instructions: "
+            msg += "https://docs.ansible.com/ansible/latest/installation_guide/intro_installation.html#"
+            msg += "\n\nNote: we've found the 'conda' based installation instructions to work best"
+            msg += " (e.g. something lke 'conda install -c conda-forge ansible'). "
+            msg += "The pip based instructions seem to be a bit buggy if you're using a conda environment"
+            msg += "\n"
+            raise MissingDependency(msg)
+
+    elif host in ["aws"]:
         print("Coming soon.")
         return ""
     else:
@@ -773,6 +1039,12 @@ def create_launch_docker_cmd(
         # force version to have -dev at the end in dev mode
         version_string += "-dev"
 
+    use_blob_storage = "True"
+    if str(node_type.input) == "network":
+        use_blob_storage = "False"
+    elif "use_blob_storage" in kwargs and kwargs["use_blob_storage"] is not None:
+        use_blob_storage = str(str_to_bool(kwargs["use_blob_storage"]))
+
     envs = {
         "RELEASE": "production",
         "COMPOSE_DOCKER_CLI_BUILD": 1,
@@ -785,13 +1057,22 @@ def create_launch_docker_cmd(
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
         "VERSION_HASH": GRID_SRC_VERSION[1],
+        "USE_BLOB_STORAGE": use_blob_storage,
     }
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
 
-    if "test" in kwargs and kwargs["test"] is True:
+    if (
+        "tls" in kwargs
+        and kwargs["tls"] is True
+        and "test" in kwargs
+        and kwargs["test"] is True
+    ):
         envs["IGNORE_TLS_ERRORS"] = "True"
+
+    if "test" in kwargs and kwargs["test"] is True:
+        envs["S3_VOLUME_SIZE_MB"] = "100"  # GitHub CI is small
 
     if "release" in kwargs:
         envs["RELEASE"] = kwargs["release"]
@@ -818,6 +1099,8 @@ def create_launch_docker_cmd(
     cmd += " docker compose -p " + snake_name
     if str(node_type.input) == "network":
         cmd += " --profile network"
+    else:
+        cmd += " --profile blob-storage"
 
     if kwargs["headless"] is False:
         cmd += " --profile frontend"
@@ -906,7 +1189,7 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
         j = json.loads(output)
         if "publicIpAddress" in j:
             return str(j["publicIpAddress"])
-    except Exception:
+    except Exception:  # nosec
         matcher = r'publicIpAddress":\s+"(.+)"'
         ips = re.findall(matcher, output)
         if len(ips) > 0:
@@ -915,15 +1198,71 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
     return None
 
 
+def is_valid_ip(host_or_ip: str) -> bool:
+    matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
+    ips = re.findall(matcher, host_or_ip.strip())
+    if len(ips) == 1:
+        return True
+    return False
+
+
+def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
+    output = stdout.decode("utf-8")
+
+    try:
+        matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
+        ips = re.findall(matcher, output)
+        if len(ips) == 2:
+            return ips[1]
+    except Exception:  # nosec
+        pass
+
+    return None
+
+
+def check_ip_for_ssh(host_ip: str, wait_time: int = 5, silent: bool = False) -> bool:
+    if not silent:
+        print(f"Checking VM at {host_ip} is up")
+    checks = int(600 / wait_time)  # 10 minutes in 5 second chunks
+    first_run = True
+    while checks > 0:
+        checks -= 1
+        try:
+            sock = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+            sock.settimeout(wait_time)
+            result = sock.connect_ex((host_ip, 22))
+            sock.close()
+            if result == 0:
+                if not silent:
+                    print(f"VM at {host_ip} is up!")
+                return True
+            else:
+                if first_run:
+                    if not silent:
+                        print("Waiting for VM to start", end="", flush=True)
+                    first_run = False
+                else:
+                    if not silent:
+                        print(".", end="", flush=True)
+        except Exception:  # nosec
+            pass
+    return False
+
+
 def make_vm_azure(
-    node_name: str, resource_group: str, username: str, key_path: str, size: str
+    node_name: str,
+    resource_group: str,
+    username: str,
+    key_path: str,
+    size: str,
+    image_name: str,
 ) -> Optional[str]:
+    disk_size_gb = "200"
     public_key_path = private_to_public_key(
         private_key_path=key_path, username=username
     )
-
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
-    cmd += "--image Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest "
+    cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
     cmd += "--public-ip-sku Standard --authentication-type ssh "
     cmd += f"--ssh-key-values {public_key_path} --admin-username {username}"
     host_ip: Optional[str] = None
@@ -960,6 +1299,126 @@ def open_port_vm_azure(
         print("failed", e)
 
 
+def create_project(project_id: str) -> None:
+    cmd = f"gcloud projects create {project_id} --set-as-default"
+    try:
+        print(f"Creating project.\nRunning: {cmd}")
+        subprocess.check_call(cmd, shell=True)
+    except Exception as e:
+        print("failed", e)
+
+    print("create project complete")
+
+
+def create_launch_gcp_cmd(
+    verb: GrammarVerb,
+    project_id: str,
+    zone: str,
+    machine_type: str,
+    ansible_extras: str,
+    kwargs: TypeDict[str, Any],
+    repo: str,
+    branch: str,
+    auth: AuthCredentials,
+) -> str:
+    # create project if it doesn't exist
+    create_project(project_id)
+    # vm
+    node_name = verb.get_named_term_type(name="node_name")
+    kebab_name = str(node_name.kebab_input)
+    disk_size_gb = "200"
+    host_ip = make_gcp_vm(
+        vm_name=kebab_name,
+        project_id=project_id,
+        zone=zone,
+        machine_type=machine_type,
+        disk_size_gb=disk_size_gb,
+    )
+
+    # get old host
+    host_term = verb.get_named_term_hostgrammar(name="host")
+
+    host_up = check_ip_for_ssh(host_ip=host_ip)
+    if not host_up:
+        raise Exception(f"Something went wrong launching the VM at IP: {host_ip}.")
+
+    if "provision" in kwargs and not kwargs["provision"]:
+        print("Skipping automatic provisioning.")
+        print("VM created with:")
+        print(f"IP: {host_ip}")
+        print(f"User: {auth.username}")
+        print(f"Key: {auth.key_path}")
+        print("\nConnect with:")
+        print(f"ssh -i {auth.key_path} {auth.username}@{host_ip}")
+        sys.exit(0)
+
+    # replace
+    host_term.parse_input(host_ip)
+    verb.set_named_term_type(name="host", new_term=host_term)
+
+    extra_kwargs = {
+        "repo": repo,
+        "branch": branch,
+        "auth_type": "key",
+        "ansible_extras": ansible_extras,
+    }
+    kwargs.update(extra_kwargs)
+
+    # provision
+    return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+
+
+def make_gcp_vm(
+    vm_name: str, project_id: str, zone: str, machine_type: str, disk_size_gb: str
+) -> str:
+    create_cmd = "gcloud compute instances create"
+    network_settings = "network=default,network-tier=PREMIUM"
+    maintenance_policy = "MIGRATE"
+    scopes = [
+        "https://www.googleapis.com/auth/devstorage.read_only",
+        "https://www.googleapis.com/auth/logging.write",
+        "https://www.googleapis.com/auth/monitoring.write",
+        "https://www.googleapis.com/auth/servicecontrol",
+        "https://www.googleapis.com/auth/service.management.readonly",
+        "https://www.googleapis.com/auth/trace.append",
+    ]
+    tags = "http-server,https-server"
+    disk_image = "projects/ubuntu-os-cloud/global/images/ubuntu-2004-focal-v20220308"
+    disk = (
+        f"auto-delete=yes,boot=yes,device-name={vm_name},image={disk_image},"
+        + f"mode=rw,size={disk_size_gb},type=pd-ssd"
+    )
+    security_flags = (
+        "--no-shielded-secure-boot --shielded-vtpm "
+        + "--shielded-integrity-monitoring --reservation-affinity=any"
+    )
+
+    cmd = (
+        f"{create_cmd} {vm_name} "
+        + f"--project={project_id} "
+        + f"--zone={zone} "
+        + f"--machine-type={machine_type} "
+        + f"--create-disk={disk} "
+        + f"--network-interface={network_settings} "
+        + f"--maintenance-policy={maintenance_policy} "
+        + f"--scopes={','.join(scopes)} --tags={tags} "
+        + f"{security_flags}"
+    )
+
+    host_ip = None
+    try:
+        print(f"Creating vm.\nRunning: {cmd}")
+        output = subprocess.check_output(cmd, shell=True)
+        host_ip = extract_host_ip_gcp(stdout=output)
+    except Exception as e:
+        print("failed", e)
+
+    if host_ip is None:
+        raise Exception("Failed to create vm or get VM public ip")
+
+    return host_ip
+
+
 def create_launch_azure_cmd(
     verb: GrammarVerb,
     resource_group: str,
@@ -973,13 +1432,15 @@ def create_launch_azure_cmd(
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
 ) -> str:
-    # resource group
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
     # vm
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
-    host_ip = make_vm_azure(snake_name, resource_group, username, key_path, size)
+    image_name = get_azure_image(kwargs["image_name"])
+    host_ip = make_vm_azure(
+        snake_name, resource_group, username, key_path, size, image_name
+    )
 
     # open port 80
     open_port_vm_azure(
@@ -999,12 +1460,32 @@ def create_launch_azure_cmd(
         priority=501,
     )
 
+    if kwargs["jupyter"]:
+        # open port 8888
+        open_port_vm_azure(
+            resource_group=resource_group,
+            node_name=snake_name,
+            port_name="Jupyter",
+            port=8888,
+            priority=502,
+        )
+
     # get old host
     host_term = verb.get_named_term_hostgrammar(name="host")
 
     # replace
     host_term.parse_input(host_ip)
     verb.set_named_term_type(name="host", new_term=host_term)
+
+    if "provision" in kwargs and not kwargs["provision"]:
+        print("Skipping automatic provisioning.")
+        print("VM created with:")
+        print(f"IP: {host_ip}")
+        print(f"User: {username}")
+        print(f"Key: {key_path}")
+        print("\nConnect with:")
+        print(f"ssh -i {key_path} {username}@{host_ip}")
+        sys.exit(0)
 
     extra_kwargs = {
         "repo": repo,
@@ -1016,6 +1497,56 @@ def create_launch_azure_cmd(
 
     # provision
     return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+
+
+def create_ansible_land_cmd(
+    verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
+) -> str:
+    try:
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        print("Landing PyGrid node on port " + str(host_term.port) + "!\n")
+
+        print("  - PORT: " + str(host_term.port))
+        print("\n")
+
+        playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
+        ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+        auth = cast(AuthCredentials, auth)
+
+        if not os.path.exists(playbook_path):
+            print(f"Can't find playbook site.yml at: {playbook_path}")
+        cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook "
+        if host_term.host == "localhost":
+            cmd += "--connection=local "
+        cmd += f"-i {host_term.host}, {playbook_path}"
+        if host_term.host != "localhost" and kwargs["auth_type"] == "key":
+            cmd += f" --private-key {auth.key_path} --user {auth.username}"
+        elif host_term.host != "localhost" and kwargs["auth_type"] == "password":
+            cmd += f" -c paramiko --user {auth.username}"
+
+        ANSIBLE_ARGS = {"install": "false"}
+
+        if host_term.host != "localhost" and kwargs["auth_type"] == "password":
+            ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]
+
+        if host_term.host == "localhost":
+            ANSIBLE_ARGS["local"] = "true"
+
+        if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
+            options = kwargs["ansible_extras"].split(",")
+            for option in options:
+                parts = option.strip().split("=")
+                if len(parts) == 2:
+                    ANSIBLE_ARGS[parts[0]] = parts[1]
+
+        for k, v in ANSIBLE_ARGS.items():
+            cmd += f" -e \"{k}='{v}'\""
+
+        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+        return cmd
+    except Exception as e:
+        print(f"Failed to construct custom deployment cmd: {cmd}. {e}")
+        raise e
 
 
 def create_launch_custom_cmd(
@@ -1100,6 +1631,12 @@ def create_launch_custom_cmd(
         ):
             ANSIBLE_ARGS["upload_tls_cert"] = kwargs["upload_tls_cert"]
 
+        if kwargs["jupyter"] is True:
+            ANSIBLE_ARGS["jupyter"] = "true"
+            ANSIBLE_ARGS["jupyter_token"] = generate_sec_random_password(
+                length=48, alphabet=HEX_LOWER_ALPHABET
+            )
+
         if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
             options = kwargs["ansible_extras"].split(",")
             for option in options:
@@ -1122,16 +1659,85 @@ def create_launch_custom_cmd(
 
 def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
-    host = host_term.host
-
-    if verb.get_named_term_grammar("node_name").input == "all":
-        # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
-        return "docker rm `docker ps -aq` --force"
+    host = host_term.host if host_term.host is not None else ""
 
     if host in ["docker"]:
+        if verb.get_named_term_grammar("node_name").input == "all":
+            # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+            return "docker rm `docker ps -aq` --force"
+
         version = check_docker_version()
         if version:
             return create_land_docker_cmd(verb=verb)
+    elif host == "localhost" or is_valid_ip(host):
+        parsed_kwargs = {}
+        if DEPENDENCIES["ansible-playbook"]:
+            if host != "localhost":
+                parsed_kwargs["username"] = ask(
+                    question=Question(
+                        var_name="username",
+                        question=f"Username for {host} with sudo privledges?",
+                        default=arg_cache.username,
+                        kind="string",
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                parsed_kwargs["auth_type"] = ask(
+                    question=Question(
+                        var_name="auth_type",
+                        question="Do you want to login with a key or password",
+                        default=arg_cache.auth_type,
+                        kind="option",
+                        options=["key", "password"],
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                if parsed_kwargs["auth_type"] == "key":
+                    parsed_kwargs["key_path"] = ask(
+                        question=Question(
+                            var_name="key_path",
+                            question=f"Private key to access {parsed_kwargs['username']}@{host}?",
+                            default=arg_cache.key_path,
+                            kind="path",
+                            cache=True,
+                        ),
+                        kwargs=kwargs,
+                    )
+                elif parsed_kwargs["auth_type"] == "password":
+                    parsed_kwargs["password"] = ask(
+                        question=Question(
+                            var_name="password",
+                            question=f"Password for {parsed_kwargs['username']}@{host}?",
+                            kind="password",
+                        ),
+                        kwargs=kwargs,
+                    )
+
+            auth = None
+            if host != "localhost":
+                if parsed_kwargs["auth_type"] == "key":
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["key_path"],
+                    )
+                else:
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["password"],
+                    )
+                if not auth.valid:
+                    raise Exception(f"Login Credentials are not valid. {auth}")
+            parsed_kwargs["ansible_extras"] = kwargs["ansible_extras"]
+            return create_ansible_land_cmd(verb=verb, auth=auth, kwargs=parsed_kwargs)
+        else:
+            errors = []
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            raise MissingDependency(
+                f"Launching a Custom VM requires: {' '.join(errors)}"
+            )
 
     host_options = ", ".join(allowed_hosts)
     raise MissingDependency(
@@ -1155,8 +1761,21 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
 
 @click.command(help="Stop a running PyGrid domain/network node.")
 @click.argument("args", type=str, nargs=-1)
+@click.option(
+    "--cmd",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: print the cmd without running it",
+)
+@click.option(
+    "--ansible_extras",
+    default="",
+    type=str,
+)
 def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_land_verb()
+
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -1164,16 +1783,19 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(e)
         return
 
-    # if len(args) == 0:
-    #     print("use interactive menu to select node?")
-
     try:
         cmd = create_land_cmd(verb=verb, kwargs=kwargs)
     except Exception as e:
         print(f"{e}")
         return
-    print("Running: \n", cmd)
-    subprocess.call(cmd, shell=True)
+    print("Running: \n", hide_password(cmd=cmd))
+
+    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+        print("Running: \n", cmd)
+        try:
+            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
+        except Exception as e:
+            print(f"Failed to run cmd: {cmd}. {e}")
 
 
 cli.add_command(launch)
@@ -1206,3 +1828,65 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 
 cli.add_command(debug)
+
+
+@click.command(help="Check health of an IP address or a resource group")
+@click.argument("ip_address", type=str)
+def check(ip_address: str) -> None:
+    if check_host(ip_address, silent=True):
+        base_host_status = "✅"
+    else:
+        base_host_status = "❌"
+
+    if check_login_page(ip_address, silent=True):
+        login_page_status = "✅"
+    else:
+        login_page_status = "❌"
+
+    if check_api_metadata(ip_address, silent=True):
+        backend_status = "✅"
+    else:
+        backend_status = "❌"
+
+    if check_ip_for_ssh(ip_address, silent=True):
+        ssh_status = "✅"
+    else:
+        ssh_status = "❌"
+
+    console = rich.get_console()
+    console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
+
+    table_contents = [
+        ["🔌", "Host", f"{ip_address}", base_host_status],
+        ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
+        ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
+        ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
+    ]
+
+    table = rich.table.Table()
+
+    table.add_column("PyGrid", style="magenta")
+    table.add_column("Info", justify="left")
+    table.add_column("", justify="left")
+    for row in table_contents:
+        table.add_row(row[1], row[2], row[3])
+    console.print(table)
+
+
+cli.add_command(check)
+
+DEFAULT_ALPHABET = string.ascii_letters + string.digits + string.punctuation
+HEX_LOWER_ALPHABET = "".join(sorted(list(set(string.hexdigits.lower()))))
+
+
+def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) -> str:
+    if not isinstance(length, int) or length < 10:
+        raise ValueError(
+            "Password should have a positive safe length of at least 10 characters!"
+        )
+
+    # original Python 2 (urandom returns str)
+    # return "".join(chars[ord(c) % len(chars)] for c in urandom(length))
+
+    # Python 3 (urandom returns bytes)
+    return "".join(alphabet[c % len(alphabet)] for c in urandom(length))

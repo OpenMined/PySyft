@@ -1,19 +1,13 @@
 # stdlib
 from typing import Any
 
-# third party
-from raven import Client
-
 # syft absolute
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 
 # grid absolute
 from grid.core.celery_app import celery_app
-from grid.core.config import settings
+from grid.core.config import settings  # noqa: F401
 from grid.core.node import node
-
-client_sentry = Client(settings.SENTRY_DSN)
-
 
 # TODO : Should be modified to use exponential backoff (for efficiency)
 # Initially we have set 0.1 as the retry time.

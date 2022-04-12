@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 from typing import List
-from typing import Optional
 from typing import Union
 
 # third party
@@ -26,7 +25,10 @@ class FixedPrecisionTensor(PassthroughTensor):
     __attr_allowlist__ = ("child", "_base", "_precision", "_scale")
 
     def __init__(
-        self, value: Optional[Any] = None, base: int = 2, precision: int = 16
+        self,
+        value: Union[int, float, np.ndarray] = None,
+        base: int = 2,
+        precision: int = 16,
     ) -> None:
 
         self._base = base
@@ -39,7 +41,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         else:
             super().__init__(None)
 
-    def encode(self, value) -> Any:
+    def encode(self, value: Union[int, float, np.ndarray]) -> np.ndarray:
         encoded_value = np.array(self._scale * value, DEFAULT_INT_NUMPY_TYPE)
         return encoded_value
 
@@ -175,7 +177,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         return self.transpose()
 
     # TODO: Remove after moving private compare to sharetensor level
-    def __lt__(self, other) -> FixedPrecisionTensor:
+    def __lt__(self, other: Any) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child < other.child
         return res

@@ -341,7 +341,8 @@ def local_decomposition(
                 sh.child = deepcopy(share.child.astype(numpy_type))
 
             if tensor_values is not None:
-                if ring_size != 2:
+                # Remove it when we move PC to share tensor.
+                if ring_size != 2:  # type: ignore
                     sh.child = tensor_values.child.child.encode(sh.child)
                 tensor_values.child.child.child = sh
                 data = tensor_values
@@ -606,8 +607,8 @@ ACTION_FUNCTIONS = ["__add__", "__sub__", "__mul__", "bit_decomposition"]
 #     result_id = UID(UUID(bytes=generator.bytes(16)))
 #     sub_result = UID(UUID(bytes=generator.bytes(16)))
 
-#     x = node.store[self_id].data  # noqa
-#     y = node.store[other_id].data
+#     x = node.store.get(self_id).data  # noqa
+#     y = node.store.get(other_id).data
 
 #     if not isinstance(y, ShareTensor):
 #         raise ValueError("Only private compare works at the moment")

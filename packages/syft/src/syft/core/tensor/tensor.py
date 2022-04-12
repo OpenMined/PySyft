@@ -11,12 +11,21 @@ from typing import Union
 
 # third party
 import numpy as np
+import pandas as pd
 import torch as th
+
+# syft absolute
+import syft as sy
 
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
 from ...util import inherit_tags
+from ..common.serde.capnp import CapnpModule
+from ..common.serde.capnp import chunk_bytes
+from ..common.serde.capnp import combine_bytes
+from ..common.serde.capnp import get_capnp_schema
+from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
@@ -24,6 +33,7 @@ from ..node.common.action.run_class_method_action import RunClassMethodAction
 from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
+from .autodp.gamma_tensor import GammaTensor
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
 from .config import DEFAULT_INT_NUMPY_TYPE
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
@@ -327,7 +337,26 @@ class TensorPointer(Pointer):
         return TensorPointer._apply_op(self, other, "ne")
 
 
-@serializable(recursive_serde=True)
+def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
+
+    if np_array.dtype == np.int64:
+        if verbose:
+            print("Casting internal tensor to int32")
+        out = np_array.astype(np.int32)
+
+    elif np_array.dtype == np.float64:
+
+        if verbose:
+            print("Casting internal tensor to float32")
+        out = np_array.astype(np.float32)
+
+    else:
+        out = np_array
+
+    return out
+
+
+@serializable(capnp_bytes=True)
 class Tensor(
     PassthroughTensor,
     AutogradTensorAncestor,
@@ -336,7 +365,7 @@ class Tensor(
     # MPCTensorAncestor,
 ):
 
-    __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
+    # __attr_allowlist__ = ["child", "tag_name", "public_shape", "public_dtype"]
 
     PointerClassOverride = TensorPointer
 
@@ -357,15 +386,21 @@ class Tensor(
             )
             child = child.numpy()
 
-        if not isinstance(child, PassthroughTensor) and not isinstance(
-            child, np.ndarray
+        # Added for convenience- might need to double check if dtype changes?
+        if isinstance(child, pd.Series):
+            child = child.to_numpy()
+
+        if (
+            not isinstance(child, PassthroughTensor)
+            and not isinstance(child, np.ndarray)
+            and not isinstance(child, GammaTensor)
         ):
 
             raise Exception(
                 f"Data: {child} ,type: {type(child)} must be list or nd.array "
             )
 
-        if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
+        if not isinstance(child, (np.ndarray, PassthroughTensor, GammaTensor)) or (
             getattr(child, "dtype", None)
             not in [DEFAULT_INT_NUMPY_TYPE, DEFAULT_FLOAT_NUMPY_TYPE, np.bool]
             and getattr(child, "dtype", None) is not None
@@ -407,10 +442,11 @@ class Tensor(
         tags: Optional[List[str]] = None,
         description: str = "",
     ) -> Pointer:
-
         # relative
         from .autodp.single_entity_phi import SingleEntityPhiTensor
         from .autodp.single_entity_phi import TensorWrappedSingleEntityPhiTensorPointer
+
+        # TODO:  Should create init pointer for NDimEntityPhiTensorPointer.
 
         if isinstance(self.child, SingleEntityPhiTensor):
             return TensorWrappedSingleEntityPhiTensorPointer(
@@ -446,3 +482,47 @@ class Tensor(
     def mpc_swap(self, other: Tensor) -> Tensor:
         self.child.child = other.child.child
         return self
+
+    def _object2bytes(self) -> bytes:
+        schema = get_capnp_schema(schema_file="tensor.capnp")
+        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
+        tensor_msg = tensor_struct.new_message()
+
+        # this is how we dispatch correct deserialization of bytes
+        tensor_msg.magicHeader = serde_magic_header(type(self))
+
+        chunk_bytes(sy.serialize(self.child, to_bytes=True), "child", tensor_msg)
+        chunk_bytes(
+            sy.serialize(self.public_shape, to_bytes=True), "publicShape", tensor_msg
+        )
+        chunk_bytes(
+            sy.serialize(self.public_dtype, to_bytes=True), "publicDtype", tensor_msg
+        )
+        chunk_bytes(sy.serialize(self.tag_name, to_bytes=True), "tagName", tensor_msg)
+
+        return tensor_msg.to_bytes_packed()
+
+    @staticmethod
+    def _bytes2object(buf: bytes) -> Tensor:
+        schema = get_capnp_schema(schema_file="tensor.capnp")
+        tensor_struct: CapnpModule = schema.Tensor  # type: ignore
+        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        tensor_msg = tensor_struct.from_bytes_packed(
+            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        )
+
+        tensor = Tensor(
+            child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
+            public_shape=sy.deserialize(
+                combine_bytes(tensor_msg.publicShape), from_bytes=True
+            ),
+            public_dtype=sy.deserialize(
+                combine_bytes(tensor_msg.publicDtype), from_bytes=True
+            ),
+        )
+        tensor.tag_name = sy.deserialize(
+            combine_bytes(tensor_msg.tagName), from_bytes=True
+        )
+
+        return tensor

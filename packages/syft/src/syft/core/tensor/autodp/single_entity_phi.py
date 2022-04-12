@@ -2302,7 +2302,8 @@ class SingleEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor
                 f"Matrix multiplication not yet implemented for type {type(other)}"
             )
         else:
-            if False and not is_broadcastable(self.shape, other.shape):
+            # Modify before merge, as we intend to remove sept code.
+            if False:  # and not is_broadcastable(self.shape, other.shape):
                 raise Exception(
                     f"Shapes not broadcastable: {self.shape} and {other.shape}"
                 )

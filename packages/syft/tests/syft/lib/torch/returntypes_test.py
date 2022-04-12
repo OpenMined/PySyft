@@ -32,7 +32,7 @@ parameters = [
     ("sort", s, None),
     # ("symeig", s, None), # deprecated in torch==1.10.0
     ("topk", s, 1),
-    ("triangular_solve", s, s),
+    # ("triangular_solve", s, s), # deprecated in torch==1.11.0
     ("svd", s, None),
     ("geqrf", s, None),
     ("median", s, 0),

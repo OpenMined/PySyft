@@ -111,8 +111,8 @@ def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         MPCTensor: Result of the multiplication.
     """
     # relative
-    from ....tensor.smpc.mpc_tensor import MPCTensor
-    from ....tensor.tensor import TensorPointer
+    # from ....tensor.smpc.mpc_tensor import MPCTensor
+    # from ....tensor.tensor import TensorPointer
 
     # diff = a - b
     # bit decomposition
@@ -125,8 +125,8 @@ def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     msb = MSB(res_shares)
 
     # return msb
-    tensor_shares = []
-    final_shares = []
+    # tensor_shares = []
+    # final_shares = []
 
     # if isinstance(x, MPCTensor):
     #     if isinstance(x.child[0], TensorPointer):
