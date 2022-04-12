@@ -1,10 +1,14 @@
-# stdlib
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import Optional
+from typing import TYPE_CHECKING
 
-# relative
-from .... import Tensor
+if TYPE_CHECKING:
+    # relative
+    from .... import Tensor
 
 SMPC_CONTEXT: dict = {}
 FPT_CONTEXT: dict = {}
-tensor_values: Optional[Tensor] = None
+tensor_values: Optional["Tensor"] = None
