@@ -38,6 +38,7 @@ from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
 from ..broadcastable import is_broadcastable
+from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -196,7 +197,7 @@ class TensorWrappedSingleEntityPhiTensorPointer(Pointer):
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
             other_shape = (1,)
-            other_dtype = np.int32
+            other_dtype = DEFAULT_INT_NUMPY_TYPE
         elif isinstance(other, bool):
             other_shape = (1,)
             other_dtype = np.dtype("bool")
