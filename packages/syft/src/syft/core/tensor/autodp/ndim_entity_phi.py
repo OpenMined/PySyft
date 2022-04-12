@@ -23,6 +23,7 @@ from ....core.adp.data_subject_list import numpyutf8tolist
 from ....core.adp.entity import Entity
 from ....lib.numpy.array import capnp_deserialize
 from ....lib.numpy.array import capnp_serialize
+from ....lib.python.util import upcast
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import get_capnp_schema
 from ...common.serde.capnp import serde_magic_header
@@ -39,36 +40,31 @@ from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
 from .initial_gamma import InitialGammaTensor
 from .initial_gamma import IntermediateGammaTensor
-from .single_entity_phi import SingleEntityPhiTensor
 
 
 @serializable(recursive_serde=True)
-class NDimEntityPhiTensorPointer(Pointer):
-    __name__ = "NDimEntityPhiTensorPointer"
+class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
+    __name__ = "TensorWrappedNDimEntityPhiTensorPointer"
     __module__ = "syft.core.tensor.autodp.ndim_entity_phi"
     __attr_allowlist__ = [
         # default pointer attrs
-        "points_to_object_with_path",
-        "pointer_name",
+        "client",
         "id_at_location",
-        "location",
+        "object_type",
         "tags",
         "description",
-        "object_type",
-        "attribute_name",
-        "public_shape",
-        "_exhausted",
-        "gc_enabled",
-        "is_enum",
         # ndim attrs
         "entities",
         "min_vals",
         "max_vals",
-        "client",
         "public_dtype",
+        "public_shape",
     ]
 
-    # TODO :should create serialization for Entity List
+    __serde_overrides__ = {
+        "client": [lambda x: x.address, lambda y: y],
+        "public_shape": [lambda x: x, lambda y: upcast(y)],
+    }
 
     def __init__(
         self,
@@ -97,10 +93,25 @@ class NDimEntityPhiTensorPointer(Pointer):
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
+    # TODO: Modify for large arrays
+    @property
+    def synthetic(self) -> np.ndarray:
+        return (
+            np.random.rand(*list(self.public_shape))  # type: ignore
+            * (self.max_vals.to_numpy() - self.min_vals.to_numpy())
+            + self.min_vals.to_numpy()
+        ).astype(self.public_dtype)
+
+    def __repr__(self) -> str:
+        return (
+            self.synthetic.__repr__()
+            + "\n\n (The data printed above is synthetic - it's an imitation of the real data.)"
+        )
+
 
 @serializable(capnp_bytes=True)
 class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
-    PointerClassOverride = NDimEntityPhiTensorPointer
+    PointerClassOverride = TensorWrappedNDimEntityPhiTensorPointer
     # __attr_allowlist__ = ["child", "min_vals", "max_vals", "entities"]
     __slots__ = (
         "child",
@@ -115,7 +126,6 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         entities: Union[List[Entity], DataSubjectList],
         min_vals: np.ndarray,
         max_vals: np.ndarray,
-        row_type: SingleEntityPhiTensor = SingleEntityPhiTensor,  # type: ignore
     ) -> None:
 
         # child = the actual private data
@@ -144,6 +154,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     @staticmethod
     def from_rows(rows: Sequence) -> NDimEntityPhiTensor:
+        # relative
+        from .single_entity_phi import SingleEntityPhiTensor
+
         if len(rows) < 1 or not isinstance(rows[0], SingleEntityPhiTensor):
             raise Exception(
                 "NDimEntityPhiTensor.from_rows requires a list of SingleEntityPhiTensors"
@@ -177,26 +190,26 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             entities=entities,
         )
 
-    def init_pointer(
-        self,
-        client: Any,
-        id_at_location: Optional[UID] = None,
-        object_type: str = "",
-        tags: Optional[List[str]] = None,
-        description: str = "",
-    ) -> NDimEntityPhiTensorPointer:
-        return NDimEntityPhiTensorPointer(
-            # Arguments specifically for SEPhiTensor
-            entities=self.entities,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            # Arguments required for a Pointer to work
-            client=client,
-            id_at_location=id_at_location,
-            object_type=object_type,
-            tags=tags,
-            description=description,
-        )
+    # def init_pointer(
+    #     self,
+    #     client: Any,
+    #     id_at_location: Optional[UID] = None,
+    #     object_type: str = "",
+    #     tags: Optional[List[str]] = None,
+    #     description: str = "",
+    # ) -> TensorWrappedNDimEntityPhiTensorPointer:
+    #     return TensorWrappedNDimEntityPhiTensorPointer(
+    #         # Arguments specifically for SEPhiTensor
+    #         entities=self.entities,
+    #         min_vals=self.min_vals,
+    #         max_vals=self.max_vals,
+    #         # Arguments required for a Pointer to work
+    #         client=client,
+    #         id_at_location=id_at_location,
+    #         object_type=object_type,
+    #         tags=tags,
+    #         description=description,
+    #     )
 
     @property
     def gamma(self) -> GammaTensor:
@@ -282,7 +295,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     def __repr__(self) -> str:
         """Pretty print some information, optimized for Jupyter notebook viewing."""
         return (
-            f"{self.__class__.__name__}(child={self.child.shape}, "
+            f"{self.__class__.__name__}(child={self.child}, "
             + f"min_vals={self.min_vals}, max_vals={self.max_vals})"
         )
 

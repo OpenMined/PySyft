@@ -34,6 +34,8 @@ from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .autodp.gamma_tensor import GammaTensor
+from .autodp.ndim_entity_phi import NDimEntityPhiTensor
+from .autodp.ndim_entity_phi import TensorWrappedNDimEntityPhiTensorPointer
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
 from .config import DEFAULT_INT_NUMPY_TYPE
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
@@ -373,7 +375,7 @@ class Tensor(
         self,
         child: Any,
         public_shape: Optional[Tuple[int, ...]] = None,
-        public_dtype: Optional[np.dtype] = None,
+        public_dtype: Optional[str] = None,
     ) -> None:
         """data must be a list of numpy array"""
 
@@ -426,7 +428,7 @@ class Tensor(
         if public_dtype is None:
             public_dtype = str(self.dtype)
 
-        self.tag_name: Optional[str] = None
+        self.tag_name: str = ""
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
@@ -448,7 +450,20 @@ class Tensor(
 
         # TODO:  Should create init pointer for NDimEntityPhiTensorPointer.
 
-        if isinstance(self.child, SingleEntityPhiTensor):
+        if isinstance(self.child, NDimEntityPhiTensor):
+            return TensorWrappedNDimEntityPhiTensorPointer(
+                entities=self.child.entities,
+                client=client,
+                id_at_location=id_at_location,
+                object_type=object_type,
+                tags=tags,
+                description=description,
+                min_vals=self.child.min_vals,
+                max_vals=self.child.max_vals,
+                public_shape=getattr(self, "public_shape", None),
+                public_dtype=getattr(self, "public_dtype", None),
+            )
+        elif isinstance(self.child, SingleEntityPhiTensor):
             return TensorWrappedSingleEntityPhiTensorPointer(
                 entity=self.child.entity,
                 client=client,
@@ -462,6 +477,7 @@ class Tensor(
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
+
         else:
             return TensorPointer(
                 client=client,
@@ -492,13 +508,10 @@ class Tensor(
         tensor_msg.magicHeader = serde_magic_header(type(self))
 
         chunk_bytes(sy.serialize(self.child, to_bytes=True), "child", tensor_msg)
-        chunk_bytes(
-            sy.serialize(self.public_shape, to_bytes=True), "publicShape", tensor_msg
-        )
-        chunk_bytes(
-            sy.serialize(self.public_dtype, to_bytes=True), "publicDtype", tensor_msg
-        )
-        chunk_bytes(sy.serialize(self.tag_name, to_bytes=True), "tagName", tensor_msg)
+
+        tensor_msg.publicShape = sy.serialize(self.public_shape, to_bytes=True)
+        tensor_msg.publicDtype = self.public_dtype
+        tensor_msg.tagName = self.tag_name
 
         return tensor_msg.to_bytes_packed()
 
@@ -514,15 +527,9 @@ class Tensor(
 
         tensor = Tensor(
             child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
-            public_shape=sy.deserialize(
-                combine_bytes(tensor_msg.publicShape), from_bytes=True
-            ),
-            public_dtype=sy.deserialize(
-                combine_bytes(tensor_msg.publicDtype), from_bytes=True
-            ),
+            public_shape=sy.deserialize(tensor_msg.publicShape, from_bytes=True),
+            public_dtype=tensor_msg.publicDtype,
         )
-        tensor.tag_name = sy.deserialize(
-            combine_bytes(tensor_msg.tagName), from_bytes=True
-        )
+        tensor.tag_name = tensor_msg.tagName
 
         return tensor

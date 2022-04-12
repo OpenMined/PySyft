@@ -132,7 +132,7 @@ def test_add_tensor_types(
 
     simple_tensor = Tensor(
         child=np.random.randint(
-            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int32
+            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int64
         )
     )
 
