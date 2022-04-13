@@ -8,7 +8,7 @@ RUN --mount=type=cache,target=/var/cache/apt \
   DEBIAN_FRONTEND=noninteractive \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-  curl python3-dev gcc make build-essential cmake
+  curl python3-dev gcc make build-essential cmake dnsutils iproute2
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
@@ -41,17 +41,25 @@ FROM python:3.10.4-slim as backend
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
+RUN --mount=type=cache,target=/var/cache/apt \
+  DEBIAN_FRONTEND=noninteractive \
+  apt-get update && \
+  apt-get install -y --no-install-recommends \
+  dnsutils iproute2
+
 # copy start scripts and gunicorn conf
 COPY grid/backend/docker-scripts/start.sh /start.sh
 # COPY grid/backend/docker-scripts/gunicorn_conf.py /gunicorn_conf.py
 COPY grid/backend/docker-scripts/start-reload.sh /start-reload.sh
 COPY grid/backend/worker-start.sh /worker-start.sh
 COPY grid/backend/worker-start-reload.sh /worker-start-reload.sh
+COPY grid/backend/tailscale-gateway.sh /tailscale-gateway.sh
 
 RUN chmod +x /start.sh
 RUN chmod +x /start-reload.sh
 RUN chmod +x /worker-start.sh
 RUN chmod +x /worker-start-reload.sh
+RUN chmod +x /tailscale-gateway.sh
 
 COPY --from=build /root/.local /root/.local
 COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit

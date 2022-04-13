@@ -29,6 +29,11 @@ else
     echo "There is no script $PRE_START_PATH"
 fi
 
+# if we run on kubernetes add the tailscale container as a gateway for 100.64.0.0/24
+if [ "$CONTAINER_HOST" == "kubernetes" ]; then
+    . tailscale-gateway.sh
+fi
+
 # Start Uvicorn with live reload
 exec uvicorn --reload --host $HOST --port $PORT --log-level $LOG_LEVEL "$APP_MODULE"
 

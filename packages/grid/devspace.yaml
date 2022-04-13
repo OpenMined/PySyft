@@ -31,6 +31,10 @@ vars:
     command: "python ../../VERSION hash"
   - name: NODE_TYPE
     value: "network"
+  - name: RELEASE
+    value: production
+  - name: CONTAINER_HOST
+    value: kubernetes
 
 images:
   backend:
@@ -86,6 +90,55 @@ images:
       buildKit: {}
 
 deployments:
+  - name: traefik-main-config
+    kubectl:
+      manifests:
+        - k8s/manifests/traefik.yaml
+
+  - name: tailscale
+    helm:
+      componentChart: true
+      values:
+        containers:
+          # - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}
+          - image: traefik:v2.5
+            volumeMounts:
+              - containerPath: /etc/traefik
+                volume:
+                  name: traefik-conf
+            env:
+              - name: SERVICE_NAME
+                value: ${SERVICE_NAME_TRAEFIK}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN", "SYS_MODULE"]
+              privileged: true
+            env:
+              - name: HOSTNAME
+                value: ${DOMAIN_NAME}
+              - name: STACK_API_KEY
+                value: ${STACK_API_KEY}
+            volumeMounts:
+              - containerPath: /var/lib/tailscale
+                volume:
+                  name: tailscale-data
+                  subPath: /tailscale-data
+                  readOnly: false
+        volumes:
+          - name: tailscale-data
+            size: "100Mi"
+          - name: traefik-conf
+            configMap:
+              name: traefik-main-config
+        service:
+          name: ${SERVICE_NAME_TAILSCALE}
+          ports:
+            - name: proxy
+              port: 80
+            - name: api
+              port: 4000
+
   - name: queue
     helm:
       componentChart: true
@@ -133,6 +186,10 @@ deployments:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
               - /start-reload.sh
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN"]
+              privileged: true
             livenessProbe:
               httpGet:
                 path: /api/v1/status
@@ -172,6 +229,8 @@ deployments:
                 value: ${NODE_TYPE}
               - name: STACK_API_KEY
                 value: ${STACK_API_KEY}
+              - name: CONTAINER_HOST
+                value: ${CONTAINER_HOST}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -192,6 +251,10 @@ deployments:
                 "--",
                 "/start-reload.sh",
               ]
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN"]
+              privileged: true
             livenessProbe:
               httpGet:
                 path: /api/v1/status
@@ -233,6 +296,8 @@ deployments:
                 value: ${NODE_TYPE}
               - name: STACK_API_KEY
                 value: ${STACK_API_KEY}
+              - name: CONTAINER_HOST
+                value: ${CONTAINER_HOST}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -253,6 +318,10 @@ deployments:
                 "--",
                 "/worker-start.sh",
               ]
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN"]
+              privileged: true
             env:
               - name: DOMAIN_NAME
                 value: ${DOMAIN_NAME}
@@ -280,6 +349,8 @@ deployments:
                 value: "1"
               - name: STACK_API_KEY
                 value: ${STACK_API_KEY}
+              - name: CONTAINER_HOST
+                value: ${CONTAINER_HOST}
   - name: frontend
     helm:
       componentChart: true
@@ -322,59 +393,6 @@ deployments:
           ports:
             - name: vpn
               port: 8080
-            - name: api
-              port: 4000
-  - name: tailscale
-    helm:
-      componentChart: true
-      values:
-        containers:
-          # - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TRAEFIK}:${TRAEFIK_VERSION}
-          - image: traefik:v2.5
-            volumeMounts:
-              - containerPath: /etc/traefik/traefik.yml
-                volume:
-                  - name: traefik-main-config
-                  configMap:
-                    name: traefik-main-config
-            # securityContext:
-            #   capabilities:
-            #     add: ["NET_ADMIN", "SYS_MODULE"]
-            #   privileged: true
-            command:
-              - sleep
-            args:
-              - "99999"
-            env:
-              - name: SERVICE_NAME
-                value: ${SERVICE_NAME_TRAEFIK}
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
-            securityContext:
-              capabilities:
-                add: ["NET_ADMIN", "SYS_MODULE"]
-              privileged: true
-            env:
-              - name: HOSTNAME
-                value: ${DOMAIN_NAME}
-              - name: STACK_API_KEY
-                value: ${STACK_API_KEY}
-            volumeMounts:
-              - containerPath: /var/lib/tailscale
-                volume:
-                  name: tailscale-data
-                  subPath: /tailscale-data
-                  readOnly: false
-        volumes:
-          - name: tailscale-data
-            size: "100Mi"
-          - name: traefik-main-config
-            configMap:
-              name: traefik-main-config
-        service:
-          name: ${SERVICE_NAME_TAILSCALE}
-          ports:
-            - name: proxy
-              port: 80
             - name: api
               port: 4000
 
@@ -425,18 +443,18 @@ dev:
     #   forward:
     #     - port: 8086
     #       remotePort: 8080
-    - name: headscale-api
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_HEADSCALE}
-      forward:
-        - port: 8087
-          remotePort: 4000
-    - name: tailscale-api
-      labelSelector:
-        app.kubernetes.io/component: ${SERVICE_NAME_TAILSCALE}
-      forward:
-        - port: 8088
-          remotePort: 4000
+    # - name: headscale-api
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_HEADSCALE}
+    #   forward:
+    #     - port: 8087
+    #       remotePort: 4000
+    # - name: tailscale-api
+    #   labelSelector:
+    #     app.kubernetes.io/component: ${SERVICE_NAME_TAILSCALE}
+    #   forward:
+    #     - port: 8088
+    #       remotePort: 4000
 
   # sync:
   # - name: traefik
