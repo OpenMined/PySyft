@@ -112,6 +112,11 @@ class Settings(BaseSettings):
         os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
     )  # 30 minutes in seconds
 
+    REDIS_HOST: str = str(os.getenv("REDIS_HOST", "redis"))
+    REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
+    STORE_DB_ID: int = int(os.getenv("STORE_DB_ID", 0))
+    LEDGER_DB_ID: int = int(os.getenv("LEDGER_DB_ID", 1))
+
     class Config:
         case_sensitive = True
 

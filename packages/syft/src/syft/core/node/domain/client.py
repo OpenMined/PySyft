@@ -689,6 +689,8 @@ class DomainClient(Client):
             ]
         )
 
+        sys.stdout.write("\rLoading dataset... uploading...🚀                        ")
+
         if send_assets_to_blob_storage:
             # upload to blob storage
             proxy_assets: Dict[str, ProxyDataset] = {}
@@ -708,16 +710,13 @@ class DomainClient(Client):
             # upload directly
             dataset_bytes = serialize(assets, to_bytes=True)
 
-        sys.stdout.write("\rLoading dataset... uploading...                        ")
         self.datasets.create_syft(
             dataset=dataset_bytes, metadata=metadata, platform="syft"
         )
-        sys.stdout.write(
-            "\rLoading dataset... uploading... SUCCESS!                        "
-        )
+        sys.stdout.write("\rDataset is uploaded successfully !!! 🎉")
 
         print(
-            "\n\nRun <your client variable>.datasets to see your new dataset loaded into your machine!"
+            "\n\nRun `<your client variable>.datasets` to see your new dataset loaded into your machine!"
         )
 
     def create_dataset(
