@@ -44,6 +44,7 @@ from .lib import GRID_SRC_VERSION
 from .lib import check_api_metadata
 from .lib import check_docker_version
 from .lib import check_host
+from .lib import check_jupyter_server
 from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
@@ -1853,6 +1854,11 @@ def check(ip_address: str) -> None:
     else:
         ssh_status = "❌"
 
+    if check_jupyter_server(ip_address, silent=True):
+        jupyter_status = "✅"
+    else:
+        jupyter_status = "❌"
+
     console = rich.get_console()
     console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
 
@@ -1861,6 +1867,7 @@ def check(ip_address: str) -> None:
         ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
         ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
         ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
+        ["", "Jupyter", f"http://{ip_address}:8888/", jupyter_status],
     ]
 
     table = rich.table.Table()
