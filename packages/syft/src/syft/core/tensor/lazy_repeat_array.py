@@ -62,8 +62,12 @@ class lazyrepeatarray:
 
         if self.data.shape == other.data.shape:
             return self.__class__(data=self.data + other.data, shape=self.shape)
+        else:
+            # Rasswanth : Fix after addition of integration tests.
+            print("Lazy Repeat adding with mismatched shapes")
+            return self.__class__(data=self.data + other.data, shape=self.shape)
 
-        raise Exception("not sure how to do this yet")
+        raise Exception(f"not sure how to do this yet: {type(other)}")
 
     def __sub__(self, other: Any) -> lazyrepeatarray:
         """
@@ -91,6 +95,22 @@ class lazyrepeatarray:
 
         if self.shape != other.shape:
             raise Exception("cannot multiply tensors with different shapes")
+
+        if self.data.shape == other.data.shape:
+            return self.__class__(data=self.data * other.data, shape=self.shape)
+
+        raise Exception("not sure how to do this yet")
+
+    def __matmul__(self, other: Any) -> lazyrepeatarray:
+        """
+        THIS MIGHT LOOK LIKE COPY-PASTED CODE!
+        Don't touch it. It's going to get more complicated.
+        """
+        if is_acceptable_simple_type(other):
+            return self.__class__(data=self.data.__matmul__(other), shape=self.shape)
+
+        if self.shape != other.shape:
+            raise Exception("cannot matrix multiply tensors with different shapes")
 
         if self.data.shape == other.data.shape:
             return self.__class__(data=self.data * other.data, shape=self.shape)

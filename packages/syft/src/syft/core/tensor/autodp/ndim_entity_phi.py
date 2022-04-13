@@ -13,7 +13,6 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from nacl.signing import VerifyKey
 import numpy as np
 
 # relative
@@ -39,6 +38,7 @@ from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
 from ..ancestors import AutogradTensorAncestor
+from ..broadcastable import is_broadcastable
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..lazy_repeat_array import lazyrepeatarray
@@ -48,6 +48,7 @@ from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
+from ..smpc.mpc_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
@@ -582,12 +583,18 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         # TODO: update InitialGammaTensor to handle DataSubjectList
         # TODO: check if values needs to be a JAX array or if numpy will suffice
-
+        self.fpt_values = self.child
+        value = (
+            self.child.child.child
+            if isinstance(self.child.child, ShareTensor)
+            else self.child.child
+        )
         return GammaTensor(
-            value=self.child,
+            value=value,
             data_subjects=self.entities,
-            min_val=self.min_vals,
-            max_val=self.max_vals,
+            min_val=self.min_vals.to_numpy(),
+            max_val=self.max_vals.to_numpy(),
+            inputs=value,
         )
 
     def publish(
@@ -596,16 +603,28 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
-        user_key: VerifyKey,
     ) -> AcceptableSimpleType:
         print("PUBLISHING TO GAMMA:")
         print(self.child)
-        return self.gamma.publish(
+
+        res = self.gamma.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             ledger=ledger,
             sigma=sigma,
+            output_func=lambda x: x,
         )
+        fpt_values = self.fpt_values
+        print("After Publish Res", res)
+        print("After publish fpt_values", fpt_values)
+        if isinstance(fpt_values.child, ShareTensor):
+            fpt_values.child.child = res
+        else:
+            fpt_values.child = res
+
+        print("Final FPT Values", fpt_values)
+
+        return fpt_values
 
     @property
     def value(self) -> np.ndarray:
@@ -659,7 +678,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __add__(
         self, other: SupportedChainType
-    ) -> Union[NDimEntityPhiTensor, IntermediateGammaTensor, GammaTensor]:
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
 
         # if the tensor being added is also private
         if isinstance(other, NDimEntityPhiTensor):
@@ -684,11 +703,204 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 # scalar_manager=self.scalar_manager,
             )
 
-        elif isinstance(other, IntermediateGammaTensor):
+        elif isinstance(other, GammaTensor):
             return self.gamma + other
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
+
+    def __sub__(
+        self, other: SupportedChainType
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+
+        if isinstance(other, NDimEntityPhiTensor):
+            if self.entities != other.entities:
+                # return self.gamma - other.gamma
+                raise NotImplementedError
+
+            data = self.child - other.child
+
+            min_min = self.min_vals.data - other.min_vals.data
+            min_max = self.min_vals.data - other.max_vals.data
+            max_min = self.max_vals.data - other.min_vals.data
+            max_max = self.max_vals.data - other.max_vals.data
+            _min_vals = np.minimum.reduce([min_min, min_max, max_min, max_max])
+            _max_vals = np.maximum.reduce([min_min, min_max, max_min, max_max])
+            min_vals = self.min_vals.copy()
+            min_vals.data = _min_vals
+            max_vals = self.max_vals.copy()
+            max_vals.data = _max_vals
+
+            entities = self.entities
+
+        elif is_acceptable_simple_type(other):
+            if isinstance(other, np.ndarray):
+                if not is_broadcastable(other.shape, self.child.shape):  # type: ignore
+                    raise Exception(
+                        f"Shapes do not match for subtraction: {self.child.shape} and {other.shape}"
+                    )
+            data = self.child - other
+            min_vals = self.min_vals - other
+            max_vals = self.max_vals - other
+            entities = self.entities
+        else:
+            raise NotImplementedError
+        return NDimEntityPhiTensor(
+            child=data,
+            entities=entities,
+            min_vals=min_vals,
+            max_vals=max_vals,
+        )
+
+    def __mul__(
+        self, other: SupportedChainType
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+
+        if isinstance(other, NDimEntityPhiTensor):
+            if self.entities != other.entities:
+                print("Entities are not the same?!?!?!")
+                return self.gamma * other.gamma
+
+            data = self.child * other.child
+
+            min_min = self.min_vals.data * other.min_vals.data
+            min_max = self.min_vals.data * other.max_vals.data
+            max_min = self.max_vals.data * other.min_vals.data
+            max_max = self.max_vals.data * other.max_vals.data
+
+            _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_vals = self.min_vals.copy()
+            min_vals.data = _min_vals
+            max_vals = self.max_vals.copy()
+            max_vals.data = _max_vals
+
+            entities = self.entities
+
+            return NDimEntityPhiTensor(
+                child=data,
+                entities=entities,
+                min_vals=min_vals,
+                max_vals=max_vals,
+            )
+        elif is_acceptable_simple_type(other):
+
+            data = self.child * other
+
+            min_min = self.min_vals.data * other
+            min_max = self.min_vals.data * other
+            max_min = self.max_vals.data * other
+            max_max = self.max_vals.data * other
+
+            _min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            _max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_vals = self.min_vals.copy()
+            min_vals.data = _min_vals
+            max_vals = self.max_vals.copy()
+            max_vals.data = _max_vals
+
+            entities = self.entities
+
+            return NDimEntityPhiTensor(
+                child=data,
+                entities=entities,
+                min_vals=min_vals,
+                max_vals=max_vals,
+            )
+        else:
+            return NotImplementedError  # type: ignore
+
+    def __matmul__(
+        self, other: Union[np.ndarray, NDimEntityPhiTensor]
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+        if not isinstance(other, (np.ndarray, NDimEntityPhiTensor)):
+            raise Exception(
+                f"Matrix multiplication not yet implemented for type {type(other)}"
+            )
+        else:
+            # Modify before merge, to know is broadcast is actually necessary
+            if False:  # and not is_broadcastable(self.shape, other.shape):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+            else:
+                if isinstance(other, np.ndarray):
+                    data = self.child.__matmul__(other)
+                    min_vals = self.min_vals.__matmul__(other)
+                    max_vals = self.max_vals.__matmul__(other)
+                elif isinstance(other, NDimEntityPhiTensor):
+                    if self.entities != other.entities:
+                        # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
+                        raise NotImplementedError
+                    else:
+                        data = self.child.__matmul__(other.child)
+                        _min_vals = np.array(
+                            [self.min_vals.data.__matmul__(other.min_vals.data)]
+                        )
+                        _max_vals = np.array(
+                            [self.max_vals.data.__matmul__(other.max_vals.data)]
+                        )
+                        min_vals = self.min_vals.copy()
+                        min_vals.data = _min_vals
+                        max_vals = self.max_vals.copy()
+                        max_vals.data = _max_vals
+                else:
+                    raise NotImplementedError
+
+                return NDimEntityPhiTensor(
+                    child=data,
+                    max_vals=max_vals,
+                    min_vals=min_vals,
+                    entities=self.entities,
+                )
+
+    def __lt__(
+        self, other: SupportedChainType
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+
+        # if the tensor being compared is also private
+        if isinstance(other, NDimEntityPhiTensor):
+
+            if self.entities != other.entities:
+                # return self.gamma < other.gamma
+                raise NotImplementedError
+
+            if len(self.child) != len(other.child):
+                raise Exception(
+                    f"Tensor dims do not match for __lt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                )
+
+            data = (
+                self.child < other.child
+            ) * 1  # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entities = self.entities
+
+            return NDimEntityPhiTensor(
+                child=data,
+                entities=entities,
+                min_vals=min_vals,
+                max_vals=max_vals,
+            )
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = (self.child < other) * 1
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entities = self.entities
+
+            return NDimEntityPhiTensor(
+                child=data,
+                entities=entities,
+                min_vals=min_vals,
+                max_vals=max_vals,
+            )
+
+        else:
+            return NotImplementedError  # type: ignore
 
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
