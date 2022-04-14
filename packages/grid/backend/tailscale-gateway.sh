@@ -4,13 +4,16 @@
 get_tailescale_ip() {
     IP=$(hostname -i)
     IP_RANGE=$(echo ${IP%.*})
-    for i in {1..255}; do
-        IP_ADDRESS=$IP_RANGE.$i
-        OUTPUT=$(nslookup $IP_ADDRESS | grep tailscale)
-        if [ ! -z "$OUTPUT" ]; then
-            break
-        fi
-        IP_ADDRESS=""
+    while [ -z "$IP_ADDRESS" ]
+    do
+        for i in {1..255}; do
+            IP_ADDRESS=$IP_RANGE.$i
+            OUTPUT=$(nslookup $IP_ADDRESS | grep tailscale)
+            if [ ! -z "$OUTPUT" ]; then
+                break
+            fi
+            IP_ADDRESS=""
+        done
     done
     echo $IP_ADDRESS
 }
@@ -25,4 +28,5 @@ set_tailscale_route() {
 }
 
 TAILSCALE_CONTAINER_IP=$(get_tailescale_ip)
+echo "Found TAILSCALE_CONTAINER_IP=$TAILSCALE_CONTAINER_IP"
 set_tailscale_route $TAILSCALE_CONTAINER_IP

@@ -394,6 +394,8 @@ deployments:
                 value: ${S3_REGION}
               - name: S3_PRESIGNED_TIMEOUT_SECS
                 value: ${S3_PRESIGNED_TIMEOUT_SECS}
+              - name: RELEASE
+                value: ${RELEASE}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -486,6 +488,8 @@ deployments:
                 value: ${S3_REGION}
               - name: S3_PRESIGNED_TIMEOUT_SECS
                 value: ${S3_PRESIGNED_TIMEOUT_SECS}
+              - name: RELEASE
+                value: ${RELEASE}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -564,6 +568,8 @@ deployments:
                 value: ${S3_REGION}
               - name: S3_PRESIGNED_TIMEOUT_SECS
                 value: ${S3_PRESIGNED_TIMEOUT_SECS}
+              - name: RELEASE
+                value: ${RELEASE}
 
   - name: frontend
     helm:
