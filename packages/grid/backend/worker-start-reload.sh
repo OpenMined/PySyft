@@ -19,4 +19,5 @@ if [ "$CONTAINER_HOST" == "kubernetes" ]; then
     . tailscale-gateway.sh
 fi
 
+celery -A grid.worker beat -l info --detach
 watchmedo auto-restart --directory=/app --pattern=*.py --recursive -- celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500

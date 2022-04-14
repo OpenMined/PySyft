@@ -679,9 +679,15 @@ class DomainClient(Client):
             if isinstance(v, str):  # type: ignore
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
+        # blob storage can only be used if domain node has blob storage enabled.
+        if use_blob_storage and not self.settings.get("use_blob_storage", False):
+            print(
+                "\n\n**Warning**: Blob Storage is disabled on this domain. Switching to database store.\n"
+            )
+            use_blob_storage = False
+
         # If one of the assets needs to be send to blob_storage, then store all other
         # assets to blob storage as well
-        # TODO: Determine use_blob_storage from the clients node metadata
         send_assets_to_blob_storage = any(
             [
                 check_send_to_blob_storage(obj=asset, use_blob_storage=use_blob_storage)
@@ -718,74 +724,3 @@ class DomainClient(Client):
         print(
             "\n\nRun `<your client variable>.datasets` to see your new dataset loaded into your machine!"
         )
-
-    def create_dataset(
-        self,
-        name: Optional[str] = None,
-        description: Optional[str] = None,
-        skip_checks: bool = False,
-        **metadata: Dict,
-    ) -> None:
-        # relative
-        from ....lib.python.util import downcast
-
-        if name is None:
-            raise Exception(
-                "Missing Name: Oops!... You forgot to name your dataset!\n\n"
-                "It's important to give your dataset a clear and descriptive name because"
-                " the name is the primary way in which potential users of the dataset will"
-                " identify it.\n\n"
-                'Retry with a string name. I.e., .load_dataset(name="<your name here>)"'
-            )
-
-        datasets = self.datasets
-
-        if not skip_checks:
-            for i in range(len(datasets)):
-                d = datasets[i]
-                sys.stdout.write(".")
-                if name == d.name:
-                    print(
-                        "\n\nWARNING - Dataset Name Conflict: A dataset named '"
-                        + name
-                        + "' already exists.\n"
-                    )
-                    pref = input("Do you want to upload this dataset anyway? (y/n)")
-                    while pref != "y" and pref != "n":
-                        pref = input(
-                            "Invalid input '" + pref + "', please specify 'y' or 'n'."
-                        )
-                    if pref == "n":
-                        raise Exception("Dataset loading cancelled.")
-                    else:
-                        print()  # just for the newline
-                        break
-
-        if description is None:
-            raise Exception(
-                "Missing Description: Oops!... You forgot to describe your dataset!\n\n"
-                "It's *very* important to give your dataset a very clear and complete description"
-                " because your users will need to be able to find this dataset (the description is used for search)"
-                " AND they will need enough information to be able to know that the dataset is what they're"
-                " looking for AND how to use it.\n\n"
-                "Start by describing where the dataset came from, how it was collected, and how its formatted."
-                "Refer to each object in 'assets' individually so that your users will know which is which. Don't"
-                " be afraid to be longwinded. :) Your users will thank you."
-            )
-
-        metadata["name"] = bytes(name, "utf-8")  # type: ignore
-        metadata["description"] = bytes(description, "utf-8")  # type: ignore
-
-        for k, v in metadata.items():
-            if isinstance(v, str):  # type: ignore
-                metadata[k] = bytes(v, "utf-8")  # type: ignore
-
-        assets = downcast({})
-        binary_dataset = serialize(assets, to_bytes=True)
-
-        metadata = downcast(metadata)
-
-        self.datasets.create_syft(
-            dataset=binary_dataset, metadata=metadata, platform="syft"
-        )
-        sys.stdout.write("Creating an empty dataset... Creating... SUCCESS!")
