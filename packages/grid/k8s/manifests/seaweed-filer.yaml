@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  filer.toml: |
+    [redis]
+    enabled = true
+    address  = "redis:6379"
+    password = ""
+    database = 15
+metadata:
+  name: seaweed-config-filer
+  namespace: openmined

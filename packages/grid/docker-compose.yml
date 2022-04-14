@@ -104,7 +104,7 @@ services:
 
   redis:
     restart: always
-    image: redis:6.2
+    image: redis:${REDIS_VERSION?Variable not set}
     volumes:
       - app-redis-data:/data
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf

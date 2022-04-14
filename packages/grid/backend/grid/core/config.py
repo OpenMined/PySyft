@@ -114,8 +114,8 @@ class Settings(BaseSettings):
 
     REDIS_HOST: str = str(os.getenv("REDIS_HOST", "redis"))
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
-    STORE_DB_ID: int = int(os.getenv("STORE_DB_ID", 0))
-    LEDGER_DB_ID: int = int(os.getenv("LEDGER_DB_ID", 1))
+    REDIS_STORE_DB_ID: int = int(os.getenv("REDIS_STORE_DB_ID", 0))
+    REDIS_LEDGER_DB_ID: int = int(os.getenv("REDIS_LEDGER_DB_ID", 1))
 
     class Config:
         case_sensitive = True

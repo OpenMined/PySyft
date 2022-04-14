@@ -1,0 +1,17 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: grid-blob-storage-ingress
+  annotations:
+    ingress.kubernetes.io/rewrite-target: /
+spec:
+  rules:
+    - http:
+        paths:
+          - path: /blob
+            pathType: Prefix
+            backend:
+              service:
+                name: proxy
+                port:
+                  number: 80
