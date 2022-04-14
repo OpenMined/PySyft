@@ -97,7 +97,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                 traceback_and_raise(Exception(log))
 
         # give the caller permission to download this
-        read_permissions: TypeDict[VerifyKey, UID] = {verify_key: None}
+        read_permissions: TypeDict[VerifyKey, Optional[UID]] = {verify_key: None}
         search_permissions: TypeDict[VerifyKey, Optional[UID]] = {verify_key: None}
 
         if len(results) == 1:

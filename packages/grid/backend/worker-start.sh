@@ -6,4 +6,4 @@ set -e
 
 python /app/grid/backend_prestart.py
 
-celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
+celery -A grid.worker beat -l info --detach && celery -A grid.worker worker -l info -Q main-queue --pool=gevent -c 500
