@@ -8,8 +8,12 @@ flask run -p 4000 --host=0.0.0.0&
 # start server in background
 headscale serve&
 
+# Wait for headscale to start
+sleep 10
+
 # create namespace
 headscale namespaces create $NETWORK_NAME || true
+
 # kill background process
 pgrep headscale | xargs kill -9
 
