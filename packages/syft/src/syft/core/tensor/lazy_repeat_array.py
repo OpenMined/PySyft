@@ -116,6 +116,11 @@ class lazyrepeatarray:
         else:
             raise Exception("not sure how to do this yet")
 
+    def transpose(self):
+        if isinstance(self.data, np.ndarray):
+            self.data = self.data.transpose()
+        self.shape = self.shape[::-1]
+
     def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, lazyrepeatarray):
             if self.shape == other.shape:

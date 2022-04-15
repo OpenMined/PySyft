@@ -345,6 +345,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def transpose(self, *args, **kwargs) -> None:
+
+
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
     ) -> Union[NDimEntityPhiTensor, GammaTensor]:
