@@ -62,23 +62,24 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         self.map_to_dyn = map_to_dyn
 
     def intersect_keys(
-        self, left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        self,
+        left: Dict[VerifyKey, Optional[UID]],
+        right: Dict[VerifyKey, Optional[UID]],
+    ) -> Dict[VerifyKey, Optional[UID]]:
         return RunClassMethodAction.intersect_keys(left, right)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-
         ast_node = node.lib_ast.query(self.path)
         method = ast_node.object_ref
 
         # storable object raw from object store
-        resolved_self = node.store[self._self.id_at_location]
+        resolved_self = node.store.get(self._self.id_at_location)
         result_read_permissions = resolved_self.read_permissions
 
         resolved_args = []
         tag_args = []
         for arg in self.args:
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get(arg.id_at_location)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -88,7 +89,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store[arg.id_at_location]
+            r_arg = node.store.get(arg.id_at_location)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )

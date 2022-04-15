@@ -1,7 +1,7 @@
-FROM tailscale/tailscale:v1.16
+FROM tailscale/tailscale:v1.20.4
 
 RUN --mount=type=cache,target=/var/cache/apk \
-    apk add --no-cache python3 py3-pip ca-certificates
+    apk add --no-cache python3 py3-pip ca-certificates || true
 
 WORKDIR /tailscale
 COPY ./requirements.txt /tailscale/requirements.txt

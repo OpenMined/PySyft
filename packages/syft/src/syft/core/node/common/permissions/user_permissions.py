@@ -77,7 +77,7 @@ class IsNodeDaaEnabled(BasePermission):
 
 
 class NoRestriction(BasePermission):
-    def has_permissions(
+    def has_permission(
         self,
         msg: SyftMessage,
         node: NodeServiceInterface,
@@ -88,7 +88,10 @@ class NoRestriction(BasePermission):
 
 class UserIsOwner(BasePermission):
     def has_permission(
-        self, msg: SyftMessage, node: NodeServiceInterface, verify_key: VerifyKey
+        self,
+        msg: SyftMessage,
+        node: NodeServiceInterface,
+        verify_key: Optional[VerifyKey],
     ) -> bool:
 
         if hasattr(msg.kwargs, "upcast"):
@@ -102,7 +105,9 @@ class UserIsOwner(BasePermission):
             return False
 
         _target_user = node.users.first(id=user_id)
-        request_user = node.users.get_user(verify_key=verify_key)
+        request_user = (
+            node.users.get_user(verify_key=verify_key) if verify_key else None
+        )
 
         _is_owner = False
         if _target_user:  # If target user exists
@@ -116,3 +121,27 @@ class UserIsOwner(BasePermission):
             ):  # request user is the target user
                 _is_owner = True
         return _is_owner
+
+
+class UserHasWritePermissionToData(BasePermission):
+    def has_permission(
+        self,
+        msg: SyftMessage,
+        node: NodeServiceInterface,
+        verify_key: Optional[VerifyKey],
+    ) -> bool:
+        if hasattr(msg.kwargs, "upcast"):
+            msg_kwargs = msg.kwargs.upcast()  # type: ignore
+        else:
+            msg_kwargs = msg.kwargs
+
+        id_at_location = msg_kwargs.get("id_at_location")
+
+        if id_at_location:
+            storable_obj = node.store.get(key=id_at_location, proxy_only=True)
+            return (
+                verify_key in storable_obj.write_permissions
+                or verify_key == node.root_verify_key
+            )
+
+        return False

@@ -27,7 +27,9 @@ from ..common.serde.serialize import _serialize as serialize
 
 @serializable()
 class Entity:
-    def __init__(self, name: str = "", id: Optional[UID] = None) -> None:
+    __slots__ = "name"
+
+    def __init__(self, name: str = "") -> None:
 
         # If someone doesn't provide a unique name - make one up!
         if name == "":
@@ -44,7 +46,6 @@ class Entity:
             )
 
         self.name = name
-        self.id = id if id else UID()
 
     @property
     def attributes(self) -> Dict[str, str]:
@@ -56,6 +57,9 @@ class Entity:
 
     # checks if the two entities are equal
     def __eq__(self, other: Any) -> bool:
+        # TODO: Remove this once Entity is refactored out
+        if isinstance(other, str):
+            return self.name == other
         return self.name == other.name
 
     # checks if the two entities are not equal
@@ -90,12 +94,11 @@ class Entity:
         return self.__add__(other)
 
     def to_string(self) -> str:
-        return f"{self.name}+{self.id.to_string()}"
+        return f"{self.name}"
 
     @staticmethod
     def from_string(blob: str) -> Entity:
-        ent_name, ent_id = blob.split("+")
-        return Entity(name=ent_name, id=UID.from_string(ent_id))
+        return Entity(name=blob)
 
     # represents entity as a string
     def __repr__(self) -> str:
@@ -103,12 +106,12 @@ class Entity:
 
     # converts entity into a protobuf object
     def _object2proto(self) -> Entity_PB:
-        return Entity_PB(name=self.name, id=self.id._object2proto())
+        return Entity_PB(name=self.name)
 
     # converts a generated protobuf object into an entity
     @staticmethod
     def _proto2object(proto: Entity_PB) -> Entity:
-        return Entity(name=proto.name, id=UID._proto2object(proto.id))
+        return Entity(name=proto.name)
 
     # returns the type of generated protobuf object
     @staticmethod

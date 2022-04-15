@@ -19,7 +19,7 @@ class DatabaseManager:
         self.db = db
 
     def register(self, **kwargs: Any) -> Any:
-        """Register e  new object into the database.
+        """Register a new object into the database.
 
         Args:
             parameters : List of object parameters.

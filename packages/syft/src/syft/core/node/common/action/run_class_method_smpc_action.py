@@ -72,8 +72,8 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def intersect_keys(
-        left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        left: Dict[VerifyKey, Optional[UID]], right: Dict[VerifyKey, Optional[UID]]
+    ) -> Dict[VerifyKey, Optional[UID]]:
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
         # so only intersect the keys and then copy those over from the main dict
@@ -190,16 +190,16 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         from .smpc_action_functions import _MAP_ACTION_TO_FUNCTION
 
         func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
-        store_object_self = node.store.get_object(key=msg.self_id)
+        store_object_self = node.store.get(key=msg.self_id)
         if store_object_self is None:
             raise KeyError("Object not already in store")
 
         _self = store_object_self.data
-        args = [node.store[arg_id].data for arg_id in msg.args_id]
+        args = [node.store.get(arg_id).data for arg_id in msg.args_id]
 
         kwargs = {}  # type: ignore
         for key, kwarg_id in msg.kwargs_id.items():
-            data = node.store[kwarg_id].data
+            data = node.store.get(kwarg_id).data
             if data is None:
                 raise KeyError(f"Key {key} is not available")
 

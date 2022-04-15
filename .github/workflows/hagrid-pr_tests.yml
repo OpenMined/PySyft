@@ -8,6 +8,7 @@ on:
       - dev
       - main
       - "0.6.0"
+      - "0.7.0"
 defaults:
   run:
     working-directory: ./packages/hagrid
@@ -18,7 +19,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -69,10 +70,7 @@ jobs:
         if: steps.changes.outputs.hagrid == 'true'
         run: |
           bandit -r .
-          # temporarily ignore unpatched numpy issue because devs don't agree
-          # https://github.com/pyupio/safety-db/issues/2349
-          # https://github.com/numpy/numpy/issues/19038
-          safety check -i 44715
+          safety check
 
       - name: Build Wheel
         if: steps.changes.outputs.hagrid == 'true'
@@ -108,7 +106,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:

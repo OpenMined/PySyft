@@ -26,7 +26,9 @@ from ....io.address import Address
 from ....pointer.pointer import Pointer
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..util import check_send_to_blob_storage
 from ..util import listify
+from ..util import upload_result_to_s3
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
 
@@ -65,8 +67,9 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def intersect_keys(
-        left: Union[Dict[VerifyKey, UID], None], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        left: Union[Dict[VerifyKey, Optional[UID]], None],
+        right: Dict[VerifyKey, Optional[UID]],
+    ) -> Dict[VerifyKey, Optional[UID]]:
         # TODO: duplicated in run_class_method_action.py
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
@@ -80,7 +83,10 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
         method = node.lib_ast(self.path)
-        result_read_permissions: Union[None, Dict[VerifyKey, UID]] = None
+        result_read_permissions: Union[None, Dict[VerifyKey, Optional[UID]]] = None
+        result_write_permissions: Union[None, Dict[VerifyKey, Optional[UID]]] = {
+            verify_key: None
+        }
 
         resolved_args = list()
         tag_args = []
@@ -96,6 +102,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
+
             resolved_args.append(r_arg.data)
             tag_args.append(r_arg)
 
@@ -139,11 +146,29 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         if result_read_permissions is None:
             result_read_permissions = {}
 
+        if result_write_permissions is None:
+            result_write_permissions = {}
+
+        # TODO: Upload object to seaweed store, instead of storing in redis
+        # create a proxy object class and store it here.
+        if check_send_to_blob_storage(
+            obj=result,
+            use_blob_storage=getattr(node.settings, "USE_BLOB_STORAGE", False),
+        ):
+            result = upload_result_to_s3(
+                asset_name=self.id_at_location.no_dash,
+                dataset_name="",
+                domain_id=node.id,
+                data=result,
+                settings=node.settings,
+            )
+
         if not isinstance(result, StorableObject):
             result = StorableObject(
                 id=self.id_at_location,
                 data=result,
                 read_permissions=result_read_permissions,
+                write_permissions=result_write_permissions,
             )
 
         inherit_tags(
