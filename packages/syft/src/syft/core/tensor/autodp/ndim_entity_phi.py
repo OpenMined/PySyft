@@ -346,7 +346,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             raise NotImplementedError
 
     def transpose(self, *args, **kwargs) -> None:
-
+        pass
 
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
