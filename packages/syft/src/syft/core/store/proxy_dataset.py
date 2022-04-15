@@ -5,6 +5,7 @@ from typing import Optional
 from typing import Tuple
 
 # third party
+from botocore.exceptions import ClientError as BotoClientError
 from pydantic import BaseSettings
 
 # relative
@@ -68,13 +69,34 @@ class ProxyDataset:
             from ..node.common.util import get_s3_client
 
             s3_client = get_s3_client(settings=settings)
-            if s3_client is None:
-                raise Exception("get_s3_client returned None")
             response = s3_client.get_object(Bucket=self.node_id.no_dash, Key=self.name)
             data = response.get("Body", b"").read()
             return deserialize(data, from_bytes=True)
+        except BotoClientError as boto_error:
+            raise boto_error
         except Exception as e:
             print(f"Failed to get data from proxy object {e}.")
+            raise e
+
+    def delete_s3_data(self, settings: BaseSettings) -> None:
+        """Deletes the object from SeaweedFS/blob store.
+
+        Args:
+            settings (BaseSettings): base settings of the PyGrid server
+
+        Raises:
+            BotoClientError: Object deletion fails due to error on SeaweedFS service
+        """
+
+        try:
+            # relative
+            from ..node.common.util import get_s3_client
+
+            s3_client = get_s3_client(settings=settings)
+            s3_client.delete_object(Bucket=self.node_id.no_dash, Key=self.name)
+        except BotoClientError as boto_error:
+            raise boto_error
+        except Exception as e:
             raise e
 
     def generate_presigned_url(
