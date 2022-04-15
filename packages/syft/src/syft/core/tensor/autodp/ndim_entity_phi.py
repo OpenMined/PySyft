@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
+from html import entities
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -345,8 +346,16 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
-    def transpose(self, *args, **kwargs) -> None:
-        pass
+    def transpose(self, *args, **kwargs) -> NDimEntityPhiTensor:
+        return NDimEntityPhiTensor(
+            child=self.child.transpose(),
+            min_vals=self.min_vals.transpose(),
+            max_vals=self.max_vals.transpose(),
+            entities=DataSubjectList(
+                one_hot_lookup=self.entities.one_hot_lookup,
+                data_subjects_indexed=self.entities.data_subjects_indexed.transpose()
+            )
+        )
 
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
