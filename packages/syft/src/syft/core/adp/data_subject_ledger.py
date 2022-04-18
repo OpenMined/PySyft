@@ -13,6 +13,9 @@ from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 
+# relative
+from ...logger import info
+
 if TYPE_CHECKING:
     # stdlib
     from dataclasses import dataclass
@@ -49,7 +52,7 @@ def load_cache(filename: str) -> np.ndarray:
     if not os.path.exists(CACHE_PATH):
         raise Exception(f"Cannot load {CACHE_PATH}")
     cache_array = np.load(CACHE_PATH)
-    print(f"Loaded constant2epsilon cache of size: {cache_array.shape}")
+    info(f"Loaded constant2epsilon cache of size: {cache_array.shape}")
     return cache_array
 
 
