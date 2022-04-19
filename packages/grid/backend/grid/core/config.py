@@ -98,7 +98,7 @@ class Settings(BaseSettings):
     DOMAIN_NAME: str = "default_node_name"
     STREAM_QUEUE: bool = False
     NODE_TYPE: str = "Domain"
-    
+
     OPEN_REGISTRATION: bool = True
 
     DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED: bool = True
@@ -118,8 +118,8 @@ class Settings(BaseSettings):
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
     STORE_DB_ID: int = int(os.getenv("STORE_DB_ID", 0))
     LEDGER_DB_ID: int = int(os.getenv("LEDGER_DB_ID", 1))
-    EXTERNAL_DOCKER_PORT : int = int(os.getenv("EXTERNAL_DOCKER_PORT", "8081"))
-    
+    EXTERNAL_DOCKER_PORT: int = int(os.getenv("EXTERNAL_DOCKER_PORT", "8081"))
+
     class Config:
         case_sensitive = True
 
