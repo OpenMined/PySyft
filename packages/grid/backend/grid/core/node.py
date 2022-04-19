@@ -59,17 +59,10 @@ elif settings.NODE_TYPE.lower() == "network":
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
     logging.info("Main    : before creating thread")
-    url = GridURL.from_url("http://localhost:8081/api/v1").as_docker_host()
+    url = GridURL.from_url(f"http://{settings.LOOPBACK_ADDRESS}:{settings.EXTERNAL_DOCKER_PORT}/api/v1").as_docker_host()
     msg = VPNJoinMessageWithReply(kwargs={"grid_url": url}).to(address=node.address,reply_to=node.address).sign(signing_key=node.signing_key)
     reply = node.recv_immediate_msg_with_reply(msg=msg)
-    logging.info("Response: ", reply)
-    #celery_app.send_task("grid.worker.connect_vpn", args=[])
-    #x = threading.Thread(target=thread_function)
-    #logging.info("Main    : before running thread")
-    #x.start()
-    logging.info("Main    : wait for the thread to finish")
-    # x.join()
-    logging.info("Main    : all done")
+    #celery_app.send_task("grid.worker.connect_vpn", args=[url])
 
 else:
     raise Exception(
