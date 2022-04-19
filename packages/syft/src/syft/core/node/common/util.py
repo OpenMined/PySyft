@@ -18,6 +18,7 @@ from ....util import size_mb
 from ...common.serde.serialize import _serialize as serialize
 from ...common.uid import UID
 from ...store.proxy_dataset import ProxyDataset
+from .exceptions import DatasetUploadError
 
 MIN_BLOB_UPLOAD_SIZE_MB = 1
 
@@ -107,6 +108,32 @@ def upload_result_to_s3(
     return proxy_obj
 
 
+def abort_s3_object_upload(
+    client: boto3.client, upload_id: str, asset_name: str
+) -> None:
+    """Abort upload to s3 for the given asset.
+
+    Args:
+        client (boto3.client): boto3 client.
+        upload_id (str): upload id generated for mutlipart upload.
+        asset_name (str): name of the data/asset.
+    """
+    # relative
+    from .node_service.upload_service.upload_service_messages import (
+        AbortDataUploadMessage,
+    )
+
+    # Send a message to PyGrid to abort the data being uploaded to s3.
+    # TODO: make this call async -> could use celery .delay method to do
+    _ = client.datasets.perform_api_request_generic(
+        syft_msg=AbortDataUploadMessage,
+        content={
+            "upload_id": upload_id,
+            "asset_name": asset_name,
+        },
+    )
+
+
 def upload_to_s3_using_presigned(
     client: Any,
     data: Any,
@@ -115,7 +142,6 @@ def upload_to_s3_using_presigned(
     dataset_name: str = "",
 ) -> ProxyDataset:
     """Perform a multipart upload of data to Seaweed using boto3 presigned urls.
-
     The main steps involve:
     - Converting the data to binary data
     - Chunking the binary into smaller chunks
@@ -123,17 +149,14 @@ def upload_to_s3_using_presigned(
     - Upload data to Seaweed via PUT request
     - Send a acknowledge to Seaweed via PyGrid when all chunks are successfully uploaded
     - Create a ProxyDataset to store metadata of the uploaded data
-
     Args:
         client (Any): Client to send object to
         data (Any): Data to be uploaded to Seaweed
         chunk_size (int): smallest size of the data to be uploaded in bytes
         asset_name (str): name of the data being uploaded
         dataset_name Optional[(str)]: name of the dataset to which the data belongs
-
     Raises:
         Exception: If upload of data chunks to Seaweed fails.
-
     Returns:
         ProxyDataset: Class to store metadata about the data that is uploaded to Seaweed.
     """
@@ -163,59 +186,65 @@ def upload_to_s3_using_presigned(
         },
     )
 
-    # Step 3 - Starts to upload binary data into Seaweed.
-    binary_buffer = BytesIO(binary_dataset)
-    parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
-    etag_chunk_no_pairs = list()
-    data_chunks = zip(read_chunks(binary_buffer, chunk_size), parts)
-    for _ in tqdm(
-        parts, desc=data_upload_description, colour="green", ncols=100, leave=True
-    ):
-        data_chunk, part = next(data_chunks)
-        presigned_url = part["url"]
-        part_no = part["part_no"]
-        client_url = client.url_from_path(presigned_url)
-        part["client_url"] = client_url
+    try:
+        # Step 3 - Starts to upload binary data into Seaweed.
+        binary_buffer = BytesIO(binary_dataset)
+        parts = sorted(upload_response.payload.parts, key=lambda x: x["part_no"])
+        etag_chunk_no_pairs = list()
+        data_chunks = zip(read_chunks(binary_buffer, chunk_size), parts)
+        for _ in tqdm(
+            parts, desc=data_upload_description, colour="green", ncols=100, leave=True
+        ):
+            data_chunk, part = next(data_chunks)
+            presigned_url = part["url"]
+            part_no = part["part_no"]
+            client_url = client.url_from_path(presigned_url)
+            part["client_url"] = client_url
 
-        res = requests.put(client_url, data=data_chunk)
+            res = requests.put(client_url, data=data_chunk)
 
-        # TODO: Replace with some error message if it fails.
+            if not res.ok:  # raise an error if upload fails
+                error_message = (
+                    f"\n\nFailed to upload `{asset_name}` to store\n"
+                    + f"Status code: {res.status_code} {res.reason}\n"
+                    + f"Error: {str(res.text)}"
+                )
+                raise DatasetUploadError(message=error_message)
+            etag = res.headers["ETag"]
+            etag_chunk_no_pairs.append(
+                {"ETag": etag, "PartNumber": part_no}
+            )  # maintain list of part no and ETag
 
-        if res.status_code != 200:
-            raise Exception(
-                f"Uploading Chunk {part} failed. "
-                + f"HTTP Status Code: {res.status_code}"
-                + f"HTTP Content: {str(res.content)}"
-            )
-        etag = res.headers["ETag"]
-        etag_chunk_no_pairs.append(
-            {"ETag": etag, "PartNumber": part_no}
-        )  # maintain list of part no and ETag
+        # Step 4 - Send a message to PyGrid informing about dataset upload complete!
+        upload_response = client.datasets.perform_request(
+            syft_msg=UploadDataCompleteMessage,
+            content={
+                "upload_id": upload_response.payload.upload_id,
+                "filename": f"{dataset_name}/{asset_name}",
+                "parts": etag_chunk_no_pairs,
+            },
+        )
 
-    # Step 4 - Send a message to PyGrid informing about dataset upload complete!
-    upload_response = client.datasets.perform_request(
-        syft_msg=UploadDataCompleteMessage,
-        content={
-            "upload_id": upload_response.payload.upload_id,
-            "filename": f"{dataset_name}/{asset_name}",
-            "parts": etag_chunk_no_pairs,
-        },
-    )
-
-    # Step 5 - Create a proxy dataset for the uploaded data.
-    # Retrieve fully qualified name to  use for pointer creation.
-    obj_public_kwargs = getattr(data, "proxy_public_kwargs", None)
-    data_fqn = str(get_fully_qualified_name(data))
-    data_dtype = str(type(data))
-    proxy_data = ProxyDataset(
-        asset_name=asset_name,
-        dataset_name=dataset_name,
-        node_id=client.id,
-        dtype=data_dtype,
-        fqn=data_fqn,
-        shape=data.shape,
-        obj_public_kwargs=obj_public_kwargs,
-    )
+        # Step 5 - Create a proxy dataset for the uploaded data.
+        # Retrieve fully qualified name to  use for pointer creation.
+        obj_public_kwargs = getattr(data, "proxy_public_kwargs", None)
+        data_fqn = str(get_fully_qualified_name(data))
+        data_dtype = str(type(data))
+        proxy_data = ProxyDataset(
+            asset_name=asset_name,
+            dataset_name=dataset_name,
+            node_id=client.id,
+            dtype=data_dtype,
+            fqn=data_fqn,
+            shape=data.shape,
+            obj_public_kwargs=obj_public_kwargs,
+        )
+    except (Exception, KeyboardInterrupt) as e:
+        upload_id = upload_response.payload.upload_id
+        abort_s3_object_upload(
+            client=client, upload_id=upload_id, asset_name=asset_name
+        )
+        raise e
 
     return proxy_data
 
@@ -245,7 +274,7 @@ def check_send_to_blob_storage(obj: Any, use_blob_storage: bool = False) -> bool
         use_blob_storage (bool, optional): Explicit flag to send the data to blob storage. Defaults to False.
 
     Returns:
-        bool: _description_
+        bool: Returns True if obj can be stored in blob store else returns False.
     """
     # relative
     from ...tensor import Tensor

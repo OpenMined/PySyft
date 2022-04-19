@@ -67,8 +67,8 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def intersect_keys(
-        left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        left: Dict[VerifyKey, Optional[UID]], right: Dict[VerifyKey, Optional[UID]]
+    ) -> Dict[VerifyKey, Optional[UID]]:
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
         # so only intersect the keys and then copy those over from the main dict
