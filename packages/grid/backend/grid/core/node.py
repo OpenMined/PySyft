@@ -19,7 +19,6 @@ from grid.core.config import Settings
 from grid.core.config import settings
 from grid.db.session import get_db_engine
 from grid.db.session import get_db_session
-from grid.core.celery_app import celery_app
 
 
 def create_s3_bucket(bucket_name: str, settings: Settings) -> None:
@@ -58,12 +57,10 @@ elif settings.NODE_TYPE.lower() == "network":
     format = "%(asctime)s: %(message)s"
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
-    logging.info("Main    : before creating thread")
     url = GridURL.from_url(f"http://{settings.LOOPBACK_ADDRESS}:{settings.EXTERNAL_DOCKER_PORT}/api/v1").as_docker_host()
+    logging.info("Main: Sending VPN Connect task .... ")
     msg = VPNJoinMessageWithReply(kwargs={"grid_url": url}).to(address=node.address,reply_to=node.address).sign(signing_key=node.signing_key)
     reply = node.recv_immediate_msg_with_reply(msg=msg)
-    #celery_app.send_task("grid.worker.connect_vpn", args=[url])
-
 else:
     raise Exception(
         "Don't know NODE_TYPE "
