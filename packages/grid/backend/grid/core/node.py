@@ -12,12 +12,15 @@ from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
 from syft.core.node.common.node_table.utils import seed_db
 from syft.core.node.common.util import get_s3_client
+from syft.core.node.common.node_service.vpn.vpn_messages import VPNJoinMessageWithReply
+from syft.grid.grid_url import GridURL
 
 # grid absolute
 from grid.core.config import Settings
 from grid.core.config import settings
 from grid.db.session import get_db_engine
 from grid.db.session import get_db_session
+from grid.core.celery_app import celery_app
 
 
 def thread_function(*args, **kwargs) -> None:  # type: ignore
@@ -103,9 +106,14 @@ elif settings.NODE_TYPE.lower() == "network":
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
 
     logging.info("Main    : before creating thread")
-    x = threading.Thread(target=thread_function)
-    logging.info("Main    : before running thread")
-    x.start()
+    url = GridURL.from_url("http://localhost:8081/api/v1").as_docker_host()
+    msg = VPNJoinMessageWithReply(kwargs={"grid_url": url}).to(address=node.address,reply_to=node.address).sign(signing_key=node.signing_key)
+    reply = node.recv_immediate_msg_with_reply(msg=msg)
+    logging.info("Response: ", reply)
+    #celery_app.send_task("grid.worker.connect_vpn", args=[])
+    #x = threading.Thread(target=thread_function)
+    #logging.info("Main    : before running thread")
+    #x.start()
     logging.info("Main    : wait for the thread to finish")
     # x.join()
     logging.info("Main    : all done")
