@@ -1,4 +1,5 @@
 # stdlib
+from __future__ import annotations
 import secrets
 from time import time
 from typing import Callable
@@ -13,8 +14,6 @@ from jax import numpy as jnp
 import numpy as np
 
 # relative
-from ..tensor.autodp.gamma_tensor import GammaTensor
-from ..tensor.autodp.gamma_tensor import no_op
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_list import DataSubjectList
@@ -80,6 +79,7 @@ def vectorized_publish(
     sigma: float = 1.5,
     output_func: Callable = lambda x: x,
 ) -> Union[np.ndarray, jax.numpy.DeviceArray]:
+    from ..tensor.autodp.gamma_tensor import GammaTensor
 
     print(f"Starting vectorized publish: {type(ledger)}")
     print("Starting RDP Params Calculation")
