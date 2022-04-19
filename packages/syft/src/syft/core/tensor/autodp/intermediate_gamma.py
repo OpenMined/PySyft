@@ -30,7 +30,6 @@ from ...common.serde.serializable import serializable
 from ...tensor.passthrough import PassthroughTensor  # type: ignore
 from ...tensor.passthrough import is_acceptable_simple_type  # type: ignore
 from ..broadcastable import is_broadcastable
-from ..smpc.share_tensor import ShareTensor
 from .adp_tensor import ADPTensor
 
 SupportedChainType = Union[int, bool, float, np.ndarray, PassthroughTensor]
@@ -548,25 +547,29 @@ class IntermediateGammaTensor(PassthroughTensor, ADPTensor):
 
     def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> np.ndarray:
         print("IntermediaGammaTensor:510: TRY: publish(scalars=self.flat_scalars)")
-        result = publish(
-            scalars=self.flat_scalars,
-            acc=acc,
-            sigma=sigma,
-            user_key=user_key,
-            public_only=True,
-        )
-
-        result = np.array(result).reshape(self.shape)
-
+        result = np.array(
+            publish(
+                scalars=self.flat_scalars,
+                acc=acc,
+                sigma=sigma,
+                user_key=user_key,
+                public_only=True,
+            )
+        ).reshape(self.shape)
         print("IntermediaGammaTensor:510: SUCCESS: publish(scalars=self.flat_scalars)")
-        fpt_values = getattr(self, "fpt_values", None)
-        if fpt_values is not None:
-            if isinstance(fpt_values.child, ShareTensor):
-                fpt_values.child.child = result
-            else:
-                fpt_values.child = result
+        sharetensor_values = getattr(self, "sharetensor_values", None)
+        if sharetensor_values is not None:
+            # relative
+            from ..smpc.share_tensor import ShareTensor
 
-            result = fpt_values
+            result = ShareTensor(
+                rank=sharetensor_values.rank,
+                parties_info=sharetensor_values.parties_info,
+                ring_size=sharetensor_values.ring_size,
+                seed_przs=sharetensor_values.seed_przs,
+                clients=sharetensor_values.clients,
+                value=result,
+            )
         return result
 
     def sum(self, axis: Optional[int] = None) -> IntermediateGammaTensor:

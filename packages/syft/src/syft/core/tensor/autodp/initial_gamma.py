@@ -2,6 +2,7 @@
 from typing import Any
 from typing import List as TypeList
 from typing import Optional
+from typing import Union
 
 # third party
 import numpy as np
@@ -11,7 +12,7 @@ from ...adp.entity import DataSubjectGroup
 from ...adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
-from ..fixed_precision_tensor import FixedPrecisionTensor
+from ..passthrough import PassthroughTensor  # type: ignore
 from ..smpc.share_tensor import ShareTensor
 from .adp_tensor import ADPTensor
 from .intermediate_gamma import IntermediateGammaTensor
@@ -45,9 +46,11 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
 
     __serde_overrides__ = {"entities": [numpy2list, list2numpy]}
 
+    sharetensor_values: Optional[ShareTensor]
+
     def __init__(
         self,
-        values: FixedPrecisionTensor,
+        values: Union[IntermediateGammaTensor, PassthroughTensor, np.ndarray],
         min_vals: np.ndarray,
         max_vals: np.ndarray,
         entities: Any,  # List[Entity] gives flatten errors
@@ -55,12 +58,12 @@ class InitialGammaTensor(IntermediateGammaTensor, ADPTensor):
     ) -> None:
         self.uid = UID()
 
-        self.fpt_values = values
-        self.values = (
-            values.child.child
-            if isinstance(values.child, ShareTensor)
-            else values.child
-        )
+        if isinstance(values, ShareTensor):
+            self.sharetensor_values = values
+            self.values = values.child
+        else:
+            self.sharetensor_values = None
+            self.values = values
 
         self.min_vals = min_vals
         self._min_vals_cache = min_vals
