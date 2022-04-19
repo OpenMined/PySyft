@@ -102,26 +102,31 @@ class GammaTensor:
     inputs: jnp.array = np.array([], dtype=np.int64)
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
-    def __post_init__(self) -> None:
-        if len(self.state) == 0:
+    def __post_init__(self) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
+        if len(self.state) == 0 and self.func is not no_op:
             self.state[self.id] = self
 
     def run(self, state: dict) -> Callable:
         # we hit a private input
         if self.func is no_op:
-            return self.func(state[self.id].value)
+            return self.value
         return self.func(state)
 
     def __add__(self, other: Any) -> GammaTensor:
-        state = dict()
-        state.update(self.state)
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
 
         if isinstance(other, GammaTensor):
 
             def _add(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.add(self.run(state), other.run(state))
 
-            state.update(other.state)
+            # print("this is the other.state", other.state)
+            output_state[other.id] = other
+            # state.update(other.state)
+            # print("this is the output_state", output_state)
+
             value = self.value + other.value
             min_val = self.min_val + other.min_val
             max_val = self.max_val + other.max_val
@@ -133,14 +138,14 @@ class GammaTensor:
             value = self.value + other
             min_val = self.min_val + other
             max_val = self.max_val + other
-
+        # print("the state we returned is: ", output_state)
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
             min_val=min_val,
             max_val=max_val,
             func=_add,
-            state=state,
+            state=output_state,
         )
 
     def __mul__(self, other: Any) -> GammaTensor:
@@ -216,7 +221,7 @@ class GammaTensor:
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
-        output_func: Callable = np.sum,
+        # output_func: Callable = np.sum,
     ) -> jax.numpy.DeviceArray:
         # TODO: Add data scientist privacy budget as an input argument, and pass it
         # into vectorized_publish
