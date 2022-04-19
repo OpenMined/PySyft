@@ -99,7 +99,6 @@ class GammaTensor:
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
-    inputs: jnp.array = np.array([], dtype=np.int64)
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
     def __post_init__(self) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
@@ -107,6 +106,8 @@ class GammaTensor:
             self.state[self.id] = self
 
     def run(self, state: dict) -> Callable:
+        """ This method traverses the computational tree and returns all the private inputs"""
+        # TODO: Can we eliminate "state" and use self.state below?
         # we hit a private input
         if self.func is no_op:
             return self.value
@@ -179,8 +180,9 @@ class GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sum(self.run(state))
 
-        state = dict()
-        state.update(self.state)
+        output_state = dict()
+        output_state[self.id] = self
+        # output_state.update(self.state)
 
         value = jnp.sum(self.value)
         min_val = jnp.sum(self.min_val)
@@ -192,7 +194,7 @@ class GammaTensor:
             min_val=min_val,
             max_val=max_val,
             func=_sum,
-            state=state,
+            state=output_state,
         )
 
     def sqrt(self) -> GammaTensor:
@@ -221,21 +223,23 @@ class GammaTensor:
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
-        # output_func: Callable = np.sum,
     ) -> jax.numpy.DeviceArray:
         # TODO: Add data scientist privacy budget as an input argument, and pass it
         # into vectorized_publish
         if sigma is None:
-            sigma = self.value.mean() / 4
+            sigma = self.value.mean() / 4  # TODO @Ishan: replace this with calibration
+
+        if self.value.dtype != np.int64:
+            raise Exception("Data type of private values is not np.int64: ", self.value.dtype)
 
         return vectorized_publish(
             min_vals=self.min_val,
             max_vals=self.max_val,
-            values=self.inputs,
+            state_tree=self.state,
             data_subjects=self.data_subjects,
             is_linear=self.is_linear,
             sigma=sigma,
-            output_func=output_func,
+            output_func=self.func,
             ledger=ledger,
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
@@ -326,6 +330,17 @@ class GammaTensor:
     @property
     def dtype(self) -> np.dtype:
         return self.value.dtype
+
+    @staticmethod
+    def get_input_tensors(state_tree: dict[int, GammaTensor]) -> List:
+        # TODO: See if we can call np.stack on the output and create a vectorized tensor instead of a list of tensors
+        input_tensors = []
+        for tensor in state_tree.values():
+            if tensor.func is no_op:
+                input_tensors.append(tensor)
+            else:
+                input_tensors += GammaTensor.get_input_tensors(tensor.state)
+        return input_tensors
 
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="gamma_tensor.capnp")

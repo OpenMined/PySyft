@@ -3,6 +3,9 @@ import secrets
 from time import time
 from typing import Callable
 from typing import Tuple
+from typing import Union
+from typing import Dict
+from typing import List
 
 # third party
 import jax
@@ -10,6 +13,8 @@ from jax import numpy as jnp
 import numpy as np
 
 # relative
+from ..tensor.autodp.gamma_tensor import GammaTensor
+from ..tensor.autodp.gamma_tensor import no_op
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_list import DataSubjectList
@@ -66,83 +71,86 @@ def calculate_bounds_for_mechanism(
 def vectorized_publish(
     min_vals: np.ndarray,
     max_vals: np.ndarray,
-    values: np.ndarray,
+    state_tree: dict[int, GammaTensor],
     data_subjects: DataSubjectList,
     ledger: DataSubjectLedger,
     get_budget_for_user: Callable,
     deduct_epsilon_for_user: Callable,
     is_linear: bool = True,
     sigma: float = 1.5,
-    output_func: Callable = np.sum,
-    # private: bool = False
-) -> np.ndarray:
-    # TODO convert values to np.int64
-    if values.dtype != np.int64:
-        raise Exception("Values is not np.int64", values.dtype)
+    output_func: Callable = lambda x: x,
+) -> Union[np.ndarray, jax.numpy.DeviceArray]:
 
     print(f"Starting vectorized publish: {type(ledger)}")
-    # Get all unique entities
-    # unique_data_subjects = data_subjects.one_hot_lookup
-    # unique_data_subject_indices = np.arange(
-
     print("Starting RDP Params Calculation")
 
-    t1 = time()
-    # Calculate everything needed for RDP
+    # TODO: Vectorize this to return a larger GammaTensor instead of a list of Tensors
+    input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
 
-    l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
-        value_array=values, min_val_array=min_vals, max_val_array=max_vals, sigma=sigma
-    )
+    for input_tensor in input_tensors:
+        # TODO: Double check with Andrew if this is correct- if we use the individual
 
-    if is_linear:
-        lipschitz_bounds = coeffs.copy()
-    else:
-        raise Exception("gamma_tensor.lipschitz_bound property would be used here")
+        t1 = time()
+        # Calculate everything needed for RDP
 
-    input_entities = data_subjects.data_subjects_indexed[0].reshape(-1)
-    t2 = time()
-    print("Obtained RDP Params, calculation time", t2 - t1)
-
-    # Query budget spend of all unique entities
-    rdp_params = RDPParams(
-        sigmas=sigmas,
-        l2_norms=l2_norms,
-        l2_norm_bounds=l2_norm_bounds,
-        Ls=lipschitz_bounds,
-        coeffs=coeffs,
-    )
-    print("Finished RDP Params Initialization")
-    try:
-        # query and save
-        mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
-            unique_entity_ids_query=input_entities,
-            rdp_params=rdp_params,
-            private=True,
-            get_budget_for_user=get_budget_for_user,
-            deduct_epsilon_for_user=deduct_epsilon_for_user,
+        l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
+            value_array=input_tensor.value,
+            min_val_array=input_tensor.min_val,
+            max_val_array=input_tensor.max_val,
+            sigma=sigma
         )
-        # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
-        reshaped_mask = mask.reshape(values.shape)
-        print("Fixed mask shape!")
-        # here we have the final mask and highest possible spend has been applied
-        # to the data scientists budget field in the database
 
-        if mask is None:
-            raise Exception("Failed to publish mask is None")
+        if is_linear:
+            lipschitz_bounds = coeffs.copy()
+        else:
+            lipschitz_bounds = input_tensor.lipschitz_bound
+            # raise Exception("gamma_tensor.lipschitz_bound property would be used here")
 
-        print("Obtained overbudgeted entity mask", mask.dtype)
+        input_entities = input_tensor.data_subjects.data_subjects_indexed
+        # data_subjects.data_subjects_indexed[0].reshape(-1)
+        t2 = time()
+        print("Obtained RDP Params, calculation time", t2 - t1)
 
-        # multiply values by the inverted mask
-        filtered_inputs = values * (
-            1 - reshaped_mask
-        )  # + gauss(0, sigma)  # Double check that noise has mean of 0
-        noise = secrets.SystemRandom().gauss(0, sigma)
-        output = np.asarray(output_func(filtered_inputs) + noise)
-        print("got output", type(output), output.dtype)
-        return output
-    except Exception as e:
-        # stdlib
-        import traceback
+        # Query budget spend of all unique entities
+        rdp_params = RDPParams(
+            sigmas=sigmas,
+            l2_norms=l2_norms,
+            l2_norm_bounds=l2_norm_bounds,
+            Ls=lipschitz_bounds,
+            coeffs=coeffs,
+        )
+        print("Finished RDP Params Initialization")
+        try:
+            # query and save
+            mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
+                unique_entity_ids_query=input_entities,
+                rdp_params=rdp_params,
+                private=True,
+                get_budget_for_user=get_budget_for_user,
+                deduct_epsilon_for_user=deduct_epsilon_for_user,
+            )
+            # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
+            reshaped_mask = mask.reshape(input_tensor.value.shape)
+            print("Fixed mask shape!")
+            # here we have the final mask and highest possible spend has been applied
+            # to the data scientists budget field in the database
 
-        print(traceback.format_exc())
-        print(f"Failed to run vectorized_publish. {e}")
+            if mask is None:
+                raise Exception("Failed to publish mask is None")
+
+            print("Obtained overbudgeted entity mask", mask.dtype)
+
+            # multiply values by the inverted mask
+            filtered_inputs = input_tensor.value * (
+                1 - reshaped_mask
+            )  # + gauss(0, sigma)  # Double check that noise has mean of 0
+            noise = secrets.SystemRandom().gauss(0, sigma)
+            output = np.asarray(output_func(filtered_inputs) + noise)
+            print("got output", type(output), output.dtype)
+            return output
+        except Exception as e:
+            # stdlib
+            import traceback
+
+            print(traceback.format_exc())
+            print(f"Failed to run vectorized_publish. {e}")
