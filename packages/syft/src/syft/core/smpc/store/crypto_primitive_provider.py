@@ -91,7 +91,7 @@ class CryptoPrimitiveProvider:
 
         for primitives_party, party in zip(primitives, parties):
             party.syft.core.tensor.smpc.share_tensor.populate_store(
-                op_str, primitives_party, **p_kwargs, ring_size=ring_size
+                op_str, primitives_party, **p_kwargs, ring_size=str(ring_size)
             )
 
     @staticmethod

@@ -97,6 +97,9 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         self.unique_entities: set[Entity] = set()
         self.n_entities = 0
         for entity in self.entities.flatten():
+            if isinstance(entity, str):
+                entity = Entity(name=entity)
+
             if isinstance(entity, Entity):
                 if entity not in self.unique_entities:
                     self.unique_entities.add(entity)
@@ -622,7 +625,7 @@ class RowEntityPhiTensor(PassthroughTensor, ADPTensor):
         )
         coeff_tensor = np.ones_like(term_tensor)
         bias_tensor = np.zeros((1,), dtype=np.int32)
-        value_tensor = np.sum(flat_values, axis=0)
+        value_tensor = sum(flat_values)
 
         result = IGT(
             value_tensor=value_tensor,

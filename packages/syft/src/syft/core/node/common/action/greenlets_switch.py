@@ -1,3 +1,6 @@
+# stdlib
+from typing import Tuple
+
 # third party
 import gevent
 
@@ -9,12 +12,12 @@ from ...abstract.node import AbstractNode
 
 
 def retrieve_object(
-    node: AbstractNode, id_at_location: UID, path: str
+    node: AbstractNode, id_at_location: UID, path: str, proxy_only: bool = False
 ) -> StorableObject:
     # A hard time limit is set on celery worker which prevents infinite execution.
     ctr = 0
     while True:
-        store_obj = node.store.get_object(key=id_at_location)
+        store_obj = node.store.get_or_none(key=id_at_location, proxy_only=proxy_only)
         if store_obj is None:
             if ctr % 1500 == 0:
                 critical(
@@ -49,3 +52,32 @@ def beaver_retrieve_object(
             ctr += 1
         else:
             return store_obj
+
+
+def crypto_store_retrieve_object(  # type: ignore
+    op_str: str,
+    **kwargs,
+) -> Tuple:
+    # relative
+    from ....smpc.store.exceptions import EmptyPrimitiveStore
+    from ....tensor.smpc.share_tensor import ShareTensor
+
+    crypto_store = ShareTensor.crypto_store
+
+    # A hard time limit is set on celery worker which prevents infinite execution.
+    ctr = 0
+    while True:
+        try:
+            store_values = crypto_store.get_primitives_from_store(
+                op_str, **kwargs  # type: ignore
+            )
+            return tuple(store_values)
+        except EmptyPrimitiveStore:
+
+            if ctr % 1500 == 0:
+                critical(
+                    f"Crypto Store Retrieval failed for parties due to missing object: {EmptyPrimitiveStore}"
+                )
+            # Implicit context switch between greenlets.
+            gevent.sleep(0)
+            ctr += 1

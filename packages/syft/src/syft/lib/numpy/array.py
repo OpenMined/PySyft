@@ -1,9 +1,18 @@
+# stdlib
+from typing import Tuple
+from typing import Union
+
 # third party
+from capnp.lib.capnp import _DynamicStructBuilder
 import numpy as np
 import pyarrow as pa
 import torch
 
 # relative
+from ...core.common.serde.capnp import CapnpModule
+from ...core.common.serde.capnp import chunk_bytes
+from ...core.common.serde.capnp import combine_bytes
+from ...core.common.serde.capnp import get_capnp_schema
 from ...core.common.serde.serializable import serializable
 from ...experimental_flags import ApacheArrowCompression
 from ...experimental_flags import flags
@@ -38,7 +47,38 @@ DTYPE_REFACTOR = {
 }
 
 
-def arrow_serialize(obj: np.ndarray) -> bytes:
+# TODO: move to sy.serialize interface, when protobuf for numpy is removed.
+def capnp_serialize(obj: np.ndarray) -> _DynamicStructBuilder:
+    schema = get_capnp_schema(schema_file="array.capnp")
+    array_struct: CapnpModule = schema.Array  # type: ignore
+    array_msg = array_struct.new_message()
+    metadata_schema = array_struct.TensorMetadata
+    array_metadata = metadata_schema.new_message()
+
+    obj_bytes, obj_decompressed_size = arrow_serialize(obj, get_bytes=True)
+    chunk_bytes(obj_bytes, "array", array_msg)
+    array_metadata.dtype = str(obj.dtype)
+    array_metadata.decompressedSize = obj_decompressed_size
+
+    array_msg.arrayMetadata = array_metadata
+
+    return array_msg
+
+
+def capnp_deserialize(array_msg: _DynamicStructBuilder) -> np.ndarray:
+    array_metadata = array_msg.arrayMetadata
+    obj = arrow_deserialize(
+        combine_bytes(array_msg.array),
+        decompressed_size=array_metadata.decompressedSize,
+        dtype=array_metadata.dtype,
+    )
+
+    return obj
+
+
+def arrow_serialize(
+    obj: np.ndarray, get_bytes: bool = False
+) -> Union[Tuple[bytes, int], NumpyProto]:
     original_dtype = obj.dtype
     apache_arrow = pa.Tensor.from_numpy(obj=obj)
     sink = pa.BufferOutputStream()
@@ -52,22 +92,23 @@ def arrow_serialize(obj: np.ndarray) -> bytes:
         )
     dtype = original_dtype.name
 
-    return NumpyProto(
-        arrow_data=numpy_bytes, dtype=dtype, decompressed_size=buffer.size
-    )
+    if get_bytes:
+        return numpy_bytes, buffer.size
+    else:
+        return NumpyProto(
+            arrow_data=numpy_bytes, dtype=dtype, decompressed_size=buffer.size
+        )
 
 
-def arrow_deserialize(proto: NumpyProto) -> np.ndarray:
-    buf: bytes = bytes(proto.arrow_data)
-    str_dtype = proto.dtype
-    original_dtype = np.dtype(str_dtype)
+def arrow_deserialize(buf: bytes, decompressed_size: int, dtype: str) -> np.ndarray:
+    original_dtype = np.dtype(dtype)
     if flags.APACHE_ARROW_COMPRESSION is ApacheArrowCompression.NONE:
         reader = pa.BufferReader(buf)
         buf = reader.read_buffer()
     else:
         buf = pa.decompress(
             buf,
-            decompressed_size=proto.decompressed_size,
+            decompressed_size=decompressed_size,
             codec=flags.APACHE_ARROW_COMPRESSION.value,
         )
 
@@ -115,7 +156,11 @@ def serialize_numpy_array(obj: np.ndarray) -> NumpyProto:
 
 def deserialize_numpy_array(proto: NumpyProto) -> np.ndarray:
     if proto.HasField("arrow_data"):
-        return arrow_deserialize(proto)
+        return arrow_deserialize(
+            buf=proto.arrow_data,
+            decompressed_size=proto.decompressed_size,
+            dtype=proto.dtype,
+        )
     else:
         return protobuf_deserialize(proto)
 

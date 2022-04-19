@@ -15,7 +15,7 @@ def test_private_manager_serde() -> None:
         entity=Entity("Phishan"),
     )
 
-    gamma_scalar = manager_one.prime2symbol[manager_one_prime]
+    gamma_scalar = manager_one.prime2symbol[int(manager_one_prime)]
     gamma_ser = sy.serialize(gamma_scalar, to_bytes=True)
     gamma_de = sy.deserialize(gamma_ser, from_bytes=True)
     assert gamma_scalar == gamma_de
@@ -38,7 +38,7 @@ def test_private_manager_serde() -> None:
         entity=Entity("Phishan"),
     )
 
-    gamma_scalar2 = manager_two.prime2symbol[manager_two_prime]
+    gamma_scalar2 = manager_two.prime2symbol[int(manager_two_prime)]
     assert gamma_scalar == gamma_scalar2
 
     # the state is the same so the managers are the same
