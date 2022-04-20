@@ -56,16 +56,23 @@ git checkout "origin/${3}" --force
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
-CONTAINER_VERSION=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep VERSION | sed 's/VERSION=//')
+CONTAINER_VERSION=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep ^VERSION= | sed 's/VERSION=//')
 CONTAINER_HASH=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
 
 REDEPLOY="0"
+
 
 # see hagrid --release options
 if [[ ${11} = "development" ]]; then
     RELEASE=development
 else
     RELEASE=production
+fi
+
+if [[ -z "${12}" ]]; then
+    DOCKER_TAG="local"
+else
+    DOCKER_TAG="${12}"
 fi
 
 if [[ "$CONTAINER_HASH" == "dockerhub" ]]
@@ -91,7 +98,7 @@ echo "CONTAINER_HASH=$CONTAINER_HASH"
 echo "REDEPLOY=$REDEPLOY"
 
 if [[ ${REDEPLOY} != "0" ]]; then
-    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${RELEASE} ${12}
+    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${RELEASE} ${DOCKER_TAG}
 fi
 
 echo "Finished autoupdate CRON"
