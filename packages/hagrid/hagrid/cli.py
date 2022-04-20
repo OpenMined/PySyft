@@ -158,7 +158,7 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--build",
-    default="true",
+    default=None,
     required=False,
     type=str,
     help="Optional: enable or disable forcing re-build",
@@ -224,6 +224,13 @@ def clean(location: str) -> None:
     required=False,
     type=str,
     help="Optional: image to use for the VM",
+)
+@click.option(
+    "--tag",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: container image tag to use",
 )
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
@@ -528,10 +535,11 @@ def create_launch_cmd(
         tail = False
 
     parsed_kwargs = {}
-    build = True
-    if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
-        build = False
-    parsed_kwargs["build"] = build
+
+    if "build" in kwargs and kwargs["build"] is not None:
+        parsed_kwargs["build"] = str_to_bool(cast(str, kwargs["build"]))
+    else:
+        parsed_kwargs["build"] = None
 
     parsed_kwargs["use_blob_storage"] = (
         kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
@@ -567,6 +575,11 @@ def create_launch_cmd(
         parsed_kwargs["image_name"] = kwargs["image_name"]
     else:
         parsed_kwargs["image_name"] = "default"
+
+    if "tag" in kwargs and kwargs["tag"] is not None:
+        parsed_kwargs["tag"] = kwargs["tag"]
+    else:
+        parsed_kwargs["tag"] = None
 
     if "jupyter" in kwargs and kwargs["jupyter"] is not None:
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
@@ -1007,7 +1020,6 @@ def create_launch_docker_cmd(
     kwargs: TypeDict[str, Any],
     tail: bool = True,
 ) -> str:
-
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
@@ -1034,10 +1046,24 @@ def create_launch_docker_cmd(
     print("  - TAIL: " + str(tail))
     print("\n")
 
-    version_string = GRID_SRC_VERSION[0]
+    version_string = kwargs["tag"]
+    version_hash = "dockerhub"
+    build = kwargs["build"]
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
+        # during development we can use the latest beta version
+        if version_string is None:
+            version_string = GRID_SRC_VERSION[0]
         version_string += "-dev"
+        version_hash = GRID_SRC_VERSION[1]
+        if build is None:
+            build = True
+    else:
+        # during production the default would be stable
+        if version_string is None:
+            version_string = "stable"
+        if build is None:
+            build = False
 
     use_blob_storage = "True"
     if str(node_type.input) == "network":
@@ -1056,7 +1082,7 @@ def create_launch_docker_cmd(
         "NODE_TYPE": str(node_type.input),
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
-        "VERSION_HASH": GRID_SRC_VERSION[1],
+        "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": use_blob_storage,
     }
 
@@ -1092,20 +1118,19 @@ def create_launch_docker_cmd(
     else:
         cmd += " ".join(args)
 
-    if kwargs["build"] is True:
-        build_cmd = str(cmd)
-        build_cmd += " docker compose build --parallel"
-
     cmd += " docker compose -p " + snake_name
     if str(node_type.input) == "network":
         cmd += " --profile network"
     else:
         cmd += " --profile blob-storage"
 
-    if kwargs["headless"] is False:
+    # network frontend disabled
+    if kwargs["headless"] is False or str(node_type.input) != "network":
         cmd += " --profile frontend"
 
     cmd += " --file docker-compose.yml"
+    if build:
+        cmd += " --file docker-compose.build.yml"
     if "release" in kwargs and kwargs["release"] == "development":
         cmd += " --file docker-compose.dev.yml"
     if "tls" in kwargs and kwargs["tls"] is True:
@@ -1117,12 +1142,8 @@ def create_launch_docker_cmd(
     if not tail:
         cmd += " -d"
 
-    if kwargs["build"] is True:
+    if build:
         cmd += " --build"  # force rebuild
-        if is_windows():
-            cmd = build_cmd + "; " + cmd
-        else:
-            cmd = build_cmd + " && " + cmd
 
     return cmd
 
