@@ -13,6 +13,7 @@
 # $9 is a bool for enabling tls or not, where true is tls enabled
 # $10 is the path to tls certs if available
 # $11 release mode, production or development with hot reloading
+# $12 docker_tag if set to local, normal local build occurs, otherwise use dockerhub
 
 # these commands cant be used because they trigger hot reloading
 # however without them accidental changes to the working tree might cause issues
@@ -55,6 +56,7 @@ git checkout "origin/${3}" --force
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
+CONTAINER_VERSION=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep VERSION | sed 's/VERSION=//')
 CONTAINER_HASH=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
 
 REDEPLOY="0"
@@ -66,7 +68,10 @@ else
     RELEASE=production
 fi
 
-if [[ "$START_HASH" != "$END_HASH" ]]
+if [[ "$CONTAINER_HASH" == "dockerhub" ]]
+then
+    echo "Version: $CONTAINER_VERSION from dockerhub deployed"
+elif [[ "$START_HASH" != "$END_HASH" ]]
 then
     echo "Git hashes $START_HASH vs $END_HASH dont match, redeploying"
     REDEPLOY="1"
@@ -86,7 +91,7 @@ echo "CONTAINER_HASH=$CONTAINER_HASH"
 echo "REDEPLOY=$REDEPLOY"
 
 if [[ ${REDEPLOY} != "0" ]]; then
-    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${RELEASE}
+    bash /home/om/PySyft/packages/grid/scripts/redeploy.sh $1 $2 $3 $4 $5 $6 $7 $8 $9 ${10} ${RELEASE} ${12}
 fi
 
 echo "Finished autoupdate CRON"

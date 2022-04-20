@@ -266,12 +266,11 @@ jobs:
           pip install numpy==1.22.3
           pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
           set HAGRID_ART=false
-          hagrid launch test_network_1 network to docker:9081 --tail=false --headless=true --test
-          hagrid launch test_domain_1 domain to docker:9082 --tail=false --headless=true --test
-          hagrid launch test_domain_2 domain to docker:9083 --tail=false --build=false --headless=true --test
+          hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
+          hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
+          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test
           bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-          bash -c "(docker logs test_network_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           docker ps
         shell: cmd
 
