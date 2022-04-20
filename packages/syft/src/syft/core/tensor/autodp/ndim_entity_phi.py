@@ -854,6 +854,51 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                     entities=self.entities,
                 )
 
+    def transpose(self, *args: Any, **kwargs: Any) -> NDimEntityPhiTensor:
+        """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
+        if (
+            isinstance(self.child, int)
+            or isinstance(self.child, float)
+            or isinstance(self.child, bool)
+        ):
+            # For these data types, the transpose operation is meaningless, so don't change them.
+            data = self.child
+            print(
+                f"Warning: Tensor data was of type {type(data)}, transpose operation had no effect."
+            )
+        else:
+            data = self.child.transpose(*args)
+
+        # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        if (
+            isinstance(self.min_vals, int)
+            or isinstance(self.min_vals, float)
+            or isinstance(self.min_vals, bool)
+        ):
+            # For these data types, the transpose operation is meaningless, so don't change them.
+            min_vals = self.min_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
+        else:
+            min_vals = self.min_vals.transpose(*args)
+
+        if (
+            isinstance(self.max_vals, int)
+            or isinstance(self.max_vals, float)
+            or isinstance(self.max_vals, bool)
+        ):
+            # For these data types, the transpose operation is meaningless, so don't change them.
+            max_vals = self.max_vals
+            # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
+        else:
+            max_vals = self.max_vals.transpose(*args)
+
+        return NDimEntityPhiTensor(
+            child=data,
+            entities=self.entities,
+            min_vals=min_vals,
+            max_vals=max_vals,
+        )
+
     def __lt__(
         self, other: SupportedChainType
     ) -> Union[NDimEntityPhiTensor, GammaTensor]:
@@ -911,12 +956,19 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 child=np.dot(self.child, other),
                 min_vals=np.dot(self.min_vals, other),
                 max_vals=np.dot(self.max_vals, other),
-                entities=self.entities
+                entities=self.entities,
             )
         elif isinstance(other, NDimEntityPhiTensor):
-            if len(self.entities.one_hot_lookup) > 1 or len(other.entities.one_hot_lookup) > 1:
+            if (
+                len(self.entities.one_hot_lookup) > 1
+                or len(other.entities.one_hot_lookup) > 1
+            ):
                 return self.gamma.dot(other.gamma)
-            elif len(self.entities.one_hot_lookup) == 1 and len(other.entities.one_hot_lookup) == 1 and self.entities.one_hot_lookup != other.entities.one_hot_lookup:
+            elif (
+                len(self.entities.one_hot_lookup) == 1
+                and len(other.entities.one_hot_lookup) == 1
+                and self.entities.one_hot_lookup != other.entities.one_hot_lookup
+            ):
                 return self.gamma.dot(other.gamma)
         elif isinstance(other, GammaTensor):
             return self.gamma.dot(other)
@@ -937,7 +989,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 ),  # Need to check this
             )
 
-        return self.gamma.sum(axis=None)  # TODO: Expand this later to include more args/kwargs
+        return self.gamma.sum(
+            axis=None
+        )  # TODO: Expand this later to include more args/kwargs
         # return GammaTensor(
         #     value=np.array(self.child.sum()),
         #     data_subjects=self.entities.sum(),

@@ -496,7 +496,7 @@ class Tensor(
         return None
 
     def mpc_swap(self, other: Tensor) -> Tensor:
-        self.child.child = other.child.child
+        self.child.child.child = other.child.child.child
         return self
 
     def _object2bytes(self) -> bytes:

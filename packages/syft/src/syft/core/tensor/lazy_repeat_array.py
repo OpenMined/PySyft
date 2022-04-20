@@ -9,6 +9,9 @@ from typing import Tuple
 # third party
 import numpy as np
 
+# syft absolute
+from syft.core.tensor.smpc.utils import get_shape
+
 # relative
 from ..common.serde.serializable import serializable
 from .passthrough import is_acceptable_simple_type  # type: ignore
@@ -107,13 +110,15 @@ class lazyrepeatarray:
         Don't touch it. It's going to get more complicated.
         """
         if is_acceptable_simple_type(other):
-            return self.__class__(data=self.data.__matmul__(other), shape=self.shape)
+            new_shape = get_shape("matmul", self.shape, other.shape)
+            return self.__class__(data=self.data.__matmul__(other), shape=new_shape)
 
         if self.shape != other.shape:
             raise Exception("cannot matrix multiply tensors with different shapes")
 
         if self.data.shape == other.data.shape:
-            return self.__class__(data=self.data * other.data, shape=self.shape)
+            new_shape = get_shape("matmul", self.shape, other.shape)
+            return self.__class__(data=self.data @ other.data, shape=new_shape)
 
         raise Exception("not sure how to do this yet")
 
@@ -199,3 +204,9 @@ class lazyrepeatarray:
 
     def any(self) -> bool:
         return self.data.any()
+
+    def transpose(self, *args, **kwargs) -> lazyrepeatarray:
+        dummy_res = self.to_numpy().transpose(*args, **kwargs)
+        return lazyrepeatarray(
+            data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
+        )

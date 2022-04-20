@@ -111,8 +111,8 @@ def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
         MPCTensor: Result of the multiplication.
     """
     # relative
-    # from ....tensor.smpc.mpc_tensor import MPCTensor
-    # from ....tensor.tensor import TensorPointer
+    from ....tensor.smpc.mpc_tensor import MPCTensor
+    from ....tensor.tensor import TensorPointer
 
     # diff = a - b
     # bit decomposition
@@ -124,30 +124,29 @@ def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     # time.sleep(2)
     msb = MSB(res_shares)
 
-    # return msb
-    # tensor_shares = []
-    # final_shares = []
+    tensor_shares = []
+    final_shares = []
 
-    # if isinstance(x, MPCTensor):
-    #     if isinstance(x.child[0], TensorPointer):
-    #         for t1, t2 in zip(x.child, y.child):
-    #             tensor_shares.append(t1.__lt__(t2))
+    if isinstance(x, MPCTensor):
+        if isinstance(x.child[0], TensorPointer):
+            for t1, t2 in zip(x.child, y.child):
+                tensor_shares.append(t1.__lt__(t2))
 
-    #         for p1, p2 in zip(tensor_shares, msb.child):
-    #             p2.block
-    #             final_shares.append(p1.mpc_swap(p2))
+            for p1, p2 in zip(tensor_shares, msb.child):
+                p2.block
+                final_shares.append(p1.mpc_swap(p2))
 
-    #         msb.child = final_shares
-    # else:
-    #     if isinstance(y.child[0], TensorPointer):  # type: ignore
-    #         for t1 in y.child:
-    #             tensor_shares.append(t1.__lt__(x))
+            msb.child = final_shares
+    else:
+        if isinstance(y.child[0], TensorPointer):  # type: ignore
+            for t1 in y.child:
+                tensor_shares.append(t1.__lt__(x))
 
-    #         for p1, p2 in zip(tensor_shares, msb.child):
-    #             p2.block
-    #             final_shares.append(p1.mpc_swap(p2))
+            for p1, p2 in zip(tensor_shares, msb.child):
+                p2.block
+                final_shares.append(p1.mpc_swap(p2))
 
-    #         msb.child = final_shares
+            msb.child = final_shares
 
     return msb
 
