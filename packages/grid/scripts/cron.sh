@@ -56,7 +56,7 @@ git checkout "origin/${3}" --force
 chown -R $4:$5 .
 
 END_HASH=$(git rev-parse HEAD)
-CONTAINER_VERSION=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep VERSION | sed 's/VERSION=//')
+CONTAINER_VERSION=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep ^VERSION= | sed 's/VERSION=//')
 CONTAINER_HASH=$(docker ps --format "{{.Names}}" | grep 'backend' | head -1l | xargs -I {} docker exec {} env | grep VERSION_HASH | sed 's/VERSION_HASH=//')
 
 REDEPLOY="0"

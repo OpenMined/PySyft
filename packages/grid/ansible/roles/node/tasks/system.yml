@@ -107,3 +107,7 @@
     enabled: yes
     state: started
     name: ntp
+
+- name: Set git dir as safe
+  shell: git config --global --add safe.directory {{ syft_dir }}
+  become: yes
