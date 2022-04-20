@@ -18,4 +18,3 @@ data:
     }
 metadata:
   name: seaweed-config-s3
-  namespace: openmined

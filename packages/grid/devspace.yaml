@@ -75,6 +75,10 @@ vars:
     value: "1800"
   - name: S3_VOLUME_SIZE_MB
     value: "1024"
+  - name: USE_BLOB_STORAGE
+    value: "True"
+  - name: DOMAIN_NAME
+    value: $DOMAIN_NAME
 
 images:
   backend:
@@ -88,8 +92,7 @@ images:
     dockerfile: ./backend/backend.dockerfile
     context: ../
     build:
-      buildKit:
-        skipPush: true
+      buildKit: {}
   frontend:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
     # rebuildStrategy: ignoreContextChanges
@@ -108,7 +111,6 @@ images:
             NODE_TYPE: ${NODE_TYPE}
             FRONTEND_ENV: development
       buildKit:
-        skipPush: true
         args: ["--target", "grid-ui-development"]
   headscale:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
@@ -121,8 +123,7 @@ images:
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
     build:
-      buildKit:
-        skipPush: true
+      buildKit: {}
   tailscale:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
     # rebuildStrategy: ignoreContextChanges
@@ -134,8 +135,7 @@ images:
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
     build:
-      buildKit:
-        skipPush: true
+      buildKit: {}
 
 deployments:
   # config maps
@@ -787,6 +787,9 @@ profiles:
       - op: replace
         path: vars.name=NODE_TYPE.value
         value: network
+      - op: replace
+        path: vars.name=USE_BLOB_STORAGE.value
+        value: "False"
       - op: remove
         path: deployments.name=seaweedfs
       - op: remove

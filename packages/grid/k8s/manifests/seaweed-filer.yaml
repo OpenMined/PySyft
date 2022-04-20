@@ -9,4 +9,3 @@ data:
     database = 15
 metadata:
   name: seaweed-config-filer
-  namespace: openmined

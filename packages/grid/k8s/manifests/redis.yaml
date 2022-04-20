@@ -2055,4 +2055,3 @@ data:
     # ignore-warnings ARM64-COW-BUG
 metadata:
   name: redis-config
-  namespace: openmined

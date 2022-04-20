@@ -49,4 +49,3 @@ data:
         filename: /etc/traefik/dynamic.yml
 metadata:
   name: traefik-main-config
-  namespace: openmined
