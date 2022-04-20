@@ -15,6 +15,7 @@ from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
 from typing import Tuple as TypeTuple
+from typing import Union
 from typing import cast
 
 # third party
@@ -171,6 +172,13 @@ def clean(location: str) -> None:
     help="Optional: enable or disable provisioning VMs",
 )
 @click.option(
+    "--node_count",
+    default="1",
+    required=False,
+    type=int,
+    help="Optional: number of independent nodes to launch",
+)
+@click.option(
     "--auth_type",
     default=None,
     type=click.Choice(["key", "password"], case_sensitive=False),
@@ -235,28 +243,51 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         return
 
     try:
-        cmd = create_launch_cmd(verb=verb, kwargs=kwargs)
+        cmds = create_launch_cmd(verb=verb, kwargs=kwargs)
     except Exception as e:
         print(f"{e}")
         return
-    print("Running: \n", hide_password(cmd=cmd))
+
+    dry_run = True
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+        dry_run = False
+
+    execute_commands(cmds, dry_run=dry_run)
+    display_vm_status(cmds)
+
+
+def execute_commands(cmds: list, dry_run: bool) -> None:
+    process_list = []
+    for cmd in cmds:
+        if dry_run:
+            print("Running: \n", hide_password(cmd=cmd))
+            continue
+
+        if is_windows():
+            cmd = ["powershell.exe", "-Command", cmd]
+
         try:
-            if is_windows():
-                cmds = ["powershell.exe", "-Command", cmd]
-                output = subprocess.run(cmds, capture_output=True, cwd=GRID_SRC_PATH)
-                out = str(output.stdout.decode("utf-8"))
-                if len(out) > 0:
-                    print(out)
-                # normal output seems to appear here
-                stderr = output.stderr.decode("utf-8")
-                if len(stderr) > 0:
-                    print(stderr)
-            else:
-                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
+            process = subprocess.Popen(
+                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=GRID_SRC_PATH
+            )
+            process_list.append(process)
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
-    display_jupyter_token(cmd)
+
+    if dry_run is False:
+        # TODO: Display the VM Status with its Ip in here.
+        # Refresh the status whenever you check for the status
+        while True:
+            # Check process status
+            process_status = [False if p.poll() is None else True for p in process_list]
+            if all(process_status):
+                print("All processes completed")
+                break
+
+
+def display_vm_status(cmds: list) -> None:
+    for cmd in cmds:
+        display_jupyter_token(cmd)
 
 
 def display_jupyter_token(cmd: str) -> None:
@@ -517,7 +548,7 @@ def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> str:
+) -> Union[str, list]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -536,6 +567,8 @@ def create_launch_cmd(
     parsed_kwargs["use_blob_storage"] = (
         kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
     )
+
+    parsed_kwargs["node_count"] = kwargs["node_count"] if "node_count" in kwargs else 1
 
     headless = False
     if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
@@ -737,7 +770,10 @@ def create_launch_cmd(
 
             use_branch(branch=branch)
 
-            auth = AuthCredentials(username=username, key_path=key_path)
+            password = "Openmined_Adastra0"  # generate_sec_random_password(length=11)
+            auth = AuthCredentials(
+                username=username, key_path=key_path, password=password
+            )
 
             return create_launch_azure_cmd(
                 verb=verb,
@@ -745,6 +781,7 @@ def create_launch_cmd(
                 location=location,
                 size=size,
                 username=username,
+                password=password,
                 key_path=key_path,
                 repo=repo,
                 branch=branch,
@@ -1168,7 +1205,7 @@ def get_or_make_resource_group(resource_group: str, location: str = "westus") ->
     try:
         subprocess.check_call(cmd, shell=True)
     except Exception:
-        # group doesnt exist so lets create it
+        # group doesn't exist so lets create it
         exists = False
 
     if not exists:
@@ -1196,6 +1233,24 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
             return ips[0]
 
     return None
+
+
+def get_vm_host_ips(node_name: str, resource_group: str) -> list:
+    cmd = f'az vm list-ip-addresses -g {resource_group} --query "[?starts_with(virtualMachine.name, `{node_name}`)].id"'
+    output = subprocess.check_output(cmd, shell=True)
+    try:
+        host_details = json.loads(output)
+        host_ips = []
+        for host_detail in host_details.items():
+            public_ip_addresses = host_detail["virtualMachine"]["network"][
+                "publicIpAddresses"
+            ]
+            ip_address = public_ip_addresses[0]["ipAddress"]
+            host_ips.append(ip_address)
+        return host_ips
+
+    except Exception as e:
+        raise e
 
 
 def is_valid_ip(host_or_ip: str) -> bool:
@@ -1253,27 +1308,30 @@ def make_vm_azure(
     node_name: str,
     resource_group: str,
     username: str,
+    password: str,
     key_path: str,
     size: str,
     image_name: str,
-) -> Optional[str]:
+    node_count: int,
+) -> list:
     disk_size_gb = "200"
     public_key_path = private_to_public_key(
         private_key_path=key_path, username=username
     )
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
-    cmd += "--public-ip-sku Standard --authentication-type ssh "
-    cmd += f"--ssh-key-values {public_key_path} --admin-username {username}"
-    host_ip: Optional[str] = None
+    cmd += "--public-ip-sku Standard --authentication-type all "
+    cmd += f"--ssh-key-values {public_key_path} --admin-username {username} "
+    cmd += f"--admin-password {password} --count {node_count} --no-wait"
+    host_ips: list = []
     try:
         print(f"Creating vm.\nRunning: {cmd}")
-        output = subprocess.check_output(cmd, shell=True)
-        host_ip = extract_host_ip(stdout=output)
+        subprocess.check_output(cmd, shell=True)
+        host_ips = get_vm_host_ips(node_name=node_name, resource_group=resource_group)
     except Exception as e:
         print("failed", e)
 
-    if host_ip is None:
+    if not host_ips:
         raise Exception("Failed to create vm or get VM public ip")
 
     try:
@@ -1282,7 +1340,7 @@ def make_vm_azure(
     except Exception:
         pass
 
-    return host_ip
+    return host_ips
 
 
 def open_port_vm_azure(
@@ -1425,21 +1483,33 @@ def create_launch_azure_cmd(
     location: str,
     size: str,
     username: str,
+    password: str,
     key_path: str,
     repo: str,
     branch: str,
     auth: AuthCredentials,
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
-) -> str:
+) -> list:
+
     get_or_make_resource_group(resource_group=resource_group, location=location)
+
+    node_count = kwargs.get("node_count", 1)
+    print("Total VMs to create: ", node_count)
 
     # vm
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
     image_name = get_azure_image(kwargs["image_name"])
-    host_ip = make_vm_azure(
-        snake_name, resource_group, username, key_path, size, image_name
+    host_ips = make_vm_azure(
+        snake_name,
+        resource_group,
+        username,
+        password,
+        key_path,
+        size,
+        image_name,
+        node_count,
     )
 
     # open port 80
@@ -1470,33 +1540,40 @@ def create_launch_azure_cmd(
             priority=502,
         )
 
-    # get old host
-    host_term = verb.get_named_term_hostgrammar(name="host")
+    launch_cmds: list = []
 
-    # replace
-    host_term.parse_input(host_ip)
-    verb.set_named_term_type(name="host", new_term=host_term)
+    for host_ip in host_ips:
+        # get old host
+        host_term = verb.get_named_term_hostgrammar(name="host")
 
-    if "provision" in kwargs and not kwargs["provision"]:
-        print("Skipping automatic provisioning.")
-        print("VM created with:")
-        print(f"IP: {host_ip}")
-        print(f"User: {username}")
-        print(f"Key: {key_path}")
-        print("\nConnect with:")
-        print(f"ssh -i {key_path} {username}@{host_ip}")
-        sys.exit(0)
+        # replace
+        host_term.parse_input(host_ip)
+        verb.set_named_term_type(name="host", new_term=host_term)
 
-    extra_kwargs = {
-        "repo": repo,
-        "branch": branch,
-        "auth_type": "key",
-        "ansible_extras": ansible_extras,
-    }
-    kwargs.update(extra_kwargs)
+        if "provision" in kwargs and not kwargs["provision"]:
+            print("Skipping automatic provisioning.")
+            print("VM created with:")
+            print(f"Name: {snake_name}")
+            print(f"IP: {host_ip}")
+            print(f"User: {username}")
+            print(f"Password: {password}")
+            print(f"Key: {key_path}")
+            print("\nConnect with:")
+            print(f"ssh -i {key_path} {username}@{host_ip}")
+        else:
+            extra_kwargs = {
+                "repo": repo,
+                "branch": branch,
+                "auth_type": "key",
+                "ansible_extras": ansible_extras,
+            }
+            kwargs.update(extra_kwargs)
 
-    # provision
-    return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+            # provision
+            launch_cmd = create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+            launch_cmds.append(launch_cmd)
+
+    return launch_cmds
 
 
 def create_ansible_land_cmd(
