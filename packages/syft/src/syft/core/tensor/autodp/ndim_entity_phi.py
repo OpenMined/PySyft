@@ -594,7 +594,6 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             data_subjects=self.entities,
             min_val=self.min_vals.to_numpy(),
             max_val=self.max_vals.to_numpy(),
-            inputs=value,
         )
 
     def publish(
