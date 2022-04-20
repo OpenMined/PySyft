@@ -25,6 +25,7 @@ import rich
 from . import __version__
 from .art import hagrid
 from .auth import AuthCredentials
+from .cache import DEFAULT_BRANCH
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import ENVIRONMENT
@@ -39,6 +40,7 @@ from .grammar import GrammarVerb
 from .grammar import parse_grammar
 from .land import get_land_verb
 from .launch import get_launch_verb
+from .lib import GIT_REPO
 from .lib import GRID_SRC_PATH
 from .lib import GRID_SRC_VERSION
 from .lib import check_api_metadata
@@ -48,9 +50,10 @@ from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import hagrid_root
-from .lib import is_editable_mode
 from .lib import name_tag
+from .lib import update_repo
 from .lib import use_branch
+from .mode import EDITABLE_MODE
 from .style import RichGroup
 
 
@@ -232,6 +235,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: container image tag to use",
 )
+@click.option(
+    "--build_src",
+    default=DEFAULT_BRANCH,
+    required=False,
+    type=str,
+    help="Optional: git branch to use for launch / build operations",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -240,6 +250,11 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except BadGrammar as e:
         print(e)
         return
+
+    try:
+        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+    except Exception as e:
+        print(f"Failed to update repo. {e}")
 
     try:
         cmd = create_launch_cmd(verb=verb, kwargs=kwargs)
@@ -1124,6 +1139,10 @@ def create_launch_docker_cmd(
     else:
         cmd += " ".join(args)
 
+    if not build:
+        pull_cmd = str(cmd)
+        pull_cmd += " docker compose pull"
+
     cmd += " docker compose -p " + snake_name
     if str(node_type.input) == "network":
         cmd += " --profile network"
@@ -1150,6 +1169,11 @@ def create_launch_docker_cmd(
 
     if build:
         cmd += " --build"  # force rebuild
+    else:
+        if is_windows():
+            cmd = pull_cmd + "; " + cmd
+        else:
+            cmd = pull_cmd + " && " + cmd
 
     return cmd
 
@@ -1783,7 +1807,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
 
     cmd = ""
     cmd += "docker compose"
-    cmd += ' --file "docker-compose.override.yml"'
+    cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
     cmd += " down"
 
@@ -1805,6 +1829,13 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
     default="",
     type=str,
 )
+@click.option(
+    "--build_src",
+    default=DEFAULT_BRANCH,
+    required=False,
+    type=str,
+    help="Optional: git branch to use for launch / build operations",
+)
 def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_land_verb()
 
@@ -1814,6 +1845,11 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except BadGrammar as e:
         print(e)
         return
+
+    try:
+        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+    except Exception as e:
+        print(f"Failed to update repo. {e}")
 
     try:
         cmd = create_land_cmd(verb=verb, kwargs=kwargs)
@@ -1846,7 +1882,7 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     debug_info["dependencies"] = DEPENDENCIES
     debug_info["environment"] = ENVIRONMENT
     debug_info["hagrid"] = __version__
-    debug_info["hagrid_dev"] = is_editable_mode()
+    debug_info["hagrid_dev"] = EDITABLE_MODE
     debug_info["hagrid_path"] = hagrid_root()
     debug_info["hagrid_repo_sha"] = commit_hash()
     debug_info["docker"] = docker_info()

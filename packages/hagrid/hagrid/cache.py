@@ -3,7 +3,7 @@ import json
 import os
 from typing import Any
 
-DEFAULT_BRANCH = "0.6.0"
+DEFAULT_BRANCH = "dev"
 
 arg_defaults = {
     "repo": "OpenMined/PySyft",
