@@ -902,6 +902,27 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         else:
             return NotImplementedError  # type: ignore
 
+    def dot(
+        self, other: Union[NDimEntityPhiTensor, GammaTensor, np.ndarray]
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+        if isinstance(other, np.ndarray):
+            print("We here or what?")
+            return NDimEntityPhiTensor(
+                child=np.dot(self.child, other),
+                min_vals=np.dot(self.min_vals, other),
+                max_vals=np.dot(self.max_vals, other),
+                entities=self.entities
+            )
+        elif isinstance(other, NDimEntityPhiTensor):
+            if len(self.entities.one_hot_lookup) > 1 or len(other.entities.one_hot_lookup) > 1:
+                return self.gamma.dot(other.gamma)
+            elif len(self.entities.one_hot_lookup) == 1 and len(other.entities.one_hot_lookup) == 1 and self.entities.one_hot_lookup != other.entities.one_hot_lookup:
+                return self.gamma.dot(other.gamma)
+        elif isinstance(other, GammaTensor):
+            return self.gamma.dot(other)
+        else:
+            raise NotImplementedError
+
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
     ) -> Union[NDimEntityPhiTensor, GammaTensor]:
