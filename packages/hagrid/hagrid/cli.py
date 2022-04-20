@@ -576,7 +576,7 @@ def create_launch_cmd(
     else:
         parsed_kwargs["image_name"] = "default"
 
-    if "tag" in kwargs and kwargs["tag"] is not None:
+    if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
         parsed_kwargs["tag"] = kwargs["tag"]
     else:
         parsed_kwargs["tag"] = None
@@ -1059,11 +1059,17 @@ def create_launch_docker_cmd(
         if build is None:
             build = True
     else:
-        # during production the default would be stable
-        if version_string is None:
-            version_string = "stable"
         if build is None:
             build = False
+
+        # during production the default would be stable
+        if version_string == "local":
+            # this can be used in VMs in production to auto update from src
+            version_string = GRID_SRC_VERSION[0]
+            version_hash = GRID_SRC_VERSION[1]
+            build = True
+        elif version_string is None:
+            version_string = "stable"
 
     use_blob_storage = "True"
     if str(node_type.input) == "network":
@@ -1612,11 +1618,16 @@ def create_launch_custom_cmd(
         elif host_term.host != "localhost" and kwargs["auth_type"] == "password":
             cmd += f" -c paramiko --user {auth.username}"
 
+        version_string = kwargs["tag"]
+        if version_string is None:
+            version_string = "local"
+
         ANSIBLE_ARGS = {
             "node_type": node_type.input,
             "node_name": snake_name,
             "github_repo": kwargs["repo"],
             "repo_branch": kwargs["branch"],
+            "docker_tag": version_string,
         }
 
         if host_term.host != "localhost" and kwargs["auth_type"] == "password":
