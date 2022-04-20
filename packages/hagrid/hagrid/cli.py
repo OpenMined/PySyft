@@ -1125,7 +1125,7 @@ def create_launch_docker_cmd(
         cmd += " --profile blob-storage"
 
     # network frontend disabled
-    if kwargs["headless"] is False or str(node_type.input) != "network":
+    if str(node_type.input) != "network" and kwargs["headless"] is False:
         cmd += " --profile frontend"
 
     cmd += " --file docker-compose.yml"
