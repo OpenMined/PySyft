@@ -111,6 +111,8 @@ class lazyrepeatarray:
         """
         if is_acceptable_simple_type(other):
             new_shape = get_shape("matmul", self.shape, other.shape)
+            if self.data.size == 1:
+                return self.__class__(data=np.matmul(np.ones(self.shape), other*self.data), shape=new_shape)
             return self.__class__(data=self.data.__matmul__(other), shape=new_shape)
 
         if self.shape != other.shape:
