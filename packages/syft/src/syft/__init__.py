@@ -82,7 +82,7 @@ from .lib import load_lib  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 
 # Temporarily here for demo
-concatenate = TensorPointer.concatenate
+# concatenate = TensorPointer.concatenate
 sys.path.append(str(Path(__file__)))
 
 logger.start()
