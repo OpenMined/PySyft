@@ -179,7 +179,10 @@ class FixedPrecisionTensor(PassthroughTensor):
     # TODO: Remove after moving private compare to sharetensor level
     def __lt__(self, other: Any) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        res.child = self.child < other.child
+        if isinstance(other,FixedPrecisionTensor):
+            res.child = self.child < other.child
+        else:
+            res.child = self.child<other
         return res
 
     def concatenate(self, other: FixedPrecisionTensor, *args, **kwargs) -> FixedPrecisionTensor:

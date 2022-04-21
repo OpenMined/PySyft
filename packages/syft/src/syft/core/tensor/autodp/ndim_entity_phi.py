@@ -981,7 +981,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
             data = (
                 self.child < other.child
-            ) * 1  # the * 1 just makes sure it returns integers instead of True/False
+            )  # the * 1 just makes sure it returns integers instead of True/False
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
             entities = self.entities
@@ -996,7 +996,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
 
-            data = (self.child < other) * 1
+            data = (self.child < other) 
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
             entities = self.entities

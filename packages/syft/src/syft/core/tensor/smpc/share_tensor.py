@@ -452,7 +452,7 @@ class ShareTensor(PassthroughTensor):
                     if self.rank == 0
                     else deepcopy(self.child)
                 )
-            elif op_str in ["mul", "matmul"]:
+            elif op_str in ["mul", "matmul", "lt"]:
                 value = op(self.child, np.array(y, numpy_type))
             else:
                 raise ValueError(f"{op_str} not supported")
@@ -765,10 +765,9 @@ class ShareTensor(PassthroughTensor):
         share.child = value
         return share
 
-    
     def concatenate(self, other: ShareTensor, *args, **kwargs) -> ShareTensor:
         res = self.copy()
-        res.child = np.concatenate((self.child,other.child),*args,**kwargs)
+        res.child = np.concatenate((self.child, other.child), *args, **kwargs)
         return res
 
     @staticmethod
@@ -814,8 +813,6 @@ class ShareTensor(PassthroughTensor):
             return ShareTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)
-    
-
 
     def _object2proto(self) -> ShareTensor_PB:
         # This works only for unsigned types.
