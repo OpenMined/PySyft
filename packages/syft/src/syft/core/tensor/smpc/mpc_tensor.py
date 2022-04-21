@@ -493,25 +493,29 @@ class MPCTensor(PassthroughTensor):
                 new_share = method(*args, **kwargs)
                 shares.append(new_share)
 
-                # TODO: generalize type after fixed precision
-                dummy_res = np.random.randint(
-                    _self.mpc_shape[0], size=_self.mpc_shape, dtype=np.int32  # type: ignore
-                )
-                if method_name not in INPLACE_OPS:
-                    dummy_res = getattr(dummy_res, method_name)(*args, **kwargs)
-                else:
-                    getattr(dummy_res, method_name)(*args, **kwargs)
+            dummy_res = np.ones(_self.mpc_shape, dtype=np.int64)
+            if method_name not in INPLACE_OPS:
+                dummy_res = getattr(dummy_res, method_name)(*args, **kwargs)
+            else:
+                getattr(dummy_res, method_name)(*args, **kwargs)
 
-                new_shape = dummy_res.shape
+            new_shape = dummy_res.shape
+            if not isinstance(new_shape, tuple):
+                new_shape = (1,)
+
             res = MPCTensor(parties=_self.parties, shares=shares, shape=new_shape)
             return res
 
         return functools.partial(method_all_shares, __self)
 
     def __getattribute__(self, attr_name: str) -> Any:
+        # relative
+        from .static import STATIC_FUNCS
 
         if attr_name in METHODS_FORWARD_ALL_SHARES:
             return MPCTensor.hook_method(self, attr_name)
+        if attr_name in STATIC_FUNCS:
+            return functools.partial(STATIC_FUNCS[attr_name], self)
 
         return object.__getattribute__(self, attr_name)
 
@@ -905,7 +909,7 @@ class MPCTensor(PassthroughTensor):
             shares.append(x.concatenate(y, *args, **kwargs))
 
         dummy_res = np.concatenate(
-            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs  # type: ignore
+            (np.ones(self.shape), np.ones(other.shape)), *args, **kwargs  # type: ignore
         )
         res = MPCTensor(shares=shares, parties=self.parties, shape=dummy_res.shape)
 

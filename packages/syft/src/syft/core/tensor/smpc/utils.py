@@ -58,7 +58,7 @@ def get_shape(
     x_shape: Tuple[int],
     y_shape: Tuple[int],
 ) -> Tuple[int]:
-    """Get the shape of apply an operation on two values
+    """Get the shape of applying an operation on two values
 
     Args:
         op_str (str): the operation to be applied
@@ -70,11 +70,11 @@ def get_shape(
     """
     if op_str[:2] != "__":
         op = getattr(operator, op_str)
-        res = op(np.empty(x_shape), np.empty(y_shape)).shape
+        res = op(np.ones(x_shape), np.ones(y_shape)).shape
     else:
-        res = (getattr(np.empty(x_shape), op_str)(np.empty(y_shape))).shape
-    res = cast(Tuple[int], res)
-    return tuple(res)  # type: ignore
+        res = (getattr(np.ones(x_shape), op_str)(np.ones(y_shape))).shape
+    res_shape = cast(Tuple[int], tuple(res))
+    return res_shape
 
 
 @lru_cache(maxsize=128)

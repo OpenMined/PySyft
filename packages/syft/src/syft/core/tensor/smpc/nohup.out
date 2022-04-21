@@ -1,0 +1,6 @@
+
+(spotify --force-device-scale-factor=2:1354726): Gtk-WARNING **: 11:44:36.999: Theme parsing error: gtk.css:1427:23: 'font-feature-settings' is not a valid property name
+
+(spotify --force-device-scale-factor=2:1354726): Gtk-WARNING **: 11:44:37.005: Theme parsing error: gtk.css:3317:25: 'font-feature-settings' is not a valid property name
+
+(spotify --force-device-scale-factor=2:1354726): Gtk-WARNING **: 11:44:37.006: Theme parsing error: gtk.css:3779:23: 'font-feature-settings' is not a valid property name

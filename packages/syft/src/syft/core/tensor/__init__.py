@@ -11,6 +11,7 @@ from ..node.abstract.node import AbstractNodeClient
 from .autodp.gamma_tensor import GammaTensor
 from .autodp.phi_tensor import PhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
+from .smpc import static
 from .smpc.share_tensor import ShareTensor
 from .tensor import Tensor
 from .tensor import TensorPointer  # noqa: 401
@@ -25,6 +26,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor",
         "syft.core.tensor.tensor",
         "syft.core.tensor.smpc",
+        "syft.core.tensor.smpc.static",
         "syft.core.tensor.smpc.share_tensor",
         "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
@@ -304,6 +306,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.bit_decomposition",
             "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.core.tensor.smpc.static.helper_argmax_pairwise",
+            "syft.core.tensor.tensor.Tensor",  # This is a Tensor that has a ShareTensor as child
         ),
     ]
 

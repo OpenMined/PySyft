@@ -162,7 +162,7 @@ class TensorPointer(Pointer):
         result_public_shape = None
         result_public_dtype = None
 
-        if isinstance(other, TensorPointer):
+        if isinstance(other, (TensorPointer, Tensor)):
             other_shape = other.public_shape
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):

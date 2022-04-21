@@ -47,7 +47,7 @@ if TYPE_CHECKING:
     from ..tensor import Tensor
 
 
-METHODS_FORWARD_ALL_SHARES = {
+METHODS_FORWARD = {
     "repeat",
     "copy",
     "diagonal",
@@ -57,6 +57,7 @@ METHODS_FORWARD_ALL_SHARES = {
     "resize",
     "ravel",
     "compress",
+    "expand",
     "reshape",
     "squeeze",
     "swapaxes",
@@ -205,6 +206,13 @@ class ShareTensor(PassthroughTensor):
             ring_size=self.ring_size,
             seed_przs=self.seed_przs,
             clients=self.clients,
+        )
+
+    @staticmethod
+    def get_dummy_value(shape: Tuple[int]) -> "ShareTensor":
+        """Return a dummy value used to get the shape when we run an operation"""
+        return ShareTensor(
+            value=np.ones(shape), rank=-1, ring_size=DEFAULT_RING_SIZE, parties_info=[]
         )
 
     @staticmethod
@@ -819,7 +827,7 @@ class ShareTensor(PassthroughTensor):
         return functools.partial(method_all_shares, __self)
 
     def __getattribute__(self, attr_name: str) -> Any:
-        if attr_name in METHODS_FORWARD_ALL_SHARES or attr_name in INPLACE_OPS:
+        if attr_name in METHODS_FORWARD or attr_name in INPLACE_OPS:
             return ShareTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)
@@ -888,7 +896,7 @@ class ShareTensor(PassthroughTensor):
         schema = get_capnp_schema(schema_file="share_tensor.capnp")
         st_struct: CapnpModule = schema.ShareTensor  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
-        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        MAX_TRAVERSAL_LIMIT = DEFAULT_RING_SIZE - 1
 
         st_msg = st_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT

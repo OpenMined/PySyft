@@ -545,9 +545,11 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
     # numpy.sum(a, axis=None, dtype=None, out=None, keepdims=<no value>, initial=<no value>, where=<no value>)
     def sum(
-        self, axis: Optional[Union[int, TypeTuple[int, ...]]] = None
+        self,
+        axis: Optional[Union[int, TypeTuple[int, ...]]] = None,
+        keepdims: bool = False,
     ) -> PassthroughTensor:
-        result = self.child.sum(axis=axis)
+        result = self.child.sum(axis=axis, keepdims=keepdims)
         if hasattr(self, "copy_tensor"):
             tensor = self.copy_tensor()
             tensor.child = result
