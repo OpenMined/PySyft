@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import hashlib
 import importlib
 import importlib.machinery
@@ -14,6 +15,7 @@ from typing import Tuple
 # third party
 import git
 import requests
+from rich.table import Table
 
 # relative
 from .cache import DEFAULT_BRANCH
@@ -42,6 +44,12 @@ sudo usermod -aG docker $USER
 
 docker compose version
 """
+
+
+class ProcessStatus(Enum):
+    RUNNING = "[blue]Running"
+    DONE = "[green]Done"
+    FAILED = "[red]Failed"
 
 
 def docker_desktop_memory() -> int:
@@ -250,6 +258,65 @@ def check_api_metadata(ip: str, silent: bool = False) -> bool:
         if not silent:
             print(f"Failed to check api metadata {ip}. {e}")
         return False
+
+
+def generate_user_table(username: str, password: str) -> Table:
+    table = Table()
+    table.add_column("Username")
+    table.add_column("Password")
+
+    table.add_row(f"[green]{username}", f"[green]{password}")
+
+    return table
+
+
+def get_process_status(process: subprocess.Popen) -> str:
+    poll_status = process.poll()
+    if poll_status is None:
+        return ProcessStatus.RUNNING.value
+    elif poll_status != 0:
+        return ProcessStatus.FAILED.value
+    else:
+        return ProcessStatus.DONE.value
+
+
+def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
+
+    process_statuses = []
+
+    table = Table()
+    table.add_column("PID")
+    table.add_column("IpAddress")
+    table.add_column("Status")
+    table.add_column("Jupyter Token")
+    table.add_column("Log")
+
+    for ip_address, process in process_list:
+        process_status = get_process_status(process)
+
+        process_statuses.append(process_status)
+
+        if process_status == ProcessStatus.FAILED.value:
+            process_log = process.stderr.readline().decode("utf-8")
+        else:
+            process_log = process.stdout.readline().decode("utf-8")
+
+        process_log = process_log if process_log else "-"
+
+        # TODO: update jupyter token dynamically
+        jupyter_token = "x-x-x-x-x-x-x"
+
+        table.add_row(
+            f"{process.pid}",
+            f"{ip_address}",
+            f"{process_status}",
+            f"{jupyter_token}",
+            f"{process_log}",
+        )
+
+    processes_completed = ProcessStatus.RUNNING.value not in process_statuses
+
+    return table, processes_completed
 
 
 GIT_REPO = get_git_repo()

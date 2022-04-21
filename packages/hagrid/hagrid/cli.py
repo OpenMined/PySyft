@@ -22,6 +22,7 @@ from typing import cast
 # third party
 import click
 import rich
+from rich.live import Live
 
 # relative
 from . import __version__
@@ -51,6 +52,8 @@ from .lib import check_host
 from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
+from .lib import generate_process_status_table
+from .lib import generate_user_table
 from .lib import hagrid_root
 from .lib import name_tag
 from .lib import update_repo
@@ -285,7 +288,10 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 def execute_commands(cmds: list, dry_run: bool = False) -> None:
     process_list: list = []
+    console = rich.get_console()
+
     for cmd in cmds:
+        print(cmd)
         if dry_run:
             print("Running: \n", hide_password(cmd=cmd))
             continue
@@ -302,7 +308,9 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
                     cwd=GRID_SRC_PATH,
                     shell=True,
                 )
-                process_list.append(process)
+
+                ip_address = extract_host_ip_from_cmd(cmd)
+                process_list.append((ip_address, process))
             else:
                 subprocess.check_call(
                     cmd,
@@ -314,29 +322,20 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
-    if dry_run is False:
-        # TODO: Display the VM Status with its Ip in here.
-        # Refresh the status whenever you check for the status
-        while True and len(process_list) > 0:
-            # Check process status
-
-            # For each process display hagrid ssh status with flush, once all machines are up.
-            # display the password and jupyter tokens and exit.
-            process_status = [False if p.poll() is None else True for p in process_list]
-            if all(process_status):
-                print("All processes completed")
-                break
-
-            process_status = [False if p.poll() is None else True for p in process_list]
-            for p in process_list:
-                output = p.stdout.readline().decode("utf-8")
-                print(f"PID: {p.pid} -> {output}")
-            time.sleep(1)
+    if dry_run is False and len(process_list) > 0:
+        # TODO: Extract username and password
+        console.print(generate_user_table("azureuser", "secret-password"))
+        display_vm_status(process_list)
 
 
-def display_vm_status(cmds: list) -> None:
-    for cmd in cmds:
-        display_jupyter_token(cmd)
+def display_vm_status(process_list: list) -> None:
+    status_table, process_completed = generate_process_status_table(process_list)
+    with Live(status_table, refresh_per_second=1) as live:
+        while not process_completed:
+            status_table, process_completed = generate_process_status_table(
+                process_list
+            )
+            live.update(status_table)
 
 
 def display_jupyter_token(cmd: str) -> None:
@@ -619,6 +618,9 @@ def create_launch_cmd(
     )
 
     parsed_kwargs["node_count"] = kwargs["node_count"] if "node_count" in kwargs else 1
+
+    # Run in detached mode if running more than one nodes
+    tail = False if parsed_kwargs["node_count"] > 1 else tail
 
     headless = False
     if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
@@ -1348,6 +1350,19 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
         if len(ips) == 2:
             return ips[1]
     except Exception:  # nosec
+        pass
+
+    return None
+
+
+def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
+
+    try:
+        matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
+        ips = re.findall(matcher, cmd)
+        if ips:
+            return ips[0]
+    except Exception:
         pass
 
     return None
