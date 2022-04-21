@@ -596,24 +596,24 @@ class PhiTensorAncestor(TensorChainManager):
                 data_subjects_indexed=data_subjects_indexed,
             )
 
-            if isinstance(min_val, (bool, int, float,np.ndarray)):
-                min_vals = np.array(min_val)
+            if isinstance(min_val, (bool, int, float)):
+                min_vals = np.array(min_val).ravel()  # make it 1D
             else:
                 raise Exception(
-                    "min_val should be either float,int,bool,np.ndarray got "
+                    "min_val should be either float,int,bool got "
                     + str(type(min_val))
                     + " instead."
                 )
 
-            if isinstance(max_val, (bool, int, float,np.ndarray)):
-                max_vals = np.array(max_val)
+            if isinstance(max_val, (bool, int, float)):
+                max_vals = np.array(max_val).ravel()  # make it 1D
             else:
                 raise Exception(
-                    "min_val should be either float,int,bool,np.ndarray got "
+                    "min_val should be either float,int,bool got "
                     + str(type(max_val))
                     + " instead."
                 )
-
+                
             if min_vals.shape != self.child.shape:
                 min_vals = lazyrepeatarray(min_vals, self.child.shape)
 
