@@ -1,18 +1,20 @@
-# stdlib
+# future
 from __future__ import annotations
+
+# stdlib
 import secrets
 from time import time
 from typing import Callable
-from typing import Tuple
-from typing import Union
 from typing import Dict
 from typing import List
-from tqdm import tqdm
+from typing import Tuple
+from typing import Union
 
 # third party
 import jax
 from jax import numpy as jnp
 import numpy as np
+from tqdm import tqdm
 
 # relative
 from .data_subject_ledger import DataSubjectLedger
@@ -80,13 +82,15 @@ def vectorized_publish(
     sigma: float = 1.5,
     output_func: Callable = lambda x: x,
 ) -> Union[np.ndarray, jax.numpy.DeviceArray]:
+    # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
 
     # print(f"Starting vectorized publish: {type(ledger)}")
     # print("Starting RDP Params Calculation")
-
     # TODO: Vectorize this to return a larger GammaTensor instead of a list of Tensors
     input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
+
+    print("Input tensors", input_tensors)
     filtered_inputs = []
 
     # This will reveal the # of input tensors to the user- remove this before merging to dev
@@ -100,7 +104,7 @@ def vectorized_publish(
             value_array=input_tensor.value,
             min_val_array=input_tensor.min_val,
             max_val_array=input_tensor.max_val,
-            sigma=sigma
+            sigma=sigma,
         )
 
         if is_linear:
@@ -154,15 +158,19 @@ def vectorized_publish(
         except Exception as e:
             # stdlib
             import traceback
+
             print(traceback.format_exc())
             print(f"Failed to run vectorized_publish. {e}")
 
     print("We have filtered all the input tensors. Now to compute the result:")
 
     # noise = secrets.SystemRandom().gauss(0, sigma)
+    print("Filtered inputs ", filtered_inputs)
     original_output = np.asarray(output_func(filtered_inputs))
     print("original output (before noise:", original_output)
-    noise = np.asarray([secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)])
+    noise = np.asarray(
+        [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
+    )
     noise.resize(original_output.shape)
     print("noise: ", noise)
     output = np.asarray(output_func(filtered_inputs) + noise)

@@ -606,12 +606,19 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         print("PUBLISHING TO GAMMA:")
         print(self.child)
 
-        res = self.gamma.publish(
+        gamma = self.gamma
+        # gamma.func = lambda x: x
+        print("Gamma Function",gamma.func)
+        print("Gamma State",gamma.state)
+        print(" Run ", gamma.run(gamma.state))
+        gamma.state[gamma.id] = gamma
+        print("Gamma State",gamma.state)
+        print(" Run ", gamma.run(gamma.state))
+        res = gamma.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             ledger=ledger,
             sigma=sigma,
-            output_func=lambda x: x,
         )
         fpt_values = self.fpt_values
         print("After Publish Res", res)
