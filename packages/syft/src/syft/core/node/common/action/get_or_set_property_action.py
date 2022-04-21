@@ -27,6 +27,7 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from .greenlets_switch import retrieve_object
 from .run_class_method_action import RunClassMethodAction
 
 
@@ -73,13 +74,13 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         method = ast_node.object_ref
 
         # storable object raw from object store
-        resolved_self = node.store.get(self._self.id_at_location)
+        resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
         result_read_permissions = resolved_self.read_permissions
 
         resolved_args = []
         tag_args = []
         for arg in self.args:
-            r_arg = node.store.get(arg.id_at_location)
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -89,7 +90,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store.get(arg.id_at_location)
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
