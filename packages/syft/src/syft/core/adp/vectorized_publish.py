@@ -89,8 +89,9 @@ def vectorized_publish(
     input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
     filtered_inputs = []
 
+    # This will reveal the # of input tensors to the user- remove this before merging to dev
     for input_tensor in tqdm(input_tensors):
-        # TODO: Double check with Andrew if this is correct- if we use the individual
+        # TODO: Double check with Andrew if this is correct- if we use the individual min/max values
 
         # t1 = time()
         # Calculate everything needed for RDP
