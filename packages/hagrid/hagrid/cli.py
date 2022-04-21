@@ -14,6 +14,7 @@ from typing import Any
 from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
+from typing import Set
 from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
@@ -265,6 +266,7 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(f"Failed to update repo. {e}")
     try:
         cmds = create_launch_cmd(verb=verb, kwargs=kwargs)
+        cmds = [cmds] if isinstance(cmds, str) else cmds
     except Exception as e:
         print(f"{e}")
         return
@@ -273,12 +275,16 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         dry_run = False
 
-    execute_commands(cmds, dry_run=dry_run)
-    display_vm_status(cmds)
+    try:
+        execute_commands(cmds, dry_run=dry_run)
+        display_vm_status(cmds)
+    except Exception as e:
+        print(f"{e}")
+        return
 
 
 def execute_commands(cmds: list, dry_run: bool) -> None:
-    process_list = []
+    process_list: list = []
     for cmd in cmds:
         if dry_run:
             print("Running: \n", hide_password(cmd=cmd))
@@ -569,7 +575,7 @@ def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> Union[str, list]:
+) -> Union[str, list[str]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -797,7 +803,7 @@ def create_launch_cmd(
 
             use_branch(branch=branch)
 
-            password = "Openmined_Adastra0"  # generate_sec_random_password(length=11)
+            password = generate_sec_random_password(length=16)
             auth = AuthCredentials(
                 username=username, key_path=key_path, password=password
             )
@@ -1540,7 +1546,7 @@ def create_launch_azure_cmd(
     auth: AuthCredentials,
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
-) -> list:
+) -> list[str]:
 
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
@@ -1590,7 +1596,7 @@ def create_launch_azure_cmd(
             priority=502,
         )
 
-    launch_cmds: list = []
+    launch_cmds: list[str] = []
 
     for host_ip in host_ips:
         # get old host
@@ -1766,7 +1772,7 @@ def create_launch_custom_cmd(
         if kwargs["jupyter"] is True:
             ANSIBLE_ARGS["jupyter"] = "true"
             ANSIBLE_ARGS["jupyter_token"] = generate_sec_random_password(
-                length=48, alphabet=HEX_LOWER_ALPHABET
+                length=48, upper_case=False, special_chars=False
             )
 
         if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
@@ -2019,18 +2025,79 @@ def check(ip_address: str) -> None:
 
 cli.add_command(check)
 
-DEFAULT_ALPHABET = string.ascii_letters + string.digits + string.punctuation
-HEX_LOWER_ALPHABET = "".join(sorted(list(set(string.hexdigits.lower()))))
 
+def generate_sec_random_password(
+    length: int,
+    special_chars: bool = True,
+    digits: bool = True,
+    lower_case: bool = True,
+    upper_case: bool = True,
+) -> str:
+    """Generates a random password of the given length.
 
-def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) -> str:
+    Args:
+        length (int): length of the password
+        special_chars (bool, optional): Include at least one specials char in the password. Defaults to True.
+        digits (bool, optional): Include at least one digit in the password. Defaults to True.
+        lower_case (bool, optional): Include at least one lower case character in the password. Defaults to True.
+        upper_case (bool, optional): Includde at least one upper case character in the password. Defaults to True.
+
+    Raises:
+        ValueError: If password length if too short.
+
+    Returns:
+        str: randomly generated password
+    """
     if not isinstance(length, int) or length < 10:
         raise ValueError(
             "Password should have a positive safe length of at least 10 characters!"
+        )
+
+    choices: str = ""
+    required_tokens: list[str] = []
+    if special_chars:
+        special_characters = "!@#$%^&*()_+"
+        choices += special_characters
+        required_tokens.append(
+            special_characters[
+                int.from_bytes(urandom(1), sys.byteorder) % len(special_characters)
+            ]
+        )
+    if lower_case:
+        choices += string.ascii_lowercase
+        required_tokens.append(
+            string.ascii_lowercase[
+                int.from_bytes(urandom(1), sys.byteorder) % len(string.ascii_lowercase)
+            ]
+        )
+    if upper_case:
+        choices += string.ascii_uppercase
+        required_tokens.append(
+            string.ascii_uppercase[
+                int.from_bytes(urandom(1), sys.byteorder) % len(string.ascii_uppercase)
+            ]
+        )
+    if digits:
+        choices += string.digits
+        required_tokens.append(
+            string.digits[
+                int.from_bytes(urandom(1), sys.byteorder) % len(string.digits)
+            ]
         )
 
     # original Python 2 (urandom returns str)
     # return "".join(chars[ord(c) % len(chars)] for c in urandom(length))
 
     # Python 3 (urandom returns bytes)
-    return "".join(alphabet[c % len(alphabet)] for c in urandom(length))
+    password = [choices[c % len(choices)] for c in urandom(length)]
+
+    # Pick some random indexes
+    random_indexes: Set[int] = set()
+    while len(random_indexes) < len(required_tokens):
+        random_indexes.add(int.from_bytes(urandom(1), sys.byteorder) % len(password))
+
+    # Replace the random indexes with the required tokens
+    for i, idx in enumerate(random_indexes):
+        password[idx] = required_tokens[i]
+
+    return "".join(password)
