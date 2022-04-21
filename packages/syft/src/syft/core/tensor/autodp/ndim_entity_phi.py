@@ -608,11 +608,11 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         gamma = self.gamma
         # gamma.func = lambda x: x
-        print("Gamma Function",gamma.func)
-        print("Gamma State",gamma.state)
+        print("Gamma Function", gamma.func)
+        print("Gamma State", gamma.state)
         print(" Run ", gamma.run(gamma.state))
         gamma.state[gamma.id] = gamma
-        print("Gamma State",gamma.state)
+        print("Gamma State", gamma.state)
         print(" Run ", gamma.run(gamma.state))
         res = gamma.publish(
             get_budget_for_user=get_budget_for_user,
@@ -840,16 +840,19 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                         raise NotImplementedError
                     else:
                         data = self.child.__matmul__(other.child)
-                        _min_vals = np.array(
-                            [self.min_vals.data.__matmul__(other.min_vals.data)]
-                        )
-                        _max_vals = np.array(
-                            [self.max_vals.data.__matmul__(other.max_vals.data)]
-                        )
-                        min_vals = self.min_vals.copy()
-                        min_vals.data = _min_vals
-                        max_vals = self.max_vals.copy()
-                        max_vals.data = _max_vals
+                        # _min_vals = np.array(
+                        #     [self.min_vals.data.__matmul__(other.min_vals.data)]
+                        # )
+                        # _max_vals = np.array(
+                        #     [self.max_vals.data.__matmul__(other.max_vals.data)]
+                        # )
+                        # min_vals = self.min_vals.copy()
+                        # min_vals.data = _min_vals
+                        # max_vals = self.max_vals.copy()
+                        # max_vals.data = _max_vals
+                        min_vals = self.min_vals.__matmul__(other.min_vals)
+                        max_vals = self.max_vals.__matmul__(other.max_vals)
+
                 else:
                     raise NotImplementedError
 

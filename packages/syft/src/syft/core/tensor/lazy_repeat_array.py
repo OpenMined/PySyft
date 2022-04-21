@@ -111,18 +111,24 @@ class lazyrepeatarray:
         """
         if is_acceptable_simple_type(other):
             new_shape = get_shape("matmul", self.shape, other.shape)
+            print("Self ", self, self.shape)
+            print("Other ", other, other.shape)
             if self.data.size == 1:
-                return self.__class__(data=np.matmul(np.ones(self.shape), other*self.data), shape=new_shape)
+                return self.__class__(
+                    data=np.matmul(np.ones(self.shape), other * self.data),
+                    shape=new_shape,
+                )
             return self.__class__(data=self.data.__matmul__(other), shape=new_shape)
 
-        if self.shape != other.shape:
-            raise Exception("cannot matrix multiply tensors with different shapes")
+        if self.shape[-1] != other.shape[0]:
+            raise Exception(
+                "cannot matrix multiply tensors with different shapes: {self.shape} and {other.shape}"
+            )
 
-        if self.data.shape == other.data.shape:
-            new_shape = get_shape("matmul", self.shape, other.shape)
-            return self.__class__(data=self.data @ other.data, shape=new_shape)
+        result = self.to_numpy() @ other.to_numpy()
+        return self.__class__(data=result, shape=result.shape)
 
-        raise Exception("not sure how to do this yet")
+        # raise Exception("not sure how to do this yet")
 
     def __pow__(self, exponent: int) -> lazyrepeatarray:
         if exponent == 2:
