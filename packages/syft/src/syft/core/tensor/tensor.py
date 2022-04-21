@@ -30,6 +30,7 @@ from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
 from ..node.common.action.run_class_method_action import RunClassMethodAction
+
 # from ..node.domain.client import DomainClient
 from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
@@ -89,6 +90,7 @@ class TensorPointer(Pointer):
             ring_size=ring_size,
         )
         return self_mpc
+
     #
     # @staticmethod
     # def concatenate(

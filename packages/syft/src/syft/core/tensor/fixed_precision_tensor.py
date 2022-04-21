@@ -181,3 +181,13 @@ class FixedPrecisionTensor(PassthroughTensor):
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child < other.child
         return res
+
+    def concatenate(self, other: FixedPrecisionTensor, *args, **kwargs) -> FixedPrecisionTensor:
+        if not isinstance(other,FixedPrecisionTensor):
+            raise NotImplementedError
+        
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = self.child.concatenate(other.child,*args,**kwargs)
+
+        return res
+        

@@ -190,6 +190,15 @@ class lazyrepeatarray:
                 raise e
 
         return self <= other
+    
+    def concatenate(self,other: lazyrepeatarray,*args,**kwargs) -> lazyrepeatarray:
+        if not isinstance(other,lazyrepeatarray):
+            raise NotImplementedError
+        
+        dummy_res = dummy_res = np.concatenate(
+            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs
+        )
+        return lazyrepeatarray(data=self.data,shape=dummy_res.shape)
 
     @property
     def dtype(self) -> np.dtype:

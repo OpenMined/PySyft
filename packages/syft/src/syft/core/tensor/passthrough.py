@@ -298,6 +298,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
             return self.__class__(self.child * other)
 
         return self.__class__(self.child * other.child)
+    
+    def concatenate(
+        self, other: PassthroughTensor,*args,**kwargs
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            raise ValueError("Does not currently for Simple Types")
+
+        return self.__class__(self.child.concatenate(other.child,*args,**kwargs))
 
     def __rmul__(
         self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]

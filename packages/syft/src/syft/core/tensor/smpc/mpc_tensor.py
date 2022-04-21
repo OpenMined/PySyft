@@ -862,6 +862,23 @@ class MPCTensor(PassthroughTensor):
         res = MPCTensor(shares=shares, parties=self.parties, shape=self.shape)
         return res
 
+    def concatenate(self, other: MPCTensor, *args, **kwargs) -> MPCTensor:
+        if not isinstance(other, MPCTensor):
+            raise ValueError(
+                f"Invalid type: {type(other)} for MPCTensor concatenate operation"
+            )
+
+        shares = []
+        for x, y in zip(self.child, other.child):
+            shares.append(x.concatenate(y, *args, **kwargs))
+
+        dummy_res = np.concatenate(
+            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs
+        )
+        res = MPCTensor(shares=shares, parties=self.parties, shape=dummy_res.shape)
+
+        return res
+
     def sign(self) -> MPCTensor:
         """Calculate sign of given tensor.
 

@@ -765,6 +765,12 @@ class ShareTensor(PassthroughTensor):
         share.child = value
         return share
 
+    
+    def concatenate(self, other: ShareTensor, *args, **kwargs) -> ShareTensor:
+        res = self.copy()
+        res.child = np.concatenate((self.child,other.child),*args,**kwargs)
+        return res
+
     @staticmethod
     def hook_method(__self: ShareTensor, method_name: str) -> Callable[..., Any]:
         """Hook a framework method.
@@ -808,6 +814,8 @@ class ShareTensor(PassthroughTensor):
             return ShareTensor.hook_method(self, attr_name)
 
         return object.__getattribute__(self, attr_name)
+    
+
 
     def _object2proto(self) -> ShareTensor_PB:
         # This works only for unsigned types.

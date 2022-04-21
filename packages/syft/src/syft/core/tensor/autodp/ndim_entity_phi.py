@@ -419,6 +419,39 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         """
         return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "ne")
 
+    def concatenate(
+        self, other: TensorWrappedNDimEntityPhiTensorPointer, *args, **kwargs
+    ) -> MPCTensor:
+        """Apply the "add" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+
+        Returns:
+            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        if not isinstance(other, TensorWrappedNDimEntityPhiTensorPointer):
+            raise ValueError(
+                f"Concatenate works only for TensorWrappedNDimEntityPhiTensorPointer got type: {type(other)}"
+            )
+
+        if self.client != other.client:
+
+            parties = [self.client, other.client]
+
+            self_mpc = MPCTensor(secret=self, shape=self.public_shape, parties=parties)
+            other_mpc = MPCTensor(
+                secret=other, shape=other.public_shape, parties=parties
+            )
+
+            return self_mpc.concatenate(other_mpc, *args, **kwargs)
+
+        else:
+            raise ValueError(
+                "Concatenate method currently works only between two different clients."
+            )
+
     def to_local_object_without_private_data_child(self) -> NDimEntityPhiTensor:
         """Convert this pointer into a partial version of the NDimEntityPhiTensor but without
         any of the private data therein."""
@@ -907,6 +940,28 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             min_vals=min_vals,
             max_vals=max_vals,
         )
+
+    def concatenate(
+        self, other: NDimEntityPhiTensor, *args, **kwargs
+    ) -> NDimEntityPhiTensor:
+
+        # if the tensor being added is also private
+        if isinstance(other, NDimEntityPhiTensor):
+            if self.entities != other.entities:
+                return self.gamma + other.gamma
+
+            return NDimEntityPhiTensor(
+                child=self.child.concatenate(other.child, *args, **kwargs),
+                min_vals=self.min_vals.concatenate(other.min_vals, *args, **kwargs),
+                max_vals=self.max_vals.concatenate(other.max_vals, *args, **kwargs),
+                entities=self.entities,
+            )
+
+        elif is_acceptable_simple_type(other):
+            raise NotImplementedError
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def __lt__(
         self, other: SupportedChainType
