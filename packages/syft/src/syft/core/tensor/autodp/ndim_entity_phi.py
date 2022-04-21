@@ -23,6 +23,10 @@ from ....core.adp.data_subject_list import DataSubjectList
 from ....core.adp.data_subject_list import liststrtonumpyutf8
 from ....core.adp.data_subject_list import numpyutf8tolist
 from ....core.adp.entity import Entity
+from ....core.node.common.action.get_or_set_property_action import (
+    GetOrSetPropertyAction,
+)
+from ....core.node.common.action.get_or_set_property_action import PropertyActions
 from ....lib.numpy.array import capnp_deserialize
 from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
@@ -79,7 +83,8 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
     }
-
+    _exhausted = False
+    is_enum = False
     def __init__(
         self,
         entities: DataSubjectList,
@@ -209,12 +214,12 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
                 op_str, self.public_shape, other_shape
             )
 
-        if self.public_dtype is not None and other_dtype is not None:
-            if self.public_dtype != other_dtype:
-                raise ValueError(
-                    f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
-                )
-            result_public_dtype = self.public_dtype
+        # if self.public_dtype is not None and other_dtype is not None:
+        #     if self.public_dtype != other_dtype:
+        #         raise ValueError(
+        #             f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
+        #         )
+        result_public_dtype = self.public_dtype
 
         result.public_shape = result_public_shape
         result.public_dtype = result_public_dtype
@@ -451,6 +456,58 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
             raise ValueError(
                 "Concatenate method currently works only between two different clients."
             )
+
+    @property
+    def T(self) -> TensorWrappedNDimEntityPhiTensorPointer:
+        # We always maintain a Tensor hierarchy Tensor ---> NDEPT--> Actual Data
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.T"
+
+        result = TensorWrappedNDimEntityPhiTensorPointer(
+            entities=self.entities,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = GetOrSetPropertyAction(
+                path=attr_path_and_name,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                action=PropertyActions.GET,
+                map_to_dyn=False,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        return result
 
     def to_local_object_without_private_data_child(self) -> NDimEntityPhiTensor:
         """Convert this pointer into a partial version of the NDimEntityPhiTensor but without
@@ -996,7 +1053,55 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         # if the tensor being compared is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
 
-            data = (self.child < other) 
+            data = self.child < other
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entities = self.entities
+
+            return NDimEntityPhiTensor(
+                child=data,
+                entities=entities,
+                min_vals=min_vals,
+                max_vals=max_vals,
+            )
+
+        else:
+            return NotImplementedError  # type: ignore
+
+    def __gt__(
+        self, other: SupportedChainType
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+
+        # if the tensor being compared is also private
+        if isinstance(other, NDimEntityPhiTensor):
+
+            if self.entities != other.entities:
+                # return self.gamma < other.gamma
+                raise NotImplementedError
+
+            if len(self.child) != len(other.child):
+                raise Exception(
+                    f"Tensor dims do not match for __gt__: {len(self.child)} != {len(other.child)}"  # type: ignore
+                )
+
+            data = (
+                self.child > other.child
+            )  # the * 1 just makes sure it returns integers instead of True/False
+            min_vals = self.min_vals * 0
+            max_vals = (self.max_vals * 0) + 1
+            entities = self.entities
+
+            return NDimEntityPhiTensor(
+                child=data,
+                entities=entities,
+                min_vals=min_vals,
+                max_vals=max_vals,
+            )
+
+        # if the tensor being compared is a public tensor / int / float / etc.
+        elif is_acceptable_simple_type(other):
+
+            data = self.child > other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
             entities = self.entities

@@ -111,8 +111,7 @@ class lazyrepeatarray:
         """
         if is_acceptable_simple_type(other):
             new_shape = get_shape("matmul", self.shape, other.shape)
-            print("Self ", self, self.shape)
-            print("Other ", other, other.shape)
+
             if self.data.size == 1:
                 return self.__class__(
                     data=np.matmul(np.ones(self.shape), other * self.data),
@@ -190,15 +189,15 @@ class lazyrepeatarray:
                 raise e
 
         return self <= other
-    
-    def concatenate(self,other: lazyrepeatarray,*args,**kwargs) -> lazyrepeatarray:
-        if not isinstance(other,lazyrepeatarray):
+
+    def concatenate(self, other: lazyrepeatarray, *args, **kwargs) -> lazyrepeatarray:
+        if not isinstance(other, lazyrepeatarray):
             raise NotImplementedError
-        
+
         dummy_res = dummy_res = np.concatenate(
             (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs
         )
-        return lazyrepeatarray(data=self.data,shape=dummy_res.shape)
+        return lazyrepeatarray(data=self.data, shape=dummy_res.shape)
 
     @property
     def dtype(self) -> np.dtype:

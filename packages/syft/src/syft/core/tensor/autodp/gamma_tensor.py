@@ -101,12 +101,14 @@ class GammaTensor:
     )  # TODO: Need to check if there are any scenarios where this is not secure
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
 
-    def __post_init__(self) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
+    def __post_init__(
+        self,
+    ) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
         if len(self.state) == 0 and self.func is not no_op:
             self.state[self.id] = self
 
     def run(self, state: dict) -> Callable:
-        """ This method traverses the computational tree and returns all the private inputs"""
+        """This method traverses the computational tree and returns all the private inputs"""
         # TODO: Can we eliminate "state" and use self.state below?
         # we hit a private input
         if self.func is no_op:
@@ -230,7 +232,9 @@ class GammaTensor:
             sigma = self.value.mean() / 4  # TODO @Ishan: replace this with calibration
 
         if self.value.dtype != np.int64:
-            raise Exception("Data type of private values is not np.int64: ", self.value.dtype)
+            raise Exception(
+                "Data type of private values is not np.int64: ", self.value.dtype
+            )
 
         return vectorized_publish(
             min_vals=self.min_val,

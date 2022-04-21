@@ -360,8 +360,12 @@ class Pointer(AbstractPointer):
         )
         ptr._pointable = True
 
+        ptr.block_with_timeout(10)
+
+        value = ptr.get_copy()
+        
         # return pointer
-        return ptr
+        return value.decode()
 
     def get(
         self,

@@ -163,6 +163,8 @@ class FixedPrecisionTensor(PassthroughTensor):
 
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
         res.child = self.child / other
+        if isinstance(res.child, np.ndarray):
+            res.child = res.child.astype(DEFAULT_INT_NUMPY_TYPE)
         return res
 
     def transpose(
@@ -179,18 +181,31 @@ class FixedPrecisionTensor(PassthroughTensor):
     # TODO: Remove after moving private compare to sharetensor level
     def __lt__(self, other: Any) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        if isinstance(other,FixedPrecisionTensor):
-            res.child = self.child < other.child
+        if isinstance(other, FixedPrecisionTensor):
+            res.child = (self.child < other.child) * 1
         else:
-            res.child = self.child<other
+            res.child = (self.child < other) * 1
         return res
 
-    def concatenate(self, other: FixedPrecisionTensor, *args, **kwargs) -> FixedPrecisionTensor:
-        if not isinstance(other,FixedPrecisionTensor):
+    def __gt__(self, other: Any) -> FixedPrecisionTensor:
+
+        if isinstance(other, FixedPrecisionTensor):
+            value = (self.child > other.child) * 1
+        else:
+            value = (self.child > other) * 1
+
+        res = FixedPrecisionTensor(
+            value=value, base=self._base, precision=self._precision
+        )
+        return res
+
+    def concatenate(
+        self, other: FixedPrecisionTensor, *args, **kwargs
+    ) -> FixedPrecisionTensor:
+        if not isinstance(other, FixedPrecisionTensor):
             raise NotImplementedError
-        
+
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        res.child = self.child.concatenate(other.child,*args,**kwargs)
+        res.child = self.child.concatenate(other.child, *args, **kwargs)
 
         return res
-        
