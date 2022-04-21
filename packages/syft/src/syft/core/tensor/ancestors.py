@@ -613,7 +613,7 @@ class PhiTensorAncestor(TensorChainManager):
                     + str(type(max_val))
                     + " instead."
                 )
-                
+
             if min_vals.shape != self.child.shape:
                 min_vals = lazyrepeatarray(min_vals, self.child.shape)
 
