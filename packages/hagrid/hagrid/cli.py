@@ -283,7 +283,7 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         return
 
 
-def execute_commands(cmds: list, dry_run: bool) -> None:
+def execute_commands(cmds: list, dry_run: bool = False) -> None:
     process_list: list = []
     for cmd in cmds:
         if dry_run:
@@ -294,22 +294,44 @@ def execute_commands(cmds: list, dry_run: bool) -> None:
             cmd = ["powershell.exe", "-Command", cmd]
 
         try:
-            process = subprocess.Popen(
-                cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, cwd=GRID_SRC_PATH
-            )
-            process_list.append(process)
+            if len(cmds) > 1:
+                process = subprocess.Popen(
+                    cmd,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    cwd=GRID_SRC_PATH,
+                    shell=True,
+                )
+                process_list.append(process)
+            else:
+                subprocess.check_call(
+                    cmd,
+                    stdout=sys.stdout,
+                    stderr=subprocess.STDOUT,
+                    shell=True,
+                    cwd=GRID_SRC_PATH,
+                )
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
     if dry_run is False:
         # TODO: Display the VM Status with its Ip in here.
         # Refresh the status whenever you check for the status
-        while True:
+        while True and len(process_list) > 0:
             # Check process status
+
+            # For each process display hagrid ssh status with flush, once all machines are up.
+            # display the password and jupyter tokens and exit.
             process_status = [False if p.poll() is None else True for p in process_list]
             if all(process_status):
                 print("All processes completed")
                 break
+
+            process_status = [False if p.poll() is None else True for p in process_list]
+            for p in process_list:
+                output = p.stdout.readline().decode("utf-8")
+                print(f"PID: {p.pid} -> {output}")
+            time.sleep(1)
 
 
 def display_vm_status(cmds: list) -> None:
