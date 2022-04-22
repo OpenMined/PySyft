@@ -30,9 +30,9 @@ vars:
   - name: SERVICE_NAME_SEAWEEDFS
     value: seaweedfs
   - name: VERSION
-    command: "python ../../VERSION"
+    command: "python3 ../../VERSION"
   - name: VERSION_HASH
-    command: "python ../../VERSION hash"
+    command: "python3 ../../VERSION hash"
   - name: NODE_TYPE
     value: network
   - name: RELEASE
