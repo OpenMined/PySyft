@@ -816,6 +816,7 @@ class ShareTensor(PassthroughTensor):
 
         return object.__getattribute__(self, attr_name)
 
+    # TODO: Add capnp serialization to ShareTensor
     def _object2proto(self) -> ShareTensor_PB:
         # This works only for unsigned types.
         length_rs = self.ring_size.bit_length()

@@ -32,6 +32,8 @@ from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...common.serde.capnp import CapnpModule
+from ...common.serde.capnp import chunk_bytes
+from ...common.serde.capnp import combine_bytes
 from ...common.serde.capnp import get_capnp_schema
 from ...common.serde.capnp import serde_magic_header
 from ...common.serde.deserialize import _deserialize as deserialize
@@ -551,7 +553,6 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         min_vals: np.ndarray,
         max_vals: np.ndarray,
     ) -> None:
-
         if isinstance(child, FixedPrecisionTensor):
             # child = the actual private data
             super().__init__(child)
@@ -1215,9 +1216,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         # this is how we dispatch correct deserialization of bytes
         ndept_msg.magicHeader = serde_magic_header(type(self))
 
-        # TODO: move numpy serialization to capnp and modify child serialization
-        # specificall done here for FPT
-        ndept_msg.child = serialize(self.child, to_bytes=True)
+        # We always have FPT as the child of an NDEPT in the tensor chain.
+        chunk_bytes(serialize(self.child, to_bytes=True), "child", ndept_msg)  # type: ignore
+
         ndept_msg.minVals = serialize(self.min_vals, to_bytes=True)
         ndept_msg.maxVals = serialize(self.max_vals, to_bytes=True)
         ndept_msg.dataSubjectsIndexed = capnp_serialize(
@@ -1245,7 +1246,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
-        child = deserialize(ndept_msg.child, from_bytes=True)
+        child = deserialize(combine_bytes(ndept_msg.child), from_bytes=True)
         min_vals = deserialize(ndept_msg.minVals, from_bytes=True)
         max_vals = deserialize(ndept_msg.maxVals, from_bytes=True)
         data_subjects_indexed = capnp_deserialize(ndept_msg.dataSubjectsIndexed)

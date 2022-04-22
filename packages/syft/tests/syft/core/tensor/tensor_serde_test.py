@@ -13,6 +13,7 @@ from syft.core.adp.entity import Entity
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
+from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 from syft.core.tensor.tensor import Tensor
 
 
@@ -55,7 +56,7 @@ def size(obj: Any) -> int:
 
 
 def test_numpy_child() -> None:
-    child = np.array([1, 2, 3], dtype=np.int32)
+    child = np.array([1, 2, 3], dtype=DEFAULT_INT_NUMPY_TYPE)
     tensor = Tensor(child=child)
 
     ser = sy.serialize(tensor, to_bytes=True)

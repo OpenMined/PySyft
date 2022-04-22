@@ -3,7 +3,7 @@ using Array = import "array.capnp".Array;
 
 struct NDEPT {
   magicHeader @0 :Data;
-  child @1 :Data;
+  child @1 :List(Data);
   minVals @2 :Data;
   maxVals @3 :Data;
   dataSubjectsIndexed @4 :Array;
