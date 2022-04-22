@@ -261,7 +261,7 @@ def check_api_metadata(ip: str, silent: bool = False) -> bool:
 
 
 def generate_user_table(username: str, password: str) -> Table:
-    table = Table()
+    table = Table(title="Virtual Machine Credentials")
     table.add_column("Username")
     table.add_column("Password")
 
@@ -281,10 +281,19 @@ def get_process_status(process: subprocess.Popen) -> str:
 
 
 def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
+    """Generate a table to show the status of the processes being exected.
 
-    process_statuses = []
+    Args:
+        process_list (list): each item in the list
+        is a tuple of ip_address, process and jupyter token
 
-    table = Table(title="Virtual Machine Credentials")
+    Returns:
+        Tuple[Table, bool]: table of process status and flag to indicate if all processes are executed.
+    """
+
+    process_statuses: list[str] = []
+
+    table = Table(title="Virtual Machine Status")
     table.add_column("PID", style="cyan")
     table.add_column("IpAddress", style="magenta")
     table.add_column("Status")

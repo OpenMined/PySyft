@@ -1446,8 +1446,11 @@ def make_vm_azure(
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
     cmd += "--public-ip-sku Standard --authentication-type all "
-    cmd += f"--ssh-key-values {public_key_path} --admin-username {username} "
-    cmd += f"--admin-password '{password}' --count {node_count}"
+    cmd += f"--ssh-key-values {public_key_path} --admin-username {username} --admin-password '{password}' "
+    if node_count > 1:
+        # count accepts integer between [2, 250]
+        cmd += f"--count {node_count} "
+
     host_ips: Optional[list] = []
     try:
         print(f"Creating vm.\nRunning: {cmd}")
