@@ -5,6 +5,8 @@ from __future__ import annotations
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
@@ -212,3 +214,15 @@ class FixedPrecisionTensor(PassthroughTensor):
 
     def all(self) -> bool:
         return self.child.all()
+
+    def copy(self, order: Optional[str] = "K") -> FixedPrecisionTensor:
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = self.child.copy(order=order)
+        return res
+
+    def sum(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> FixedPrecisionTensor:
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        res.child = self.child.sum(axis=axis)
+        return res
