@@ -333,8 +333,9 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
             print(f"Failed to run cmd: {cmd}. {e}")
 
     if dry_run is False and len(process_list) > 0:
-        # TODO: Extract username and password
+        # display VM credentials
         console.print(generate_user_table(username=username, password=password))
+        # display VM launch status
         display_vm_status(process_list)
 
 
@@ -349,7 +350,7 @@ def display_vm_status(process_list: list) -> None:
     status_table, process_completed = generate_process_status_table(process_list)
 
     # Render the live table
-    with Live(status_table, refresh_per_second=1) as live:
+    with Live(status_table, refresh_per_second=0.5) as live:
 
         # Loop till all processes have not completed executing
         while not process_completed:
@@ -808,7 +809,7 @@ def create_launch_cmd(
 
             key_path_question = Question(
                 var_name="azure_key_path",
-                question=f"Private key to access {username}@{host}?",
+                question=f"Absolute path of the private key to access {username}@{host}?",
                 default=arg_cache.azure_key_path,
                 kind="path",
                 cache=True,
@@ -1446,7 +1447,7 @@ def make_vm_azure(
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
     cmd += "--public-ip-sku Standard --authentication-type all "
     cmd += f"--ssh-key-values {public_key_path} --admin-username {username} "
-    cmd += f"--admin-password {password} --count {node_count} --no-wait"
+    cmd += f"--admin-password '{password}' --count {node_count}"
     host_ips: Optional[list] = []
     try:
         print(f"Creating vm.\nRunning: {cmd}")

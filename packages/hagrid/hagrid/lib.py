@@ -284,11 +284,11 @@ def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
 
     process_statuses = []
 
-    table = Table()
-    table.add_column("PID")
-    table.add_column("IpAddress")
+    table = Table(title="Virtual Machine Credentials")
+    table.add_column("PID", style="cyan")
+    table.add_column("IpAddress", style="magenta")
     table.add_column("Status")
-    table.add_column("Jupyter Token")
+    table.add_column("Jupyter Token", style="white on black")
     table.add_column("Log")
 
     for ip_address, process, jupyter_token in process_list:
