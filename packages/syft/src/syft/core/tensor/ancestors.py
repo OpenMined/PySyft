@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+from calendar import day_abbr
 import textwrap
 from typing import Any
 from typing import List
@@ -589,8 +590,11 @@ class PhiTensorAncestor(TensorChainManager):
 
         elif ndept and entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
+
             if isinstance(entities, DataSubjectList):
                 entity_list = entities
+            else:
+                entity_list = DataSubjectList.from_objs(entities)
 
             if isinstance(min_val, (bool, int, float)):
                 min_vals = np.array(min_val).ravel()  # make it 1D

@@ -65,14 +65,14 @@ def run_suite() -> None:
     # run_sept_suite(
     #     runner=runner, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max
     # )
-    run_rept_suite(
-        runner=runner,
-        rept_dimension=15,
-        rows=1000,
-        cols=10,
-        lower_bound=inf.min,
-        upper_bound=inf.max,
-    )
+    # run_rept_suite(
+    #     runner=runner,
+    #     rept_dimension=15,
+    #     rows=1000,
+    #     cols=10,
+    #     lower_bound=inf.min,
+    #     upper_bound=inf.max,
+    # )
     run_ndept_suite(runner=runner, data_file=data_file)
 
 

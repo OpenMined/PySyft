@@ -1,46 +1,10 @@
 # stdlib
-import subprocess
-import warnings
+from time import time
 
 # third party
 import numpy as np
-import pyperf
-from syft_benchmarks import run_rept_suite
-from syft_benchmarks import run_sept_suite
+import pyarrow.parquet as pq
 
-warnings.filterwarnings("ignore", category=UserWarning)
-
-
-def get_git_revision_short_hash() -> str:
-    return (
-        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
-        .decode("ascii")
-        .strip()
-    )
-
-
-def run_suite(rept=True, sept=False) -> None:
-    inf = np.iinfo(np.int32)
-    runner = pyperf.Runner()
-    runner.parse_args()
-    runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
-    if sept:
-        run_sept_suite(
-            runner=runner,
-            rows=1000,
-            cols=10,
-            lower_bound=inf.min,
-            upper_bound=inf.max,
-        )
-    if rept:
-        run_rept_suite(
-            runner=runner,
-            rept_dimension=15,
-            rows=200000,
-            cols=10,
-            lower_bound=inf.min,
-            upper_bound=inf.max,
-        )
-
-
-run_suite(rept=True, sept=False)
+# syft absolute
+import syft as sy
+from syft.core.adp.data_subject_list import DataSubjectList
