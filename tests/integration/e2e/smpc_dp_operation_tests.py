@@ -11,13 +11,12 @@ import pytest
 # syft absolute
 import syft as sy
 
-
 sy.logger.remove()
 
 
 @pytest.fixture
 def email() -> str:
-    """ Unique email to run tests isolated"""
+    """Unique email to run tests isolated"""
     return f"{uuid.uuid4()}@avengers.inc"
 
 
@@ -28,19 +27,21 @@ def password() -> str:
 
 @pytest.fixture
 def domain1_port() -> int:
-    """ If we change ports in the future, change here"""
+    """If we change ports in the future, change here"""
     return 9082
 
 
 @pytest.fixture
 def domain2_port() -> int:
-    """ If we change ports in the future, change here"""
+    """If we change ports in the future, change here"""
     return 9083
 
 
 @pytest.fixture
 def data_shape() -> np.ndarray:
-    return np.random.randint(low=7, high=10, size=2)  # Somewhere between 49-100 values in a 2D array for matmul
+    return np.random.randint(
+        low=7, high=10, size=2
+    )  # Somewhere between 49-100 values in a 2D array for matmul
 
 
 @pytest.fixture
@@ -51,6 +52,7 @@ def data_max() -> int:
 @pytest.fixture
 def reference_data(data_shape: np.ndarray, data_max: int) -> np.ndarray:
     return np.random.random(size=data_shape) * data_max
+
 
 #
 # @pytest.fixture
@@ -67,24 +69,41 @@ def data_scientist(email: str, pwd: str) -> Dict["str", Any]:
     }
 
 
-def startup(node1_port: int, node2_port: int, data: np.ndarray, max_values: int, ds_email: str, ds_pwd: str,
-            matmul: bool = False):
-    """ Log into both domain nodes as admin/data owner, and upload the data"""
+def startup(
+    node1_port: int,
+    node2_port: int,
+    data: np.ndarray,
+    max_values: int,
+    ds_email: str,
+    ds_pwd: str,
+    matmul: bool = False,
+):
+    """Log into both domain nodes as admin/data owner, and upload the data"""
 
     # Login to domain nodes
-    domain1 = sy.login(email="info@openmined.org", password="changethis", port=node1_port)
-    domain2 = sy.login(email="info@openmined.org", password="changethis", port=node2_port)
+    domain1 = sy.login(
+        email="info@openmined.org", password="changethis", port=node1_port
+    )
+    domain2 = sy.login(
+        email="info@openmined.org", password="changethis", port=node2_port
+    )
 
     # Annotate metadata
     domain1_data = sy.Tensor(data).private(0, max_values, ["Earth"] * data.shape[0])
     if matmul is False:
         domain2_data = sy.Tensor(data).private(0, max_values, ["Mars"] * data.shape[0])
     else:
-        domain2_data = sy.Tensor(data.T).private(0, max_values, ["Mars"] * data.shape[0])
+        domain2_data = sy.Tensor(data.T).private(
+            0, max_values, ["Mars"] * data.shape[0]
+        )
 
     # Upload data
-    domain1.load_dataset(assets={"data": domain1_data}, name="Earth Data", description="Data from Earth")
-    domain2.load_dataset(assets={"data": domain2_data}, name="Mars Data", description="Data from Mars")
+    domain1.load_dataset(
+        assets={"data": domain1_data}, name="Earth Data", description="Data from Earth"
+    )
+    domain2.load_dataset(
+        assets={"data": domain2_data}, name="Mars Data", description="Data from Mars"
+    )
 
     # Ensure datasets were loaded properly
     assert len(domain1.datasets) > 0
@@ -103,13 +122,25 @@ def startup(node1_port: int, node2_port: int, data: np.ndarray, max_values: int,
 
 
 @pytest.mark.e2e
-def test_addition(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
-    """ This tests DP and SMPC addition, end to end """
+def test_addition(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
+    """This tests DP and SMPC addition, end to end"""
 
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -132,7 +163,10 @@ def test_addition(email: str, domain1_port: int, domain2_port: int, reference_da
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
     # TODO: Figure out how to test result is reasonable
@@ -152,13 +186,25 @@ def test_addition(email: str, domain1_port: int, domain2_port: int, reference_da
 
 
 @pytest.mark.e2e
-def test_subtraction(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
-    """ This tests DP and SMPC subtraction, end to end """
+def test_subtraction(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
+    """This tests DP and SMPC subtraction, end to end"""
 
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -181,21 +227,34 @@ def test_subtraction(email: str, domain1_port: int, domain2_port: int, reference
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
 
 
-
-
 @pytest.mark.e2e
-def test_mul(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
-    """ This tests DP and SMPC multiplication, end to end """
+def test_mul(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
+    """This tests DP and SMPC multiplication, end to end"""
 
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -218,19 +277,34 @@ def test_mul(email: str, domain1_port: int, domain2_port: int, reference_data: n
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
 
 
 @pytest.mark.e2e
-def test_subtraction(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
-    """ This tests DP and SMPC subtraction, end to end """
+def test_subtraction(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
+    """This tests DP and SMPC subtraction, end to end"""
 
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -253,17 +327,32 @@ def test_subtraction(email: str, domain1_port: int, domain2_port: int, reference
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
 
 
 @pytest.mark.e2e
-def test_eq(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
+def test_eq(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -286,17 +375,32 @@ def test_eq(email: str, domain1_port: int, domain2_port: int, reference_data: np
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
 
 
 @pytest.mark.e2e
-def test_ne(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
+def test_ne(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -319,17 +423,32 @@ def test_ne(email: str, domain1_port: int, domain2_port: int, reference_data: np
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
 
 
 @pytest.mark.e2e
-def test_lt(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
+def test_lt(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -352,17 +471,32 @@ def test_lt(email: str, domain1_port: int, domain2_port: int, reference_data: np
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
 
 
 @pytest.mark.e2e
-def test_gt(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
+def test_gt(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -385,17 +519,32 @@ def test_gt(email: str, domain1_port: int, domain2_port: int, reference_data: np
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
 
 
 @pytest.mark.e2e
-def test_le(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
+def test_le(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -418,17 +567,32 @@ def test_le(email: str, domain1_port: int, domain2_port: int, reference_data: np
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
 
 
 @pytest.mark.e2e
-def test_ge(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
+def test_ge(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -451,19 +615,35 @@ def test_ge(email: str, domain1_port: int, domain2_port: int, reference_data: np
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert published_result.shape == reference_data.shape or published_result.squeeze().shape == reference_data.shape
+    assert (
+        published_result.shape == reference_data.shape
+        or published_result.squeeze().shape == reference_data.shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
 
 
 @pytest.mark.e2e
-def test_matmul(email: str, domain1_port: int, domain2_port: int, reference_data: np.ndarray, data_max: int,
-                  password: str) -> None:
-    """ This tests DP and SMPC multiplication, end to end """
+def test_matmul(
+    email: str,
+    domain1_port: int,
+    domain2_port: int,
+    reference_data: np.ndarray,
+    data_max: int,
+    password: str,
+) -> None:
+    """This tests DP and SMPC multiplication, end to end"""
 
     # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(node1_port=domain1_port, node2_port=domain2_port, data=reference_data, max_values=data_max, ds_email=email,
-            ds_pwd=password, matmul=True)
+    startup(
+        node1_port=domain1_port,
+        node2_port=domain2_port,
+        data=reference_data,
+        max_values=data_max,
+        ds_email=email,
+        ds_pwd=password,
+        matmul=True,
+    )
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password)
@@ -487,7 +667,9 @@ def test_matmul(email: str, domain1_port: int, domain2_port: int, reference_data
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
     target_shape = (reference_data.shape[0], reference_data.shape[0])
-    assert published_result.shape == target_shape or published_result.squeeze().shape == target_shape
+    assert (
+        published_result.shape == target_shape
+        or published_result.squeeze().shape == target_shape
+    )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
-
