@@ -275,9 +275,9 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(f"{e}")
         return
 
-    dry_run = False
+    dry_run = True
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        dry_run = True
+        dry_run = False
 
     try:
         execute_commands(cmds, dry_run=dry_run)
