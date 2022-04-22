@@ -20,7 +20,9 @@ from ...adp.data_subject_list import numpyutf8tolist
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import get_capnp_schema
 from ...common.serde.capnp import serde_magic_header
+from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
 
 if TYPE_CHECKING:
     # stdlib
@@ -359,7 +361,7 @@ class GammaTensor:
         # what about the state dict?
 
         gamma_msg.value = capnp_serialize(jax2numpy(self.value, dtype=self.value.dtype))
-        gamma_msg.inputs = capnp_serialize(jax2numpy(self.inputs, self.inputs.dtype))
+        gamma_msg.state = serialize(self.state, to_bytes=True)
         gamma_msg.dataSubjectsIndexed = capnp_serialize(
             self.data_subjects.data_subjects_indexed
         )
@@ -386,7 +388,7 @@ class GammaTensor:
         )
 
         value = capnp_deserialize(gamma_msg.value)
-        inputs = capnp_deserialize(gamma_msg.inputs)
+        state = deserialize(gamma_msg.state, from_bytes=True)
         data_subjects_indexed = capnp_deserialize(gamma_msg.dataSubjectsIndexed)
         one_hot_lookup = numpyutf8tolist(capnp_deserialize(gamma_msg.oneHotLookup))
         data_subjects = DataSubjectList(one_hot_lookup, data_subjects_indexed)
@@ -401,6 +403,6 @@ class GammaTensor:
             min_val=min_val,
             max_val=max_val,
             is_linear=is_linear,
-            inputs=numpy2jax(inputs, dtype=inputs.dtype),
+            state=state,
             id=id_str,
         )

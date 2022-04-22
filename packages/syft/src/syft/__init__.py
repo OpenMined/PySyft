@@ -69,7 +69,6 @@ from .core.tensor.autodp import ndim_entity_phi  # noqa: F401
 from .core.tensor.autodp import row_entity_phi  # noqa: F401
 from .core.tensor.autodp import single_entity_phi  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
-from .core.tensor.tensor import TensorPointer
 from .experimental_flags import flags  # noqa: F401
 from .grid.client.client import connect  # noqa: F401
 from .grid.client.client import login  # noqa: F401
@@ -81,8 +80,6 @@ from .lib import load  # noqa: F401
 from .lib import load_lib  # noqa: F401
 from .registry import NetworkRegistry  # noqa: F401
 
-# Temporarily here for demo
-# concatenate = TensorPointer.concatenate
 sys.path.append(str(Path(__file__)))
 
 logger.start()

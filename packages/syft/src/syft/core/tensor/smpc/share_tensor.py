@@ -765,7 +765,9 @@ class ShareTensor(PassthroughTensor):
         share.child = value
         return share
 
-    def concatenate(self, other: ShareTensor, *args, **kwargs) -> ShareTensor:
+    def concatenate(
+        self, other: ShareTensor, *args: List[Any], **kwargs: Dict[str, Any]
+    ) -> ShareTensor:
         res = self.copy()
         res.child = np.concatenate((self.child, other.child), *args, **kwargs)
         return res

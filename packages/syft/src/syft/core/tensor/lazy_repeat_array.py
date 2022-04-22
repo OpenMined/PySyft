@@ -3,18 +3,18 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Tuple
 
 # third party
 import numpy as np
 
-# syft absolute
-from syft.core.tensor.smpc.utils import get_shape
-
 # relative
 from ..common.serde.serializable import serializable
 from .passthrough import is_acceptable_simple_type  # type: ignore
+from .smpc.utils import get_shape
 
 
 @serializable(recursive_serde=True)
@@ -190,11 +190,13 @@ class lazyrepeatarray:
 
         return self <= other
 
-    def concatenate(self, other: lazyrepeatarray, *args, **kwargs) -> lazyrepeatarray:
+    def concatenate(
+        self, other: lazyrepeatarray, *args: List[Any], **kwargs: Dict[str, Any]
+    ) -> lazyrepeatarray:
         if not isinstance(other, lazyrepeatarray):
             raise NotImplementedError
 
-        dummy_res = dummy_res = np.concatenate(
+        dummy_res = np.concatenate(
             (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs
         )
         return lazyrepeatarray(data=self.data, shape=dummy_res.shape)
@@ -221,7 +223,7 @@ class lazyrepeatarray:
     def any(self) -> bool:
         return self.data.any()
 
-    def transpose(self, *args, **kwargs) -> lazyrepeatarray:
+    def transpose(self, *args: List[Any], **kwargs: Dict[str, Any]) -> lazyrepeatarray:
         dummy_res = self.to_numpy().transpose(*args, **kwargs)
         return lazyrepeatarray(
             data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape

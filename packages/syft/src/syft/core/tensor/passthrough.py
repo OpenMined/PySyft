@@ -382,7 +382,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def T(self) -> PassthroughTensor:
         return self.transpose()
 
-    def transpose(self, *args, **kwargs):
+    def transpose(self, *args, **kwargs) -> PassthroughTensor:
         return self.__class__(self.child.transpose(*args, **kwargs))
 
     def __getitem__(

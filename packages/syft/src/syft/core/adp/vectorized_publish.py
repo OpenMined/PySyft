@@ -3,10 +3,9 @@ from __future__ import annotations
 
 # stdlib
 import secrets
-from time import time
 from typing import Callable
-from typing import Dict
 from typing import List
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 
@@ -20,6 +19,10 @@ from tqdm import tqdm
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_list import DataSubjectList
+
+if TYPE_CHECKING:
+    # relative
+    from ..tensor.autodp.gamma_tensor import GammaTensor
 
 # def calculate_bounds_for_mechanism(
 #     value_array: np.ndarray, min_val_array: np.ndarray, max_val_array: np.ndarray
@@ -73,7 +76,7 @@ def calculate_bounds_for_mechanism(
 def vectorized_publish(
     min_vals: np.ndarray,
     max_vals: np.ndarray,
-    state_tree: dict[int, GammaTensor],
+    state_tree: dict[int, "GammaTensor"],
     data_subjects: DataSubjectList,
     ledger: DataSubjectLedger,
     get_budget_for_user: Callable,

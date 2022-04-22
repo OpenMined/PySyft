@@ -85,6 +85,7 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
     }
     _exhausted = False
     is_enum = False
+
     def __init__(
         self,
         entities: DataSubjectList,
@@ -214,11 +215,11 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
                 op_str, self.public_shape, other_shape
             )
 
-        # if self.public_dtype is not None and other_dtype is not None:
-        #     if self.public_dtype != other_dtype:
-        #         raise ValueError(
-        #             f"Type for self and other do not match ({self.public_dtype} vs {other_dtype})"
-        #         )
+        if self.public_dtype is None or other_dtype is None:
+            if self.public_dtype != other_dtype:
+                raise ValueError(
+                    f"Dtype for self: {self.public_dtype} and other :{other_dtype} should not be None"
+                )
         result_public_dtype = self.public_dtype
 
         result.public_shape = result_public_shape
@@ -425,7 +426,10 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "ne")
 
     def concatenate(
-        self, other: TensorWrappedNDimEntityPhiTensorPointer, *args, **kwargs
+        self,
+        other: TensorWrappedNDimEntityPhiTensorPointer,
+        *args: List[Any],
+        **kwargs: Dict[str, Any],
     ) -> MPCTensor:
         """Apply the "add" operation between "self" and "other"
 
@@ -460,7 +464,7 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
     @property
     def T(self) -> TensorWrappedNDimEntityPhiTensorPointer:
         # We always maintain a Tensor hierarchy Tensor ---> NDEPT--> Actual Data
-        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.T"
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.T"
 
         result = TensorWrappedNDimEntityPhiTensorPointer(
             entities=self.entities,
@@ -955,13 +959,14 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def transpose(self, *args: Any, **kwargs: Any) -> NDimEntityPhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
+        data: Sequence
         if (
             isinstance(self.child, int)
             or isinstance(self.child, float)
             or isinstance(self.child, bool)
         ):
             # For these data types, the transpose operation is meaningless, so don't change them.
-            data = self.child
+            data = self.child  # type: ignore
             print(
                 f"Warning: Tensor data was of type {type(data)}, transpose operation had no effect."
             )
@@ -999,8 +1004,11 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         )
 
     def concatenate(
-        self, other: NDimEntityPhiTensor, *args, **kwargs
-    ) -> NDimEntityPhiTensor:
+        self,
+        other: Union[np.ndarray, NDimEntityPhiTensor],
+        *args: List[Any],
+        **kwargs: Dict[str, Any],
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
 
         # if the tensor being added is also private
         if isinstance(other, NDimEntityPhiTensor):
@@ -1112,37 +1120,37 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
-
         else:
-            return NotImplementedError  # type: ignore
+            raise NotImplementedError  # type: ignore
 
-    def dot(
-        self, other: Union[NDimEntityPhiTensor, GammaTensor, np.ndarray]
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
-        if isinstance(other, np.ndarray):
-            print("We here or what?")
-            return NDimEntityPhiTensor(
-                child=np.dot(self.child, other),
-                min_vals=np.dot(self.min_vals, other),
-                max_vals=np.dot(self.max_vals, other),
-                entities=self.entities,
-            )
-        elif isinstance(other, NDimEntityPhiTensor):
-            if (
-                len(self.entities.one_hot_lookup) > 1
-                or len(other.entities.one_hot_lookup) > 1
-            ):
-                return self.gamma.dot(other.gamma)
-            elif (
-                len(self.entities.one_hot_lookup) == 1
-                and len(other.entities.one_hot_lookup) == 1
-                and self.entities.one_hot_lookup != other.entities.one_hot_lookup
-            ):
-                return self.gamma.dot(other.gamma)
-        elif isinstance(other, GammaTensor):
-            return self.gamma.dot(other)
-        else:
-            raise NotImplementedError
+    # Re enable after testing
+    # def dot(
+    #     self, other: Union[NDimEntityPhiTensor, GammaTensor, np.ndarray]
+    # ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    #     if isinstance(other, np.ndarray):
+    #         print("We here or what?")
+    #         return NDimEntityPhiTensor(
+    #             child=np.dot(self.child, other),
+    #             min_vals=np.dot(self.min_vals, other),
+    #             max_vals=np.dot(self.max_vals, other),
+    #             entities=self.entities,
+    #         )
+    #     elif isinstance(other, NDimEntityPhiTensor):
+    #         if (
+    #             len(self.entities.one_hot_lookup) > 1
+    #             or len(other.entities.one_hot_lookup) > 1
+    #         ):
+    #             return self.gamma.dot(other.gamma)
+    #         elif (
+    #             len(self.entities.one_hot_lookup) == 1
+    #             and len(other.entities.one_hot_lookup) == 1
+    #             and self.entities.one_hot_lookup != other.entities.one_hot_lookup
+    #         ):
+    #             return self.gamma.dot(other.gamma)
+    #     elif isinstance(other, GammaTensor):
+    #         return self.gamma.dot(other)
+    #     else:
+    #         raise NotImplementedError
 
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None

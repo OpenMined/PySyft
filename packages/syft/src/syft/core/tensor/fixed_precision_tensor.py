@@ -200,7 +200,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         return res
 
     def concatenate(
-        self, other: FixedPrecisionTensor, *args, **kwargs
+        self, other: FixedPrecisionTensor, *args: List[Any], **kwargs: Dict[str, Any]
     ) -> FixedPrecisionTensor:
         if not isinstance(other, FixedPrecisionTensor):
             raise NotImplementedError

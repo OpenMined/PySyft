@@ -862,7 +862,9 @@ class MPCTensor(PassthroughTensor):
         res = MPCTensor(shares=shares, parties=self.parties, shape=self.shape)
         return res
 
-    def concatenate(self, other: MPCTensor, *args, **kwargs) -> MPCTensor:
+    def concatenate(
+        self, other: MPCTensor, *args: List[Any], **kwargs: Dict[str, Any]
+    ) -> MPCTensor:
         if not isinstance(other, MPCTensor):
             raise ValueError(
                 f"Invalid type: {type(other)} for MPCTensor concatenate operation"
