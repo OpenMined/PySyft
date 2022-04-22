@@ -303,7 +303,7 @@ def test_big_ndept() -> None:
 
         ndept_metrics = time_and_size_serde(big_ndept)
         print(multiplier, ndept_metrics)
-        assert ndept_metrics[0] < 81 * multiplier
+        assert ndept_metrics[0] < 120 * multiplier
         assert ndept_metrics[1] < 30 * multiplier
         assert ndept_metrics[2] < 3 * multiplier
         assert ndept_metrics[3] < 3 * multiplier

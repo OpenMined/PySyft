@@ -20,7 +20,6 @@ import numpy as np
 import torch
 
 # syft absolute
-# absolute
 import syft as sy
 
 # relative
@@ -389,8 +388,13 @@ class ShareTensor(PassthroughTensor):
                 seed_przs=seed_przs,
                 ring_size=ring_size,
             )
+        # relative
+        from ..autodp.ndim_entity_phi import NDimEntityPhiTensor
 
-        share_wrapper.child.child.child = share
+        if isinstance(share_wrapper.child, NDimEntityPhiTensor):
+            share_wrapper.child.child.child = share
+        else:
+            share_wrapper.child.child = share
 
         return share_wrapper
 
