@@ -1315,22 +1315,18 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
     return None
 
 
-def get_vm_host_ips(node_name: str, resource_group: str) -> list:
-    cmd = f'az vm list-ip-addresses -g {resource_group} --query "[?starts_with(virtualMachine.name, `{node_name}`)].id"'
+def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[list]:
+    cmd = f"az vm list-ip-addresses -g {resource_group} --query "
+    cmd += f""""[?starts_with(virtualMachine.name, '{node_name}')]"""
+    cmd += '''.virtualMachine.network.publicIpAddresses[0].ipAddress"'''
     output = subprocess.check_output(cmd, shell=True)
     try:
-        host_details = json.loads(output)
-        host_ips = []
-        for host_detail in host_details.items():
-            public_ip_addresses = host_detail["virtualMachine"]["network"][
-                "publicIpAddresses"
-            ]
-            ip_address = public_ip_addresses[0]["ipAddress"]
-            host_ips.append(ip_address)
+        host_ips = json.loads(output)
         return host_ips
-
     except Exception as e:
-        raise e
+        print(f"Failed to extract ips: {e}")
+
+    return None
 
 
 def is_valid_ip(host_or_ip: str) -> bool:
@@ -1416,7 +1412,7 @@ def make_vm_azure(
     cmd += "--public-ip-sku Standard --authentication-type all "
     cmd += f"--ssh-key-values {public_key_path} --admin-username {username} "
     cmd += f"--admin-password {password} --count {node_count} --no-wait"
-    host_ips: list = []
+    host_ips: Optional[list] = []
     try:
         print(f"Creating vm.\nRunning: {cmd}")
         subprocess.check_output(cmd, shell=True)
