@@ -87,7 +87,7 @@
   register: ctop_exists
 
 - name: Install ctop Docker CLI Utility
-  shell: sudo wget https://github.com/bcicen/ctop/releases/download/0.7.6/ctop-0.7.6-linux-amd64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
+  shell: sudo wget https://github.com/bcicen/ctop/releases/download/v0.7.7/ctop-0.7.7-linux-amd64 -O /usr/local/bin/ctop && sudo chmod +x /usr/local/bin/ctop
   become: yes
   when: not ctop_exists.stat.exists
 
@@ -107,3 +107,7 @@
     enabled: yes
     state: started
     name: ntp
+
+- name: Set git dir as safe
+  shell: git config --global --add safe.directory {{ syft_dir }}
+  become: yes
