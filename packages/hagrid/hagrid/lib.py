@@ -291,7 +291,7 @@ def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
     table.add_column("Jupyter Token")
     table.add_column("Log")
 
-    for ip_address, process in process_list:
+    for ip_address, process, jupyter_token in process_list:
         process_status = get_process_status(process)
 
         process_statuses.append(process_status)
@@ -302,9 +302,6 @@ def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
             process_log = process.stdout.readline().decode("utf-8")
 
         process_log = process_log if process_log else "-"
-
-        # TODO: update jupyter token dynamically
-        jupyter_token = "x-x-x-x-x-x-x"
 
         table.add_row(
             f"{process.pid}",

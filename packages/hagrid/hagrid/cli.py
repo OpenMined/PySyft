@@ -15,6 +15,7 @@ from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
 from typing import Set
+from typing import Tuple
 from typing import Tuple as TypeTuple
 from typing import Union
 from typing import cast
@@ -274,24 +275,32 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(f"{e}")
         return
 
-    dry_run = True
+    dry_run = False
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
-        dry_run = False
+        dry_run = True
 
     try:
         execute_commands(cmds, dry_run=dry_run)
-        display_vm_status(cmds)
     except Exception as e:
         print(f"{e}")
         return
 
 
 def execute_commands(cmds: list, dry_run: bool = False) -> None:
+    """Execute the launch commands and display their status in realtime.
+
+    Args:
+        cmds (list): list of commands to be executed
+        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
+    """
     process_list: list = []
     console = rich.get_console()
 
+    username, password = (
+        extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
+    )
+
     for cmd in cmds:
-        print(cmd)
         if dry_run:
             print("Running: \n", hide_password(cmd=cmd))
             continue
@@ -310,7 +319,8 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
                 )
 
                 ip_address = extract_host_ip_from_cmd(cmd)
-                process_list.append((ip_address, process))
+                jupyter_token = extract_jupyter_token(cmd)
+                process_list.append((ip_address, process, jupyter_token))
             else:
                 subprocess.check_call(
                     cmd,
@@ -324,24 +334,49 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
 
     if dry_run is False and len(process_list) > 0:
         # TODO: Extract username and password
-        console.print(generate_user_table("azureuser", "secret-password"))
+        console.print(generate_user_table(username=username, password=password))
         display_vm_status(process_list)
 
 
 def display_vm_status(process_list: list) -> None:
+    """Display the status of the processes being executed on the VM.
+
+    Args:
+        process_list (list): list of processes executed.
+    """
+
+    # Generate the table showing the status of each process being executed
     status_table, process_completed = generate_process_status_table(process_list)
+
+    # Render the live table
     with Live(status_table, refresh_per_second=1) as live:
+
+        # Loop till all processes have not completed executing
         while not process_completed:
             status_table, process_completed = generate_process_status_table(
                 process_list
             )
-            live.update(status_table)
+            live.update(status_table)  # Update the status table
 
 
 def display_jupyter_token(cmd: str) -> None:
     token = extract_jupyter_token(cmd=cmd)
     if token is not None:
         print(f"Jupyter Token: {token}")
+
+
+def extract_username_and_pass(cmd: str) -> Tuple:
+    # Extract username
+    matcher = r"--user (.+?) "
+    username = re.findall(matcher, cmd)
+    username = username[0] if len(username) > 0 else None
+
+    # Extract password
+    matcher = r"user_ssh_pass='(.+?)'"
+    password = re.findall(matcher, cmd)
+    password = password[0] if len(password) > 0 else None
+
+    return username, password
 
 
 def extract_jupyter_token(cmd: str) -> Optional[str]:
@@ -1768,6 +1803,9 @@ def create_launch_custom_cmd(
             "repo_branch": kwargs["branch"],
             "docker_tag": version_string,
         }
+
+        if host_term.host != "localhost" and auth.password is not None:
+            ANSIBLE_ARGS["user_ssh_pass"] = auth.password
 
         if host_term.host != "localhost" and kwargs["auth_type"] == "password":
             ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]
