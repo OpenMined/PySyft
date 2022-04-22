@@ -208,8 +208,8 @@ def test_serde(
     assert (de.max_vals == tensor1.max_vals).all()
     assert de.entities == tensor1.entities
 
-    assert np.shares_memory(tensor1.child, tensor1.child)
-    assert not np.shares_memory(de.child, tensor1.child)
+    assert np.shares_memory(tensor1.child.child, tensor1.child.child)
+    assert not np.shares_memory(de.child.child, tensor1.child.child)
 
 
 def test_copy(

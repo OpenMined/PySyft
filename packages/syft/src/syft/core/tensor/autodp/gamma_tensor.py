@@ -189,8 +189,8 @@ class GammaTensor:
         # output_state.update(self.state)
 
         value = jnp.sum(self.value)
-        min_val = jnp.sum(self.min_val)
-        max_val = jnp.sum(self.max_val)
+        min_val = float(self.min_val)
+        max_val = float(self.max_val)
 
         return GammaTensor(
             value=value,

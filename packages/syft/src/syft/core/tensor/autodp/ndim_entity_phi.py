@@ -1166,16 +1166,13 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 ),  # Need to check this
             )
 
-        return self.gamma.sum(
-            axis=None
-        )  # TODO: Expand this later to include more args/kwargs
-        # return GammaTensor(
-        #     value=np.array(self.child.sum()),
-        #     data_subjects=self.entities.sum(),
-        #     min_val=float(self.min_vals.sum(axis=None)),
-        #     max_val=float(self.max_vals.sum(axis=None)),
-        #     inputs=self.child,
-        # )
+        # TODO: Expand this later to include more args/kwargs
+        return GammaTensor(
+            value=np.array(self.child.child.sum()),
+            data_subjects=self.entities.sum(),
+            min_val=float(self.min_vals.sum(axis=None)),
+            max_val=float(self.max_vals.sum(axis=None)),
+        )
 
     def __ne__(  # type: ignore
         self, other: Any

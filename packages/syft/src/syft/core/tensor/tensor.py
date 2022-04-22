@@ -91,57 +91,6 @@ class TensorPointer(Pointer):
         )
         return self_mpc
 
-    #
-    # @staticmethod
-    # def concatenate(
-    #         party1_pointer: Union[TensorPointer, DomainClient],
-    #         party2_pointer: Union[TensorPointer, DomainClient],
-    #         party1_data: Optional[Tensor] = None,
-    #         party2_data: Optional[Tensor] = None
-    # ) -> Union[Tuple[MPCTensor, MPCTensor], TensorPointer]:
-    #     if isinstance(party1_pointer, TensorPointer):
-    #         if party2_pointer.client != party1_pointer.client:
-    #             # These are different parties
-    #             if party2_data is None or party1_data is None:
-    #                 raise Exception("Must provide data along with TensorPointers")
-    #             d1: Pointer = party1_data.send(party1_pointer)
-    #             d2: Pointer = party2_data.send(party2_pointer)
-    #             return (
-    #                 MPCTensor(
-    #                     secret=d1,
-    #                     parties=[party1_pointer.client, party2_pointer.client],
-    #                     shape=party1_data.shape,
-    #                 ), MPCTensor(
-    #                     secret=d2,
-    #                     parties=[party1_pointer.client, party2_pointer.client],
-    #                     shape=party2_data.shape
-    #                 )
-    #             )
-    #         elif party2_pointer.client == party1_pointer.client:
-    #             # I think this means they are the same TensorPointer so no MPC happens, it returns a pointer to itself
-    #             return party1_pointer
-    #         else:
-    #             raise Exception
-    #     elif isinstance(party1_pointer, DomainClient):
-    #         if party2_pointer == party1_pointer:
-    #             return party1_pointer
-    #         elif party1_pointer != party2_pointer:
-    #             if party2_data is None or party1_data is None:
-    #                 raise Exception("Must provide data along with TensorPointers")
-    #             d1: Pointer = party1_data.send(party1_pointer)
-    #             d2: Pointer = party2_data.send(party2_pointer)
-    #             return (
-    #                 MPCTensor(
-    #                     secret=d1,
-    #                     parties=[party1_pointer.client, party2_pointer.client],
-    #                     shape=party1_data.shape,
-    #                 ), MPCTensor(
-    #                     secret=d2,
-    #                     parties=[party1_pointer.client, party2_pointer.client],
-    #                     shape=party2_data.shape
-    #                 )
-    #             )
-
     def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out

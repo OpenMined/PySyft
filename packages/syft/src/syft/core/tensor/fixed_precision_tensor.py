@@ -209,3 +209,6 @@ class FixedPrecisionTensor(PassthroughTensor):
         res.child = self.child.concatenate(other.child, *args, **kwargs)
 
         return res
+
+    def all(self) -> bool:
+        return self.child.all()
