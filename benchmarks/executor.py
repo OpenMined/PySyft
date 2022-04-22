@@ -62,9 +62,9 @@ def run_suite() -> None:
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
 
     inf = np.iinfo(np.int32)
-    run_sept_suite(
-        runner=runner, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max
-    )
+    # run_sept_suite(
+    #     runner=runner, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max
+    # )
     run_rept_suite(
         runner=runner,
         rept_dimension=15,
