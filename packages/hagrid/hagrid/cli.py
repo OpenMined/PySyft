@@ -1900,7 +1900,7 @@ def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) 
 
 # add Hagrid info to the cli
 @click.command(help="Show Hagrid info")
-def info() -> None:
+def version() -> None:
     print(
         "============================== Info about Hagrid =============================="
     )
@@ -1911,4 +1911,4 @@ def info() -> None:
     print(f"Operating system: {platform.platform()}")
 
 
-cli.add_command(info)
+cli.add_command(version)
