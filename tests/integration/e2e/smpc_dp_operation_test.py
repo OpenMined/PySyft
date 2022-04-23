@@ -1,5 +1,4 @@
 # stdlib
-import os
 from typing import Any
 from typing import Dict
 import uuid
@@ -172,15 +171,15 @@ def test_addition(
     # TODO: Figure out how to test result is reasonable
     """
     Idea: https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule#Table_of_numerical_values
-    
+
     true result = reference_data * 2
     to this we add noise from Gaussian distribution with mean = 0, sigma = 100
-    
-    => ~68% of published_result values are between 2 * reference_data +/- 100 
+
+    => ~68% of published_result values are between 2 * reference_data +/- 100
     => ~95% of published_result values are between 2 * reference_data +/- 200
     => ~99.7% of published_result values are between 2 * reference_data +/- 300
     etc etc
-    
+
     We could use 5 sigma (flakiness would be expected once every 1.7M times this test is run)
     """
 
@@ -272,56 +271,6 @@ def test_mul(
     domain2_data = domain2[-1]["Mars Data"]
 
     result = domain1_data * domain2_data
-    result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
-    published_result.block_with_timeout(60)
-
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
-
-
-@pytest.mark.e2e
-def test_subtraction(
-    email: str,
-    domain1_port: int,
-    domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
-    password: str,
-) -> None:
-    """This tests DP and SMPC subtraction, end to end"""
-
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
-
-    # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
-
-    # Check that datasets are visible
-    assert len(domain1.datasets) > 0
-    assert len(domain2.datasets) > 0
-
-    # Check PB is available
-    assert domain1.privacy_budget > 100
-    assert domain2.privacy_budget > 100
-
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
-
-    result = domain1_data - domain2_data
     result.block_with_timeout(60)
     published_result = result.publish(sigma=100)
     published_result.block_with_timeout(60)

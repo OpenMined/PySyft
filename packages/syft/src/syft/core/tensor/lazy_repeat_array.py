@@ -135,7 +135,7 @@ class lazyrepeatarray:
         raise Exception("not sure how to do this yet")
 
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
-        return self.__class__(data=np.copy(self.data, order=order), shape=self.shape)
+        return self.__class__(data=self.data.copy(order=order), shape=self.shape)
 
     @property
     def size(self) -> int:
