@@ -280,7 +280,7 @@ class ShareTensor(PassthroughTensor):
             getattr(value, "dtype", None), None
         )
         if ring_size_from_type is None:
-            logger.warning("Could not get ring size from {value}")
+            logger.warning(f"Could not get ring size from {value}")
         else:
             ring_size_final = ring_size_from_type
             numpy_type = value.dtype
