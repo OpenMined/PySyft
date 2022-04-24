@@ -115,6 +115,15 @@ def test_auto_connect_network_to_self() -> None:
     res = check_network_is_connected(
         email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
     )
+    if res["connected"] is True:
+        # try one more time as it may have just re-connected automatically
+        disconnect_network()
+
+        # disconnect network
+        res = check_network_is_connected(
+            email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
+        )
+
     assert res["connected"] is False
 
     # wait for NETWORK_CHECK_INTERVAL to trigger auto reconnect
@@ -125,13 +134,6 @@ def test_auto_connect_network_to_self() -> None:
         email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
     )
     assert res["connected"] is True
-
-
-@pytest.mark.network
-def test_connect_network_to_network() -> None:
-    run_network_tests(
-        port=NETWORK_PORT, hostname="test_network_1", vpn_ip=NETWORK_VPN_IP
-    )
 
 
 @pytest.mark.network
