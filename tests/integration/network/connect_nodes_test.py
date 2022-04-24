@@ -1,6 +1,10 @@
 # future
 from __future__ import annotations
 
+# stdlib
+import subprocess
+import time
+
 # third party
 import pytest
 import requests
@@ -76,6 +80,51 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
     if "status" not in response or response["status"] != "ok":
         print(response)
     assert response["status"] == "ok"
+
+
+def check_network_is_connected(email: str, password: str, port: int) -> None:
+    root_client = sy.login(email=email, password=password, port=port)
+    response = root_client.vpn_status()
+    print("response", response)
+    return response
+
+
+def disconnect_network() -> None:
+    container = "test_network_1-tailscale-1"
+
+    try:
+        cmd = f"docker exec -i {container} tailscale down"
+        output = subprocess.check_output(cmd, shell=True)
+        output = output.decode("utf-8")
+    except Exception as e:
+        print(f"Exception running: {cmd}. {e}")
+
+
+@pytest.mark.network
+def test_auto_connect_network_to_self() -> None:
+    # check network has auto connected
+    res = check_network_is_connected(
+        email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
+    )
+    assert res["connected"] is True
+
+    # disconnect network
+    disconnect_network()
+
+    # check its down
+    res = check_network_is_connected(
+        email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
+    )
+    assert res["connected"] is False
+
+    # wait for NETWORK_CHECK_INTERVAL to trigger auto reconnect
+    time.sleep(11)
+
+    # check again
+    res = check_network_is_connected(
+        email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
+    )
+    assert res["connected"] is True
 
 
 @pytest.mark.network

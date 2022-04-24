@@ -9,10 +9,8 @@ from nacl.signing import SigningKey
 from syft import Domain  # type: ignore
 from syft import Network  # type: ignore
 from syft.core.node.common.client import Client
-from syft.core.node.common.node_service.vpn.vpn_messages import VPNJoinMessageWithReply
 from syft.core.node.common.node_table.utils import seed_db
 from syft.core.node.common.util import get_s3_client
-from syft.grid.grid_url import GridURL
 
 # grid absolute
 from grid.core.config import Settings
@@ -56,17 +54,6 @@ elif settings.NODE_TYPE.lower() == "network":
     node = Network("Network", db_engine=get_db_engine(), settings=settings)
     format = "%(asctime)s: %(message)s"
     logging.basicConfig(format=format, level=logging.INFO, datefmt="%H:%M:%S")
-
-    url = GridURL.from_url(
-        f"http://{settings.LOOPBACK_ADDRESS}:{settings.EXTERNAL_DOCKER_PORT}/api/v1"
-    ).as_docker_host()
-    logging.info("Main: Sending VPN Connect task .... ")
-    msg = (
-        VPNJoinMessageWithReply(kwargs={"grid_url": url})
-        .to(address=node.address, reply_to=node.address)
-        .sign(signing_key=node.signing_key)
-    )
-    reply = node.recv_immediate_msg_with_reply(msg=msg)
 else:
     raise Exception(
         "Don't know NODE_TYPE "

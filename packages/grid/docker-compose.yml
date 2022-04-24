@@ -210,6 +210,7 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
     build:
       context: ../
