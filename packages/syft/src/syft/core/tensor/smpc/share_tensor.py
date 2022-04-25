@@ -19,7 +19,6 @@ import numpy as np
 import torch
 
 # syft absolute
-# absolute
 import syft as sy
 
 # relative
