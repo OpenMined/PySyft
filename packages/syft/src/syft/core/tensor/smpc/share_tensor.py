@@ -799,23 +799,12 @@ class ShareTensor(PassthroughTensor):
         ) -> Any:
 
             share = _self.child
-            if method_name != "resize":
-                method = getattr(share, method_name)
-            else:
-                # Should be modified to remove copy
-                # https://stackoverflow.com/questions/23253144/numpy-the-array-doesnt-have-its-own-data
-                share = share.copy()
-                method = getattr(share, method_name)
 
-            if method_name not in INPLACE_OPS:
-                new_share = method(*args, **kwargs)
-            else:
-                method(*args, **kwargs)
-                new_share = share
+            method = getattr(share, method_name)
+            new_share = method(*args, **kwargs)
 
             res = _self.copy_tensor()
-
-            res.child = new_share
+            res.child = np.array(new_share)
 
             return res
 
