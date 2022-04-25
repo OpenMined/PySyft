@@ -45,7 +45,7 @@ def data_shape() -> np.ndarray:
 
 @pytest.fixture
 def data_max() -> int:
-    return 1000
+    return 10
 
 
 @pytest.fixture
@@ -166,7 +166,7 @@ def test_addition(
 
     result = domain1_data + domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e5)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     assert (
@@ -229,7 +229,7 @@ def test_subtraction(
 
     result = domain1_data - domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e5)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     assert (
@@ -278,7 +278,7 @@ def test_mul(
 
     result = domain1_data * domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e4)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
@@ -326,7 +326,7 @@ def test_eq(
 
     result = domain1_data == domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e4)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
@@ -374,7 +374,7 @@ def test_ne(
 
     result = domain1_data != domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
@@ -422,7 +422,7 @@ def test_lt(
 
     result = domain1_data < domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
@@ -470,7 +470,7 @@ def test_gt(
 
     result = domain1_data > domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
@@ -518,7 +518,7 @@ def test_le(
 
     result = domain1_data <= domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
@@ -566,7 +566,7 @@ def test_ge(
 
     result = domain1_data >= domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
@@ -617,7 +617,7 @@ def test_matmul(
 
     result = domain1_data @ domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e6)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
