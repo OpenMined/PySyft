@@ -3,7 +3,6 @@ from datetime import datetime
 import json
 import os
 from os import urandom
-import platform
 import re
 import socket
 import stat
@@ -21,9 +20,6 @@ from typing import cast
 # third party
 import click
 import rich
-
-# syft absolute
-import syft
 
 # relative
 from . import __version__
@@ -71,8 +67,6 @@ def get_azure_image(short_name: str) -> str:
 
 
 @click.group(cls=RichGroup)
-# experimenting with click.option
-# @click.version_option(__version__)
 def cli() -> None:
     pass
 
@@ -1901,14 +1895,7 @@ def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) 
 # add Hagrid info to the cli
 @click.command(help="Show Hagrid info")
 def version() -> None:
-    print(
-        "============================== Info about Hagrid =============================="
-    )
-    print(f"HAGrid version: {__version__}")
-    print(f"Syft version: {syft.__version__}")
-    print(f"Python version: {sys.version}")
-    print(f"Python path: {sys.executable}")
-    print(f"Operating system: {platform.platform()}")
+    print(f"Hagrid version: {__version__}")
 
 
 cli.add_command(version)
