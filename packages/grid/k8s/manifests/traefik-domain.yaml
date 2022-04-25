@@ -16,6 +16,10 @@ data:
           loadBalancer:
             servers:
               - url: "http://backend-stream"
+        seaweedfs:
+          loadBalancer:
+            servers:
+              - url: "http://seaweedfs:8333"
       routers:
         frontend:
           rule: "PathPrefix(`/`)"
@@ -32,6 +36,24 @@ data:
           entryPoints:
             - "web"
           service: "backend-stream"
+        blob-storage:
+          rule: "PathPrefix(`/blob`)"
+          entryPoints:
+            - "web"
+          service: "seaweedfs"
+          middlewares:
+            - "blob-storage-url"
+            - "blob-storage-host"
+      middlewares:
+        blob-storage-host:
+          headers:
+            customrequestheaders:
+              Host: seaweedfs:8333
+        blob-storage-url:
+          stripprefix:
+            prefixes: /blob
+            forceslash: true
+
   traefik.yml: |
     global:
       checkNewVersion: false

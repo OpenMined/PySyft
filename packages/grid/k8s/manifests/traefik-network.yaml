@@ -1,0 +1,69 @@
+apiVersion: v1
+kind: ConfigMap
+data:
+  dynamic.yml: |
+    http:
+      services:
+        frontend:
+          loadBalancer:
+            servers:
+              - url: "http://frontend"
+        backend:
+          loadBalancer:
+            servers:
+              - url: "http://backend"
+        backend-stream:
+          loadBalancer:
+            servers:
+              - url: "http://backend-stream"
+        headscale:
+          loadBalancer:
+            servers:
+              - url: "http://headscale:8080"
+      routers:
+        frontend:
+          rule: "PathPrefix(`/`)"
+          entryPoints:
+            - "web"
+          service: "frontend"
+        backend:
+          rule: "PathPrefix(`/api`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+          entryPoints:
+            - "web"
+          service: "backend"
+        backend-stream:
+          rule: "PathPrefix(`/api`) && PathPrefix(`/api/v1/syft/stream`) || PathPrefix(`/docs`) || PathPrefix(`/redoc`)"
+          entryPoints:
+            - "web"
+          service: "backend-stream"
+        vpn:
+          rule: "PathPrefix(`/vpn`)"
+          entryPoints:
+            - "web"
+          service: "headscale"
+          middlewares:
+            - "vpn-url"
+
+      middlewares:
+        vpn-url:
+          stripprefix:
+            prefixes: /vpn
+            forceslash: true
+
+  traefik.yml: |
+    global:
+      checkNewVersion: false
+      sendAnonymousUsage: false
+
+    log:
+      level: INFO
+
+    entryPoints:
+      web:
+        address: :80
+
+    providers:
+      file:
+        filename: /etc/traefik/dynamic.yml
+metadata:
+  name: traefik-main-config

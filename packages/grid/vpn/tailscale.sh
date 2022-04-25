@@ -32,5 +32,6 @@ iptables -t nat -A POSTROUTING -o tailscale0 -j MASQUERADE
 export PATH="/root/.local/bin:${PATH}"
 export FLASK_APP=tailscale
 export HOSTNAME="${1}"
+hostname "$HOSTNAME"
 flask run -p 4000 --host=0.0.0.0&
 tailscaled -port 41641

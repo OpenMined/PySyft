@@ -78,7 +78,11 @@ vars:
   - name: USE_BLOB_STORAGE
     value: "True"
   - name: DOMAIN_NAME
-    value: $DOMAIN_NAME
+    value: node
+  - name: TRAEFIK_CONFIG_FILE
+    value: traefik-domain.yaml
+  - name: NETWORK_CHECK_INTERVAL
+    value: "60"
 
 images:
   backend:
@@ -142,7 +146,7 @@ deployments:
   - name: traefik-main-config
     kubectl:
       manifests:
-        - k8s/manifests/traefik.yaml
+        - k8s/manifests/${TRAEFIK_CONFIG_FILE}
 
   - name: redis-config
     kubectl:
@@ -578,6 +582,8 @@ deployments:
                 value: ${S3_PRESIGNED_TIMEOUT_SECS}
               - name: RELEASE
                 value: ${RELEASE}
+              - name: NETWORK_CHECK_INTERVAL
+                value: $!{NETWORK_CHECK_INTERVAL}
 
   - name: frontend
     helm:
@@ -632,16 +638,6 @@ deployments:
     kubectl:
       manifests:
         - k8s/manifests/ingress.yaml
-
-  - name: grid-blob-storage-ingress
-    kubectl:
-      manifests:
-        - k8s/manifests/ingress-blob-storage.yaml
-
-  - name: grid-vpn-ingress
-    kubectl:
-      manifests:
-        - k8s/manifests/ingress-vpn.yaml
 
 dev:
   ports:
@@ -794,3 +790,8 @@ profiles:
         path: deployments.name=seaweedfs
       - op: remove
         path: deployments.name=grid-blob-storage-ingress
+      - op: remove
+        path: deployments.name=frontend
+      - op: replace
+        path: vars.name=TRAEFIK_CONFIG_FILE.value
+        value: traefik-network.yaml
