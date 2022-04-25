@@ -32,6 +32,10 @@ from ...store.exceptions import EmptyPrimitiveStore
 ttp_generator = np.random.default_rng()
 
 
+def get_child(lst: List[Any]) -> List:
+    return [value.child for value in lst]
+
+
 def _get_triples(
     op_str: str,
     nr_parties: int,
@@ -92,6 +96,8 @@ def _get_triples(
             seed_przs=seed_przs,
             ring_size=ring_size,
         )
+        a_shares = get_child(a_shares)
+
         seed_przs = secrets.randbits(32)
         b_rand = Tensor(
             ttp_generator.integers(
@@ -110,8 +116,9 @@ def _get_triples(
             seed_przs=seed_przs,
             ring_size=ring_size,
         )
+        b_shares = get_child(b_shares)
         seed_przs = secrets.randbits(32)
-        # TODO: bitwise and on passthorough tensor raises
+        # TODO: bitwise and on passthrough tensor raises exception
         # hence we do it on numpy array itself.
         c_val = Tensor(cmd(a_rand.child, b_rand.child))
         c_shares = MPCTensor._get_shares_from_local_secret(
@@ -121,7 +128,7 @@ def _get_triples(
             seed_przs=seed_przs,
             ring_size=ring_size,
         )
-
+        c_shares = get_child(c_shares)
         # We are always creating an instance
         triples.append((a_shares, b_shares, c_shares))
 
@@ -380,6 +387,7 @@ def count_wraps_rand(
             seed_przs=seed_przs,
             ring_size=ring_size,
         )
+        r_shares = get_child(r_shares)
 
         seed_przs = secrets.randbits(32)
         wraps = Tensor(count_wraps([share.child for share in r_shares]))
@@ -391,6 +399,7 @@ def count_wraps_rand(
             seed_przs=seed_przs,
             ring_size=ring_size,
         )
+        theta_r_shares = get_child(theta_r_shares)
 
         # For now We are always creating only an instance
         primitives.append((r_shares, theta_r_shares))

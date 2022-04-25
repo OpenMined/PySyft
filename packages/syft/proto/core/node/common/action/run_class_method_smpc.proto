@@ -8,7 +8,7 @@ import "proto/core/io/address.proto";
 
 message RunClassMethodSMPCAction {
   string path = 1;
-  syft.core.pointer.Pointer _self = 2;
+  bytes _self = 2;
   repeated syft.core.pointer.Pointer args = 3;
   map<string, syft.core.pointer.Pointer> kwargs = 4;
   syft.core.common.UID id_at_location = 5;

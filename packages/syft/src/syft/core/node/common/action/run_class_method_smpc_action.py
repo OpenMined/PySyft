@@ -188,7 +188,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         return RunClassMethodSMPCAction_PB(
             path=self.path,
-            _self=sy.serialize(self._self),
+            _self=sy.serialize(self._self, to_bytes=True),
             args=list(map(lambda x: sy.serialize(x), self.args)),
             kwargs={k: sy.serialize(v) for k, v in self.kwargs.items()},
             id_at_location=sy.serialize(self.id_at_location),
@@ -214,7 +214,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         return RunClassMethodSMPCAction(
             path=proto.path,
-            _self=sy.deserialize(blob=proto._self),
+            _self=sy.deserialize(blob=proto._self, from_bytes=True),
             args=list(map(lambda x: sy.deserialize(blob=x), proto.args)),
             kwargs={k: sy.deserialize(blob=v) for k, v in proto.kwargs.items()},
             id_at_location=sy.deserialize(blob=proto.id_at_location),

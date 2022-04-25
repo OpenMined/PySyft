@@ -13,6 +13,7 @@ import numpy as np
 # relative
 from ....common.uid import UID
 from ....store.storeable_object import StorableObject
+from ....tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor
 from ....tensor.smpc import context
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
@@ -341,10 +342,13 @@ def local_decomposition(
                 sh.child = deepcopy(share.child.astype(numpy_type))
 
             if tensor_values is not None:
-                # Remove it when we move PC to share tensor.
-                if ring_size != 2:  # type: ignore
-                    sh.child = tensor_values.child.child.encode(sh.child)
-                tensor_values.child.child.child = sh
+                if isinstance(tensor_values.child, NDimEntityPhiTensor):
+                    # Remove it when we move PC to share tensor.
+                    if ring_size != 2:  # type: ignore
+                        sh.child = tensor_values.child.child.encode(sh.child)
+                    tensor_values.child.child.child = sh
+                else:
+                    tensor_values.child = sh
                 data = tensor_values
             else:
                 data = sh

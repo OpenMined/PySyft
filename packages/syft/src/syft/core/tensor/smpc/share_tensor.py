@@ -11,6 +11,7 @@ from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 
@@ -34,6 +35,11 @@ from ...smpc.store.crypto_store import CryptoStore
 from ..config import DEFAULT_RING_SIZE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import PassthroughTensor  # type: ignore
+
+if TYPE_CHECKING:
+    # relative
+    from ..tensor import Tensor
+
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -283,7 +289,10 @@ class ShareTensor(PassthroughTensor):
         seed_przs: Optional[int] = None,
         generator_przs: Optional[Any] = None,
         init_clients: bool = True,
-    ) -> "ShareTensor":
+    ) -> Tensor:
+        # relative
+        from ..tensor import Tensor
+
         ring_size = int(ring_size)
         nr_parties = len(parties_info)
 
@@ -309,9 +318,6 @@ class ShareTensor(PassthroughTensor):
 
         if numpy_type is None:
             raise ValueError(f"Ring size {ring_size} not known how to be treated")
-
-        # relative
-        from ..tensor import Tensor
 
         if (seed_przs is None) == (generator_przs is None):
             raise ValueError("Only seed_przs or generator should be populated")
@@ -356,8 +362,9 @@ class ShareTensor(PassthroughTensor):
         op = ShareTensor.get_op(ring_size_final, "sub")
         przs_share = op(shares[rank], shares[(rank + 1) % nr_parties])
         share.child = op(share.child, przs_share)
+        res = Tensor(share)
 
-        return share
+        return res
 
     @staticmethod
     def generate_przs_on_dp_tensor(
@@ -392,9 +399,9 @@ class ShareTensor(PassthroughTensor):
         from ..autodp.ndim_entity_phi import NDimEntityPhiTensor
 
         if isinstance(share_wrapper.child, NDimEntityPhiTensor):
-            share_wrapper.child.child.child = share
+            share_wrapper.child.child.child = share.child
         else:
-            share_wrapper.child.child = share
+            share_wrapper.child.child = share.child
 
         return share_wrapper
 

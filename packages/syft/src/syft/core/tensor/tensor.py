@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 import operator
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -29,7 +30,8 @@ from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
-from ..node.common.action.run_class_method_action import RunClassMethodAction
+from ..node.common.action import smpc_action_functions
+from ..node.common.action.run_class_method_smpc_action import RunClassMethodSMPCAction
 
 # from ..node.domain.client import DomainClient
 from ..pointer.pointer import Pointer
@@ -91,25 +93,46 @@ class TensorPointer(Pointer):
         )
         return self_mpc
 
-    def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
+    def _apply_tensor_op(
+        self,
+        other: Any,
+        op_str: str,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Any:
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
+        op = f"__{op_str}__"
+        # remove this to dunder method before merge.
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
+        seed_id_locations = kwargs.get("seed_id_locations", None)
+        if seed_id_locations is None:
+            raise ValueError(
+                "There should be a `seed_id_locations` kwargs when doing an operation on TensorPointer"
+            )
+        kwargs.pop("seed_id_locations")
 
-        result = TensorPointer(client=self.client)
+        id_at_location = smpc_action_functions.get_id_at_location_from_op(
+            seed_id_locations, op
+        )
 
         # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
+        result_id_at_location = id_at_location
+
+        result = TensorPointer(client=self.client)
+        result.id_at_location = result_id_at_location
 
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
+            ) = lib.python.util.downcast_args_and_kwargs(
+                args=[self, other], kwargs=kwargs
+            )
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -119,12 +142,13 @@ class TensorPointer(Pointer):
                 gc_enabled=False,
             )
 
-            cmd = RunClassMethodAction(
+            cmd = RunClassMethodSMPCAction(
                 path=attr_path_and_name,
                 _self=self,
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
+                seed_id_locations=seed_id_locations,
                 address=self.client.address,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
@@ -178,6 +202,7 @@ class TensorPointer(Pointer):
         self: TensorPointer,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         op_str: str,
+        **kwargs: Dict[str, Any],
     ) -> Union[MPCTensor, TensorPointer]:
         """Performs the operation based on op_str
 
@@ -202,10 +227,12 @@ class TensorPointer(Pointer):
 
             return op(other, self)
 
-        return self._apply_tensor_op(other=other, op_str=op_str)
+        return self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
     def __add__(
-        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "add" operation between "self" and "other"
 
@@ -215,10 +242,12 @@ class TensorPointer(Pointer):
         Returns:
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorPointer._apply_op(self, other, "add")
+        return TensorPointer._apply_op(self, other, "add", **kwargs)
 
     def __sub__(
-        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "sub" operation between "self" and "other"
 
@@ -228,10 +257,12 @@ class TensorPointer(Pointer):
         Returns:
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorPointer._apply_op(self, other, "sub")
+        return TensorPointer._apply_op(self, other, "sub", **kwargs)
 
     def __mul__(
-        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "mul" operation between "self" and "other"
 
@@ -241,10 +272,12 @@ class TensorPointer(Pointer):
         Returns:
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorPointer._apply_op(self, other, "mul")
+        return TensorPointer._apply_op(self, other, "mul", **kwargs)
 
     def __matmul__(
-        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "matmul" operation between "self" and "other"
 
@@ -254,7 +287,7 @@ class TensorPointer(Pointer):
         Returns:
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorPointer._apply_op(self, other, "matmul")
+        return TensorPointer._apply_op(self, other, "matmul", **kwargs)
 
     def __lt__(
         self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
@@ -494,7 +527,11 @@ class Tensor(
     # TODO: remove after moving private compare to sharetensor level
     def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:
         context.tensor_values = self
-        self.child.child.child.bit_decomposition(ring_size, bitwise)
+        if isinstance(self.child, NDimEntityPhiTensor):
+            self.child.child.child.bit_decomposition(ring_size, bitwise)
+        else:
+            self.child.bit_decomposition(ring_size, bitwise)
+
         return None
 
     def mpc_swap(self, other: Tensor) -> Tensor:

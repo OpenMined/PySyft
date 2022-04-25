@@ -175,7 +175,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         # ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs",
-            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+            "syft.core.tensor.tensor.Tensor",
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor",
