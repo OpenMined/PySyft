@@ -284,7 +284,7 @@ def test_big_ndept() -> None:
     """Create big NDEPTs"""
     # for multiplier in [1, 10, 100, 1000]:
     for multiplier in [10]:
-        ndim = 1_000_000
+        ndim = 100_000
         rows = 1
         cols = 7
         num_entites = 100
