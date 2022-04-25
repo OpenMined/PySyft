@@ -287,7 +287,7 @@ def test_big_ndept() -> None:
         ndim = 1_000_000
         rows = 1
         cols = 7
-        num_entites = 1000
+        num_entites = 100
 
         upper = highest()
         lower = lowest()
