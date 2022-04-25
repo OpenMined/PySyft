@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import operator
+import secrets
 from typing import Any
 from typing import Dict
 from typing import List
@@ -110,10 +111,9 @@ class TensorPointer(Pointer):
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
         seed_id_locations = kwargs.get("seed_id_locations", None)
         if seed_id_locations is None:
-            raise ValueError(
-                "There should be a `seed_id_locations` kwargs when doing an operation on TensorPointer"
-            )
-        kwargs.pop("seed_id_locations")
+            seed_id_locations = secrets.randbits(64)
+        else:
+            kwargs.pop("seed_id_locations")
 
         id_at_location = smpc_action_functions.get_id_at_location_from_op(
             seed_id_locations, op

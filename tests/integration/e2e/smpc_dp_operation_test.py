@@ -88,20 +88,28 @@ def startup(
     )
 
     # Annotate metadata
-    domain1_data = sy.Tensor(data).private(0, max_values, ["Earth"] * data.shape[0])
+    domain1_data = sy.Tensor(data).private(
+        0, max_values, entities=["Mars"] * data.shape[0], ndept=True
+    )
     if matmul is False:
-        domain2_data = sy.Tensor(data).private(0, max_values, ["Mars"] * data.shape[0])
+        domain2_data = sy.Tensor(data).private(
+            0, max_values, entities=["Mars"] * data.shape[0], ndept=True
+        )
     else:
         domain2_data = sy.Tensor(data.T).private(
-            0, max_values, ["Mars"] * data.shape[0]
+            0, max_values, entities=["Mars"] * data.shape[0], ndept=True
         )
 
     # Upload data
     domain1.load_dataset(
-        assets={"data": domain1_data}, name="Earth Data", description="Data from Earth"
+        assets={"data": domain1_data},
+        name="Mars Data",
+        description="Domain 1  collected Data",
     )
     domain2.load_dataset(
-        assets={"data": domain2_data}, name="Mars Data", description="Data from Mars"
+        assets={"data": domain2_data},
+        name="Mars Data",
+        description="Domain 2 collected Data",
     )
 
     # Ensure datasets were loaded properly
@@ -114,8 +122,8 @@ def startup(
     domain2.users.create(**data_scientist(email=ds_email, pwd=ds_pwd))
 
     # Ensure data scientist accounts were created properly
-    assert len(domain1.users) > 1
-    assert len(domain2.users) > 1
+    assert len(domain1.users.pandas()) > 1
+    assert len(domain2.users.pandas()) > 1
 
     return None
 
@@ -142,8 +150,8 @@ def test_addition(
     )
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -153,18 +161,17 @@ def test_addition(
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
 
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data + domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e5)
     published_result.block_with_timeout(60)
 
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
     assert (
         published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
+        or published_result.shape == reference_data.shape
     )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
@@ -206,8 +213,8 @@ def test_subtraction(
     )
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -217,18 +224,17 @@ def test_subtraction(
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
 
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data - domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e5)
     published_result.block_with_timeout(60)
 
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
     assert (
         published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
+        or published_result.shape == reference_data.shape
     )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
@@ -256,8 +262,8 @@ def test_mul(
     )
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -267,18 +273,18 @@ def test_mul(
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
 
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data * domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e4)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
     assert (
         published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
+        or published_result.shape == reference_data.shape
     )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200
@@ -304,8 +310,8 @@ def test_eq(
     )
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -315,18 +321,18 @@ def test_eq(
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
 
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data == domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=100)
+    published_result = result.publish(sigma=1e4)
     published_result.block_with_timeout(60)
 
     # TODO: Remove the squeeze when the vectorized_publish bug is found
     assert (
         published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
+        or published_result.shape == reference_data.shape
     )
     assert domain1.privacy_budget < 200
     assert domain2.privacy_budget < 200

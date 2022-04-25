@@ -25,6 +25,8 @@ from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
+from ..util import check_send_to_blob_storage
+from ..util import upload_result_to_s3
 from .common import ImmediateActionWithoutReply
 from .greenlets_switch import retrieve_object
 
@@ -160,6 +162,21 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
                 except AttributeError as e:
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))
+
+        # We do not use blob storage support for SMPC,
+        # Since we shifted to TensorPointer as the shares in MPCTensor
+        # We use this temporary fix , to not regress NDEPT performance
+        if check_send_to_blob_storage(
+            obj=result,
+            use_blob_storage=getattr(node.settings, "USE_BLOB_STORAGE", False),
+        ):
+            result = upload_result_to_s3(
+                asset_name=self.id_at_location.no_dash,
+                dataset_name="",
+                domain_id=node.id,
+                data=result,
+                settings=node.settings,
+            )
 
         if not isinstance(result, StorableObject):
             result = StorableObject(
