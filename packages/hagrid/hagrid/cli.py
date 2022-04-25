@@ -1272,10 +1272,12 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
     return None
 
 
-def check_ip_for_ssh(host_ip: str, wait_time: int = 5, silent: bool = False) -> bool:
+def check_ip_for_ssh(
+    host_ip: str, timeout: int = 600, wait_time: int = 5, silent: bool = False
+) -> bool:
     if not silent:
         print(f"Checking VM at {host_ip} is up")
-    checks = int(600 / wait_time)  # 10 minutes in 5 second chunks
+    checks = int(timeout / wait_time)  # 10 minutes in 5 second chunks
     first_run = True
     while checks > 0:
         checks -= 1
@@ -1997,7 +1999,7 @@ def ssh_into_remote_machine(
 )
 def ssh(ip_address: str, cmd: str) -> None:
     kwargs: dict = {}
-    if check_ip_for_ssh(ip_address, wait_time=5, silent=False):
+    if check_ip_for_ssh(ip_address, timeout=10, silent=False):
         azure_key_path = ask(
             question=Question(
                 var_name="azure_key_path",

@@ -270,7 +270,7 @@ def check_jupyter_server(
             print(f"Failed to check jupyter server status {host_ip}. {e}")
         return False
 
-      
+
 GIT_REPO = get_git_repo()
 GRID_SRC_VERSION = get_version_module()
 GRID_SRC_PATH = grid_src_path()
