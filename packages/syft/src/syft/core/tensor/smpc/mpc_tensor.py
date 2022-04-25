@@ -543,7 +543,7 @@ class MPCTensor(PassthroughTensor):
                 value=shares[i],
                 shape=shape,
                 seed_przs=seed_przs,
-                ring_size=mpc_tensor.ring_size,
+                ring_size=str(mpc_tensor.ring_size),
             )
 
         res_mpc = MPCTensor(shares=shares, ring_size=mpc_tensor.ring_size, shape=shape, parties=parties)  # type: ignore
