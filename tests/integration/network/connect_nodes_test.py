@@ -102,37 +102,46 @@ def disconnect_network() -> None:
 
 @pytest.mark.network
 def test_auto_connect_network_to_self() -> None:
-    # check network has auto connected
-    res = check_network_is_connected(
-        email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
-    )
-    assert res["connected"] is True
-
-    # disconnect network
-    disconnect_network()
-
-    # check its down
-    res = check_network_is_connected(
-        email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
-    )
-    if res["connected"] is True:
-        # try one more time as it may have just re-connected automatically
-        disconnect_network()
-
-        # disconnect network
+    # wait for NETWORK_CHECK_INTERVAL to trigger auto reconnect
+    retry_time = 11
+    while retry_time > 0:
+        retry_time -= 1
+        # check network has auto connected
         res = check_network_is_connected(
             email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
         )
+        if res["connected"] is True:
+            break
+        time.sleep(1)
+    assert res["connected"] is True
 
+    # disconnect network
+    retry_time = 11
+    while retry_time > 0:
+        retry_time -= 1
+
+        disconnect_network()
+
+        # check network has auto connected
+        res = check_network_is_connected(
+            email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
+        )
+        if res["connected"] is False:
+            break
+        time.sleep(1)
     assert res["connected"] is False
 
     # wait for NETWORK_CHECK_INTERVAL to trigger auto reconnect
-    time.sleep(11)
-
-    # check again
-    res = check_network_is_connected(
-        email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
-    )
+    retry_time = 11
+    while retry_time > 0:
+        retry_time -= 1
+        # check network has auto connected
+        res = check_network_is_connected(
+            email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS, port=NETWORK_PORT
+        )
+        if res["connected"] is True:
+            break
+        time.sleep(1)
     assert res["connected"] is True
 
 
