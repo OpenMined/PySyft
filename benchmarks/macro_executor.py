@@ -15,6 +15,8 @@ import syft as sy
 from syft.core.adp.data_subject_list import DataSubjectList
 from syft.util import download_file
 from syft.util import get_root_data_path
+from syft.core.node.common.node_service.user_manager.user_messages import UpdateUserMessage
+
 
 
 def download_spicy_bird_benchmark(
@@ -75,4 +77,57 @@ benchmark_report["make_private_syft_tensor"] = tf
 
 print(benchmark_report)
 
+#login to domain
 domain_node = sy.login(email="info@openmined.org", password="changethis", port=9082)
+
+
+
+
+
+# Upgrade admins budget
+content = {"user_id": 1, "budget": 9_999_999}
+domain_node._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
+
+dataset_name = "1M Tweets dataset"
+
+t0 = time()
+
+domain_node.load_dataset(
+    assets={"1M Tweets dataset": tweets_data},
+    name=dataset_name,
+    description=" Tweets- 1M rows",
+    use_blob_storage=True
+)
+tf = round(time() - t0, 3)
+print(f"Time taken to load {dataset_name} dataset: {tf} seconds")
+benchmark_report["load_dataset"] = tf
+
+data = domain_node.datasets[-1]["1M Tweets dataset"]
+
+print(data)
+
+
+sum_result = data.sum()
+try:
+    t0 = time()
+    sum_result.block
+    tf = round(time() - t0, 3)
+except Exception as e:
+    print(e)
+print(f"Time taken to get sum: {tf} seconds")
+benchmark_report["get_sum"] = tf
+
+
+#Sum result publish
+published_result = sum_result.publish(sigma=1e6)
+
+
+t0 = time()
+published_result.block
+tf = round(time() - t0, 3)
+print(f"Time taken to publish: {tf} seconds")
+benchmark_report["publish"] = tf
+
+
+print(benchmark_report)
+
