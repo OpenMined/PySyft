@@ -6,7 +6,6 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import site
 import socket
 import subprocess
 from typing import Optional
@@ -14,11 +13,14 @@ from typing import Tuple
 
 # third party
 import git
+import requests
 
 # relative
 from .cache import DEFAULT_BRANCH
 from .deps import MissingDependency
 from .deps import is_windows
+from .mode import EDITABLE_MODE
+from .mode import hagrid_root
 
 DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
@@ -57,34 +59,8 @@ def docker_desktop_memory() -> int:
         return -1
 
 
-def hagrid_root() -> str:
-    return os.path.abspath(str(Path(__file__).parent.parent))
-
-
 def asset_path() -> os.PathLike:
     return Path(hagrid_root()) / "hagrid"
-
-
-def is_editable_mode() -> bool:
-    current_package_root = hagrid_root()
-
-    installed_as_editable = False
-    sitepackages_dirs = site.getsitepackages()
-    # check all site-packages returned if they have a hagrid.egg-link
-    for sitepackages_dir in sitepackages_dirs:
-        egg_link_file = Path(sitepackages_dir) / "hagrid.egg-link"
-        try:
-            linked_folder = egg_link_file.read_text()
-            # if the current code is in the same path as the egg-link its -e mode
-            installed_as_editable = current_package_root in linked_folder
-            break
-        except Exception:
-            pass
-
-    if os.path.exists(Path(current_package_root) / "hagrid.egg-info"):
-        installed_as_editable = True
-
-    return installed_as_editable
 
 
 def repo_src_path() -> Path:
@@ -103,8 +79,8 @@ def check_is_git(path: Path) -> bool:
     try:
         git.Repo(path)
         is_repo = True
-    except Exception:
-        print(f"{path} is not a git repo!")
+    except Exception:  # nosec
+        pass
     return is_repo
 
 
@@ -157,15 +133,6 @@ def use_branch(branch: str) -> None:
             repo.remotes.origin.pull()
         except Exception as e:
             print(f"Error checking out branch {branch}.", e)
-
-
-EDITABLE_MODE = is_editable_mode()
-GRID_SRC_PATH = grid_src_path()
-GIT_REPO = get_git_repo()
-
-
-repo_branch = DEFAULT_BRANCH
-update_repo(repo=GIT_REPO, branch=repo_branch)
 
 
 def should_provision_remote(
@@ -230,7 +197,7 @@ def check_docker_version() -> Optional[str]:
 
 def get_version_module() -> Tuple[str, str]:
     try:
-        version_file_path = f"{GRID_SRC_PATH}/VERSION"
+        version_file_path = f"{grid_src_path()}/VERSION"
         loader = importlib.machinery.SourceFileLoader("VERSION", version_file_path)
         spec = importlib.util.spec_from_loader(loader.name, loader)
         if spec:
@@ -244,4 +211,47 @@ def get_version_module() -> Tuple[str, str]:
     return ("unknown", "unknown")
 
 
+# Check base route of an IP address
+def check_host(ip: str, silent: bool = False) -> bool:
+    try:
+        socket.gethostbyname(ip)
+        return True
+    except Exception as e:
+        if not silent:
+            print(f"Failed to resolve host {ip}. {e}")
+        return False
+
+
+# Check status of login page
+def check_login_page(ip: str, silent: bool = False) -> bool:
+    try:
+        url = f"http://{ip}/login"
+        response = requests.get(url)
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except Exception as e:
+        if not silent:
+            print(f"Failed to check login page {ip}. {e}")
+        return False
+
+
+# Check api metadata
+def check_api_metadata(ip: str, silent: bool = False) -> bool:
+    try:
+        url = f"http://{ip}/api/v1/syft/metadata"
+        response = requests.get(url)
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except Exception as e:
+        if not silent:
+            print(f"Failed to check api metadata {ip}. {e}")
+        return False
+
+
+GIT_REPO = get_git_repo()
 GRID_SRC_VERSION = get_version_module()
+GRID_SRC_PATH = grid_src_path()

@@ -15,8 +15,8 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # relative
+from ..adp.data_subject_list import DataSubjectList
 from ..adp.entity import Entity
-from ..adp.entity_list import EntityList
 from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
@@ -403,11 +403,23 @@ class PhiTensorAncestor(TensorChainManager):
     def gamma(self):  # type: ignore
         return self.__class__(self.child.gamma)
 
-    def publish(self, acc: Any, sigma: float, user_key: VerifyKey) -> PhiTensorAncestor:
-        return self.child.publish(acc=acc, sigma=sigma, user_key=user_key)
+    def publish(
+        self,
+        user_key: VerifyKey,
+        sigma: Optional[float] = None,
+        acc: Optional[Any] = None,
+        ledger: Optional[Any] = None,
+    ) -> PhiTensorAncestor:
+        # third party
+        from autodp.gamma_tensor import GammaTensor
+
+        if isinstance(self.child, GammaTensor):
+            return self.child.publish(sigma=sigma, ledger=ledger)
+        return self.child.publish(acc=acc, sigma=100, user_key=user_key)
 
     def copy(self) -> PhiTensorAncestor:
-        """This should certainly be implemented by the subclass but adding this here to satisfy mypy."""
+        """This should certainly be implemented by the subclass but adding this here to
+        satisfy mypy."""
 
         return NotImplemented
 
@@ -436,19 +448,18 @@ class PhiTensorAncestor(TensorChainManager):
         scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
-        ndept: bool = False,
+        ndept: bool = True,
     ) -> PhiTensorAncestor:
         # PHASE 1: RUN CHECKS
 
         # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
-        if (
-            not isinstance(self.child, np.ndarray)
-            or getattr(self.child, "dtype", None) != np.int32
-        ):
+        if not isinstance(self.child, np.ndarray) or getattr(
+            self.child, "dtype", None
+        ) not in [np.int32, np.int64]:
 
             msg = (
                 "At present, you can only call .private() "
-                + "on syft.Tensor objects wrapping np.int32 arrays. You called it on a "
+                + "on syft.Tensor objects wrapping np.int32/64 arrays. You called it on a "
                 + "syft.Tensor wrapping a "
                 + str(type(self.child))
             )
@@ -489,22 +500,31 @@ class PhiTensorAncestor(TensorChainManager):
         #         " the tensor you're calling .private() on. Try again."
         #     )
 
-        if not isinstance(entities, EntityList):
+        if not isinstance(entities, DataSubjectList):
             one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
         else:
             one_hot_lookup, entities_indexed = (
                 entities.one_hot_lookup,
-                entities.entities_indexed,
+                entities.data_subjects_indexed,
             )
 
-        for entity in one_hot_lookup:
-            if not isinstance(entity, (str, Entity)):
-                raise ValueError(
-                    f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
-                )
+        # SKIP check temporarily
+        # for entity in one_hot_lookup:
+        #     if not isinstance(entity, (np.integer, str, Entity)):
+        #         raise ValueError(
+        #             f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
+        #         )
+
+        if not isinstance(one_hot_lookup, np.ndarray) or not isinstance(
+            entities_indexed, np.ndarray
+        ):
+            raise Exception(
+                f"one_hot_lookup {type(one_hot_lookup)} and entities_indexed "
+                + f"{type(entities_indexed)} must be np.ndarrays"
+            )
 
         # PHASE 2: CREATE CHILD
-        if len(entities) == 1:
+        if not ndept and len(entities) == 1:
             # if there's only one entity - push a SingleEntityPhiTensor
             if isinstance(min_val, (float, int)):
                 min_vals = (self.child * 0) + min_val
@@ -569,7 +589,8 @@ class PhiTensorAncestor(TensorChainManager):
 
         elif ndept and entities is not None and len(entities) == self.shape[0]:
             class_type = _SingleEntityPhiTensor()
-            entity_list = EntityList(one_hot_lookup, entities_indexed)
+            if isinstance(entities, DataSubjectList):
+                entity_list = entities
 
             if isinstance(min_val, (bool, int, float)):
                 min_vals = np.array(min_val).ravel()  # make it 1D

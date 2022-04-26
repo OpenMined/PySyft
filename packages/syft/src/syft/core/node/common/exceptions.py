@@ -181,3 +181,17 @@ class AppInSleepyMode(PyGridError):
                 "This app is in sleep mode. Please undergo the initial setup first"
             )
         super().__init__(message)
+
+
+class DatasetUploadError(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "Failed to upload/send data to blob store."
+        super().__init__(message)
+
+
+class DatasetDownloadError(Exception):
+    def __init__(self, message: str = "") -> None:
+        if not message:
+            message = "Failed to retrieve data from blob store."
+        super().__init__(message)

@@ -210,3 +210,117 @@ def test_serde(
 
     assert np.shares_memory(tensor1.child, tensor1.child)
     assert not np.shares_memory(de.child, tensor1.child)
+
+
+def test_copy(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test copy for NDEPT"""
+    reference_tensor = NDEPT(
+        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+    )
+
+    # Copy the tensor and check if it works
+    copy_tensor = reference_tensor.copy()
+
+    assert (reference_tensor == copy_tensor).all(), "Copying of the NDEPT fails"
+
+
+def test_copy_with(
+    reference_data: np.ndarray,
+    reference_binary_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test copy_with for NDEPT"""
+    reference_tensor = NDEPT(
+        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+    )
+    reference_binary_tensor = NDEPT(
+        child=reference_binary_data,
+        entities=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    # Copy the tensor and check if it works
+    copy_with_tensor = reference_tensor.copy_with(reference_data)
+    copy_with_binary_tensor = reference_tensor.copy_with(reference_binary_data)
+
+    assert (
+        reference_tensor == copy_with_tensor
+    ).all(), "Copying of the NDEPT with the given child fails"
+
+    assert (
+        reference_binary_tensor == copy_with_binary_tensor
+    ).all(), "Copying of the NDEPT with the given child fails"
+
+
+def test_sum(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+    dims: int,
+) -> None:
+    zeros_tensor = NDEPT(
+        child=reference_data * 0,
+        entities=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    tensor = NDEPT(
+        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+    )
+
+    tensor_sum = sum([tensor.child[i, j] for i in range(dims) for j in range(dims)])
+
+    assert tensor.sum().child == tensor_sum
+    assert zeros_tensor.sum().child == 0
+
+
+def test_ne_vals(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test inequality between two different NDimEntityPhiTensors"""
+    # TODO: Add tests for GammaTensor when having same values but different entites.
+    reference_tensor = NDEPT(
+        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+    )
+
+    comparison_tensor = NDEPT(
+        child=reference_data + 1,
+        entities=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    assert (
+        reference_tensor != comparison_tensor
+    ).all(), "Inequality between different NDEPTs fails"
+
+
+def test_neg(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+    """Test neg for NDEPT"""
+    reference_tensor = NDEPT(
+        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+    )
+
+    neg_tensor = reference_tensor.__neg__()
+
+    assert (neg_tensor.child == reference_tensor.child * -1).all()
+    assert (neg_tensor.min_vals == reference_tensor.max_vals * -1).all()
+    assert (neg_tensor.max_vals == reference_tensor.min_vals * -1).all()
+    assert neg_tensor.shape == reference_tensor.shape
