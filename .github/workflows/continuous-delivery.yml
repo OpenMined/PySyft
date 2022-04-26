@@ -1,8 +1,15 @@
 name: Continuous Delivery
 
 on:
+  workflow_call:
+
   schedule:
     - cron: "00 12 * * 0" # Sunday 12:00 UTC
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run syft cd manually"
+        required: false
 
 jobs:
   deploy-syft-beta:
@@ -76,6 +83,7 @@ jobs:
           file: ./packages/grid/backend/backend.dockerfile
           push: true
           tags: ${{ steps.meta_grid_backend.outputs.tags }}
+          target: backend
 
       - name: Docker meta for Grid-Frontend
         id: meta_grid_frontend
@@ -93,6 +101,7 @@ jobs:
           file: ./packages/grid/frontend/frontend.dockerfile
           push: true
           tags: ${{ steps.meta_grid_frontend.outputs.tags }}
+          target: grid-ui-production
 
       - name: Docker meta for Grid-Headscale
         id: meta_grid_headscale

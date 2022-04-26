@@ -2,9 +2,11 @@
 from datetime import datetime
 import json
 import os
+from os import urandom
 import re
 import socket
 import stat
+import string
 import subprocess
 import sys
 import time
@@ -23,6 +25,7 @@ import rich
 from . import __version__
 from .art import hagrid
 from .auth import AuthCredentials
+from .cache import DEFAULT_BRANCH
 from .cache import arg_cache
 from .deps import DEPENDENCIES
 from .deps import ENVIRONMENT
@@ -37,6 +40,7 @@ from .grammar import GrammarVerb
 from .grammar import parse_grammar
 from .land import get_land_verb
 from .launch import get_launch_verb
+from .lib import GIT_REPO
 from .lib import GRID_SRC_PATH
 from .lib import GRID_SRC_VERSION
 from .lib import check_api_metadata
@@ -46,10 +50,23 @@ from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import hagrid_root
-from .lib import is_editable_mode
 from .lib import name_tag
+from .lib import update_repo
 from .lib import use_branch
+from .mode import EDITABLE_MODE
 from .style import RichGroup
+
+
+def get_azure_image(short_name: str) -> str:
+    prebuild_070 = (
+        "madhavajay1632269232059:openmined_mj_grid_domain_ubuntu_1:domain_070:latest"
+    )
+    fresh_ubuntu = "Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest"
+    if short_name == "default":
+        return fresh_ubuntu
+    elif short_name == "domain_0.7.0":
+        return prebuild_070
+    raise Exception(f"Image name doesn't exist: {short_name}. Try: default or 0.7.0")
 
 
 @click.group(cls=RichGroup)
@@ -138,8 +155,13 @@ def clean(location: str) -> None:
     help="Optional: print the cmd without running it",
 )
 @click.option(
+    "--jupyter",
+    is_flag=True,
+    help="Optional: enable Jupyter Notebooks",
+)
+@click.option(
     "--build",
-    default="true",
+    default=None,
     required=False,
     type=str,
     help="Optional: enable or disable forcing re-build",
@@ -199,6 +221,27 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: flag to use blob storage",
 )
+@click.option(
+    "--image_name",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: image to use for the VM",
+)
+@click.option(
+    "--tag",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: container image tag to use",
+)
+@click.option(
+    "--build_src",
+    default=DEFAULT_BRANCH,
+    required=False,
+    type=str,
+    help="Optional: git branch to use for launch / build operations",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -207,6 +250,11 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     except BadGrammar as e:
         print(e)
         return
+
+    try:
+        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+    except Exception as e:
+        print(f"Failed to update repo. {e}")
 
     try:
         cmd = create_launch_cmd(verb=verb, kwargs=kwargs)
@@ -230,6 +278,21 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
                 subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
+    display_jupyter_token(cmd)
+
+
+def display_jupyter_token(cmd: str) -> None:
+    token = extract_jupyter_token(cmd=cmd)
+    if token is not None:
+        print(f"Jupyter Token: {token}")
+
+
+def extract_jupyter_token(cmd: str) -> Optional[str]:
+    matcher = r"jupyter_token='(.+?)'"
+    token = re.findall(matcher, cmd)
+    if len(token) == 1:
+        return token[0]
+    return None
 
 
 def hide_password(cmd: str) -> str:
@@ -487,10 +550,11 @@ def create_launch_cmd(
         tail = False
 
     parsed_kwargs = {}
-    build = True
-    if "build" in kwargs and not str_to_bool(cast(str, kwargs["build"])):
-        build = False
-    parsed_kwargs["build"] = build
+
+    if "build" in kwargs and kwargs["build"] is not None:
+        parsed_kwargs["build"] = str_to_bool(cast(str, kwargs["build"]))
+    else:
+        parsed_kwargs["build"] = None
 
     parsed_kwargs["use_blob_storage"] = (
         kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
@@ -521,6 +585,21 @@ def create_launch_cmd(
         parsed_kwargs["upload_tls_key"] = kwargs["upload_tls_key"]
     if "provision" in kwargs:
         parsed_kwargs["provision"] = str_to_bool(cast(str, kwargs["provision"]))
+
+    if "image_name" in kwargs and kwargs["image_name"] is not None:
+        parsed_kwargs["image_name"] = kwargs["image_name"]
+    else:
+        parsed_kwargs["image_name"] = "default"
+
+    if "tag" in kwargs and kwargs["tag"] is not None and kwargs["tag"] != "":
+        parsed_kwargs["tag"] = kwargs["tag"]
+    else:
+        parsed_kwargs["tag"] = None
+
+    if "jupyter" in kwargs and kwargs["jupyter"] is not None:
+        parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
+    else:
+        parsed_kwargs["jupyter"] = False
 
     if host in ["docker"]:
 
@@ -956,7 +1035,6 @@ def create_launch_docker_cmd(
     kwargs: TypeDict[str, Any],
     tail: bool = True,
 ) -> str:
-
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
     node_type = verb.get_named_term_type(name="node_type")
@@ -983,10 +1061,30 @@ def create_launch_docker_cmd(
     print("  - TAIL: " + str(tail))
     print("\n")
 
-    version_string = GRID_SRC_VERSION[0]
+    version_string = kwargs["tag"]
+    version_hash = "dockerhub"
+    build = kwargs["build"]
     if "release" in kwargs and kwargs["release"] == "development":
         # force version to have -dev at the end in dev mode
+        # during development we can use the latest beta version
+        if version_string is None:
+            version_string = GRID_SRC_VERSION[0]
         version_string += "-dev"
+        version_hash = GRID_SRC_VERSION[1]
+        if build is None:
+            build = True
+    else:
+        if build is None:
+            build = False
+
+        # during production the default would be stable
+        if version_string == "local":
+            # this can be used in VMs in production to auto update from src
+            version_string = GRID_SRC_VERSION[0]
+            version_hash = GRID_SRC_VERSION[1]
+            build = True
+        elif version_string is None:
+            version_string = "stable"
 
     use_blob_storage = "True"
     if str(node_type.input) == "network":
@@ -1005,7 +1103,7 @@ def create_launch_docker_cmd(
         "NODE_TYPE": str(node_type.input),
         "TRAEFIK_PUBLIC_NETWORK_IS_EXTERNAL": "False",
         "VERSION": version_string,
-        "VERSION_HASH": GRID_SRC_VERSION[1],
+        "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": use_blob_storage,
     }
 
@@ -1041,9 +1139,9 @@ def create_launch_docker_cmd(
     else:
         cmd += " ".join(args)
 
-    if kwargs["build"] is True:
-        build_cmd = str(cmd)
-        build_cmd += " docker compose build --parallel"
+    if not build:
+        pull_cmd = str(cmd)
+        pull_cmd += " docker compose pull"
 
     cmd += " docker compose -p " + snake_name
     if str(node_type.input) == "network":
@@ -1051,10 +1149,13 @@ def create_launch_docker_cmd(
     else:
         cmd += " --profile blob-storage"
 
-    if kwargs["headless"] is False:
+    # network frontend disabled
+    if str(node_type.input) != "network" and kwargs["headless"] is False:
         cmd += " --profile frontend"
 
     cmd += " --file docker-compose.yml"
+    if build:
+        cmd += " --file docker-compose.build.yml"
     if "release" in kwargs and kwargs["release"] == "development":
         cmd += " --file docker-compose.dev.yml"
     if "tls" in kwargs and kwargs["tls"] is True:
@@ -1066,12 +1167,13 @@ def create_launch_docker_cmd(
     if not tail:
         cmd += " -d"
 
-    if kwargs["build"] is True:
+    if build:
         cmd += " --build"  # force rebuild
+    else:
         if is_windows():
-            cmd = build_cmd + "; " + cmd
+            cmd = pull_cmd + "; " + cmd
         else:
-            cmd = build_cmd + " && " + cmd
+            cmd = pull_cmd + " && " + cmd
 
     return cmd
 
@@ -1147,6 +1249,14 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
     return None
 
 
+def is_valid_ip(host_or_ip: str) -> bool:
+    matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
+    ips = re.findall(matcher, host_or_ip.strip())
+    if len(ips) == 1:
+        return True
+    return False
+
+
 def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
     output = stdout.decode("utf-8")
 
@@ -1191,14 +1301,19 @@ def check_ip_for_ssh(host_ip: str, wait_time: int = 5, silent: bool = False) -> 
 
 
 def make_vm_azure(
-    node_name: str, resource_group: str, username: str, key_path: str, size: str
+    node_name: str,
+    resource_group: str,
+    username: str,
+    key_path: str,
+    size: str,
+    image_name: str,
 ) -> Optional[str]:
+    disk_size_gb = "200"
     public_key_path = private_to_public_key(
         private_key_path=key_path, username=username
     )
-
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
-    cmd += "--image Canonical:0001-com-ubuntu-server-focal:20_04-lts:latest "
+    cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
     cmd += "--public-ip-sku Standard --authentication-type ssh "
     cmd += f"--ssh-key-values {public_key_path} --admin-username {username}"
     host_ip: Optional[str] = None
@@ -1368,13 +1483,15 @@ def create_launch_azure_cmd(
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
 ) -> str:
-    # resource group
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
     # vm
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
-    host_ip = make_vm_azure(snake_name, resource_group, username, key_path, size)
+    image_name = get_azure_image(kwargs["image_name"])
+    host_ip = make_vm_azure(
+        snake_name, resource_group, username, key_path, size, image_name
+    )
 
     # open port 80
     open_port_vm_azure(
@@ -1393,6 +1510,16 @@ def create_launch_azure_cmd(
         port=443,
         priority=501,
     )
+
+    if kwargs["jupyter"]:
+        # open port 8888
+        open_port_vm_azure(
+            resource_group=resource_group,
+            node_name=snake_name,
+            port_name="Jupyter",
+            port=8888,
+            priority=502,
+        )
 
     # get old host
     host_term = verb.get_named_term_hostgrammar(name="host")
@@ -1421,6 +1548,56 @@ def create_launch_azure_cmd(
 
     # provision
     return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+
+
+def create_ansible_land_cmd(
+    verb: GrammarVerb, auth: Optional[AuthCredentials], kwargs: TypeDict[str, Any]
+) -> str:
+    try:
+        host_term = verb.get_named_term_hostgrammar(name="host")
+        print("Landing PyGrid node on port " + str(host_term.port) + "!\n")
+
+        print("  - PORT: " + str(host_term.port))
+        print("\n")
+
+        playbook_path = GRID_SRC_PATH + "/ansible/site.yml"
+        ansible_cfg_path = GRID_SRC_PATH + "/ansible.cfg"
+        auth = cast(AuthCredentials, auth)
+
+        if not os.path.exists(playbook_path):
+            print(f"Can't find playbook site.yml at: {playbook_path}")
+        cmd = f"ANSIBLE_CONFIG={ansible_cfg_path} ansible-playbook "
+        if host_term.host == "localhost":
+            cmd += "--connection=local "
+        cmd += f"-i {host_term.host}, {playbook_path}"
+        if host_term.host != "localhost" and kwargs["auth_type"] == "key":
+            cmd += f" --private-key {auth.key_path} --user {auth.username}"
+        elif host_term.host != "localhost" and kwargs["auth_type"] == "password":
+            cmd += f" -c paramiko --user {auth.username}"
+
+        ANSIBLE_ARGS = {"install": "false"}
+
+        if host_term.host != "localhost" and kwargs["auth_type"] == "password":
+            ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]
+
+        if host_term.host == "localhost":
+            ANSIBLE_ARGS["local"] = "true"
+
+        if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
+            options = kwargs["ansible_extras"].split(",")
+            for option in options:
+                parts = option.strip().split("=")
+                if len(parts) == 2:
+                    ANSIBLE_ARGS[parts[0]] = parts[1]
+
+        for k, v in ANSIBLE_ARGS.items():
+            cmd += f" -e \"{k}='{v}'\""
+
+        cmd = "cd " + GRID_SRC_PATH + ";" + cmd
+        return cmd
+    except Exception as e:
+        print(f"Failed to construct custom deployment cmd: {cmd}. {e}")
+        raise e
 
 
 def create_launch_custom_cmd(
@@ -1465,11 +1642,16 @@ def create_launch_custom_cmd(
         elif host_term.host != "localhost" and kwargs["auth_type"] == "password":
             cmd += f" -c paramiko --user {auth.username}"
 
+        version_string = kwargs["tag"]
+        if version_string is None:
+            version_string = "local"
+
         ANSIBLE_ARGS = {
             "node_type": node_type.input,
             "node_name": snake_name,
             "github_repo": kwargs["repo"],
             "repo_branch": kwargs["branch"],
+            "docker_tag": version_string,
         }
 
         if host_term.host != "localhost" and kwargs["auth_type"] == "password":
@@ -1505,6 +1687,12 @@ def create_launch_custom_cmd(
         ):
             ANSIBLE_ARGS["upload_tls_cert"] = kwargs["upload_tls_cert"]
 
+        if kwargs["jupyter"] is True:
+            ANSIBLE_ARGS["jupyter"] = "true"
+            ANSIBLE_ARGS["jupyter_token"] = generate_sec_random_password(
+                length=48, alphabet=HEX_LOWER_ALPHABET
+            )
+
         if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
             options = kwargs["ansible_extras"].split(",")
             for option in options:
@@ -1527,16 +1715,85 @@ def create_launch_custom_cmd(
 
 def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
-    host = host_term.host
-
-    if verb.get_named_term_grammar("node_name").input == "all":
-        # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
-        return "docker rm `docker ps -aq` --force"
+    host = host_term.host if host_term.host is not None else ""
 
     if host in ["docker"]:
+        if verb.get_named_term_grammar("node_name").input == "all":
+            # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+            return "docker rm `docker ps -aq` --force"
+
         version = check_docker_version()
         if version:
             return create_land_docker_cmd(verb=verb)
+    elif host == "localhost" or is_valid_ip(host):
+        parsed_kwargs = {}
+        if DEPENDENCIES["ansible-playbook"]:
+            if host != "localhost":
+                parsed_kwargs["username"] = ask(
+                    question=Question(
+                        var_name="username",
+                        question=f"Username for {host} with sudo privledges?",
+                        default=arg_cache.username,
+                        kind="string",
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                parsed_kwargs["auth_type"] = ask(
+                    question=Question(
+                        var_name="auth_type",
+                        question="Do you want to login with a key or password",
+                        default=arg_cache.auth_type,
+                        kind="option",
+                        options=["key", "password"],
+                        cache=True,
+                    ),
+                    kwargs=kwargs,
+                )
+                if parsed_kwargs["auth_type"] == "key":
+                    parsed_kwargs["key_path"] = ask(
+                        question=Question(
+                            var_name="key_path",
+                            question=f"Private key to access {parsed_kwargs['username']}@{host}?",
+                            default=arg_cache.key_path,
+                            kind="path",
+                            cache=True,
+                        ),
+                        kwargs=kwargs,
+                    )
+                elif parsed_kwargs["auth_type"] == "password":
+                    parsed_kwargs["password"] = ask(
+                        question=Question(
+                            var_name="password",
+                            question=f"Password for {parsed_kwargs['username']}@{host}?",
+                            kind="password",
+                        ),
+                        kwargs=kwargs,
+                    )
+
+            auth = None
+            if host != "localhost":
+                if parsed_kwargs["auth_type"] == "key":
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["key_path"],
+                    )
+                else:
+                    auth = AuthCredentials(
+                        username=parsed_kwargs["username"],
+                        key_path=parsed_kwargs["password"],
+                    )
+                if not auth.valid:
+                    raise Exception(f"Login Credentials are not valid. {auth}")
+            parsed_kwargs["ansible_extras"] = kwargs["ansible_extras"]
+            return create_ansible_land_cmd(verb=verb, auth=auth, kwargs=parsed_kwargs)
+        else:
+            errors = []
+            if not DEPENDENCIES["ansible-playbook"]:
+                errors.append("ansible-playbook")
+            raise MissingDependency(
+                f"Launching a Custom VM requires: {' '.join(errors)}"
+            )
 
     host_options = ", ".join(allowed_hosts)
     raise MissingDependency(
@@ -1550,7 +1807,7 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
 
     cmd = ""
     cmd += "docker compose"
-    cmd += ' --file "docker-compose.override.yml"'
+    cmd += ' --file "docker-compose.yml"'
     cmd += ' --project-name "' + snake_name + '"'
     cmd += " down"
 
@@ -1560,8 +1817,28 @@ def create_land_docker_cmd(verb: GrammarVerb) -> str:
 
 @click.command(help="Stop a running PyGrid domain/network node.")
 @click.argument("args", type=str, nargs=-1)
+@click.option(
+    "--cmd",
+    default="false",
+    required=False,
+    type=str,
+    help="Optional: print the cmd without running it",
+)
+@click.option(
+    "--ansible_extras",
+    default="",
+    type=str,
+)
+@click.option(
+    "--build_src",
+    default=DEFAULT_BRANCH,
+    required=False,
+    type=str,
+    help="Optional: git branch to use for launch / build operations",
+)
 def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_land_verb()
+
     try:
         grammar = parse_grammar(args=args, verb=verb)
         verb.load_grammar(grammar=grammar)
@@ -1569,16 +1846,24 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         print(e)
         return
 
-    # if len(args) == 0:
-    #     print("use interactive menu to select node?")
+    try:
+        update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
+    except Exception as e:
+        print(f"Failed to update repo. {e}")
 
     try:
         cmd = create_land_cmd(verb=verb, kwargs=kwargs)
     except Exception as e:
         print(f"{e}")
         return
-    print("Running: \n", cmd)
-    subprocess.call(cmd, shell=True)
+    print("Running: \n", hide_password(cmd=cmd))
+
+    if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+        print("Running: \n", cmd)
+        try:
+            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
+        except Exception as e:
+            print(f"Failed to run cmd: {cmd}. {e}")
 
 
 cli.add_command(launch)
@@ -1597,7 +1882,7 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     debug_info["dependencies"] = DEPENDENCIES
     debug_info["environment"] = ENVIRONMENT
     debug_info["hagrid"] = __version__
-    debug_info["hagrid_dev"] = is_editable_mode()
+    debug_info["hagrid_dev"] = EDITABLE_MODE
     debug_info["hagrid_path"] = hagrid_root()
     debug_info["hagrid_repo_sha"] = commit_hash()
     debug_info["docker"] = docker_info()
@@ -1657,3 +1942,19 @@ def check(ip_address: str) -> None:
 
 
 cli.add_command(check)
+
+DEFAULT_ALPHABET = string.ascii_letters + string.digits + string.punctuation
+HEX_LOWER_ALPHABET = "".join(sorted(list(set(string.hexdigits.lower()))))
+
+
+def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) -> str:
+    if not isinstance(length, int) or length < 10:
+        raise ValueError(
+            "Password should have a positive safe length of at least 10 characters!"
+        )
+
+    # original Python 2 (urandom returns str)
+    # return "".join(chars[ord(c) % len(chars)] for c in urandom(length))
+
+    # Python 3 (urandom returns bytes)
+    return "".join(alphabet[c % len(alphabet)] for c in urandom(length))
