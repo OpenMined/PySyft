@@ -181,10 +181,10 @@ def clean(location: str) -> None:
 )
 @click.option(
     "--node_count",
-    default="1",
+    default=1,
     required=False,
-    type=int,
-    help="Optional: number of independent nodes to launch",
+    type=click.IntRange(1, 250),
+    help="Optional: number of independent nodes/VMs to launch",
 )
 @click.option(
     "--auth_type",
@@ -299,6 +299,8 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
     username, password = (
         extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
     )
+    # display VM credentials
+    console.print(generate_user_table(username=username, password=password))
 
     for cmd in cmds:
         if dry_run:
@@ -322,6 +324,7 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
                 jupyter_token = extract_jupyter_token(cmd)
                 process_list.append((ip_address, process, jupyter_token))
             else:
+                display_jupyter_token(cmd)
                 subprocess.check_call(
                     cmd,
                     stdout=sys.stdout,
@@ -333,8 +336,6 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
             print(f"Failed to run cmd: {cmd}. {e}")
 
     if dry_run is False and len(process_list) > 0:
-        # display VM credentials
-        console.print(generate_user_table(username=username, password=password))
         # display VM launch status
         display_vm_status(process_list)
 
@@ -357,7 +358,7 @@ def display_vm_status(process_list: list) -> None:
             status_table, process_completed = generate_process_status_table(
                 process_list
             )
-            live.update(status_table)  # Update the status table
+            live.update(status_table)  # Update the process status table
 
 
 def display_jupyter_token(cmd: str) -> None:
@@ -373,7 +374,7 @@ def extract_username_and_pass(cmd: str) -> Tuple:
     username = username[0] if len(username) > 0 else None
 
     # Extract password
-    matcher = r"user_ssh_pass='(.+?)'"
+    matcher = r"ansible_ssh_pass='(.+?)'"
     password = re.findall(matcher, cmd)
     password = password[0] if len(password) > 0 else None
 
@@ -655,8 +656,11 @@ def create_launch_cmd(
 
     parsed_kwargs["node_count"] = kwargs["node_count"] if "node_count" in kwargs else 1
 
-    # Run in detached mode if running more than one nodes
-    tail = False if parsed_kwargs["node_count"] > 1 else tail
+    if parsed_kwargs["node_count"] > 1 and host not in ["azure"]:
+        print("\nArgument `node_count` is only supported with `azure`.\n")
+    else:
+        # Default to detached mode if running more than one nodes
+        tail = False if parsed_kwargs["node_count"] > 1 else tail
 
     headless = False
     if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
@@ -1809,7 +1813,7 @@ def create_launch_custom_cmd(
         }
 
         if host_term.host != "localhost" and auth.password is not None:
-            ANSIBLE_ARGS["user_ssh_pass"] = auth.password
+            ANSIBLE_ARGS["ansible_ssh_pass"] = auth.password
 
         if host_term.host != "localhost" and kwargs["auth_type"] == "password":
             ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]

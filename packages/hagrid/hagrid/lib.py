@@ -11,6 +11,7 @@ import socket
 import subprocess
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import git
@@ -260,7 +261,10 @@ def check_api_metadata(ip: str, silent: bool = False) -> bool:
         return False
 
 
-def generate_user_table(username: str, password: str) -> Table:
+def generate_user_table(username: str, password: str) -> Union[Table, str]:
+    if not username and not password:
+        return ""
+
     table = Table(title="Virtual Machine Credentials")
     table.add_column("Username")
     table.add_column("Password")
@@ -292,6 +296,7 @@ def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
     """
 
     process_statuses: list[str] = []
+    lines_to_display = 5  # Number of lines to display as output
 
     table = Table(title="Virtual Machine Status")
     table.add_column("PID", style="cyan")
@@ -306,10 +311,11 @@ def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
         process_statuses.append(process_status)
 
         if process_status == ProcessStatus.FAILED.value:
-            process_log = process.stderr.readline().decode("utf-8")
+            process_log = process.stderr.readlines(lines_to_display)
         else:
-            process_log = process.stdout.readline().decode("utf-8")
+            process_log = process.stdout.readlines(lines_to_display)
 
+        process_log = "\n".join(log.decode("utf-8") for log in process_log)
         process_log = process_log if process_log else "-"
 
         table.add_row(
