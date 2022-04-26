@@ -303,27 +303,28 @@ def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
     table.add_column("IpAddress", style="magenta")
     table.add_column("Status")
     table.add_column("Jupyter Token", style="white on black")
-    table.add_column("Log")
+    table.add_column("Log", overflow="fold", no_wrap=False)
 
     for ip_address, process, jupyter_token in process_list:
         process_status = get_process_status(process)
 
         process_statuses.append(process_status)
 
+        process_log = []
         if process_status == ProcessStatus.FAILED.value:
-            process_log = process.stderr.readlines(lines_to_display)
+            process_log += process.stderr.readlines(lines_to_display)
         else:
-            process_log = process.stdout.readlines(lines_to_display)
+            process_log += process.stdout.readlines(lines_to_display)
 
-        process_log = "\n".join(log.decode("utf-8") for log in process_log)
-        process_log = process_log if process_log else "-"
+        process_log_str = "\n".join(process_log)
+        process_log_str = process_log_str if process_log else "-"
 
         table.add_row(
             f"{process.pid}",
             f"{ip_address}",
             f"{process_status}",
             f"{jupyter_token}",
-            f"{process_log}",
+            f"{process_log_str}",
         )
 
     processes_completed = ProcessStatus.RUNNING.value not in process_statuses

@@ -351,7 +351,7 @@ def display_vm_status(process_list: list) -> None:
     status_table, process_completed = generate_process_status_table(process_list)
 
     # Render the live table
-    with Live(status_table, refresh_per_second=0.5) as live:
+    with Live(status_table, refresh_per_second=1) as live:
 
         # Loop till all processes have not completed executing
         while not process_completed:
