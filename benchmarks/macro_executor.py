@@ -8,7 +8,6 @@ from typing import Optional
 from typing import Tuple
 
 # third party
-import numpy as np
 import pyarrow.parquet as pq
 
 # syft absolute
@@ -77,4 +76,3 @@ benchmark_report["make_private_syft_tensor"] = tf
 print(benchmark_report)
 
 domain_node = sy.login(email="info@openmined.org", password="changethis", port=9082)
-
