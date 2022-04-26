@@ -36,6 +36,7 @@ class Settings(BaseSettings):
         raise ValueError(v)
 
     PROJECT_NAME: str = "grid"
+
     SENTRY_DSN: Optional[HttpUrl] = None
 
     @validator("SENTRY_DSN", pre=True)
@@ -88,7 +89,6 @@ class Settings(BaseSettings):
             and values.get("EMAILS_FROM_EMAIL")
         )
 
-    EMAIL_TEST_USER: EmailStr = EmailStr("test@example.com")
     FIRST_SUPERUSER: EmailStr = EmailStr("info@openmined.org")
     FIRST_SUPERUSER_PASSWORD: str = "changethis"
     USERS_OPEN_REGISTRATION: bool = False
@@ -116,6 +116,7 @@ class Settings(BaseSettings):
     REDIS_PORT: int = int(os.getenv("REDIS_PORT", 6379))
     STORE_DB_ID: int = int(os.getenv("STORE_DB_ID", 0))
     LEDGER_DB_ID: int = int(os.getenv("LEDGER_DB_ID", 1))
+    NETWORK_CHECK_INTERVAL: int = int(os.getenv("NETWORK_CHECK_INTERVAL", 60))
 
     class Config:
         case_sensitive = True
