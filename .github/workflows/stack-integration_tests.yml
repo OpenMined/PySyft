@@ -173,7 +173,7 @@ jobs:
     steps:
       - name: Start Docker Desktop
         run: |
-          "C:\Program Files\Docker\Docker\Docker Desktop.exe"
+          powershell.exe -command 'start "C:\Program Files\Docker\Docker\Docker Desktop.exe"'
         shell: cmd
 
       - name: Stop all running containers
