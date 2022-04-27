@@ -45,6 +45,15 @@ jobs:
       - name: Install mongo tools
         run: |
           sudo apt-get update && sudo apt install mongo-tools -y
+      
+      - name: Install Docker Compose
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.3.4
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Run Benchmark
         run: |
