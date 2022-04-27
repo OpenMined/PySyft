@@ -11,6 +11,7 @@ from typing import Union
 
 # third party
 import numpy as np
+import pandas as pd
 import torch as th
 
 # syft absolute
@@ -32,6 +33,7 @@ from ..node.common.action.run_class_method_action import RunClassMethodAction
 from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
+from .autodp.gamma_tensor import GammaTensor
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
 from .smpc import utils
@@ -367,16 +369,22 @@ class Tensor(
             )
             child = to32bit(child.numpy())
 
-        if not isinstance(child, PassthroughTensor) and not isinstance(
-            child, np.ndarray
+        # Added for convenience- might need to double check if dtype changes?
+        if isinstance(child, pd.Series):
+            child = child.to_numpy()
+
+        if (
+            not isinstance(child, PassthroughTensor)
+            and not isinstance(child, np.ndarray)
+            and not isinstance(child, GammaTensor)
         ):
 
             raise Exception(
                 f"Data: {child} ,type: {type(child)} must be list or nd.array "
             )
 
-        if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
-            getattr(child, "dtype", None) not in [np.int32, np.bool_]
+        if not isinstance(child, (np.ndarray, PassthroughTensor, GammaTensor)) or (
+            getattr(child, "dtype", None) not in [np.int32, np.bool_, np.int64]
             and getattr(child, "dtype", None) is not None
         ):
             raise TypeError(
@@ -385,7 +393,7 @@ class Tensor(
                 + " with child.dtype == "
                 + str(getattr(child, "dtype", None))
                 + ". Syft tensor objects only support np.int32 objects at this time. Please pass in either "
-                "a list of int objects or a np.int32 array. We apologise for the inconvenience and will "
+                "a list of int objects or a np.int32/int64 array. We apologise for the inconvenience and will "
                 "be adding support for more types very soon!"
             )
 

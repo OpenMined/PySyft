@@ -9,7 +9,6 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # relative
-from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
 from .....logger import warning
@@ -149,6 +148,7 @@ class GetObjectAction(ImmediateActionWithReply):
         msg_id: Optional[UID] = None,
         delete_obj: bool = True,
     ):
+        # TODO: remove delete_obj flag if everthing works fine.
         self.id_at_location = id_at_location
         self.delete_obj = delete_obj
 
@@ -189,6 +189,7 @@ class GetObjectAction(ImmediateActionWithReply):
 
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
+<<<<<<< HEAD
             if self.delete_obj:
                 try:
                     # TODO: send EventualActionWithoutReply to delete the object at the node's
@@ -208,6 +209,8 @@ class GetObjectAction(ImmediateActionWithReply):
             else:
                 debug(f"Copying Object with ID {self.id_at_location} in store.")
 
+=======
+>>>>>>> 5d4abfbc53c8d3a48f85606d43f7fd9b05a16b3d
             debug(
                 f"Returning Object with ID: {self.id_at_location} {type(storable_object.data)}"
             )

@@ -1,7 +1,11 @@
 FROM headscale/headscale:0.14.0-alpine
 
-RUN apk add python3 py3-pip
+RUN apk add python3 py3-pip curl
 RUN pip install --upgrade pip
+
+ENV WAITFORIT_VERSION="v2.4.1"
+RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
+  chmod +x /usr/local/bin/waitforit
 
 WORKDIR /headscale
 COPY ./requirements.txt /headscale/requirements.txt

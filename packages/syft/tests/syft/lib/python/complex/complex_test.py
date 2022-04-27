@@ -203,8 +203,9 @@ class ComplexTest(unittest.TestCase):
             self.assertTrue(isnan(z.imag))
 
     def test_floordiv(self):
-        self.assertRaises(TypeError, Complex.__floordiv__, 3 + 0j, 1.5 + 0j)
-        self.assertRaises(TypeError, Complex.__floordiv__, 3 + 0j, 0 + 0j)
+        if sys.version_info < (3, 10):
+            self.assertRaises(TypeError, Complex.__floordiv__, 3 + 0j, 1.5 + 0j)
+            self.assertRaises(TypeError, Complex.__floordiv__, 3 + 0j, 0 + 0j)
 
     def test_richcompare(self):
         self.assertIs(Complex.__eq__(1 + 1j, 1 << 10000), False)
@@ -253,9 +254,10 @@ class ComplexTest(unittest.TestCase):
 
     def test_mod(self):
         # % is no longer supported on Complex numbers
-        self.assertRaises(TypeError, (1 + 1j).__mod__, 0 + 0j)
-        self.assertRaises(TypeError, lambda: (3.33 + 4.43j) % 0)
-        self.assertRaises(TypeError, (1 + 1j).__mod__, 4.3j)
+        if sys.version_info < (3, 10):
+            self.assertRaises(TypeError, (1 + 1j).__mod__, 0 + 0j)
+            self.assertRaises(TypeError, lambda: (3.33 + 4.43j) % 0)
+            self.assertRaises(TypeError, (1 + 1j).__mod__, 4.3j)
 
     def test_divmod(self):
         self.assertRaises(TypeError, divmod, 1 + 1j, 1 + 0j)

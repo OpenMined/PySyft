@@ -17,6 +17,9 @@ from .vpn_messages import VPNConnectReplyMessage
 from .vpn_messages import VPNJoinMessage
 from .vpn_messages import VPNJoinMessageWithReply
 from .vpn_messages import VPNJoinReplyMessage
+from .vpn_messages import VPNJoinSelfMessage
+from .vpn_messages import VPNJoinSelfMessageWithReply
+from .vpn_messages import VPNJoinSelfReplyMessage
 from .vpn_messages import VPNRegisterMessage
 from .vpn_messages import VPNRegisterMessageWithReply
 from .vpn_messages import VPNRegisterReplyMessage
@@ -65,6 +68,27 @@ class VPNJoinService(ImmediateNodeServiceWithReply):
     @staticmethod
     def message_handler_types() -> List[Type[VPNJoinMessage]]:
         return [VPNJoinMessage]
+
+
+class VPNJoinSelfService(ImmediateNodeServiceWithReply):
+    @staticmethod
+    @service_auth(guests_welcome=True)
+    def process(
+        node: NodeServiceInterface,
+        msg: VPNJoinSelfMessage,
+        verify_key: Optional[VerifyKey] = None,
+    ) -> VPNJoinSelfReplyMessage:
+        if verify_key is None:
+            traceback_and_raise(
+                "Can't process VPNJoinService with no verification key."
+            )
+
+        result = msg.payload.run(node=node, verify_key=verify_key)
+        return VPNJoinSelfMessageWithReply(kwargs=result).back_to(address=msg.reply_to)
+
+    @staticmethod
+    def message_handler_types() -> List[Type[VPNJoinSelfMessage]]:
+        return [VPNJoinSelfMessage]
 
 
 class VPNRegisterService(ImmediateNodeServiceWithReply):

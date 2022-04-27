@@ -346,7 +346,7 @@ left_name = [
 right_name = [
     "altman",
     "bach",
-    "bengio",
+    "bengios",
     "bostrom",
     "botvinick",
     "brockman",
@@ -374,6 +374,7 @@ right_name = [
     "koller",
     "krizhevsky",
     "larochelle",
+    "lattner",
     "lecun",
     "li",
     "lim",

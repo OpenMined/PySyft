@@ -1,4 +1,5 @@
 # third party
+from sqlalchemy import Boolean
 from sqlalchemy import Column
 from sqlalchemy import Integer
 from sqlalchemy import JSON
@@ -21,3 +22,4 @@ class ObjectMetadata(Base):
     read_permissions = Column(JSON())
     search_permissions = Column(JSON())
     write_permissions = Column(JSON())
+    is_proxy_dataset = Column(Boolean(), default=False)

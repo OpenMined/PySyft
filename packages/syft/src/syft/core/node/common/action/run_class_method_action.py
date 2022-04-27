@@ -13,6 +13,7 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # relative
+# from . import context
 from ..... import lib
 from .....logger import traceback_and_raise
 from .....logger import warning
@@ -71,8 +72,8 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
 
     @staticmethod
     def intersect_keys(
-        left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        left: Dict[VerifyKey, Optional[UID]], right: Dict[VerifyKey, Optional[UID]]
+    ) -> Dict[VerifyKey, Optional[UID]]:
         # get the intersection of the dict keys, the value is the request_id
         # if the request_id is different for some reason we still want to keep it,
         # so only intersect the keys and then copy those over from the main dict
@@ -210,6 +211,7 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                     err = f"Unable to set id on result {type(result)}. {e}"
                     traceback_and_raise(Exception(err))
 
+        # TODO: Find a better way to do this, a serialization is compute intesive.
         # check if resolved_self has changed and if so mark as mutating_internal
         # this prevents someone from mutating an object they own with something they
         # do not own and the read_permissions not flowing backwards
@@ -235,6 +237,9 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             if isinstance(resolved_self, StorableObject):
                 resolved_self.read_permissions = result_read_permissions
                 resolved_self.write_permissions = result_write_permissions
+
+        # in memory lookup for publish_service.py:40
+        # context.OBJ_CACHE[str(self.id_at_location.no_dash)] = result
 
         # TODO: Upload object to seaweed store, instead of storing in redis
         # create a proxy object class and store it here.
