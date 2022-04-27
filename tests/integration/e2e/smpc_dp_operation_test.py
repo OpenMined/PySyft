@@ -231,86 +231,6 @@ def test_matmul(
 
 
 @pytest.mark.e2e
-def test_eq(
-    create_data_scientist,
-    domain1_port: int,
-    domain2_port: int,
-    email: str,
-    password: str,
-) -> None:
-    """This tests DP and SMPC Equality, end to end"""
-    create_data_scientist(domain1_port, **data_scientist(email, password))
-    create_data_scientist(domain2_port, **data_scientist(email, password))
-
-    # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
-
-    # Check that datasets are visible
-    assert len(domain1.datasets) > 0
-    assert len(domain2.datasets) > 0
-
-    # Check PB is available
-    assert domain1.privacy_budget > 100
-    assert domain2.privacy_budget > 100
-    prev_domain1_budget = domain1.privacy_budget
-    prev_domain2_budget = domain2.privacy_budget
-
-    domain1_data = domain1.datasets[-1]["data"]
-    domain2_data = domain2.datasets[-1]["data"]
-
-    result = domain1_data == domain2_data
-    result.block_with_timeout(60)
-    published_result = result.publish(sigma=10)
-    published_result.block_with_timeout(20)
-
-    assert published_result.shape == (2, 2)
-    assert domain1.privacy_budget < prev_domain1_budget
-    assert domain2.privacy_budget < prev_domain2_budget
-    print("Published Result ", published_result.get())
-
-
-@pytest.mark.e2e
-def test_ne(
-    create_data_scientist,
-    domain1_port: int,
-    domain2_port: int,
-    email: str,
-    password: str,
-) -> None:
-    """This tests DP and SMPC Not Equal Operator, end to end"""
-    create_data_scientist(domain1_port, **data_scientist(email, password))
-    create_data_scientist(domain2_port, **data_scientist(email, password))
-
-    # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
-
-    # Check that datasets are visible
-    assert len(domain1.datasets) > 0
-    assert len(domain2.datasets) > 0
-
-    # Check PB is available
-    assert domain1.privacy_budget > 100
-    assert domain2.privacy_budget > 100
-    prev_domain1_budget = domain1.privacy_budget
-    prev_domain2_budget = domain2.privacy_budget
-
-    domain1_data = domain1.datasets[-1]["data"]
-    domain2_data = domain2.datasets[-1]["data"]
-
-    result = domain1_data != domain2_data
-    result.block_with_timeout(60)
-    published_result = result.publish(sigma=10)
-    published_result.block_with_timeout(60)
-
-    assert published_result.shape == (2, 2)
-    assert domain1.privacy_budget < prev_domain1_budget
-    assert domain2.privacy_budget < prev_domain2_budget
-    print("Published Result ", published_result.get())
-
-
-@pytest.mark.e2e
 def test_lt(
     create_data_scientist,
     domain1_port: int,
@@ -390,81 +310,165 @@ def test_gt(
     print("Published Result ", published_result.get())
 
 
-@pytest.mark.e2e
-def test_le(
-    create_data_scientist,
-    domain1_port: int,
-    domain2_port: int,
-    email: str,
-    password: str,
-) -> None:
-    """This tests DP and SMPC Less than Equal Operator, end to end"""
-    create_data_scientist(domain1_port, **data_scientist(email, password))
-    create_data_scientist(domain2_port, **data_scientist(email, password))
+# NOTE: Less than Comparison is the basic operation we use to perform other comparision
+# The below comparision tests work, would be enabled after moving to
+# Parallel prefix adder for comparison as they are compute intensive now.
 
-    # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
+# @pytest.mark.e2e
+# def test_eq(
+#     create_data_scientist,
+#     domain1_port: int,
+#     domain2_port: int,
+#     email: str,
+#     password: str,
+# ) -> None:
+#     """This tests DP and SMPC Equality, end to end"""
+#     create_data_scientist(domain1_port, **data_scientist(email, password))
+#     create_data_scientist(domain2_port, **data_scientist(email, password))
 
-    # Check that datasets are visible
-    assert len(domain1.datasets) > 0
-    assert len(domain2.datasets) > 0
+#     # Data Scientist logs in to both domains
+#     domain1 = sy.login(email=email, password=password, port=domain1_port)
+#     domain2 = sy.login(email=email, password=password, port=domain2_port)
 
-    # Check PB is available
-    assert domain1.privacy_budget > 100
-    assert domain2.privacy_budget > 100
-    prev_domain1_budget = domain1.privacy_budget
-    prev_domain2_budget = domain2.privacy_budget
+#     # Check that datasets are visible
+#     assert len(domain1.datasets) > 0
+#     assert len(domain2.datasets) > 0
 
-    domain1_data = domain1.datasets[-1]["data"]
-    domain2_data = domain2.datasets[-1]["data"]
+#     # Check PB is available
+#     assert domain1.privacy_budget > 100
+#     assert domain2.privacy_budget > 100
+#     prev_domain1_budget = domain1.privacy_budget
+#     prev_domain2_budget = domain2.privacy_budget
 
-    result = domain1_data <= domain2_data
-    result.block_with_timeout(60)
-    published_result = result.publish(sigma=10)
-    published_result.block_with_timeout(60)
+#     domain1_data = domain1.datasets[-1]["data"]
+#     domain2_data = domain2.datasets[-1]["data"]
 
-    assert published_result.shape == (2, 2)
-    assert domain1.privacy_budget < prev_domain1_budget
-    assert domain2.privacy_budget < prev_domain2_budget
-    print("Published Result ", published_result.get())
+#     result = domain1_data == domain2_data
+#     result.block_with_timeout(60)
+#     published_result = result.publish(sigma=10)
+#     published_result.block_with_timeout(20)
+
+#     assert published_result.shape == (2, 2)
+#     assert domain1.privacy_budget < prev_domain1_budget
+#     assert domain2.privacy_budget < prev_domain2_budget
+#     print("Published Result ", published_result.get())
 
 
-@pytest.mark.e2e
-def test_ge(
-    create_data_scientist,
-    domain1_port: int,
-    domain2_port: int,
-    email: str,
-    password: str,
-) -> None:
-    """This tests DP and SMPC Less than Equal Operator, end to end"""
-    create_data_scientist(domain1_port, **data_scientist(email, password))
-    create_data_scientist(domain2_port, **data_scientist(email, password))
+# @pytest.mark.e2e
+# def test_ne(
+#     create_data_scientist,
+#     domain1_port: int,
+#     domain2_port: int,
+#     email: str,
+#     password: str,
+# ) -> None:
+#     """This tests DP and SMPC Not Equal Operator, end to end"""
+#     create_data_scientist(domain1_port, **data_scientist(email, password))
+#     create_data_scientist(domain2_port, **data_scientist(email, password))
 
-    # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password, port=domain1_port)
-    domain2 = sy.login(email=email, password=password, port=domain2_port)
+#     # Data Scientist logs in to both domains
+#     domain1 = sy.login(email=email, password=password, port=domain1_port)
+#     domain2 = sy.login(email=email, password=password, port=domain2_port)
 
-    # Check that datasets are visible
-    assert len(domain1.datasets) > 0
-    assert len(domain2.datasets) > 0
+#     # Check that datasets are visible
+#     assert len(domain1.datasets) > 0
+#     assert len(domain2.datasets) > 0
 
-    # Check PB is available
-    assert domain1.privacy_budget > 100
-    assert domain2.privacy_budget > 100
-    prev_domain1_budget = domain1.privacy_budget
-    prev_domain2_budget = domain2.privacy_budget
+#     # Check PB is available
+#     assert domain1.privacy_budget > 100
+#     assert domain2.privacy_budget > 100
+#     prev_domain1_budget = domain1.privacy_budget
+#     prev_domain2_budget = domain2.privacy_budget
 
-    domain1_data = domain1.datasets[-1]["data"]
-    domain2_data = domain2.datasets[-1]["data"]
+#     domain1_data = domain1.datasets[-1]["data"]
+#     domain2_data = domain2.datasets[-1]["data"]
 
-    result = domain1_data >= domain2_data
-    result.block_with_timeout(60)
-    published_result = result.publish(sigma=10)
-    published_result.block_with_timeout(60)
+#     result = domain1_data != domain2_data
+#     result.block_with_timeout(60)
+#     published_result = result.publish(sigma=10)
+#     published_result.block_with_timeout(60)
 
-    assert published_result.shape == (2, 2)
-    assert domain1.privacy_budget < prev_domain1_budget
-    assert domain2.privacy_budget < prev_domain2_budget
-    print("Published Result ", published_result.get())
+#     assert published_result.shape == (2, 2)
+#     assert domain1.privacy_budget < prev_domain1_budget
+#     assert domain2.privacy_budget < prev_domain2_budget
+#     print("Published Result ", published_result.get())
+
+
+# @pytest.mark.e2e
+# def test_le(
+#     create_data_scientist,
+#     domain1_port: int,
+#     domain2_port: int,
+#     email: str,
+#     password: str,
+# ) -> None:
+#     """This tests DP and SMPC Less than Equal Operator, end to end"""
+#     create_data_scientist(domain1_port, **data_scientist(email, password))
+#     create_data_scientist(domain2_port, **data_scientist(email, password))
+
+#     # Data Scientist logs in to both domains
+#     domain1 = sy.login(email=email, password=password, port=domain1_port)
+#     domain2 = sy.login(email=email, password=password, port=domain2_port)
+
+#     # Check that datasets are visible
+#     assert len(domain1.datasets) > 0
+#     assert len(domain2.datasets) > 0
+
+#     # Check PB is available
+#     assert domain1.privacy_budget > 100
+#     assert domain2.privacy_budget > 100
+#     prev_domain1_budget = domain1.privacy_budget
+#     prev_domain2_budget = domain2.privacy_budget
+
+#     domain1_data = domain1.datasets[-1]["data"]
+#     domain2_data = domain2.datasets[-1]["data"]
+
+#     result = domain1_data <= domain2_data
+#     result.block_with_timeout(60)
+#     published_result = result.publish(sigma=10)
+#     published_result.block_with_timeout(60)
+
+#     assert published_result.shape == (2, 2)
+#     assert domain1.privacy_budget < prev_domain1_budget
+#     assert domain2.privacy_budget < prev_domain2_budget
+#     print("Published Result ", published_result.get())
+
+
+# @pytest.mark.e2e
+# def test_ge(
+#     create_data_scientist,
+#     domain1_port: int,
+#     domain2_port: int,
+#     email: str,
+#     password: str,
+# ) -> None:
+#     """This tests DP and SMPC Less than Equal Operator, end to end"""
+#     create_data_scientist(domain1_port, **data_scientist(email, password))
+#     create_data_scientist(domain2_port, **data_scientist(email, password))
+
+#     # Data Scientist logs in to both domains
+#     domain1 = sy.login(email=email, password=password, port=domain1_port)
+#     domain2 = sy.login(email=email, password=password, port=domain2_port)
+
+#     # Check that datasets are visible
+#     assert len(domain1.datasets) > 0
+#     assert len(domain2.datasets) > 0
+
+#     # Check PB is available
+#     assert domain1.privacy_budget > 100
+#     assert domain2.privacy_budget > 100
+#     prev_domain1_budget = domain1.privacy_budget
+#     prev_domain2_budget = domain2.privacy_budget
+
+#     domain1_data = domain1.datasets[-1]["data"]
+#     domain2_data = domain2.datasets[-1]["data"]
+
+#     result = domain1_data >= domain2_data
+#     result.block_with_timeout(60)
+#     published_result = result.publish(sigma=10)
+#     published_result.block_with_timeout(60)
+
+#     assert published_result.shape == (2, 2)
+#     assert domain1.privacy_budget < prev_domain1_budget
+#     assert domain2.privacy_budget < prev_domain2_budget
+#     print("Published Result ", published_result.get())
