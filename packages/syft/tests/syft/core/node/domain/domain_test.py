@@ -40,6 +40,13 @@ def test_domain_request_pending(domain: sy.Domain) -> None:
 
     domain_2 = sy.Domain(
         name="my domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+<<<<<<< HEAD
+=======
+    )
+
+    data_ptr_domain_1.request(
+        reason="I'd lke to see this pointer",
+>>>>>>> 5d4abfbc53c8d3a48f85606d43f7fd9b05a16b3d
     )
 
     data_ptr_domain_1.request(reason="I'd lke to see this pointer")

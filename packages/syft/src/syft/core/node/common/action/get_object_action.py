@@ -190,6 +190,7 @@ class GetObjectAction(ImmediateActionWithReply):
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
 <<<<<<< HEAD
+<<<<<<< HEAD
             if self.delete_obj:
                 try:
                     # TODO: send EventualActionWithoutReply to delete the object at the node's
@@ -209,6 +210,8 @@ class GetObjectAction(ImmediateActionWithReply):
             else:
                 debug(f"Copying Object with ID {self.id_at_location} in store.")
 
+=======
+>>>>>>> 5d4abfbc53c8d3a48f85606d43f7fd9b05a16b3d
 =======
 >>>>>>> 5d4abfbc53c8d3a48f85606d43f7fd9b05a16b3d
             debug(
