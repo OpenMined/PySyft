@@ -4,7 +4,6 @@ from typing import Dict
 import uuid
 
 # third party
-import numpy as np
 import pytest
 
 # syft absolute
@@ -36,23 +35,6 @@ def domain2_port() -> int:
     return 9083
 
 
-@pytest.fixture
-def data_shape() -> np.ndarray:
-    return np.random.randint(
-        low=7, high=10, size=2
-    )  # Somewhere between 49-100 values in a 2D array for matmul
-
-
-@pytest.fixture
-def data_max() -> int:
-    return 10
-
-
-@pytest.fixture
-def reference_data(data_shape: np.ndarray, data_max: int) -> np.ndarray:
-    return np.random.random(size=data_shape) * data_max
-
-
 #
 # @pytest.fixture
 # def matmul_data(data_shape: np.ndarray, data_max: int) -> np.ndarray:
@@ -64,90 +46,27 @@ def data_scientist(email: str, pwd: str) -> Dict["str", Any]:
         "name": "Doctor Strange",
         "email": email,
         "password": pwd,
-        "budget": 200,
+        "budget": 9_999_999,
     }
 
 
-def startup(
-    node1_port: int,
-    node2_port: int,
-    data: np.ndarray,
-    max_values: int,
-    ds_email: str,
-    ds_pwd: str,
-    matmul: bool = False,
-):
-    """Log into both domain nodes as admin/data owner, and upload the data"""
-
-    # Login to domain nodes
-    domain1 = sy.login(
-        email="info@openmined.org", password="changethis", port=node1_port
-    )
-    domain2 = sy.login(
-        email="info@openmined.org", password="changethis", port=node2_port
-    )
-
-    # Annotate metadata
-    domain1_data = sy.Tensor(data).private(
-        0, max_values, entities=["Mars"] * data.shape[0], ndept=True
-    )
-    if matmul is False:
-        domain2_data = sy.Tensor(data).private(
-            0, max_values, entities=["Mars"] * data.shape[0], ndept=True
-        )
-    else:
-        domain2_data = sy.Tensor(data.T).private(
-            0, max_values, entities=["Mars"] * data.shape[0], ndept=True
-        )
-
-    # Upload data
-    domain1.load_dataset(
-        assets={"data": domain1_data},
-        name="Mars Data",
-        description="Domain 1  collected Data",
-    )
-    domain2.load_dataset(
-        assets={"data": domain2_data},
-        name="Mars Data",
-        description="Domain 2 collected Data",
-    )
-
-    # Ensure datasets were loaded properly
-    assert len(domain1.datasets) > 0
-    assert len(domain2.datasets) > 0
-    # TODO: If these tests are run async, this might give false positives
-
-    # Create data scientist accounts
-    domain1.users.create(**data_scientist(email=ds_email, pwd=ds_pwd))
-    domain2.users.create(**data_scientist(email=ds_email, pwd=ds_pwd))
-
-    # Ensure data scientist accounts were created properly
-    assert len(domain1.users.pandas()) > 1
-    assert len(domain2.users.pandas()) > 1
-
-    return None
+# NOTE: We assign a high budget to the Data Scientist, as  there ShareTensor Values
+# in np.int64 drastically increases the RDP Parameters, which causes a high
+# privacy budget requirement.
 
 
 @pytest.mark.e2e
 def test_addition(
-    email: str,
+    create_data_scientist,
     domain1_port: int,
     domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
+    email: str,
     password: str,
 ) -> None:
     """This tests DP and SMPC addition, end to end"""
 
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password, port=domain1_port)
@@ -160,21 +79,21 @@ def test_addition(
     # Check PB is available
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
 
     domain1_data = domain1.datasets[-1]["data"]
     domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data + domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
+    published_result = result.publish(sigma=10)
     published_result.block_with_timeout(60)
 
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
     # TODO: Figure out how to test result is reasonable
     """
     Idea: https://en.wikipedia.org/wiki/68%E2%80%9395%E2%80%9399.7_rule#Table_of_numerical_values
@@ -193,24 +112,15 @@ def test_addition(
 
 @pytest.mark.e2e
 def test_subtraction(
-    email: str,
+    create_data_scientist,
     domain1_port: int,
     domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
+    email: str,
     password: str,
 ) -> None:
     """This tests DP and SMPC subtraction, end to end"""
-
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password, port=domain1_port)
@@ -223,43 +133,34 @@ def test_subtraction(
     # Check PB is available
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
 
     domain1_data = domain1.datasets[-1]["data"]
     domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data - domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
+    published_result = result.publish(sigma=10)
     published_result.block_with_timeout(60)
 
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
 
 
 @pytest.mark.e2e
 def test_mul(
-    email: str,
+    create_data_scientist,
     domain1_port: int,
     domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
+    email: str,
     password: str,
 ) -> None:
-    """This tests DP and SMPC multiplication, end to end"""
-
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
+    """This tests DP and SMPC Multiplication, end to end"""
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password, port=domain1_port)
@@ -272,42 +173,34 @@ def test_mul(
     # Check PB is available
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
 
     domain1_data = domain1.datasets[-1]["data"]
     domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data * domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
+    published_result = result.publish(sigma=10)
     published_result.block_with_timeout(60)
 
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
 
 
 @pytest.mark.e2e
-def test_eq(
-    email: str,
+def test_matmul(
+    create_data_scientist,
     domain1_port: int,
     domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
+    email: str,
     password: str,
 ) -> None:
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
+    """This tests DP and SMPC Matrix Multiplication, end to end"""
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
     domain1 = sy.login(email=email, password=password, port=domain1_port)
@@ -320,46 +213,78 @@ def test_eq(
     # Check PB is available
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
+
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
+
+    result = domain1_data @ domain2_data
+    result.block_with_timeout(60)
+    published_result = result.publish(sigma=10)
+    published_result.block_with_timeout(60)
+
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
+
+
+@pytest.mark.e2e
+def test_eq(
+    create_data_scientist,
+    domain1_port: int,
+    domain2_port: int,
+    email: str,
+    password: str,
+) -> None:
+    """This tests DP and SMPC Equality, end to end"""
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
+
+    # Data Scientist logs in to both domains
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
+
+    # Check that datasets are visible
+    assert len(domain1.datasets) > 0
+    assert len(domain2.datasets) > 0
+
+    # Check PB is available
+    assert domain1.privacy_budget > 100
+    assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
 
     domain1_data = domain1.datasets[-1]["data"]
     domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data == domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
-    published_result.block_with_timeout(60)
+    published_result = result.publish(sigma=10)
+    published_result.block_with_timeout(20)
 
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
 
 
 @pytest.mark.e2e
 def test_ne(
-    email: str,
+    create_data_scientist,
     domain1_port: int,
     domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
+    email: str,
     password: str,
 ) -> None:
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
+    """This tests DP and SMPC Not Equal Operator, end to end"""
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -368,46 +293,38 @@ def test_ne(
     # Check PB is available
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
 
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data != domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
+    published_result = result.publish(sigma=10)
     published_result.block_with_timeout(60)
 
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
 
 
 @pytest.mark.e2e
 def test_lt(
-    email: str,
+    create_data_scientist,
     domain1_port: int,
     domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
+    email: str,
     password: str,
 ) -> None:
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
+    """This tests DP and SMPC Less than Operator, end to end"""
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -416,46 +333,38 @@ def test_lt(
     # Check PB is available
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
 
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data < domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
+    published_result = result.publish(sigma=10)
     published_result.block_with_timeout(60)
 
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
 
 
 @pytest.mark.e2e
 def test_gt(
-    email: str,
+    create_data_scientist,
     domain1_port: int,
     domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
+    email: str,
     password: str,
 ) -> None:
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
+    """This tests DP and SMPC Greater than Operator, end to end"""
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -464,46 +373,38 @@ def test_gt(
     # Check PB is available
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
 
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data > domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
+    published_result = result.publish(sigma=10)
     published_result.block_with_timeout(60)
 
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
 
 
 @pytest.mark.e2e
 def test_le(
-    email: str,
+    create_data_scientist,
     domain1_port: int,
     domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
+    email: str,
     password: str,
 ) -> None:
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
+    """This tests DP and SMPC Less than Equal Operator, end to end"""
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -512,46 +413,38 @@ def test_le(
     # Check PB is available
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
 
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data <= domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
+    published_result = result.publish(sigma=10)
     published_result.block_with_timeout(60)
 
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
 
 
 @pytest.mark.e2e
 def test_ge(
-    email: str,
+    create_data_scientist,
     domain1_port: int,
     domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
+    email: str,
     password: str,
 ) -> None:
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-    )
+    """This tests DP and SMPC Less than Equal Operator, end to end"""
+    create_data_scientist(domain1_port, **data_scientist(email, password))
+    create_data_scientist(domain2_port, **data_scientist(email, password))
 
     # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
+    domain1 = sy.login(email=email, password=password, port=domain1_port)
+    domain2 = sy.login(email=email, password=password, port=domain2_port)
 
     # Check that datasets are visible
     assert len(domain1.datasets) > 0
@@ -560,71 +453,18 @@ def test_ge(
     # Check PB is available
     assert domain1.privacy_budget > 100
     assert domain2.privacy_budget > 100
+    prev_domain1_budget = domain1.privacy_budget
+    prev_domain2_budget = domain2.privacy_budget
 
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
+    domain1_data = domain1.datasets[-1]["data"]
+    domain2_data = domain2.datasets[-1]["data"]
 
     result = domain1_data >= domain2_data
     result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
+    published_result = result.publish(sigma=10)
     published_result.block_with_timeout(60)
 
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
-    assert (
-        published_result.shape == reference_data.shape
-        or published_result.squeeze().shape == reference_data.shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
-
-
-@pytest.mark.e2e
-def test_matmul(
-    email: str,
-    domain1_port: int,
-    domain2_port: int,
-    reference_data: np.ndarray,
-    data_max: int,
-    password: str,
-) -> None:
-    """This tests DP and SMPC multiplication, end to end"""
-
-    # Data Owner creates data, annotates it, uploads it, creates data scientist accounts
-    startup(
-        node1_port=domain1_port,
-        node2_port=domain2_port,
-        data=reference_data,
-        max_values=data_max,
-        ds_email=email,
-        ds_pwd=password,
-        matmul=True,
-    )
-
-    # Data Scientist logs in to both domains
-    domain1 = sy.login(email=email, password=password)
-    domain2 = sy.login(email=email, password=password)
-
-    # Check that datasets are visible
-    assert len(domain1.datasets) > 0
-    assert len(domain2.datasets) > 0
-
-    # Check PB is available
-    assert domain1.privacy_budget > 100
-    assert domain2.privacy_budget > 100
-
-    domain1_data = domain1[-1]["Earth Data"]
-    domain2_data = domain2[-1]["Mars Data"]
-
-    result = domain1_data @ domain2_data
-    result.block_with_timeout(60)
-    published_result = result.publish(sigma=1e6)
-    published_result.block_with_timeout(60)
-
-    # TODO: Remove the squeeze when the vectorized_publish bug is found
-    target_shape = (reference_data.shape[0], reference_data.shape[0])
-    assert (
-        published_result.shape == target_shape
-        or published_result.squeeze().shape == target_shape
-    )
-    assert domain1.privacy_budget < 200
-    assert domain2.privacy_budget < 200
+    assert published_result.shape == (2, 2)
+    assert domain1.privacy_budget < prev_domain1_budget
+    assert domain2.privacy_budget < prev_domain2_budget
+    print("Published Result ", published_result.get())
