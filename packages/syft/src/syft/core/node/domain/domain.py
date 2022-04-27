@@ -76,6 +76,7 @@ from ..common.node_service.user_manager.user_manager_service import UserManagerS
 from ..common.node_service.vpn.vpn_service import VPNConnectService
 from ..common.node_service.vpn.vpn_service import VPNJoinService
 from ..common.node_service.vpn.vpn_service import VPNStatusService
+from ..common.node_service.tff.tff_service import TFFService
 from ..common.node_table.utils import create_memory_db_engine
 from ..device import Device
 from ..device import DeviceClient
