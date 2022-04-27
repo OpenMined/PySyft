@@ -3,16 +3,17 @@ import json
 import os
 from typing import Any
 
-DEFAULT_BRANCH = "0.6.0"
+STABLE_BRANCH = "0.6.0"
+DEFAULT_BRANCH = "dev"
 
 arg_defaults = {
     "repo": "OpenMined/PySyft",
-    "branch": DEFAULT_BRANCH,
+    "branch": STABLE_BRANCH,
     "username": "root",
     "auth_type": "key",
     "key_path": "~/.ssh/id_rsa",
     "azure_repo": "OpenMined/PySyft",
-    "azure_branch": DEFAULT_BRANCH,
+    "azure_branch": STABLE_BRANCH,
     "azure_username": "azureuser",
     "azure_key_path": "~/.ssh/id_rsa",
     "azure_resource_group": "openmined",
@@ -24,7 +25,7 @@ arg_defaults = {
     "gcp_username": "",
     "gcp_key_path": "~/.ssh/google_compute_engine",
     "gcp_repo": "OpenMined/PySyft",
-    "gcp_branch": DEFAULT_BRANCH,
+    "gcp_branch": STABLE_BRANCH,
 }
 
 

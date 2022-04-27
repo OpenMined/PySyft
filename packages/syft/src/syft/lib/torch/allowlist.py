@@ -236,7 +236,7 @@ allowlist["torch.return_types.mode"] = "torch.return_types.mode"
 allowlist["torch.return_types.sort"] = "torch.return_types.sort"
 # allowlist["torch.return_types.symeig"] = "torch.return_types.symeig" # deprecated in torch==1.10.0
 allowlist["torch.return_types.topk"] = "torch.return_types.topk"
-allowlist["torch.return_types.triangular_solve"] = "torch.return_types.triangular_solve"
+# allowlist["torch.return_types.triangular_solve"] = "torch.return_types.triangular_solve" # deprecated in torch==1.11.0
 allowlist["torch.return_types.svd"] = "torch.return_types.svd"
 allowlist["torch.return_types.geqrf"] = "torch.return_types.geqrf"
 allowlist["torch.return_types.median"] = "torch.return_types.median"
@@ -518,7 +518,7 @@ allowlist["torch.Tensor.topk"] = "torch.return_types.topk"
 allowlist["torch.Tensor.trace"] = "torch.Tensor"
 allowlist["torch.Tensor.transpose_"] = "torch.Tensor"
 allowlist["torch.Tensor.transpose"] = "torch.Tensor"
-allowlist["torch.Tensor.triangular_solve"] = "torch.return_types.triangular_solve"
+# allowlist["torch.Tensor.triangular_solve"] = "torch.return_types.triangular_solve" # deprecated in torch==1.11.0
 allowlist["torch.Tensor.tril_"] = "torch.Tensor"
 allowlist["torch.Tensor.tril"] = "torch.Tensor"
 allowlist["torch.Tensor.triu_"] = "torch.Tensor"
@@ -1290,7 +1290,7 @@ allowlist["torch.tanh"] = "torch.Tensor"
 allowlist["torch.topk"] = "torch.return_types.topk"
 allowlist["torch.trace"] = "torch.Tensor"
 allowlist["torch.transpose"] = "torch.Tensor"
-allowlist["torch.triangular_solve"] = "torch.return_types.triangular_solve"
+# allowlist["torch.triangular_solve"] = "torch.return_types.triangular_solve" # deprecated in torch==1.11.0
 allowlist["torch.tril"] = "torch.Tensor"
 allowlist["torch.triu"] = "torch.Tensor"
 allowlist["torch.true_divide"] = {"return_type": "torch.Tensor", "min_version": "1.5.0"}

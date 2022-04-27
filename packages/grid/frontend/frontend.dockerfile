@@ -9,7 +9,7 @@ FROM node:16-alpine as grid-ui-development
 
 ENV NEXT_PUBLIC_ENVIRONMENT development
 ENV NEXT_PUBLIC_API_URL /api/v1
-ENV NODE_TYPE $NODE_TYPE
+ENV NODE_TYPE domain
 ENV NEXT_TELEMETRY_DISABLED 1
 
 WORKDIR /app
@@ -17,10 +17,9 @@ COPY --from=init-stage /app .
 CMD ["/usr/local/bin/node", "--max-old-space-size=4096", "/app/node_modules/.bin/next", "dev", "-p", "80"]
 
 FROM init-stage as build-stage
-ARG NODE_TYPE
 WORKDIR /app
 COPY --from=init-stage /app .
-ENV NODE_TYPE $NODE_TYPE
+ENV NODE_TYPE domain
 ENV NEXT_TELEMETRY_DISABLED 1
 RUN yarn build
 RUN yarn export

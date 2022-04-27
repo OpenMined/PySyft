@@ -9,7 +9,6 @@ from nacl.signing import VerifyKey
 import syft as sy
 
 # relative
-from .....logger import critical
 from .....logger import debug
 from .....logger import traceback_and_raise
 from .....logger import warning
@@ -149,6 +148,7 @@ class GetObjectAction(ImmediateActionWithReply):
         msg_id: Optional[UID] = None,
         delete_obj: bool = True,
     ):
+        # TODO: remove delete_obj flag if everthing works fine.
         self.id_at_location = id_at_location
         self.delete_obj = delete_obj
 
@@ -188,25 +188,6 @@ class GetObjectAction(ImmediateActionWithReply):
                 obj.data.generate_presigned_url(settings=node.settings, public_url=True)
 
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
-
-            if self.delete_obj:
-                try:
-                    # TODO: send EventualActionWithoutReply to delete the object at the node's
-                    # convenience instead of definitely having to delete it now
-                    debug(
-                        f"Calling delete on Object with ID {self.id_at_location} in store."
-                    )
-                    if not node.store.is_dataset(
-                        key=self.id_at_location
-                    ):  # type: ignore
-                        node.store.delete(key=self.id_at_location)
-                except Exception as e:
-                    log = (
-                        f"> GetObjectAction delete exception {self.id_at_location} {e}"
-                    )
-                    critical(log)
-            else:
-                debug(f"Copying Object with ID {self.id_at_location} in store.")
 
             debug(
                 f"Returning Object with ID: {self.id_at_location} {type(storable_object.data)}"

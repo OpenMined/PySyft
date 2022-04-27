@@ -11,8 +11,8 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.adp.data_subject_list import DataSubjectList
 from syft.core.adp.entity import Entity
-from syft.core.adp.entity_list import EntityList
 from syft.core.store.proxy_dataset import ProxyDataset
 from syft.util import size_mb
 
@@ -133,11 +133,8 @@ def test_large_blob_upload() -> None:
         if not ndept:
             entities = [Entity(name="ϕhishan") * reference_data.shape[0]]
         else:
-            one_hot_lookup = np.array(["ϕhishan"])
-            entities_indexed = np.zeros(reference_data.shape[0], dtype=np.uint32)
-            entities = EntityList(
-                one_hot_lookup=one_hot_lookup, entities_indexed=entities_indexed
-            )
+            entity_name = "ϕhishan"
+            entities = DataSubjectList.from_objs([entity_name] * (multiplier * ndim))
 
         tweets_data = sy.Tensor(reference_data).private(
             min_val=0, max_val=30, entities=entities, ndept=ndept

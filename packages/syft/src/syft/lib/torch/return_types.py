@@ -81,8 +81,9 @@ def get_supported_types_fields() -> Dict[type, List]:
     topk = s.topk(1)
     supported_types[type(topk)] = get_field_names(topk)
 
-    triangular_solve = s.triangular_solve(s)
-    supported_types[type(triangular_solve)] = get_field_names(triangular_solve)
+    # deprecated in torch==1.11.0
+    # triangular_solve = s.triangular_solve(s)
+    # supported_types[type(triangular_solve)] = get_field_names(triangular_solve)
 
     svd = s.svd()
     supported_types[type(svd)] = get_field_names(svd)

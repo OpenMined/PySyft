@@ -109,8 +109,8 @@ class lazyrepeatarray:
     def size(self) -> int:
         return np.prod(self.shape)
 
-    def sum(self, axis: Optional[int] = None) -> np.ndarray:
-        if axis is None:
+    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> np.ndarray:
+        if "axis" in kwargs and kwargs["axis"] is None:
             # TODO: make fast
             return self.to_numpy().sum()
         else:
@@ -136,6 +136,27 @@ class lazyrepeatarray:
                 raise e
 
         return self == other
+
+    def __le__(self, other: Any) -> lazyrepeatarray:  # type: ignore
+        if isinstance(other, lazyrepeatarray):
+            if self.shape == other.shape:
+                return lazyrepeatarray(data=self.data <= other.data, shape=self.shape)
+            else:
+                result = (self.to_numpy() <= other.to_numpy()).all()
+                return lazyrepeatarray(data=np.array([result]), shape=result.shape)
+        if isinstance(other, np.ndarray):
+            try:
+                _ = np.broadcast_shapes(self.shape, other.shape)
+                result = (self.to_numpy() <= other).all()
+                return lazyrepeatarray(data=np.array([result]), shape=other.shape)
+            except Exception as e:
+                print(
+                    "Failed to compare lazyrepeatarray with "
+                    + f"{self.shape} == {other.shape} to numpy by broadcasting. {e}"
+                )
+                raise e
+
+        return self <= other
 
     @property
     def dtype(self) -> np.dtype:
