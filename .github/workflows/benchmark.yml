@@ -45,7 +45,7 @@ jobs:
       - name: Install mongo tools
         run: |
           sudo apt-get update && sudo apt install mongo-tools -y
-      
+
       - name: Install Docker Compose
         if: runner.os == 'Linux'
         shell: bash
