@@ -463,6 +463,9 @@ class Question:
                 f"{value} is not one of the options: {self.options}"
             )
 
+        if self.kind == "password":
+            return validate_password(password=value)
+
         return value
 
 
@@ -627,6 +630,63 @@ def generate_key_at_path(key_path: str) -> str:
             raise e
 
     return key_path
+
+
+def validate_password(password: str) -> str:
+    """Validate if the password entered by the user is valid.
+
+    Password length should be between 12 - 123 characters
+    Passwords must also meet 3 out of the following 4 complexity requirements:
+    - Have lower characters
+    - Have upper characters
+    - Have a digit
+    - Have a special character
+
+    Args:
+        password (str): password for the vm
+
+    Returns:
+        str: password if it is valid
+    """
+    # Validate password length
+    if len(password) < 12 or len(password) > 123:
+        raise ValueError("Password length should be between 12 - 123 characters")
+
+    # Valid character types
+    character_types = {
+        "upper_case": False,
+        "lower_case": False,
+        "digit": False,
+        "special": False,
+    }
+
+    for ch in password:
+        if ch.islower():
+            character_types["lower_case"] = True
+        elif ch.isupper():
+            character_types["upper_case"] = True
+        elif ch.isdigit():
+            character_types["digit"] = True
+        elif ch.isascii():
+            character_types["special"] = True
+        else:
+            raise ValueError(f"{ch} is not a valid character for password")
+
+    # Validate characters in the password
+    required_character_type_count = sum(
+        [int(value) for value in character_types.values()]
+    )
+
+    if required_character_type_count >= 3:
+        return password
+
+    absent_character_types = ", ".join(
+        char_type for char_type, value in character_types.items() if value is False
+    ).strip(", ")
+
+    raise ValueError(
+        f"At least one {absent_character_types} character types must be present"
+    )
 
 
 def create_launch_cmd(
@@ -811,38 +871,61 @@ def create_launch_cmd(
                 kwargs=kwargs,
             )
 
-            key_path_question = Question(
-                var_name="azure_key_path",
-                question=f"Absolute path of the private key to access {username}@{host}?",
-                default=arg_cache.azure_key_path,
-                kind="path",
-                cache=True,
+            parsed_kwargs["auth_type"] = ask(
+                question=Question(
+                    var_name="auth_type",
+                    question="Do you want to login with a key or password",
+                    default=arg_cache.auth_type,
+                    kind="option",
+                    options=["key", "password"],
+                    cache=True,
+                ),
+                kwargs=kwargs,
             )
-            try:
-                key_path = ask(
-                    key_path_question,
-                    kwargs=kwargs,
-                )
-            except QuestionInputPathError as e:
-                print(e)
-                key_path = str(e).split("is not a valid path")[0].strip()
 
-                create_key_question = Question(
+            key_path = None
+            if parsed_kwargs["auth_type"] == "key":
+                key_path_question = Question(
                     var_name="azure_key_path",
-                    question=f"Key {key_path} does not exist. Do you want to create it? (y/n)",
-                    default="y",
-                    kind="yesno",
+                    question=f"Absolute path of the private key to access {username}@{host}?",
+                    default=arg_cache.azure_key_path,
+                    kind="path",
+                    cache=True,
                 )
-                create_key = ask(
-                    create_key_question,
+                try:
+                    key_path = ask(
+                        key_path_question,
+                        kwargs=kwargs,
+                    )
+                except QuestionInputPathError as e:
+                    print(e)
+                    key_path = str(e).split("is not a valid path")[0].strip()
+
+                    create_key_question = Question(
+                        var_name="azure_key_path",
+                        question=f"Key {key_path} does not exist. Do you want to create it? (y/n)",
+                        default="y",
+                        kind="yesno",
+                    )
+                    create_key = ask(
+                        create_key_question,
+                        kwargs=kwargs,
+                    )
+                    if create_key == "y":
+                        key_path = generate_key_at_path(key_path=key_path)
+                    else:
+                        raise QuestionInputError(
+                            "Unable to create VM without a private key"
+                        )
+            elif parsed_kwargs["auth_type"] == "password":
+                parsed_kwargs["password"] = ask(
+                    question=Question(
+                        var_name="password",
+                        question=f"Password for {username}@{host}?",
+                        kind="password",
+                    ),
                     kwargs=kwargs,
                 )
-                if create_key == "y":
-                    key_path = generate_key_at_path(key_path=key_path)
-                else:
-                    raise QuestionInputError(
-                        "Unable to create VM without a private key"
-                    )
 
             repo = ask(
                 Question(
@@ -867,7 +950,9 @@ def create_launch_cmd(
 
             use_branch(branch=branch)
 
-            password = generate_sec_random_password(length=16)
+            password = parsed_kwargs.get("password")
+            password = password if password else generate_sec_random_password(length=16)
+
             auth = AuthCredentials(
                 username=username, key_path=key_path, password=password
             )
@@ -1438,22 +1523,23 @@ def make_vm_azure(
     resource_group: str,
     username: str,
     password: str,
-    key_path: str,
+    key_path: Optional[str],
     size: str,
     image_name: str,
     node_count: int,
 ) -> list:
     disk_size_gb = "200"
-    public_key_path = private_to_public_key(
-        private_key_path=key_path, username=username
+    public_key_path = (
+        private_to_public_key(private_key_path=key_path, username=username)
+        if key_path
+        else None
     )
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
     cmd += "--public-ip-sku Standard --authentication-type all "
-    cmd += f"--ssh-key-values {public_key_path} --admin-username {username} --admin-password '{password}' "
-    if node_count > 1:
-        # count accepts integer between [2, 250]
-        cmd += f"--count {node_count} "
+    cmd += f"--ssh-key-values {public_key_path} " if public_key_path else ""
+    cmd += f"--admin-username {username} --admin-password '{password}' "
+    cmd += f"--count {node_count} " if node_count > 1 else ""
 
     host_ips: Optional[list] = []
     try:
@@ -1468,7 +1554,8 @@ def make_vm_azure(
 
     try:
         # clean up temp public key
-        os.unlink(public_key_path)
+        if public_key_path:
+            os.unlink(public_key_path)
     except Exception:
         pass
 
@@ -1616,7 +1703,7 @@ def create_launch_azure_cmd(
     size: str,
     username: str,
     password: str,
-    key_path: str,
+    key_path: Optional[str],
     repo: str,
     branch: str,
     auth: AuthCredentials,
