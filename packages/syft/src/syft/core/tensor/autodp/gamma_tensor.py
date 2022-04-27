@@ -23,6 +23,7 @@ from ...common.serde.capnp import serde_magic_header
 from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
+from ..fixed_precision_tensor import FixedPrecisionTensor
 
 if TYPE_CHECKING:
     # stdlib
@@ -102,6 +103,7 @@ class GammaTensor:
         pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
+    fpt_values: Optional[FixedPrecisionTensor] = None
 
     def __post_init__(
         self,
@@ -237,6 +239,10 @@ class GammaTensor:
             raise Exception(
                 "Data type of private values is not np.int64: ", self.value.dtype
             )
+        fpt_values = self.fpt_values
+        fpt_encode_func = None  # Function for encoding noise
+        if fpt_values is not None:
+            fpt_encode_func = fpt_values.encode
 
         return vectorized_publish(
             min_vals=self.min_val,
@@ -249,6 +255,7 @@ class GammaTensor:
             ledger=ledger,
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
+            fpt_encode_func=fpt_encode_func,
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:

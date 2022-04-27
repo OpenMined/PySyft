@@ -667,29 +667,21 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
-
-        # if scalar_manager is None:
-        #     scalar_manager = self.scalar_manager
-
-        # Gamma expects an entity for each scalar
-        # entities = np.array([self.entity] * np.array(self.child.shape).prod()).reshape(
-        #     self.shape
-        # )
-
-        # TODO: update InitialGammaTensor to handle DataSubjectList
         # TODO: check if values needs to be a JAX array or if numpy will suffice
-        self.fpt_values = self.child
+        fpt_values = self.child
         value = (
             self.child.child.child
             if isinstance(self.child.child, ShareTensor)
             else self.child.child
         )
-        return GammaTensor(
+        gamma_tensor = GammaTensor(
             value=value,
             data_subjects=self.entities,
             min_val=self.min_vals.to_numpy(),
             max_val=self.max_vals.to_numpy(),
+            fpt_values=fpt_values,
         )
+        return gamma_tensor
 
     def publish(
         self,
@@ -711,7 +703,12 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             ledger=ledger,
             sigma=sigma,
         )
-        fpt_values = self.fpt_values
+        fpt_values = gamma.fpt_values
+
+        if fpt_values is None:
+            raise ValueError(
+                "FixedPrecisionTensor values should not be None after publish"
+            )
 
         if isinstance(fpt_values.child, ShareTensor):
             fpt_values.child.child = res
