@@ -332,6 +332,25 @@ def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
     return table, processes_completed
 
 
+def check_jupyter_server(
+    host_ip: str, wait_time: int = 5, silent: bool = False
+) -> bool:
+    if not silent:
+        print(f"Checking Jupyter Server at VM {host_ip} is up")
+
+    try:
+        url = f"http://{host_ip}:8888/"
+        response = requests.get(url, timeout=wait_time)
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except Exception as e:
+        if not silent:
+            print(f"Failed to check jupyter server status {host_ip}. {e}")
+        return False
+
+
 GIT_REPO = get_git_repo()
 GRID_SRC_VERSION = get_version_module()
 GRID_SRC_PATH = grid_src_path()
