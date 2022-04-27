@@ -30,7 +30,6 @@ from ..config import DEFAULT_RING_SIZE
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
-from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..util import implements  # type: ignore
 from .share_tensor import ShareTensor
 
@@ -444,10 +443,8 @@ class MPCTensor(PassthroughTensor):
         def get_lowest_child(value: Any) -> AcceptableSimpleType:
             if isinstance(value, PassthroughTensor):
                 return get_lowest_child(value.child)
-            elif is_acceptable_simple_type(value):
-                return value
             else:
-                raise ValueError(f"Invalid type {type(value)} during MPC reconstruct")
+                return value
 
         return get_lowest_child(result)
 
