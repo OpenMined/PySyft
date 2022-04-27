@@ -1,5 +1,6 @@
 # stdlib
 import os
+import json
 from pathlib import Path
 from time import time
 from typing import Dict
@@ -131,3 +132,9 @@ benchmark_report["publish"] = tf
 
 print(benchmark_report)
 
+benchmark_report_json = json.dumps(benchmark_report, indent = 4) 
+
+print(benchmark_report_json)
+
+with open("macro_benchmark.json", "w") as outfile:
+    outfile.write(benchmark_report_json)
