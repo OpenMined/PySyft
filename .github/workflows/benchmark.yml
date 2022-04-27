@@ -44,7 +44,7 @@ jobs:
 
       - name: Install mongo tools
         run: |
-          sudo apt-get update && sudo apt-get install -y mongodb-tools
+          sudo apt-get update && sudo apt install mongo-tools -y
 
       - name: Run Benchmark
         run: |
