@@ -189,28 +189,6 @@ class GetObjectAction(ImmediateActionWithReply):
 
             msg = GetObjectResponseMessage(obj=obj, address=self.reply_to, msg_id=None)
 
-<<<<<<< HEAD
-            if self.delete_obj:
-                try:
-                    # TODO: send EventualActionWithoutReply to delete the object at the node's
-                    # convenience instead of definitely having to delete it now
-                    debug(
-                        f"Calling delete on Object with ID {self.id_at_location} in store."
-                    )
-                    if not node.store.is_dataset(
-                        key=self.id_at_location
-                    ):  # type: ignore
-                        node.store.delete(key=self.id_at_location)
-                except Exception as e:
-                    log = (
-                        f"> GetObjectAction delete exception {self.id_at_location} {e}"
-                    )
-                    critical(log)
-            else:
-                debug(f"Copying Object with ID {self.id_at_location} in store.")
-
-=======
->>>>>>> 5d4abfbc53c8d3a48f85606d43f7fd9b05a16b3d
             debug(
                 f"Returning Object with ID: {self.id_at_location} {type(storable_object.data)}"
             )
