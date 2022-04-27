@@ -64,6 +64,16 @@ class RDPParams:
     Ls: jnp.array
     coeffs: jnp.array
 
+    def __repr__(self) -> str:
+        res = "RDPParams:"
+        res = f"{res}\n sigmas:{self.sigmas}"
+        res = f"{res}\n l2_norms:{self.l2_norms}"
+        res = f"{res}\n l2_norm_bounds:{self.l2_norm_bounds}"
+        res = f"{res}\n Ls:{self.Ls}"
+        res = f"{res}\n coeffs:{self.coeffs}"
+
+        return res
+
 
 @partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
 def first_try_branch(
