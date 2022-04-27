@@ -703,12 +703,8 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         gamma = self.gamma
         # gamma.func = lambda x: x
-        print("Gamma Function", gamma.func)
-        print("Gamma State", gamma.state)
-        print(" Run ", gamma.run(gamma.state))
         gamma.state[gamma.id] = gamma
-        print("Gamma State", gamma.state)
-        print(" Run ", gamma.run(gamma.state))
+
         res = gamma.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
@@ -716,8 +712,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             sigma=sigma,
         )
         fpt_values = self.fpt_values
-        print("After Publish Res", res)
-        print("After publish fpt_values", fpt_values)
+
         if isinstance(fpt_values.child, ShareTensor):
             fpt_values.child.child = res
         else:

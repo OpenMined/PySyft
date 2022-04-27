@@ -93,7 +93,6 @@ def vectorized_publish(
     # TODO: Vectorize this to return a larger GammaTensor instead of a list of Tensors
     input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
 
-    print("Input tensors", input_tensors)
     filtered_inputs = []
 
     # This will reveal the # of input tensors to the user- remove this before merging to dev

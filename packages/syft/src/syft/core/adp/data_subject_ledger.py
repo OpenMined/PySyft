@@ -329,7 +329,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         mask = np.array(mask, copy=False)
         highest_possible_spend = float(highest_possible_spend)
         user_budget = float(user_budget)
-
+        print("Epsilon spend ", epsilon_spend)
+        print("Highest possible spend ", highest_possible_spend)
         if highest_possible_spend > 0:
             # go spend it in the db
             attempts = 0
