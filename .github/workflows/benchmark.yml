@@ -64,6 +64,6 @@ jobs:
 
       - name: Import Benchmark Results
         run: |
-          mongoimport --uri ${{ secrets.MONGO_URI }} --collection macro_becnhmark --file macro_benchmark.json
-          mongoimport --uri ${{ secrets.MONGO_URI }} --collection macro_becnhmark --file micro_benchmark.json
+          mongoimport --uri ${{ secrets.MONGO_URI }} --collection macro_benchmark --file macro_benchmark.json
+          mongoimport --uri ${{ secrets.MONGO_URI }} --collection micro_benchmark --file micro_benchmark.json
 
