@@ -19,7 +19,7 @@ def generate_sec_random_password(length):
     return "".join(alphabet[c % len(alphabet)] for c in urandom(length))
 
 if __name__ == "__main__":
-    pwd_length = 15  # creates a 16 characters random password
+    pwd_length = 20  # creates a 16 characters random password
     #generate_sec_random_password(pwd_length)
     print(generate_sec_random_password(pwd_length))
 
