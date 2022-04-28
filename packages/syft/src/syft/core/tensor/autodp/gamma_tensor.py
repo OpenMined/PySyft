@@ -182,6 +182,17 @@ class GammaTensor:
             state=state,
         )
 
+    def __neg__(self) -> GammaTensor:
+        return GammaTensor(
+            value=self.value * -1,
+            data_subjects=self.data_subjects,
+            min_val=self.max_val * -1,
+            max_val=self.min_val * -1,
+            state=self.state,
+            func=self.func,
+
+        )
+
     def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sum(self.run(state))
