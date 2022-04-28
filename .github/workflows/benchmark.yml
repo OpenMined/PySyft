@@ -19,7 +19,7 @@ jobs:
     strategy:
       matrix:
         python-version: ["3.9"]
-    runs-on: [benchmark-linux]
+    runs-on: [self-hosted, linux]
     steps:
       - name: Install build essentials
         run: |
