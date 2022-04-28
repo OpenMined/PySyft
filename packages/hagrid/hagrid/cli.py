@@ -308,13 +308,13 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
             print("Running: \n", hide_password(cmd=cmd))
             continue
 
-        if is_windows():
-            cmd = ["powershell.exe", "-Command", f"{cmd}"]
+        # use powershell if environment is Windows
+        cmd_to_exec = ["powershell.exe", "-Command", cmd] if is_windows() else cmd
 
         try:
             if len(cmds) > 1:
                 process = subprocess.Popen(
-                    cmd,
+                    cmd_to_exec,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
                     cwd=GRID_SRC_PATH,
@@ -327,7 +327,7 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
             else:
                 display_jupyter_token(cmd)
                 subprocess.run(
-                    cmd,
+                    cmd_to_exec,
                     shell=True,
                     cwd=GRID_SRC_PATH,
                 )
