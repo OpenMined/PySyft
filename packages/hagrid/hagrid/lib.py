@@ -316,7 +316,7 @@ def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
         else:
             process_log += process.stdout.readlines(lines_to_display)
 
-        process_log_str = "\n".join(process_log)
+        process_log_str = "\n".join(log.decode("utf-8") for log in process_log)
         process_log_str = process_log_str if process_log else "-"
 
         table.add_row(

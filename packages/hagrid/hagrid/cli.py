@@ -2281,7 +2281,11 @@ def generate_sec_random_password(
 
 
 def ssh_into_remote_machine(
-    host_ip: str, private_key_path: str, username: str, cmd: str = ""
+    host_ip: str,
+    username: str,
+    auth_type: str,
+    private_key_path: Optional[str],
+    cmd: str = "",
 ) -> None:
     """Access or execute command on the remote machine.
 
@@ -2292,9 +2296,12 @@ def ssh_into_remote_machine(
         cmd (str, optional): Command to execute on the remote machine. Defaults to "".
     """
     try:
-        subprocess.call(
-            ["ssh", "-i", f"{private_key_path}", f"{username}@{host_ip}", cmd]
-        )
+        if auth_type == "key":
+            subprocess.call(
+                ["ssh", "-i", f"{private_key_path}", f"{username}@{host_ip}", cmd]
+            )
+        elif auth_type == "password":
+            subprocess.call(["ssh", f"{username}@{host_ip}", cmd])
     except Exception as e:
         raise e
 
@@ -2310,18 +2317,10 @@ def ssh_into_remote_machine(
 )
 def ssh(ip_address: str, cmd: str) -> None:
     kwargs: dict = {}
+    key_path: Optional[str] = None
+
     if check_ip_for_ssh(ip_address, timeout=10, silent=False):
-        azure_key_path = ask(
-            question=Question(
-                var_name="azure_key_path",
-                question="What is the path to the private key of the VM?",
-                default=arg_cache.azure_key_path,
-                kind="string",
-                cache=True,
-            ),
-            kwargs=kwargs,
-        )
-        azure_username = ask(
+        username = ask(
             question=Question(
                 var_name="azure_username",
                 question="What is the username for the VM?",
@@ -2331,12 +2330,36 @@ def ssh(ip_address: str, cmd: str) -> None:
             ),
             kwargs=kwargs,
         )
+        auth_type = ask(
+            question=Question(
+                var_name="auth_type",
+                question="Do you want to login with a key or password",
+                default=arg_cache.auth_type,
+                kind="option",
+                options=["key", "password"],
+                cache=True,
+            ),
+            kwargs=kwargs,
+        )
+
+        if auth_type == "key":
+            key_path = ask(
+                question=Question(
+                    var_name="azure_key_path",
+                    question="Absolute path to the private key of the VM?",
+                    default=arg_cache.azure_key_path,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
 
         # SSH into the remote and execute the command
         ssh_into_remote_machine(
             host_ip=ip_address,
-            private_key_path=azure_key_path,
-            username=azure_username,
+            username=username,
+            auth_type=auth_type,
+            private_key_path=key_path,
             cmd=cmd,
         )
 
