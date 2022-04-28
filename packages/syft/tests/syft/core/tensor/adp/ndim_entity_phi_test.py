@@ -79,6 +79,25 @@ def reference_scalar_manager() -> VirtualMachinePrivateScalarManager:
     return reference_scalar_manager
 
 
+def test_pos(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: Entity,
+) -> None:
+
+    reference_tensor = NDEPT(
+        child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
+    )
+    output = +reference_tensor
+
+    assert isinstance(output, NDEPT)
+    assert (output.child == reference_tensor.child).all()
+    assert (output.min_vals == reference_tensor.min_vals).all()
+    assert (output.max_vals == reference_tensor.max_vals).all()
+    assert output.entities == reference_tensor.entities
+
+
 def test_eq(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
