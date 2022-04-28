@@ -3,9 +3,9 @@ using Array = import "array.capnp".Array;
 
 struct NDEPT {
   magicHeader @0 :Data;
-  child @1 :Array;
-  minVals @2 :Array;
-  maxVals @3 :Array;
+  child @1 :List(Data);
+  minVals @2 :Data;
+  maxVals @3 :Data;
   dataSubjectsIndexed @4 :Array;
   oneHotLookup @5 :Array;
 }

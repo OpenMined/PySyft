@@ -75,8 +75,7 @@ def test_gamma_serde(
 
     # Checks to ensure gamma tensor was properly created
     assert isinstance(gamma_tensor1, GammaTensor)
-    assert gamma_tensor1.value == reference_data.sum()
-    assert (gamma_tensor1.inputs == reference_data).all()
+    assert gamma_tensor1.value == tensor1.child.child.sum()
 
     ser = sy.serialize(gamma_tensor1, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
@@ -88,10 +87,7 @@ def test_gamma_serde(
     assert de.is_linear == gamma_tensor1.is_linear
     assert de.func == gamma_tensor1.func
     assert de.id == gamma_tensor1.id
-    assert (np.asarray(de.inputs) == np.asarray(gamma_tensor1.inputs)).all()
     assert de.state.keys() == gamma_tensor1.state.keys()
-    for key in de.state.keys():
-        assert (de.state[key].inputs == gamma_tensor1.state[key].inputs).all()
 
 
 def test_gamma_publish(
@@ -109,8 +105,8 @@ def test_gamma_publish(
     assert tensor1.entities.data_subjects_indexed.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.sum()
     assert isinstance(gamma_tensor1, GammaTensor)
-    assert reference_data.sum() == gamma_tensor1.value
-    assert (reference_data == gamma_tensor1.inputs).all()
+    # Gamma Tensor Does not have FPT Values
+    assert tensor1.child.child.sum() == gamma_tensor1.value
 
     ledger_store = DictLedgerStore()
     print(ledger_store.kv_store)

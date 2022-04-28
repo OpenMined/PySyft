@@ -164,6 +164,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.lib.python._SyNone",
         ),
         ("syft.core.tensor.tensor.Tensor.mpc_swap", "syft.core.tensor.tensor.Tensor"),
+        (
+            "syft.core.tensor.tensor.Tensor.concatenate",
+            "syft.core.tensor.tensor.Tensor",
+        ),
         # # SMPC
         # (
         #     "syft.core.tensor.tensor.Tensor.fix_precision",
@@ -171,7 +175,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         # ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs",
-            "syft.core.tensor.smpc.share_tensor.ShareTensor",
+            "syft.core.tensor.tensor.Tensor",
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor",

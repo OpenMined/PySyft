@@ -24,7 +24,7 @@ from syft.proto.core.tensor import (
 )
 
 DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
-    b"\n1proto/core/node/common/action/beaver_action.proto\x12\x1csyft.core.node.common.action\x1a$proto/core/tensor/share_tensor.proto\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\"\xe0\x01\n\x0c\x42\x65\x61verAction\x12*\n\x03\x65ps\x18\x01 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensor\x12%\n\x06\x65ps_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12,\n\x05\x64\x65lta\x18\x03 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensor\x12'\n\x08\x64\x65lta_id\x18\x04 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x05 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3"
+    b'\n1proto/core/node/common/action/beaver_action.proto\x12\x1csyft.core.node.common.action\x1a$proto/core/tensor/share_tensor.proto\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x8f\x01\n\x0c\x42\x65\x61verAction\x12-\n\x06values\x18\x01 \x03(\x0b\x32\x1d.syft.core.tensor.ShareTensor\x12(\n\tlocations\x18\x02 \x03(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
 )
 
 
@@ -44,5 +44,5 @@ if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
     _BEAVERACTION._serialized_start = 190
-    _BEAVERACTION._serialized_end = 414
+    _BEAVERACTION._serialized_end = 333
 # @@protoc_insertion_point(module_scope)

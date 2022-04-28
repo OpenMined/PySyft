@@ -7,9 +7,7 @@ import "proto/core/common/common_object.proto";
 import "proto/core/io/address.proto";
 
 message BeaverAction {
-    syft.core.tensor.ShareTensor eps = 1;
-    syft.core.common.UID eps_id = 2;
-    syft.core.tensor.ShareTensor delta = 3;
-    syft.core.common.UID delta_id  = 4;
-    syft.core.io.Address address = 5;
+    repeated syft.core.tensor.ShareTensor values = 1;
+    repeated syft.core.common.UID locations = 2;
+    syft.core.io.Address address = 3;
 }
