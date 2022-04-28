@@ -15,6 +15,7 @@ import numpy as np
 from ..common.serde.serializable import serializable
 from .passthrough import is_acceptable_simple_type  # type: ignore
 from .smpc.utils import get_shape
+from .broadcastable import is_broadcastable
 
 
 @serializable(recursive_serde=True)
@@ -60,8 +61,8 @@ class lazyrepeatarray:
         if is_acceptable_simple_type(other):
             return self.__class__(data=self.data + other, shape=self.shape)
 
-        if self.shape != other.shape:
-            raise Exception("cannot add tensors with different shapes")
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}")
 
         if self.data.shape == other.data.shape:
             return self.__class__(data=self.data + other.data, shape=self.shape)
