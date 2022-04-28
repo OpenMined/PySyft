@@ -1245,6 +1245,14 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         else:
             raise NotImplementedError
 
+    def exp(self) -> NDimEntityPhiTensor:
+        return NDimEntityPhiTensor(
+            child=np.e ** self.child,
+            min_vals=self.min_vals.exp(),
+            max_vals=self.max_vals.exp(),
+            entities=self.entities
+        )
+
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="ndept.capnp")
 

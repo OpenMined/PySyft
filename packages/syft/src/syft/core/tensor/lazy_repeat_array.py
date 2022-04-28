@@ -171,6 +171,9 @@ class lazyrepeatarray:
         else:
             raise NotImplementedError
 
+    def exp(self):
+        return lazyrepeatarray(data=np.exp(self.data), shape=self.shape)
+
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
         return self.__class__(data=self.data.copy(order=order), shape=self.shape)
 
