@@ -124,6 +124,11 @@ class DataSubjectList:
         return len(self.data_subjects_indexed)
 
     def __eq__(self, other: Any) -> bool:
+        # TODO: This is technically correct but isn't the most useful as is;
+        # Maybe could return:
+        # 0 if not equal,
+        # 1 if equal and is NDEPT (1 unique entity in total),
+        # 2 if is equal and is GammaTensor?
         if isinstance(other, DataSubjectList):
             if (self.data_subjects_indexed == other.data_subjects_indexed).all() and (  # type: ignore
                 self.one_hot_lookup == other.one_hot_lookup

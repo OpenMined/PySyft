@@ -1210,22 +1210,38 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def dot(
         self, other: Union[AcceptableSimpleType, NDimEntityPhiTensor, GammaTensor]
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:  # type: ignore
         if is_acceptable_simple_type(other):
             # Return NDEPT
-            pass
+            if isinstance(other, np.ndarray):
+                return NDimEntityPhiTensor(
+                    child=self.child.dot(other),
+                    min_vals=self.child.dot(other),
+                    max_vals=self.child.dot(other),
+                    entities=self.entities
+                )
+            else:
+                # TODO: Should we should cast it to an array of the same size for them?
+                raise Exception(f"We can't take a dot product with object of type: {type(other)}. "
+                                f"Please try casting this to an array instead")
         elif isinstance(other, NDimEntityPhiTensor):
+            # TODO: Improve equality for DataSubjectLists
             if len(self.entities.one_hot_lookup) > 1 or len(other.entities.one_hot_lookup) > 1:
                 # Return GammaTensor
-                pass
+                raise NotImplementedError
             elif self.entities.one_hot_lookup == other.entities.one_hot_lookup:
-                # Return NDEPT
-                pass
+                return NDimEntityPhiTensor(
+                    child=self.child.dot(other.child),
+                    min_vals=self.min_vals.dot(other.min_vals),
+                    max_vals=self.max_vals.dot(other.max_vals),
+                    entities=self.entities
+                )
             else:
                 raise NotImplementedError
         elif isinstance(other, GammaTensor):
             # Perhaps could do check for invalid arguments before conversion to GammaTensor?
-            return self.gamma.dot(other)
+            # return self.gamma.dot(other)
+            raise NotImplementedError
         else:
             raise NotImplementedError
 

@@ -7,6 +7,7 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import numpy as np
@@ -137,6 +138,39 @@ class lazyrepeatarray:
             return self * self
         raise Exception("not sure how to do this yet")
 
+    def dot(self, other) -> Union[lazyrepeatarray, np.ndarray]:
+        # Note: np.dot does different things depending upon shape
+        if isinstance(other, lazyrepeatarray):
+            if len(self.shape) == len(other.shape):
+                if len(self.shape) == 1:
+                    # inner product
+                    return (self * other).sum()
+                elif len(self.shape) == 2:
+                    # matrix multiplication
+                    return self.__matmul__(other)
+                else:
+                    if self.shape[-1] == other.shape[-2]:
+                        # dot(a,b)[i,j,k,m] = sum(self[i,j, :] * b[k, :, m])
+                        raise NotImplementedError
+                    else:
+                        raise ValueError(f": shapes {self.shape} and {other.shape} not aligned: "
+                                         f"{self.shape[-1]} (dim -1) != {other.shape[-2]} (dim -2)")
+            else:
+                if other.size == 1:  # 0-D array (scalar)
+                    return self * other.data
+                elif len(other.shape) == 1:  # 1-D array
+                    # "sum product over the last axis of a and b"
+                    raise NotImplementedError
+                else:
+                    raise NotImplementedError
+
+        elif isinstance(other, (int, float, bool, np.integer, np.floating)):
+            return self * other
+        elif isinstance(other, np.ndarray):
+            pass
+        else:
+            raise NotImplementedError
+
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
         return self.__class__(data=self.data.copy(order=order), shape=self.shape)
 
@@ -147,6 +181,8 @@ class lazyrepeatarray:
     def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> np.ndarray:
         if "axis" in kwargs and kwargs["axis"] is None:
             # TODO: make fast
+            if self.data.size == 1:
+                return self.data * np.prod(self.shape)
             return self.to_numpy().sum()
         else:
             raise Exception("not sure how to do this yet")
