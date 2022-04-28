@@ -43,9 +43,11 @@ class BeaverAction(ImmediateActionWithoutReply):
             )
 
     def __repr__(self) -> str:
-        res = f"Values: {self.values}, "
-        res = f"{res}Locations: {self.locations}, "
-        return f"Beaver Action: {res}"
+        return (
+            "Beaver Action: "
+            + f"Values: {self.values}, "
+            + f"Locations: {self.locations}"
+        )
 
     @staticmethod
     def beaver_populate(

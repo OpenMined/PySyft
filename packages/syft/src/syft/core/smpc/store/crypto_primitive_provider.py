@@ -69,8 +69,6 @@ class CryptoPrimitiveProvider:
                 ring_size=ring_size,
             )
 
-        # Since we do not have (YET!) the possiblity to return typed tuples from a remote
-        # execute function we are using this.
         return primitives
 
     @staticmethod

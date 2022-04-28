@@ -11,4 +11,4 @@ if TYPE_CHECKING:
 
 SMPC_CONTEXT: dict = {}
 FPT_CONTEXT: dict = {}
-tensor_values: Optional["Tensor"] = None
+tensor_values: Optional[Tensor] = None
