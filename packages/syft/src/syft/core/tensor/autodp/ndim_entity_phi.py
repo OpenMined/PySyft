@@ -400,6 +400,14 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             entities=self.entities,
         )
 
+    def __pos__(self) -> NDimEntityPhiTensor:
+        return NDimEntityPhiTensor(
+            child=self.child,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            entities=self.entities
+        )
+
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="ndept.capnp")
 
