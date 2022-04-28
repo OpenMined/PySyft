@@ -25,7 +25,7 @@
   when: hagrid_dir_exists.stat.exists == False and vagrant is not defined and install == "true"
 
 - name: Install HAGrid
-  shell: "runuser -l {{ om_user }} -c 'pip install -e {{ build_dir }}/packages/hagrid'"
+  shell: "sleep 10 && runuser -l {{ om_user }} -c 'pip install -e {{ build_dir }}/packages/hagrid'"
   become: yes
   when: vagrant is not defined and install == "true"
 
