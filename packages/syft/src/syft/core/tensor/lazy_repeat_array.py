@@ -108,6 +108,16 @@ class lazyrepeatarray:
 
         raise Exception("not sure how to do this yet")
 
+    def __truediv__(self, other: Any) -> lazyrepeatarray:
+        if is_acceptable_simple_type(other):
+            if 0 in other:
+                raise ZeroDivisionError
+            return self.__class__(data=self.data / other, shape=self.shape)
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(f"Cannot divide with shapes: {self.shape} and {other.shape}")
+        else:
+            return self.__class__(data=self.data / other.data, shape=self.shape)
+
     def __matmul__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
