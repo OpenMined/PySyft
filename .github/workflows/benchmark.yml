@@ -57,6 +57,9 @@ jobs:
 
       - name: Run Benchmark
         run: |
+          docker rm `docker ps -aq` --force || true
+          docker system prune --volumes --force || true
+          rm -rf .tox
           tox -e syft.benchmark
 
       - name: Import Benchmark Results
