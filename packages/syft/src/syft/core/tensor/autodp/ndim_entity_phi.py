@@ -1253,6 +1253,32 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             entities=self.entities
         )
 
+    def __truediv__(self, other: Union[AcceptableSimpleType, NDimEntityPhiTensor, GammaTensor]) -> Union[NDimEntityPhiTensor, GammaTensor]:
+        if isinstance(other, np.ndarray):
+            if 0 in other:
+                raise ZeroDivisionError
+            return NDimEntityPhiTensor(
+                child=self.child / other,
+                min_vals=self.child / other,
+                max_vals=self.child / other,
+                entities=self.entities
+            )
+        elif isinstance(other, NDimEntityPhiTensor):
+            if self.entities == other.entities:
+                if len(self.entities.one_hot_lookup) == 1:
+                    return NDimEntityPhiTensor(
+                        child=self.child / other.child,
+                        min_vals=self.min_vals / other.min_vals,
+                        max_vals=self.max_vals / other.max_vals,
+                        entities=self.entities
+                    )
+                else:
+                    return self.gamma / other.gamma
+        elif isinstance(other, GammaTensor):
+            return self.gamma / other
+        else:
+            raise NotImplementedError
+
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="ndept.capnp")
 
