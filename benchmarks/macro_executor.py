@@ -1,7 +1,9 @@
 # stdlib
+from datetime import date
 import json
 import os
 from pathlib import Path
+import subprocess
 from time import time
 from typing import Dict
 from typing import List
@@ -19,6 +21,24 @@ from syft.core.node.common.node_service.user_manager.user_messages import (
 )
 from syft.util import download_file
 from syft.util import get_root_data_path
+
+benchmark_report: dict = {}
+
+today = date.today()
+date = today.strftime("%B %d, %Y")
+
+benchmark_report["date"] = date
+
+
+def get_git_revision_short_hash() -> str:
+    return (
+        subprocess.check_output(["git", "rev-parse", "--short", "HEAD"])
+        .decode("ascii")
+        .strip()
+    )
+
+
+benchmark_report["git_revision_hash"] = get_git_revision_short_hash()
 
 
 def download_spicy_bird_benchmark(
@@ -50,7 +70,6 @@ files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
 
 data_file = files[key_size]
 
-benchmark_report: dict = {}
 benchmark_report["data_row_size"] = key_size
 t0 = time()
 df = pq.read_table(data_file)
@@ -77,11 +96,8 @@ tf = round(time() - t0, 4)
 print(f"Time taken to make Private Syft Tensor: {round(tf,2)} seconds")
 benchmark_report["make_private_syft_tensor"] = tf
 
-print(benchmark_report)
-
 # login to domain
 domain_node = sy.login(email="info@openmined.org", password="changethis", port=9082)
-
 
 # Upgrade admins budget
 content = {"user_id": 1, "budget": 9_999_999}

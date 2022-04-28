@@ -1,9 +1,11 @@
 {
+    "date": "April 28, 2022",
+    "git_revision_hash": "468bfc085",
     "data_row_size": "1M",
-    "read_parquet": 0.1376,
-    "data_subject_list_creation": 0.1763,
-    "make_private_syft_tensor": 0.0026,
-    "load_dataset": 0.288,
-    "get_sum": 0.902,
-    "publish": 0.23
+    "read_parquet": 0.1353,
+    "data_subject_list_creation": 0.1824,
+    "make_private_syft_tensor": 0.0025,
+    "load_dataset": 0.291,
+    "get_sum": 0.882,
+    "publish": 0.226
 }

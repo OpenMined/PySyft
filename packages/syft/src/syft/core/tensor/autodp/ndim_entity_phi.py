@@ -405,7 +405,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             child=self.child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            entities=self.entities
+            entities=self.entities,
         )
 
     def _object2bytes(self) -> bytes:
