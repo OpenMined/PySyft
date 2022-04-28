@@ -309,7 +309,7 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
             continue
 
         if is_windows():
-            cmd = ["powershell.exe", "-Command", cmd]
+            cmd = ["powershell.exe", "-Command", f"{cmd}"]
 
         try:
             if len(cmds) > 1:
