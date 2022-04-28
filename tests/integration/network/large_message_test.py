@@ -14,6 +14,7 @@ import syft as sy
 from syft.core.adp.data_subject_list import DataSubjectList
 from syft.core.adp.entity import Entity
 from syft.core.store.proxy_dataset import ProxyDataset
+from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 from syft.util import size_mb
 
 DOMAIN1_PORT = 9082
@@ -24,9 +25,8 @@ def size(obj: Any) -> int:
 
 
 def highest() -> int:
-    ii32 = np.iinfo(np.int32)
-    # 2147483647
-    return ii32.max
+    ii64 = np.iinfo(DEFAULT_INT_NUMPY_TYPE)
+    return ii64.max
 
 
 def make_bounds(data, bound: int) -> np.ndarray:
@@ -126,7 +126,10 @@ def test_large_blob_upload() -> None:
         upper = highest()
         lower = -highest()
         reference_data = np.random.randint(
-            lower, upper, size=(multiplier * ndim, rows, cols), dtype=np.int32
+            lower,
+            upper,
+            size=(multiplier * ndim, rows, cols),
+            dtype=DEFAULT_INT_NUMPY_TYPE,
         )
 
         ndept = True

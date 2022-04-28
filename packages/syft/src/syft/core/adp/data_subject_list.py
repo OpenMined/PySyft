@@ -62,11 +62,10 @@ class DataSubjectList:
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
-    # Temporarily remove as we are not using strings.
-    # # one_hot_lookup is a numpy array of unicode strings which can't be serialized
-    # __serde_overrides__ = {
-    #     "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
-    # }
+    # one_hot_lookup is a numpy array of unicode strings which can't be serialized
+    __serde_overrides__ = {
+        "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
+    }
 
     def __init__(
         self,
