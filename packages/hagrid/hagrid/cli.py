@@ -326,10 +326,8 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
                 process_list.append((ip_address, process, jupyter_token))
             else:
                 display_jupyter_token(cmd)
-                subprocess.check_call(
+                subprocess.run(
                     cmd,
-                    stdout=sys.stdout,
-                    stderr=subprocess.STDOUT,
                     shell=True,
                     cwd=GRID_SRC_PATH,
                 )
