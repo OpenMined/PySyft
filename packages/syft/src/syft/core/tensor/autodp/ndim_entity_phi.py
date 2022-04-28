@@ -1208,6 +1208,27 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             entities=self.entities,
         )
 
+    def dot(
+        self, other: Union[AcceptableSimpleType, NDimEntityPhiTensor, GammaTensor]
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+        if is_acceptable_simple_type(other):
+            # Return NDEPT
+            pass
+        elif isinstance(other, NDimEntityPhiTensor):
+            if len(self.entities.one_hot_lookup) > 1 or len(other.entities.one_hot_lookup) > 1:
+                # Return GammaTensor
+                pass
+            elif self.entities.one_hot_lookup == other.entities.one_hot_lookup:
+                # Return NDEPT
+                pass
+            else:
+                raise NotImplementedError
+        elif isinstance(other, GammaTensor):
+            # Perhaps could do check for invalid arguments before conversion to GammaTensor?
+            return self.gamma.dot(other)
+        else:
+            raise NotImplementedError
+
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="ndept.capnp")
 
