@@ -187,7 +187,7 @@ class RunFunctionOrConstructorAction(ImmediateActionWithoutReply):
         kwargs_names = ",".join(
             [f"{k}={v.__class__.__name__}" for k, v in self.kwargs.items()]
         )
-        return f"RunClassMethodAction {method_name}({arg_names}, {kwargs_names})"
+        return f"FunctionOrConstructorAction {method_name}({arg_names}, {kwargs_names})"
 
     def _object2proto(self) -> RunFunctionOrConstructorAction_PB:
         """Returns a protobuf serialization of self.

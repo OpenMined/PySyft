@@ -123,7 +123,7 @@ def disconnect_network() -> None:
 @pytest.mark.network
 def test_auto_connect_network_to_self() -> None:
     # wait for NETWORK_CHECK_INTERVAL to trigger auto reconnect
-    retry_time = 11
+    retry_time = 20
     while retry_time > 0:
         retry_time -= 1
         # check network has auto connected
@@ -136,7 +136,7 @@ def test_auto_connect_network_to_self() -> None:
     assert res["connected"] is True
 
     # disconnect network
-    retry_time = 11
+    retry_time = 20
     while retry_time > 0:
         retry_time -= 1
 
@@ -152,7 +152,7 @@ def test_auto_connect_network_to_self() -> None:
     assert res["connected"] is False
 
     # wait for NETWORK_CHECK_INTERVAL to trigger auto reconnect
-    retry_time = 11
+    retry_time = 20
     while retry_time > 0:
         retry_time -= 1
         # check network has auto connected
