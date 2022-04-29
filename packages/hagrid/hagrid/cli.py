@@ -2148,53 +2148,58 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 cli.add_command(debug)
 
 
-@click.command(help="Check health of an IP address or a resource group")
-@click.argument("ip_address", type=str)
-def check(ip_address: str) -> None:
-    if check_host(ip_address, silent=True):
-        base_host_status = "✅"
-    else:
-        base_host_status = "❌"
-
-    if check_login_page(ip_address, silent=True):
-        login_page_status = "✅"
-    else:
-        login_page_status = "❌"
-
-    if check_api_metadata(ip_address, silent=True):
-        backend_status = "✅"
-    else:
-        backend_status = "❌"
-
-    if check_ip_for_ssh(ip_address, silent=True):
-        ssh_status = "✅"
-    else:
-        ssh_status = "❌"
-
-    if check_jupyter_server(ip_address, silent=True):
-        jupyter_status = "✅"
-    else:
-        jupyter_status = "❌"
-
+@click.command(help="Check health of an IP address/addresses or a resource group")
+@click.argument("ip_addresses", type=str, nargs=-1)
+def check(ip_addresses: list[str]) -> None:
     console = rich.get_console()
-    console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
 
-    table_contents = [
-        ["🔌", "Host", f"{ip_address}", base_host_status],
-        ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
-        ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
-        ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
-        ["", "Jupyter", f"http://{ip_address}:8888/", jupyter_status],
-    ]
+    for ip_address in ip_addresses:
 
-    table = rich.table.Table()
+        console.print(
+            "[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:"
+        )
 
-    table.add_column("PyGrid", style="magenta")
-    table.add_column("Info", justify="left")
-    table.add_column("", justify="left")
-    for row in table_contents:
-        table.add_row(row[1], row[2], row[3])
-    console.print(table)
+        if check_host(ip_address, silent=True):
+            base_host_status = "✅"
+        else:
+            base_host_status = "❌"
+
+        if check_login_page(ip_address, silent=True):
+            login_page_status = "✅"
+        else:
+            login_page_status = "❌"
+
+        if check_api_metadata(ip_address, silent=True):
+            backend_status = "✅"
+        else:
+            backend_status = "❌"
+
+        if check_ip_for_ssh(ip_address, silent=True, timeout=10):
+            ssh_status = "✅"
+        else:
+            ssh_status = "❌"
+
+        if check_jupyter_server(ip_address, silent=True):
+            jupyter_status = "✅"
+        else:
+            jupyter_status = "❌"
+
+        table_contents = [
+            ["🔌", "Host", f"{ip_address}", base_host_status],
+            ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
+            ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
+            ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
+            ["", "Jupyter", f"http://{ip_address}:8888/", jupyter_status],
+        ]
+
+        table = rich.table.Table()
+
+        table.add_column("PyGrid", style="magenta")
+        table.add_column("Info", justify="left")
+        table.add_column("", justify="left")
+        for row in table_contents:
+            table.add_row(row[1], row[2], row[3])
+        console.print(table)
 
 
 cli.add_command(check)

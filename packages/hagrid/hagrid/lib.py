@@ -232,10 +232,10 @@ def check_host(ip: str, silent: bool = False) -> bool:
 
 
 # Check status of login page
-def check_login_page(ip: str, silent: bool = False) -> bool:
+def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/login"
-        response = requests.get(url)
+        response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
@@ -247,10 +247,10 @@ def check_login_page(ip: str, silent: bool = False) -> bool:
 
 
 # Check api metadata
-def check_api_metadata(ip: str, silent: bool = False) -> bool:
+def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/api/v1/syft/metadata"
-        response = requests.get(url)
+        response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
