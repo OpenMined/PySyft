@@ -18,7 +18,6 @@ message SingleEntityPhiTensor {
   syft.core.adp.Entity entity = 6;
   VirtualMachinePrivateScalarManager scalar_manager = 7;
 }
-
 message RowEntityPhiTensor {
   uint32 serde_concurrency = 1;
   repeated bytes rows = 2;
