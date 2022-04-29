@@ -8,7 +8,7 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..node.abstract.node import AbstractNodeClient
-from .autodp.ndim_entity_phi import NDimEntityPhiTensor
+from .autodp.phi_tensor import PhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .smpc.share_tensor import ShareTensor
 from .tensor import Tensor
@@ -33,9 +33,9 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
     classes = [
         ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
         (
-            "syft.core.tensor.autodp.ndim_entity_phi.NDimEntityPhiTensor",
-            "syft.core.tensor.autodp.ndim_entity_phi.NDimEntityPhiTensor",
-            NDimEntityPhiTensor,
+            "syft.core.tensor.autodp.ndim_entity_phi.PhiTensor",
+            "syft.core.tensor.autodp.ndim_entity_phi.PhiTensor",
+            PhiTensor,
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor",

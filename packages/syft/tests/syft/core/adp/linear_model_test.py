@@ -41,7 +41,7 @@ def test_autodp_phiscalar_can_publish() -> None:
     z.publish(acc=domain.acc, sigma=0.2, user_key=key.verify_key)
 
     domain.acc.print_ledger()
-    assert len(domain.acc.entities) == 3
+    assert len(domain.acc.data_subjects) == 3
 
 
 def test_autodp_phiscalar_cannot_publish() -> None:
@@ -72,7 +72,7 @@ def test_autodp_phiscalar_cannot_publish() -> None:
     z.publish(acc=domain.acc, sigma=0.2, user_key=key.verify_key)
 
     domain.acc.print_ledger()
-    assert len(domain.acc.entities) == 0
+    assert len(domain.acc.data_subjects) == 0
 
 
 # def test_autodp_phiscalar_substitute_publish(domain: sy.Domain) -> None:
@@ -100,12 +100,12 @@ def test_autodp_phiscalar_cannot_publish() -> None:
 #     # Load some sample data
 #     data_batch = np.array([13] * n)
 #
-#     entities = list()
+#     data_subjects = list()
 #     for i in range(n):
-#         entities.append(Entity(name=str(i)))
+#         data_subjects.append(DataSubject(name=str(i)))
 #
 #     # Upload a private dataset to the Domain object, as the root owner
-#     data = sy.Tensor(data_batch).private(0, 20, entities=entities).tag("data")
+#     data = sy.Tensor(data_batch).private(0, 20, data_subjects=data_subjects).tag("data")
 #
 #     # send data
 #     data_ptr = data.send(client)
@@ -120,16 +120,16 @@ def test_autodp_phiscalar_cannot_publish() -> None:
 #     assert result_float < 5  # less than 5 inaccurate
 #
 #     domain.acc.print_ledger()
-#     assert len(domain.acc.entities) == 10
+#     assert len(domain.acc.data_subjects) == 10
 
 
 @pytest.mark.xfail
 def test_autodp_train_linear_model() -> None:
-    # entities = [
-    #     Entity(name="Tudor"),
-    #     Entity(name="Madhava"),
-    #     Entity(name="Kritika"),
-    #     Entity(name="George"),
+    # data_subjects = [
+    #     DataSubject(name="Tudor"),
+    #     DataSubject(name="Madhava"),
+    #     DataSubject(name="Kritika"),
+    #     DataSubject(name="George"),
     # ]
 
     entity = Entity(name="Trask")
@@ -166,7 +166,7 @@ def test_autodp_train_linear_model() -> None:
 
         acc.print_ledger()
 
-    assert len(acc.entities) == 4
+    assert len(acc.data_subjects) == 4
     assert batch_loss > 0
     assert True is False
 

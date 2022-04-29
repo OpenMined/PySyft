@@ -24,15 +24,15 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
 )
 
 
-_ENTITY = DESCRIPTOR.message_types_by_name["Entity"]
+_ENTITY = DESCRIPTOR.message_types_by_name["DataSubject"]
 _DATASUBJECTGROUP = DESCRIPTOR.message_types_by_name["DataSubjectGroup"]
 Entity = _reflection.GeneratedProtocolMessageType(
-    "Entity",
+    "DataSubject",
     (_message.Message,),
     {
         "DESCRIPTOR": _ENTITY,
         "__module__": "proto.core.adp.entity_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.adp.Entity)
+        # @@protoc_insertion_point(class_scope:syft.core.adp.DataSubject)
     },
 )
 _sym_db.RegisterMessage(Entity)

@@ -278,7 +278,7 @@ def check_send_to_blob_storage(obj: Any, use_blob_storage: bool = False) -> bool
     """
     # relative
     from ...tensor import Tensor
-    from ...tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
+    from ...tensor.autodp.phi_tensor import PhiTensor as NDEPT
 
     if use_blob_storage and (
         isinstance(obj, (NDEPT, Tensor)) or size_mb(obj) > MIN_BLOB_UPLOAD_SIZE_MB

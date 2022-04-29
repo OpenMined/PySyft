@@ -13,7 +13,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.orm import sessionmaker
 
 # relative
-from ....adp.entity import Entity
+from ....adp.data_subject import DataSubject
 from ....adp.idp_gaussian_mechanism import iDPGaussianMechanism
 from ....common.serde import _serialize
 from ..node_table.entity import Entity as EntitySchema
@@ -30,7 +30,7 @@ class EntityManager(DatabaseManager):
         super().__init__(db=database, schema=EntityManager.schema)
 
     def register(self, name: str):  # type: ignore
-        entity = Entity(name)  # Constructor
+        entity = DataSubject(name)  # Constructor
         _obj: EntitySchema = self._schema(name=entity.name)  # type: ignore
         _obj.obj = entity
         session_local = sessionmaker(autocommit=False, autoflush=False, bind=self.db)()

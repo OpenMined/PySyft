@@ -16,7 +16,7 @@ from numpy.typing import ArrayLike
 
 # relative
 from ..adp.data_subject_list import DataSubjectList
-from ..adp.entity import Entity
+from ..adp.data_subject import DataSubject
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
@@ -30,9 +30,9 @@ def _NDimEntityPhiTensor() -> Type[PassthroughTensor]:
     global _NDimEntityPhiTensorRef
     if _NDimEntityPhiTensorRef is None:
         # relative
-        from .autodp.ndim_entity_phi import NDimEntityPhiTensor
+        from .autodp.phi_tensor import PhiTensor
 
-        _NDimEntityPhiTensorRef = NDimEntityPhiTensor
+        _NDimEntityPhiTensorRef = PhiTensor
     return _NDimEntityPhiTensorRef
 
 
@@ -98,10 +98,10 @@ def entity_creation_wizard(data: Any) -> List[Any]:
 
     welcome_msg = "Welcome to the Data Subject Annotation Wizard!!!"
 
-    description1 = """You've arrived here because you called Tensor.private() without passing in any entities!
+    description1 = """You've arrived here because you called Tensor.private() without passing in any data_subjects!
 Since the purpose of .private() is to add metadata for the support of automatic differential
 privacy budgeting, you need to describe which parts of your Tensor correspond to which
-real-world data subjects (entities) whose privacy you want to protect. This is the only
+real-world data subjects (data_subjects) whose privacy you want to protect. This is the only
 way the system knows, for example, that it costs twice as much privacy budget when twice
 as much of your data (say, 2 rows instead of 1 row) refer to the same entity."""
 
@@ -113,15 +113,15 @@ If it's a group of people who are somehow similar/linked to each other (such as 
 make each entity a different group. For more information on differential privacy, see OpenMined's
 course on the subject: https://courses.openmined.org/"""
 
-    description3 = """Since you didn't pass in entities into .private() (or you did so incorrectly), this wizard is
-going to guide you through the process of annotating your data with entities."""
+    description3 = """Since you didn't pass in data_subjects into .private() (or you did so incorrectly), this wizard is
+going to guide you through the process of annotating your data with data_subjects."""
 
-    description4 = """In this wizard, we're going to ask you for *unique identifiers* which refer to the entities
+    description4 = """In this wizard, we're going to ask you for *unique identifiers* which refer to the data_subjects
 in your data. While the unique identifiers need not be personal data (they can be random strings of letters and numbers
 if you like). It is ESSENTIAL that you use the same identifier when referring to the same entity in the
-data that you never accidentally refer to two entities by the same identifier. Additionally, if you plan
+data that you never accidentally refer to two data_subjects by the same identifier. Additionally, if you plan
 to do any kind of data JOIN with another dataset, it is ESSENTIAL that you are using the same unique
-identifiers for entities as the data you're joining with. Since these unique identifiers may be personal
+identifiers for data_subjects as the data you're joining with. Since these unique identifiers may be personal
 information, PySyft might not be able to detect if two tensors are using different identifiers for the
 same person."""
 
@@ -168,7 +168,7 @@ uniquely in your data and in the data you intend to use with your data (if any).
     print()
     print(
         w.fill(
-            """(if the tensor is about one entity, but it also contains multiple other entities within,
+            """(if the tensor is about one entity, but it also contains multiple other data_subjects within,
 such as a tensor about all the customers of one business, ask yourself, are you trying to
 protect the people or the business)"""
         )
@@ -200,7 +200,7 @@ protect the people or the business)"""
             )
         )
         print()
-        print(w.fill("\t.private(entities='" + str(single_uid) + "')"))
+        print(w.fill("\t.private(data_subjects='" + str(single_uid) + "')"))
         print()
         print("\t" + "=" * 69)
         return [single_uid]
@@ -254,7 +254,7 @@ protect the people or the business)"""
             print()
             print(
                 w.fill(
-                    ".private(entities=['"
+                    ".private(data_subjects=['"
                     + entities[0]
                     + "', '"
                     + entities[1]
@@ -266,8 +266,8 @@ protect the people or the business)"""
             print()
             print(
                 w.fill(
-                    " where you pass in entities as a list of strings, one per row. As long as you"
-                    " pass in the same number of entities as there are rows in your tensor, it will"
+                    " where you pass in data_subjects as a list of strings, one per row. As long as you"
+                    " pass in the same number of data_subjects as there are rows in your tensor, it will"
                     " automatically detect you have and assume you mean one entity per row."
                 )
             )
@@ -286,14 +286,14 @@ protect the people or the business)"""
             )
 
             print()
-            print(w.fill(".private(entities=['bob', 'alice', 'john'])"))
+            print(w.fill(".private(data_subjects=['bob', 'alice', 'john'])"))
             print()
             print(
                 " Now just to make sure I don't corrupt your tensor - I'm going to throw an exception."
             )
             print()
             raise Exception(
-                "Wizard aborted. Please run .private(entities=<your entities>)"
+                "Wizard aborted. Please run .private(data_subjects=<your data_subjects>)"
                 " again with your list of entity unique identifiers (strings),"
                 "one per row of your tensor."
             )
@@ -321,28 +321,28 @@ protect the people or the business)"""
 
             print(
                 w.fill(
-                    "It sounds like your tensor is a random assortment of entities (and perhaps empty/non-entities). "
-                    "If you have empty values, just create random entities for them for now. If you have various "
-                    "entities scattered throughout your tensor (not organized by row), then you'll need to pass "
-                    "in a np.ndarray of strings which is identically shaped to your data in entities like so:"
+                    "It sounds like your tensor is a random assortment of data_subjects (and perhaps empty/non-data_subjects). "
+                    "If you have empty values, just create random data_subjects for them for now. If you have various "
+                    "data_subjects scattered throughout your tensor (not organized by row), then you'll need to pass "
+                    "in a np.ndarray of strings which is identically shaped to your data in data_subjects like so:"
                 )
             )
 
             print()
             print("\t\ttensor = sy.Tensor(np.ones((2,2)).astype(np.int32))")
             print()
-            print("\t\tentities = np.array([['bob', 'alice'],['charlie', 'danielle']])")
+            print("\t\tdata_subjects = np.array([['bob', 'alice'],['charlie', 'danielle']])")
             print()
-            print("\t\ttensor.private(min_val=0, max_val=1, entities=entities))")
+            print("\t\ttensor.private(min_val=0, max_val=1, data_subjects=data_subjects))")
             print()
             print(
                 "Aborting wizard now so that you rcan re-run .private with the right parameters."
             )
             print()
             raise Exception(
-                "Wizard aborted. Please run .private(entities=<your entities>)"
+                "Wizard aborted. Please run .private(data_subjects=<your data_subjects>)"
                 " again with your np.ndarray of entity unique identifiers (strings),"
-                " one per value of your tensor and where your np.ndarray of entities is"
+                " one per value of your tensor and where your np.ndarray of data_subjects is"
                 " the same shape as your data."
             )
     print()
@@ -437,34 +437,34 @@ class PhiTensorAncestor(TensorChainManager):
 
             raise TypeError(msg)
 
-        # Check 2: If entities == None, then run the entity creation tutorial
+        # Check 2: If data_subjects == None, then run the entity creation tutorial
         if entities is None:
             if skip_blocking_checks:
                 raise Exception(
-                    "Error: 'entities' argument to .private() must not be None!"
+                    "Error: 'data_subjects' argument to .private() must not be None!"
                 )
             print(
-                "ALERT: You didn't pass in any entities. Launching entity wizard...\n"
+                "ALERT: You didn't pass in any data_subjects. Launching entity wizard...\n"
             )
             entities = entity_creation_wizard(self.child)
 
-        # Check 3: If entities is a string, make it a list with one entity in it
+        # Check 3: If data_subjects is a string, make it a list with one entity in it
         if isinstance(entities, str):
-            entities = [Entity(entities)]
-        elif isinstance(entities, Entity):
+            entities = [DataSubject(entities)]
+        elif isinstance(entities, DataSubject):
             entities = [entities]
-        # Check 4: If entities are a list, are the items strings or Entity objects.
-        # If they're strings lets create Entity objects.
+        # Check 4: If data_subjects are a list, are the items strings or DataSubject objects.
+        # If they're strings lets create DataSubject objects.
 
         if isinstance(entities, (list, tuple)):
             entities = np.array(entities)
 
-        # if len(entities) != 1 and entities.shape != self.shape:
+        # if len(data_subjects) != 1 and data_subjects.shape != self.shape:
         #     raise Exception(
         #         "Entities shape doesn't match data shape. If you're"
         #         " going to pass in something other than 1 entity for the"
         #         " entire tensor or one entity per row, you're going to need"
-        #         " to make the np.ndarray of entities have the same shape as"
+        #         " to make the np.ndarray of data_subjects have the same shape as"
         #         " the tensor you're calling .private() on. Try again."
         #     )
 
@@ -480,9 +480,9 @@ class PhiTensorAncestor(TensorChainManager):
 
         # SKIP check temporarily
         # for entity in one_hot_lookup:
-        #     if not isinstance(entity, (np.integer, str, Entity)):
+        #     if not isinstance(entity, (np.integer, str, DataSubject)):
         #         raise ValueError(
-        #             f"Expected Entity to be either string or Entity object, but type is {type(entity)}"
+        #             f"Expected DataSubject to be either string or DataSubject object, but type is {type(entity)}"
         #         )
 
         if not isinstance(one_hot_lookup, np.ndarray) or not isinstance(
@@ -533,7 +533,7 @@ class PhiTensorAncestor(TensorChainManager):
 
         else:
             raise Exception(
-                "If you're passing in mulitple entities, please pass in one entity per row."
+                "If you're passing in mulitple data_subjects, please pass in one entity per row."
             )
 
         return self

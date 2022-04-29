@@ -39,8 +39,8 @@ from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .autodp.gamma_tensor import GammaTensor
-from .autodp.ndim_entity_phi import NDimEntityPhiTensor
-from .autodp.ndim_entity_phi import TensorWrappedNDimEntityPhiTensorPointer
+from .autodp.phi_tensor import PhiTensor
+from .autodp.phi_tensor import TensorWrappedPhiTensorPointer
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
 from .config import DEFAULT_INT_NUMPY_TYPE
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
@@ -482,9 +482,9 @@ class Tensor(
         # relative
         # TODO:  Should create init pointer for NDimEntityPhiTensorPointer.
 
-        if isinstance(self.child, NDimEntityPhiTensor):
-            return TensorWrappedNDimEntityPhiTensorPointer(
-                entities=self.child.entities,
+        if isinstance(self.child, PhiTensor):
+            return TensorWrappedPhiTensorPointer(
+                data_subjects=self.child.entities,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
@@ -509,7 +509,7 @@ class Tensor(
     # TODO: remove after moving private compare to sharetensor level
     def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:
         context.tensor_values = self
-        if isinstance(self.child, NDimEntityPhiTensor):
+        if isinstance(self.child, PhiTensor):
             self.child.child.child.bit_decomposition(ring_size, bitwise)
         else:
             self.child.bit_decomposition(ring_size, bitwise)

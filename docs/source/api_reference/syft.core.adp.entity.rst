@@ -18,7 +18,7 @@ syft.core.adp.entity
    .. autosummary::
    
       DataSubjectGroup
-      Entity
+      DataSubject
    
    
 

@@ -17,12 +17,12 @@ def generic_update_ast(
     ast_or_client: TypeUnion[Globals, AbstractNodeClient],
 ) -> None:
     """
-    Update the abstract syntax tree data structure used by the Globals or AbstractNodeClient entities.
+    Update the abstract syntax tree data structure used by the Globals or AbstractNodeClient data_subjects.
 
     Args:
         lib_name (str): Library name to update ast.
         create_ast (Callable): AST generation function for the given library.
-        ast_or_client (Union[Globals, AbstractNodeClient]): Entity to update ast.
+        ast_or_client (Union[Globals, AbstractNodeClient]): DataSubject to update ast.
 
     Raises:
         ValueError: raises a ValueError exception if ast_or_client isn't a Globals or AbstractNodeClient instance.

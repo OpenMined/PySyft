@@ -396,9 +396,9 @@ class ShareTensor(PassthroughTensor):
                 ring_size=ring_size,
             )
         # relative
-        from ..autodp.ndim_entity_phi import NDimEntityPhiTensor
+        from ..autodp.phi_tensor import PhiTensor
 
-        if isinstance(share_wrapper.child, NDimEntityPhiTensor):
+        if isinstance(share_wrapper.child, PhiTensor):
             share_wrapper.child.child.child = share.child
         else:
             share_wrapper.child.child = share.child

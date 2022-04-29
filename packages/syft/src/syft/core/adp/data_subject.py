@@ -26,7 +26,7 @@ from ..common.serde.serialize import _serialize as serialize
 
 
 @serializable()
-class Entity:
+class DataSubject:
     __slots__ = "name"
 
     def __init__(self, name: str = "") -> None:
@@ -37,12 +37,12 @@ class Entity:
 
         if ";" in name:
             raise Exception(
-                "Entity name cannot contain a semi-colon (;), sorry. Don't ask why. Accept your fate."
+                "DataSubject name cannot contain a semi-colon (;), sorry. Don't ask why. Accept your fate."
             )
 
         if "+" in name:
             raise Exception(
-                "Entity name cannot contain a plus (+), sorry. Don't ask why. Accept your fate."
+                "DataSubject name cannot contain a plus (+), sorry. Don't ask why. Accept your fate."
             )
 
         self.name = name
@@ -55,14 +55,14 @@ class Entity:
     def __hash__(self) -> int:
         return hash(self.name)
 
-    # checks if the two entities are equal
+    # checks if the two data_subjects are equal
     def __eq__(self, other: Any) -> bool:
-        # TODO: Remove this once Entity is refactored out
+        # TODO: Remove this once DataSubject is refactored out
         if isinstance(other, str):
             return self.name == other
         return self.name == other.name
 
-    # checks if the two entities are not equal
+    # checks if the two data_subjects are not equal
     def __ne__(self, other: Any) -> bool:
         # Not strictly necessary, but to avoid having both x==y and x!=y
         # True at the same time
@@ -72,9 +72,9 @@ class Entity:
         return self.name < other.name
 
     def __add__(
-        self, other: Union[Entity, DataSubjectGroup, int, float]
-    ) -> Union[DataSubjectGroup, Entity]:
-        if isinstance(other, Entity):
+        self, other: Union[DataSubject, DataSubjectGroup, int, float]
+    ) -> Union[DataSubjectGroup, DataSubject]:
+        if isinstance(other, DataSubject):
             return DataSubjectGroup([self, other])
         elif isinstance(other, DataSubjectGroup):
             other.entity_set.add(self)
@@ -89,20 +89,20 @@ class Entity:
             )
 
     def __mul__(
-        self, other: Union[Entity, DataSubjectGroup, int, float]
-    ) -> Union[DataSubjectGroup, Entity]:
+        self, other: Union[DataSubject, DataSubjectGroup, int, float]
+    ) -> Union[DataSubjectGroup, DataSubject]:
         return self.__add__(other)
 
     def to_string(self) -> str:
         return f"{self.name}"
 
     @staticmethod
-    def from_string(blob: str) -> Entity:
-        return Entity(name=blob)
+    def from_string(blob: str) -> DataSubject:
+        return DataSubject(name=blob)
 
     # represents entity as a string
     def __repr__(self) -> str:
-        return "<Entity:" + str(self.name) + ">"
+        return "<DataSubject:" + str(self.name) + ">"
 
     # converts entity into a protobuf object
     def _object2proto(self) -> Entity_PB:
@@ -110,8 +110,8 @@ class Entity:
 
     # converts a generated protobuf object into an entity
     @staticmethod
-    def _proto2object(proto: Entity_PB) -> Entity:
-        return Entity(name=proto.name)
+    def _proto2object(proto: Entity_PB) -> DataSubject:
+        return DataSubject(name=proto.name)
 
     # returns the type of generated protobuf object
     @staticmethod
@@ -125,14 +125,14 @@ class DataSubjectGroup:
 
     def __init__(
         self,
-        list_of_entities: Optional[Union[list, set, Entity]] = None,
+        list_of_entities: Optional[Union[list, set, DataSubject]] = None,
         id: Optional[UID] = None,
     ):
         self.entity_set: set = set()
         # Ensure each entity being tracked is unique
         if isinstance(list_of_entities, (list, set)):
             self.entity_set = self.entity_set.union(list_of_entities)
-        elif isinstance(list_of_entities, Entity):
+        elif isinstance(list_of_entities, DataSubject):
             self.entity_set.add(list_of_entities)  # type: ignore
         elif list_of_entities is None:  # Don't need to do anything if is NoneType
             pass
@@ -148,7 +148,7 @@ class DataSubjectGroup:
     def __eq__(self, other: DataSubjectGroup) -> bool:  # type: ignore
         return hash(self) == hash(other)
 
-    def __contains__(self, item: Entity) -> bool:
+    def __contains__(self, item: DataSubject) -> bool:
         return item in self.entity_set
 
     def to_string(self) -> str:
@@ -161,13 +161,13 @@ class DataSubjectGroup:
         entity_list = blob.split(";")
         entity_set = set()
         for entity_blob in entity_list:
-            entity_set.add(Entity.from_string(entity_blob))
+            entity_set.add(DataSubject.from_string(entity_blob))
         return DataSubjectGroup(entity_set)  # type: ignore
 
     def __add__(
-        self, other: Union[DataSubjectGroup, Entity, int, float]
+        self, other: Union[DataSubjectGroup, DataSubject, int, float]
     ) -> DataSubjectGroup:
-        if isinstance(other, Entity):
+        if isinstance(other, DataSubject):
             return DataSubjectGroup(self.entity_set.union({other}))
         elif isinstance(other, DataSubjectGroup):
             return DataSubjectGroup(self.entity_set.union(other.entity_set))
@@ -181,7 +181,7 @@ class DataSubjectGroup:
             )
 
     def __mul__(
-        self, other: Union[DataSubjectGroup, Entity, int, float]
+        self, other: Union[DataSubjectGroup, DataSubject, int, float]
     ) -> DataSubjectGroup:
         return self.__add__(other)
 
@@ -198,7 +198,7 @@ class DataSubjectGroup:
     @staticmethod
     def _proto2object(proto: DataSubjectGroup_PB) -> DataSubjectGroup:
         return DataSubjectGroup(
-            list_of_entities=[deserialize(x) for x in proto.entities],
+            list_of_entities=[deserialize(x) for x in proto.data_subjects],
             id=UID._proto2object(proto.id),
         )
 

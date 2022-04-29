@@ -300,7 +300,7 @@ class MPCTensor(PassthroughTensor):
                 value = None
 
             # relative
-            from ..autodp.ndim_entity_phi import TensorWrappedNDimEntityPhiTensorPointer
+            from ..autodp.phi_tensor import TensorWrappedPhiTensorPointer
             remote_share = (
                 party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
                     rank=i,

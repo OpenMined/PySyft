@@ -22,7 +22,7 @@ from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.data_subject_list import DataSubjectList
 from ....core.adp.data_subject_list import liststrtonumpyutf8
 from ....core.adp.data_subject_list import numpyutf8tolist
-from ....core.adp.entity import Entity
+from ....core.adp.data_subject import DataSubject
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -61,8 +61,8 @@ from .gamma_tensor import GammaTensor
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
-    __name__ = "TensorWrappedNDimEntityPhiTensorPointer"
+class TensorWrappedPhiTensorPointer(Pointer):
+    __name__ = "TensorWrappedPhiTensorPointer"
     __module__ = "syft.core.tensor.autodp.ndim_entity_phi"
     __attr_allowlist__ = [
         # default pointer attrs
@@ -72,7 +72,7 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         "tags",
         "description",
         # ndim attrs
-        "entities",
+        "data_subjects",
         "min_vals",
         "max_vals",
         "public_dtype",
@@ -88,7 +88,7 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
 
     def __init__(
         self,
-        entities: DataSubjectList,
+        data_subjects: DataSubjectList,
         min_vals: np.typing.ArrayLike,
         max_vals: np.typing.ArrayLike,
         client: Any,
@@ -109,7 +109,7 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
 
         self.min_vals = min_vals
         self.max_vals = max_vals
-        self.entities = entities
+        self.data_subjects = data_subjects
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
@@ -148,8 +148,8 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         # We always maintain a Tensor hierarchy Tensor ---> NDEPT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
 
-        result = TensorWrappedNDimEntityPhiTensorPointer(
-            entities=self.entities,
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
             client=self.client,
@@ -193,7 +193,7 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
 
         result_public_shape = None
 
-        if isinstance(other, TensorWrappedNDimEntityPhiTensorPointer):
+        if isinstance(other, TensorWrappedPhiTensorPointer):
             other_shape = other.public_shape
             other_dtype = other.public_dtype
         elif isinstance(other, (int, float)):
@@ -207,7 +207,7 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
             other_dtype = other.dtype
         else:
             raise ValueError(
-                f"Invalid Type for TensorWrappedNDimEntityPhiTensorPointer:{type(other)}"
+                f"Invalid Type for TensorWrappedPhiTensorPointer:{type(other)}"
             )
 
         if self.public_shape is not None and other_shape is not None:
@@ -229,16 +229,16 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
 
     @staticmethod
     def _apply_op(
-        self: TensorWrappedNDimEntityPhiTensorPointer,
+        self: TensorWrappedPhiTensorPointer,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
         op_str: str,
-    ) -> Union[MPCTensor, TensorWrappedNDimEntityPhiTensorPointer]:
+    ) -> Union[MPCTensor, TensorWrappedPhiTensorPointer]:
         """Performs the operation based on op_str
 
         Args:
-            other (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]): second operand.
+            other (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]): second operand.
 
         Returns:
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
@@ -246,7 +246,7 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         op = getattr(operator, op_str)
 
         if (
-            isinstance(other, TensorWrappedNDimEntityPhiTensorPointer)
+            isinstance(other, TensorWrappedPhiTensorPointer)
             and self.client != other.client
         ):
 
@@ -268,181 +268,181 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
     def __add__(
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "add" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "add")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "add")
 
     def __sub__(
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "sub" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "sub")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "sub")
 
     def __mul__(
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "mul" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "mul")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "mul")
 
     def __matmul__(
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "matmul" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "matmul")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "matmul")
 
     def __lt__(
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "lt" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "lt")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "lt")
 
     def __gt__(
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "gt" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "gt")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "gt")
 
     def __ge__(
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "ge" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "ge")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "ge")
 
     def __le__(
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "le" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "le")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "le")
 
     def __eq__(  # type: ignore
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "eq" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "eq")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "eq")
 
     def __ne__(  # type: ignore
         self,
         other: Union[
-            TensorWrappedNDimEntityPhiTensorPointer, MPCTensor, int, float, np.ndarray
+            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
         ],
-    ) -> Union[TensorWrappedNDimEntityPhiTensorPointer, MPCTensor]:
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "ne" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedNDimEntityPhiTensorPointer._apply_op(self, other, "ne")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "ne")
 
     def concatenate(
         self,
-        other: TensorWrappedNDimEntityPhiTensorPointer,
+        other: TensorWrappedPhiTensorPointer,
         *args: List[Any],
         **kwargs: Dict[str, Any],
     ) -> MPCTensor:
         """Apply the "add" operation between "self" and "other"
 
         Args:
-            y (Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
 
 
         Returns:
-            Union[TensorWrappedNDimEntityPhiTensorPointer,MPCTensor] : Result of the operation.
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        if not isinstance(other, TensorWrappedNDimEntityPhiTensorPointer):
+        if not isinstance(other, TensorWrappedPhiTensorPointer):
             raise ValueError(
-                f"Concatenate works only for TensorWrappedNDimEntityPhiTensorPointer got type: {type(other)}"
+                f"Concatenate works only for TensorWrappedPhiTensorPointer got type: {type(other)}"
             )
 
         if self.client != other.client:
@@ -462,12 +462,12 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
             )
 
     @property
-    def T(self) -> TensorWrappedNDimEntityPhiTensorPointer:
+    def T(self) -> TensorWrappedPhiTensorPointer:
         # We always maintain a Tensor hierarchy Tensor ---> NDEPT--> Actual Data
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.T"
 
-        result = TensorWrappedNDimEntityPhiTensorPointer(
-            entities=self.entities,
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
             client=self.client,
@@ -513,8 +513,8 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
 
         return result
 
-    def to_local_object_without_private_data_child(self) -> NDimEntityPhiTensor:
-        """Convert this pointer into a partial version of the NDimEntityPhiTensor but without
+    def to_local_object_without_private_data_child(self) -> PhiTensor:
+        """Convert this pointer into a partial version of the PhiTensor but without
         any of the private data therein."""
         # relative
         from ..tensor import Tensor
@@ -522,9 +522,9 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
         public_shape = getattr(self, "public_shape", None)
         public_dtype = getattr(self, "public_dtype", None)
         return Tensor(
-            child=NDimEntityPhiTensor(
+            child=PhiTensor(
                 child=FixedPrecisionTensor(value=None),
-                entities=self.entities,
+                data_subjects=self.data_subjects,
                 min_vals=self.min_vals,  # type: ignore
                 max_vals=self.max_vals,  # type: ignore
             ),
@@ -534,20 +534,20 @@ class TensorWrappedNDimEntityPhiTensorPointer(Pointer):
 
 
 @serializable(capnp_bytes=True)
-class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
-    PointerClassOverride = TensorWrappedNDimEntityPhiTensorPointer
-    # __attr_allowlist__ = ["child", "min_vals", "max_vals", "entities"]
+class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
+    PointerClassOverride = TensorWrappedPhiTensorPointer
+    # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subjects"]
     __slots__ = (
         "child",
         "min_vals",
         "max_vals",
-        "entities",
+        "data_subjects",
     )
 
     def __init__(
         self,
         child: Sequence,
-        entities: Union[List[Entity], DataSubjectList],
+        data_subjects: Union[List[DataSubject], DataSubjectList],
         min_vals: np.ndarray,
         max_vals: np.ndarray,
     ) -> None:
@@ -565,17 +565,17 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         self.min_vals = min_vals
         self.max_vals = max_vals
 
-        if not isinstance(entities, DataSubjectList):
-            entities = DataSubjectList.from_objs(entities)
+        if not isinstance(data_subjects, DataSubjectList):
+            data_subjects = DataSubjectList.from_objs(data_subjects)
 
-        self.entities = entities
+        self.entities = data_subjects
 
     @property
     def proxy_public_kwargs(self) -> Dict[str, Any]:
         return {
             "min_vals": self.min_vals,
             "max_vals": self.max_vals,
-            "entities": self.entities,
+            "data_subjects": self.entities,
         }
 
     # def init_pointer(
@@ -585,10 +585,10 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     #     object_type: str = "",
     #     tags: Optional[List[str]] = None,
     #     description: str = "",
-    # ) -> TensorWrappedNDimEntityPhiTensorPointer:
-    #     return TensorWrappedNDimEntityPhiTensorPointer(
+    # ) -> TensorWrappedPhiTensorPointer:
+    #     return TensorWrappedPhiTensorPointer(
     #         # Arguments specifically for SEPhiTensor
-    #         entities=self.entities,
+    #         data_subjects=self.data_subjects,
     #         min_vals=self.min_vals,
     #         max_vals=self.max_vals,
     #         # Arguments required for a Pointer to work
@@ -604,14 +604,14 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         """Property to cast this tensor into a GammaTensor"""
         return self.create_gamma()
 
-    def copy(self, order: Optional[str] = "K") -> NDimEntityPhiTensor:
+    def copy(self, order: Optional[str] = "K") -> PhiTensor:
         """Return copy of the given object"""
 
-        return NDimEntityPhiTensor(
+        return PhiTensor(
             child=self.child.copy(order=order),
             min_vals=self.min_vals.copy(order=order),
             max_vals=self.max_vals.copy(order=order),
-            entities=self.entities.copy(order=order),
+            data_subjects=self.entities.copy(order=order),
         )
 
     def all(self) -> bool:
@@ -620,7 +620,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     def any(self) -> bool:
         return self.child.any()
 
-    def copy_with(self, child: np.ndarray) -> NDimEntityPhiTensor:
+    def copy_with(self, child: np.ndarray) -> PhiTensor:
         new_tensor = self.copy()
         new_tensor.child = child
         return new_tensor
@@ -683,7 +683,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     def value(self) -> np.ndarray:
         return self.child
 
-    def astype(self, np_type: np.dtype) -> NDimEntityPhiTensor:
+    def astype(self, np_type: np.dtype) -> PhiTensor:
         return self.__class__(
             child=self.child.astype(np_type),
             entities=self.entities,
@@ -705,14 +705,14 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __eq__(  # type: ignore
         self, other: Any
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
-        # TODO: what about entities and min / max values?
+    ) -> Union[PhiTensor, GammaTensor]:
+        # TODO: what about data_subjects and min / max values?
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             gamma_output = False
             if is_acceptable_simple_type(other):
                 result = self.child == other
             else:
-                # check entities match, if they dont gamma_output = True
+                # check data_subjects match, if they dont gamma_output = True
                 result = self.child == other.child
                 if isinstance(result, GammaTensor):  # TODO: Check this
                     gamma_output = True
@@ -730,28 +730,28 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __add__(
         self, other: SupportedChainType
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    ) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being added is also private
-        if isinstance(other, NDimEntityPhiTensor):
+        if isinstance(other, PhiTensor):
             if self.entities != other.entities:
                 return self.gamma + other.gamma
 
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=self.child + other.child,
                 min_vals=self.min_vals + other.min_vals,
                 max_vals=self.max_vals + other.max_vals,
-                entities=self.entities,
+                data_subjects=self.entities,
                 # scalar_manager=self.scalar_manager,
             )
 
         # if the tensor being added is a public tensor / int / float / etc.
         elif is_acceptable_simple_type(other):
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=self.child + other,
                 min_vals=self.min_vals + other,
                 max_vals=self.max_vals + other,
-                entities=self.entities,
+                data_subjects=self.entities,
                 # scalar_manager=self.scalar_manager,
             )
 
@@ -763,9 +763,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __sub__(
         self, other: SupportedChainType
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    ) -> Union[PhiTensor, GammaTensor]:
 
-        if isinstance(other, NDimEntityPhiTensor):
+        if isinstance(other, PhiTensor):
             if self.entities != other.entities:
                 # return self.gamma - other.gamma
                 raise NotImplementedError
@@ -797,18 +797,18 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             entities = self.entities
         else:
             raise NotImplementedError
-        return NDimEntityPhiTensor(
+        return PhiTensor(
             child=data,
-            entities=entities,
+            data_subjects=entities,
             min_vals=min_vals,
             max_vals=max_vals,
         )
 
     def __mul__(
         self, other: SupportedChainType
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    ) -> Union[PhiTensor, GammaTensor]:
 
-        if isinstance(other, NDimEntityPhiTensor):
+        if isinstance(other, PhiTensor):
             if self.entities != other.entities:
                 print("Entities are not the same?!?!?!")
                 return self.gamma * other.gamma
@@ -829,9 +829,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
             entities = self.entities
 
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=data,
-                entities=entities,
+                data_subjects=entities,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -853,9 +853,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
             entities = self.entities
 
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=data,
-                entities=entities,
+                data_subjects=entities,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -863,9 +863,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             return NotImplementedError  # type: ignore
 
     def __matmul__(
-        self, other: Union[np.ndarray, NDimEntityPhiTensor]
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
-        if not isinstance(other, (np.ndarray, NDimEntityPhiTensor)):
+        self, other: Union[np.ndarray, PhiTensor]
+    ) -> Union[PhiTensor, GammaTensor]:
+        if not isinstance(other, (np.ndarray, PhiTensor)):
             raise Exception(
                 f"Matrix multiplication not yet implemented for type {type(other)}"
             )
@@ -880,7 +880,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                     data = self.child.__matmul__(other)
                     min_vals = self.min_vals.__matmul__(other)
                     max_vals = self.max_vals.__matmul__(other)
-                elif isinstance(other, NDimEntityPhiTensor):
+                elif isinstance(other, PhiTensor):
                     if self.entities != other.entities:
                         # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
                         raise NotImplementedError
@@ -902,14 +902,14 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 else:
                     raise NotImplementedError
 
-                return NDimEntityPhiTensor(
+                return PhiTensor(
                     child=data,
                     max_vals=max_vals,
                     min_vals=min_vals,
-                    entities=self.entities,
+                    data_subjects=self.entities,
                 )
 
-    def transpose(self, *args: Any, **kwargs: Any) -> NDimEntityPhiTensor:
+    def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
         data: Sequence
         if (
@@ -948,30 +948,30 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         else:
             max_vals = self.max_vals.transpose(*args)
 
-        return NDimEntityPhiTensor(
+        return PhiTensor(
             child=data,
-            entities=self.entities,
+            data_subjects=self.entities,
             min_vals=min_vals,
             max_vals=max_vals,
         )
 
     def concatenate(
         self,
-        other: Union[np.ndarray, NDimEntityPhiTensor],
+        other: Union[np.ndarray, PhiTensor],
         *args: List[Any],
         **kwargs: Dict[str, Any],
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    ) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being added is also private
-        if isinstance(other, NDimEntityPhiTensor):
+        if isinstance(other, PhiTensor):
             if self.entities != other.entities:
                 return self.gamma + other.gamma
 
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=self.child.concatenate(other.child, *args, **kwargs),
                 min_vals=self.min_vals.concatenate(other.min_vals, *args, **kwargs),
                 max_vals=self.max_vals.concatenate(other.max_vals, *args, **kwargs),
-                entities=self.entities,
+                data_subjects=self.entities,
             )
 
         elif is_acceptable_simple_type(other):
@@ -982,10 +982,10 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __lt__(
         self, other: SupportedChainType
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    ) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being compared is also private
-        if isinstance(other, NDimEntityPhiTensor):
+        if isinstance(other, PhiTensor):
 
             if self.entities != other.entities:
                 # return self.gamma < other.gamma
@@ -1003,9 +1003,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             max_vals = (self.max_vals * 0) + 1
             entities = self.entities
 
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=data,
-                entities=entities,
+                data_subjects=entities,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -1018,9 +1018,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             max_vals = (self.max_vals * 0) + 1
             entities = self.entities
 
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=data,
-                entities=entities,
+                data_subjects=entities,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -1030,10 +1030,10 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __gt__(
         self, other: SupportedChainType
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    ) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being compared is also private
-        if isinstance(other, NDimEntityPhiTensor):
+        if isinstance(other, PhiTensor):
 
             if self.entities != other.entities:
                 # return self.gamma < other.gamma
@@ -1051,9 +1051,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             max_vals = (self.max_vals * 0) + 1
             entities = self.entities
 
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=data,
-                entities=entities,
+                data_subjects=entities,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -1066,9 +1066,9 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             max_vals = (self.max_vals * 0) + 1
             entities = self.entities
 
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=data,
-                entities=entities,
+                data_subjects=entities,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -1077,26 +1077,26 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     # Re enable after testing
     # def dot(
-    #     self, other: Union[NDimEntityPhiTensor, GammaTensor, np.ndarray]
-    # ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    #     self, other: Union[PhiTensor, GammaTensor, np.ndarray]
+    # ) -> Union[PhiTensor, GammaTensor]:
     #     if isinstance(other, np.ndarray):
     #         print("We here or what?")
-    #         return NDimEntityPhiTensor(
+    #         return PhiTensor(
     #             child=np.dot(self.child, other),
     #             min_vals=np.dot(self.min_vals, other),
     #             max_vals=np.dot(self.max_vals, other),
-    #             entities=self.entities,
+    #             data_subjects=self.data_subjects,
     #         )
-    #     elif isinstance(other, NDimEntityPhiTensor):
+    #     elif isinstance(other, PhiTensor):
     #         if (
-    #             len(self.entities.one_hot_lookup) > 1
-    #             or len(other.entities.one_hot_lookup) > 1
+    #             len(self.data_subjects.one_hot_lookup) > 1
+    #             or len(other.data_subjects.one_hot_lookup) > 1
     #         ):
     #             return self.gamma.dot(other.gamma)
     #         elif (
-    #             len(self.entities.one_hot_lookup) == 1
-    #             and len(other.entities.one_hot_lookup) == 1
-    #             and self.entities.one_hot_lookup != other.entities.one_hot_lookup
+    #             len(self.data_subjects.one_hot_lookup) == 1
+    #             and len(other.data_subjects.one_hot_lookup) == 1
+    #             and self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
     #         ):
     #             return self.gamma.dot(other.gamma)
     #     elif isinstance(other, GammaTensor):
@@ -1106,14 +1106,14 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
         if len(self.entities.one_hot_lookup) == 1:
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=self.child.sum(),
                 min_vals=self.min_vals.sum(axis=None),
                 max_vals=self.max_vals.sum(axis=None),
-                entities=DataSubjectList.from_objs(
+                data_subjects=DataSubjectList.from_objs(
                     self.entities.one_hot_lookup[0]
                 ),  # Need to check this
             )
@@ -1128,14 +1128,14 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __ne__(  # type: ignore
         self, other: Any
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
-        # TODO: what about entities and min / max values?
+    ) -> Union[PhiTensor, GammaTensor]:
+        # TODO: what about data_subjects and min / max values?
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             gamma_output = False
             if is_acceptable_simple_type(other):
                 result = self.child != other
             else:
-                # check entities match, if they dont gamma_output = True
+                # check data_subjects match, if they dont gamma_output = True
                 #
                 result = self.child != other.child
                 if isinstance(result, InitialGammaTensor):
@@ -1150,21 +1150,21 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 + f"{len(self.child)} != {len(other.child)}"
             )
 
-    def __neg__(self) -> NDimEntityPhiTensor:
+    def __neg__(self) -> PhiTensor:
 
-        return NDimEntityPhiTensor(
+        return PhiTensor(
             child=self.child * -1,
             min_vals=self.max_vals * -1,
             max_vals=self.min_vals * -1,
-            entities=self.entities,
+            data_subjects=self.entities,
         )
 
-    def __pos__(self) -> NDimEntityPhiTensor:
-        return NDimEntityPhiTensor(
+    def __pos__(self) -> PhiTensor:
+        return PhiTensor(
             child=self.child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            entities=self.entities,
+            data_subjects=self.entities,
         )
 
     def _object2bytes(self) -> bytes:
@@ -1194,7 +1194,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         return ndept_msg.to_bytes_packed()
 
     @staticmethod
-    def _bytes2object(buf: bytes) -> NDimEntityPhiTensor:
+    def _bytes2object(buf: bytes) -> PhiTensor:
         schema = get_capnp_schema(schema_file="ndept.capnp")
         ndept_struct: CapnpModule = schema.NDEPT  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
@@ -1213,6 +1213,6 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         entity_list = DataSubjectList(one_hot_lookup, data_subjects_indexed)
 
-        return NDimEntityPhiTensor(
-            child=child, min_vals=min_vals, max_vals=max_vals, entities=entity_list
+        return PhiTensor(
+            child=child, min_vals=min_vals, max_vals=max_vals, data_subjects=entity_list
         )

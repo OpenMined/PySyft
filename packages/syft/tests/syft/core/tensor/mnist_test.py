@@ -241,12 +241,12 @@ def test_train_publish_entities_event() -> None:
 
     thanos = Entity(name="Thanos")
 
-    # trask = Entity(name="Trask")
-    # kritika = Entity(name="Kritika")
-    # madhava = Entity(name="Madhava")
-    # tudor = Entity(name="Tudor")
+    # trask = DataSubject(name="Trask")
+    # kritika = DataSubject(name="Kritika")
+    # madhava = DataSubject(name="Madhava")
+    # tudor = DataSubject(name="Tudor")
 
-    # entities = [trask, kritika, madhava, tudor]
+    # data_subjects = [trask, kritika, madhava, tudor]
 
     # Step 1: upload a private dataset as the root owner
     data = (
@@ -302,7 +302,7 @@ def test_train_publish_entities_event() -> None:
 #     data_batch = np.random.rand(4, 28 * 28)
 #     label_batch = np.random.rand(4, 10)
 #
-#     bob = Entity(name="Bob")
+#     bob = DataSubject(name="Bob")
 #
 #     # Step 1: upload a private dataset as the root owner
 #     data = Tensor(data_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True).tag("data")

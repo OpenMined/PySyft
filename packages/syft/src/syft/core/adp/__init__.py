@@ -63,7 +63,7 @@ def create_adp_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.core.adp.PhiScalar.input_entities",
             "syft.lib.python.List",
-        ),  # TypeList[Entity]
+        ),  # TypeList[DataSubject]
         (
             "syft.core.adp.PhiScalar.input_polys",
             "syft.lib.python.Set",

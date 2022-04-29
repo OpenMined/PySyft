@@ -95,7 +95,7 @@ def test_pos(
     assert (output.child == reference_tensor.child).all()
     assert (output.min_vals == reference_tensor.min_vals).all()
     assert (output.max_vals == reference_tensor.max_vals).all()
-    assert output.entities == reference_tensor.entities
+    assert output.data_subjects == reference_tensor.data_subjects
 
 
 def test_eq(
@@ -225,7 +225,7 @@ def test_serde(
     assert (de.child == tensor1.child).all()
     assert (de.min_vals == tensor1.min_vals).all()
     assert (de.max_vals == tensor1.max_vals).all()
-    assert de.entities == tensor1.entities
+    assert de.data_subjects == tensor1.data_subjects
 
     assert np.shares_memory(tensor1.child.child, tensor1.child.child)
     assert not np.shares_memory(de.child.child, tensor1.child.child)

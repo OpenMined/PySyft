@@ -28,7 +28,7 @@ from ...proto.core.adp.scalar_manager_pb2 import PrimeFactory as PrimeFactory_PB
 from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
 from ..common.serde.serialize import _serialize as serialize
-from .entity import Entity
+from .data_subject import DataSubject
 from .scalar.gamma_scalar import GammaScalar
 
 prime_exp_cache = {}
@@ -108,7 +108,7 @@ class VirtualMachinePrivateScalarManager:
         min_val: Union[bool, int, float],
         value: Union[bool, int, float],
         max_val: Union[bool, int, float],
-        entity: Entity,
+        entity: DataSubject,
     ) -> int:
         # NOTE: this is overly conservative because it always creates a new scalar even when
         # a computationally equivalent one might exist somewhere already.
