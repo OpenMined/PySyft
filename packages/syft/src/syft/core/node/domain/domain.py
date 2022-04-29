@@ -24,7 +24,6 @@ from ....logger import critical
 from ....logger import debug
 from ....logger import info
 from ....logger import traceback
-from ...adp.adversarial_accountant import AdversarialAccountant
 from ...adp.ledger_store import RedisLedgerStore
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedMessage

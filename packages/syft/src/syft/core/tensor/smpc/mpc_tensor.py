@@ -301,42 +301,16 @@ class MPCTensor(PassthroughTensor):
 
             # relative
             from ..autodp.ndim_entity_phi import TensorWrappedNDimEntityPhiTensorPointer
-            from ..autodp.single_entity_phi import (
-                TensorWrappedSingleEntityPhiTensorPointer,
-            )
-
-            if isinstance(
-                secret,
-                (
-                    TensorWrappedSingleEntityPhiTensorPointer,
-                    TensorWrappedNDimEntityPhiTensorPointer,
-                ),
-            ):
-
-                share_wrapper = secret.to_local_object_without_private_data_child()
-                share_wrapper_pointer = share_wrapper.send(party)
-
-                remote_share = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor(
+            remote_share = (
+                party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
                     rank=i,
                     parties_info=parties_info,
                     value=value,
                     shape=shape,
                     seed_przs=seed_przs,
-                    share_wrapper=share_wrapper_pointer,
                     ring_size=str(ring_size),
                 )
-
-            else:
-                remote_share = (
-                    party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
-                        rank=i,
-                        parties_info=parties_info,
-                        value=value,
-                        shape=shape,
-                        seed_przs=seed_przs,
-                        ring_size=str(ring_size),
-                    )
-                )
+            )
 
             # Converted ring size to string as it exceeds 64 bit.
 

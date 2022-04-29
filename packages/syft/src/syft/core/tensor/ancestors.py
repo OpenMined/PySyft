@@ -17,36 +17,10 @@ from numpy.typing import ArrayLike
 # relative
 from ..adp.data_subject_list import DataSubjectList
 from ..adp.entity import Entity
-from ..adp.vm_private_scalar_manager import VirtualMachinePrivateScalarManager
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
 from .passthrough import is_acceptable_simple_type  # type: ignore
-
-_SingleEntityPhiTensorRef = None
-
-
-def _SingleEntityPhiTensor() -> Type[PassthroughTensor]:
-    global _SingleEntityPhiTensorRef
-    if _SingleEntityPhiTensorRef is None:
-        # relative
-        from .autodp.single_entity_phi import SingleEntityPhiTensor
-
-        _SingleEntityPhiTensorRef = SingleEntityPhiTensor
-    return _SingleEntityPhiTensorRef
-
-
-_RowEntityPhiTensorRef = None
-
-
-def _RowEntityPhiTensor() -> Type[PassthroughTensor]:
-    global _RowEntityPhiTensorRef
-    if _RowEntityPhiTensorRef is None:
-        # relative
-        from .autodp.row_entity_phi import RowEntityPhiTensor
-
-        _RowEntityPhiTensorRef = RowEntityPhiTensor
-    return _RowEntityPhiTensorRef
 
 
 _NDimEntityPhiTensorRef = None
@@ -429,28 +403,22 @@ class PhiTensorAncestor(TensorChainManager):
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
-        scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
-        ndept: bool = False,
     ) -> PhiTensorAncestor:
         return self.copy()._private(
             min_val=min_val,
             max_val=max_val,
-            scalar_manager=scalar_manager,
             entities=entities,
             skip_blocking_checks=skip_blocking_checks,
-            ndept=ndept,
         )
 
     def _private(
         self,
         min_val: ArrayLike,
         max_val: ArrayLike,
-        scalar_manager: VirtualMachinePrivateScalarManager = VirtualMachinePrivateScalarManager(),
         entities: Optional[Any] = None,
         skip_blocking_checks: bool = False,
-        ndept: bool = True,
     ) -> PhiTensorAncestor:
         # PHASE 1: RUN CHECKS
 
@@ -524,72 +492,7 @@ class PhiTensorAncestor(TensorChainManager):
                 f"one_hot_lookup {type(one_hot_lookup)} and data_subjects_indexed "
                 + f"{type(data_subjects_indexed)} must be np.ndarrays"
             )
-
-        # PHASE 2: CREATE CHILD
-        if not ndept and len(entities) == 1:
-            # if there's only one entity - push a SingleEntityPhiTensor
-            if isinstance(min_val, (float, int)):
-                min_vals = (self.child * 0) + min_val
-            else:
-                raise Exception(
-                    "min_val should be a float, got " + str(type(min_val)) + " instead."
-                )
-
-            if isinstance(max_val, (float, int)):
-                max_vals = (self.child * 0) + max_val
-            else:
-                raise Exception(
-                    "max_val should be a float, got " + str(type(min_val)) + " instead."
-                )
-
-            self.push_abstraction_top(
-                _SingleEntityPhiTensor(),
-                entity=entities[0],  # type: ignore
-                min_vals=min_vals,
-                max_vals=max_vals,
-                scalar_manager=scalar_manager,  # type: ignore
-            )
-
-        # if there's row-level entities - push a RowEntityPhiTensor
-        elif not ndept and entities is not None and len(entities) == self.shape[0]:
-            class_type = _SingleEntityPhiTensor()
-
-            new_list = list()
-            for i, entity in enumerate(entities):
-
-                if isinstance(min_val, (float, int)):
-                    min_vals = (self.child[i : i + 1] * 0) + min_val  # noqa: E203
-                else:
-                    raise Exception(
-                        "min_val should be a float, got "
-                        + str(type(min_val))
-                        + " instead."
-                    )
-
-                if isinstance(max_val, (float, int)):
-                    max_vals = (self.child[i : i + 1] * 0) + max_val  # noqa: E203
-                else:
-                    raise Exception(
-                        "max_val should be a float, got "
-                        + str(type(min_val))
-                        + " instead."
-                    )
-
-                value = self.child[i : i + 1]  # noqa: E203
-
-                new_list.append(
-                    class_type(
-                        child=value,
-                        entity=entity,
-                        min_vals=min_vals,
-                        max_vals=max_vals,
-                        scalar_manager=scalar_manager,
-                    )
-                )
-
-            self.replace_abstraction_top(_RowEntityPhiTensor(), rows=new_list)  # type: ignore
-
-        elif ndept and entities is not None and len(entities) == self.shape[0]:
+        elif entities is not None and len(entities) == self.shape[0]:
 
             data_subject_list = DataSubjectList(
                 one_hot_lookup=one_hot_lookup,
@@ -628,7 +531,6 @@ class PhiTensorAncestor(TensorChainManager):
                 entities=data_subject_list,  # type: ignore
             )  # type: ignore
 
-        # TODO: if there's element-level entities - push all elements with PhiScalars
         else:
             raise Exception(
                 "If you're passing in mulitple entities, please pass in one entity per row."

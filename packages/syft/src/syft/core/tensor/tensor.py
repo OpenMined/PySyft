@@ -480,9 +480,6 @@ class Tensor(
         description: str = "",
     ) -> Pointer:
         # relative
-        from .autodp.single_entity_phi import SingleEntityPhiTensor
-        from .autodp.single_entity_phi import TensorWrappedSingleEntityPhiTensorPointer
-
         # TODO:  Should create init pointer for NDimEntityPhiTensorPointer.
 
         if isinstance(self.child, NDimEntityPhiTensor):
@@ -498,21 +495,6 @@ class Tensor(
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
-        elif isinstance(self.child, SingleEntityPhiTensor):
-            return TensorWrappedSingleEntityPhiTensorPointer(
-                entity=self.child.entity,
-                client=client,
-                id_at_location=id_at_location,
-                object_type=object_type,
-                tags=tags,
-                description=description,
-                min_vals=self.child.min_vals,
-                max_vals=self.child.max_vals,
-                scalar_manager=self.child.scalar_manager,
-                public_shape=getattr(self, "public_shape", None),
-                public_dtype=getattr(self, "public_dtype", None),
-            )
-
         else:
             return TensorPointer(
                 client=client,

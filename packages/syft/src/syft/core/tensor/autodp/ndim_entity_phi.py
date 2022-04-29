@@ -58,8 +58,6 @@ from ..smpc.mpc_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
-from .initial_gamma import InitialGammaTensor
-from .initial_gamma import IntermediateGammaTensor
 
 
 @serializable(recursive_serde=True)
@@ -580,44 +578,6 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             "entities": self.entities,
         }
 
-    @staticmethod
-    def from_rows(rows: Sequence) -> NDimEntityPhiTensor:
-        # relative
-        from .single_entity_phi import SingleEntityPhiTensor
-
-        if len(rows) < 1 or not isinstance(rows[0], SingleEntityPhiTensor):
-            raise Exception(
-                "NDimEntityPhiTensor.from_rows requires a list of SingleEntityPhiTensors"
-            )
-
-        # create lazyrepeatarrays of the first element
-        first_row = rows[0]
-        min_vals = lazyrepeatarray(
-            data=first_row.min_vals,
-            shape=tuple([len(rows)] + list(first_row.min_vals.shape)),
-        )
-        max_vals = lazyrepeatarray(
-            data=first_row.max_vals,
-            shape=tuple([len(rows)] + list(first_row.max_vals.shape)),
-        )
-
-        # collect entities and children into numpy arrays
-        entity_list = []
-        child_list = []
-        for row in rows:
-            entity_list.append(row.entity)
-            child_list.append(row.child)
-        entities = DataSubjectList.from_objs(entities=entity_list)
-        child = np.stack(child_list)
-
-        # use new constructor
-        return NDimEntityPhiTensor(
-            child=child,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            entities=entities,
-        )
-
     # def init_pointer(
     #     self,
     #     client: Any,
@@ -745,7 +705,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __eq__(  # type: ignore
         self, other: Any
-    ) -> Union[NDimEntityPhiTensor, IntermediateGammaTensor, GammaTensor]:
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
         # TODO: what about entities and min / max values?
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             gamma_output = False
@@ -753,9 +713,8 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 result = self.child == other
             else:
                 # check entities match, if they dont gamma_output = True
-                #
                 result = self.child == other.child
-                if isinstance(result, InitialGammaTensor):
+                if isinstance(result, GammaTensor):  # TODO: Check this
                     gamma_output = True
             if not gamma_output:
                 # min_vals=self.min_vals * 0.0,
@@ -1169,7 +1128,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
     def __ne__(  # type: ignore
         self, other: Any
-    ) -> Union[NDimEntityPhiTensor, IntermediateGammaTensor, GammaTensor]:
+    ) -> Union[NDimEntityPhiTensor, GammaTensor]:
         # TODO: what about entities and min / max values?
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             gamma_output = False
