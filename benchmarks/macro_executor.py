@@ -64,7 +64,7 @@ def download_spicy_bird_benchmark(
     return dict(zip(sizes, paths)), sizes
 
 
-key_size = "1B"
+key_size = "1M"
 files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
 
 
