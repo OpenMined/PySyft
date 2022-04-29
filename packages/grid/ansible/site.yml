@@ -7,4 +7,5 @@
   roles:
     - node
     - containers
+    - jupyter
     - update

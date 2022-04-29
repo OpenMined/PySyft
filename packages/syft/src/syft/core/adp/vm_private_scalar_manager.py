@@ -10,7 +10,14 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from primesieve.numpy import primes
+
+try:
+    # third party
+    from primesieve.numpy import primes
+except Exception:  # nosec
+    print("Warning primesieve is not compiled with numpy")
+    # fallback if not compiled with numpy
+    from primesieve import primes
 
 # relative
 from ...logger import warning

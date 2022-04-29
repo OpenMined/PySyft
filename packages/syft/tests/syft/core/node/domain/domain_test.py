@@ -5,6 +5,7 @@ import torch as th
 
 # syft absolute
 import syft as sy
+from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.common.message import SyftMessage
 from syft.core.common.uid import UID
 from syft.core.node.common.node_manager.dict_store import DictStore
@@ -15,7 +16,9 @@ from syft.core.node.common.node_service.request_receiver.request_receiver_messag
 
 @pytest.mark.asyncio
 async def test_domain_creation() -> None:
-    sy.Domain(name="test domain", store_type=DictStore)
+    sy.Domain(
+        name="test domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
 
 
 @pytest.mark.asyncio
@@ -35,7 +38,9 @@ def test_domain_request_pending(domain: sy.Domain) -> None:
     domain_1_client = domain.get_root_client()
     data_ptr_domain_1 = tensor.send(domain_1_client)
 
-    domain_2 = sy.Domain(name="my domain", store_type=DictStore)
+    domain_2 = sy.Domain(
+        name="my domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
 
     data_ptr_domain_1.request(
         reason="I'd lke to see this pointer",
@@ -66,7 +71,9 @@ def test_domain_request_denied(domain: sy.Domain) -> None:
     domain_1_client = domain.get_root_client()
     data_ptr_domain_1 = tensor.send(domain_1_client)
 
-    domain_2 = sy.Domain(name="my domain", store_type=DictStore)
+    domain_2 = sy.Domain(
+        name="my domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
 
     data_ptr_domain_1.request(reason="I'd lke to see this pointer")
 
@@ -98,7 +105,9 @@ def test_domain_request_accepted(domain: sy.Domain) -> None:
     domain_1_client = domain.get_root_client()
     data_ptr_domain_1 = tensor.send(domain_1_client)
 
-    domain_2 = sy.Domain(name="my domain", store_type=DictStore)
+    domain_2 = sy.Domain(
+        name="my domain", store_type=DictStore, ledger_store_type=DictLedgerStore
+    )
 
     data_ptr_domain_1.request(reason="I'd lke to see this pointer")
 

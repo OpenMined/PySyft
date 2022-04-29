@@ -3,7 +3,9 @@ from __future__ import annotations
 
 # stdlib
 import operator
+import secrets
 from typing import Any
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -11,6 +13,7 @@ from typing import Union
 
 # third party
 import numpy as np
+import pandas as pd
 import torch as th
 
 # syft absolute
@@ -28,12 +31,21 @@ from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from ..common.uid import UID
 from ..node.abstract.node import AbstractNodeClient
-from ..node.common.action.run_class_method_action import RunClassMethodAction
+from ..node.common.action import smpc_action_functions
+from ..node.common.action.run_class_method_smpc_action import RunClassMethodSMPCAction
+
+# from ..node.domain.client import DomainClient
 from ..pointer.pointer import Pointer
 from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
+from .autodp.gamma_tensor import GammaTensor
+from .autodp.ndim_entity_phi import NDimEntityPhiTensor
+from .autodp.ndim_entity_phi import TensorWrappedNDimEntityPhiTensorPointer
+from .config import DEFAULT_FLOAT_NUMPY_TYPE
+from .config import DEFAULT_INT_NUMPY_TYPE
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
+from .smpc import context
 from .smpc import utils
 from .smpc.mpc_tensor import MPCTensor
 
@@ -82,25 +94,45 @@ class TensorPointer(Pointer):
         )
         return self_mpc
 
-    def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
+    def _apply_tensor_op(
+        self,
+        other: Any,
+        op_str: str,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Any:
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
+        op = f"__{op_str}__"
+        # remove this to dunder method before merge.
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
+        seed_id_locations = kwargs.get("seed_id_locations", None)
+        if seed_id_locations is None:
+            seed_id_locations = secrets.randbits(64)
+        else:
+            kwargs.pop("seed_id_locations")
 
-        result = TensorPointer(client=self.client)
+        id_at_location = smpc_action_functions.get_id_at_location_from_op(
+            seed_id_locations, op
+        )
 
         # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
+        result_id_at_location = id_at_location
+
+        result = TensorPointer(client=self.client)
+        result.id_at_location = result_id_at_location
 
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[other], kwargs={})
+            ) = lib.python.util.downcast_args_and_kwargs(
+                args=[self, other], kwargs=kwargs
+            )
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -110,12 +142,13 @@ class TensorPointer(Pointer):
                 gc_enabled=False,
             )
 
-            cmd = RunClassMethodAction(
+            cmd = RunClassMethodSMPCAction(
                 path=attr_path_and_name,
                 _self=self,
                 args=pointer_args,
                 kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
+                seed_id_locations=seed_id_locations,
                 address=self.client.address,
             )
             self.client.send_immediate_msg_without_reply(msg=cmd)
@@ -169,6 +202,7 @@ class TensorPointer(Pointer):
         self: TensorPointer,
         other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
         op_str: str,
+        **kwargs: Dict[str, Any],
     ) -> Union[MPCTensor, TensorPointer]:
         """Performs the operation based on op_str
 
@@ -193,10 +227,12 @@ class TensorPointer(Pointer):
 
             return op(other, self)
 
-        return self._apply_tensor_op(other=other, op_str=op_str)
+        return self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
     def __add__(
-        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "add" operation between "self" and "other"
 
@@ -206,10 +242,12 @@ class TensorPointer(Pointer):
         Returns:
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorPointer._apply_op(self, other, "add")
+        return TensorPointer._apply_op(self, other, "add", **kwargs)
 
     def __sub__(
-        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "sub" operation between "self" and "other"
 
@@ -219,10 +257,12 @@ class TensorPointer(Pointer):
         Returns:
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorPointer._apply_op(self, other, "sub")
+        return TensorPointer._apply_op(self, other, "sub", **kwargs)
 
     def __mul__(
-        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "mul" operation between "self" and "other"
 
@@ -232,7 +272,22 @@ class TensorPointer(Pointer):
         Returns:
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorPointer._apply_op(self, other, "mul")
+        return TensorPointer._apply_op(self, other, "mul", **kwargs)
+
+    def __matmul__(
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "matmul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "matmul", **kwargs)
 
     def __lt__(
         self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
@@ -355,29 +410,36 @@ class Tensor(
         self,
         child: Any,
         public_shape: Optional[Tuple[int, ...]] = None,
-        public_dtype: Optional[np.dtype] = None,
+        public_dtype: Optional[str] = None,
     ) -> None:
         """data must be a list of numpy array"""
 
-        if isinstance(child, (list, np.int32)):
-            child = to32bit(np.array(child), verbose=False)
+        if isinstance(child, list) or np.isscalar(child):
+            child = np.array(child)
 
         if isinstance(child, th.Tensor):
             print(
                 "Converting PyTorch tensor to numpy tensor for internal representation..."
             )
-            child = to32bit(child.numpy())
+            child = child.numpy()
 
-        if not isinstance(child, PassthroughTensor) and not isinstance(
-            child, np.ndarray
+        # Added for convenience- might need to double check if dtype changes?
+        if isinstance(child, pd.Series):
+            child = child.to_numpy()
+
+        if (
+            not isinstance(child, PassthroughTensor)
+            and not isinstance(child, np.ndarray)
+            and not isinstance(child, GammaTensor)
         ):
 
             raise Exception(
                 f"Data: {child} ,type: {type(child)} must be list or nd.array "
             )
 
-        if not isinstance(child, (np.ndarray, PassthroughTensor)) or (
-            getattr(child, "dtype", None) not in [np.int32, np.bool_]
+        if not isinstance(child, (np.ndarray, PassthroughTensor, GammaTensor)) or (
+            getattr(child, "dtype", None)
+            not in [DEFAULT_INT_NUMPY_TYPE, DEFAULT_FLOAT_NUMPY_TYPE, np.bool]
             and getattr(child, "dtype", None) is not None
         ):
             raise TypeError(
@@ -385,9 +447,9 @@ class Tensor(
                 + str(type(child))
                 + " with child.dtype == "
                 + str(getattr(child, "dtype", None))
-                + ". Syft tensor objects only support np.int32 objects at this time. Please pass in either "
-                "a list of int objects or a np.int32 array. We apologise for the inconvenience and will "
-                "be adding support for more types very soon!"
+                + ". Syft tensor objects only supports numpy objects of "
+                + f"{DEFAULT_INT_NUMPY_TYPE,DEFAULT_FLOAT_NUMPY_TYPE,np.bool_}. "
+                + "Please pass in either the supported types or change the default types in syft/core/tensor/config.py "
             )
 
         kwargs = {"child": child}
@@ -401,7 +463,7 @@ class Tensor(
         if public_dtype is None:
             public_dtype = str(self.dtype)
 
-        self.tag_name: Optional[str] = None
+        self.tag_name: str = ""
         self.public_shape = public_shape
         self.public_dtype = public_dtype
 
@@ -423,7 +485,20 @@ class Tensor(
 
         # TODO:  Should create init pointer for NDimEntityPhiTensorPointer.
 
-        if isinstance(self.child, SingleEntityPhiTensor):
+        if isinstance(self.child, NDimEntityPhiTensor):
+            return TensorWrappedNDimEntityPhiTensorPointer(
+                entities=self.child.entities,
+                client=client,
+                id_at_location=id_at_location,
+                object_type=object_type,
+                tags=tags,
+                description=description,
+                min_vals=self.child.min_vals,
+                max_vals=self.child.max_vals,
+                public_shape=getattr(self, "public_shape", None),
+                public_dtype=getattr(self, "public_dtype", None),
+            )
+        elif isinstance(self.child, SingleEntityPhiTensor):
             return TensorWrappedSingleEntityPhiTensorPointer(
                 entity=self.child.entity,
                 client=client,
@@ -437,6 +512,7 @@ class Tensor(
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
+
         else:
             return TensorPointer(
                 client=client,
@@ -448,8 +524,15 @@ class Tensor(
                 public_dtype=getattr(self, "public_dtype", None),
             )
 
-    def bit_decomposition(self) -> Tensor:
-        raise ValueError("Should not reach this point")
+    # TODO: remove after moving private compare to sharetensor level
+    def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:
+        context.tensor_values = self
+        if isinstance(self.child, NDimEntityPhiTensor):
+            self.child.child.child.bit_decomposition(ring_size, bitwise)
+        else:
+            self.child.bit_decomposition(ring_size, bitwise)
+
+        return None
 
     def mpc_swap(self, other: Tensor) -> Tensor:
         self.child.child = other.child.child
@@ -464,13 +547,10 @@ class Tensor(
         tensor_msg.magicHeader = serde_magic_header(type(self))
 
         chunk_bytes(sy.serialize(self.child, to_bytes=True), "child", tensor_msg)
-        chunk_bytes(
-            sy.serialize(self.public_shape, to_bytes=True), "publicShape", tensor_msg
-        )
-        chunk_bytes(
-            sy.serialize(self.public_dtype, to_bytes=True), "publicDtype", tensor_msg
-        )
-        chunk_bytes(sy.serialize(self.tag_name, to_bytes=True), "tagName", tensor_msg)
+
+        tensor_msg.publicShape = sy.serialize(self.public_shape, to_bytes=True)
+        tensor_msg.publicDtype = self.public_dtype
+        tensor_msg.tagName = self.tag_name
 
         return tensor_msg.to_bytes_packed()
 
@@ -486,15 +566,9 @@ class Tensor(
 
         tensor = Tensor(
             child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
-            public_shape=sy.deserialize(
-                combine_bytes(tensor_msg.publicShape), from_bytes=True
-            ),
-            public_dtype=sy.deserialize(
-                combine_bytes(tensor_msg.publicDtype), from_bytes=True
-            ),
+            public_shape=sy.deserialize(tensor_msg.publicShape, from_bytes=True),
+            public_dtype=tensor_msg.publicDtype,
         )
-        tensor.tag_name = sy.deserialize(
-            combine_bytes(tensor_msg.tagName), from_bytes=True
-        )
+        tensor.tag_name = tensor_msg.tagName
 
         return tensor
