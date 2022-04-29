@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from calendar import day_abbr
 import textwrap
 from typing import Any
 from typing import List

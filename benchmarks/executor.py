@@ -8,7 +8,6 @@ from typing import Optional
 from typing import Tuple
 
 # third party
-import numpy as np
 import pyperf
 from syft_benchmarks import run_ndept_suite
 from syft_benchmarks import run_rept_suite  # noqa: F401
@@ -61,7 +60,7 @@ def run_suite() -> None:
     runner.parse_args()
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
 
-    inf = np.iinfo(np.int32)
+    # inf = np.iinfo(np.int32)
     # run_sept_suite(
     #     runner=runner, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max
     # )
