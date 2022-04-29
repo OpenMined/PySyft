@@ -97,14 +97,6 @@ jobs:
     steps:
       - uses: actions/checkout@v2
 
-      - name: Check for file changes
-        uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          base: ${{ github.ref }}
-          token: ${{ github.token }}
-          filters: .github/file-filters.yml
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         if: steps.changes.outputs.stack == 'true'
@@ -149,7 +141,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
         run: |
-          tox -e stack.test.integration.public
+          HAGRID_FLAGS="--tag=latest" tox -e stack.test.integration
 
   stack-integration-tests-tls:
     strategy:
