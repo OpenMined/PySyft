@@ -14,7 +14,7 @@ import requests
 import syft as sy
 
 NETWORK_PORT = 9081
-HOST_IP = os.environ.get("HOST_IP", "docker-host")
+HOST_IP = os.environ.get("HOST_IP", "localhost")
 NETWORK_PUBLIC_HOST = f"{HOST_IP}:{NETWORK_PORT}"
 print("Network IP", NETWORK_PUBLIC_HOST)
 DOMAIN1_PORT = 9082

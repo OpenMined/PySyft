@@ -18,6 +18,7 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
+from pydantic import BaseSettings
 import torch
 
 # syft absolute
@@ -145,7 +146,7 @@ class ShareTensor(PassthroughTensor):
         if clients is not None:
             self.clients = clients
         elif init_clients:  # type: ignore
-            self.clients = ShareTensor.login_clients(parties_info)
+            self.clients = ShareTensor.login_clients(parties_info=parties_info)
 
         self.min_value, self.max_value = ShareTensor.compute_min_max_from_ring(
             self.ring_size
@@ -160,8 +161,8 @@ class ShareTensor(PassthroughTensor):
     def login_clients(parties_info: List[GridURL]) -> Any:
         clients = []
         for party_info in parties_info:
-            # if its localhost make it docker-host otherwise no change
-            external_host_info = party_info.as_docker_host()
+            # if its localhost change it to a host that resolves outside the container
+            external_host_info = party_info.as_container_host()
             client = CACHE_CLIENTS.get(str(external_host_info), None)
 
             if client is None:

@@ -119,6 +119,7 @@ class Settings(BaseSettings):
     STORE_DB_ID: int = int(os.getenv("STORE_DB_ID", 0))
     LEDGER_DB_ID: int = int(os.getenv("LEDGER_DB_ID", 1))
     NETWORK_CHECK_INTERVAL: int = int(os.getenv("NETWORK_CHECK_INTERVAL", 60))
+    CONTAINER_HOST: str = str(os.getenv("CONTAINER_HOST", "docker"))
 
     class Config:
         case_sensitive = True

@@ -151,7 +151,12 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
                     "Network cant join another Network, try VPNJoinSelfMessageWithReply"
                 )
 
-            grid_url = grid_url_from_kwargs(self.kwargs)
+            # we are running inside the container so we should change the host to
+            # what ever will suit the environment with as_container_host
+            grid_url = grid_url_from_kwargs(self.kwargs).as_container_host(
+                container_host=node.settings.CONTAINER_HOST
+            )
+
             res = requests.post(
                 str(grid_url.with_path("/api/v1/vpn/register")), verify=verify_tls()
             )
