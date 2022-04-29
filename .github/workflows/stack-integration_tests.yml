@@ -99,19 +99,16 @@ jobs:
 
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
-        if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Get pip cache dir
-        if: steps.changes.outputs.stack == 'true'
         id: pip-cache
         run: |
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
         uses: actions/cache@v2
-        if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
@@ -119,12 +116,10 @@ jobs:
             ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
       - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
         run: |
           pip install --upgrade --user pip
 
       - name: Install tox
-        if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
 
@@ -138,7 +133,6 @@ jobs:
           chmod +x ~/.docker/cli-plugins/docker-compose
 
       - name: Run integration tests
-        if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
         run: |
           HAGRID_FLAGS="--tag=latest" tox -e stack.test.integration
