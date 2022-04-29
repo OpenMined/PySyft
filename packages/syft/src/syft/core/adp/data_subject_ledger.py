@@ -8,10 +8,12 @@ from pathlib import Path
 import time
 from typing import Any
 from typing import Callable
-from typing import Final
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
+
+# third party
+from typing_extensions import Final
 
 # relative
 from ...logger import info
