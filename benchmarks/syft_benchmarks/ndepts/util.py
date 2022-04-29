@@ -12,7 +12,7 @@ from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 def make_ndept(data_file) -> NDEPT:
     df = pd.read_parquet(data_file)
     # name = f"Tweets- {df.shape[0]} rows dataset "
-    impressions = ((np.array(list(df["impressions"])))).astype(np.int32)
+    impressions = np.array(list(df["impressions"]))
     publication_title = list(df["publication_title"])
     entities = DataSubjectList.from_objs(["Tom"] * len(publication_title))
 

@@ -44,7 +44,7 @@ benchmark_report["git_revision_hash"] = get_git_revision_short_hash()
 def download_spicy_bird_benchmark(
     sizes: Optional[List[str]] = None,
 ) -> Tuple[Dict[str, Path], List[str]]:
-    sizes = sizes if sizes else ["100K", "250K", "500K", "750K", "1M"]
+    sizes = sizes if sizes else ["100K", "250K", "500K", "750K", "1M", "1B"]
     file_suffix = "_rows_dataset_sample.parquet"
     BASE_URL = "https://raw.githubusercontent.com/madhavajay/datasets/main/spicy_bird/"
 
@@ -64,7 +64,7 @@ def download_spicy_bird_benchmark(
     return dict(zip(sizes, paths)), sizes
 
 
-key_size = "1M"
+key_size = "1B"
 files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
 
 

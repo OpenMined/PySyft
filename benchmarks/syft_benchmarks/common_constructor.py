@@ -19,7 +19,7 @@ def create_bench_constructor(
 
     df = pd.read_parquet(data_file)
     # name = f"Tweets- {df.shape[0]} rows dataset "
-    impressions = ((np.array(list(df["impressions"])))).astype(np.int32)
+    impressions = np.array(list(df["impressions"]))
     publication_title = list(df["publication_title"])
     entities = list()
     for i in range(len(publication_title)):
