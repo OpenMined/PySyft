@@ -184,7 +184,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
 
     assert len(sycure_result) == 10
     assert sum(sycure_result) > -300
-    assert sum(sycure_result) < 300
+    assert sum(sycure_result) < 2000
 
     assert ca.privacy_budget < 210
     assert ca.privacy_budget > 10
