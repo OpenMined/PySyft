@@ -3,6 +3,7 @@ import numpy as np
 import pytest
 
 # syft absolute
+from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 from syft.core.tensor.tensor import Tensor
 
@@ -10,7 +11,7 @@ from syft.core.tensor.tensor import Tensor
 @pytest.mark.smpc
 def test_repeat(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[1, 2], [3, 4]], dtype=np.int32))
+    value = Tensor(np.array([[1, 2], [3, 4]], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -28,7 +29,7 @@ def test_repeat(get_clients) -> None:
 @pytest.mark.smpc
 def test_copy(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[1, 2], [3, 4]], dtype=np.int32))
+    value = Tensor(np.array([[1, 2], [3, 4]], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -47,7 +48,7 @@ def test_copy(get_clients) -> None:
 @pytest.mark.smpc
 def test_diagonal(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[0, 1], [2, 3]], dtype=np.int32))
+    value = Tensor(np.array([[0, 1], [2, 3]], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -66,7 +67,9 @@ def test_diagonal(get_clients) -> None:
 def test_flatten(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
-        np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=np.int32)
+        np.array(
+            [[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=DEFAULT_INT_NUMPY_TYPE
+        )
     )
 
     remote_value = value.send(clients[0])
@@ -86,7 +89,9 @@ def test_flatten(get_clients) -> None:
 def test_transpose(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
-        np.array([[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=np.int32)
+        np.array(
+            [[89, 12, 54], [412, 89, 42], [87, 32, 58]], dtype=DEFAULT_INT_NUMPY_TYPE
+        )
     )
 
     remote_value = value.send(clients[0])
@@ -105,7 +110,9 @@ def test_transpose(get_clients) -> None:
 @pytest.mark.smpc
 def test_resize(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[89, 12], [412, 89], [87, 32]], dtype=np.int32))
+    value = Tensor(
+        np.array([[89, 12], [412, 89], [87, 32]], dtype=DEFAULT_INT_NUMPY_TYPE)
+    )
 
     remote_value = value.send(clients[0])
 
@@ -123,7 +130,9 @@ def test_resize(get_clients) -> None:
 @pytest.mark.smpc
 def test_ravel(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[8, 1, 5], [4, 8, 4], [7, 2, 27]], dtype=np.int32))
+    value = Tensor(
+        np.array([[8, 1, 5], [4, 8, 4], [7, 2, 27]], dtype=DEFAULT_INT_NUMPY_TYPE)
+    )
 
     remote_value = value.send(clients[0])
 
@@ -141,7 +150,7 @@ def test_ravel(get_clients) -> None:
 @pytest.mark.smpc
 def test_compress(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[1, 2], [3, 4], [5, 6]], dtype=np.int32))
+    value = Tensor(np.array([[1, 2], [3, 4], [5, 6]], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -159,7 +168,7 @@ def test_compress(get_clients) -> None:
 @pytest.mark.smpc
 def test_reshape(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[1, 2], [3, 4], [5, 6]], dtype=np.int32))
+    value = Tensor(np.array([[1, 2], [3, 4], [5, 6]], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -177,7 +186,7 @@ def test_reshape(get_clients) -> None:
 @pytest.mark.smpc
 def test_squeeze(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[7], [6], [72]], dtype=np.int32))
+    value = Tensor(np.array([[7], [6], [72]], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -195,7 +204,9 @@ def test_squeeze(get_clients) -> None:
 @pytest.mark.smpc
 def test_swapaxes(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[613, 645, 738], [531, 412, 658]], dtype=np.int32))
+    value = Tensor(
+        np.array([[613, 645, 738], [531, 412, 658]], dtype=DEFAULT_INT_NUMPY_TYPE)
+    )
 
     remote_value = value.send(clients[0])
 
@@ -213,7 +224,7 @@ def test_swapaxes(get_clients) -> None:
 @pytest.mark.smpc
 def test_pos(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[5, 2], [3, 7]], dtype=np.int32))
+    value = Tensor(np.array([[5, 2], [3, 7]], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -231,7 +242,7 @@ def test_pos(get_clients) -> None:
 @pytest.mark.smpc
 def test_put(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[5, 2], [3, 7]], dtype=np.int32))
+    value = Tensor(np.array([[5, 2], [3, 7]], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -250,7 +261,7 @@ def test_put(get_clients) -> None:
 @pytest.mark.smpc
 def test_neg(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[-5, 2], [-3, 7]], dtype=np.int32))
+    value = Tensor(np.array([[-5, 2], [-3, 7]], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -268,7 +279,7 @@ def test_neg(get_clients) -> None:
 @pytest.mark.smpc
 def test_take(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([-5, 2, -3, 7, 132, 54, 27], dtype=np.int32))
+    value = Tensor(np.array([-5, 2, -3, 7, 132, 54, 27], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -286,7 +297,9 @@ def test_take(get_clients) -> None:
 @pytest.mark.smpc
 def test_abs(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[-32, -54, 98], [12, -108, 27]], dtype=np.int32))
+    value = Tensor(
+        np.array([[-32, -54, 98], [12, -108, 27]], dtype=DEFAULT_INT_NUMPY_TYPE)
+    )
 
     remote_value = value.send(clients[0])
 
@@ -304,7 +317,9 @@ def test_abs(get_clients) -> None:
 @pytest.mark.smpc
 def test_sign(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[-32, -54, 98], [12, -108, 27]], dtype=np.int32))
+    value = Tensor(
+        np.array([[-32, -54, 98], [12, -108, 27]], dtype=DEFAULT_INT_NUMPY_TYPE)
+    )
 
     remote_value = value.send(clients[0])
 
@@ -314,7 +329,7 @@ def test_sign(get_clients) -> None:
     res.block_with_timeout(secs=120)
     res = res.reconstruct()
 
-    exp_res = np.array([[-1, -1, 1], [1, -1, 1]], dtype=np.int32)
+    exp_res = np.array([[-1, -1, 1], [1, -1, 1]], dtype=DEFAULT_INT_NUMPY_TYPE)
 
     assert (res == exp_res).all()
 
@@ -323,7 +338,7 @@ def test_sign(get_clients) -> None:
 @pytest.mark.smpc
 def test_pow(get_clients, power) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([1, -2, 3], dtype=np.int32))
+    value = Tensor(np.array([1, -2, 3], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -341,7 +356,7 @@ def test_pow(get_clients, power) -> None:
 @pytest.mark.smpc
 def test_cumsum(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([-5, 2, -3, 7, 132, 54, 27], dtype=np.int32))
+    value = Tensor(np.array([-5, 2, -3, 7, 132, 54, 27], dtype=DEFAULT_INT_NUMPY_TYPE))
 
     remote_value = value.send(clients[0])
 
@@ -359,7 +374,9 @@ def test_cumsum(get_clients) -> None:
 @pytest.mark.smpc
 def test_trace(get_clients) -> None:
     clients = get_clients(2)
-    value = Tensor(np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=np.int32))
+    value = Tensor(
+        np.array([[1, 2, 3], [4, 5, 6], [7, 8, 9]], dtype=DEFAULT_INT_NUMPY_TYPE)
+    )
 
     remote_value = value.send(clients[0])
 

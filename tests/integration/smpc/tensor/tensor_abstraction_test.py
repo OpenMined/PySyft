@@ -9,6 +9,7 @@ import pytest
 
 # syft absolute
 from syft import Tensor
+from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 
 @pytest.mark.smpc
@@ -18,9 +19,11 @@ def test_tensor_abstraction_pointer(get_clients, op_str) -> None:
 
     op = getattr(operator, op_str)
 
-    data_1 = Tensor(child=np.array([[15, 34], [32, 89]], dtype=np.int32))
-    data_2 = Tensor(child=np.array([[567, 98], [78, 25]], dtype=np.int32))
-    data_3 = Tensor(child=np.array([[125, 10], [124, 28]], dtype=np.int32))
+    data_1 = Tensor(child=np.array([[15, 34], [32, 89]], dtype=DEFAULT_INT_NUMPY_TYPE))
+    data_2 = Tensor(child=np.array([[567, 98], [78, 25]], dtype=DEFAULT_INT_NUMPY_TYPE))
+    data_3 = Tensor(
+        child=np.array([[125, 10], [124, 28]], dtype=DEFAULT_INT_NUMPY_TYPE)
+    )
 
     tensor_pointer_1 = data_1.send(clients[0])
     tensor_pointer_2 = data_2.send(clients[1])
@@ -50,9 +53,11 @@ def test_tensor_abstraction_subsets(get_clients, op_str) -> None:
 
     op = getattr(operator, op_str)
 
-    data_1 = Tensor(child=np.array([[15, 34], [32, 89]], dtype=np.int32))
-    data_2 = Tensor(child=np.array([[567, 98], [78, 25]], dtype=np.int32))
-    data_3 = Tensor(child=np.array([[125, 10], [124, 28]], dtype=np.int32))
+    data_1 = Tensor(child=np.array([[15, 34], [32, 89]], dtype=DEFAULT_INT_NUMPY_TYPE))
+    data_2 = Tensor(child=np.array([[567, 98], [78, 25]], dtype=DEFAULT_INT_NUMPY_TYPE))
+    data_3 = Tensor(
+        child=np.array([[125, 10], [124, 28]], dtype=DEFAULT_INT_NUMPY_TYPE)
+    )
 
     tensor_pointer_1 = data_1.send(clients[0])
     tensor_pointer_2 = data_2.send(clients[1])

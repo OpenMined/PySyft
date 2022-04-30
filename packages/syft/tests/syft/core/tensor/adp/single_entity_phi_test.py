@@ -123,10 +123,12 @@ def test_eq_public_shape(
     )
 
     # Without public shape
-    normal_tensor: Tensor = Tensor(child=reference_data)
+    normal_tensor: Tensor = Tensor(child=reference_data.astype(np.int64))
 
     # With public shape
-    tensor_with_shape = Tensor(child=reference_data, public_shape=reference_data.shape)
+    tensor_with_shape = Tensor(
+        child=reference_data.astype(np.int64), public_shape=reference_data.shape
+    )
 
     assert (
         sept_tensor == normal_tensor
@@ -397,7 +399,7 @@ def test_add_tensor_types(
 
     simple_tensor = Tensor(
         child=np.random.randint(
-            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int32
+            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int64
         )
     )
 

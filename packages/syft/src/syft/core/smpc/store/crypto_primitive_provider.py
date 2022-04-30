@@ -69,8 +69,6 @@ class CryptoPrimitiveProvider:
                 ring_size=ring_size,
             )
 
-        # Since we do not have (YET!) the possiblity to return typed tuples from a remote
-        # execute function we are using this.
         return primitives
 
     @staticmethod
@@ -91,7 +89,7 @@ class CryptoPrimitiveProvider:
 
         for primitives_party, party in zip(primitives, parties):
             party.syft.core.tensor.smpc.share_tensor.populate_store(
-                op_str, primitives_party, **p_kwargs, ring_size=ring_size
+                op_str, primitives_party, **p_kwargs, ring_size=str(ring_size)
             )
 
     @staticmethod

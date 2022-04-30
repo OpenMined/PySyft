@@ -18,10 +18,10 @@ from tqdm import tqdm
 # relative
 from .....ast.klass import get_run_class_method
 from ....common import UID
+from ....tensor.config import DEFAULT_RING_SIZE
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.utils import get_nr_bits
-from ....tensor.tensor import Tensor
 from ...store.crypto_primitive_provider import CryptoPrimitiveProvider
 
 
@@ -58,7 +58,6 @@ class ABY3:
             ValueError: If the exactly three parties are not involved in the computation.
         """
         # relative
-        # relative
         from ....tensor import TensorPointer
 
         shape = x.shape
@@ -70,14 +69,16 @@ class ABY3:
 
         if not isinstance(x.child[0], TensorPointer):
             decomposed_shares = [
-                share.bit_decomposition(share, ring_size, False, **kwargs)
+                share.bit_decomposition(share, str(ring_size), False, **kwargs)
                 for share in x.child
             ]
         else:
             decomposed_shares = []
             op = get_run_class_method(attr_path_and_name, SMPC=True)
             for share in x.child:
-                decomposed_shares.append(op(share, share, ring_size, False, **kwargs))
+                decomposed_shares.append(
+                    op(share, share, str(ring_size), False, **kwargs)
+                )
 
         decomposed_shares = ABY3.pregenerate_pointers(
             parties, 1, path_and_name, seed_id_locations
@@ -95,7 +96,7 @@ class ABY3:
             res_shares.append(mpc)
 
         # TODO: Should modify to xor at mpc tensor level
-        arith_share = reduce(lambda a, b: a + b - (2 * a * b), res_shares)
+        arith_share = reduce(lambda a, b: a + b - (a * b * 2), res_shares)
 
         return arith_share
 
@@ -117,12 +118,16 @@ class ABY3:
 
         shape_x = tuple(a[0].shape)  # type: ignore
         shape_y = tuple(b[0].shape)  # type: ignore
+<<<<<<< HEAD
         ring_size = 2 ** 32
+=======
+        ring_size = DEFAULT_RING_SIZE
+>>>>>>> dev
 
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
             "beaver_mul",
-            nr_instances=64,
+            nr_instances=128,
             parties=parties,
             g_kwargs={
                 "a_shape": shape_x,
@@ -167,12 +172,16 @@ class ABY3:
 
         shape_x = tuple(a[0].shape)  # type: ignore
         shape_y = tuple(b[0].shape)  # type: ignore
+<<<<<<< HEAD
         ring_size = 2 ** 32
+=======
+        ring_size = DEFAULT_RING_SIZE
+>>>>>>> dev
 
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
             "beaver_mul",
-            nr_instances=32,
+            nr_instances=64,
             parties=parties,
             g_kwargs={
                 "a_shape": shape_x,
@@ -186,11 +195,11 @@ class ABY3:
         ring_bits = get_nr_bits(ring_size)
 
         carry = np.zeros(a[0].mpc_shape, dtype=np.bool)
-        one = MPCTensor(
-            parties=parties,
-            secret=Tensor(np.ones(a[0].mpc_shape, dtype=np.bool)),
-            shape=a[0].mpc_shape,
-        )
+        # one = MPCTensor(
+        #     parties=parties,
+        #     secret=Tensor(np.ones(a[0].mpc_shape, dtype=np.bool)),
+        #     shape=a[0].mpc_shape,
+        # )
 
         result: List[MPCTensor] = []
 
@@ -199,7 +208,8 @@ class ABY3:
             b: Union[MPCTensor, np.ndarray],
             c: Union[MPCTensor, np.ndarray],
         ) -> MPCTensor:
-            return (a + c + one) * (b + c) + b
+
+            return (a + c + np.array(1, dtype=bool)) * (b + c) + b
 
         for idx in tqdm(range(ring_bits), desc="Computing..."):
             s = a[idx] + b[idx] + carry
@@ -227,8 +237,13 @@ class ABY3:
         from ....tensor import TensorPointer
 
         nr_parties = len(x.parties)
+<<<<<<< HEAD
         ring_size = 2 ** 32  # Should extract this info better
+=======
+        ring_size = DEFAULT_RING_SIZE
+>>>>>>> dev
         ring_bits = get_nr_bits(ring_size)
+
         shape = x.shape
         parties = x.parties
 
@@ -263,7 +278,7 @@ class ABY3:
                     shares=bit_sh, shape=shape, parties=parties, ring_size=2
                 )
                 res_shares[i].append(mpc)
-
+        # return res_shares
         if nr_parties == 2:
             # Specialized for two parties
             bin_share = ABY3.full_adder_spdz_compiler(res_shares[0], res_shares[1])

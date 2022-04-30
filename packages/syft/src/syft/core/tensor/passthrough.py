@@ -285,6 +285,14 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(self.child * other.child)
 
+    def concatenate(
+        self, other: PassthroughTensor, *args, **kwargs
+    ) -> PassthroughTensor:
+        if is_acceptable_simple_type(other):
+            raise ValueError("Does not currently for Simple Types")
+
+        return self.__class__(self.child.concatenate(other.child, *args, **kwargs))
+
     def __rmul__(
         self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:
@@ -295,7 +303,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __matmul__(
         self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
-        return self.manual_dot(other)
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child @ other)
+
+        return self.__class__(self.child @ other.child)
 
     def __rmatmul__(
         self, other: Union[Type[PassthroughTensor], np.ndarray]
@@ -357,7 +368,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def T(self) -> PassthroughTensor:
         return self.transpose()
 
-    def transpose(self, *args, **kwargs):
+    def transpose(self, *args, **kwargs) -> PassthroughTensor:
         return self.__class__(self.child.transpose(*args, **kwargs))
 
     def __getitem__(
@@ -395,12 +406,11 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def cumprod(self, axis: Optional[int] = None) -> PassthroughTensor:
         return self.__class__(self.child.cumprod(axis=axis))
 
-    # TODO : override default datatype as np.int32 until we have support np.int64
     # numpy.cumsum(a, axis=None, dtype=None, out=None)
     def cumsum(
         self,
         axis: Optional[int] = None,
-        dtype: Optional[np.dtype] = np.int32,
+        dtype: Optional[np.dtype] = None,
         out: Optional[np.ndarray] = None,
     ) -> PassthroughTensor:
         return self.__class__(self.child.cumsum(axis=axis, dtype=dtype, out=out))
@@ -411,7 +421,7 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         offset: Optional[int] = 0,
         axis1: Optional[int] = 0,
         axis2: Optional[int] = 1,
-        dtype: Optional[np.dtype] = np.int32,
+        dtype: Optional[np.dtype] = None,
         out: Optional[np.ndarray] = None,
     ) -> PassthroughTensor:
         return self.__class__(
@@ -545,6 +555,9 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
         mode: Optional[str] = "raise",
     ) -> PassthroughTensor:
         return self.__class__(self.child.choose(choices, out=out, mode=mode))
+
+    def decode(self) -> AcceptableSimpleType:
+        return self.child.decode()
 
     def astype(self, np_type: np.dtype) -> PassthroughTensor:
         return self.__class__(self.child.astype(np_type))

@@ -412,11 +412,13 @@ class PhiTensorAncestor(TensorChainManager):
         acc: Optional[Any] = None,
         ledger: Optional[Any] = None,
     ) -> PhiTensorAncestor:
-        # third party
-        from autodp.gamma_tensor import GammaTensor
+        # relative
+        from .autodp.gamma_tensor import GammaTensor
 
+        # Currently not used for GammaTensor conversion.
+        # Modify before merge: Rasswanth
         if isinstance(self.child, GammaTensor):
-            return self.child.publish(sigma=sigma, ledger=ledger)
+            return self.child.publish(sigma=sigma, ledger=ledger)  # type: ignore
         return self.child.publish(acc=acc, sigma=100, user_key=user_key)
 
     def copy(self) -> PhiTensorAncestor:
@@ -455,13 +457,11 @@ class PhiTensorAncestor(TensorChainManager):
         # PHASE 1: RUN CHECKS
 
         # Check 1: Is self.child a compatible type? We only support DP and SMPC for a few types.
-        if not isinstance(self.child, np.ndarray) or getattr(
-            self.child, "dtype", None
-        ) not in [np.int32, np.int64]:
+        if not isinstance(self.child, np.ndarray):
 
             msg = (
                 "At present, you can only call .private() "
-                + "on syft.Tensor objects wrapping np.int32/64 arrays. You called it on a "
+                + "on syft.Tensor objects wrapping numpy arrays. You called it on a "
                 + "syft.Tensor wrapping a "
                 + str(type(self.child))
             )
@@ -503,9 +503,11 @@ class PhiTensorAncestor(TensorChainManager):
         #     )
 
         if not isinstance(entities, DataSubjectList):
-            one_hot_lookup, entities_indexed = np.unique(entities, return_inverse=True)
+            one_hot_lookup, data_subjects_indexed = np.unique(
+                entities, return_inverse=True
+            )
         else:
-            one_hot_lookup, entities_indexed = (
+            one_hot_lookup, data_subjects_indexed = (
                 entities.one_hot_lookup,
                 entities.data_subjects_indexed,
             )
@@ -518,11 +520,11 @@ class PhiTensorAncestor(TensorChainManager):
         #         )
 
         if not isinstance(one_hot_lookup, np.ndarray) or not isinstance(
-            entities_indexed, np.ndarray
+            data_subjects_indexed, np.ndarray
         ):
             raise Exception(
-                f"one_hot_lookup {type(one_hot_lookup)} and entities_indexed "
-                + f"{type(entities_indexed)} must be np.ndarrays"
+                f"one_hot_lookup {type(one_hot_lookup)} and data_subjects_indexed "
+                + f"{type(data_subjects_indexed)} must be np.ndarrays"
             )
 
         # PHASE 2: CREATE CHILD
@@ -592,9 +594,11 @@ class PhiTensorAncestor(TensorChainManager):
             )  # type: ignore
 
         elif ndept and entities is not None and len(entities) == self.shape[0]:
-            class_type = _SingleEntityPhiTensor()
-            if isinstance(entities, DataSubjectList):
-                entity_list = entities
+
+            data_subject_list = DataSubjectList(
+                one_hot_lookup=one_hot_lookup,
+                data_subjects_indexed=data_subjects_indexed,
+            )
 
             if isinstance(min_val, (bool, int, float)):
                 min_vals = np.array(min_val).ravel()  # make it 1D
@@ -625,8 +629,7 @@ class PhiTensorAncestor(TensorChainManager):
                 child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
-                entities=entity_list,  # type: ignore
-                row_type=class_type,  # type: ignore
+                entities=data_subject_list,  # type: ignore
             )  # type: ignore
 
         # TODO: if there's element-level entities - push all elements with PhiScalars

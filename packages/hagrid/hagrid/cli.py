@@ -1959,6 +1959,15 @@ def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) 
     return "".join(alphabet[c % len(alphabet)] for c in urandom(length))
 
 
+# add Hagrid info to the cli
+@click.command(help="Show Hagrid info")
+def version() -> None:
+    print(f"Hagrid version: {__version__}")
+
+
+cli.add_command(version)
+
+
 def ssh_into_remote_machine(
     host_ip: str, private_key_path: str, username: str, cmd: str = ""
 ) -> None:

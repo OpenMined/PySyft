@@ -44,7 +44,7 @@ DTYPE_REFACTOR = {
 
 
 # TODO: move to sy.serialize interface, when protobuf for numpy is removed.
-def capnp_serialize(obj: np.ndarray) -> _DynamicStructBuilder:
+def capnp_serialize(obj: np.ndarray, to_bytes: bool = False) -> _DynamicStructBuilder:
     schema = get_capnp_schema(schema_file="array.capnp")
     array_struct: CapnpModule = schema.Array  # type: ignore
     array_msg = array_struct.new_message()
@@ -58,10 +58,29 @@ def capnp_serialize(obj: np.ndarray) -> _DynamicStructBuilder:
 
     array_msg.arrayMetadata = array_metadata
 
-    return array_msg
+    if not to_bytes:
+        return array_msg
+    else:
+        return array_msg.to_bytes_packed()
 
 
-def capnp_deserialize(array_msg: _DynamicStructBuilder) -> np.ndarray:
+def capnp_deserialize(
+    msg: Union[_DynamicStructBuilder, bytes], from_bytes: bool = False
+) -> np.ndarray:
+    array_msg: _DynamicStructBuilder
+    if from_bytes:
+        schema = get_capnp_schema(schema_file="array.capnp")
+        array_struct: CapnpModule = schema.Array  # type: ignore
+        # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+        # to pack or not to pack?
+        # array_msg = array_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
+        array_msg = array_struct.from_bytes_packed(
+            msg, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        )
+    else:
+        array_msg = msg
+
     array_metadata = array_msg.arrayMetadata
     obj = arrow_deserialize(
         combine_bytes(array_msg.array),
