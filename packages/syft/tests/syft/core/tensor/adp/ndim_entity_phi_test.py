@@ -312,7 +312,7 @@ def test_ne_vals(
     ishan: Entity,
 ) -> None:
     """Test inequality between two different NDimEntityPhiTensors"""
-    # TODO: Add tests for GammaTensor when having same values but different entites.
+    # TODO: Add tests for GammaTensor when having same values but different entities.
     reference_tensor = NDEPT(
         child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
     )

@@ -128,3 +128,30 @@ def test_gamma_publish(
     print(results)
     print(results, results.dtype)
     print(ledger_store.kv_store)
+
+
+def test_pos(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+) -> None:
+    """Test basic serde for GammaTensor"""
+    tensor1 = NDEPT(
+        child=reference_data,
+        entities=np.random.choice(["0", "1"], reference_data.shape),
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    assert tensor1.entities.data_subjects_indexed.shape == tensor1.child.shape
+    gamma_tensor1 = tensor1.sum()
+
+    # Checks to ensure gamma tensor was properly created
+    assert isinstance(gamma_tensor1, GammaTensor)
+    assert gamma_tensor1.value == tensor1.child.child.sum()
+
+    output = +gamma_tensor1
+
+    assert output.value == gamma_tensor1.value
+    assert output.data_subjects == gamma_tensor1.data_subjects
+    assert output.min_val == gamma_tensor1.min_val
+    assert output.max_val == gamma_tensor1.max_val
