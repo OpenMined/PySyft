@@ -2283,6 +2283,15 @@ def generate_sec_random_password(
     return "".join(password)
 
 
+# add Hagrid info to the cli
+@click.command(help="Show Hagrid info")
+def version() -> None:
+    print(f"Hagrid version: {__version__}")
+
+
+cli.add_command(version)
+
+
 def ssh_into_remote_machine(
     host_ip: str,
     username: str,
