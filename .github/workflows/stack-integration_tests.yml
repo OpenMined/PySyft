@@ -438,16 +438,27 @@ jobs:
         run: |
           pip install tox --upgrade
 
+      # - name: Install minikube
+      #   if: steps.changes.outputs.stack == 'true'
+      #   shell: bash
+      #   run: |
+      #     # replace minikube with an older version
+      #     wget https://github.com/kubernetes/minikube/releases/download/v1.25.2/minikube-linux-amd64
+      #     mv minikube-linux-amd64 minikube
+      #     chmod +x minikube
+      #     export PATH=`pwd`:$PATH
+      #     minikube version
+
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         shell: bash
         run: |
-          # replace minikube with an older version
-          wget https://github.com/kubernetes/minikube/releases/download/v1.25.2/minikube-linux-amd64
-          mv minikube-linux-amd64 minikube
-          chmod +x minikube
+          # install k3d
+          wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
           export PATH=`pwd`:$PATH
-          minikube version
+          k3d version
           curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
           sudo install devspace /usr/local/bin;
           tox -e stack.test.integration.k8s

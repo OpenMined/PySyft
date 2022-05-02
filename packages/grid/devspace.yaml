@@ -140,6 +140,18 @@ images:
     context: ./vpn
     build:
       buildKit: {}
+  vpn-iptables:
+    image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
+    # rebuildStrategy: ignoreContextChanges
+    tags:
+      - "######"
+      - latest
+      - "0.7.0-beta.15"
+    createPullSecret: true
+    dockerfile: ./vpn/iptables.dockerfile
+    context: ./vpn
+    build:
+      buildKit: {}
 
 deployments:
   # config maps
@@ -162,6 +174,12 @@ deployments:
     kubectl:
       manifests:
         - k8s/manifests/seaweed-s3.yaml
+
+  # - name: vpn-iptables
+  #   kubectl:
+  #     kustomize: true
+  #     manifests:
+  #       - k8s/manifests/vpn-iptables
 
   # containers
   - name: tailscale
@@ -408,6 +426,8 @@ deployments:
                 value: ${S3_PRESIGNED_TIMEOUT_SECS}
               - name: RELEASE
                 value: ${RELEASE}
+              - name: USE_BLOB_STORAGE
+                value: ${USE_BLOB_STORAGE}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -502,6 +522,8 @@ deployments:
                 value: ${S3_PRESIGNED_TIMEOUT_SECS}
               - name: RELEASE
                 value: ${RELEASE}
+              - name: USE_BLOB_STORAGE
+                value: ${USE_BLOB_STORAGE}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -584,6 +606,8 @@ deployments:
                 value: ${RELEASE}
               - name: NETWORK_CHECK_INTERVAL
                 value: $!{NETWORK_CHECK_INTERVAL}
+              - name: USE_BLOB_STORAGE
+                value: ${USE_BLOB_STORAGE}
 
   - name: frontend
     helm:
@@ -632,6 +656,23 @@ deployments:
               port: 8080
             - name: api
               port: 4000
+
+  - name: vpn-iptables
+    helm:
+      componentChart: true
+      values:
+        hostNetwork: true
+        containers:
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
+            command: ["sh", "-c", "/iptables.sh"]
+            resources:
+              requests:
+                cpu: 5m
+                memory: 10Mi
+            securityContext:
+              capabilities:
+                add: ["NET_ADMIN", "SYS_MODULE"]
+              privileged: true
 
   # ingress
   - name: grid-stack-ingress

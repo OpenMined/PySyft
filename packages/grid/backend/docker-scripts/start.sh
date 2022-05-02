@@ -32,15 +32,6 @@ else
     echo "There is no script $PRE_START_PATH"
 fi
 
-# if we run on kubernetes add the tailscale container as a gateway for 100.64.0.0/24
-if [ "$CONTAINER_HOST" == "kubernetes" ]; then
-    echo "Running in Kubernetes"
-    . /app/tailscale-gateway.sh
-    echo "Finished running tailscale-gateway.sh"
-else
-    echo "Running in Docker"
-fi
-
 # Start Gunicorn
 # TODO: gunicorn crashes when running in k8s with asyncio issues while uvicorn from
 # start-reload.sh seems okay

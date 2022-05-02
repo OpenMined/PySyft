@@ -64,7 +64,9 @@ def test_search_network() -> None:
     result = network_client.search(query=query, pandas=False)
 
     assert len(result) == 1
-    assert result[0]["name"] == "test_domain_1"
+    assert (
+        result[0]["name"].replace("-", "_") == "test_domain_1"
+    )  # kubernetes forces - not _
     assert result[0]["host_or_ip"] == DOMAIN1_VPN_IP
 
 

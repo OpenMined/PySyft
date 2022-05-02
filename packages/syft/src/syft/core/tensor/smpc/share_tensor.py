@@ -18,7 +18,6 @@ from typing import Union
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 import numpy as np
-from pydantic import BaseSettings
 import torch
 
 # syft absolute

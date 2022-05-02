@@ -36,6 +36,18 @@ def join_to_network_python(
     # test Syft API
     root_client.join_network(host_or_ip=network_host)
 
+    # wait for tailscale to connect
+    retry_time = 20
+    while retry_time > 0:
+        retry_time -= 1
+        # check network has auto connected
+        response = root_client.vpn_status()
+        status = response["status"]
+        host = response["host"]
+        if status == "ok" and "ip" in host:
+            break
+        time.sleep(1)
+
     response = root_client.vpn_status()
     return response
 

@@ -61,6 +61,11 @@ data:
     entryPoints:
       web:
         address: :80
+      ping:
+        address: :8082
+
+    ping:
+      entryPoint: "ping"
 
     providers:
       file:
