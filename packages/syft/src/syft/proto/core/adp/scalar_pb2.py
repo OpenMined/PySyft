@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -24,79 +23,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x1bproto/core/adp/scalar.proto\x12\rsyft.core.adp\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/adp/entity.proto"7\n\x12IntermediateScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\xb8\x01\n\nBaseScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x01H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x01H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x01H\x02\x88\x01\x01\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.EntityB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"<\n\x17IntermediateGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\x89\x02\n\x0bGammaScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x01H\x01\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x01H\x02\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x01H\x03\x88\x01\x01\x12\'\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.EntityH\x00\x12.\n\x03\x64sg\x18\x06 \x01(\x0b\x32\x1f.syft.core.adp.DataSubjectGroupH\x00\x12\r\n\x05prime\x18\x07 \x01(\x03\x42\r\n\x0b\x65ntity_dataB\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_val"\x9b\x01\n\x15IntermediatePhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12%\n\x06\x65ntity\x18\x02 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12.\n\x05gamma\x18\x03 \x01(\x0b\x32\x1a.syft.core.adp.GammaScalarH\x00\x88\x01\x01\x42\x08\n\x06_gamma"\xf1\x01\n\tPhiScalar\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x14\n\x07min_val\x18\x02 \x01(\x01H\x00\x88\x01\x01\x12\x12\n\x05value\x18\x03 \x01(\x01H\x01\x88\x01\x01\x12\x14\n\x07max_val\x18\x04 \x01(\x01H\x02\x88\x01\x01\x12%\n\x06\x65ntity\x18\x05 \x01(\x0b\x32\x15.syft.core.adp.Entity\x12.\n\x05gamma\x18\x06 \x01(\x0b\x32\x1a.syft.core.adp.GammaScalarH\x03\x88\x01\x01\x42\n\n\x08_min_valB\x08\n\x06_valueB\n\n\x08_max_valB\x08\n\x06_gammab\x06proto3'
 )
 
-
-_INTERMEDIATESCALAR = DESCRIPTOR.message_types_by_name["IntermediateScalar"]
-_BASESCALAR = DESCRIPTOR.message_types_by_name["BaseScalar"]
-_INTERMEDIATEGAMMASCALAR = DESCRIPTOR.message_types_by_name["IntermediateGammaScalar"]
-_GAMMASCALAR = DESCRIPTOR.message_types_by_name["GammaScalar"]
-_INTERMEDIATEPHISCALAR = DESCRIPTOR.message_types_by_name["IntermediatePhiScalar"]
-_PHISCALAR = DESCRIPTOR.message_types_by_name["PhiScalar"]
-IntermediateScalar = _reflection.GeneratedProtocolMessageType(
-    "IntermediateScalar",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _INTERMEDIATESCALAR,
-        "__module__": "proto.core.adp.scalar_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.adp.IntermediateScalar)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.adp.scalar_pb2", globals()
 )
-_sym_db.RegisterMessage(IntermediateScalar)
-
-BaseScalar = _reflection.GeneratedProtocolMessageType(
-    "BaseScalar",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _BASESCALAR,
-        "__module__": "proto.core.adp.scalar_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.adp.BaseScalar)
-    },
-)
-_sym_db.RegisterMessage(BaseScalar)
-
-IntermediateGammaScalar = _reflection.GeneratedProtocolMessageType(
-    "IntermediateGammaScalar",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _INTERMEDIATEGAMMASCALAR,
-        "__module__": "proto.core.adp.scalar_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.adp.IntermediateGammaScalar)
-    },
-)
-_sym_db.RegisterMessage(IntermediateGammaScalar)
-
-GammaScalar = _reflection.GeneratedProtocolMessageType(
-    "GammaScalar",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GAMMASCALAR,
-        "__module__": "proto.core.adp.scalar_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.adp.GammaScalar)
-    },
-)
-_sym_db.RegisterMessage(GammaScalar)
-
-IntermediatePhiScalar = _reflection.GeneratedProtocolMessageType(
-    "IntermediatePhiScalar",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _INTERMEDIATEPHISCALAR,
-        "__module__": "proto.core.adp.scalar_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.adp.IntermediatePhiScalar)
-    },
-)
-_sym_db.RegisterMessage(IntermediatePhiScalar)
-
-PhiScalar = _reflection.GeneratedProtocolMessageType(
-    "PhiScalar",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _PHISCALAR,
-        "__module__": "proto.core.adp.scalar_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.adp.PhiScalar)
-    },
-)
-_sym_db.RegisterMessage(PhiScalar)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
