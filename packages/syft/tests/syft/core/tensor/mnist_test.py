@@ -158,7 +158,7 @@ def test_basic_publish_entities_event() -> None:
     # Step 1: upload a private dataset as the root owner
     data = (
         Tensor(data_batch)
-        .private(0.01, 1, entities=entities)
+        .private(0.01, 1, data_subjects=entities)
         .autograd(requires_grad=True)
         .tag("data")
     )

@@ -140,7 +140,7 @@ def test_large_blob_upload() -> None:
             entities = DataSubjectList.from_objs([entity_name] * (multiplier * ndim))
 
         tweets_data = sy.Tensor(reference_data).private(
-            min_val=0, max_val=30, entities=entities, ndept=ndept
+            min_val=0, max_val=30, data_subjects=entities, ndept=ndept
         )
 
         report[size_name]["tensor_type"] = type(tweets_data.child).__name__

@@ -56,7 +56,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     sampled_canada_dataset = sy.Tensor(canada_trade)
     sampled_canada_dataset.public_shape = sampled_canada_dataset.shape
     sampled_canada_dataset = sampled_canada_dataset.private(
-        0, 3, entities=entities[0]
+        0, 3, data_subjects=entities[0]
     ).tag("trade_flow")
 
     # load dataset
@@ -92,7 +92,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     sampled_italy_dataset = sy.Tensor(data_batch)
     sampled_italy_dataset.public_shape = sampled_italy_dataset.shape
     sampled_italy_dataset = sampled_italy_dataset.private(
-        0, 3, entities=entities[0]
+        0, 3, data_subjects=entities[0]
     ).tag("trade_flow")
 
     it_root.load_dataset(

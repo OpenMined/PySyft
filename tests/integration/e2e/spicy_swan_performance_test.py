@@ -61,7 +61,7 @@ def upload_subset(
     entities = DataSubjectList.from_series(user_id)
 
     tweets_data = sy.Tensor(impressions).private(
-        min_val=0, max_val=30, entities=entities, ndept=True
+        min_val=0, max_val=30, data_subjects=entities, ndept=True
     )
 
     assert isinstance(tweets_data.child, NDEPT)
