@@ -63,12 +63,25 @@ def join_to_network_rest(
     )
     auth = auth_response.json()
 
-    # test HTTP API
     grid_url.path = f"/api/v1/vpn/join/{network_host}"
     headers = {"Authorization": f"Bearer {auth['access_token']}"}
     response = requests.post(grid_url.url, headers=headers)
-
     result = response.json()
+    if "status" in result and result["status"] == "ok":
+        return result
+
+    # test HTTP API
+    # wait for tailscale to connect
+    retry_time = 20
+    while retry_time > 0:
+        retry_time -= 1
+        grid_url.path = "/api/v1/vpn/status"
+        headers = {"Authorization": f"Bearer {auth['access_token']}"}
+        response = requests.get(grid_url.url, headers=headers)
+        result = response.json()
+        if "status" in result and result["status"] == "ok":
+            break
+        time.sleep(1)
     return result
 
 
