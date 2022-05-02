@@ -103,6 +103,7 @@ def connect_with_key(
                 "--accept-dns=false",
             ],
             "timeout": 60,
+            "force_unique_key": True,
         }
 
         command_url = f"{tailscale_host}/commands/up"
@@ -143,26 +144,23 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
         self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
     ) -> Dict[str, Any]:
         try:
-            grid_url = grid_url_from_kwargs(self.kwargs)
             # can't import Network due to circular imports
             if type(node).__name__ == "Network":
-                # we are already in the network and could be on the blocking backend api
-                msg = VPNRegisterMessageWithReply(kwargs={}).to(
-                    address=node.address, reply_to=node.address
+                # networks can't join other networks yet
+                raise Exception(
+                    "Network cant join another Network, try VPNJoinSelfMessageWithReply"
                 )
-                reply = node.recv_immediate_msg_with_reply(msg=msg).message
-                res_json = {}
-                try:
-                    res_json["vpn_auth_key"] = str(
-                        reply.payload.kwargs.get("vpn_auth_key")  # type: ignore
-                    )
-                except Exception:  # nosec
-                    pass
-            else:
-                res = requests.post(
-                    str(grid_url.with_path("/api/v1/vpn/register")), verify=verify_tls()
-                )
-                res_json = res.json()
+
+            # we are running inside the container so we should change the host to
+            # what ever will suit the environment with as_container_host
+            grid_url = grid_url_from_kwargs(self.kwargs).as_container_host(
+                container_host=node.settings.CONTAINER_HOST
+            )
+
+            res = requests.post(
+                str(grid_url.with_path("/api/v1/vpn/register")), verify=verify_tls()
+            )
+            res_json = res.json()
 
             if "vpn_auth_key" not in res_json:
                 print("Registration failed", res)
@@ -175,6 +173,66 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
             )
 
             if status:
+                return {"status": "ok"}
+            else:
+                print("connect with key failed", error)
+                return {"status": "error"}
+        except Exception as e:
+            print(f"Failed to run {type(self)}", self.kwargs, e)
+            return {"status": "error"}
+
+
+@serializable(recursive_serde=True)
+@final
+class VPNJoinSelfMessage(GenericPayloadMessage):
+    ...
+
+
+@serializable(recursive_serde=True)
+@final
+class VPNJoinSelfReplyMessage(GenericPayloadReplyMessage):
+    ...
+
+
+@serializable(recursive_serde=True)
+@final
+class VPNJoinSelfMessageWithReply(GenericPayloadMessageWithReply):
+    message_type = VPNJoinSelfMessage
+    message_reply_type = VPNJoinSelfReplyMessage
+
+    def run(
+        self, node: AbstractNode, verify_key: Optional[VerifyKey] = None
+    ) -> Dict[str, Any]:
+        try:
+            # can't import Domaiun due to circular imports
+            if type(node).__name__ == "Domain":
+                # networks can't join other networks yet
+                raise Exception(
+                    "Domains cant join themselves, try VPNJoinMessageWithReply"
+                )
+
+            # get status
+            up_status, _, _ = get_status(tailscale_host="http://tailscale:4000")
+            if up_status:
+                print("Already connected!")
+                return {"status": "ok"}
+            print("Connecting...")
+
+            key_status, vpn_auth_key = generate_key(
+                headscale_host="http://headscale:4000"
+            )
+
+            if not key_status:
+                raise Exception("Failed to generate key for joining VPN")
+
+            connect_status, error = connect_with_key(
+                tailscale_host="http://tailscale:4000",
+                headscale_host="http://headscale:8080",
+                vpn_auth_key=vpn_auth_key,
+            )
+
+            if connect_status:
+                print("Connected successfully")
                 return {"status": "ok"}
             else:
                 print("connect with key failed", error)
@@ -225,9 +283,7 @@ def extract_nested_json(nested_json: str) -> Union[Dict, List]:
 
 
 def generate_key(headscale_host: str) -> Tuple[bool, str]:
-    data = {
-        "timeout": 5,
-    }
+    data = {"timeout": 5, "force_unique_key": True}
 
     command_url = f"{headscale_host}/commands/generate_key"
     try:
@@ -343,9 +399,7 @@ def clean_status_output(
 def get_status(
     tailscale_host: str,
 ) -> Tuple[bool, Dict[str, str], List[Dict[str, str]]]:
-    data = {
-        "timeout": 5,
-    }
+    data = {"timeout": 5, "force_unique_key": True}
     command_url = f"{tailscale_host}/commands/status"
     host: Dict[str, str] = {}
     peers: List[Dict[str, str]] = []

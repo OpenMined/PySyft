@@ -13,6 +13,7 @@ from syft.core.adp.entity import Entity
 from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
 from syft.core.tensor.autodp.row_entity_phi import RowEntityPhiTensor as REPT
 from syft.core.tensor.autodp.single_entity_phi import SingleEntityPhiTensor as SEPT
+from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 from syft.core.tensor.tensor import Tensor
 
 
@@ -55,7 +56,7 @@ def size(obj: Any) -> int:
 
 
 def test_numpy_child() -> None:
-    child = np.array([1, 2, 3], dtype=np.int32)
+    child = np.array([1, 2, 3], dtype=DEFAULT_INT_NUMPY_TYPE)
     tensor = Tensor(child=child)
 
     ser = sy.serialize(tensor, to_bytes=True)
@@ -283,10 +284,10 @@ def test_big_ndept() -> None:
     """Create big NDEPTs"""
     # for multiplier in [1, 10, 100, 1000]:
     for multiplier in [10]:
-        ndim = 1_000_000
+        ndim = 100_000
         rows = 1
         cols = 7
-        num_entites = 1000
+        num_entites = 100
 
         upper = highest()
         lower = lowest()
@@ -302,7 +303,7 @@ def test_big_ndept() -> None:
 
         ndept_metrics = time_and_size_serde(big_ndept)
         print(multiplier, ndept_metrics)
-        assert ndept_metrics[0] < 81 * multiplier
+        assert ndept_metrics[0] < 120 * multiplier
         assert ndept_metrics[1] < 30 * multiplier
         assert ndept_metrics[2] < 3 * multiplier
         assert ndept_metrics[3] < 3 * multiplier
