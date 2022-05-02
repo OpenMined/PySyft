@@ -43,7 +43,6 @@ from ...common.uid import UID
 from ...node.abstract.node import AbstractNodeClient
 from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
-from ..ancestors import AutogradTensorAncestor
 from ..broadcastable import is_broadcastable
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
@@ -512,7 +511,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
 
 @serializable(capnp_bytes=True)
-class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
+class PhiTensor(PassthroughTensor, ADPTensor):
     PointerClassOverride = TensorWrappedPhiTensorPointer
     # __attr_allowlist__ = ["child", "min_vals", "max_vals", "data_subjects"]
     __slots__ = (
@@ -546,14 +545,14 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         if not isinstance(data_subjects, DataSubjectList):
             data_subjects = DataSubjectList.from_objs(data_subjects)
 
-        self.entities = data_subjects
+        self.data_subjects = data_subjects
 
     @property
     def proxy_public_kwargs(self) -> Dict[str, Any]:
         return {
             "min_vals": self.min_vals,
             "max_vals": self.max_vals,
-            "data_subjects": self.entities,
+            "data_subjects": self.data_subjects,
         }
 
     # def init_pointer(
@@ -589,7 +588,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             child=self.child.copy(order=order),
             min_vals=self.min_vals.copy(order=order),
             max_vals=self.max_vals.copy(order=order),
-            data_subjects=self.entities.copy(order=order),
+            data_subjects=self.data_subjects.copy(order=order),
         )
 
     def all(self) -> bool:
@@ -614,7 +613,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         )
         gamma_tensor = GammaTensor(
             value=value,
-            data_subjects=self.entities,
+            data_subjects=self.data_subjects,
             min_val=self.min_vals.to_numpy(),
             max_val=self.max_vals.to_numpy(),
             fpt_values=fpt_values,
@@ -664,7 +663,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     def astype(self, np_type: np.dtype) -> PhiTensor:
         return self.__class__(
             child=self.child.astype(np_type),
-            entities=self.entities,
+            data_subjects=self.data_subjects,
             min_vals=self.min_vals.astype(np_type),
             max_vals=self.max_vals.astype(np_type),
             # scalar_manager=self.scalar_manager,
@@ -708,14 +707,14 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            if self.entities != other.entities:
+            if self.data_subjects != other.data_subjects:
                 return self.gamma + other.gamma
 
             return PhiTensor(
                 child=self.child + other.child,
                 min_vals=self.min_vals + other.min_vals,
                 max_vals=self.max_vals + other.max_vals,
-                data_subjects=self.entities,
+                data_subjects=self.data_subjects,
                 # scalar_manager=self.scalar_manager,
             )
 
@@ -725,7 +724,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 child=self.child + other,
                 min_vals=self.min_vals + other,
                 max_vals=self.max_vals + other,
-                data_subjects=self.entities,
+                data_subjects=self.data_subjects,
                 # scalar_manager=self.scalar_manager,
             )
 
@@ -738,7 +737,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if self.entities != other.entities:
+            if self.data_subjects != other.data_subjects:
                 # return self.gamma - other.gamma
                 raise NotImplementedError
 
@@ -755,7 +754,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             max_vals = self.max_vals.copy()
             max_vals.data = _max_vals
 
-            entities = self.entities
+            data_subjects = self.data_subjects
 
         elif is_acceptable_simple_type(other):
             if isinstance(other, np.ndarray):
@@ -766,12 +765,12 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             data = self.child - other
             min_vals = self.min_vals - other
             max_vals = self.max_vals - other
-            entities = self.entities
+            data_subjects = self.data_subjects
         else:
             raise NotImplementedError
         return PhiTensor(
             child=data,
-            data_subjects=entities,
+            data_subjects=data_subjects,
             min_vals=min_vals,
             max_vals=max_vals,
         )
@@ -779,7 +778,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if self.entities != other.entities:
+            if self.data_subjects != other.data_subjects:
                 print("Entities are not the same?!?!?!")
                 return self.gamma * other.gamma
 
@@ -797,11 +796,11 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             max_vals = self.max_vals.copy()
             max_vals.data = _max_vals
 
-            entities = self.entities
+            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=entities,
+                data_subjects=data_subjects,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -821,11 +820,11 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             max_vals = self.max_vals.copy()
             max_vals.data = _max_vals
 
-            entities = self.entities
+            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=entities,
+                data_subjects=data_subjects,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -851,7 +850,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                     min_vals = self.min_vals.__matmul__(other)
                     max_vals = self.max_vals.__matmul__(other)
                 elif isinstance(other, PhiTensor):
-                    if self.entities != other.entities:
+                    if self.data_subjects != other.data_subjects:
                         # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
                         raise NotImplementedError
                     else:
@@ -876,7 +875,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                     child=data,
                     max_vals=max_vals,
                     min_vals=min_vals,
-                    data_subjects=self.entities,
+                    data_subjects=self.data_subjects,
                 )
 
     def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
@@ -920,7 +919,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         return PhiTensor(
             child=data,
-            data_subjects=self.entities,
+            data_subjects=self.data_subjects,
             min_vals=min_vals,
             max_vals=max_vals,
         )
@@ -934,14 +933,14 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
 
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
-            if self.entities != other.entities:
+            if self.data_subjects != other.data_subjects:
                 return self.gamma + other.gamma
 
             return PhiTensor(
                 child=self.child.concatenate(other.child, *args, **kwargs),
                 min_vals=self.min_vals.concatenate(other.min_vals, *args, **kwargs),
                 max_vals=self.max_vals.concatenate(other.max_vals, *args, **kwargs),
-                data_subjects=self.entities,
+                data_subjects=self.data_subjects,
             )
 
         elif is_acceptable_simple_type(other):
@@ -955,7 +954,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
 
-            if self.entities != other.entities:
+            if self.data_subjects != other.data_subjects:
                 # return self.gamma < other.gamma
                 raise NotImplementedError
 
@@ -969,11 +968,11 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             )  # the * 1 just makes sure it returns integers instead of True/False
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            entities = self.entities
+            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=entities,
+                data_subjects=data_subjects,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -984,11 +983,11 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             data = self.child < other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            entities = self.entities
+            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=entities,
+                data_subjects=data_subjects,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -1001,7 +1000,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
 
-            if self.entities != other.entities:
+            if self.data_subjects != other.data_subjects:
                 # return self.gamma < other.gamma
                 raise NotImplementedError
 
@@ -1015,11 +1014,11 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             )  # the * 1 just makes sure it returns integers instead of True/False
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            entities = self.entities
+            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=entities,
+                data_subjects=data_subjects,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -1030,11 +1029,11 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             data = self.child > other
             min_vals = self.min_vals * 0
             max_vals = (self.max_vals * 0) + 1
-            entities = self.entities
+            data_subjects = self.data_subjects
 
             return PhiTensor(
                 child=data,
-                data_subjects=entities,
+                data_subjects=data_subjects,
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
@@ -1074,20 +1073,20 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
-        if len(self.entities.one_hot_lookup) == 1:
+        if len(self.data_subjects.one_hot_lookup) == 1:
             return PhiTensor(
                 child=self.child.sum(),
                 min_vals=self.min_vals.sum(axis=None),
                 max_vals=self.max_vals.sum(axis=None),
                 data_subjects=DataSubjectList.from_objs(
-                    self.entities.one_hot_lookup[0]
+                    self.data_subjects.one_hot_lookup[0]
                 ),  # Need to check this
             )
 
         # TODO: Expand this later to include more args/kwargs
         return GammaTensor(
             value=np.array(self.child.child.sum()),
-            data_subjects=self.entities.sum(),
+            data_subjects=self.data_subjects.sum(),
             min_val=float(self.min_vals.sum(axis=None)),
             max_val=float(self.max_vals.sum(axis=None)),
         )
@@ -1120,7 +1119,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             child=self.child * -1,
             min_vals=self.max_vals * -1,
             max_vals=self.min_vals * -1,
-            data_subjects=self.entities,
+            data_subjects=self.data_subjects,
         )
 
     def __pos__(self) -> PhiTensor:
@@ -1128,7 +1127,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             child=self.child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
-            data_subjects=self.entities,
+            data_subjects=self.data_subjects,
         )
 
     def _object2bytes(self) -> bytes:
@@ -1145,11 +1144,11 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         ndept_msg.minVals = serialize(self.min_vals, to_bytes=True)
         ndept_msg.maxVals = serialize(self.max_vals, to_bytes=True)
         ndept_msg.dataSubjectsIndexed = capnp_serialize(
-            self.entities.data_subjects_indexed
+            self.data_subjects.data_subjects_indexed
         )
 
         ndept_msg.oneHotLookup = capnp_serialize(
-            liststrtonumpyutf8(self.entities.one_hot_lookup)
+            liststrtonumpyutf8(self.data_subjects.one_hot_lookup)
         )
 
         # to pack or not to pack?

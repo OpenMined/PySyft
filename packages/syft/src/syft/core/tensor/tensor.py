@@ -36,7 +36,6 @@ from ..node.common.action.run_class_method_smpc_action import RunClassMethodSMPC
 
 # from ..node.domain.client import DomainClient
 from ..pointer.pointer import Pointer
-from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .autodp.gamma_tensor import GammaTensor
 from .autodp.phi_tensor import PhiTensor
@@ -396,7 +395,6 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
 @serializable(capnp_bytes=True)
 class Tensor(
     PassthroughTensor,
-    AutogradTensorAncestor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,

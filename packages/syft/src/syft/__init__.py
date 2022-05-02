@@ -64,7 +64,6 @@ from .core.node.network.network import NetworkClient  # noqa: F401
 from .core.node.vm.vm import VirtualMachine  # noqa: F401
 from .core.node.vm.vm import VirtualMachineClient  # noqa: F401
 from .core.tensor import autodp  # noqa: F401
-from .core.tensor import autograd  # noqa: F401
 from .core.tensor.autodp import phi_tensor  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
