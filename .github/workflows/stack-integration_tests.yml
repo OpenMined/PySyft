@@ -504,7 +504,7 @@ jobs:
         if: steps.changes.outputs.stack == 'true'
         run: |
           # needed for the wait_for.sh script
-          apt update && apt install jq -y
+          sudo apt update && sudo apt install jq -y
 
       - name: Install k9s
         if: steps.changes.outputs.stack == 'true'
