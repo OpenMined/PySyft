@@ -43,7 +43,7 @@ def test_api_auth() -> None:
             cmd = make_curl_cmd(url=url, key="garbage")
             output = subprocess.check_output(cmd, shell=True)
             output = output.decode("utf-8")
-            assert "500 INTERNAL SERVER ERROR" in output
+            assert "500 INTERNAL SERVER ERROR".lower() in output.lower()
     except Exception as e:
         print(f"Exception running: {cmd}. {e}")
         raise e
