@@ -89,7 +89,7 @@ def spdz_mask(
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
-    clients = ShareTensor.login_clients(x.parties_info)
+    clients = ShareTensor.login_clients(parties_info=x.parties_info)
 
     eps = x - a_share  # beaver intermediate values.
     delta = y - b_share
@@ -208,7 +208,7 @@ def divide_mask(
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
-    clients = ShareTensor.login_clients(x.parties_info)
+    clients = ShareTensor.login_clients(parties_info=x.parties_info)
 
     z = x + r
 
