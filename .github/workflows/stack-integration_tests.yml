@@ -500,6 +500,12 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y kubectl
 
+      - name: Install jq
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # needed for the wait_for.sh script
+          apt update && apt install jq -y
+
       - name: Install k9s
         if: steps.changes.outputs.stack == 'true'
         run: |
