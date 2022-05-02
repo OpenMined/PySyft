@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -27,119 +26,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n*proto/grid/service/signaling_service.proto\x12\x11syft.grid.service\x1a%proto/core/common/common_object.proto\x1a%proto/core/node/common/metadata.proto\x1a\x1bproto/core/io/address.proto"\x90\x01\n\x16RegisterNewPeerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"|\n\x1aPeerSuccessfullyRegistered\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07peer_id\x18\x03 \x01(\t"\xd8\x01\n\x16SignalingAnswerMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\x36\n\rhost_metadata\x18\x04 \x01(\x0b\x32\x1f.syft.core.node.common.Metadata\x12\x13\n\x0btarget_peer\x18\x05 \x01(\t\x12\x11\n\thost_peer\x18\x06 \x01(\t"\xd7\x01\n\x15SignalingOfferMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07payload\x18\x03 \x01(\t\x12\x36\n\rhost_metadata\x18\x04 \x01(\x0b\x32\x1f.syft.core.node.common.Metadata\x12\x13\n\x0btarget_peer\x18\x05 \x01(\t\x12\x11\n\thost_peer\x18\x06 \x01(\t"\xb9\x01\n\x17OfferPullRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x13\n\x0btarget_peer\x18\x04 \x01(\t\x12\x11\n\thost_peer\x18\x05 \x01(\t"\xba\x01\n\x18\x41nswerPullRequestMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x13\n\x0btarget_peer\x18\x04 \x01(\t\x12\x11\n\thost_peer\x18\x05 \x01(\t"j\n\x19SignalingRequestsNotFound\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address"g\n\x16InvalidLoopBackRequest\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address"g\n\x16\x43loseConnectionMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
 )
 
-
-_REGISTERNEWPEERMESSAGE = DESCRIPTOR.message_types_by_name["RegisterNewPeerMessage"]
-_PEERSUCCESSFULLYREGISTERED = DESCRIPTOR.message_types_by_name[
-    "PeerSuccessfullyRegistered"
-]
-_SIGNALINGANSWERMESSAGE = DESCRIPTOR.message_types_by_name["SignalingAnswerMessage"]
-_SIGNALINGOFFERMESSAGE = DESCRIPTOR.message_types_by_name["SignalingOfferMessage"]
-_OFFERPULLREQUESTMESSAGE = DESCRIPTOR.message_types_by_name["OfferPullRequestMessage"]
-_ANSWERPULLREQUESTMESSAGE = DESCRIPTOR.message_types_by_name["AnswerPullRequestMessage"]
-_SIGNALINGREQUESTSNOTFOUND = DESCRIPTOR.message_types_by_name[
-    "SignalingRequestsNotFound"
-]
-_INVALIDLOOPBACKREQUEST = DESCRIPTOR.message_types_by_name["InvalidLoopBackRequest"]
-_CLOSECONNECTIONMESSAGE = DESCRIPTOR.message_types_by_name["CloseConnectionMessage"]
-RegisterNewPeerMessage = _reflection.GeneratedProtocolMessageType(
-    "RegisterNewPeerMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _REGISTERNEWPEERMESSAGE,
-        "__module__": "proto.grid.service.signaling_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.service.RegisterNewPeerMessage)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.grid.service.signaling_service_pb2", globals()
 )
-_sym_db.RegisterMessage(RegisterNewPeerMessage)
-
-PeerSuccessfullyRegistered = _reflection.GeneratedProtocolMessageType(
-    "PeerSuccessfullyRegistered",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _PEERSUCCESSFULLYREGISTERED,
-        "__module__": "proto.grid.service.signaling_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.service.PeerSuccessfullyRegistered)
-    },
-)
-_sym_db.RegisterMessage(PeerSuccessfullyRegistered)
-
-SignalingAnswerMessage = _reflection.GeneratedProtocolMessageType(
-    "SignalingAnswerMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _SIGNALINGANSWERMESSAGE,
-        "__module__": "proto.grid.service.signaling_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.service.SignalingAnswerMessage)
-    },
-)
-_sym_db.RegisterMessage(SignalingAnswerMessage)
-
-SignalingOfferMessage = _reflection.GeneratedProtocolMessageType(
-    "SignalingOfferMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _SIGNALINGOFFERMESSAGE,
-        "__module__": "proto.grid.service.signaling_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.service.SignalingOfferMessage)
-    },
-)
-_sym_db.RegisterMessage(SignalingOfferMessage)
-
-OfferPullRequestMessage = _reflection.GeneratedProtocolMessageType(
-    "OfferPullRequestMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _OFFERPULLREQUESTMESSAGE,
-        "__module__": "proto.grid.service.signaling_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.service.OfferPullRequestMessage)
-    },
-)
-_sym_db.RegisterMessage(OfferPullRequestMessage)
-
-AnswerPullRequestMessage = _reflection.GeneratedProtocolMessageType(
-    "AnswerPullRequestMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _ANSWERPULLREQUESTMESSAGE,
-        "__module__": "proto.grid.service.signaling_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.service.AnswerPullRequestMessage)
-    },
-)
-_sym_db.RegisterMessage(AnswerPullRequestMessage)
-
-SignalingRequestsNotFound = _reflection.GeneratedProtocolMessageType(
-    "SignalingRequestsNotFound",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _SIGNALINGREQUESTSNOTFOUND,
-        "__module__": "proto.grid.service.signaling_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.service.SignalingRequestsNotFound)
-    },
-)
-_sym_db.RegisterMessage(SignalingRequestsNotFound)
-
-InvalidLoopBackRequest = _reflection.GeneratedProtocolMessageType(
-    "InvalidLoopBackRequest",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _INVALIDLOOPBACKREQUEST,
-        "__module__": "proto.grid.service.signaling_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.service.InvalidLoopBackRequest)
-    },
-)
-_sym_db.RegisterMessage(InvalidLoopBackRequest)
-
-CloseConnectionMessage = _reflection.GeneratedProtocolMessageType(
-    "CloseConnectionMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _CLOSECONNECTIONMESSAGE,
-        "__module__": "proto.grid.service.signaling_service_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.service.CloseConnectionMessage)
-    },
-)
-_sym_db.RegisterMessage(CloseConnectionMessage)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

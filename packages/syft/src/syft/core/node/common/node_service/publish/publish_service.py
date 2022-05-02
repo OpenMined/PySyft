@@ -22,9 +22,13 @@ from .publish_messages import PublishScalarsAction  # type: ignore
 
 class PublishScalarsService(ImmediateNodeServiceWithoutReply):
     @staticmethod
-    def process(node: AbstractNode, msg: PublishScalarsAction, verify_key: VerifyKey) -> None:
+    def process(
+        node: AbstractNode, msg: PublishScalarsAction, verify_key: VerifyKey
+    ) -> None:
         # get scalar objects from store
-        results = []  # TODO: Ask Andrew why this is a thing- are we able to publish multiple things at once?
+        results = (
+            []
+        )  # TODO: Ask Andrew why this is a thing- are we able to publish multiple things at once?
         for publish_id in msg.publish_ids_at_location:
             # print("PublishScalarsService:33")
             print("Publish_id: ", publish_id)

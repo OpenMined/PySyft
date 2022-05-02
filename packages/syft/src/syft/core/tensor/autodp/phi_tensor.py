@@ -18,11 +18,11 @@ import numpy as np
 # relative
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
+from ....core.adp.data_subject import DataSubject
 from ....core.adp.data_subject_ledger import DataSubjectLedger
 from ....core.adp.data_subject_list import DataSubjectList
 from ....core.adp.data_subject_list import liststrtonumpyutf8
 from ....core.adp.data_subject_list import numpyutf8tolist
-from ....core.adp.data_subject import DataSubject
 from ....core.node.common.action.get_or_set_property_action import (
     GetOrSetPropertyAction,
 )
@@ -230,9 +230,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
     @staticmethod
     def _apply_op(
         self: TensorWrappedPhiTensorPointer,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
         op_str: str,
     ) -> Union[MPCTensor, TensorWrappedPhiTensorPointer]:
         """Performs the operation based on op_str
@@ -267,9 +265,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __add__(
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "add" operation between "self" and "other"
 
@@ -283,9 +279,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __sub__(
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "sub" operation between "self" and "other"
 
@@ -299,9 +293,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __mul__(
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "mul" operation between "self" and "other"
 
@@ -315,9 +307,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __matmul__(
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "matmul" operation between "self" and "other"
 
@@ -331,9 +321,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __lt__(
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "lt" operation between "self" and "other"
 
@@ -347,9 +335,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __gt__(
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "gt" operation between "self" and "other"
 
@@ -363,9 +349,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __ge__(
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "ge" operation between "self" and "other"
 
@@ -379,9 +363,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __le__(
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "le" operation between "self" and "other"
 
@@ -395,9 +377,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __eq__(  # type: ignore
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "eq" operation between "self" and "other"
 
@@ -411,9 +391,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def __ne__(  # type: ignore
         self,
-        other: Union[
-            TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray
-        ],
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "ne" operation between "self" and "other"
 
@@ -703,9 +681,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             + f"min_vals={self.min_vals}, max_vals={self.max_vals})"
         )
 
-    def __eq__(  # type: ignore
-        self, other: Any
-    ) -> Union[PhiTensor, GammaTensor]:
+    def __eq__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
         # TODO: what about data_subjects and min / max values?
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             gamma_output = False
@@ -728,9 +704,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 + f"{len(self.child)} != {len(other.child)}"
             )
 
-    def __add__(
-        self, other: SupportedChainType
-    ) -> Union[PhiTensor, GammaTensor]:
+    def __add__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being added is also private
         if isinstance(other, PhiTensor):
@@ -761,9 +735,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
-    def __sub__(
-        self, other: SupportedChainType
-    ) -> Union[PhiTensor, GammaTensor]:
+    def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
             if self.entities != other.entities:
@@ -804,9 +776,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             max_vals=max_vals,
         )
 
-    def __mul__(
-        self, other: SupportedChainType
-    ) -> Union[PhiTensor, GammaTensor]:
+    def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
             if self.entities != other.entities:
@@ -980,9 +950,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
-    def __lt__(
-        self, other: SupportedChainType
-    ) -> Union[PhiTensor, GammaTensor]:
+    def __lt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
@@ -1028,9 +996,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         else:
             return NotImplementedError  # type: ignore
 
-    def __gt__(
-        self, other: SupportedChainType
-    ) -> Union[PhiTensor, GammaTensor]:
+    def __gt__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         # if the tensor being compared is also private
         if isinstance(other, PhiTensor):
@@ -1126,9 +1092,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             max_val=float(self.max_vals.sum(axis=None)),
         )
 
-    def __ne__(  # type: ignore
-        self, other: Any
-    ) -> Union[PhiTensor, GammaTensor]:
+    def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
         # TODO: what about data_subjects and min / max values?
         if is_acceptable_simple_type(other) or len(self.child) == len(other.child):
             gamma_output = False

@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -27,19 +26,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n.proto/core/tensor/fixed_precision_tensor.proto\x12\x10syft.core.tensor\x1a\x1eproto/core/tensor/tensor.proto\x1a$proto/core/tensor/share_tensor.proto\x1a\x1bproto/lib/numpy/array.proto"\xc8\x01\n\x14\x46ixedPrecisionTensor\x12*\n\x06tensor\x18\x01 \x01(\x0b\x32\x18.syft.core.tensor.TensorH\x00\x12.\n\x05share\x18\x02 \x01(\x0b\x32\x1d.syft.core.tensor.ShareTensorH\x00\x12+\n\x05\x61rray\x18\x03 \x01(\x0b\x32\x1a.syft.lib.numpy.NumpyProtoH\x00\x12\x0c\n\x04\x62\x61se\x18\x04 \x01(\r\x12\x11\n\tprecision\x18\x05 \x01(\rB\x06\n\x04\x64\x61tab\x06proto3'
 )
 
-
-_FIXEDPRECISIONTENSOR = DESCRIPTOR.message_types_by_name["FixedPrecisionTensor"]
-FixedPrecisionTensor = _reflection.GeneratedProtocolMessageType(
-    "FixedPrecisionTensor",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _FIXEDPRECISIONTENSOR,
-        "__module__": "proto.core.tensor.fixed_precision_tensor_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.tensor.FixedPrecisionTensor)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.tensor.fixed_precision_tensor_pb2", globals()
 )
-_sym_db.RegisterMessage(FixedPrecisionTensor)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

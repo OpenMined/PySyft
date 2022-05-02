@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -18,19 +17,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b"\n'proto/core/common/recursive_serde.proto\x12\x10syft.core.common\"X\n\x0eRecursiveSerde\x12\x13\n\x0b\x66ields_name\x18\x01 \x03(\t\x12\x13\n\x0b\x66ields_data\x18\x02 \x03(\x0c\x12\x1c\n\x14\x66ully_qualified_name\x18\x03 \x01(\tb\x06proto3"
 )
 
-
-_RECURSIVESERDE = DESCRIPTOR.message_types_by_name["RecursiveSerde"]
-RecursiveSerde = _reflection.GeneratedProtocolMessageType(
-    "RecursiveSerde",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _RECURSIVESERDE,
-        "__module__": "proto.core.common.recursive_serde_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.common.RecursiveSerde)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.common.recursive_serde_pb2", globals()
 )
-_sym_db.RegisterMessage(RecursiveSerde)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

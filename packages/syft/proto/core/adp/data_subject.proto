@@ -3,11 +3,11 @@ syntax = "proto3";
 package syft.core.adp;
 import "proto/core/common/common_object.proto";
 
-message Entity {
+message DataSubject {
   string name = 1;
 }
 
 message DataSubjectGroup {
   syft.core.common.UID id = 1;
-  repeated Entity entities = 2;
+  repeated DataSubject data_subjects = 2;
 }

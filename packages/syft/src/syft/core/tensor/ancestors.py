@@ -15,81 +15,24 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # relative
-from ..adp.data_subject_list import DataSubjectList
 from ..adp.data_subject import DataSubject
+from ..adp.data_subject_list import DataSubjectList
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
 from .passthrough import is_acceptable_simple_type  # type: ignore
 
+_PhiTensorRef = None
 
-_NDimEntityPhiTensorRef = None
 
-
-def _NDimEntityPhiTensor() -> Type[PassthroughTensor]:
-    global _NDimEntityPhiTensorRef
-    if _NDimEntityPhiTensorRef is None:
+def _PhiTensor() -> Type[PassthroughTensor]:
+    global _PhiTensorRef
+    if _PhiTensorRef is None:
         # relative
         from .autodp.phi_tensor import PhiTensor
 
-        _NDimEntityPhiTensorRef = PhiTensor
-    return _NDimEntityPhiTensorRef
-
-
-_AutogradTensorRef = None
-
-
-def _AutogradTensor() -> Type[PassthroughTensor]:
-    global _AutogradTensorRef
-    if _AutogradTensorRef is None:
-        # relative
-        from .autograd.tensor import AutogradTensor
-
-        _AutogradTensorRef = AutogradTensor
-    return _AutogradTensorRef
-
-
-class AutogradTensorAncestor(TensorChainManager):
-    """Inherited by any class which might have or like to have AutogradTensor in its chain
-    of .child objects"""
-
-    @property
-    def grad(self):  # type: ignore
-        child_gradient = self.child.grad
-        if child_gradient is None:
-            return None
-        return self.__class__(child_gradient)
-
-    @property
-    def requires_grad(self) -> bool:
-        return self.child.requires_grad
-
-    def backward(self, grad=None):  # type: ignore
-
-        AutogradTensor = _AutogradTensor()
-
-        # TODO: @Madhava question, if autograd(requires_grad=True) is not set
-        # we still end up in here from AutogradTensorAncestor but child.backward
-        # has no backprop_id
-        if isinstance(self.child, AutogradTensorAncestor) or isinstance(
-            self.child, AutogradTensor
-        ):
-
-            if grad is not None and not is_acceptable_simple_type(grad):
-                grad = grad.child
-
-            return self.child.backward(grad, backprop_id=uuid.uuid4())  # type: ignore
-        else:
-            raise Exception(
-                "No AutogradTensor found in chain, but backward() method called."
-            )
-
-    def autograd(self, requires_grad: bool = True) -> AutogradTensorAncestor:
-        AutogradTensor = _AutogradTensor()
-
-        self.push_abstraction_top(AutogradTensor, requires_grad=requires_grad)  # type: ignore
-
-        return self
+        _PhiTensorRef = PhiTensor
+    return _PhiTensorRef
 
 
 def data_subject_creation_wizard(data: Any) -> List[Any]:
@@ -159,7 +102,9 @@ uniquely in your data and in the data you intend to use with your data (if any).
     print("\t" + "-" * 69)
     print()
 
-    print(w.fill("Question 1: Is this entire tensor referring to the same data subject?"))
+    print(
+        w.fill("Question 1: Is this entire tensor referring to the same data subject?")
+    )
     print()
     print(w.fill("Examples:"))
     print("\t - a single medical scan of one patient")
@@ -299,7 +244,11 @@ protect the people or the business)"""
             )
     elif answer == "no":
 
-        print(w.fill("Question 3: Is your data one data subject for every column (yes/no)?"))
+        print(
+            w.fill(
+                "Question 3: Is your data one data subject for every column (yes/no)?"
+            )
+        )
 
         print()
 
@@ -331,9 +280,13 @@ protect the people or the business)"""
             print()
             print("\t\ttensor = sy.Tensor(np.ones((2,2)).astype(np.int32))")
             print()
-            print("\t\tdata_subjects = np.array([['bob', 'alice'],['charlie', 'danielle']])")
+            print(
+                "\t\tdata_subjects = np.array([['bob', 'alice'],['charlie', 'danielle']])"
+            )
             print()
-            print("\t\ttensor.private(min_val=0, max_val=1, data_subjects=data_subjects))")
+            print(
+                "\t\ttensor.private(min_val=0, max_val=1, data_subjects=data_subjects))"
+            )
             print()
             print(
                 "Aborting wizard now so that you rcan re-run .private with the right parameters."
@@ -524,7 +477,7 @@ class PhiTensorAncestor(TensorChainManager):
                 max_vals = lazyrepeatarray(max_vals, self.child.shape)
 
             self.replace_abstraction_top(
-                tensor_type=_NDimEntityPhiTensor(),
+                tensor_type=_PhiTensor(),
                 child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
