@@ -12,7 +12,6 @@ from ......logger import traceback_and_raise  # type: ignore
 from .....adp.data_subject_ledger import DataSubjectLedger  # type: ignore
 from .....common.uid import UID  # type: ignore
 from .....store.storeable_object import StorableObject  # type: ignore
-from .....tensor.tensor import PassthroughTensor  # type: ignore
 from ....abstract.node import AbstractNode  # type: ignore
 
 # from ...action import context  # type: ignore

@@ -16,5 +16,4 @@ class DomainInterface(NodeServiceInterface):
     association_requests: AssociationRequestManager
     datasets: DatasetManager
     setup: SetupManager
-    acc: AdversarialAccountant
     settings: BaseSettings

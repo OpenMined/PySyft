@@ -1102,7 +1102,7 @@ class PhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
                 # check data_subjects match, if they dont gamma_output = True
                 #
                 result = self.child != other.child
-                if isinstance(result, InitialGammaTensor):
+                if isinstance(result, GammaTensor):
                     gamma_output = True
             if not gamma_output:
                 return self.copy_with(child=result)

@@ -7,7 +7,6 @@ from typing import Any
 from typing import List
 from typing import Optional
 from typing import Type
-import uuid
 
 # third party
 from nacl.signing import VerifyKey
@@ -20,7 +19,6 @@ from ..adp.data_subject_list import DataSubjectList
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
-from .passthrough import is_acceptable_simple_type  # type: ignore
 
 _PhiTensorRef = None
 
@@ -68,7 +66,7 @@ identifiers for data_subjects as the data you're joining with. Since these uniqu
 information, PySyft might not be able to detect if two tensors are using different identifiers for the
 same person."""
 
-    description5 = """So, in this tutorial we're going to be asking you to specify Unique Identifiers (UIDs) for each 
+    description5 = """So, in this tutorial we're going to be asking you to specify Unique Identifiers (UIDs) for each
 data subject in your data. This could be an email, street address, or any other string that identifies someone
 uniquely in your data and in the data you intend to use with your data (if any)."""
 
@@ -270,10 +268,11 @@ protect the people or the business)"""
 
             print(
                 w.fill(
-                    "It sounds like your tensor is a random assortment of data_subjects (and perhaps empty/non-data_subjects). "
-                    "If you have empty values, just create random data_subjects for them for now. If you have various "
-                    "data_subjects scattered throughout your tensor (not organized by row), then you'll need to pass "
-                    "in a np.ndarray of strings which is identically shaped to your data in data_subjects like so:"
+                    "It sounds like your tensor is a random assortment of data_subjects (and perhaps empty/non"
+                    "-data_subjects). If you have empty values, just create random data_subjects for them for now. If "
+                    "you have various data_subjects scattered throughout your tensor (not organized by row), then "
+                    "you'll need to pass in a np.ndarray of strings which is identically shaped to your data in data "
+                    "subjects like so:"
                 )
             )
 
