@@ -2,6 +2,7 @@
 from __future__ import annotations
 
 # stdlib
+import os
 import subprocess
 import time
 
@@ -13,7 +14,9 @@ import requests
 import syft as sy
 
 NETWORK_PORT = 9081
-NETWORK_PUBLIC_HOST = f"docker-host:{NETWORK_PORT}"
+HOST_IP = os.environ.get("HOST_IP", "localhost")
+NETWORK_PUBLIC_HOST = f"{HOST_IP}:{NETWORK_PORT}"
+print("Network IP", NETWORK_PUBLIC_HOST)
 DOMAIN1_PORT = 9082
 DOMAIN2_PORT = 9083
 NETWORK_VPN_IP = "100.64.0.1"
@@ -21,6 +24,8 @@ DOMAIN1_VPN_IP = "100.64.0.2"
 DOMAIN2_VPN_IP = "100.64.0.3"
 TEST_ROOT_EMAIL = "info@openmined.org"
 TEST_ROOT_PASS = "changethis"
+CONTAINER_HOST = os.environ.get("CONTAINER_HOST", "docker")
+print("CONTAINER_HOST", CONTAINER_HOST)
 
 
 def join_to_network_python(
@@ -29,9 +34,26 @@ def join_to_network_python(
     root_client = sy.login(email=email, password=password, port=port)
 
     # test Syft API
-    root_client.join_network(host_or_ip=network_host)
+    try:
+        root_client.join_network(host_or_ip=network_host)
+    except Exception as e:
+        print(e)
+        time.sleep(10)
+        print("Retrying...")
+        root_client.join_network(host_or_ip=network_host)
 
-    response = root_client.vpn_status()
+    # wait for tailscale to connect
+    retry_time = 20
+    while retry_time > 0:
+        retry_time -= 1
+        # check network has auto connected
+        response = root_client.vpn_status()
+        status = response["status"]
+        host = response["host"]
+        if status == "ok" and "ip" in host:
+            break
+        time.sleep(1)
+
     return response
 
 
@@ -46,12 +68,25 @@ def join_to_network_rest(
     )
     auth = auth_response.json()
 
-    # test HTTP API
     grid_url.path = f"/api/v1/vpn/join/{network_host}"
     headers = {"Authorization": f"Bearer {auth['access_token']}"}
     response = requests.post(grid_url.url, headers=headers)
-
     result = response.json()
+    if "status" in result and result["status"] == "ok":
+        return result
+
+    # test HTTP API
+    # wait for tailscale to connect
+    retry_time = 20
+    while retry_time > 0:
+        retry_time -= 1
+        grid_url.path = "/api/v1/vpn/status"
+        headers = {"Authorization": f"Bearer {auth['access_token']}"}
+        response = requests.get(grid_url.url, headers=headers)
+        result = response.json()
+        if "status" in result and result["status"] == "ok":
+            break
+        time.sleep(1)
     return result
 
 
@@ -68,7 +103,7 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
     if "ip" not in host:
         print(response)
     assert host["ip"] == vpn_ip
-    assert host["hostname"] == hostname
+    assert host["hostname"].replace("-", "_") == hostname  # kubernetes forces - not _
     assert host["os"] == "linux"
 
     response = join_to_network_rest(
@@ -85,19 +120,34 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
 def check_network_is_connected(email: str, password: str, port: int) -> None:
     root_client = sy.login(email=email, password=password, port=port)
     response = root_client.vpn_status()
-    print("response", response)
     return response
 
 
 def disconnect_network() -> None:
-    container = "test_network_1-tailscale-1"
+    if CONTAINER_HOST == "docker":
+        container = "test_network_1-tailscale-1"
 
-    try:
-        cmd = f"docker exec -i {container} tailscale down"
-        output = subprocess.check_output(cmd, shell=True)
-        output = output.decode("utf-8")
-    except Exception as e:
-        print(f"Exception running: {cmd}. {e}")
+        try:
+            cmd = f"docker exec -i {container} tailscale down"
+            output = subprocess.check_output(cmd, shell=True)
+            output = output.decode("utf-8")
+        except Exception as e:
+            print(f"Exception running: {cmd}. {e}")
+    else:
+        pod = "tailscale-0"
+        container = "container-1"
+        context = "k3d-test-network-1"
+        namespace = "test-network-1"
+
+        try:
+            cmd = (
+                f"kubectl exec -it {pod} -c {container}  --context {context} "
+                + f"--namespace {namespace} -- tailscale down"
+            )
+            output = subprocess.check_output(cmd, shell=True)
+            output = output.decode("utf-8")
+        except Exception as e:
+            print(f"Exception running: {cmd}. {e}")
 
 
 @pytest.mark.network

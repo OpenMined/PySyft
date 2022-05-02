@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -25,19 +24,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b"\n#proto/core/node/common/client.proto\x12\x15syft.core.node.common\x1a%proto/core/common/common_object.proto\x1a\x1cproto/core/io/location.proto\x1a\x19proto/core/io/route.proto\"\xee\x02\n\x06\x43lient\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0c\n\x04name\x18\x02 \x01(\t\x12'\n\x06routes\x18\x03 \x03(\x0b\x32\x17.syft.core.io.SoloRoute\x12\x34\n\x07network\x18\x04 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocationH\x00\x88\x01\x01\x12\x33\n\x06\x64omain\x18\x05 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocationH\x01\x88\x01\x01\x12\x33\n\x06\x64\x65vice\x18\x06 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocationH\x02\x88\x01\x01\x12/\n\x02vm\x18\x07 \x01(\x0b\x32\x1e.syft.core.io.SpecificLocationH\x03\x88\x01\x01\x12\x10\n\x08obj_type\x18\x08 \x01(\tB\n\n\x08_networkB\t\n\x07_domainB\t\n\x07_deviceB\x05\n\x03_vmb\x06proto3"
 )
 
-
-_CLIENT = DESCRIPTOR.message_types_by_name["Client"]
-Client = _reflection.GeneratedProtocolMessageType(
-    "Client",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _CLIENT,
-        "__module__": "proto.core.node.common.client_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.common.Client)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.node.common.client_pb2", globals()
 )
-_sym_db.RegisterMessage(Client)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -25,19 +24,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x1cproto/lib/torch/module.proto\x12\x0esyft.lib.torch\x1a/proto/lib/python/collections/ordered_dict.proto\x1a\x1bproto/lib/python/dict.proto\x1a\x1bproto/lib/python/list.proto"\xef\x03\n\x06Module\x12\x13\n\x0bmodule_type\x18\x01 \x01(\t\x12\x13\n\x0bmodule_name\x18\x02 \x01(\t\x12\x18\n\x0bmodule_repr\x18\x03 \x01(\tH\x00\x88\x01\x01\x12\x15\n\rpython_module\x18\x04 \x01(\t\x12(\n\x08\x63hildren\x18\x05 \x03(\x0b\x32\x16.syft.lib.torch.Module\x12/\n\x0bmodule_args\x18\x06 \x01(\x0b\x32\x15.syft.lib.python.ListH\x01\x88\x01\x01\x12\x31\n\rmodule_kwargs\x18\x07 \x01(\x0b\x32\x15.syft.lib.python.DictH\x02\x88\x01\x01\x12<\n\nstate_dict\x18\x08 \x01(\x0b\x32(.syft.lib.python.collections.OrderedDict\x12<\n\nparameters\x18\t \x01(\x0b\x32(.syft.lib.python.collections.OrderedDict\x12@\n\t_uid2attr\x18\x0b \x01(\x0b\x32(.syft.lib.python.collections.OrderedDictH\x03\x88\x01\x01\x42\x0e\n\x0c_module_reprB\x0e\n\x0c_module_argsB\x10\n\x0e_module_kwargsB\x0c\n\nX_uid2attrb\x06proto3'
 )
 
-
-_MODULE = DESCRIPTOR.message_types_by_name["Module"]
-Module = _reflection.GeneratedProtocolMessageType(
-    "Module",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _MODULE,
-        "__module__": "proto.lib.torch.module_pb2"
-        # @@protoc_insertion_point(class_scope:syft.lib.torch.Module)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.lib.torch.module_pb2", globals()
 )
-_sym_db.RegisterMessage(Module)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
