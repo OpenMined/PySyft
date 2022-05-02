@@ -1,3 +1,6 @@
+# stdlib
+import os
+
 # third party
 import pytest
 
@@ -8,19 +11,27 @@ NETWORK_PORT = 9081
 DOMAIN1_PORT = 9082
 DOMAIN2_PORT = 9083
 
+HOST_IP = os.environ.get("HOST_IP", "localhost")
+
 
 @pytest.mark.network
 def test_domain1_association_network1() -> None:
     network_guest = sy.login(port=NETWORK_PORT)
 
     domain = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN1_PORT
+        email="info@openmined.org",
+        password="changethis",
+        port=DOMAIN1_PORT,
+        url=HOST_IP,
     )
 
     domain.apply_to_network(client=network_guest)
 
     network = sy.login(
-        email="info@openmined.org", password="changethis", port=NETWORK_PORT
+        email="info@openmined.org",
+        password="changethis",
+        port=NETWORK_PORT,
+        url=HOST_IP,
     )
     associations = network.association.all()
     for association in associations:
@@ -36,13 +47,19 @@ def test_domain2_association_network1() -> None:
     network_guest = sy.login(port=NETWORK_PORT)
 
     domain = sy.login(
-        email="info@openmined.org", password="changethis", port=DOMAIN2_PORT
+        email="info@openmined.org",
+        password="changethis",
+        port=DOMAIN2_PORT,
+        url=HOST_IP,
     )
 
     domain.apply_to_network(client=network_guest)
 
     network = sy.login(
-        email="info@openmined.org", password="changethis", port=NETWORK_PORT
+        email="info@openmined.org",
+        password="changethis",
+        port=NETWORK_PORT,
+        url=HOST_IP,
     )
     associations = network.association.all()
     for association in associations:

@@ -46,6 +46,7 @@ from .lib import GRID_SRC_VERSION
 from .lib import check_api_metadata
 from .lib import check_docker_version
 from .lib import check_host
+from .lib import check_jupyter_server
 from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
@@ -1271,10 +1272,12 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
     return None
 
 
-def check_ip_for_ssh(host_ip: str, wait_time: int = 5, silent: bool = False) -> bool:
+def check_ip_for_ssh(
+    host_ip: str, timeout: int = 600, wait_time: int = 5, silent: bool = False
+) -> bool:
     if not silent:
         print(f"Checking VM at {host_ip} is up")
-    checks = int(600 / wait_time)  # 10 minutes in 5 second chunks
+    checks = int(timeout / wait_time)  # 10 minutes in 5 second chunks
     first_run = True
     while checks > 0:
         checks -= 1
@@ -1921,6 +1924,11 @@ def check(ip_address: str) -> None:
     else:
         ssh_status = "❌"
 
+    if check_jupyter_server(ip_address, silent=True):
+        jupyter_status = "✅"
+    else:
+        jupyter_status = "❌"
+
     console = rich.get_console()
     console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
 
@@ -1929,6 +1937,7 @@ def check(ip_address: str) -> None:
         ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
         ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
         ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
+        ["", "Jupyter", f"http://{ip_address}:8888/", jupyter_status],
     ]
 
     table = rich.table.Table()
@@ -1958,3 +1967,76 @@ def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) 
 
     # Python 3 (urandom returns bytes)
     return "".join(alphabet[c % len(alphabet)] for c in urandom(length))
+
+
+# add Hagrid info to the cli
+@click.command(help="Show Hagrid info")
+def version() -> None:
+    print(f"Hagrid version: {__version__}")
+
+
+cli.add_command(version)
+
+
+def ssh_into_remote_machine(
+    host_ip: str, private_key_path: str, username: str, cmd: str = ""
+) -> None:
+    """Access or execute command on the remote machine.
+
+    Args:
+        host_ip (str): ip address of the VM
+        private_key_path (str): private key of the VM
+        username (str): username on the VM
+        cmd (str, optional): Command to execute on the remote machine. Defaults to "".
+    """
+    try:
+        subprocess.call(
+            ["ssh", "-i", f"{private_key_path}", f"{username}@{host_ip}", cmd]
+        )
+    except Exception as e:
+        raise e
+
+
+@click.command(help="SSH into the IP address or a resource group")
+@click.argument("ip_address", type=str)
+@click.option(
+    "--cmd",
+    type=str,
+    required=False,
+    default="",
+    help="Optional: command to execute on the remote machine.",
+)
+def ssh(ip_address: str, cmd: str) -> None:
+    kwargs: dict = {}
+    if check_ip_for_ssh(ip_address, timeout=10, silent=False):
+        azure_key_path = ask(
+            question=Question(
+                var_name="azure_key_path",
+                question="What is the path to the private key of the VM?",
+                default=arg_cache.azure_key_path,
+                kind="string",
+                cache=True,
+            ),
+            kwargs=kwargs,
+        )
+        azure_username = ask(
+            question=Question(
+                var_name="azure_username",
+                question="What is the username for the VM?",
+                default=arg_cache.azure_username,
+                kind="string",
+                cache=True,
+            ),
+            kwargs=kwargs,
+        )
+
+        # SSH into the remote and execute the command
+        ssh_into_remote_machine(
+            host_ip=ip_address,
+            private_key_path=azure_key_path,
+            username=azure_username,
+            cmd=cmd,
+        )
+
+
+cli.add_command(ssh)
