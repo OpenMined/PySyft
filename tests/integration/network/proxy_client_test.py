@@ -43,7 +43,17 @@ def test_domain1_via_network_proxy_client() -> None:
 
     time.sleep(1)
 
-    y_ptr = proxy_client.store[x_ptr.id_at_location.no_dash]
+    retry_time = 5
+    while retry_time > 0:
+        retry_time -= 1
+        try:
+            y_ptr = proxy_client.store[x_ptr.id_at_location.no_dash]
+            break
+        except Exception as e:
+            print(e)
+            print("Retrying")
+            time.sleep(1)
+
     assert x_ptr.id_at_location == y_ptr.id_at_location
     assert type(x_ptr).__name__ == type(y_ptr).__name__
 
