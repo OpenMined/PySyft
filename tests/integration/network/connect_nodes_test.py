@@ -34,7 +34,13 @@ def join_to_network_python(
     root_client = sy.login(email=email, password=password, port=port)
 
     # test Syft API
-    root_client.join_network(host_or_ip=network_host)
+    try:
+        root_client.join_network(host_or_ip=network_host)
+    except Exception as e:
+        print(e)
+        time.sleep(10)
+        print("Retrying...")
+        root_client.join_network(host_or_ip=network_host)
 
     # wait for tailscale to connect
     retry_time = 20
@@ -48,7 +54,6 @@ def join_to_network_python(
             break
         time.sleep(1)
 
-    response = root_client.vpn_status()
     return response
 
 
