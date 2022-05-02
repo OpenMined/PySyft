@@ -10,8 +10,6 @@ from typing import Tuple
 # third party
 import pyperf
 from syft_benchmarks import run_ndept_suite
-from syft_benchmarks import run_rept_suite  # noqa: F401
-from syft_benchmarks import run_sept_suite  # noqa: F401
 
 # syft absolute
 from syft.util import download_file
@@ -60,18 +58,6 @@ def run_suite() -> None:
     runner.parse_args()
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
 
-    # inf = np.iinfo(np.int32)
-    # run_sept_suite(
-    #     runner=runner, rows=1000, cols=10, lower_bound=inf.min, upper_bound=inf.max
-    # )
-    # run_rept_suite(
-    #     runner=runner,
-    #     rept_dimension=15,
-    #     rows=1000,
-    #     cols=10,
-    #     lower_bound=inf.min,
-    #     upper_bound=inf.max,
-    # )
     run_ndept_suite(runner=runner, data_file=data_file)
 
 
