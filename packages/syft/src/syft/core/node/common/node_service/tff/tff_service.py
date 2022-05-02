@@ -3,8 +3,6 @@ from typing import List
 from typing import Optional
 from typing import Type
 from unittest import result
-from click import argument, pass_obj
-
 # third party
 from nacl.signing import VerifyKey
 import tensorflow_federated as tff
@@ -28,7 +26,7 @@ import asyncio
 from tensorflow_federated.python.core.impl.executors import eager_tf_executor
 from tensorflow_federated.python.core.impl.types import computation_types
 from tensorflow_federated.python.core.api import computations
-from tensorflow_federated.python.core.impl.executors import executor_test_utils
+# from tensorflow_federated.python.core.impl.executors import executor_test_utils
 from tensorflow_federated.python.core.impl.executors import executor_stacks
 
 # from pybind11_abseil import status
@@ -41,16 +39,18 @@ def custom_data_descriptor(uris, data_type):
     return tff.framework.DataDescriptor(None, arguments, tff.FederatedType(data_type, tff.CLIENTS), num_clients)
 
 def test_data_descriptor(node):
+    print('ce plm')
     uris = [key.to_string() for key in node.store.keys()]
     data_desc = custom_data_descriptor(uris, ())
+    print('ce plm')
 
     @computations.tf_computation()
     def foo(x):
         return x * 20.0
 
-    with executor_test_utils.install_executor(executor_stacks.local_executor_factory()):
-        result = foo(data_desc)
-        print(result)
+    # with executor_test_utils.install_executor(executor_stacks.local_executor_factory()):
+    #     result = foo(data_desc)
+    #     print(result)
 
 
 async def train_model(store):
@@ -113,6 +113,7 @@ class TFFService(ImmediateNodeServiceWithReply):
     ) -> TFFReplyMessage:
         if verify_key is None:
             traceback_and_raise("Can't process TFFService with no verification key.")
+        print('plm')
         print(node.store.keys())
         # import nest_asyncio
         # import uvloop
@@ -126,7 +127,7 @@ class TFFService(ImmediateNodeServiceWithReply):
         # loop.run_until_complete(asyncio.wait([loop.create_task(support())]))
         # loop.close()
         # asyncio.ensure_future(support(node.store))
-        test_data_descriptor(node.store)
+        test_data_descriptor(node)
         # asyncio.ensure_future(test_custom_backend())
         # test_custom_backend_materize()
         # s = 0

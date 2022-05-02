@@ -127,16 +127,11 @@ class TensorPointer(Pointer):
 
         if result_id_at_location is not None:
             # first downcast anything primitive which is not already PyPrimitive
-<<<<<<< HEAD
-            (downcast_args, downcast_kwargs) = lib.python.util.downcast_args_and_kwargs(
-                args=[other], kwargs={}
-=======
             (
                 downcast_args,
                 downcast_kwargs,
             ) = lib.python.util.downcast_args_and_kwargs(
                 args=[self, other], kwargs=kwargs
->>>>>>> dev
             )
 
             # then we convert anything which isnt a pointer into a pointer

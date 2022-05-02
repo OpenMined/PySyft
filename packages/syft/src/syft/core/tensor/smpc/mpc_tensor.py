@@ -152,13 +152,8 @@ class MPCTensor(PassthroughTensor):
         if ring_size is not None:
             return ring_size
 
-<<<<<<< HEAD
-        logger.warning("Ring size was not found! Defaulting to 2**32.")
-        return 2 ** 32
-=======
         logger.warning(f"Ring size was not found! Defaulting to {DEFAULT_RING_SIZE}.")
         return DEFAULT_RING_SIZE
->>>>>>> dev
 
     @staticmethod
     def get_parties_info(parties: Iterable[Any]) -> List[GridURL]:
@@ -227,14 +222,9 @@ class MPCTensor(PassthroughTensor):
 
     @staticmethod
     def _mpc_from_shares(
-<<<<<<< HEAD
-        shares: List[ShareTensor], parties: Optional[List[Any]] = None
-    ) -> List[ShareTensor]:
-=======
         shares: Union[List[Tensor], List[TensorPointer]],
         parties: Optional[List[Any]] = None,
     ) -> List[TensorPointer]:
->>>>>>> dev
         if not isinstance(shares, (list, tuple)):
             raise ValueError("_mpc_from_shares expected a list or tuple of shares")
 
@@ -329,15 +319,6 @@ class MPCTensor(PassthroughTensor):
                 )
 
             else:
-<<<<<<< HEAD
-                remote_share = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
-                    rank=i,
-                    parties_info=parties_info,
-                    value=value,
-                    shape=shape,
-                    seed_przs=seed_przs,
-                    ring_size=ring_size,
-=======
                 remote_share = (
                     party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
                         rank=i,
@@ -347,7 +328,6 @@ class MPCTensor(PassthroughTensor):
                         seed_przs=seed_przs,
                         ring_size=str(ring_size),
                     )
->>>>>>> dev
                 )
 
             # Converted ring size to string as it exceeds 64 bit.
@@ -362,13 +342,8 @@ class MPCTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         seed_przs: int,
         parties_info: List[GridURL],
-<<<<<<< HEAD
-        ring_size: int = 2 ** 32,
-    ) -> List[ShareTensor]:
-=======
         ring_size: int = DEFAULT_RING_SIZE,
     ) -> List[Tensor]:
->>>>>>> dev
         shares = []
         nr_parties = len(parties_info)
         for i in range(nr_parties):
@@ -728,14 +703,6 @@ class MPCTensor(PassthroughTensor):
         if isinstance(y, MPCTensor):
             res_shares = spdz.mul_master(self, y, "mul", **kwargs)
         else:
-<<<<<<< HEAD
-            if not isinstance(self.child[0], TensorPointer):
-                res_shares = [
-                    getattr(a, op)(a, b, **kwargs)
-                    for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
-                ]
-            else:
-=======
             CryptoPrimitiveProvider.generate_primitives(
                 "beaver_wraps",
                 parties=self.parties,
@@ -746,7 +713,6 @@ class MPCTensor(PassthroughTensor):
                 p_kwargs={"shape": new_shape},
                 ring_size=self.ring_size,
             )
->>>>>>> dev
 
             res_shares = [
                 getattr(a, op)(b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore

@@ -37,7 +37,7 @@ RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit
   chmod +x /usr/local/bin/waitforit
 
 # Backend
-FROM python:3.10.4-slim as backend
+FROM python:3.9-slim as backend
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
 
@@ -70,11 +70,26 @@ COPY syft/setup.py /app/syft/setup.py
 COPY syft/setup.cfg /app/syft/setup.cfg
 COPY syft/src /app/syft/src
 
-RUN pip install --upgrade tensorflow-federated
+RUN --mount=type=cache,target=/root/.cache \
+  pip install --user -r requirements.txt
+
 RUN apt-get update
 RUN apt-get install -y git
-RUN git clone https://github.com/tensorflow/federated
-RUN cp federated/tensorflow_federated/python/core/backends/native/execution_contexts.py /usr/local/lib/python3.9/site-packages/tensorflow_federated/python/core/backends/native/execution_contexts.py 
+RUN apt-get install build-essential --assume-yes
+RUN pip install psycopg2-binary
+RUN apt-get install libpq-dev python3-dev --assume-yes
+# RUN pip install psycopg2
+RUN pip install --upgrade tensorflow-federated
+# RUN pip install alembic
+# RUN pip install uvicorn
+# RUN pip install fastapi
+# RUN pip install python-jose
+# RUN pip install passlib
+# RUN pip install python-multipart
+# RUN pip install celery
+# RUN git clone https://github.com/tensorflow/federated
+# RUN pip install tenacity/
+# RUN cp federated/tensorflow_federated/python/core/backends/native/execution_contexts.py /usr/local/lib/python3.9/site-packages/tensorflow_federated/python/core/backends/native/execution_contexts.py 
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \

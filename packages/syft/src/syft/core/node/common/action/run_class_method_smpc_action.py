@@ -132,69 +132,6 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         seed_id_locations = self.seed_id_locations
 
         # TODO: For the moment we don't run any SMPC operation that provides any kwarg
-<<<<<<< HEAD
-        kwargs = {"seed_id_locations": int(seed_id_locations), "node": node}
-
-        # Get the list of actions to be run
-        # TODO : Remove client as we do not use it now.
-        actions: Union[List[SMPCActionMessage], SMPCActionSeqBatchMessage]
-        actions = actions_generator(*args_id, **kwargs)  # type: ignore
-
-        if isinstance(actions, (list, tuple)) and isinstance(
-            actions[0], SMPCActionMessage
-        ):
-            actions = SMPCActionMessage.filter_actions_after_rank(rank, actions)
-            for action in actions:
-                RunClassMethodSMPCAction.execute_smpc_action(node, action, verify_key)
-        elif isinstance(actions, SMPCActionSeqBatchMessage):
-            msg = actions
-            while msg.smpc_actions:
-                action = msg.smpc_actions[0]
-                RunClassMethodSMPCAction.execute_smpc_action(node, action, verify_key)
-                del msg.smpc_actions[0]
-
-    @staticmethod
-    def execute_smpc_action(
-        node: AbstractNode, msg: "SMPCActionMessage", verify_key: VerifyKey
-    ) -> None:
-        # relative
-        from .smpc_action_functions import _MAP_ACTION_TO_FUNCTION
-
-        func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
-        store_object_self = node.store.get(key=msg.self_id)
-        if store_object_self is None:
-            raise KeyError("Object not already in store")
-
-        _self = store_object_self.data
-        args = [node.store.get(arg_id).data for arg_id in msg.args_id]
-
-        kwargs = {}  # type: ignore
-        for key, kwarg_id in msg.kwargs_id.items():
-            data = node.store.get(kwarg_id).data
-            if data is None:
-                raise KeyError(f"Key {key} is not available")
-
-            kwargs[key] = data
-        kwargs = {**kwargs, **msg.kwargs}
-        (upcasted_args, upcasted_kwargs) = lib.python.util.upcast_args_and_kwargs(
-            args, kwargs
-        )
-        logger.warning(func)
-
-        if msg.name_action in {"spdz_multiply", "spdz_mask"}:
-            result = func(_self, *upcasted_args, **upcasted_kwargs, node=node)
-        elif msg.name_action == "local_decomposition":
-            result = func(
-                _self,
-                *upcasted_args,
-                **upcasted_kwargs,
-                node=node,
-                read_permissions=store_object_self.read_permissions,
-            )
-        else:
-            result = func(_self, *upcasted_args, **upcasted_kwargs)
-
-=======
         context.SMPC_CONTEXT = {
             "seed_id_locations": seed_id_locations,
             "node": node,
@@ -204,7 +141,6 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         result = method(*upcasted_args, **upcasted_kwargs)
 
         id_at_location = self.id_at_location
->>>>>>> dev
         if lib.python.primitive_factory.isprimitive(value=result):
             # Wrap in a SyPrimitive
             result = lib.python.primitive_factory.PrimitiveFactory.generate_primitive(

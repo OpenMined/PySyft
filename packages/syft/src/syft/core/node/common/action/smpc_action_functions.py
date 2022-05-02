@@ -247,39 +247,6 @@ def divide_wrap_correction(
     Note: Since [eta_xr] = 0 with probability 1 - |x| / Q for modulus Q, we
     can make the assumption that [eta_xr] = 0 with high probability.
 
-<<<<<<< HEAD
-    if seed_id_locations is None or node is None:
-        raise ValueError(
-            f"The values seed_id_locations{seed_id_locations}, Node:{node} should not be None"
-        )
-    generator = np.random.default_rng(seed_id_locations)
-    result_id = UID(UUID(bytes=generator.bytes(16)))
-    other = node.store.get(other_id).data
-
-    actions = []
-    if isinstance(other, (ShareTensor, Tensor)) and (a_shape_id and b_shape_id):
-        # crypto_store = ShareTensor.crypto_store
-        # _self = node.store.get(self_id).data
-        # a_share, b_share, c_share = crypto_store.get_primitives_from_store("beaver_mul", _self.shape, other.shape)
-        if isinstance(other, ShareTensor):
-            ring_size = other.ring_size
-        else:
-            ring_size = other.child.child.ring_size
-
-        mask_result = UID(UUID(bytes=generator.bytes(16)))
-        eps_id = UID(UUID(bytes=generator.bytes(16)))
-        delta_id = UID(UUID(bytes=generator.bytes(16)))
-        a_shape = node.store.get(a_shape_id).data  # type: ignore
-        b_shape = node.store.get(b_shape_id).data  # type: ignore
-        crypto_store = ShareTensor.crypto_store
-        a_share, b_share, c_share = crypto_store.get_primitives_from_store(
-            "beaver_mul",
-            a_shape=a_shape,
-            b_shape=b_shape,
-            ring_size=ring_size,
-            remove=True,  # type: ignore
-        )
-=======
     Args:
         x (ShareTensor): shares for which we want to compute the number of wraparounds
         y (Union[int, np.integer]): the number/tensor by which we divide
@@ -287,7 +254,6 @@ def divide_wrap_correction(
         theta_r_sh (ShareTensor): share for the number of wraparounds for "r"
         z_id (UID): UID which contains the z(z=x+r_share) from all parties
         node (Optional[Any]) : current node context.
->>>>>>> dev
 
     Returns:
         ShareTensor representing the number of wraparounds

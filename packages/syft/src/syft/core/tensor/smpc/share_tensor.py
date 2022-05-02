@@ -202,13 +202,9 @@ class ShareTensor(PassthroughTensor):
 
     @staticmethod
     @lru_cache(32)
-<<<<<<< HEAD
-    def compute_min_max_from_ring(ring_size: int = 2 ** 32) -> Tuple[int, int]:
-=======
     def compute_min_max_from_ring(
         ring_size: int = DEFAULT_RING_SIZE,
     ) -> Tuple[int, int]:
->>>>>>> dev
         if ring_size == 2:
             min_value, max_value = 0, 1
         else:
@@ -289,11 +285,7 @@ class ShareTensor(PassthroughTensor):
         shape: Tuple[int, ...],
         rank: int,
         parties_info: List[GridURL],
-<<<<<<< HEAD
-        ring_size: int = 2 ** 32,
-=======
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
->>>>>>> dev
         seed_przs: Optional[int] = None,
         generator_przs: Optional[Any] = None,
         init_clients: bool = True,
@@ -382,11 +374,7 @@ class ShareTensor(PassthroughTensor):
         parties_info: List[GridURL],
         seed_przs: int,
         share_wrapper: Any,
-<<<<<<< HEAD
-        ring_size: int = 2 ** 32,
-=======
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
->>>>>>> dev
     ) -> PassthroughTensor:
         ring_size = int(ring_size)
         if value is not None:
