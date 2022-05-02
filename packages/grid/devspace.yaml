@@ -6,7 +6,7 @@ vars:
   - name: DOCKER_IMAGE_DB
     value: postgres:12
   - name: DOCKER_IMAGE_QUEUE
-    value: rabbitmq:3-management
+    value: rabbitmq:3
   - name: SERVICE_NAME_DB
     value: db
   - name: SERVICE_NAME_QUEUE
@@ -354,7 +354,7 @@ deployments:
         containers:
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
-              - /start-reload.sh
+              - /start.sh
             securityContext:
               capabilities:
                 add: ["NET_ADMIN"]
@@ -447,7 +447,7 @@ deployments:
                 "-status=200",
                 "-timeout=600",
                 "--",
-                "/start-reload.sh",
+                "/start.sh",
               ]
             securityContext:
               capabilities:
