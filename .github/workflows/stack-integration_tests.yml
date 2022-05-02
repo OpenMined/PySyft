@@ -500,10 +500,10 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y kubectl
 
-      - name: Install k9s
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          sudo snap install k9s --edge --devmode
+      # - name: Install k9s
+      #   if: steps.changes.outputs.stack == 'true'
+      #   run: |
+      #     sudo snap install k9s --edge --devmode
 
       # - name: Install minikube
       #   if: steps.changes.outputs.stack == 'true'
