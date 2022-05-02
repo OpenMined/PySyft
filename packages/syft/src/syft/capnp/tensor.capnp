@@ -3,7 +3,7 @@
 struct Tensor {
   magicHeader @0 :Data;
   child @1 :List(Data);
-  publicShape @2 :List(Data);
-  publicDtype @3 :List(Data);
-  tagName @4 :List(Data);
+  publicShape @2 :Data;
+  publicDtype @3 :Text;
+  tagName @4 :Text;
 }
