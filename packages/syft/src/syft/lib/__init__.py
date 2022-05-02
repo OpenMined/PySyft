@@ -20,7 +20,6 @@ from packaging import version
 
 # relative
 from ..ast.globals import Globals
-from ..core.adp import create_adp_ast
 from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common import create_client_ast
 from ..core.smpc import create_smpc_ast
