@@ -85,57 +85,57 @@ jobs:
         run: |
           tox -e stack.test.integration
 
-  stack-integration-tests-public:
-    strategy:
-      max-parallel: 3
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
+  # stack-integration-tests-public:
+  #   strategy:
+  #     max-parallel: 3
+  #     matrix:
+  #       os: [ubuntu-latest]
+  #       python-version: ["3.10"]
 
-    runs-on: ${{matrix.os}}
+  #   runs-on: ${{matrix.os}}
 
-    steps:
-      - uses: actions/checkout@v2
+  #   steps:
+  #     - uses: actions/checkout@v2
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
+  #     - name: Set up Python ${{ matrix.python-version }}
+  #       uses: actions/setup-python@v2
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
 
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+  #     - name: Get pip cache dir
+  #       id: pip-cache
+  #       run: |
+  #         echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+  #     - name: pip cache
+  #       uses: actions/cache@v2
+  #       with:
+  #         path: ${{ steps.pip-cache.outputs.dir }}
+  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
+  #     - name: Upgrade pip
+  #       run: |
+  #         pip install --upgrade --user pip
 
-      - name: Install tox
-        run: |
-          pip install tox --upgrade
+  #     - name: Install tox
+  #       run: |
+  #         pip install tox --upgrade
 
-      - name: Install Docker Compose
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
-          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
+  #     - name: Install Docker Compose
+  #       if: runner.os == 'Linux'
+  #       shell: bash
+  #       run: |
+  #         mkdir -p ~/.docker/cli-plugins
+  #         DOCKER_COMPOSE_VERSION=v2.3.4
+  #         curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+  #         chmod +x ~/.docker/cli-plugins/docker-compose
 
-      - name: Run integration tests
-        timeout-minutes: 30
-        run: |
-          HAGRID_FLAGS="--tag=latest --test" tox -e stack.test.integration
+  #     - name: Run integration tests
+  #       timeout-minutes: 30
+  #       run: |
+  #         HAGRID_FLAGS="--tag=latest --test" tox -e stack.test.integration
 
   stack-integration-tests-tls:
     strategy:
