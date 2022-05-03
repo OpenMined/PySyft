@@ -1818,12 +1818,14 @@ def create_launch_azure_cmd(
             print(f"Password: {password}")
             print(f"Key: {key_path}")
             print("\nConnect with:")
-            print(f"ssh -i {key_path} {username}@{host_ip}")
+            if kwargs["auth_type"] == "key":
+                print(f"ssh -i {key_path} {username}@{host_ip}")
+            else:
+                print(f"ssh {username}@{host_ip}")
         else:
             extra_kwargs = {
                 "repo": repo,
                 "branch": branch,
-                "auth_type": "key",
                 "ansible_extras": ansible_extras,
             }
             kwargs.update(extra_kwargs)
