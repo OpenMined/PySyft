@@ -404,6 +404,22 @@ def hide_password(cmd: str) -> str:
         raise e
 
 
+def hide_azure_vm_password(azure_cmd: str) -> str:
+    try:
+        matcher = r"admin-password '(.+?)'"
+        passwords = re.findall(matcher, azure_cmd)
+        if len(passwords) > 0:
+            password = passwords[0]
+            stars = "*" * 4
+            azure_cmd = azure_cmd.replace(
+                f"admin-password '{password}'", f"admin-password '{stars}'"
+            )
+        return azure_cmd
+    except Exception as e:
+        print("Failed to hide password.")
+        raise e
+
+
 class QuestionInputError(Exception):
     pass
 
@@ -1566,7 +1582,7 @@ def make_vm_azure(
 
     host_ips: Optional[list] = []
     try:
-        print(f"Creating vm.\nRunning: {cmd}")
+        print(f"Creating vm.\nRunning: {hide_azure_vm_password(cmd)}")
         subprocess.check_output(cmd, shell=True)
         host_ips = get_vm_host_ips(node_name=node_name, resource_group=resource_group)
     except Exception as e:
