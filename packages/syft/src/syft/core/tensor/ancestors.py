@@ -7,7 +7,6 @@ from typing import Any
 from typing import List
 from typing import Optional
 from typing import Type
-import uuid
 
 # third party
 from nacl.signing import VerifyKey
@@ -20,7 +19,6 @@ from ..adp.data_subject_list import DataSubjectList
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
-from .passthrough import is_acceptable_simple_type  # type: ignore
 
 _PhiTensorRef = None
 
