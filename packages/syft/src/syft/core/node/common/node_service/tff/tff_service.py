@@ -28,6 +28,10 @@ from tensorflow_federated.python.core.impl.types import computation_types
 from tensorflow_federated.python.core.api import computations
 # from tensorflow_federated.python.core.impl.executors import executor_test_utils
 from tensorflow_federated.python.core.impl.executors import executor_stacks
+from tensorflow_federated.python.core.impl.context_stack import set_default_context
+# from tensorflow_federated.python.core.impl.context_stack import context_stack_test_utils
+from tensorflow_federated.python.core.backends.native import compiler
+from tensorflow_federated.python.core.impl.execution_contexts import async_execution_context
 
 # from pybind11_abseil import status
 import torch as th
@@ -35,22 +39,44 @@ import torch as th
 def custom_data_descriptor(uris, data_type):
     num_clients = len(uris)
     data_type_proto = tff.framework.serialize_type(data_type)
-    arguments = [pb.Data(uri=uri, type_data=data_type_proto) for uri in uris]
-    return tff.framework.DataDescriptor(None, arguments, tff.FederatedType(data_type, tff.CLIENTS), num_clients)
+    arguments = [pb.Computation(type=data_type_proto, data=pb.Data(uri=uri)) for uri in uris]
+    return tff.framework.DataDescriptor(None, 
+                                        arguments, 
+                                        # tf.int32
+                                        # data_type,
+                                        data_type_proto,
+                                        # tff.FederatedType(data_type, tff.CLIENTS), 
+                                        # 1
+                                        num_clients
+                                        )
 
-def test_data_descriptor(node):
-    print('ce plm')
+async def test_data_descriptor(node):
     uris = [key.to_string() for key in node.store.keys()]
-    data_desc = custom_data_descriptor(uris, ())
-    print('ce plm')
+    data_type = computation_types.TensorType(tf.int32)
+    data_desc = custom_data_descriptor(uris, data_type)
 
-    @computations.tf_computation()
+    @computations.tf_computation(tf.int32)
     def foo(x):
-        return x * 20.0
+        return x + 1
 
-    # with executor_test_utils.install_executor(executor_stacks.local_executor_factory()):
-    #     result = foo(data_desc)
-    #     print(result)
+    backend = PySyftDataBackend(node.store)
+    ex = tff.framework.DataExecutor(
+        tff.framework.EagerTFExecutor(),
+        backend
+    )
+    ex_fn = lambda device: ex
+    factory = executor_stacks.local_executor_factory(
+        leaf_executor_fn=ex_fn
+        )
+    # context = context_stack_test_utils.TestContext(factory)
+    context = async_execution_context.AsyncExecutionContext(
+        executor_fn=factory,
+        # compiler_fn=compiler.transform_to_native_form,
+    )
+    set_default_context.set_default_context(context)
+
+    result = await foo(data_desc)
+    print(result)
 
 
 async def train_model(store):
@@ -66,28 +92,6 @@ async def train_model(store):
 
     # with executor_test_utils.install_executor(executor_stacks.local_executor_factory()):
     #     result = foo(ds)
-
-
-async def support(store):
-    backend = PySyftDataBackend(store)
-    uris = [key.to_string() for key in store.keys()]
-    num_clients = len(uris)
-    data_type = ()
-    data_type_proto = tff.framework.serialize_type(data_type)
-    arguments = []
-    for uri in uris:
-        arguments.append(pb.Data(uri=uri, type=data_type_proto))
-    data_descriptor = tff.framework.DataDescriptor(None, arguments, tff.FederatedType(data_type, tff.CLIENTS), num_clients)
-    # data = await backend.materialize(pb.Data(uri=key.to_string()), ())
-    # string = await tff.federated_computation(lambda: 'Hello World')()
-    # print("in async context", string)
-    # return string
-
-async def test_custom_backend(store):
-    pass
-    # await test_materialize(store, )
-    # await test_raises_no_uri(store)
-    # await test_raises_unknown_uri(store)
 
 async def test_materialize(store, uri, type_signature, expected_value):
     backend = PySyftDataBackend(store)
@@ -113,31 +117,8 @@ class TFFService(ImmediateNodeServiceWithReply):
     ) -> TFFReplyMessage:
         if verify_key is None:
             traceback_and_raise("Can't process TFFService with no verification key.")
-        print('plm')
-        print(node.store.keys())
-        # import nest_asyncio
-        # import uvloop
-        # nest_asyncio.apply()
-        # asyncio.set_event_loop_policy(uvloop.EventLoopPolicy())
-        # print(asyncio.get_event_loop_policy())
-        # print(dir(asyncio.get_event_loop_policy()))
         tff.backends.native.execution_contexts.set_local_async_python_execution_context(reference_resolving_clients=True)
-        # loop = asyncio.get_event_loop()
-        
-        # loop.run_until_complete(asyncio.wait([loop.create_task(support())]))
-        # loop.close()
-        # asyncio.ensure_future(support(node.store))
-        test_data_descriptor(node)
-        # asyncio.ensure_future(test_custom_backend())
-        # test_custom_backend_materize()
-        # s = 0
-        # for x in range(100000000):
-        #     s += x
-        # print(s)
-        # loop = asyncio.get_running_loop()
-        # loop.run_until_complete(lambda: await tff.federated_computation(lambda: 'Hello World')())
-        # print(res)
-
+        asyncio.ensure_future(test_data_descriptor(node))
         result = msg.payload.run(node=node, verify_key=verify_key)
         return TFFReplyMessage(payload=result, address=msg.reply_to)
 
