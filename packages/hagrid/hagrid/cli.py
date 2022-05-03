@@ -944,7 +944,7 @@ def create_launch_cmd(
                 auto_generate_password = ask(
                     question=Question(
                         var_name="auto_generate_password",
-                        question="Do you want to auto-generate the password ?",
+                        question="Do you want to auto-generate the password? (y/n)",
                         kind="yesno",
                     ),
                     kwargs=kwargs,
@@ -2211,7 +2211,7 @@ def check(ip_addresses: list[str]) -> None:
         else:
             backend_status = "❌"
 
-        if check_ip_for_ssh(ip_address, silent=True, timeout=10):
+        if check_ip_for_ssh(ip_address, silent=True):
             ssh_status = "✅"
         else:
             ssh_status = "❌"
