@@ -7,7 +7,7 @@ import torch as th
 import syft as sy
 from syft import deserialize
 from syft import serialize
-from syft.core.adp.entity import Entity
+from syft.core.adp.data_subject import DataSubject
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.node.common.node_manager.dict_store import DictStore
 from syft.core.tensor.tensor import Tensor
@@ -53,7 +53,7 @@ def test_train_mnist() -> None:
     data_batch = np.random.rand(4, 28 * 28)
     label_batch = np.random.rand(4, 10)
 
-    bob = Entity(name="Bob")
+    bob = DataSubject(name="Bob")
 
     data = Tensor(data_batch).private(0.01, 1, entity=bob).autograd(requires_grad=True)
     target = (
@@ -80,7 +80,7 @@ def test_train_mnist() -> None:
 @pytest.mark.xfail
 def test_serde_tensors() -> None:
     data = np.random.rand(4, 10)
-    bob = Entity(name="Bob")
+    bob = DataSubject(name="Bob")
 
     # Step 1: upload a private dataset as the root owner
     data = (
@@ -112,7 +112,7 @@ def test_serde_tensors() -> None:
 @pytest.mark.xfail
 def test_send_tensors(root_client: sy.VirtualMachineClient) -> None:
     data = np.random.rand(4, 10)
-    bob = Entity(name="Bob")
+    bob = DataSubject(name="Bob")
 
     # Step 1: upload a private dataset as the root owner
     data = Tensor(data).private(0.01, 1, entity=bob).autograd(requires_grad=True)
@@ -148,10 +148,10 @@ def test_basic_publish_entities_event() -> None:
 
     data_batch = np.random.rand(4, 10)
 
-    trask = Entity(name="Trask")
-    kritika = Entity(name="Kritika")
-    madhava = Entity(name="Madhava")
-    tudor = Entity(name="Tudor")
+    trask = DataSubject(name="Trask")
+    kritika = DataSubject(name="Kritika")
+    madhava = DataSubject(name="Madhava")
+    tudor = DataSubject(name="Tudor")
 
     entities = [trask, kritika, madhava, tudor]
 
@@ -195,7 +195,7 @@ def test_basic_publish_entity_event() -> None:
 
     data_batch = np.random.rand(4, 10)
 
-    thanos = Entity(name="Thanos")
+    thanos = DataSubject(name="Thanos")
 
     # Step 1: upload a private dataset as the root owner
     data = (
@@ -239,7 +239,7 @@ def test_train_publish_entities_event() -> None:
     data_batch = np.random.rand(1, 3)
     label_batch = np.random.rand(1, 3)
 
-    thanos = Entity(name="Thanos")
+    thanos = DataSubject(name="Thanos")
 
     # trask = DataSubject(name="Trask")
     # kritika = DataSubject(name="Kritika")

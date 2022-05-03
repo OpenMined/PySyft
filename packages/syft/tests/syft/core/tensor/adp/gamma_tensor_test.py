@@ -10,7 +10,7 @@ import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
-from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
+from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 
 
 @pytest.fixture
@@ -64,9 +64,9 @@ def test_gamma_serde(
     lower_bound: np.ndarray,
 ) -> None:
     """Test basic serde for GammaTensor"""
-    tensor1 = NDEPT(
+    tensor1 = PT(
         child=reference_data,
-        entities=np.random.choice(["0", "1"], reference_data.shape),
+        data_subjects=np.random.choice(["0", "1"], reference_data.shape),
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
@@ -96,9 +96,9 @@ def test_gamma_publish(
     lower_bound: np.ndarray,
 ) -> None:
     """Test basic serde for GammaTensor"""
-    tensor1 = NDEPT(
+    tensor1 = PT(
         child=reference_data,
-        entities=np.random.choice([0, 1], reference_data.shape),
+        data_subjects=np.random.choice([0, 1], reference_data.shape),
         max_vals=upper_bound,
         min_vals=lower_bound,
     )

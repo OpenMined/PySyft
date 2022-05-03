@@ -488,6 +488,10 @@ class PhiTensorAncestor(TensorChainManager):
                 data_subjects.data_subjects_indexed,
             )
 
+        data_subjects_list = DataSubjectList(
+            one_hot_lookup=one_hot_lookup, data_subjects_indexed=data_subjects_indexed
+        )
+
         # SKIP check temporarily
         # for entity in one_hot_lookup:
         #     if not isinstance(entity, (np.integer, str, DataSubject)):
@@ -502,12 +506,9 @@ class PhiTensorAncestor(TensorChainManager):
                 f"one_hot_lookup {type(one_hot_lookup)} and data_subjects_indexed "
                 + f"{type(data_subjects_indexed)} must be np.ndarrays"
             )
-        elif data_subjects is not None and len(data_subjects) == self.shape[0]:
-
-            data_subject_list = DataSubjectList(
-                one_hot_lookup=one_hot_lookup,
-                data_subjects_indexed=data_subjects_indexed,
-            )
+        elif (
+            data_subjects_list is not None and len(data_subjects_list) == self.shape[0]
+        ):
 
             if isinstance(min_val, (bool, int, float)):
                 min_vals = np.array(min_val).ravel()  # make it 1D
@@ -538,7 +539,7 @@ class PhiTensorAncestor(TensorChainManager):
                 child=self.child,
                 min_vals=min_vals,
                 max_vals=max_vals,
-                entities=data_subject_list,  # type: ignore
+                data_subjects=data_subjects_list,  # type: ignore
             )  # type: ignore
 
         else:

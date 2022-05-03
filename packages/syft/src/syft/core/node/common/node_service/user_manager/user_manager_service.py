@@ -259,9 +259,10 @@ def get_all_users_msg(
             # Remaining Budget
             # TODO:
             # Rename it from budget_spent to remaining budget
-            _user_json["budget_spent"] = node.acc.get_remaining_budget(  # type: ignore
-                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
-                returned_epsilon_is_private=False,
+            _user_json["budget_spent"] = node.users.get_budget_for_user(  # type: ignore
+                verify_key=VerifyKey(
+                    user.verify_key.encode("utf-8"), encoder=HexEncoder
+                ),
             )
             _msg.append(_user_json)
 

@@ -22,7 +22,7 @@ from syft.core.node.common.node_service.user_manager.user_messages import (
 )
 from syft.core.node.common.util import MIN_BLOB_UPLOAD_SIZE_MB
 from syft.core.store.proxy_dataset import ProxyDataset
-from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
+from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 from syft.util import download_file
 from syft.util import get_root_data_path
 from syft.util import size_mb
@@ -61,10 +61,10 @@ def upload_subset(
     entities = DataSubjectList.from_series(user_id)
 
     tweets_data = sy.Tensor(impressions).private(
-        min_val=0, max_val=30, data_subjects=entities, ndept=True
+        min_val=0, max_val=30, data_subjects=entities
     )
 
-    assert isinstance(tweets_data.child, NDEPT)
+    assert isinstance(tweets_data.child, PT)
 
     tweets_data_size_mb = size_mb(tweets_data)
 
