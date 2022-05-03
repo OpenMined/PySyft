@@ -27,6 +27,7 @@ from ....io.address import Address
 from ....store.storeable_object import StorableObject
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
+from .greenlets_switch import retrieve_object
 from .run_class_method_action import RunClassMethodAction
 
 
@@ -73,13 +74,13 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         method = ast_node.object_ref
 
         # storable object raw from object store
-        resolved_self = node.store.get(self._self.id_at_location)
+        resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
         result_read_permissions = resolved_self.read_permissions
 
         resolved_args = []
         tag_args = []
         for arg in self.args:
-            r_arg = node.store.get(arg.id_at_location)
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -89,7 +90,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            r_arg = node.store.get(arg.id_at_location)
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             result_read_permissions = self.intersect_keys(
                 result_read_permissions, r_arg.read_permissions
             )
@@ -204,7 +205,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             args=list(map(lambda x: sy.serialize(x), self.args)),
             kwargs={k: sy.serialize(v) for k, v in self.kwargs.items()},
             address=sy.serialize(self.address),
-            _self=sy.serialize(self._self),
+            _self=sy.serialize(self._self, to_bytes=True),
             msg_id=sy.serialize(self.id),
             action=self.action.value,
             map_to_dyn=self.map_to_dyn,
@@ -228,7 +229,7 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
             path=proto.path,
             id_at_location=sy.deserialize(blob=proto.id_at_location),
             address=sy.deserialize(blob=proto.address),
-            _self=sy.deserialize(blob=proto._self),
+            _self=sy.deserialize(blob=proto._self, from_bytes=True),
             msg_id=sy.deserialize(blob=proto.msg_id),
             args=tuple(sy.deserialize(blob=x) for x in proto.args),
             kwargs={k: sy.deserialize(blob=v) for k, v in proto.kwargs.items()},

@@ -151,7 +151,7 @@ def test_add_tensor_types(
 
     simple_tensor = Tensor(
         child=np.random.randint(
-            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int32
+            low=-highest, high=highest, size=(dims + 10, dims + 10), dtype=np.int64
         )
     )
 
@@ -227,8 +227,8 @@ def test_serde(
     assert (de.max_vals == tensor1.max_vals).all()
     assert de.entities == tensor1.entities
 
-    assert np.shares_memory(tensor1.child, tensor1.child)
-    assert not np.shares_memory(de.child, tensor1.child)
+    assert np.shares_memory(tensor1.child.child, tensor1.child.child)
+    assert not np.shares_memory(de.child.child, tensor1.child.child)
 
 
 def test_copy(
@@ -265,10 +265,13 @@ def test_copy_with(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
+    encode_func = reference_tensor.child.encode
 
     # Copy the tensor and check if it works
-    copy_with_tensor = reference_tensor.copy_with(reference_data)
-    copy_with_binary_tensor = reference_tensor.copy_with(reference_binary_data)
+    copy_with_tensor = reference_tensor.copy_with(encode_func(reference_data))
+    copy_with_binary_tensor = reference_tensor.copy_with(
+        encode_func(reference_binary_data)
+    )
 
     assert (
         reference_tensor == copy_with_tensor
@@ -295,11 +298,11 @@ def test_sum(
     tensor = NDEPT(
         child=reference_data, entities=ishan, max_vals=upper_bound, min_vals=lower_bound
     )
+    encode_func = tensor.child.encode
+    tensor_sum = tensor.sum()
 
-    tensor_sum = sum([tensor.child[i, j] for i in range(dims) for j in range(dims)])
-
-    assert tensor.sum().child == tensor_sum
-    assert zeros_tensor.sum().child == 0
+    assert tensor_sum.child.child == encode_func(reference_data).sum()
+    assert zeros_tensor.sum().child.child == 0
 
 
 def test_ne_vals(
