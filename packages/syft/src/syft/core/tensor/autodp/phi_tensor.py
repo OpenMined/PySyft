@@ -144,7 +144,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
-        # We always maintain a Tensor hierarchy Tensor ---> NDEPT--> Actual Data
+        # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
 
         result = TensorWrappedPhiTensorPointer(
@@ -440,7 +440,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     @property
     def T(self) -> TensorWrappedPhiTensorPointer:
-        # We always maintain a Tensor hierarchy Tensor ---> NDEPT--> Actual Data
+        # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.T"
 
         result = TensorWrappedPhiTensorPointer(
@@ -1131,51 +1131,54 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def _object2bytes(self) -> bytes:
-        schema = get_capnp_schema(schema_file="ndept.capnp")
+        schema = get_capnp_schema(schema_file="phi_tensor.capnp")
 
-        ndept_struct: CapnpModule = schema.NDEPT  # type: ignore
-        ndept_msg = ndept_struct.new_message()
+        pt_struct: CapnpModule = schema.PT  # type: ignore
+        pt_msg = pt_struct.new_message()
         # this is how we dispatch correct deserialization of bytes
-        ndept_msg.magicHeader = serde_magic_header(type(self))
+        pt_msg.magicHeader = serde_magic_header(type(self))
 
-        # We always have FPT as the child of an NDEPT in the tensor chain.
-        chunk_bytes(serialize(self.child, to_bytes=True), "child", ndept_msg)  # type: ignore
+        # We always have FPT as the child of an PT in the tensor chain.
+        chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
 
-        ndept_msg.minVals = serialize(self.min_vals, to_bytes=True)
-        ndept_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        ndept_msg.dataSubjectsIndexed = capnp_serialize(
+        pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
+        pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
+        pt_msg.dataSubjectsIndexed = capnp_serialize(
             self.data_subjects.data_subjects_indexed
         )
 
-        ndept_msg.oneHotLookup = capnp_serialize(
+        pt_msg.oneHotLookup = capnp_serialize(
             liststrtonumpyutf8(self.data_subjects.one_hot_lookup)
         )
 
         # to pack or not to pack?
-        # to_bytes = ndept_msg.to_bytes()
+        # to_bytes = pt_msg.to_bytes()
 
-        return ndept_msg.to_bytes_packed()
+        return pt_msg.to_bytes_packed()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> PhiTensor:
-        schema = get_capnp_schema(schema_file="ndept.capnp")
-        ndept_struct: CapnpModule = schema.NDEPT  # type: ignore
+        schema = get_capnp_schema(schema_file="phi_tensor.capnp")
+        pt_struct: CapnpModule = schema.PT  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
-        # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        ndept_msg = ndept_struct.from_bytes_packed(
+        # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
+        pt_msg = pt_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
-        child = deserialize(combine_bytes(ndept_msg.child), from_bytes=True)
-        min_vals = deserialize(ndept_msg.minVals, from_bytes=True)
-        max_vals = deserialize(ndept_msg.maxVals, from_bytes=True)
-        data_subjects_indexed = capnp_deserialize(ndept_msg.dataSubjectsIndexed)
-        one_hot_lookup = numpyutf8tolist(capnp_deserialize(ndept_msg.oneHotLookup))
+        child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+        min_vals = deserialize(pt_msg.minVals, from_bytes=True)
+        max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
+        data_subjects_indexed = capnp_deserialize(pt_msg.dataSubjectsIndexed)
+        one_hot_lookup = numpyutf8tolist(capnp_deserialize(pt_msg.oneHotLookup))
 
-        entity_list = DataSubjectList(one_hot_lookup, data_subjects_indexed)
+        data_subjects_list = DataSubjectList(one_hot_lookup, data_subjects_indexed)
 
         return PhiTensor(
-            child=child, min_vals=min_vals, max_vals=max_vals, data_subjects=entity_list
+            child=child,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            data_subjects=data_subjects_list,
         )

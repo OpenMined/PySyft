@@ -1,7 +1,7 @@
 @0x8f9c60bd7a9842fc;
 using Array = import "array.capnp".Array;
 
-struct NDEPT {
+struct PT {
   magicHeader @0 :Data;
   child @1 :List(Data);
   minVals @2 :Data;
