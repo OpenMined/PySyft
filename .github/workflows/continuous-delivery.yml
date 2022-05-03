@@ -1,9 +1,13 @@
 name: Continuous Delivery
 
 on:
-  pull_request:
-    branches:
-      - dev
+  schedule:
+    - cron: "00 12 * * 0" # Sunday 12:00 UTC
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run syft cd manually"
+        required: false
 
 jobs:
   call-syft_tests:
@@ -62,6 +66,15 @@ jobs:
           message: "bump version"
           add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
           pull_strategy: NO-PULL
+  
+      - name: Build and publish
+        env:
+          TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
+          TWINE_PASSWORD: ${{ secrets.PYPI_PASSWORD }}
+        run: |
+          tox -e syft.publish
+          twine upload packages/syft/dist/*
+        
       - name: Set Grid package version
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
 
@@ -87,6 +100,15 @@ jobs:
             type=raw,value=${{ env.GRID_VERSION }}
             type=raw,value=latest
 
+      - name: Build and push `grid-backend` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages
+          file: ./packages/grid/backend/backend.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_backend.outputs.tags }}
+          target: backend
+
       - name: Docker meta for Grid-Frontend
         id: meta_grid_frontend
         uses: docker/metadata-action@v3
@@ -95,6 +117,16 @@ jobs:
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
             type=raw,value=latest
+
+
+      - name: Build and push `grid-frontend` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages/grid/frontend
+          file: ./packages/grid/frontend/frontend.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_frontend.outputs.tags }}
+          target: grid-ui-production
 
       - name: Docker meta for Grid-Headscale
         id: meta_grid_headscale
@@ -105,6 +137,14 @@ jobs:
             type=raw,value=${{ env.GRID_VERSION }}
             type=raw,value=latest
 
+      - name: Build and push `grid-headscale` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages/grid/vpn
+          file: ./packages/grid/vpn/headscale.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_headscale.outputs.tags }}
+      
       - name: Docker meta for Grid-Tailscale
         id: meta_grid_tailscale
         uses: docker/metadata-action@v3
@@ -113,3 +153,11 @@ jobs:
           tags: |
             type=raw,value=${{ env.GRID_VERSION }}
             type=raw,value=latest
+
+      - name: Build and push `grid-tailscale` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages/grid/vpn
+          file: ./packages/grid/vpn/tailscale.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_tailscale.outputs.tags }}
