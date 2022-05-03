@@ -2,17 +2,12 @@ syntax = "proto3";
 
 package syft.core.tensor;
 
-import "proto/lib/numpy/array.proto";
 import "proto/core/common/recursive_serde.proto";
 
 message ShareTensor {
-  oneof data {
-    syft.core.common.RecursiveSerde tensor = 1;
-    syft.lib.numpy.NumpyProto array = 2;
-  };
-
-  uint32 rank = 3;
-  uint32 seed_przs = 4;
-  bytes ring_size = 5;
-  repeated syft.core.common.RecursiveSerde parties_info = 6;
+  bytes child = 1;
+  uint32 rank = 2;
+  uint32 seed_przs = 3;
+  bytes ring_size = 4;
+  repeated syft.core.common.RecursiveSerde parties_info = 5;
 }

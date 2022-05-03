@@ -62,7 +62,7 @@ from .gamma_tensor import GammaTensor
 @serializable(recursive_serde=True)
 class TensorWrappedPhiTensorPointer(Pointer):
     __name__ = "TensorWrappedPhiTensorPointer"
-    __module__ = "syft.core.tensor.autodp.ndim_entity_phi"
+    __module__ = "syft.core.tensor.autodp.phi_tensor"
     __attr_allowlist__ = [
         # default pointer attrs
         "client",
@@ -70,7 +70,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         "object_type",
         "tags",
         "description",
-        # ndim attrs
+        # phi_tensor attrs
         "data_subjects",
         "min_vals",
         "max_vals",

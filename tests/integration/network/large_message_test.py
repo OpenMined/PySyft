@@ -11,7 +11,6 @@ import pytest
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject import DataSubject
 from syft.core.adp.data_subject_list import DataSubjectList
 from syft.core.store.proxy_dataset import ProxyDataset
 from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
@@ -132,17 +131,11 @@ def test_large_blob_upload() -> None:
             dtype=DEFAULT_INT_NUMPY_TYPE,
         )
 
-        ndept = True
-        if not ndept:
-            entities = [DataSubject(name="ϕhishan") * reference_data.shape[0]]
-        else:
-            data_subject_name = "ϕhishan"
-            entities = DataSubjectList.from_objs(
-                [data_subject_name] * (multiplier * ndim)
-            )
+        data_subject_name = "ϕhishan"
+        entities = DataSubjectList.from_objs([data_subject_name] * (multiplier * ndim))
 
         tweets_data = sy.Tensor(reference_data).private(
-            min_val=0, max_val=30, data_subjects=entities, ndept=ndept
+            min_val=0, max_val=30, data_subjects=entities
         )
 
         report[size_name]["tensor_type"] = type(tweets_data.child).__name__

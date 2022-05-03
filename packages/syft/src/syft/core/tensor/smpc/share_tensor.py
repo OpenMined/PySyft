@@ -828,12 +828,8 @@ class ShareTensor(PassthroughTensor):
             "seed_przs": self.seed_przs,
             "ring_size": rs_bytes,
         }
-        if isinstance(self.child, np.ndarray):
-            proto_init_kwargs["array"] = serialize(self.child)
-        elif isinstance(self.child, torch.Tensor):
-            proto_init_kwargs["array"] = serialize(np.array(self.child))
-        else:
-            proto_init_kwargs["tensor"] = serialize(self.child)
+
+        proto_init_kwargs["child"] = serialize(self.child, to_bytes=True)
 
         return ShareTensor_PB(**proto_init_kwargs)
 
@@ -845,10 +841,8 @@ class ShareTensor(PassthroughTensor):
             "seed_przs": proto.seed_przs,
             "ring_size": int.from_bytes(proto.ring_size, "big"),
         }
-        if proto.HasField("tensor"):
-            init_kwargs["value"] = deserialize(proto.tensor)
-        else:
-            init_kwargs["value"] = deserialize(proto.array)
+
+        init_kwargs["value"] = deserialize(proto.child, from_bytes=True)
 
         # init_kwargs["init_clients"] = True
         res = ShareTensor(**init_kwargs)
