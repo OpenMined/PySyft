@@ -925,14 +925,25 @@ def create_launch_cmd(
                             "Unable to create VM without a private key"
                         )
             elif parsed_kwargs["auth_type"] == "password":
-                parsed_kwargs["password"] = ask(
+                auto_generate_password = ask(
                     question=Question(
-                        var_name="password",
-                        question=f"Password for {username}@{host}?",
-                        kind="password",
+                        var_name="auto_generate_password",
+                        question="Do you want to auto-generate the password ?",
+                        kind="yesno",
                     ),
                     kwargs=kwargs,
                 )
+                if auto_generate_password == "y":
+                    parsed_kwargs["password"] = generate_sec_random_password(length=16)
+                elif auto_generate_password == "n":
+                    parsed_kwargs["password"] = ask(
+                        question=Question(
+                            var_name="password",
+                            question=f"Password for {username}@{host}?",
+                            kind="password",
+                        ),
+                        kwargs=kwargs,
+                    )
 
             repo = ask(
                 Question(
@@ -958,11 +969,13 @@ def create_launch_cmd(
             use_branch(branch=branch)
 
             password = parsed_kwargs.get("password")
-            password = password if password else generate_sec_random_password(length=16)
 
             auth = AuthCredentials(
                 username=username, key_path=key_path, password=password
             )
+
+            if not auth.valid:
+                raise Exception(f"Login Credentials are not valid. {auth}")
 
             return create_launch_azure_cmd(
                 verb=verb,
@@ -1532,7 +1545,7 @@ def make_vm_azure(
     node_name: str,
     resource_group: str,
     username: str,
-    password: str,
+    password: Optional[str],
     key_path: Optional[str],
     size: str,
     image_name: str,
@@ -1546,9 +1559,9 @@ def make_vm_azure(
     )
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
-    cmd += "--public-ip-sku Standard --authentication-type all "
+    cmd += "--public-ip-sku Standard --authentication-type all --admin-username {username} "
     cmd += f"--ssh-key-values {public_key_path} " if public_key_path else ""
-    cmd += f"--admin-username {username} --admin-password '{password}' "
+    cmd += f"--admin-password '{password}' " if password else ""
     cmd += f"--count {node_count} " if node_count > 1 else ""
 
     host_ips: Optional[list] = []
@@ -1712,7 +1725,7 @@ def create_launch_azure_cmd(
     location: str,
     size: str,
     username: str,
-    password: str,
+    password: Optional[str],
     key_path: Optional[str],
     repo: str,
     branch: str,
@@ -1908,9 +1921,6 @@ def create_launch_custom_cmd(
             "repo_branch": kwargs["branch"],
             "docker_tag": version_string,
         }
-
-        if host_term.host != "localhost" and auth.password is not None:
-            ANSIBLE_ARGS["ansible_ssh_pass"] = auth.password
 
         if host_term.host != "localhost" and kwargs["auth_type"] == "password":
             ANSIBLE_ARGS["ansible_ssh_pass"] = kwargs["password"]
