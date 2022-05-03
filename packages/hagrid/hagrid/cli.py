@@ -463,8 +463,10 @@ class Question:
             )
 
         if self.kind == "password":
-            return validate_password(password=value)
-
+            try:
+                return validate_password(password=value)
+            except Exception as e:
+                raise QuestionInputError(f"Invalid password. {e}")
         return value
 
 
@@ -481,7 +483,11 @@ def ask(question: Question, kwargs: TypeDict[str, str]) -> str:
         else:
             value = click.prompt(question.question, type=str)
 
-    value = question.validate(value=value)
+    try:
+        value = question.validate(value=value)
+    except QuestionInputError as e:
+        print(e)
+        return ask(question=question, kwargs=kwargs)
     if question.cache:
         setattr(arg_cache, question.var_name, value)
 
@@ -713,7 +719,9 @@ def create_launch_cmd(
         kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
     )
 
-    parsed_kwargs["node_count"] = kwargs["node_count"] if "node_count" in kwargs else 1
+    parsed_kwargs["node_count"] = (
+        int(kwargs["node_count"]) if "node_count" in kwargs else 1
+    )
 
     if parsed_kwargs["node_count"] > 1 and host not in ["azure"]:
         print("\nArgument `node_count` is only supported with `azure`.\n")
