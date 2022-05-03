@@ -41,7 +41,7 @@ class RedisLedgerStore(AbstractLedgerStore):
             self.redis: redis.client.Redis = redis.Redis(
                 host=settings.REDIS_HOST,
                 port=self.settings.REDIS_PORT,
-                db=self.settings.LEDGER_DB_ID,
+                db=self.settings.REDIS_LEDGER_DB_ID,
             )
         except Exception as e:
             print("failed to load redis", e)
