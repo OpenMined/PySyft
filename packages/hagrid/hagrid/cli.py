@@ -1573,9 +1573,10 @@ def make_vm_azure(
         if key_path
         else None
     )
+    authentication_type = "ssh" if key_path else "password"
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
-    cmd += "--public-ip-sku Standard --authentication-type all --admin-username {username} "
+    cmd += f"--public-ip-sku Standard --authentication-type {authentication_type} --admin-username {username} "
     cmd += f"--ssh-key-values {public_key_path} " if public_key_path else ""
     cmd += f"--admin-password '{password}' " if password else ""
     cmd += f"--count {node_count} " if node_count > 1 else ""
