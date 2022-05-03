@@ -35,62 +35,6 @@ def _PhiTensor() -> Type[PassthroughTensor]:
     return _PhiTensorRef
 
 
-_AutogradTensorRef = None
-
-
-def _AutogradTensor() -> Type[PassthroughTensor]:
-    global _AutogradTensorRef
-    if _AutogradTensorRef is None:
-        # relative
-        from .autograd.tensor import AutogradTensor
-
-        _AutogradTensorRef = AutogradTensor
-    return _AutogradTensorRef
-
-
-class AutogradTensorAncestor(TensorChainManager):
-    """Inherited by any class which might have or like to have AutogradTensor in its chain
-    of .child objects"""
-
-    @property
-    def grad(self):  # type: ignore
-        child_gradient = self.child.grad
-        if child_gradient is None:
-            return None
-        return self.__class__(child_gradient)
-
-    @property
-    def requires_grad(self) -> bool:
-        return self.child.requires_grad
-
-    def backward(self, grad=None):  # type: ignore
-
-        AutogradTensor = _AutogradTensor()
-
-        # TODO: @Madhava question, if autograd(requires_grad=True) is not set
-        # we still end up in here from AutogradTensorAncestor but child.backward
-        # has no backprop_id
-        if isinstance(self.child, AutogradTensorAncestor) or isinstance(
-            self.child, AutogradTensor
-        ):
-
-            if grad is not None and not is_acceptable_simple_type(grad):
-                grad = grad.child
-
-            return self.child.backward(grad, backprop_id=uuid.uuid4())  # type: ignore
-        else:
-            raise Exception(
-                "No AutogradTensor found in chain, but backward() method called."
-            )
-
-    def autograd(self, requires_grad: bool = True) -> AutogradTensorAncestor:
-        AutogradTensor = _AutogradTensor()
-
-        self.push_abstraction_top(AutogradTensor, requires_grad=requires_grad)  # type: ignore
-
-        return self
-
-
 def data_subject_creation_wizard(data: Any) -> List[Any]:
 
     w = textwrap.TextWrapper(initial_indent="\t", subsequent_indent="\t")
