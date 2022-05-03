@@ -249,9 +249,9 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
+    lib_ast.syft.add_attr("core", attr=tensor_ast.syft.core)
     lib_ast.syft.core.add_attr("node", attr=client_ast.syft.core.node)
     lib_ast.syft.core.add_attr("common", attr=client_ast.syft.core.common)
-    lib_ast.syft.core.add_attr("tensor", attr=tensor_ast.syft.core.tensor)
     lib_ast.syft.core.add_attr("smpc", attr=smpc_ast.syft.core.smpc)
 
     # let the misc creation be always the last, as it needs the full ast solved

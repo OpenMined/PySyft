@@ -27,14 +27,13 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor.smpc.share_tensor",
         "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
-        "syft.core.tensor.autodp.single_entity_phi",
-        "syft.core.tensor.autodp.ndim_entity_phi",
+        "syft.core.tensor.autodp.phi_tensor",
     ]
     classes = [
         ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
         (
-            "syft.core.tensor.autodp.ndim_entity_phi.PhiTensor",
-            "syft.core.tensor.autodp.ndim_entity_phi.PhiTensor",
+            "syft.core.tensor.autodp.phi_tensor.PhiTensor",
+            "syft.core.tensor.autodp.phi_tensor.PhiTensor",
             PhiTensor,
         ),
         (
