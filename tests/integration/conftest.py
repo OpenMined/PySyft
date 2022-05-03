@@ -67,9 +67,7 @@ def load_dataset() -> None:
     PARTIES = 2
 
     data = np.array([[1.2, 2.7], [3.4, 4.8]])
-    data = sy.Tensor(data).private(
-        0, 5, data_subjects=["Mars"] * data.shape[0], ndept=True
-    )
+    data = sy.Tensor(data).private(0, 5, data_subjects=["Mars"] * data.shape[0])
 
     for i in range(PARTIES):
         try:
