@@ -8,7 +8,7 @@ import pyperf
 
 # syft absolute
 import syft as sy
-from syft.core.adp.entity import Entity
+from syft.core.adp.data_subject import DataSubject
 
 
 def create_bench_constructor(
@@ -21,15 +21,15 @@ def create_bench_constructor(
     # name = f"Tweets- {df.shape[0]} rows dataset "
     impressions = np.array(list(df["impressions"]))
     publication_title = list(df["publication_title"])
-    entities = list()
+    data_subjects = list()
     for i in range(len(publication_title)):
-        entities.append(Entity(name=publication_title[i]))
+        data_subjects.append(DataSubject(name=publication_title[i]))
 
     partial_function_evaluation = functools.partial(
         sy.Tensor(impressions).private,
         min_val=0,
         max_val=30,
-        entities=entities,
+        data_subjects=data_subjects,
         ndept=ndept,
     )
     rows = len(impressions)

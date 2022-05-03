@@ -99,7 +99,7 @@ def test_eq(
     lower_bound: np.ndarray,
     ishan: DataSubject,
 ) -> None:
-    """Test equality between two identical NDimEntityPhiTensors"""
+    """Test equality between two identical PhiTensors"""
     reference_tensor = PT(
         child=reference_data,
         data_subjects=ishan,

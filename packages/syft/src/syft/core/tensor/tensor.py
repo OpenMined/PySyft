@@ -480,7 +480,6 @@ class Tensor(
         description: str = "",
     ) -> Pointer:
         # relative
-        # TODO:  Should create init pointer for NDimEntityPhiTensorPointer.
 
         if isinstance(self.child, PhiTensor):
             return TensorWrappedPhiTensorPointer(
