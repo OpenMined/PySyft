@@ -66,7 +66,7 @@ jobs:
           message: "bump version"
           add: "['.bumpversion.cfg', 'VERSION', 'packages/grid/VERSION', 'packages/grid/devspace.yaml', 'packages/syft/src/syft/VERSION', 'packages/grid/frontend/package.json', 'packages/grid/frontend/src/pages/_domain/login.tsx', 'packages/syft/src/syft/__init__.py']"
           pull_strategy: NO-PULL
-  
+
       - name: Build and publish
         env:
           TWINE_USERNAME: ${{ secrets.PYPI_USERNAME }}
@@ -74,7 +74,7 @@ jobs:
         run: |
           tox -e syft.publish
           twine upload packages/syft/dist/*
-        
+
       - name: Set Grid package version
         run: echo "GRID_VERSION=$(python packages/grid/VERSION)" >> $GITHUB_ENV
 
@@ -118,7 +118,6 @@ jobs:
             type=raw,value=${{ env.GRID_VERSION }}
             type=raw,value=latest
 
-
       - name: Build and push `grid-frontend` image to DockerHub
         uses: docker/build-push-action@v2
         with:
@@ -144,7 +143,7 @@ jobs:
           file: ./packages/grid/vpn/headscale.dockerfile
           push: true
           tags: ${{ steps.meta_grid_headscale.outputs.tags }}
-      
+
       - name: Docker meta for Grid-Tailscale
         id: meta_grid_tailscale
         uses: docker/metadata-action@v3
