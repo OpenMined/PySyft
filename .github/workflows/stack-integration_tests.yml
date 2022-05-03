@@ -321,7 +321,6 @@ jobs:
           pip install cython
           pip install pycapnp
           pip install numpy==1.22.3
-          pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
           set HAGRID_ART=false
           set NETWORK_CHECK_INTERVAL=5
           hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
