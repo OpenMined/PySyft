@@ -223,8 +223,8 @@ def get_user_msg(
         del _msg["private_key"]
 
         # Get budget spent
-        _msg["budget_spent"] = node.acc.user_budget(
-            user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
+        _msg["budget_spent"] = node.users.get_budget_for_user(
+            verify_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
         )
 
     return GetUserResponse(

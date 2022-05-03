@@ -13,21 +13,17 @@ from typing import Optional
 from typing import Union
 
 # third party
-from google.protobuf.reflection import GeneratedProtocolMessageType
 import names
 
 # relative
-from ...proto.core.adp.entity_pb2 import DataSubjectGroup as DataSubjectGroup_PB
-from ...proto.core.adp.entity_pb2 import Entity as Entity_PB
 from ..common import UID
-from ..common.serde.deserialize import _deserialize as deserialize
 from ..common.serde.serializable import serializable
-from ..common.serde.serialize import _serialize as serialize
 
 
-@serializable()
+@serializable(recursive_serde=True)
 class DataSubject:
     __slots__ = "name"
+    __attr_allowlist__ = ("name",)
 
     def __init__(self, name: str = "") -> None:
 
@@ -104,24 +100,12 @@ class DataSubject:
     def __repr__(self) -> str:
         return "<DataSubject:" + str(self.name) + ">"
 
-    # converts entity into a protobuf object
-    def _object2proto(self) -> Entity_PB:
-        return Entity_PB(name=self.name)
 
-    # converts a generated protobuf object into an entity
-    @staticmethod
-    def _proto2object(proto: Entity_PB) -> DataSubject:
-        return DataSubject(name=proto.name)
-
-    # returns the type of generated protobuf object
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return Entity_PB
-
-
-@serializable()
+@serializable(recursive_serde=True)
 class DataSubjectGroup:
     """Data Subject is what we have been calling an 'ENTITY' all along ..."""
+
+    __attr_allowlist__ = ("id", "entity_set")
 
     def __init__(
         self,
@@ -187,22 +171,3 @@ class DataSubjectGroup:
 
     def __repr__(self) -> str:
         return f"DSG{[i.__repr__() for i in self.entity_set]}"
-
-    # converts entity into a protobuf object
-    def _object2proto(self) -> DataSubjectGroup_PB:
-        return DataSubjectGroup_PB(
-            id=self.id._object2proto(), entities=[serialize(x) for x in self.entity_set]
-        )
-
-    # converts a generated protobuf object into an entity
-    @staticmethod
-    def _proto2object(proto: DataSubjectGroup_PB) -> DataSubjectGroup:
-        return DataSubjectGroup(
-            list_of_entities=[deserialize(x) for x in proto.data_subjects],
-            id=UID._proto2object(proto.id),
-        )
-
-    # returns the type of generated protobuf object
-    @staticmethod
-    def get_protobuf_schema() -> GeneratedProtocolMessageType:
-        return DataSubjectGroup_PB

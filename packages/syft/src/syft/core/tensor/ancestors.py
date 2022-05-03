@@ -7,6 +7,7 @@ from typing import Any
 from typing import List
 from typing import Optional
 from typing import Type
+import uuid
 
 # third party
 from nacl.signing import VerifyKey
@@ -19,6 +20,7 @@ from ..adp.data_subject_list import DataSubjectList
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
+from .passthrough import is_acceptable_simple_type  # type: ignore
 
 _PhiTensorRef = None
 
@@ -31,6 +33,62 @@ def _PhiTensor() -> Type[PassthroughTensor]:
 
         _PhiTensorRef = PhiTensor
     return _PhiTensorRef
+
+
+_AutogradTensorRef = None
+
+
+def _AutogradTensor() -> Type[PassthroughTensor]:
+    global _AutogradTensorRef
+    if _AutogradTensorRef is None:
+        # relative
+        from .autograd.tensor import AutogradTensor
+
+        _AutogradTensorRef = AutogradTensor
+    return _AutogradTensorRef
+
+
+class AutogradTensorAncestor(TensorChainManager):
+    """Inherited by any class which might have or like to have AutogradTensor in its chain
+    of .child objects"""
+
+    @property
+    def grad(self):  # type: ignore
+        child_gradient = self.child.grad
+        if child_gradient is None:
+            return None
+        return self.__class__(child_gradient)
+
+    @property
+    def requires_grad(self) -> bool:
+        return self.child.requires_grad
+
+    def backward(self, grad=None):  # type: ignore
+
+        AutogradTensor = _AutogradTensor()
+
+        # TODO: @Madhava question, if autograd(requires_grad=True) is not set
+        # we still end up in here from AutogradTensorAncestor but child.backward
+        # has no backprop_id
+        if isinstance(self.child, AutogradTensorAncestor) or isinstance(
+            self.child, AutogradTensor
+        ):
+
+            if grad is not None and not is_acceptable_simple_type(grad):
+                grad = grad.child
+
+            return self.child.backward(grad, backprop_id=uuid.uuid4())  # type: ignore
+        else:
+            raise Exception(
+                "No AutogradTensor found in chain, but backward() method called."
+            )
+
+    def autograd(self, requires_grad: bool = True) -> AutogradTensorAncestor:
+        AutogradTensor = _AutogradTensor()
+
+        self.push_abstraction_top(AutogradTensor, requires_grad=requires_grad)  # type: ignore
+
+        return self
 
 
 def data_subject_creation_wizard(data: Any) -> List[Any]:
