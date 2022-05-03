@@ -11,32 +11,28 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/syft-pr_tests.yml@dev
 
   call-grid-backend_test:
-    needs: call-syft_tests
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/grid-backend_tests.yml@dev
 
   call-grid-frontend_test:
-    needs: call-grid-backend_test
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/grid-frontend_tests.yml@dev
 
-  call-stack-integration_tests:
-    needs: call-grid-frontend_test
-    if: github.repository == 'OpenMined/PySyft' # don't run on forks
-    uses: OpenMined/PySyft/.github/workflows/stack-integration_tests.yml@dev
-
   call-syft-security:
-    needs: call-stack-integration_tests
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/syft-security.yml@dev
 
   call-syft-version_tests:
-    needs: call-syft-security
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/syft-version_tests.yml@dev
 
+  call-stack-integration_tests:
+    needs: [call-syft_tests, call-grid-backend_test, call-syft-security, call-grid-frontend_test, call-syft_tests, call-syft-version_tests]
+    if: github.repository == 'OpenMined/PySyft' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/stack-integration_tests.yml@dev
+
   deploy-syft-beta:
-    needs: call-syft-version_tests
+    needs: [call-syft_tests, call-grid-backend_test, call-stack-integration_tests, call-syft-security, call-grid-frontend_test, call-syft_tests, call-syft-version_tests]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v2
