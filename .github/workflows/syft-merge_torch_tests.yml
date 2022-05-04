@@ -35,11 +35,15 @@ defaults:
 jobs:
   torch-tests-latest-versions:
     strategy:
-      max-parallel: 3
+      max-parallel: 4
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10"]
         torch-version: [1.11.0]
+        include:
+          - python-version: "3.7"
+            torch-version: 1.11.0
+            os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:

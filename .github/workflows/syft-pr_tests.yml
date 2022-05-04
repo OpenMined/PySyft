@@ -22,11 +22,15 @@ defaults:
 jobs:
   syft-core-tests-latest-versions:
     strategy:
-      max-parallel: 3
+      max-parallel: 4
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10"]
         torch-version: [1.11.0]
+        include:
+          - python-version: "3.7"
+            torch-version: 1.11.0
+            os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -75,11 +79,18 @@ jobs:
           pip install pycapnp
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
-      - name: Scan for security issues
-        if: steps.changes.outputs.syft == 'true'
+      - name: Scan for security issues python 3.8+
+        if: steps.changes.outputs.syft == 'true' && matrix.python-version != '3.7'
         run: |
           bandit -r src
           safety check
+
+      - name: Scan for security issues python 3.7
+        if: steps.changes.outputs.syft == 'true' && matrix.python-version == '3.7'
+        run: |
+          bandit -r src
+          # we want to test python 3.7 for colab so we have to ignore these numpy issues
+          safety check -i 44717 -i 44716 -i 44715
 
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
