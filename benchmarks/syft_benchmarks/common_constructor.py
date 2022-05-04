@@ -14,7 +14,6 @@ from syft.core.adp.data_subject import DataSubject
 def create_bench_constructor(
     runner: pyperf.Runner,
     data_file,
-    ndept: bool = False,
 ) -> None:
 
     df = pd.read_parquet(data_file)
@@ -30,10 +29,9 @@ def create_bench_constructor(
         min_val=0,
         max_val=30,
         data_subjects=data_subjects,
-        ndept=ndept,
     )
     rows = len(impressions)
-    row_type = "ndept" if ndept else "rept"
+    row_type = "phitensor"
     runner.bench_func(
         f"constructor_for_{row_type}_rows_{rows:,}",
         partial_function_evaluation,

@@ -46,14 +46,14 @@ def reference_data(highest, dims) -> np.ndarray:
 
 @pytest.fixture
 def upper_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
-    """This is used to specify the max_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
+    """This is used to specify the max_vals that is either binary or randomly generated b/w 0-1"""
     max_values = np.ones_like(reference_data) * highest
     return max_values
 
 
 @pytest.fixture
 def lower_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
-    """This is used to specify the min_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
+    """This is used to specify the min_vals that is either binary or randomly generated b/w 0-1"""
     min_values = np.ones_like(reference_data) * -highest
     return min_values
 

@@ -1,2 +1,2 @@
 # relative
-from .ndepts.suite import run_ndept_suite  # noqa: F401
+from .phitensor.suite import run_phitensor_suite  # noqa: F401

@@ -8,13 +8,12 @@ import pyperf
 import syft as sy
 
 
-def create_bench_ndept_deserialize(runner: pyperf.Runner, ndept):
-
-    serialized_data = sy.serialize(ndept, to_bytes=True)
+def create_bench_phitensor_deserialize(runner: pyperf.Runner, phitensor):
+    serialized_data = sy.serialize(phitensor, to_bytes=True)
     partially_evaluated_func = functools.partial(
         sy.deserialize, serialized_data, from_bytes=True
     )
     runner.bench_func(
-        f"deserialize_ndept__{len(ndept):,}",
+        f"deserialize_phitensor__{len(phitensor):,}",
         partially_evaluated_func,
     )

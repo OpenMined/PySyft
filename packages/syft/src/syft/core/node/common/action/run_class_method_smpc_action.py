@@ -165,7 +165,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 
         # We do not use blob storage support for SMPC,
         # Since we shifted to TensorPointer as the shares in MPCTensor
-        # We use this temporary fix , to not regress NDEPT performance
+        # We use this temporary fix, to not regress PhiTensor performance
         if check_send_to_blob_storage(
             obj=result,
             use_blob_storage=getattr(node.settings, "USE_BLOB_STORAGE", False),
