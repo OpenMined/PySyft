@@ -10,7 +10,7 @@ import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
-from syft.core.tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor as NDEPT
+from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 
 
 @pytest.fixture
@@ -46,14 +46,14 @@ def reference_data(highest, dims) -> np.ndarray:
 
 @pytest.fixture
 def upper_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
-    """This is used to specify the max_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
+    """This is used to specify the max_vals that is either binary or randomly generated b/w 0-1"""
     max_values = np.ones_like(reference_data) * highest
     return max_values
 
 
 @pytest.fixture
 def lower_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
-    """This is used to specify the min_vals for a SEPT that is either binary or randomly generated b/w 0-1"""
+    """This is used to specify the min_vals that is either binary or randomly generated b/w 0-1"""
     min_values = np.ones_like(reference_data) * -highest
     return min_values
 
@@ -64,13 +64,13 @@ def test_gamma_serde(
     lower_bound: np.ndarray,
 ) -> None:
     """Test basic serde for GammaTensor"""
-    tensor1 = NDEPT(
+    tensor1 = PT(
         child=reference_data,
-        entities=np.random.choice(["0", "1"], reference_data.shape),
+        data_subjects=np.random.choice(["0", "1"], reference_data.shape),
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    assert tensor1.entities.data_subjects_indexed.shape == tensor1.child.shape
+    assert tensor1.data_subjects.data_subjects_indexed.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.sum()
 
     # Checks to ensure gamma tensor was properly created
@@ -96,13 +96,13 @@ def test_gamma_publish(
     lower_bound: np.ndarray,
 ) -> None:
     """Test basic serde for GammaTensor"""
-    tensor1 = NDEPT(
+    tensor1 = PT(
         child=reference_data,
-        entities=np.random.choice([0, 1], reference_data.shape),
+        data_subjects=np.random.choice([0, 1], reference_data.shape),
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    assert tensor1.entities.data_subjects_indexed.shape == tensor1.child.shape
+    assert tensor1.data_subjects.data_subjects_indexed.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.sum()
     assert isinstance(gamma_tensor1, GammaTensor)
     # Gamma Tensor Does not have FPT Values
@@ -136,13 +136,13 @@ def test_pos(
     lower_bound: np.ndarray,
 ) -> None:
     """Test basic serde for GammaTensor"""
-    tensor1 = NDEPT(
+    tensor1 = PT(
         child=reference_data,
-        entities=np.random.choice(["0", "1"], reference_data.shape),
+        data_subjects=np.random.choice(["0", "1"], reference_data.shape),
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    assert tensor1.entities.data_subjects_indexed.shape == tensor1.child.shape
+    assert tensor1.data_subjects.data_subjects_indexed.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.sum()
 
     # Checks to ensure gamma tensor was properly created
