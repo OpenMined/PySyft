@@ -14,8 +14,8 @@ from typing_extensions import final
 # relative
 from ......grid import GridURL
 from .....common.serde.serializable import serializable
-from ....domain.domain_interface import DomainInterface
-from ....domain.registry import DomainMessageRegistry
+from ....domain_interface import DomainInterface
+from ....domain_msg_registry import DomainMessageRegistry
 from ...permissions.permissions import BasePermission
 from ...permissions.user_permissions import NoRestriction
 from ...util import get_s3_client

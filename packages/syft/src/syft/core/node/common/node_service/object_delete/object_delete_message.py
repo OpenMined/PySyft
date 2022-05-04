@@ -10,9 +10,9 @@ from typing_extensions import final
 # relative
 from .....common.serde.serializable import serializable
 from .....common.uid import UID
-from ....domain.domain_interface import DomainInterface
-from ....domain.registry import DomainMessageRegistry
-from ....vm.registry import VMMessageRegistry
+from ....domain_interface import DomainInterface
+from ....domain_msg_registry import DomainMessageRegistry
+from ....registry import VMMessageRegistry
 from ...permissions.permissions import BasePermission
 from ...permissions.user_permissions import NoRestriction
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage

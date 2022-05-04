@@ -18,8 +18,8 @@ from .....core.tensor.tensor import Tensor
 from ....common import UID
 from ....common.serde.serialize import _serialize as serialize  # noqa: F401
 from ...abstract.node import AbstractNodeClient
-from ...domain.enums import RequestAPIFields
-from ...domain.enums import ResponseObjectEnum
+from ...enums import RequestAPIFields
+from ...enums import ResponseObjectEnum
 from ..node_service.dataset_manager.dataset_manager_messages import CreateDatasetMessage
 from ..node_service.dataset_manager.dataset_manager_messages import DeleteDatasetMessage
 from ..node_service.dataset_manager.dataset_manager_messages import GetDatasetMessage

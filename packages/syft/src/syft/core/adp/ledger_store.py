@@ -16,7 +16,6 @@ import redis
 import syft as sy
 
 # relative
-from ...util import size_mb
 from .abstract_ledger_store import AbstractDataSubjectLedger
 from .abstract_ledger_store import AbstractLedgerStore
 
@@ -42,7 +41,7 @@ class RedisLedgerStore(AbstractLedgerStore):
             self.redis: redis.client.Redis = redis.Redis(
                 host=settings.REDIS_HOST,
                 port=self.settings.REDIS_PORT,
-                db=self.settings.LEDGER_DB_ID,
+                db=self.settings.REDIS_LEDGER_DB_ID,
             )
         except Exception as e:
             print("failed to load redis", e)
@@ -63,7 +62,6 @@ class RedisLedgerStore(AbstractLedgerStore):
         try:
             key_str = bytes(key).hex()
             buf = sy.serialize(value, to_bytes=True)
-            print(f"Saving DataSubjectLedger of size: {int(size_mb(buf))} MB")
             self.redis.set(key_str, buf)
         except Exception as e:
             print(f"Failed to set ledger to database. {e}")

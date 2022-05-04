@@ -23,8 +23,8 @@ from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
 from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize
-from ...core.node.domain.enums import RequestAPIFields
-from ...core.node.domain.exceptions import RequestAPIException
+from ...core.node.enums import RequestAPIFields
+from ...core.node.exceptions import RequestAPIException
 from ...logger import debug
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ...proto.grid.connections.http_connection_pb2 import (
@@ -257,7 +257,7 @@ class GridHTTPConnection(HTTPConnection):
 
         resp = requests.post(
             str(self.base_url) + route,
-            files=files,
+            files=files,  # type: ignore
             headers=header,
             verify=verify_tls(),
             proxies=HTTPConnection.proxies,
