@@ -13,9 +13,9 @@ services:
       - SERVICE_NAME=tailscale
       - RELEASE=${RELEASE:-production}
       - HOSTNAME=${DOMAIN_NAME?Variable not set}
-      - STACK_API_KEY= {STACK_API_KEY}
-      - HTTP_PORT=$HTTP_PORT
-      - HTTPS_PORT=$HTTPS_PORT
+      - STACK_API_KEY=$STACK_API_KEY
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
     volumes:
       - tailscale-data:/var/lib/tailscale
       - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
@@ -64,8 +64,8 @@ services:
       - NODE_TYPE=${NODE_TYPE?Variable not set}
       - VERSION=${VERSION}
       - VERSION_HASH=${VERSION_HASH}
-      - HTTP_PORT=$HTTP_PORT
-      - HTTPS_PORT=$HTTPS_PORT
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
     labels:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
@@ -211,8 +211,6 @@ services:
       - RELEASE=${RELEASE:-production}
       - NETWORK_NAME=omnet
       - STACK_API_KEY=$STACK_API_KEY
-    ports:
-      - "4000"
     labels:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
@@ -222,11 +220,38 @@ services:
       - "traefik.http.middlewares.${STACK_NAME?Variable not set}-vpn.stripprefix.forceslash=true"
       - "traefik.http.services.${STACK_NAME?Variable not set}-vpn.loadbalancer.server.port=8080"
 
+  seaweedfs:
+    profiles:
+      - blob-storage
+    image: "${DOCKER_IMAGE_SEAWEEDFS?Variable not set}"
+    environment:
+      - S3_VOLUME_SIZE_MB=${S3_VOLUME_SIZE_MB:-1024}
+    command: "server -s3 -s3.config=/etc/s3config.json -master.volumeSizeLimitMB=${S3_VOLUME_SIZE_MB}"
+    volumes:
+      - seaweedfs-data:/data
+      - ./seaweedfs/s3config.json:/etc/s3config.json
+      - ./seaweedfs/filer.toml:/etc/seaweedfs/filer.toml
+
+    depends_on:
+      - redis
+    labels:
+      - "traefik.enable=true"
+      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
+      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.rule=PathPrefix(`/blob`)"
+      - "traefik.http.routers.${STACK_NAME?Variable not set}-blob.middlewares=${STACK_NAME?Variable not set}-host,${STACK_NAME?Variable not set}-blob"
+      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-host.headers.customrequestheaders.Host=${S3_ENDPOINT}:${S3_PORT}"
+      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.prefixes=/blob"
+      - "traefik.http.middlewares.${STACK_NAME?Variable not set}-blob.stripprefix.forceslash=true"
+      - "traefik.http.services.${STACK_NAME?Variable not set}-blob.loadbalancer.server.port=${S3_PORT}"
+      # by rewriting the customrequestheaders.Host with the same host:port as the
+      # code uses internally any S3 presigned urls will still validate
+
 volumes:
   app-db-data:
   tailscale-data:
   headscale-data:
   app-redis-data:
+  seaweedfs-data:
 
 networks:
   traefik-public:
