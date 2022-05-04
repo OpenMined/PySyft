@@ -135,7 +135,7 @@ def test_pos(
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
 ) -> None:
-    """Test basic serde for GammaTensor"""
+    """Test __pos__ for GammaTensor"""
     tensor1 = PT(
         child=reference_data,
         data_subjects=np.random.choice(["0", "1"], reference_data.shape),
@@ -149,7 +149,7 @@ def test_pos(
     assert isinstance(gamma_tensor1, GammaTensor)
     assert gamma_tensor1.value == tensor1.child.child.sum()
 
-    output = +gamma_tensor1
+    output = gamma_tensor1.__pos__()
 
     assert output.value == gamma_tensor1.value
     assert output.data_subjects == gamma_tensor1.data_subjects
