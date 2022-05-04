@@ -16,8 +16,8 @@ from ...core.common.message import SyftMessage
 from ...core.common.serde.deserialize import _deserialize
 from ...core.common.serde.serialize import _serialize
 from ...core.io.connection import ClientConnection
-from ...core.node.domain.enums import RequestAPIFields
-from ...core.node.domain.exceptions import RequestAPIException
+from ...core.node.enums import RequestAPIFields
+from ...core.node.exceptions import RequestAPIException
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 
 

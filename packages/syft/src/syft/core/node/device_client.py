@@ -8,12 +8,12 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
-from ....logger import traceback_and_raise
-from ...common.uid import UID
-from ...io.location import Location
-from ...io.location import SpecificLocation
-from ...io.route import Route
-from ..common.client import Client
+from ...logger import traceback_and_raise
+from ..common.uid import UID
+from ..io.location import Location
+from ..io.location import SpecificLocation
+from ..io.route import Route
+from .common.client import Client
 
 
 @final

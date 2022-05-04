@@ -16,47 +16,47 @@ from nacl.signing import VerifyKey
 from pydantic import BaseSettings
 
 # relative
-from ....lib.python import String
-from ....logger import error
-from ...common.message import SignedImmediateSyftMessageWithReply
-from ...common.message import SignedMessage
-from ...common.message import SyftMessage
-from ...common.uid import UID
-from ...io.location import Location
-from ...io.location import SpecificLocation
-from ..common.node import Node
-from ..common.node_manager.association_request_manager import AssociationRequestManager
-from ..common.node_manager.node_manager import NodeManager
-from ..common.node_manager.node_route_manager import NodeRouteManager
-from ..common.node_manager.role_manager import RoleManager
-from ..common.node_manager.user_manager import UserManager
-from ..common.node_service.association_request.association_request_service import (
+from ...lib.python import String
+from ...logger import error
+from ..common.message import SignedImmediateSyftMessageWithReply
+from ..common.message import SignedMessage
+from ..common.message import SyftMessage
+from ..common.uid import UID
+from ..io.location import Location
+from ..io.location import SpecificLocation
+from .common.node import Node
+from .common.node_manager.association_request_manager import AssociationRequestManager
+from .common.node_manager.node_manager import NodeManager
+from .common.node_manager.node_route_manager import NodeRouteManager
+from .common.node_manager.role_manager import RoleManager
+from .common.node_manager.user_manager import UserManager
+from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
-from ..common.node_service.network_search.network_search_service import (
+from .common.node_service.network_search.network_search_service import (
     NetworkSearchService,
 )
-from ..common.node_service.node_setup.node_setup_messages import (
+from .common.node_service.node_setup.node_setup_messages import (
     CreateInitialSetUpMessage,
 )
-from ..common.node_service.node_setup.node_setup_service import NodeSetupService
-from ..common.node_service.peer_discovery.peer_discovery_service import (
+from .common.node_service.node_setup.node_setup_service import NodeSetupService
+from .common.node_service.peer_discovery.peer_discovery_service import (
     PeerDiscoveryService,
 )
-from ..common.node_service.ping.ping_service import PingService
-from ..common.node_service.request_receiver.request_receiver_messages import (
+from .common.node_service.ping.ping_service import PingService
+from .common.node_service.request_receiver.request_receiver_messages import (
     RequestMessage,
 )
-from ..common.node_service.role_manager.role_manager_service import RoleManagerService
-from ..common.node_service.user_manager.user_manager_service import UserManagerService
-from ..common.node_service.vpn.vpn_service import VPNConnectService
-from ..common.node_service.vpn.vpn_service import VPNJoinSelfService
-from ..common.node_service.vpn.vpn_service import VPNJoinService
-from ..common.node_service.vpn.vpn_service import VPNRegisterService
-from ..common.node_service.vpn.vpn_service import VPNStatusService
-from ..domain.client import DomainClient
-from ..domain.domain import Domain
-from .client import NetworkClient
+from .common.node_service.role_manager.role_manager_service import RoleManagerService
+from .common.node_service.user_manager.user_manager_service import UserManagerService
+from .common.node_service.vpn.vpn_service import VPNConnectService
+from .common.node_service.vpn.vpn_service import VPNJoinSelfService
+from .common.node_service.vpn.vpn_service import VPNJoinService
+from .common.node_service.vpn.vpn_service import VPNRegisterService
+from .common.node_service.vpn.vpn_service import VPNStatusService
+from .domain import Domain
+from .domain_client import DomainClient
+from .network_client import NetworkClient
 
 
 class Network(Node):
@@ -163,21 +163,24 @@ class Network(Node):
         self.set_node_uid()
 
     def loud_print(self) -> None:
-        install_path = os.path.abspath(
-            os.path.join(os.path.realpath(__file__), "../../../../img/")
-        )
-        ascii_magic.to_terminal(
-            ascii_magic.from_image_file(
-                img_path=install_path + "/pygrid.png", columns=83
+        try:
+            install_path = os.path.abspath(
+                os.path.join(os.path.realpath(__file__), "../../../img/")
             )
-        )
+            ascii_magic.to_terminal(
+                ascii_magic.from_image_file(
+                    img_path=install_path + "/pygrid.png", columns=83
+                )
+            )
 
-        print(
-            r"""
-                                                    |\ |  _ |_      _   _ |
-                                                    | \| (- |_ \)/ (_) |  |(
-"""
-        )
+            print(
+                r"""
+                                                        |\ |  _ |_      _   _ |
+                                                        | \| (- |_ \)/ (_) |  |(
+    """
+            )
+        except Exception:
+            print("NETOWRK NODE (print fail backup)")
 
     @property
     def icon(self) -> str:

@@ -5,16 +5,16 @@ from typing import Optional
 from nacl.signing import VerifyKey
 
 # relative
-from ....core.node.abstract.node_service_interface import NodeServiceInterface
-from ....core.node.common.node_service.auth import service_auth
-from ....core.node.common.node_service.generic_payload.syft_message import (
+from ...core.node.abstract.node_service_interface import NodeServiceInterface
+from ...core.node.common.node_service.auth import service_auth
+from ...core.node.common.node_service.generic_payload.syft_message import (
     NewSyftMessage as SyftMessage,
 )
-from ....core.node.common.node_service.node_service import NodeService
-from .registry import DomainMessageRegistry
+from ...core.node.common.node_service.node_service import NodeService
+from .registry import VMMessageRegistry
 
 
-class DomainServiceClass(NodeService):
+class VMServiceClass(NodeService):
     @staticmethod
     @service_auth(guests_welcome=True)  # Service level authentication
     def process(
@@ -46,5 +46,5 @@ class DomainServiceClass(NodeService):
 
     @staticmethod
     def message_handler_types() -> list:
-        registered_messages = DomainMessageRegistry().get_registered_messages()
+        registered_messages = VMMessageRegistry().get_registered_messages()
         return registered_messages

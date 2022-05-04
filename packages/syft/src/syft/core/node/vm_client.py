@@ -8,11 +8,11 @@ from nacl.signing import VerifyKey
 from typing_extensions import final
 
 # relative
-from ...common.uid import UID
-from ...io.location import Location
-from ...io.location.specific import SpecificLocation
-from ...io.route import Route
-from ..common.client import Client
+from ..common.uid import UID
+from ..io.location import Location
+from ..io.location.specific import SpecificLocation
+from ..io.route import Route
+from .common.client import Client
 
 
 @final
