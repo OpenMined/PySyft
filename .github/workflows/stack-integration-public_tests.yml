@@ -1,4 +1,3 @@
-
 # Stack Integration Tests
 name: Syft + Grid Stack Integration Tests (Public)
 
@@ -12,7 +11,7 @@ on:
         required: false
 
 jobs:
-stack-integration-tests-public:
+  stack-integration-tests-public:
     strategy:
       max-parallel: 3
       matrix:
