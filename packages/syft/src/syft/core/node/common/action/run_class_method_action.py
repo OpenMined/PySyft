@@ -230,10 +230,10 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             mutating_internal = False
             # TODO: Need to clarify with Madhava/Andrew if it should be allowed to
             # create the result pointer and store it in the database.
-            #traceback_and_raise(
+            # traceback_and_raise(
             #     Exception("You don't have permissions to perform the write operation.")
             # )
-       # node.users.get_user(verify_key=verify_key)   #Verify if key exist in db
+        # node.users.get_user(verify_key=verify_key)   #Verify if key exist in db
         if mutating_internal:
             if isinstance(resolved_self, StorableObject):
                 resolved_self.read_permissions = result_read_permissions
@@ -289,12 +289,14 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
             node.store[self._self.id_at_location] = resolved_self  # type: ignore
 
         # check if the object is at location , if yes , check the user's permission otherwise block or pass.
-        current_result_object = node.store.get_object(self.id_at_location)
-        if current_result_object is None or verify_key in current_result_object.write_permissions:
+        current_result_object = node.store.get(self.id_at_location)
+        if (
+            current_result_object is None
+            or verify_key in current_result_object.write_permissions
+        ):
             node.store[self.id_at_location] = result
         else:
-            pass # TODO: May be tell the user they dont have permission to perform this action.
-            
+            pass  # TODO: May be tell the user they dont have permission to perform this action.
 
     def _object2proto(self) -> RunClassMethodAction_PB:
         """Returns a protobuf serialization of self.

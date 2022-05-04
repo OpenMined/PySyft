@@ -6,7 +6,6 @@ import torch as th
 
 # syft absolute
 import syft as sy
-
 from syft.core.node.common.action.run_class_method_action import RunClassMethodAction
 
 
@@ -74,7 +73,7 @@ def test_store_object_mutation(
     assert all(new_result == (y + y)) is True
 
 
-#TODO: Fix
+# TODO: Fix
 def test_store_overwrite_key(
     client: sy.VirtualMachineClient, root_client: sy.VirtualMachineClient
 ) -> None:

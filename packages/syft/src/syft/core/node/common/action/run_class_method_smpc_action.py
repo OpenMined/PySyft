@@ -272,7 +272,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
 #     from .smpc_action_functions import _MAP_ACTION_TO_FUNCTION
 
 #     func = _MAP_ACTION_TO_FUNCTION[msg.name_action]
-#     store_object_self = node.store.get_object(key=msg.self_id)
+#     store_object_self = node.store.get(key=msg.self_id)
 #     if store_object_self is None:
 #         raise KeyError("Object not already in store")
 
