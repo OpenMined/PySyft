@@ -13,6 +13,7 @@ import pytest
 # syft absolute
 import syft as sy
 from syft.core.adp.entity import Entity
+from syft.core.tensor.config import DEFAULT_INT_NUMPY_TYPE
 
 sy.logger.remove()
 
@@ -43,10 +44,9 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     ca_root = sy.login(email="info@openmined.org", password="changethis", port=9082)
     ca_data = load_data(csv_file="ca - feb 2021.csv")
 
-    # NOTE: casting this tensor as np.int32 is REALLY IMPORTANT
     canada_trade = (
         (np.array(list(ca_data["Trade Value (US$)"])) / 100000)[0:10]
-    ).astype(np.int32)
+    ).astype(DEFAULT_INT_NUMPY_TYPE)
     trade_partners = ((list(ca_data["Partner"])))[0:10]
 
     entities = list()
@@ -78,9 +78,9 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # Italy
     it_root = sy.login(email="info@openmined.org", password="changethis", port=9083)
     it_data = load_data(csv_file="it - feb 2021.csv")
-    # NOTE: casting this tensor as np.int32 is REALLY IMPORTANT
+
     data_batch = ((np.array(list(it_data["Trade Value (US$)"])) / 100000)[0:10]).astype(
-        np.int32
+        DEFAULT_INT_NUMPY_TYPE
     )
     trade_partners = ((list(it_data["Partner"])))[0:10]
 
@@ -183,8 +183,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     print("after it", it.privacy_budget)
 
     assert len(sycure_result) == 10
-    assert sum(sycure_result) > -100
-    assert sum(sycure_result) < 100
+    assert sum(sycure_result) > -300
+    assert sum(sycure_result) < 2000
 
     assert ca.privacy_budget < 210
     assert ca.privacy_budget > 10

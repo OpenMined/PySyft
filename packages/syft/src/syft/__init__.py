@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.7.0-beta.8"
+__version__ = "0.7.0-beta.16"
 
 # stdlib
 from pathlib import Path
@@ -40,6 +40,7 @@ from pkg_resources import get_distribution  # noqa: F401
 # relative
 # Package Imports
 from . import filterwarnings  # noqa: F401
+from . import jax_settings  # noqa: F401
 from . import lib  # noqa: F401
 from . import logger  # noqa: F401
 

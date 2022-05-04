@@ -6,18 +6,19 @@
 
 - name: Apply system changes
   import_tasks: system.yml
-  when: deploy_only is not defined
+  when: deploy_only is not defined and install == "true"
 
 - name: Apply security updates
   import_tasks: security.yml
-  when: deploy_only is not defined
+  when: deploy_only is not defined and install == "true"
 
 - name: Install docker
   import_tasks: docker.yml
-  when: deploy_only is not defined
+  when: deploy_only is not defined and install == "true"
 
 - name: Archive Logs
   ansible.builtin.cron:
+    disabled: "{{ not install | bool }}"
     minute: "0"
     hour: "0"
     name: "Archive Logs"
@@ -33,7 +34,7 @@
     force: yes
   become_user: "{{ om_user }}"
   ignore_errors: yes
-  when: vagrant is not defined
+  when: vagrant is not defined and install == "true"
 
 - name: Check Build Directory
   stat:
@@ -53,4 +54,4 @@
     group: "{{ om_user }}"
   become_user: "{{ om_user }}"
   ignore_errors: yes
-  when: build_dir_exists.stat.exists == False and vagrant is not defined
+  when: build_dir_exists.stat.exists == False and vagrant is not defined and install == "true"

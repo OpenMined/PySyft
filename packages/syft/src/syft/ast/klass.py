@@ -32,6 +32,7 @@ from ..core.node.common.action.save_object_action import SaveObjectAction
 from ..core.node.common.node_service.resolve_pointer_type.resolve_pointer_type_messages import (
     ResolvePointerTypeMessage,
 )
+from ..core.node.common.util import check_send_to_blob_storage
 from ..core.node.common.util import upload_to_s3_using_presigned
 from ..core.pointer.pointer import Pointer
 from ..core.store.storeable_object import StorableObject
@@ -109,7 +110,6 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
     """
     # relative
     from ..core.node.common.action import smpc_action_functions
-    from ..core.node.common.action.smpc_action_functions import MAP_FUNC_TO_ACTION
 
     def run_class_smpc_method(
         __self: Any,
@@ -125,13 +125,11 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
         Returns:
             Pointer to object returned by class method.
         """
-        seed_id_locations = kwargs.get("seed_id_locations", None)
+        seed_id_locations = kwargs.pop("seed_id_locations", None)
         if seed_id_locations is None:
             raise ValueError(
                 "There should be a `seed_id_locations` kwargs when doing an operation for MPCTensor"
             )
-
-        kwargs["seed_id_locations"] = str(seed_id_locations)
 
         op = attr_path_and_name.split(".")[-1]
         id_at_location = smpc_action_functions.get_id_at_location_from_op(
@@ -169,6 +167,7 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
             args=pointer_args,
             kwargs=pointer_kwargs,
             id_at_location=result.id_at_location,
+            seed_id_locations=seed_id_locations,
             address=__self.client.address,
         )
         __self.client.send_immediate_msg_without_reply(msg=cmd)
@@ -247,7 +246,8 @@ def get_run_class_method(attr_path_and_name: str, SMPC: bool = False) -> Callabl
 
     method_name = attr_path_and_name.rsplit(".", 1)[-1]
     if SMPC or (
-        "ShareTensor" in attr_path_and_name and method_name in MAP_FUNC_TO_ACTION
+        "ShareTensor" in attr_path_and_name
+        and method_name in smpc_action_functions.ACTION_FUNCTIONS
     ):
         return run_class_smpc_method
 
@@ -761,7 +761,22 @@ class Class(Callable):
             else:
                 ptr.gc_enabled = True
 
-            if send_to_blob_storage:
+            # Check if the client has blob storage enabled
+            # blob storage can only be used if client node has blob storage enabled.
+            if send_to_blob_storage and not client.settings.get(
+                "use_blob_storage", False
+            ):
+                sys.stdout.write(
+                    "\n**Warning**: Blob Storage is disabled on this client node. Switching to database store.\n"
+                )
+                send_to_blob_storage = False
+
+            # Check if the obj satisfies the min requirements for it to be stored in blob store
+            store_obj_in_blob_store = check_send_to_blob_storage(
+                obj=self, use_blob_storage=send_to_blob_storage
+            )
+
+            if store_obj_in_blob_store:
                 store_data = upload_to_s3_using_presigned(
                     client=client,
                     data=self,

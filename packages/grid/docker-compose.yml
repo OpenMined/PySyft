@@ -9,9 +9,6 @@ services:
   tailscale:
     hostname: ${DOMAIN_NAME?Variable not set}
     image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
-    build:
-      context: ./vpn
-      dockerfile: tailscale.dockerfile
     environment:
       - SERVICE_NAME=tailscale
       - RELEASE=${RELEASE:-production}
@@ -34,7 +31,7 @@ services:
 
   proxy:
     restart: always
-    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}
+    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
@@ -58,15 +55,9 @@ services:
 
   frontend:
     restart: always
-    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}-${NODE_TYPE}:${VERSION-latest}"
+    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
     profiles:
       - frontend
-    build:
-      context: ./frontend
-      dockerfile: frontend.dockerfile
-      target: "grid-ui-production"
-      args:
-        NODE_TYPE: ${NODE_TYPE}
     environment:
       - SERVICE_NAME=frontend
       - RELEASE=${RELEASE:-production}
@@ -104,7 +95,7 @@ services:
 
   redis:
     restart: always
-    image: redis:6.2
+    image: redis:${REDIS_VERSION?Variable not set}
     volumes:
       - app-redis-data:/data
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
@@ -140,12 +131,10 @@ services:
       - STACK_API_KEY=${STACK_API_KEY}
       - PORT=8001
       - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
-      - HTTP_PORT=$HTTP_PORT
-      - HTTPS_PORT=$HTTPS_PORT
-    build:
-      context: ../
-      dockerfile: ./grid/backend/backend.dockerfile
-      target: "backend"
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
     command: /start.sh
     labels:
       - "traefik.enable=true"
@@ -173,12 +162,10 @@ services:
       - PORT=8011
       - STREAM_QUEUE=1
       - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
-      - HTTP_PORT=$HTTP_PORT
-      - HTTPS_PORT=$HTTPS_PORT
-    build:
-      context: ../
-      dockerfile: ./grid/backend/backend.dockerfile
-      target: "backend"
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
     labels:
       - "traefik.enable=true"
@@ -205,13 +192,12 @@ services:
       - C_FORCE_ROOT=1
       - STACK_API_KEY=${STACK_API_KEY}
       - IGNORE_TLS_ERRORS=${IGNORE_TLS_ERRORS?False}
-      - HTTP_PORT=$HTTP_PORT
-      - HTTPS_PORT=$HTTPS_PORT
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
+      - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+      - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
-    build:
-      context: ../
-      dockerfile: ./grid/backend/backend.dockerfile
-      target: "backend"
     network_mode: service:proxy
 
   headscale:
@@ -219,9 +205,6 @@ services:
       - network
     hostname: headscale
     image: "${DOCKER_IMAGE_HEADSCALE?Variable not set}:${VERSION-latest}"
-    build:
-      context: ./vpn
-      dockerfile: headscale.dockerfile
     volumes:
       - headscale-data:/headscale/data
     environment:

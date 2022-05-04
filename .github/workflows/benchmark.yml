@@ -1,6 +1,9 @@
 name: Benchmark Test
 
 on:
+  schedule:
+    - cron: "0 00 * * *" # 12am UTC, 5:30pm Indian, 9pm Brazil, 11am AEDT #Trigger commit
+
   workflow_call:
 
   workflow_dispatch:
@@ -12,14 +15,17 @@ jobs:
   run-benchmark:
     strategy:
       matrix:
-        python-version: [3.9]
+        python-version: ["3.10"]
     runs-on: [benchmark-linux]
     steps:
+      - name: Install build essentials
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake libssl-dev build-essential
+
       - name: set permissions on work folder for self-runners
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
       - uses: actions/checkout@v2
-
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v2
         with:
@@ -33,6 +39,28 @@ jobs:
         run: |
           pip install --upgrade tox
 
+      - name: Install mongo tools
+        run: |
+          sudo apt-get update && sudo apt install mongo-tools -y
+
+      - name: Install Docker Compose
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.3.4
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+
       - name: Run Benchmark
         run: |
-         tox -e syft.benchmark
+          docker rm `docker ps -aq` --force || true
+          docker system prune --volumes --force || true
+          rm -rf .tox
+          tox -e syft.benchmark
+
+      - name: Import Benchmark Results
+        run: |
+          mongoimport --uri ${{ secrets.MONGO_URI }} --collection macro_benchmark --file macro_benchmark.json
+          mongoimport --uri ${{ secrets.MONGO_URI }} --collection micro_benchmark --file micro_benchmark.json
+

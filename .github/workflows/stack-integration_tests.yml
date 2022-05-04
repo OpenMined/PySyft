@@ -11,6 +11,7 @@ on:
       - dev
       - main
       - "0.6.0"
+      - "0.7.0"
   workflow_dispatch:
     inputs:
       none:
@@ -23,7 +24,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{matrix.os}}
 
@@ -84,12 +85,64 @@ jobs:
         run: |
           tox -e stack.test.integration
 
+  stack-integration-tests-public:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+
+    runs-on: ${{matrix.os}}
+
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install tox
+        run: |
+          pip install tox --upgrade
+
+      - name: Install Docker Compose
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.3.4
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+
+      - name: Run integration tests
+        timeout-minutes: 30
+        run: |
+          HAGRID_FLAGS="--tag=latest --test" tox -e stack.test.integration
+
   stack-integration-tests-tls:
     strategy:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{matrix.os}}
 
@@ -165,11 +218,16 @@ jobs:
       max-parallel: 3
       matrix:
         os: [Windows-10]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: [self-hosted, windows]
 
     steps:
+      - name: Start Docker Desktop
+        run: |
+          powershell.exe -command 'start "C:\Program Files\Docker\Docker\Docker Desktop.exe"'
+        shell: cmd
+
       - name: Stop all running containers
         continue-on-error: true
         run: |
@@ -226,6 +284,33 @@ jobs:
           pip install tox --upgrade
         shell: cmd
 
+      - name: Check python version
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -VV
+        shell: cmd
+
+      - name: Show choco installed packages
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: list --localonly
+
+      - name: Install cmake
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          cmake --version
+        shell: cmd
+
+      - name: Install visualcpp-build-tools
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
+
       - name: Start stacks
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
@@ -233,13 +318,17 @@ jobs:
           HAGRID_ART: false
         run: |
           pip install -e packages/hagrid
+          pip install cython
+          pip install pycapnp
+          pip install numpy==1.22.3
+          pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
           set HAGRID_ART=false
-          hagrid launch test_network_1 network to docker:9081 --tail=false --headless=true --test
-          hagrid launch test_domain_1 domain to docker:9082 --tail=false --headless=true --test
-          hagrid launch test_domain_2 domain to docker:9083 --tail=false --build=false --headless=true --test
+          set NETWORK_CHECK_INTERVAL=5
+          hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
+          hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
+          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test
           bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-          bash -c "(docker logs test_network_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           docker ps
         shell: cmd
 
@@ -271,7 +360,91 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
+
+    runs-on: [self-hosted, linux]
+
+    steps:
+      - name: set permissions on work folder for self-runners
+        run: |
+          sudo chown -R $USER:$USER ~/actions-runner/_work/
+
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install --upgrade --user pip
+
+      - name: Install build essentials
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake libssl-dev build-essential
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
+
+      - name: docker cache
+        uses: actions/cache@v2
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        with:
+          path: .docker-cache
+          key: ${{ runner.os }}-docker
+          restore-keys: |
+            ${{ runner.os }}-docker
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.3.4
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+          docker rm `docker ps -aq` --force || true
+          rm -rf .tox
+          tox -e stack.test.integration.smpc
+          docker rm `docker ps -aq` --force || true
+          docker system prune --volumes --force || true
+
+  stack-integration-tests-k8s:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
 
     runs-on: [self-hosted, linux]
 
@@ -321,91 +494,42 @@ jobs:
         run: |
           pip install tox --upgrade
 
-      - name: docker cache
-        uses: actions/cache@v2
+      - name: Install kubectl
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y apt-transport-https ca-certificates curl
+          sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
+          echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
+          sudo apt-get update
+          sudo apt-get install -y kubectl
+
+      - name: Install jq
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # needed for the wait_for.sh script
+          sudo apt update && sudo apt install jq -y
+
+      - name: Install k9s
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # install k9s
+          wget https://github.com/derailed/k9s/releases/download/v0.25.18/k9s_Linux_x86_64.tar.gz
+          tar -xvf k9s_Linux_x86_64.tar.gz
+          chmod +x k9s
+          sudo install k9s /usr/local/bin;
+
+      - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
-        with:
-          path: .docker-cache
-          key: ${{ runner.os }}-docker
-          restore-keys: |
-            ${{ runner.os }}-docker
-
-      - name: Run integration tests
-        if: steps.changes.outputs.stack == 'true'
         shell: bash
         run: |
-          mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
-          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
-          docker rm `docker ps -aq` --force || true
-          rm -rf .tox
-          tox -e stack.test.integration.smpc
-          docker rm `docker ps -aq` --force || true
-          docker system prune --volumes --force || true
-
-  stack-integration-tests-k8s:
-    strategy:
-      max-parallel: 3
-      matrix:
-        os: [ubuntu-latest]
-        python-version: [3.9]
-
-    runs-on: ${{ matrix.os }}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Check for file changes
-        uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          base: ${{ github.ref }}
-          token: ${{ github.token }}
-          filters: .github/file-filters.yml
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Get pip cache dir
-        if: steps.changes.outputs.stack == 'true'
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install --upgrade --user pip
-
-      - name: Install tox
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install tox --upgrade
-
-      - name: Run integration tests
-        if: steps.changes.outputs.stack == 'true'
-        shell: bash
-        run: |
-          # replace minikube with an older version
-          wget https://github.com/kubernetes/minikube/releases/download/v1.25.2/minikube-linux-amd64
-          mv minikube-linux-amd64 minikube
-          chmod +x minikube
+          # install k3d
+          wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
           export PATH=`pwd`:$PATH
-          minikube version
+          k3d version
           curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
           sudo install devspace /usr/local/bin;
           tox -e stack.test.integration.k8s
@@ -415,7 +539,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest]
-        python-version: [3.9]
+        python-version: ["3.10"]
 
     runs-on: ${{matrix.os}}
     steps:

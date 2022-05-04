@@ -1,9 +1,13 @@
 # stdlib
+import os
 import re
 import subprocess
 
 # third party
 import pytest
+
+CONTAINER_HOST = os.environ.get("CONTAINER_HOST", "docker")
+print("CONTAINER_HOST", CONTAINER_HOST)
 
 
 def docker_network_connect(direction: str = "connect") -> None:
@@ -30,11 +34,15 @@ def docker_network_connect(direction: str = "connect") -> None:
 
 @pytest.mark.security
 def test_create_overlay_networks_docker() -> None:
+    if CONTAINER_HOST != "docker":
+        return
     docker_network_connect(direction="connect")
 
 
 @pytest.mark.security
 def test_vpn_scan() -> None:
+    if CONTAINER_HOST != "docker":
+        return
     # the tailscale container is currently the same so we can get away with a
     # single external scan
     containers = [
@@ -75,4 +83,6 @@ def test_vpn_scan() -> None:
 
 @pytest.mark.security
 def test_remove_overlay_networks_docker() -> None:
+    if CONTAINER_HOST != "docker":
+        return
     docker_network_connect(direction="disconnect")

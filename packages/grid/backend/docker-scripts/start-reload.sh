@@ -1,9 +1,7 @@
-#! /usr/bin/env sh
+#! /usr/bin/env bash
 set -e
 
 echo "Running start-reload.sh with RELEASE=${RELEASE}"
-
-python3 -c "print('---Monkey Patching: Gevent---\n');from gevent import monkey;monkey.patch_all()"
 
 if [ -f /app/grid/main.py ]; then
     DEFAULT_MODULE_NAME=grid.main

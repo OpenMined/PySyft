@@ -1,0 +1,79 @@
+name: HAGrid Continuous Delivery
+
+on:
+  schedule:
+    - cron: "00 03 * * *"
+  workflow_dispatch:
+    inputs:
+      none:
+        description: "Run hagrid cd manually"
+        required: false
+
+jobs:
+  call-hagrid-tests:
+    if: github.repository == 'OpenMined/PySyft' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/hagrid-pr_tests.yml@dev
+
+  hagrid-deploy:
+    needs: call-hagrid-tests
+    runs-on: ubuntu-latest
+
+    outputs:
+      current_hash: ${{ steps.get_hash.outputs.current_hash }}
+      previous_hash: ${{ steps.get_hash.outputs.previous_hash }}
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          token: ${{ secrets.SYFT_BUMP_TOKEN }}
+      - name: Install checksumdir
+        run: |
+          pip install --upgrade checksumdir
+      - name: Get the hashes
+        id: get-hashes
+        run: |
+          current_hash=$(checksumdir ./packages/hagrid)
+          echo "::set-output name=current_hash::$current_hash"
+          previous_hash=$(cat ./scripts/hagrid_hash)
+
+      - name: Set up Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: "3.10"
+
+      - name: Install dependencies
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        run: |
+          python -m pip install --upgrade pip
+          pip install --upgrade setuptools wheel twine tox bump2version
+
+      - name: Bump the Version
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        run: |
+          python3 hagrid/__init__.py
+          bump2version patch --allow-dirty --no-commit
+          tox -e lint || true
+          python3 hagrid/__init__.py
+        working-directory: ./packages/hagrid
+
+      - name: Write the new hash
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        run: echo $(checksumdir packages/hagrid) > ./scripts/hagrid_hash
+
+      - name: Commit changes
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        uses: EndBug/add-and-commit@v7
+        with:
+          author_name: Madhava Jay
+          author_email: madhava@openmined.org
+          message: "bump version"
+          add: "['./packages/hagrid/.bumpversion.cfg','./packages/hagrid/hagrid/__init__.py', './scripts/hagrid_hash']"
+          pull_strategy: NO-PULL
+
+      - name: Build and publish
+        if: ${{needs.hagrid-deploy.outputs.current_hash}} != ${{needs.hagrid-deploy.outputs.previous_hash}}
+        env:
+          TWINE_USERNAME: __token__
+          TWINE_PASSWORD: ${{ secrets.HAGRID_BUMP_TOKEN }}
+        run: |
+          tox -e hagrid.publish
+          twine upload packages/hagrid/dist/*
