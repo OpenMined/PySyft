@@ -28,6 +28,32 @@ def make_curl_cmd(url: str, key: str) -> str:
         return f"{kubectl_run} {add_curl} &&" f"{kubectl_run} {run_curl}"
 
 
+def make_get_key_cmd() -> str:
+    get_env = "env | grep STACK_API_KEY | cut -d'=' -f2"
+    if CONTAINER_HOST == "docker":
+        container = "test_network_1-backend-1"
+        return f"docker exec {container} bash -c {get_env}"
+    else:
+        service_name = "service/backend"
+        context = "k3d-test-network-1"
+        namespace = "test-network-1"
+        kubectl_run = (
+            f"kubectl exec -it {service_name} --context {context} "
+            + f"--namespace {namespace} -- "
+        )
+        return f"{kubectl_run} {get_env}"
+
+
+def get_stack_key() -> str:
+    try:
+        cmd = make_get_key_cmd()
+        output = subprocess.check_output(cmd, shell=True)
+        return output.decode("utf-8")
+    except Exception as e:
+        print(f"Exception running: {cmd}. {e}")
+        raise e
+
+
 @pytest.mark.security
 def test_api_auth() -> None:
     urls = [
@@ -35,12 +61,12 @@ def test_api_auth() -> None:
         "http://tailscale:4000/commands/status",
     ]
 
-    stack_key = "hex_key_value"
+    old_stack_key = "hex_key_value"
 
     # try with a bad header
     try:
         for url in urls:
-            cmd = make_curl_cmd(url=url, key="garbage")
+            cmd = make_curl_cmd(url=url, key=old_stack_key)
             output = subprocess.check_output(cmd, shell=True)
             output = output.decode("utf-8")
             assert "500 INTERNAL SERVER ERROR".lower() in output.lower()
@@ -51,6 +77,7 @@ def test_api_auth() -> None:
     # try with correct header
     try:
         for url in urls:
+            stack_key = get_stack_key()
             cmd = make_curl_cmd(url=url, key=stack_key)
             output = subprocess.check_output(cmd, shell=True)
             output = output.decode("utf-8")
