@@ -27,6 +27,10 @@ jobs:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10"]
         torch-version: [1.11.0]
+        include:
+          - python-version: "3.7"
+            torch-version: 1.11.0
+            os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -75,79 +79,18 @@ jobs:
           pip install pycapnp
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
-      - name: Scan for security issues
-        if: steps.changes.outputs.syft == 'true'
+      - name: Scan for security issues python 3.8+
+        if: steps.changes.outputs.syft == 'true' && ${{ matrix.python-version!='3.7' }}
         run: |
           bandit -r src
           safety check
 
-      - name: Run normal tests
-        if: steps.changes.outputs.syft == 'true'
-        run: |
-          pytest -s -m 'fast or slow' --cov syft --cov-fail-under 68 -n auto --durations=50
-
-  syft-core-tests-previous-versions:
-    strategy:
-      max-parallel: 3
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.7"]
-        torch-version: [1.11.0]
-
-    runs-on: ${{ matrix.os }}
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Check for file changes
-        uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          base: ${{ github.ref }}
-          token: ${{ github.token }}
-          filters: .github/file-filters.yml
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        if: steps.changes.outputs.syft == 'true'
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        if: steps.changes.outputs.syft == 'true'
-        run: |
-          pip install --upgrade --user pip
-
-      - name: Get pip cache dir
-        id: pip-cache
-        if: steps.changes.outputs.syft == 'true'
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        if: steps.changes.outputs.syft == 'true'
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}-
-
-      - name: Install Dependencies
-        if: steps.changes.outputs.syft == 'true'
-        run: |
-          pip install packaging wheel --default-timeout=60
-          python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          python -c "import platform; import os; os.system('pip install jaxlib===0.3.5 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-          pip install pycapnp
-          pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
-          pip install numpy==1.21.5
-          pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
-
-      - name: Scan for security issues
-        if: steps.changes.outputs.syft == 'true'
+      - name: Scan for security issues python 3.7
+        if: steps.changes.outputs.syft == 'true' && ${{ matrix.python-version=='3.7' }}
         run: |
           bandit -r src
-          safety check
+          # we want to test python 3.7 for colab so we have to ignore these numpy issues
+          safety check -i 44717 44716 44715
 
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
