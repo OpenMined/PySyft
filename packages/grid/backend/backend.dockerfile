@@ -25,8 +25,7 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then 
   fi
 
 RUN --mount=type=cache,target=/root/.cache \
-  pip install --user pycapnp==1.1.0; \
-  pip install --user numpy==1.22.3;
+  pip install --user pycapnp==1.1.0;
 
 WORKDIR /app
 COPY grid/backend/requirements.txt /app
