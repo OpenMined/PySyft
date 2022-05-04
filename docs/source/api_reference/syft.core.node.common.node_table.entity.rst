@@ -17,7 +17,7 @@ syft.core.node.common.node\_table.entity
 
    .. autosummary::
    
-      Entity
+      DataSubject
    
    
 
