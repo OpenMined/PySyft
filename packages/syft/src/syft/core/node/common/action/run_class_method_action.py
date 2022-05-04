@@ -288,15 +288,24 @@ class RunClassMethodAction(ImmediateActionWithoutReply):
                 resolved_self.data = resolved_self_proxy
             node.store[self._self.id_at_location] = resolved_self  # type: ignore
 
-        # check if the object is at location , if yes , check the user's permission otherwise block or pass.
-        current_result_object = node.store.get(self.id_at_location)
+        # check if the object is at location, if yes,
+        # check the user's permission otherwise block or pass.
+        current_result_object = retrieve_object(
+            node=node,
+            id_at_location=self.id_at_location,
+            path=self.path,
+            proxy_only=True,
+        )
+
         if (
             current_result_object is None
             or verify_key in current_result_object.write_permissions
         ):
             node.store[self.id_at_location] = result
         else:
-            pass  # TODO: May be tell the user they dont have permission to perform this action.
+            raise Exception(
+                f"You are not able to write to this location: {self.id_at_location}"
+            )
 
     def _object2proto(self) -> RunClassMethodAction_PB:
         """Returns a protobuf serialization of self.
