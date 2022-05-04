@@ -35,7 +35,7 @@ defaults:
 jobs:
   torch-tests-latest-versions:
     strategy:
-      max-parallel: 3
+      max-parallel: 4
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10"]
