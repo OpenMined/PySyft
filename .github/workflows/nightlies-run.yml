@@ -8,6 +8,9 @@ on:
       none:
         description: "Run Nightlies Tests Manually"
         required: false
+  pull_request:
+    branches:
+      - dev
 
 jobs:
   call-grid-backend_test:
