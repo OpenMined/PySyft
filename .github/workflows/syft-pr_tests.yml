@@ -90,7 +90,7 @@ jobs:
         run: |
           bandit -r src
           # we want to test python 3.7 for colab so we have to ignore these numpy issues
-          safety check -i 44717 44716 44715
+          safety check -i 44717 -i 44716 -i 44715
 
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
