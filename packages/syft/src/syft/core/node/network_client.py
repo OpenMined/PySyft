@@ -13,28 +13,26 @@ from pandas import DataFrame
 from typing_extensions import final
 
 # relative
-from ....grid.client.proxy_client import ProxyClient
-from ....logger import traceback_and_raise
-from ...common.message import SyftMessage
-from ...common.uid import UID
-from ...io.location import Location
-from ...io.location import SpecificLocation
-from ...io.route import Route
-from ..common.action.exception_action import ExceptionMessage
-from ..common.client import Client
-from ..common.client_manager.association_api import AssociationRequestAPI
-from ..common.client_manager.dataset_api import DatasetRequestAPI
-from ..common.client_manager.domain_api import DomainRequestAPI
-from ..common.client_manager.role_api import RoleRequestAPI
-from ..common.client_manager.user_api import UserRequestAPI
-from ..common.client_manager.vpn_api import VPNAPI
-from ..common.node_service.generic_payload.messages import (
-    GenericPayloadMessageWithReply,
-)
-from ..common.node_service.network_search.network_search_messages import (
+from ...grid.client.proxy_client import ProxyClient
+from ...logger import traceback_and_raise
+from ..common.message import SyftMessage
+from ..common.uid import UID
+from ..io.location import Location
+from ..io.location import SpecificLocation
+from ..io.route import Route
+from .common.action.exception_action import ExceptionMessage
+from .common.client import Client
+from .common.client_manager.association_api import AssociationRequestAPI
+from .common.client_manager.dataset_api import DatasetRequestAPI
+from .common.client_manager.domain_api import DomainRequestAPI
+from .common.client_manager.role_api import RoleRequestAPI
+from .common.client_manager.user_api import UserRequestAPI
+from .common.client_manager.vpn_api import VPNAPI
+from .common.node_service.generic_payload.messages import GenericPayloadMessageWithReply
+from .common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
-from ..domain.enums import RequestAPIFields
+from .domain.enums import RequestAPIFields
 
 
 @final

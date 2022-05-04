@@ -10,17 +10,17 @@ from pydantic import BaseSettings
 from typing_extensions import final
 
 # relative
-from ....logger import critical
-from ....logger import traceback_and_raise
-from ...common.message import SignedMessage
-from ...common.message import SyftMessage
-from ...common.uid import UID
-from ...io.location import Location
-from ...io.location import SpecificLocation
-from ..common.node import Node
-from ..common.node_manager.dict_store import DictStore
-from .client import VirtualMachineClient
+from ...logger import critical
+from ...logger import traceback_and_raise
+from ..common.message import SignedMessage
+from ..common.message import SyftMessage
+from ..common.uid import UID
+from ..io.location import Location
+from ..io.location import SpecificLocation
+from .common.node import Node
+from .common.node_manager.dict_store import DictStore
 from .service import VMServiceClass
+from .vm_client import VirtualMachineClient
 
 
 @final
@@ -59,7 +59,7 @@ class VirtualMachine(Node):
         self.vm = SpecificLocation(name=self.name)
 
         # relative
-        from ..common.node_service.vm_request_service.vm_service import (
+        from .common.node_service.vm_request_service.vm_service import (
             VMRequestAnswerService,
         )
 

@@ -11,10 +11,10 @@ from ....core.node.common.node_service.generic_payload.syft_message import (
     NewSyftMessage as SyftMessage,
 )
 from ....core.node.common.node_service.node_service import NodeService
-from .registry import VMMessageRegistry
+from .domain_msg_registry import DomainMessageRegistry
 
 
-class VMServiceClass(NodeService):
+class DomainServiceClass(NodeService):
     @staticmethod
     @service_auth(guests_welcome=True)  # Service level authentication
     def process(
@@ -46,5 +46,5 @@ class VMServiceClass(NodeService):
 
     @staticmethod
     def message_handler_types() -> list:
-        registered_messages = VMMessageRegistry().get_registered_messages()
+        registered_messages = DomainMessageRegistry().get_registered_messages()
         return registered_messages
