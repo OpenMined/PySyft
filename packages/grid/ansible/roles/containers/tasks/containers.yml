@@ -17,20 +17,20 @@
   args:
     chdir: "{{ build_dir }}/packages/grid"
   become_user: "{{ om_user }}"
-  when: vagrant is not defined and install == "true"
+  when: vagrant is not defined and install == "true" and docker_tag == "local"
 
 - name: Build Docker Images
   shell: "docker compose build"
   args:
     chdir: "{{ syft_dir }}/packages/grid"
   become_user: "{{ om_user }}"
-  when: vagrant is defined and install == "true"
+  when: vagrant is defined and install == "true" and docker_tag == "local"
 
 - name: Remove old Docker Images
   shell: "docker rmi $(docker images -qa -f 'dangling=true') || true"
   become_user: "{{ om_user }}"
   ignore_errors: yes
-  when: install == "true"
+  when: install == "true" and docker_tag == "local"
 
 - name: Remove Docker Volumes
   shell: "docker volume prune -f"
@@ -40,12 +40,12 @@
 
 - name: Start Docker Containers
   shell:
-    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tail=false'
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }} --tail=false'
   become: yes
   when: tls == "false" and install == "true"
 
 - name: Start Docker Containers with TLS
   shell:
-    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tail=false --tls --cert_store_path={{ cert_store_path }}'
+    cmd: runuser -l {{ om_user }} -c 'hagrid launch {{ node_name }} {{ node_type }} to docker:80 --release={{ release }} --tag={{ docker_tag }} --tail=false --tls --cert_store_path={{ cert_store_path }}'
   become: yes
   when: tls == "true" and install == "true"

@@ -112,6 +112,8 @@ from ..common.uid import UID
 from ..io.address import Address
 from ..node.abstract.node import AbstractNode
 from ..node.common.action.get_object_action import GetObjectAction
+from ..node.common.exceptions import AuthorizationError
+from ..node.common.exceptions import DatasetDownloadError
 from ..node.common.node_service.get_repr.get_repr_service import GetReprMessage
 from ..node.common.node_service.object_search_permission_update.obj_search_permission_messages import (
     ObjectSearchPermissionUpdateMessage,
@@ -219,13 +221,43 @@ class Pointer(AbstractPointer):
             presigned_url = self.client.url_from_path(presigned_url_path)
             response = requests.get(presigned_url)
 
-            if response.status_code != 200:
-                raise Exception(
-                    f"Failed to get object from store. HTTP Status Code: {response.status_code}"
+            if not response.ok:
+                error_msg = (
+                    f"\nFailed to get object {self.id_at_location} from store\n."
+                    + f"Status Code: {response.status_code} {response.reason}"
                 )
+                raise DatasetDownloadError(error_msg)
             obj = _deserialize(response.content, from_bytes=True)
         else:
+            if proxy_only:
+                print(
+                    "**Warning**: Proxy data class does not exist for this object. Fetching the real data."
+                )
             obj = obj.data
+
+        if delete_obj:
+            # relative
+            from ..node.common.node_service.generic_payload.syft_message import (
+                NewSyftMessage,
+            )
+            from ..node.common.node_service.object_delete.object_delete_message import (
+                ObjectDeleteMessage,
+            )
+
+            # TODO: Fix circular import
+            # This deletes the data from both database and blob store
+            obj_del_msg: NewSyftMessage = ObjectDeleteMessage(
+                address=self.client.address,
+                reply_to=self.client.address,
+                kwargs={
+                    "id_at_location": self.id_at_location.to_string(),
+                },
+            ).sign(signing_key=self.client.signing_key)
+
+            try:
+                self.client.send_immediate_msg_with_reply(msg=obj_del_msg)
+            except AuthorizationError:
+                print("**Warning:** You don't have delete permissions to the object.")
 
         if self.is_enum:
             enum_class = self.client.lib_ast.query(self.path_and_name).object_ref
@@ -348,7 +380,7 @@ class Pointer(AbstractPointer):
         """
         if proxy_only and delete_obj:
             delete_obj = False
-            print("Warning fetching proxy_only will not delete the real object")
+            print("**Warning**: Fetching proxy_only will not delete the real object")
 
         # relative
         from ..node.common.node_service.request_receiver.request_receiver_messages import (

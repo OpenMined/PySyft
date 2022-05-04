@@ -19,6 +19,7 @@ from ..io.location import Location
 from ..io.location import SpecificLocation
 from .common.node import Node
 from .common.node_manager.dict_store import DictStore
+from .service import VMServiceClass
 from .vm_client import VirtualMachineClient
 
 
@@ -62,6 +63,7 @@ class VirtualMachine(Node):
             VMRequestAnswerService,
         )
 
+        self.immediate_services_with_reply.append(VMServiceClass)
         self.immediate_services_with_reply.append(VMRequestAnswerService)
         # All node subclasses have to call this at the end of their __init__
         self._register_services()

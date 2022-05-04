@@ -68,8 +68,6 @@ jobs:
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
           pip install pycapnp
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
-          pip install numpy==1.22.3
-          pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
 
       - name: Scan for security issues
         if: steps.changes.outputs.syft == 'true'

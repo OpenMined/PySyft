@@ -50,6 +50,7 @@ from .common.node_service.request_receiver.request_receiver_messages import (
 from .common.node_service.role_manager.role_manager_service import RoleManagerService
 from .common.node_service.user_manager.user_manager_service import UserManagerService
 from .common.node_service.vpn.vpn_service import VPNConnectService
+from .common.node_service.vpn.vpn_service import VPNJoinSelfService
 from .common.node_service.vpn.vpn_service import VPNJoinService
 from .common.node_service.vpn.vpn_service import VPNRegisterService
 from .common.node_service.vpn.vpn_service import VPNStatusService
@@ -114,6 +115,7 @@ class Network(Node):
         self.immediate_services_with_reply.append(VPNJoinService)
         self.immediate_services_with_reply.append(VPNRegisterService)
         self.immediate_services_with_reply.append(VPNStatusService)
+        self.immediate_services_with_reply.append(VPNJoinSelfService)
         self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(NetworkSearchService)
         self.immediate_services_with_reply.append(PeerDiscoveryService)

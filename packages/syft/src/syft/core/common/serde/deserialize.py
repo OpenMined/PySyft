@@ -168,15 +168,15 @@ class CapnpMagicBytesNotFound(Exception):
 
 
 def deserialize_capnp(buf: bytes) -> Any:
-    # only search 100 bytes to prevent wasting time on large files
-    search_range = 100
+    # only search 1000 bytes to prevent wasting time on large files
+    search_range = 1000
     header_bytes = buf[0:search_range]
     chars = bytearray()
     # filter header bytes
     for i in header_bytes:
         # only allow ascii letters or : in headers and class name to prevent lookup
         # breaking somehow, when packing weird stuff like \x03 ends up in the string
-        # e.g. NDimEntityPhiTensor -> ND\x03imEntityPhiTensor
+        # e.g. PhiTensor -> ND\x03imEntityPhiTensor
         if i in range(65, 91) or i in range(97, 123) or i == 58:
             chars.append(i)
     header_bytes = bytes(chars)

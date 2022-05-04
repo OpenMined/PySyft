@@ -189,13 +189,14 @@ class Client(AbstractNodeClient):
             # we are leaving the client and entering the node in a container
             # any hostnames of localhost need to be converted to docker-host
             if client is not None:
-                grid_url = client.routes[0].connection.base_url.as_docker_host()  # type: ignore
+                grid_url = client.routes[0].connection.base_url  # type: ignore
             else:
-                grid_url = GridURL.from_url(str(host_or_ip)).as_docker_host()
+                grid_url = GridURL.from_url(str(host_or_ip))
 
             return self.vpn.join_network_vpn(grid_url=grid_url)  # type: ignore
         except Exception as e:
-            print(f"Failed to join network with {client} or {host_or_ip}. {e}")
+            msg = f"Failed to join network with {client} or {host_or_ip}. {e}"
+            raise Exception(msg)
 
     @property
     def id(self) -> UID:

@@ -1,4 +1,4 @@
-#! /usr/bin/env sh
+#! /usr/bin/env bash
 set -e
 
 echo "Running start.sh with RELEASE=${RELEASE}"

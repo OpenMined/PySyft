@@ -32,8 +32,11 @@ class RedisStore(ObjectStore):
             raise Exception("RedisStore requires Settings")
         self.settings = settings
         try:
-            # TODO: refactor hard coded host and port to configuration
-            self.redis: redis.client.Redis = redis.Redis(host="redis", port=6379)
+            self.redis: redis.client.Redis = redis.Redis(
+                host=settings.REDIS_HOST,
+                port=self.settings.REDIS_PORT,
+                db=self.settings.REDIS_STORE_DB_ID,
+            )
         except Exception as e:
             print("failed to load redis", e)
             raise e
@@ -144,8 +147,10 @@ class RedisStore(ObjectStore):
     def set(self, key: StoreKey, value: StorableObject) -> None:
         key_str, _ = self.key_to_str_and_uid(key=key)
 
+        is_proxy_dataset = False
         if isinstance(value._data, ProxyDataset):
             bin = syft.serialize(value._data, to_bytes=True)
+            is_proxy_dataset = True
         else:
             bin = syft.serialize(value.data, to_bytes=True)
         self.redis.set(key_str, bin)
@@ -182,6 +187,7 @@ class RedisStore(ObjectStore):
                 syft.lib.python.Dict(value.write_permissions), to_bytes=True
             ),
         ).hex()
+        metadata_obj.is_proxy_dataset = is_proxy_dataset
 
         local_session = sessionmaker(bind=self.db)()
         if create_metadata:
@@ -191,13 +197,21 @@ class RedisStore(ObjectStore):
 
     def delete(self, key: UID) -> None:
         try:
-            self.redis.delete(str(key.value))
             local_session = sessionmaker(bind=self.db)()
             metadata_to_delete = (
                 local_session.query(ObjectMetadata)
                 .filter_by(obj=str(key.value))
                 .first()
             )
+            # Check if the uploaded data is a proxy dataset
+            if metadata_to_delete and metadata_to_delete.is_proxy_dataset:
+                # Retrieve proxy dataset from store
+                obj = self.get(key=key, proxy_only=True)
+                proxy_dataset = obj.data
+                if proxy_dataset:
+                    proxy_dataset.delete_s3_data(settings=self.settings)
+
+            self.redis.delete(str(key.value))
             local_session.delete(metadata_to_delete)
             local_session.commit()
             local_session.close()

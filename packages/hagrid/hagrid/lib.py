@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import hashlib
 import importlib
 import importlib.machinery
@@ -6,20 +7,23 @@ import importlib.util
 import json
 import os
 from pathlib import Path
-import site
 import socket
 import subprocess
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import git
 import requests
+from rich.table import Table
 
 # relative
 from .cache import DEFAULT_BRANCH
 from .deps import MissingDependency
 from .deps import is_windows
+from .mode import EDITABLE_MODE
+from .mode import hagrid_root
 
 DOCKER_ERROR = """
 You are running an old version of docker, possibly on Linux. You need to install v2.
@@ -43,6 +47,12 @@ docker compose version
 """
 
 
+class ProcessStatus(Enum):
+    RUNNING = "[blue]Running"
+    DONE = "[green]Done"
+    FAILED = "[red]Failed"
+
+
 def docker_desktop_memory() -> int:
 
     path = str(Path.home()) + "/Library/Group Containers/group.com.docker/settings.json"
@@ -58,34 +68,8 @@ def docker_desktop_memory() -> int:
         return -1
 
 
-def hagrid_root() -> str:
-    return os.path.abspath(str(Path(__file__).parent.parent))
-
-
 def asset_path() -> os.PathLike:
     return Path(hagrid_root()) / "hagrid"
-
-
-def is_editable_mode() -> bool:
-    current_package_root = hagrid_root()
-
-    installed_as_editable = False
-    sitepackages_dirs = site.getsitepackages()
-    # check all site-packages returned if they have a hagrid.egg-link
-    for sitepackages_dir in sitepackages_dirs:
-        egg_link_file = Path(sitepackages_dir) / "hagrid.egg-link"
-        try:
-            linked_folder = egg_link_file.read_text()
-            # if the current code is in the same path as the egg-link its -e mode
-            installed_as_editable = current_package_root in linked_folder
-            break
-        except Exception:
-            pass
-
-    if os.path.exists(Path(current_package_root) / "hagrid.egg-info"):
-        installed_as_editable = True
-
-    return installed_as_editable
 
 
 def repo_src_path() -> Path:
@@ -104,8 +88,8 @@ def check_is_git(path: Path) -> bool:
     try:
         git.Repo(path)
         is_repo = True
-    except Exception:
-        print(f"{path} is not a git repo!")
+    except Exception:  # nosec
+        pass
     return is_repo
 
 
@@ -158,15 +142,6 @@ def use_branch(branch: str) -> None:
             repo.remotes.origin.pull()
         except Exception as e:
             print(f"Error checking out branch {branch}.", e)
-
-
-EDITABLE_MODE = is_editable_mode()
-GRID_SRC_PATH = grid_src_path()
-GIT_REPO = get_git_repo()
-
-
-repo_branch = DEFAULT_BRANCH
-update_repo(repo=GIT_REPO, branch=repo_branch)
 
 
 def should_provision_remote(
@@ -231,7 +206,7 @@ def check_docker_version() -> Optional[str]:
 
 def get_version_module() -> Tuple[str, str]:
     try:
-        version_file_path = f"{GRID_SRC_PATH}/VERSION"
+        version_file_path = f"{grid_src_path()}/VERSION"
         loader = importlib.machinery.SourceFileLoader("VERSION", version_file_path)
         spec = importlib.util.spec_from_loader(loader.name, loader)
         if spec:
@@ -257,10 +232,10 @@ def check_host(ip: str, silent: bool = False) -> bool:
 
 
 # Check status of login page
-def check_login_page(ip: str, silent: bool = False) -> bool:
+def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/login"
-        response = requests.get(url)
+        response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
@@ -272,10 +247,10 @@ def check_login_page(ip: str, silent: bool = False) -> bool:
 
 
 # Check api metadata
-def check_api_metadata(ip: str, silent: bool = False) -> bool:
+def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/api/v1/syft/metadata"
-        response = requests.get(url)
+        response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
@@ -286,4 +261,96 @@ def check_api_metadata(ip: str, silent: bool = False) -> bool:
         return False
 
 
+def generate_user_table(username: str, password: str) -> Union[Table, str]:
+    if not username and not password:
+        return ""
+
+    table = Table(title="Virtual Machine Credentials")
+    table.add_column("Username")
+    table.add_column("Password")
+
+    table.add_row(f"[green]{username}", f"[green]{password}")
+
+    return table
+
+
+def get_process_status(process: subprocess.Popen) -> str:
+    poll_status = process.poll()
+    if poll_status is None:
+        return ProcessStatus.RUNNING.value
+    elif poll_status != 0:
+        return ProcessStatus.FAILED.value
+    else:
+        return ProcessStatus.DONE.value
+
+
+def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
+    """Generate a table to show the status of the processes being exected.
+
+    Args:
+        process_list (list): each item in the list
+        is a tuple of ip_address, process and jupyter token
+
+    Returns:
+        Tuple[Table, bool]: table of process status and flag to indicate if all processes are executed.
+    """
+
+    process_statuses: list[str] = []
+    lines_to_display = 5  # Number of lines to display as output
+
+    table = Table(title="Virtual Machine Status")
+    table.add_column("PID", style="cyan")
+    table.add_column("IpAddress", style="magenta")
+    table.add_column("Status")
+    table.add_column("Jupyter Token", style="white on black")
+    table.add_column("Log", overflow="fold", no_wrap=False)
+
+    for ip_address, process, jupyter_token in process_list:
+        process_status = get_process_status(process)
+
+        process_statuses.append(process_status)
+
+        process_log = []
+        if process_status == ProcessStatus.FAILED.value:
+            process_log += process.stderr.readlines(lines_to_display)
+        else:
+            process_log += process.stdout.readlines(lines_to_display)
+
+        process_log_str = "\n".join(log.decode("utf-8") for log in process_log)
+        process_log_str = process_log_str if process_log else "-"
+
+        table.add_row(
+            f"{process.pid}",
+            f"{ip_address}",
+            f"{process_status}",
+            f"{jupyter_token}",
+            f"{process_log_str}",
+        )
+
+    processes_completed = ProcessStatus.RUNNING.value not in process_statuses
+
+    return table, processes_completed
+
+
+def check_jupyter_server(
+    host_ip: str, wait_time: int = 5, silent: bool = False
+) -> bool:
+    if not silent:
+        print(f"Checking Jupyter Server at VM {host_ip} is up")
+
+    try:
+        url = f"http://{host_ip}:8888/"
+        response = requests.get(url, timeout=wait_time)
+        if response.status_code == 200:
+            return True
+        else:
+            return False
+    except Exception as e:
+        if not silent:
+            print(f"Failed to check jupyter server status {host_ip}. {e}")
+        return False
+
+
+GIT_REPO = get_git_repo()
 GRID_SRC_VERSION = get_version_module()
+GRID_SRC_PATH = grid_src_path()
