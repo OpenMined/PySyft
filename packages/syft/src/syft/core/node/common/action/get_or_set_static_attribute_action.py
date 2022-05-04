@@ -48,8 +48,10 @@ class GetSetStaticAttributeAction(ImmediateActionWithoutReply):
         self.set_arg = set_arg
 
     def intersect_keys(
-        self, left: Dict[VerifyKey, UID], right: Dict[VerifyKey, UID]
-    ) -> Dict[VerifyKey, UID]:
+        self,
+        left: Dict[VerifyKey, Optional[UID]],
+        right: Dict[VerifyKey, Optional[UID]],
+    ) -> Dict[VerifyKey, Optional[UID]]:
         return RunClassMethodAction.intersect_keys(left, right)
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:

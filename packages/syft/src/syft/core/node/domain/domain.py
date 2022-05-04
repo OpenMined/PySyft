@@ -24,7 +24,7 @@ from ....logger import critical
 from ....logger import debug
 from ....logger import info
 from ....logger import traceback
-from ...adp.adversarial_accountant import AdversarialAccountant
+from ...adp.ledger_store import RedisLedgerStore
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedMessage
 from ...common.message import SyftMessage
@@ -103,6 +103,7 @@ class Domain(Node):
         root_key: Optional[VerifyKey] = None,
         db_engine: Any = None,
         store_type: type = RedisStore,
+        ledger_store_type: type = RedisLedgerStore,
         settings: Optional[BaseSettings] = None,
     ):
 
@@ -138,7 +139,7 @@ class Domain(Node):
         self.datasets = DatasetManager(db_engine)
         self.node = NodeManager(db_engine)
         self.node_route = NodeRouteManager(db_engine)
-        self.acc = AdversarialAccountant(db_engine=db_engine, max_budget=10000)
+        self.ledger_store = ledger_store_type(settings=settings)
 
         # self.immediate_services_without_reply.append(RequestReceiverService)
         # self.immediate_services_without_reply.append(AcceptOrDenyRequestService)

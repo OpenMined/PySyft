@@ -138,3 +138,51 @@ class UploadDataCompleteMessage(SyftMessage, DomainMessageRegistry):
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""
         return [NoRestriction]
+
+
+@serializable(recursive_serde=True)
+@final
+class AbortDataUploadMessage(SyftMessage, DomainMessageRegistry):
+
+    # Pydantic Inner class to define expected request payload fields.
+    class Request(RequestPayload):
+        """Payload fields and types used during Deletion of Incomplete Data Upload Request."""
+
+        upload_id: str
+        asset_name: str
+
+    # Pydantic Inner class to define expected reply payload fields.
+    class Reply(ReplyPayload):
+        """Payload fields and types used during a Deletion of Incomplete Data Upload Response."""
+
+        message: str = "Deletion Complete!"
+
+    request_payload_type = (
+        Request  # Converts generic syft dict into a CreateUserMessage.Request object.
+    )
+    reply_payload_type = (
+        Reply  # Creates a proper Reply payload message structure as a response.
+    )
+
+    def run(  # type: ignore
+        self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
+    ) -> ReplyPayload:  # type: ignore
+
+        # TODO: Move to permissions
+        # user_role = node.roles.first(**{"id": current_user.role})
+        # if not user_role.can_upload_data:
+        #    return {"message": "You're not authorized to do this."}
+
+        client: boto3.client.S3 = get_s3_client(settings=node.settings)
+
+        # Abort multipart upload
+        client.abort_multipart_upload(
+            UploadId=self.payload.upload_id,
+            Key=self.payload.asset_name,
+            Bucket=node.id.no_dash,
+        )
+        return UploadDataCompleteMessage.Reply()
+
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        """Returns the list of permission classes."""
+        return [NoRestriction]

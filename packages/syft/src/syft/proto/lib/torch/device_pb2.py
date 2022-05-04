@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -18,19 +17,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x1cproto/lib/torch/device.proto\x12\x0esyft.lib.torch"%\n\x06\x44\x65vice\x12\x0c\n\x04type\x18\x01 \x01(\t\x12\r\n\x05index\x18\x02 \x01(\x05\x62\x06proto3'
 )
 
-
-_DEVICE = DESCRIPTOR.message_types_by_name["Device"]
-Device = _reflection.GeneratedProtocolMessageType(
-    "Device",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _DEVICE,
-        "__module__": "proto.lib.torch.device_pb2"
-        # @@protoc_insertion_point(class_scope:syft.lib.torch.Device)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.lib.torch.device_pb2", globals()
 )
-_sym_db.RegisterMessage(Device)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

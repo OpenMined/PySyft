@@ -7,7 +7,7 @@ import rich
 
 # relative
 from .deps import DEPENDENCIES
-from .lib import is_editable_mode
+from .mode import EDITABLE_MODE
 
 
 class RichGroup(click.Group):
@@ -17,7 +17,7 @@ class RichGroup(click.Group):
         sio = io.StringIO()
         console = rich.get_console()
         mode = ""
-        if is_editable_mode():
+        if EDITABLE_MODE:
             mode = "[bold red]EDITABLE DEV MODE[/bold red] :police_car_light:"
         console.print(
             "[bold red]HA[/bold red][bold magenta]Grid[/bold magenta]!", ":mage:", mode
