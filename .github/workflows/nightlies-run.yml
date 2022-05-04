@@ -49,3 +49,7 @@ jobs:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/benchmark.yml@dev
     secrets: inherit
+
+  call-stack-integration-public_tests:
+    if: github.repository == 'OpenMined/PySyft' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/stack-integration-public_tests.yml@dev
