@@ -190,7 +190,6 @@ class GammaTensor:
             max_val=self.min_val * -1,
             state=self.state,
             func=self.func,
-
         )
 
     def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:

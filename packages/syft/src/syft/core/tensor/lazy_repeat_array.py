@@ -114,7 +114,9 @@ class lazyrepeatarray:
                 raise ZeroDivisionError
             return self.__class__(data=self.data / other, shape=self.shape)
         if not is_broadcastable(self.shape, other.shape):
-            raise Exception(f"Cannot divide with shapes: {self.shape} and {other.shape}")
+            raise Exception(
+                f"Cannot divide with shapes: {self.shape} and {other.shape}"
+            )
         else:
             return self.__class__(data=self.data / other.data, shape=self.shape)
 
@@ -163,8 +165,10 @@ class lazyrepeatarray:
                         # dot(a,b)[i,j,k,m] = sum(self[i,j, :] * b[k, :, m])
                         raise NotImplementedError
                     else:
-                        raise ValueError(f": shapes {self.shape} and {other.shape} not aligned: "
-                                         f"{self.shape[-1]} (dim -1) != {other.shape[-2]} (dim -2)")
+                        raise ValueError(
+                            f": shapes {self.shape} and {other.shape} not aligned: "
+                            f"{self.shape[-1]} (dim -1) != {other.shape[-2]} (dim -2)"
+                        )
             else:
                 if other.size == 1:  # 0-D array (scalar)
                     return self * other.data

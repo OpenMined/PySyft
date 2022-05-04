@@ -1131,32 +1131,37 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def dot(
-        self, other: Union[AcceptableSimpleType, NDimEntityPhiTensor, GammaTensor]
-    ) -> Union[NDimEntityPhiTensor, GammaTensor]:  # type: ignore
+        self, other: Union[AcceptableSimpleType, PhiTensor, GammaTensor]
+    ) -> Union[PhiTensor, GammaTensor]:  # type: ignore
         if is_acceptable_simple_type(other):
             # Return NDEPT
             if isinstance(other, np.ndarray):
-                return NDimEntityPhiTensor(
+                return PhiTensor(
                     child=self.child.dot(other),
                     min_vals=self.child.dot(other),
                     max_vals=self.child.dot(other),
-                    entities=self.entities
+                    entities=self.entities,
                 )
             else:
                 # TODO: Should we should cast it to an array of the same size for them?
-                raise Exception(f"We can't take a dot product with object of type: {type(other)}. "
-                                f"Please try casting this to an array instead")
-        elif isinstance(other, NDimEntityPhiTensor):
+                raise Exception(
+                    f"We can't take a dot product with object of type: {type(other)}. "
+                    f"Please try casting this to an array instead"
+                )
+        elif isinstance(other, PhiTensor):
             # TODO: Improve equality for DataSubjectLists
-            if len(self.entities.one_hot_lookup) > 1 or len(other.entities.one_hot_lookup) > 1:
+            if (
+                len(self.entities.one_hot_lookup) > 1
+                or len(other.entities.one_hot_lookup) > 1
+            ):
                 # Return GammaTensor
                 raise NotImplementedError
             elif self.entities.one_hot_lookup == other.entities.one_hot_lookup:
-                return NDimEntityPhiTensor(
+                return PhiTensor(
                     child=self.child.dot(other.child),
                     min_vals=self.min_vals.dot(other.min_vals),
                     max_vals=self.max_vals.dot(other.max_vals),
-                    entities=self.entities
+                    entities=self.entities,
                 )
             else:
                 raise NotImplementedError
@@ -1167,32 +1172,34 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             raise NotImplementedError
 
-    def exp(self) -> NDimEntityPhiTensor:
-        return NDimEntityPhiTensor(
-            child=np.e ** self.child,
+    def exp(self) -> PhiTensor:
+        return PhiTensor(
+            child=np.e**self.child,
             min_vals=self.min_vals.exp(),
             max_vals=self.max_vals.exp(),
-            entities=self.entities
+            entities=self.entities,
         )
 
-    def __truediv__(self, other: Union[AcceptableSimpleType, NDimEntityPhiTensor, GammaTensor]) -> Union[NDimEntityPhiTensor, GammaTensor]:
+    def __truediv__(
+        self, other: Union[AcceptableSimpleType, PhiTensor, GammaTensor]
+    ) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, np.ndarray):
             if 0 in other:
                 raise ZeroDivisionError
-            return NDimEntityPhiTensor(
+            return PhiTensor(
                 child=self.child / other,
                 min_vals=self.child / other,
                 max_vals=self.child / other,
-                entities=self.entities
+                entities=self.entities,
             )
-        elif isinstance(other, NDimEntityPhiTensor):
+        elif isinstance(other, PhiTensor):
             if self.entities == other.entities:
                 if len(self.entities.one_hot_lookup) == 1:
-                    return NDimEntityPhiTensor(
+                    return PhiTensor(
                         child=self.child / other.child,
                         min_vals=self.min_vals / other.min_vals,
                         max_vals=self.max_vals / other.max_vals,
-                        entities=self.entities
+                        entities=self.entities,
                     )
                 else:
                     return self.gamma / other.gamma
