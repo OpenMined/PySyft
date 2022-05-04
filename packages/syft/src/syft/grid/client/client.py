@@ -22,8 +22,8 @@ from .. import GridURL
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
-from ...core.node.domain.client import DomainClient
-from ...core.node.network.client import NetworkClient
+from ...core.node.domain.domain_client import DomainClient
+from ...core.node.network_client import NetworkClient
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
 

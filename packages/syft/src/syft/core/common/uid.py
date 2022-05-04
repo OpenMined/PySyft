@@ -16,9 +16,7 @@ from .decorators import singleton
 from .serde.serializable import serializable
 
 
-# TODO: make this callable from REPTs to pre-warm the UID cache when a large
-# tensor starts executing a complex operation.
-# Make sure to investigate any issues with taxing the /dev/urandom entropy
+# TODO: Make sure to investigate any issues with taxing the /dev/urandom entropy
 @singleton
 class UIDValueGenerator:
     def __init__(self, n_uids: int = 1000) -> None:

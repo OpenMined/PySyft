@@ -53,21 +53,18 @@ from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
 from .core.node.common.node_service.testing_services.repr_service import (  # noqa: F401
     ReprMessage,
 )
-from .core.node.device.device import Device  # noqa: F401
-from .core.node.device.device import DeviceClient  # noqa: F401
-from .core.node.domain.domain import Domain  # noqa: F401
-from .core.node.domain.domain import DomainClient  # noqa: F401
-from .core.node.network.network import Network  # noqa: F401
-from .core.node.network.network import NetworkClient  # noqa: F401
+from .core.node.device import Device  # noqa: F401
+from .core.node.device_client import DeviceClient  # noqa: F401
+from .core.node.domain import Domain  # noqa: F401
+from .core.node.domain import DomainClient  # noqa: F401
+from .core.node.network import Network  # noqa: F401
+from .core.node.network_client import NetworkClient  # noqa: F401
 
 # Convenience Constructors
-from .core.node.vm.vm import VirtualMachine  # noqa: F401
-from .core.node.vm.vm import VirtualMachineClient  # noqa: F401
+from .core.node.vm import VirtualMachine  # noqa: F401
+from .core.node.vm_client import VirtualMachineClient  # noqa: F401
 from .core.tensor import autodp  # noqa: F401
-from .core.tensor import autograd  # noqa: F401
-from .core.tensor.autodp import ndim_entity_phi  # noqa: F401
-from .core.tensor.autodp import row_entity_phi  # noqa: F401
-from .core.tensor.autodp import single_entity_phi  # noqa: F401
+from .core.tensor.autodp import phi_tensor  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
 from .grid.client.client import connect  # noqa: F401

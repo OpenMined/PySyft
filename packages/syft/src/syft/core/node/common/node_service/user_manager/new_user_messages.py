@@ -15,7 +15,7 @@ from typing_extensions import final
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain.domain_interface import DomainInterface
-from ....domain.registry import DomainMessageRegistry
+from ....domain.domain_msg_registry import DomainMessageRegistry
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
@@ -157,8 +157,8 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
         reply.role = node.roles.first(id=reply.role).name  # type: ignore
 
         # Get budget spent
-        reply.budget_spent = node.acc.user_budget(  # type: ignore
-            user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
+        reply.budget_spent = node.users.get_budget_for_user(  # type: ignore
+            verify_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
         )
         return reply
 
@@ -206,9 +206,10 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
             # Remaining Budget
             # TODO:
             # Rename it from budget_spent to remaining budget
-            user_model.budget_spent = node.acc.get_remaining_budget(  # type: ignore
-                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
-                returned_epsilon_is_private=False,
+            user_model.budget_spent = node.users.get_budget_for_user(  # type: ignore
+                verify_key=VerifyKey(
+                    user.verify_key.encode("utf-8"), encoder=HexEncoder
+                ),
             )
             users_list.append(user_model)
 

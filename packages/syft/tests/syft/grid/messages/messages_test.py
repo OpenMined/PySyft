@@ -297,7 +297,7 @@ def test_message(message_name: str, node: sy.VirtualMachine) -> None:
 
     if response_content is None:
         pytest.skip(
-            "{message_name} does not have a response added to the test configuration"
+            f"{message_name} does not have a response added to the test configuration"
         )
 
     res_func = getattr(lib, message_name + "Response")

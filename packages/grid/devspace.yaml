@@ -33,8 +33,10 @@ vars:
     command: "python3 ../../VERSION"
   - name: VERSION_HASH
     command: "python3 ../../VERSION hash"
+  - name: STACK_API_KEY
+    command: "python3 ../hagrid/hagrid/rand_sec.py"
   - name: NODE_TYPE
-    value: network
+    value: "network"
   - name: RELEASE
     value: production
   - name: CONTAINER_HOST
