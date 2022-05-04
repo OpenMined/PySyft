@@ -176,7 +176,7 @@ def deserialize_capnp(buf: bytes) -> Any:
     for i in header_bytes:
         # only allow ascii letters or : in headers and class name to prevent lookup
         # breaking somehow, when packing weird stuff like \x03 ends up in the string
-        # e.g. NDimEntityPhiTensor -> ND\x03imEntityPhiTensor
+        # e.g. PhiTensor -> ND\x03imEntityPhiTensor
         if i in range(65, 91) or i in range(97, 123) or i == 58:
             chars.append(i)
     header_bytes = bytes(chars)

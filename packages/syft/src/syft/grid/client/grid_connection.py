@@ -257,7 +257,7 @@ class GridHTTPConnection(HTTPConnection):
 
         resp = requests.post(
             str(self.base_url) + route,
-            files=files,
+            files=files,  # type: ignore
             headers=header,
             verify=verify_tls(),
             proxies=HTTPConnection.proxies,

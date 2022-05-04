@@ -8,10 +8,15 @@ from pathlib import Path
 import time
 from typing import Any
 from typing import Callable
-from typing import Final
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
+
+# third party
+from typing_extensions import Final
+
+# relative
+from ...logger import info
 
 if TYPE_CHECKING:
     # stdlib
@@ -49,7 +54,7 @@ def load_cache(filename: str) -> np.ndarray:
     if not os.path.exists(CACHE_PATH):
         raise Exception(f"Cannot load {CACHE_PATH}")
     cache_array = np.load(CACHE_PATH)
-    print(f"Loaded constant2epsilon cache of size: {cache_array.shape}")
+    info(f"Loaded constant2epsilon cache of size: {cache_array.shape}")
     return cache_array
 
 
@@ -60,6 +65,16 @@ class RDPParams:
     l2_norm_bounds: jnp.array
     Ls: jnp.array
     coeffs: jnp.array
+
+    def __repr__(self) -> str:
+        res = "RDPParams:"
+        res = f"{res}\n sigmas:{self.sigmas}"
+        res = f"{res}\n l2_norms:{self.l2_norms}"
+        res = f"{res}\n l2_norm_bounds:{self.l2_norm_bounds}"
+        res = f"{res}\n Ls:{self.Ls}"
+        res = f"{res}\n coeffs:{self.coeffs}"
+
+        return res
 
 
 @partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
@@ -326,7 +341,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         mask = np.array(mask, copy=False)
         highest_possible_spend = float(highest_possible_spend)
         user_budget = float(user_budget)
-
+        print("Epsilon spend ", epsilon_spend)
+        print("Highest possible spend ", highest_possible_spend)
         if highest_possible_spend > 0:
             # go spend it in the db
             attempts = 0
@@ -399,7 +415,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
-        # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
         dsl_msg = dsl_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )

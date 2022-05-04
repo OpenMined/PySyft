@@ -20,7 +20,10 @@ from ...adp.data_subject_list import numpyutf8tolist
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import get_capnp_schema
 from ...common.serde.capnp import serde_magic_header
+from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
+from ...common.serde.serialize import _serialize as serialize
+from ..fixed_precision_tensor import FixedPrecisionTensor
 
 if TYPE_CHECKING:
     # stdlib
@@ -99,29 +102,38 @@ class GammaTensor:
     id: str = flax.struct.field(
         pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
-    inputs: jnp.array = np.array([], dtype=np.int64)
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
+    fpt_values: Optional[FixedPrecisionTensor] = None
 
-    def __post_init__(self) -> None:
-        if len(self.state) == 0:
+    def __post_init__(
+        self,
+    ) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
+        if len(self.state) == 0 and self.func is not no_op:
             self.state[self.id] = self
 
     def run(self, state: dict) -> Callable:
+        """This method traverses the computational tree and returns all the private inputs"""
+        # TODO: Can we eliminate "state" and use self.state below?
         # we hit a private input
         if self.func is no_op:
-            return self.func(state[self.id].value)
+            return self.value
         return self.func(state)
 
     def __add__(self, other: Any) -> GammaTensor:
-        state = dict()
-        state.update(self.state)
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
 
         if isinstance(other, GammaTensor):
 
             def _add(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.add(self.run(state), other.run(state))
 
-            state.update(other.state)
+            # print("this is the other.state", other.state)
+            output_state[other.id] = other
+            # state.update(other.state)
+            # print("this is the output_state", output_state)
+
             value = self.value + other.value
             min_val = self.min_val + other.min_val
             max_val = self.max_val + other.max_val
@@ -133,14 +145,14 @@ class GammaTensor:
             value = self.value + other
             min_val = self.min_val + other
             max_val = self.max_val + other
-
+        # print("the state we returned is: ", output_state)
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
             min_val=min_val,
             max_val=max_val,
             func=_add,
-            state=state,
+            state=output_state,
         )
 
     def __mul__(self, other: Any) -> GammaTensor:
@@ -174,12 +186,13 @@ class GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sum(self.run(state))
 
-        state = dict()
-        state.update(self.state)
+        output_state = dict()
+        output_state[self.id] = self
+        # output_state.update(self.state)
 
         value = jnp.sum(self.value)
-        min_val = jnp.sum(self.min_val)
-        max_val = jnp.sum(self.max_val)
+        min_val = float(self.min_val)
+        max_val = float(self.max_val)
 
         return GammaTensor(
             value=value,
@@ -187,7 +200,7 @@ class GammaTensor:
             min_val=min_val,
             max_val=max_val,
             func=_sum,
-            state=state,
+            state=output_state,
         )
 
     def sqrt(self) -> GammaTensor:
@@ -216,24 +229,33 @@ class GammaTensor:
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
-        output_func: Callable = np.sum,
     ) -> jax.numpy.DeviceArray:
         # TODO: Add data scientist privacy budget as an input argument, and pass it
         # into vectorized_publish
         if sigma is None:
-            sigma = self.value.mean() / 4
+            sigma = self.value.mean() / 4  # TODO @Ishan: replace this with calibration
+
+        if self.value.dtype != np.int64:
+            raise Exception(
+                "Data type of private values is not np.int64: ", self.value.dtype
+            )
+        fpt_values = self.fpt_values
+        fpt_encode_func = None  # Function for encoding noise
+        if fpt_values is not None:
+            fpt_encode_func = fpt_values.encode
 
         return vectorized_publish(
             min_vals=self.min_val,
             max_vals=self.max_val,
-            values=self.inputs,
+            state_tree=self.state,
             data_subjects=self.data_subjects,
             is_linear=self.is_linear,
             sigma=sigma,
-            output_func=output_func,
+            output_func=self.func,
             ledger=ledger,
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
+            fpt_encode_func=fpt_encode_func,
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:
@@ -322,6 +344,17 @@ class GammaTensor:
     def dtype(self) -> np.dtype:
         return self.value.dtype
 
+    @staticmethod
+    def get_input_tensors(state_tree: dict[int, GammaTensor]) -> List:
+        # TODO: See if we can call np.stack on the output and create a vectorized tensor instead of a list of tensors
+        input_tensors = []
+        for tensor in state_tree.values():
+            if tensor.func is no_op:
+                input_tensors.append(tensor)
+            else:
+                input_tensors += GammaTensor.get_input_tensors(tensor.state)
+        return input_tensors
+
     def _object2bytes(self) -> bytes:
         schema = get_capnp_schema(schema_file="gamma_tensor.capnp")
 
@@ -335,7 +368,7 @@ class GammaTensor:
         # what about the state dict?
 
         gamma_msg.value = capnp_serialize(jax2numpy(self.value, dtype=self.value.dtype))
-        gamma_msg.inputs = capnp_serialize(jax2numpy(self.inputs, self.inputs.dtype))
+        gamma_msg.state = serialize(self.state, to_bytes=True)
         gamma_msg.dataSubjectsIndexed = capnp_serialize(
             self.data_subjects.data_subjects_indexed
         )
@@ -356,13 +389,12 @@ class GammaTensor:
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
-        # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
         gamma_msg = gamma_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
         value = capnp_deserialize(gamma_msg.value)
-        inputs = capnp_deserialize(gamma_msg.inputs)
+        state = deserialize(gamma_msg.state, from_bytes=True)
         data_subjects_indexed = capnp_deserialize(gamma_msg.dataSubjectsIndexed)
         one_hot_lookup = numpyutf8tolist(capnp_deserialize(gamma_msg.oneHotLookup))
         data_subjects = DataSubjectList(one_hot_lookup, data_subjects_indexed)
@@ -377,6 +409,6 @@ class GammaTensor:
             min_val=min_val,
             max_val=max_val,
             is_linear=is_linear,
-            inputs=numpy2jax(inputs, dtype=inputs.dtype),
+            state=state,
             id=id_str,
         )
