@@ -9,7 +9,7 @@ from typing import Tuple
 
 # third party
 import pyperf
-from syft_benchmarks import run_ndept_suite
+from syft_benchmarks import run_phitensor_suite
 
 # syft absolute
 from syft.util import download_file
@@ -58,7 +58,7 @@ def run_suite() -> None:
     runner.parse_args()
     runner.metadata["git_commit_hash"] = get_git_revision_short_hash()
 
-    run_ndept_suite(runner=runner, data_file=data_file)
+    run_phitensor_suite(runner=runner, data_file=data_file)
 
 
 run_suite()

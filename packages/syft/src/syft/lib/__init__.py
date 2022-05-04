@@ -20,7 +20,6 @@ from packaging import version
 
 # relative
 from ..ast.globals import Globals
-from ..core.adp import create_adp_ast
 from ..core.node.abstract.node import AbstractNodeClient
 from ..core.node.common import create_client_ast
 from ..core.smpc import create_smpc_ast
@@ -242,7 +241,6 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     python_ast = create_python_ast(client=client)
     torch_ast = create_torch_ast(client=client)
     numpy_ast = create_ast(client=client)
-    adp_ast = create_adp_ast(client=client)
     client_ast = create_client_ast(client=client)
     tensor_ast = create_tensor_ast(client=client)
     smpc_ast = create_smpc_ast(client=client)
@@ -251,10 +249,9 @@ def create_lib_ast(client: Optional[Any] = None) -> Globals:
     lib_ast.add_attr(attr_name="syft", attr=python_ast.attrs["syft"])
     lib_ast.add_attr(attr_name="torch", attr=torch_ast.attrs["torch"])
     lib_ast.add_attr(attr_name="numpy", attr=numpy_ast.attrs["numpy"])
-    lib_ast.syft.add_attr("core", attr=adp_ast.syft.core)
+    lib_ast.syft.add_attr("core", attr=tensor_ast.syft.core)
     lib_ast.syft.core.add_attr("node", attr=client_ast.syft.core.node)
     lib_ast.syft.core.add_attr("common", attr=client_ast.syft.core.common)
-    lib_ast.syft.core.add_attr("tensor", attr=tensor_ast.syft.core.tensor)
     lib_ast.syft.core.add_attr("smpc", attr=smpc_ast.syft.core.smpc)
 
     # let the misc creation be always the last, as it needs the full ast solved

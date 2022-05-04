@@ -122,7 +122,7 @@ def vectorized_publish(
         # t2 = time()
         # print("Obtained RDP Params, calculation time", t2 - t1)
 
-        # Query budget spend of all unique entities
+        # Query budget spend of all unique data_subjects
         rdp_params = RDPParams(
             sigmas=sigmas,
             l2_norms=l2_norms,
