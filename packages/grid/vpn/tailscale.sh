@@ -22,8 +22,16 @@ iptables -A INPUT -i tailscale0 -p tcp --destination-port 8001 -j REJECT
 iptables -A INPUT -i tailscale0 -p tcp --destination-port 8011 -j REJECT
 iptables -A INPUT -i tailscale0 -p tcp --destination-port 8080 -j REJECT
 
+# allow k8s pods to use tailscale as a Gateway NAT
+iptables -t nat -A POSTROUTING -o tailscale0 -j MASQUERADE
+# on each container you will need to set the IP of the tailscale container
+# as the gateway for a new route
+# ip route add 100.64.0.0/24 via $TAILSCALE_CONTAINER_IP dev eth0 onlink
+# see tailscale-gateway.sh
+
 export PATH="/root/.local/bin:${PATH}"
 export FLASK_APP=tailscale
 export HOSTNAME="${1}"
+hostname "$HOSTNAME"
 flask run -p 4000 --host=0.0.0.0&
 tailscaled -port 41641

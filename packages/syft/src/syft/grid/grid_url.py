@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import copy
+import os
 from typing import Optional
 from typing import Union
 from urllib.parse import urlparse
@@ -75,12 +76,20 @@ class GridURL:
         dupe.path = path
         return dupe
 
-    def as_docker_host(self) -> GridURL:
-        if self.host_or_ip != "localhost":
+    def as_container_host(self, container_host: Optional[str] = None) -> GridURL:
+        if self.host_or_ip not in ["localhost", "docker-host", "host.k3d.internal"]:
             return self
+
+        if container_host is None:
+            # TODO: we could move config.py to syft and then the Settings singleton
+            # could be importable in all parts of the code
+            container_host = os.getenv("CONTAINER_HOST", "docker")
+
+        hostname = "docker-host" if container_host == "docker" else "host.k3d.internal"
+
         return GridURL(
             protocol=self.protocol,
-            host_or_ip="docker-host",
+            host_or_ip=hostname,
             port=self.port,
             path=self.path,
         )

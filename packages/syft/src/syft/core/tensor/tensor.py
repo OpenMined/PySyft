@@ -36,11 +36,10 @@ from ..node.common.action.run_class_method_smpc_action import RunClassMethodSMPC
 
 # from ..node.domain.client import DomainClient
 from ..pointer.pointer import Pointer
-from .ancestors import AutogradTensorAncestor
 from .ancestors import PhiTensorAncestor
 from .autodp.gamma_tensor import GammaTensor
-from .autodp.ndim_entity_phi import NDimEntityPhiTensor
-from .autodp.ndim_entity_phi import TensorWrappedNDimEntityPhiTensorPointer
+from .autodp.phi_tensor import PhiTensor
+from .autodp.phi_tensor import TensorWrappedPhiTensorPointer
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
 from .config import DEFAULT_INT_NUMPY_TYPE
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
@@ -396,7 +395,6 @@ def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
 @serializable(capnp_bytes=True)
 class Tensor(
     PassthroughTensor,
-    AutogradTensorAncestor,
     PhiTensorAncestor,
     FixedPrecisionTensorAncestor,
     # MPCTensorAncestor,
@@ -480,14 +478,10 @@ class Tensor(
         description: str = "",
     ) -> Pointer:
         # relative
-        from .autodp.single_entity_phi import SingleEntityPhiTensor
-        from .autodp.single_entity_phi import TensorWrappedSingleEntityPhiTensorPointer
 
-        # TODO:  Should create init pointer for NDimEntityPhiTensorPointer.
-
-        if isinstance(self.child, NDimEntityPhiTensor):
-            return TensorWrappedNDimEntityPhiTensorPointer(
-                entities=self.child.entities,
+        if isinstance(self.child, PhiTensor):
+            return TensorWrappedPhiTensorPointer(
+                data_subjects=self.child.data_subjects,
                 client=client,
                 id_at_location=id_at_location,
                 object_type=object_type,
@@ -498,21 +492,6 @@ class Tensor(
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
-        elif isinstance(self.child, SingleEntityPhiTensor):
-            return TensorWrappedSingleEntityPhiTensorPointer(
-                entity=self.child.entity,
-                client=client,
-                id_at_location=id_at_location,
-                object_type=object_type,
-                tags=tags,
-                description=description,
-                min_vals=self.child.min_vals,
-                max_vals=self.child.max_vals,
-                scalar_manager=self.child.scalar_manager,
-                public_shape=getattr(self, "public_shape", None),
-                public_dtype=getattr(self, "public_dtype", None),
-            )
-
         else:
             return TensorPointer(
                 client=client,
@@ -527,7 +506,7 @@ class Tensor(
     # TODO: remove after moving private compare to sharetensor level
     def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:
         context.tensor_values = self
-        if isinstance(self.child, NDimEntityPhiTensor):
+        if isinstance(self.child, PhiTensor):
             self.child.child.child.bit_decomposition(ring_size, bitwise)
         else:
             self.child.bit_decomposition(ring_size, bitwise)

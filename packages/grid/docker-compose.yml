@@ -31,7 +31,7 @@ services:
 
   proxy:
     restart: always
-    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}
+    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
@@ -95,7 +95,7 @@ services:
 
   redis:
     restart: always
-    image: redis:6.2
+    image: redis:${REDIS_VERSION?Variable not set}
     volumes:
       - app-redis-data:/data
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
@@ -134,6 +134,7 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
     command: /start.sh
     labels:
       - "traefik.enable=true"
@@ -164,6 +165,7 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
     labels:
       - "traefik.enable=true"
@@ -193,6 +195,7 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
       - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
     network_mode: service:proxy

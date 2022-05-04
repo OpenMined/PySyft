@@ -8,10 +8,12 @@ from pathlib import Path
 import time
 from typing import Any
 from typing import Callable
-from typing import Final
 from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
+
+# third party
+from typing_extensions import Final
 
 # relative
 from ...logger import info
@@ -413,7 +415,6 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
-        # ndept_msg = ndept_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
         dsl_msg = dsl_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )

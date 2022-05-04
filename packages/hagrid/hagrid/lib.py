@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import hashlib
 import importlib
 import importlib.machinery
@@ -10,10 +11,12 @@ import socket
 import subprocess
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import git
 import requests
+from rich.table import Table
 
 # relative
 from .cache import DEFAULT_BRANCH
@@ -42,6 +45,12 @@ sudo usermod -aG docker $USER
 
 docker compose version
 """
+
+
+class ProcessStatus(Enum):
+    RUNNING = "[blue]Running"
+    DONE = "[green]Done"
+    FAILED = "[red]Failed"
 
 
 def docker_desktop_memory() -> int:
@@ -223,10 +232,10 @@ def check_host(ip: str, silent: bool = False) -> bool:
 
 
 # Check status of login page
-def check_login_page(ip: str, silent: bool = False) -> bool:
+def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/login"
-        response = requests.get(url)
+        response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
@@ -238,10 +247,10 @@ def check_login_page(ip: str, silent: bool = False) -> bool:
 
 
 # Check api metadata
-def check_api_metadata(ip: str, silent: bool = False) -> bool:
+def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/api/v1/syft/metadata"
-        response = requests.get(url)
+        response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
@@ -250,6 +259,77 @@ def check_api_metadata(ip: str, silent: bool = False) -> bool:
         if not silent:
             print(f"Failed to check api metadata {ip}. {e}")
         return False
+
+
+def generate_user_table(username: str, password: str) -> Union[Table, str]:
+    if not username and not password:
+        return ""
+
+    table = Table(title="Virtual Machine Credentials")
+    table.add_column("Username")
+    table.add_column("Password")
+
+    table.add_row(f"[green]{username}", f"[green]{password}")
+
+    return table
+
+
+def get_process_status(process: subprocess.Popen) -> str:
+    poll_status = process.poll()
+    if poll_status is None:
+        return ProcessStatus.RUNNING.value
+    elif poll_status != 0:
+        return ProcessStatus.FAILED.value
+    else:
+        return ProcessStatus.DONE.value
+
+
+def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
+    """Generate a table to show the status of the processes being exected.
+
+    Args:
+        process_list (list): each item in the list
+        is a tuple of ip_address, process and jupyter token
+
+    Returns:
+        Tuple[Table, bool]: table of process status and flag to indicate if all processes are executed.
+    """
+
+    process_statuses: list[str] = []
+    lines_to_display = 5  # Number of lines to display as output
+
+    table = Table(title="Virtual Machine Status")
+    table.add_column("PID", style="cyan")
+    table.add_column("IpAddress", style="magenta")
+    table.add_column("Status")
+    table.add_column("Jupyter Token", style="white on black")
+    table.add_column("Log", overflow="fold", no_wrap=False)
+
+    for ip_address, process, jupyter_token in process_list:
+        process_status = get_process_status(process)
+
+        process_statuses.append(process_status)
+
+        process_log = []
+        if process_status == ProcessStatus.FAILED.value:
+            process_log += process.stderr.readlines(lines_to_display)
+        else:
+            process_log += process.stdout.readlines(lines_to_display)
+
+        process_log_str = "\n".join(log.decode("utf-8") for log in process_log)
+        process_log_str = process_log_str if process_log else "-"
+
+        table.add_row(
+            f"{process.pid}",
+            f"{ip_address}",
+            f"{process_status}",
+            f"{jupyter_token}",
+            f"{process_log_str}",
+        )
+
+    processes_completed = ProcessStatus.RUNNING.value not in process_statuses
+
+    return table, processes_completed
 
 
 def check_jupyter_server(

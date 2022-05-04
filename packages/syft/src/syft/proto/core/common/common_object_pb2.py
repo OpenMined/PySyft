@@ -5,9 +5,8 @@
 # third party
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -18,43 +17,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n%proto/core/common/common_object.proto\x12\x10syft.core.common"x\n\x0c\x43ommonObject\x12)\n\nuid_object\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12=\n\x15object_with_id_object\x18\x02 \x01(\x0b\x32\x1e.syft.core.common.ObjectWithID"1\n\x0cObjectWithID\x12!\n\x02id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID"\x14\n\x03UID\x12\r\n\x05value\x18\x01 \x01(\x0c\x62\x06proto3'
 )
 
-
-_COMMONOBJECT = DESCRIPTOR.message_types_by_name["CommonObject"]
-_OBJECTWITHID = DESCRIPTOR.message_types_by_name["ObjectWithID"]
-_UID = DESCRIPTOR.message_types_by_name["UID"]
-CommonObject = _reflection.GeneratedProtocolMessageType(
-    "CommonObject",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _COMMONOBJECT,
-        "__module__": "proto.core.common.common_object_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.common.CommonObject)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.common.common_object_pb2", globals()
 )
-_sym_db.RegisterMessage(CommonObject)
-
-ObjectWithID = _reflection.GeneratedProtocolMessageType(
-    "ObjectWithID",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _OBJECTWITHID,
-        "__module__": "proto.core.common.common_object_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.common.ObjectWithID)
-    },
-)
-_sym_db.RegisterMessage(ObjectWithID)
-
-UID = _reflection.GeneratedProtocolMessageType(
-    "UID",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _UID,
-        "__module__": "proto.core.common.common_object_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.common.UID)
-    },
-)
-_sym_db.RegisterMessage(UID)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None
