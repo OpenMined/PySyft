@@ -8,8 +8,7 @@ from ...ast import add_methods
 from ...ast import add_modules
 from ...ast.globals import Globals
 from ..node.abstract.node import AbstractNodeClient
-from .autodp.ndim_entity_phi import NDimEntityPhiTensor
-from .autodp.single_entity_phi import SingleEntityPhiTensor
+from .autodp.phi_tensor import PhiTensor
 from .fixed_precision_tensor import FixedPrecisionTensor
 from .smpc.share_tensor import ShareTensor
 from .tensor import Tensor
@@ -28,20 +27,14 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor.smpc.share_tensor",
         "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
-        "syft.core.tensor.autodp.single_entity_phi",
-        "syft.core.tensor.autodp.ndim_entity_phi",
+        "syft.core.tensor.autodp.phi_tensor",
     ]
     classes = [
         ("syft.core.tensor.tensor.Tensor", "syft.core.tensor.tensor.Tensor", Tensor),
         (
-            "syft.core.tensor.autodp.single_entity_phi.SingleEntityPhiTensor",
-            "syft.core.tensor.autodp.single_entity_phi.SingleEntityPhiTensor",
-            SingleEntityPhiTensor,
-        ),
-        (
-            "syft.core.tensor.autodp.ndim_entity_phi.NDimEntityPhiTensor",
-            "syft.core.tensor.autodp.ndim_entity_phi.NDimEntityPhiTensor",
-            NDimEntityPhiTensor,
+            "syft.core.tensor.autodp.phi_tensor.PhiTensor",
+            "syft.core.tensor.autodp.phi_tensor.PhiTensor",
+            PhiTensor,
         ),
         (
             "syft.core.tensor.smpc.share_tensor.ShareTensor",
@@ -137,7 +130,6 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.compress", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.swapaxes", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.gamma", "syft.core.tensor.tensor.Tensor"),
-        ("syft.core.tensor.tensor.Tensor.grad", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.max", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.mean", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.min", "syft.core.tensor.tensor.Tensor"),
@@ -145,7 +137,6 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ("syft.core.tensor.tensor.Tensor.private", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.prod", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.repeat", "syft.core.tensor.tensor.Tensor"),
-        ("syft.core.tensor.tensor.Tensor.requires_grad", "syft.lib.python.Bool"),
         ("syft.core.tensor.tensor.Tensor.reshape", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.resize", "syft.core.tensor.tensor.Tensor"),
         ("syft.core.tensor.tensor.Tensor.shape", "syft.core.tensor.tensor.Tensor"),

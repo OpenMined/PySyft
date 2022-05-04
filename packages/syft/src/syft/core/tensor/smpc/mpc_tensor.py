@@ -300,18 +300,9 @@ class MPCTensor(PassthroughTensor):
                 value = None
 
             # relative
-            from ..autodp.ndim_entity_phi import TensorWrappedNDimEntityPhiTensorPointer
-            from ..autodp.single_entity_phi import (
-                TensorWrappedSingleEntityPhiTensorPointer,
-            )
+            from ..autodp.phi_tensor import TensorWrappedPhiTensorPointer
 
-            if isinstance(
-                secret,
-                (
-                    TensorWrappedSingleEntityPhiTensorPointer,
-                    TensorWrappedNDimEntityPhiTensorPointer,
-                ),
-            ):
+            if isinstance(secret, TensorWrappedPhiTensorPointer):
 
                 share_wrapper = secret.to_local_object_without_private_data_child()
                 share_wrapper_pointer = share_wrapper.send(party)
