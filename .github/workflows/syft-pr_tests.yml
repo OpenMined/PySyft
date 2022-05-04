@@ -80,13 +80,13 @@ jobs:
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 
       - name: Scan for security issues python 3.8+
-        if: steps.changes.outputs.syft == 'true' && ${{ matrix.python-version!='3.7' }}
+        if: steps.changes.outputs.syft == 'true' && ${{ matrix.python-version }} != '3.7'
         run: |
           bandit -r src
           safety check
 
       - name: Scan for security issues python 3.7
-        if: steps.changes.outputs.syft == 'true' && ${{ matrix.python-version=='3.7' }}
+        if: steps.changes.outputs.syft == 'true' && ${{ matrix.python-version }} == '3.7'
         run: |
           bandit -r src
           # we want to test python 3.7 for colab so we have to ignore these numpy issues
