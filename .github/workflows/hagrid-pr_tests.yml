@@ -19,7 +19,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10"]
+        python-version: ["3.7", "3.8", "3.9","3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -67,7 +67,7 @@ jobs:
 
       - name: Scan for security issues
         continue-on-error: true
-        if: steps.changes.outputs.hagrid == 'true'
+        if: steps.changes.outputs.hagrid == 'true' && matrix.python-version != '3.7'
         run: |
           bandit -r .
           safety check
@@ -106,7 +106,7 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10"]
+        python-version: ["3.7","3.8","3.9","3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
