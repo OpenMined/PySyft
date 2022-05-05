@@ -594,7 +594,7 @@ class MPCTensor(PassthroughTensor):
     ) -> List[ShareTensor]:
 
         op_method = f"__{op_str}__"
-        if op_str in {"add", "sub"}:
+        if op_str in {"add", "sub", "lt"}:
             if len(self.child) != len(other.child):
                 raise ValueError(
                     "Zipping two different lengths will drop data. "
@@ -612,8 +612,10 @@ class MPCTensor(PassthroughTensor):
     def __apply_public_op(
         self, y: Any, op_str: str, **kwargs: Dict[Any, Any]
     ) -> List[ShareTensor]:
+        # TODO: For add,sub operations only rank 0 does the operations,
+        # modify such that ,we send communication only to that specific party.
         op_method = f"__{op_str}__"
-        if op_str in {"mul", "matmul", "add", "sub"}:
+        if op_str in {"mul", "matmul", "add", "sub", "lt"}:
             res_shares = [
                 getattr(share, op_method)(y, **kwargs) for share in self.child
             ]
@@ -763,7 +765,7 @@ class MPCTensor(PassthroughTensor):
     def lt(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        mpc_res = spdz.lt_master(self, y, "mul")  # type: ignore
+        mpc_res = self.__apply_op(y, "lt")  # type: ignore
 
         return mpc_res
 

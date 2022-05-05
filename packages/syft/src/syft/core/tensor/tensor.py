@@ -106,13 +106,22 @@ class TensorPointer(Pointer):
         # then set the result to that pointer klass
 
         op = f"__{op_str}__"
-        # remove this to dunder method before merge.
+        # remove this to dunder method before merge.modify both merge.
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
-        seed_id_locations = kwargs.get("seed_id_locations", None)
-        if seed_id_locations is None:
+        seed_id_locations = kwargs.pop("seed_id_locations", None)
+        if op_str not in [
+            "add",
+            "sub",
+            "mul",
+            "matmul",
+            "lt",
+        ]:
             seed_id_locations = secrets.randbits(64)
-        else:
-            kwargs.pop("seed_id_locations")
+
+        if seed_id_locations is None:
+            raise ValueError(
+                f"Seed id location for tensor pointer , should not be non for :{op_str}"
+            )
 
         id_at_location = smpc_action_functions.get_id_at_location_from_op(
             seed_id_locations, op
@@ -289,7 +298,9 @@ class TensorPointer(Pointer):
         return TensorPointer._apply_op(self, other, "matmul", **kwargs)
 
     def __lt__(
-        self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
     ) -> Union[TensorPointer, MPCTensor]:
         """Apply the "lt" operation between "self" and "other"
 
@@ -300,7 +311,7 @@ class TensorPointer(Pointer):
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
 
-        return TensorPointer._apply_op(self, other, "lt")
+        return TensorPointer._apply_op(self, other, "lt", **kwargs)
 
     def __gt__(
         self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]

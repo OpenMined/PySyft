@@ -620,11 +620,13 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        # raise ValueError(
-        #     "It should not reach this point since we generate SMPCAction for this"
-        # )
-        new_share = ShareTensor.apply_function(self, y, "lt")
-        return new_share
+        print("Self", self)
+        print("y", y)
+        raise ValueError(
+            "It should not reach this point since we generate SMPCAction for this"
+        )
+        # new_share = ShareTensor.apply_function(self, y, "lt")
+        # return new_share
 
     def gt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
         """Apply the "gt" operation between "y" and "self".
