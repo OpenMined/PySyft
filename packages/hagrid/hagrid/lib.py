@@ -9,6 +9,7 @@ import os
 from pathlib import Path
 import socket
 import subprocess
+from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -284,7 +285,7 @@ def get_process_status(process: subprocess.Popen) -> str:
         return ProcessStatus.DONE.value
 
 
-def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
+def generate_process_status_table(process_list: List) -> Tuple[Table, bool]:
     """Generate a table to show the status of the processes being exected.
 
     Args:
@@ -295,7 +296,7 @@ def generate_process_status_table(process_list: list) -> Tuple[Table, bool]:
         Tuple[Table, bool]: table of process status and flag to indicate if all processes are executed.
     """
 
-    process_statuses: list[str] = []
+    process_statuses: List[str] = []
     lines_to_display = 5  # Number of lines to display as output
 
     table = Table(title="Virtual Machine Status")
