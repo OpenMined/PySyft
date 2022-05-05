@@ -55,6 +55,7 @@ from .lib import generate_process_status_table
 from .lib import generate_user_table
 from .lib import hagrid_root
 from .lib import name_tag
+from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
@@ -335,6 +336,9 @@ def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
     if dry_run is False and len(process_list) > 0:
         # display VM launch status
         display_vm_status(process_list)
+
+        # save vm details as json
+        save_vm_details_as_json(username, password, process_list)
 
 
 def display_vm_status(process_list: TypeList) -> None:

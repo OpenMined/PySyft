@@ -262,6 +262,32 @@ def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool
         return False
 
 
+def save_vm_details_as_json(username: str, password: str, process_list: List) -> None:
+    """Saves the launched hosts details as json."""
+
+    host_ip_details: List = []
+
+    # file path to save host details
+    dir_path = os.path.expanduser("~/.hagrid")
+    os.makedirs(dir_path, exist_ok=True)
+    file_path = f"{dir_path}/host_ips.json"
+
+    for ip_address, _, jupyter_token in process_list:
+        _data = {
+            "username": username,
+            "password": password,
+            "ip_address": ip_address,
+            "jupyter_token": jupyter_token,
+        }
+        host_ip_details.append(_data)
+
+    # save host details
+    with open(file_path, "w") as fp:
+        json.dump({"host_ips": host_ip_details}, fp)
+
+    print(f"Saved vm details at: {file_path}")
+
+
 def generate_user_table(username: str, password: str) -> Union[Table, str]:
     if not username and not password:
         return ""
