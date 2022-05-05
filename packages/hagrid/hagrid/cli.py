@@ -285,14 +285,14 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         return
 
 
-def execute_commands(cmds: list, dry_run: bool = False) -> None:
+def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
     """Execute the launch commands and display their status in realtime.
 
     Args:
         cmds (list): list of commands to be executed
         dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
     """
-    process_list: list = []
+    process_list: TypeList = []
     console = rich.get_console()
 
     username, password = (
@@ -337,7 +337,7 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
         display_vm_status(process_list)
 
 
-def display_vm_status(process_list: list) -> None:
+def display_vm_status(process_list: TypeList) -> None:
     """Display the status of the processes being executed on the VM.
 
     Args:
@@ -712,7 +712,7 @@ def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> Union[str, list[str]]:
+) -> Union[str, TypeList[str]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -1477,7 +1477,7 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
     return None
 
 
-def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[list]:
+def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[TypeList]:
     cmd = f"az vm list-ip-addresses -g {resource_group} --query "
     cmd += f""""[?starts_with(virtualMachine.name, '{node_name}')]"""
     cmd += '''.virtualMachine.network.publicIpAddresses[0].ipAddress"'''
@@ -1567,7 +1567,7 @@ def make_vm_azure(
     size: str,
     image_name: str,
     node_count: int,
-) -> list:
+) -> TypeList:
     disk_size_gb = "200"
     public_key_path = (
         private_to_public_key(private_key_path=key_path, username=username)
@@ -1582,7 +1582,7 @@ def make_vm_azure(
     cmd += f"--admin-password '{password}' " if password else ""
     cmd += f"--count {node_count} " if node_count > 1 else ""
 
-    host_ips: Optional[list] = []
+    host_ips: Optional[TypeList] = []
     try:
         print(f"Creating vm.\nRunning: {hide_azure_vm_password(cmd)}")
         subprocess.check_output(cmd, shell=True)
@@ -1750,7 +1750,7 @@ def create_launch_azure_cmd(
     auth: AuthCredentials,
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
-) -> list[str]:
+) -> TypeList[str]:
 
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
@@ -1800,7 +1800,7 @@ def create_launch_azure_cmd(
             priority=502,
         )
 
-    launch_cmds: list[str] = []
+    launch_cmds: TypeList[str] = []
 
     for host_ip in host_ips:
         # get old host
@@ -2188,7 +2188,7 @@ cli.add_command(debug)
 
 @click.command(help="Check health of an IP address/addresses or a resource group")
 @click.argument("ip_addresses", type=str, nargs=-1)
-def check(ip_addresses: list[str]) -> None:
+def check(ip_addresses: TypeList[str]) -> None:
     console = rich.get_console()
 
     for ip_address in ip_addresses:
@@ -2288,7 +2288,7 @@ def ssh_into_remote_machine(
     help="Optional: command to execute on the remote machine.",
 )
 def ssh(ip_address: str, cmd: str) -> None:
-    kwargs: dict = {}
+    kwargs: TypeDict = {}
     key_path: Optional[str] = None
 
     if check_ip_for_ssh(ip_address, timeout=10, silent=False):
