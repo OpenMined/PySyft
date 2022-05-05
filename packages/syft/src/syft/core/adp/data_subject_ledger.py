@@ -1,3 +1,51 @@
+"""
+Context:
+
+PUBLISHING & PRIVACY BUDGETS
+- This file is where we calculate the privacy budget spent by a given query. We do this by implementing the results from
+this paper: https://arxiv.org/abs/2008.11193 (See 2.7 for Linear queries and 2.8 for Non-linear, but Lipschitz bound
+queries).
+- Here, we use the term "rdp_constants" which refers to all the terms in the epsilon calculation from 2.7 and 2.8,
+EXCEPT alpha. So in other words, epsilon = alpha * rdp_constant, where rdp_constant = L^2 * L2-norm^2/sigma^2
+- Normally, to calculate the privacy budget, we would have to search for the ideal value of alpha to minimize epsilon.
+This might seem like it's a linear function (epsilon = alpha * constant) but in reality it isn't. Why? Because alpha
+also changes the order of the Renyi divergence used. (if confused about this please feel free to Slack message @Ishan)
+- However, we have already computed these searches, and have stored them in a cache located in /syft/src/syft/cache.
+Thus, we won't need to manually compute potentially millions of polynomial searches again.
+- In cases where the cache is invalidated (perhaps you're trying to find the value of alpha with a super high value of
+rdp_constant), you do have to perform polynomial searches and this can be slow.
+
+DATA SUBJECT LEDGERS
+- Each data scientist who tries to publish a result from a dataset gets a unique DataSubjectLedger.
+- In our DP system, we track privacy budget spend for a given data scientist.
+- We also track the privacy budget spent querying every data subject in a dataset. This information is currently
+stored in the Data Subject Ledger, and is updated with every query.
+- Not all data subjects will be queried every time. For instance, if I have a dataset with one clear maximum value,
+and I call np.max() on it, only one data subject will have their data shown, and thus only that data subject will
+have its privacy budget changed.
+
+FILTERING AND DATA SUBJECT BUDGETS
+- The privacy budget spent by a given query is equal to the maximum privacy budget spent by all the data
+subjects that were involved in the query.
+For example- Let's say I use a dataset with 10 unique data subjects, and 5 of these had their data shown in my query.
+Let's say I start out with 25 epsilon of privacy budget.
+
+These 5 data subjects (let's say person A, B, C, D, E) spent 1, 2, 5, 11, 9 privacy budget/epsilon respectively.
+Then the privacy budget spent by my query would be equal to 11. My privacy budget would change from 25 to 25-11 = 14.
+
+Let's say I started with only 10 epsilon of privacy budget, and A,B,C,D,E had the same privacy budget expenditure.
+What would happen?
+Since D has the max budget spend of 11, that would be how much my privacy budget would be changed by.
+However, since I don't have 11 privacy budget, I can't use any of D's data in my calculation. So all of D's data would
+be filtered out, and D would not spend any privacy budget in that scenario.
+We would then have to recalculate the privacy budget spent by A, B, C, E, since there is now less data.
+Let's say their new privacy budget spends are now 2, 3, 6, and 9.5. (we expect them to increase because there is fewer
+data for them to hide amongst)
+
+Thus, my privacy budget would go from 10 to 10-9.5=0.5.
+"""
+
+
 # future
 from __future__ import annotations
 
@@ -66,6 +114,11 @@ class RDPParams:
     Ls: jnp.array
     coeffs: jnp.array
 
+    """
+    This class is meant to store all the data needed to calculate rdp_constants, which is needed to calculate the 
+    privacy budget spent by a given query.
+    """
+
     def __repr__(self) -> str:
         res = "RDPParams:"
         res = f"{res}\n sigmas:{self.sigmas}"
@@ -84,6 +137,17 @@ def first_try_branch(
     entity_ids_query: np.ndarray,
     max_entity: int,
 ) -> jax.numpy.DeviceArray:
+    """
+    This function updates the privacy budget per DATA SUBJECT.
+    It does so by figuring out how much PB has been spent querying them in the past (the `constant` parameter) and
+    adding how much PB is being spent querying them with the current query (the `rdp_constants` parameter).
+
+    You may notice the use of `jnp.take` and `jnp.set` below. This is because not every Data Subject's data is being
+    shown in the current query. For instance, if I call np.max() on a dataset with only one maximum value, only one
+    data subject's data will be shown to me, and thus, only its privacy budget will be changed.
+    `take` and `set`, help us work with these specific data subjects whose data is being shown.
+    """
+
     summed_constant = constant.take(entity_ids_query) + rdp_constants.take(
         entity_ids_query
     )
@@ -98,7 +162,20 @@ def first_try_branch(
 
 @partial(jax.jit, static_argnums=1)
 def compute_rdp_constant(rdp_params: RDPParams, private: bool) -> jax.numpy.DeviceArray:
-    squared_Ls = rdp_params.Ls**2
+    """
+    This function just helps us compute the value of rdp_constant using the `RDPParams` class we implemented above.
+    Reminder: our privacy budget (or Epsilon) spent on a given query = alpha * rdp_constant
+
+    The use of `private` is important- if we use private data to calculate the rdp_constant, and then use this to
+    calculate the privacy budget spent by the current query, we CANNOT show this privacy budget to the Data Scientist.
+    Why? Because this privacy budget would be a direct function of our raw private data. This would open up a potential
+    side-channel attack.
+
+    To solve this problem, we can use `private=False`. This calculates the `rdp_constant` using public metadata.
+    We can show privacy budgets calculated using this public rdp_constant, because it is not a direct function of our
+    private data.
+    """
+    squared_Ls = rdp_params.Ls**2  # For linear queries, this is equal to 1
     squared_sigma = rdp_params.sigmas**2
 
     if private:
@@ -115,6 +192,13 @@ def compute_rdp_constant(rdp_params: RDPParams, private: bool) -> jax.numpy.Devi
 def get_budgets_and_mask(
     epsilon_spend: jnp.array, user_budget: jnp.float64
 ) -> Tuple[float, float, jax.numpy.DeviceArray]:
+    """
+    This creates a mask to filter out values which the Data Scientist doesn't have enough
+    privacy budget to see
+    Reminder: the PB spent by a query is equal to the PB spent by the data subject in the query
+    that has spent the most PB
+    """
+
     # Function to vectorize the result of the budget computation.
     mask = jnp.ones_like(epsilon_spend) * user_budget < epsilon_spend
     # get the highest value which was under budget and represented by False in the mask
@@ -125,7 +209,7 @@ def get_budgets_and_mask(
 @serializable(capnp_bytes=True)
 class DataSubjectLedger(AbstractDataSubjectLedger):
     """for a particular data subject, this is the list
-    of all mechanisms releasing informationo about this
+    of all mechanisms releasing information about this
     particular subject, stored in a vectorized form"""
 
     CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_300k.npy"
@@ -321,11 +405,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         deduct_epsilon_for_user: Callable,
         rdp_constants: np.ndarray,
     ) -> Tuple[np.ndarray]:
-        """TODO:
-        In our current implementation, user_budget is obtained by querying the
-        Adversarial Accountant's entity2ledger with the Data Scientist's User Key.
-        When we replace the entity2ledger with something else, we could perhaps directly
-        add it into this method
+        """
+        
         """
         epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants)
 
