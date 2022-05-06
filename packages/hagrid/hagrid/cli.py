@@ -5,8 +5,9 @@ import os
 import re
 import socket
 import stat
-import subprocess
+import subprocess  # nosec
 import sys
+import tempfile
 import time
 from typing import Any
 from typing import Dict as TypeDict
@@ -89,17 +90,17 @@ def clean(location: str) -> None:
     if location == "library" or location == "volumes":
         print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
+        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)  # nosec
 
     if location == "containers" or location == "pantry":
         print("Deleting all Docker containers in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
+        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)  # nosec
 
     if location == "images":
         print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker rmi $(docker images -q)", shell=True)
+        subprocess.call("docker rmi $(docker images -q)", shell=True)  # nosec
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -312,7 +313,7 @@ def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
 
         try:
             if len(cmds) > 1:
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # nosec
                     cmd_to_exec,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -325,7 +326,7 @@ def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
                 process_list.append((ip_address, process, jupyter_token))
             else:
                 display_jupyter_token(cmd)
-                subprocess.run(
+                subprocess.run(  # nosec
                     cmd_to_exec,
                     shell=True,
                     cwd=GRID_SRC_PATH,
@@ -527,13 +528,13 @@ def fix_key_permission(private_key_path: str) -> None:
             raise e
 
 
-def private_to_public_key(private_key_path: str, username: str) -> str:
+def private_to_public_key(private_key_path: str, temp_path: str, username: str) -> str:
     # check key permission
     fix_key_permission(private_key_path=private_key_path)
-    output_path = f"/tmp/hagrid_{username}_key.pub"
+    output_path = f"{temp_path}/hagrid_{username}_key.pub"
     cmd = f"ssh-keygen -f {private_key_path} -y > {output_path}"
     try:
-        subprocess.check_call(cmd, shell=True)
+        subprocess.check_call(cmd, shell=True)  # nosec
     except Exception as e:
         print("failed to make ssh key", e)
         raise e
@@ -543,9 +544,9 @@ def private_to_public_key(private_key_path: str, username: str) -> str:
 def check_azure_authed() -> bool:
     cmd = "az account show"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -553,21 +554,21 @@ def check_azure_authed() -> bool:
 def login_azure() -> bool:
     cmd = "az login"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
 
 def check_azure_cli_installed() -> bool:
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             ["az", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
         )
         if result.returncode != 0:
             raise FileNotFoundError("az not installed")
-    except Exception:  # nosec
+    except Exception:  # nosec  # nosec
         msg = "\nYou don't appear to have the Azure CLI installed!!! \n\n\
 Please install it and then retry your command.\
 \n\nInstallation Instructions: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli\n"
@@ -578,7 +579,7 @@ Please install it and then retry your command.\
 
 def check_gcloud_cli_installed() -> bool:
     try:
-        subprocess.call(["gcloud", "version"])
+        subprocess.call(["gcloud", "version"])  # nosec
         print("Gcloud cli installed!")
     except FileNotFoundError:
         msg = "\nYou don't appear to have the gcloud CLI tool installed! \n\n\
@@ -591,12 +592,12 @@ Please install it and then retry again.\
 
 def check_gcloud_authed() -> bool:
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             ["gcloud", "auth", "print-identity-token"], stdout=subprocess.PIPE
         )
         if result.returncode == 0:
             return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -604,9 +605,9 @@ def check_gcloud_authed() -> bool:
 def login_gcloud() -> bool:
     cmd = "gcloud auth login"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -630,8 +631,8 @@ def generate_gcloud_key_at_path(key_path: str) -> str:
         # triggers a key check
         cmd = "gcloud compute ssh '' --dry-run"
         try:
-            subprocess.check_call(cmd, shell=True)
-        except Exception:  # nosec
+            subprocess.check_call(cmd, shell=True)  # nosec
+        except Exception:  # nosec  # nosec
             pass
         if not os.path.exists(key_path):
             raise Exception(f"gcloud failed to generate ssh-key at: {key_path}")
@@ -646,7 +647,7 @@ def generate_key_at_path(key_path: str) -> str:
     else:
         cmd = f"ssh-keygen -N '' -f {key_path}"
         try:
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
             if not os.path.exists(key_path):
                 raise Exception(f"Failed to generate ssh-key at: {key_path}")
         except Exception as e:
@@ -951,9 +952,9 @@ def create_launch_cmd(
                     ),
                     kwargs=kwargs,
                 )
-                if auto_generate_password == "y":
+                if auto_generate_password == "y":  # nosec
                     parsed_kwargs["password"] = generate_sec_random_password(length=16)
-                elif auto_generate_password == "n":
+                elif auto_generate_password == "n":  # nosec
                     parsed_kwargs["password"] = ask(
                         question=Question(
                             var_name="password",
@@ -1449,8 +1450,8 @@ def get_or_make_resource_group(resource_group: str, location: str = "westus") ->
     cmd = f"az group show --resource-group {resource_group}"
     exists = True
     try:
-        subprocess.check_call(cmd, shell=True)
-    except Exception:
+        subprocess.check_call(cmd, shell=True)  # nosec
+    except Exception:  # nosec
         # group doesn't exist so lets create it
         exists = False
 
@@ -1458,7 +1459,7 @@ def get_or_make_resource_group(resource_group: str, location: str = "westus") ->
         cmd = f"az group create -l {location} -n {resource_group}"
         try:
             print(f"Creating resource group.\nRunning: {cmd}")
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
         except Exception as e:
             raise Exception(
                 f"Unable to create resource group {resource_group} @ {location}. {e}"
@@ -1472,7 +1473,7 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
         j = json.loads(output)
         if "publicIpAddress" in j:
             return str(j["publicIpAddress"])
-    except Exception:  # nosec
+    except Exception:  # nosec  # nosec
         matcher = r'publicIpAddress":\s+"(.+)"'
         ips = re.findall(matcher, output)
         if len(ips) > 0:
@@ -1485,7 +1486,7 @@ def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[TypeList]:
     cmd = f"az vm list-ip-addresses -g {resource_group} --query "
     cmd += f""""[?starts_with(virtualMachine.name, '{node_name}')]"""
     cmd += '''.virtualMachine.network.publicIpAddresses[0].ipAddress"'''
-    output = subprocess.check_output(cmd, shell=True)
+    output = subprocess.check_output(cmd, shell=True)  # nosec
     try:
         host_ips = json.loads(output)
         return host_ips
@@ -1511,7 +1512,7 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
         ips = re.findall(matcher, output)
         if len(ips) == 2:
             return ips[1]
-    except Exception:  # nosec
+    except Exception:  # nosec  # nosec
         pass
 
     return None
@@ -1524,7 +1525,7 @@ def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
         ips = re.findall(matcher, cmd)
         if ips:
             return ips[0]
-    except Exception:
+    except Exception:  # nosec
         pass
 
     return None
@@ -1557,7 +1558,7 @@ def check_ip_for_ssh(
                 else:
                     if not silent:
                         print(".", end="", flush=True)
-        except Exception:  # nosec
+        except Exception:  # nosec  # nosec
             pass
     return False
 
@@ -1573,11 +1574,20 @@ def make_vm_azure(
     node_count: int,
 ) -> TypeList:
     disk_size_gb = "200"
-    public_key_path = (
-        private_to_public_key(private_key_path=key_path, username=username)
-        if key_path
-        else None
-    )
+    try:
+        temp_dir = tempfile.TemporaryDirectory()
+        public_key_path = (
+            private_to_public_key(
+                private_key_path=key_path, temp_path=temp_dir.name, username=username
+            )
+            if key_path
+            else None
+        )
+    except Exception:  # nosec
+        pass
+    finally:
+        temp_dir.cleanup()
+
     authentication_type = "ssh" if key_path else "password"
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
@@ -1589,7 +1599,7 @@ def make_vm_azure(
     host_ips: Optional[TypeList] = []
     try:
         print(f"Creating vm.\nRunning: {hide_azure_vm_password(cmd)}")
-        subprocess.check_output(cmd, shell=True)
+        subprocess.check_output(cmd, shell=True)  # nosec
         host_ips = get_vm_host_ips(node_name=node_name, resource_group=resource_group)
     except Exception as e:
         print("failed", e)
@@ -1601,7 +1611,7 @@ def make_vm_azure(
         # clean up temp public key
         if public_key_path:
             os.unlink(public_key_path)
-    except Exception:
+    except Exception:  # nosec
         pass
 
     return host_ips
@@ -1614,7 +1624,7 @@ def open_port_vm_azure(
     cmd += f"--nsg-name {node_name}NSG --name {port_name} --destination-port-ranges {port} --priority {priority}"
     try:
         print(f"Creating {port_name} {port} ngs rule.\nRunning: {cmd}")
-        output = subprocess.check_call(cmd, shell=True)
+        output = subprocess.check_call(cmd, shell=True)  # nosec
         print("output", output)
         pass
     except Exception as e:
@@ -1625,7 +1635,7 @@ def create_project(project_id: str) -> None:
     cmd = f"gcloud projects create {project_id} --set-as-default"
     try:
         print(f"Creating project.\nRunning: {cmd}")
-        subprocess.check_call(cmd, shell=True)
+        subprocess.check_call(cmd, shell=True)  # nosec
     except Exception as e:
         print("failed", e)
 
@@ -1730,7 +1740,7 @@ def make_gcp_vm(
     host_ip = None
     try:
         print(f"Creating vm.\nRunning: {cmd}")
-        output = subprocess.check_output(cmd, shell=True)
+        output = subprocess.check_output(cmd, shell=True)  # nosec
         host_ip = extract_host_ip_gcp(stdout=output)
     except Exception as e:
         print("failed", e)
@@ -2011,7 +2021,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
 
     if host in ["docker"]:
         if verb.get_named_term_grammar("node_name").input == "all":
-            # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+            # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
             return "docker rm `docker ps -aq` --force"
 
         version = check_docker_version()
@@ -2153,7 +2163,7 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         print("Running: \n", cmd)
         try:
-            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
+            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
@@ -2273,11 +2283,11 @@ def ssh_into_remote_machine(
     """
     try:
         if auth_type == "key":
-            subprocess.call(
+            subprocess.call(  # nosec
                 ["ssh", "-i", f"{private_key_path}", f"{username}@{host_ip}", cmd]
             )
         elif auth_type == "password":
-            subprocess.call(["ssh", f"{username}@{host_ip}", cmd])
+            subprocess.call(["ssh", f"{username}@{host_ip}", cmd])  # nosec
     except Exception as e:
         raise e
 

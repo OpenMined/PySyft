@@ -41,7 +41,7 @@ class ArgCache:
         try:
             with open(ArgCache.cache_file_path(), "r") as f:
                 cache = json.loads(f.read())
-        except Exception:
+        except Exception:  # nosec
             pass
         self.__dict__ = cache
 

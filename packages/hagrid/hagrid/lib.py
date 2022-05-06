@@ -8,7 +8,7 @@ import json
 import os
 from pathlib import Path
 import socket
-import subprocess
+import subprocess  # nosec
 from typing import List
 from typing import Optional
 from typing import Tuple
@@ -64,7 +64,7 @@ def docker_desktop_memory() -> int:
         f.close()
         return json.loads(out)["memoryMiB"]
 
-    except Exception:
+    except Exception:  # nosec  # nosec
         # docker desktop not found - probably running linux
         return -1
 
@@ -89,7 +89,7 @@ def check_is_git(path: Path) -> bool:
     try:
         git.Repo(path)
         is_repo = True
-    except Exception:  # nosec
+    except Exception:  # nosec  # nosec
         pass
     return is_repo
 
@@ -105,7 +105,7 @@ def get_git_repo() -> git.Repo:
             git.Repo.clone_from(
                 git_url, repo_src_path(), single_branch=False, b=repo_branch
             )
-        except Exception:
+        except Exception:  # nosec
             print(f"Failed to clone {git_url} to {repo_src_path()}")
     return git.Repo(repo_src_path())
 
@@ -191,14 +191,16 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
 def check_docker_version() -> Optional[str]:
     if is_windows():
         return "N/A"  # todo fix to work with windows
-    result = os.popen("docker compose version", "r").read()
+    result = os.popen("docker compose version", "r").read()  # nosec
     version = None
     if "version" in result:
         version = result.split()[-1]
     else:
         print("This may be a linux machine, either that or docker compose isn't s")
         print("Result:" + result)
-        out = subprocess.run(["docker", "compose"], capture_output=True, text=True)
+        out = subprocess.run(  # nosec
+            ["docker", "compose"], capture_output=True, text=True
+        )
         if "'compose' is not a docker command" in out.stderr:
             raise MissingDependency(DOCKER_ERROR)
 
