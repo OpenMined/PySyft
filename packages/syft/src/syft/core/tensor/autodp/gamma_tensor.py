@@ -182,6 +182,18 @@ class GammaTensor:
             state=state,
         )
 
+    def __pos__(self) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        return GammaTensor(
+            value=self.value,
+            data_subjects=self.data_subjects,
+            min_val=self.min_val,
+            max_val=self.max_val,
+            state=output_state,
+        )
+
     def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sum(self.run(state))
@@ -200,6 +212,39 @@ class GammaTensor:
             min_val=min_val,
             max_val=max_val,
             func=_sum,
+            state=output_state,
+        )
+
+    def dot(self, other: Any) -> GammaTensor:
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, GammaTensor):
+
+            def _dot(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.dot(self.run(state), other.run(state))
+
+            print("THIS is the other.state")#, other.state)
+            output_state[other.id] = other
+            value = jnp.dot(self.value, other.value)
+            min_val = jnp.dot(self.min_val, other.min_val)
+            max_val = jnp.dot(self.max_val, other.max_val)
+        else:
+
+            def _dot(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.dot(self.run(state), other)
+
+            value = jnp.dot(self.value, other)
+            min_val = jnp.dot(self.min_val, other)
+            max_val = jnp.dot(self.max_val, other)
+        print("THE state we returned is: ")#, output_state)
+        return GammaTensor(
+            value=value,
+            data_subjects=self.data_subjects,
+            min_val=min_val,
+            max_val=max_val,
+            func=_dot,
             state=output_state,
         )
 

@@ -330,6 +330,49 @@ def test_sum(
     assert zeros_tensor.sum().child.child == 0
 
 
+def test_dot(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubject,
+    traskmaster: DataSubject,
+) -> None:
+
+    tensor1 = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    tensor2 = PT(
+        child=reference_data,
+        data_subjects=traskmaster,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    tensor3 = PT(
+        child=reference_data + 3,
+        data_subjects=[ishan, traskmaster],
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    result_tensor = tensor1.dot(tensor2)
+    result_gamma_tensor = tensor1.dot(tensor3)
+    result_self_tensor = tensor1.dot(tensor1)
+
+    assert (result_tensor.value == tensor1.child.child.dot(tensor2.child.child)).all()
+    assert (
+        result_gamma_tensor.value == tensor1.child.child.dot(tensor3.child.child)
+    ).all()
+    assert (
+        result_self_tensor.child.decode()
+        == tensor1.child.child.dot(tensor1.child.child)
+    ).all()
+
+
 def test_ne_vals(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
