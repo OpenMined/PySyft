@@ -90,7 +90,7 @@ print(f"Time taken to create inputs for Syft Tensor: {round(tf,2)} seconds")
 
 t0 = time()
 tweets_data = sy.Tensor(impressions).private(
-    min_val=70, max_val=2000, entities=data_subjects, ndept=True
+    min_val=70, max_val=2000, data_subjects=data_subjects
 )
 tf = round(time() - t0, 4)
 print(f"Time taken to make Private Syft Tensor: {round(tf,2)} seconds")

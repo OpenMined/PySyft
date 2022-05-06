@@ -49,8 +49,8 @@ from syft.core.node.common.node_service.user_manager.user_messages import (
     UpdateUserMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_messages import GetUserMessage
-from syft.core.node.domain.domain_interface import DomainInterface
-from syft.core.node.domain.service import DomainServiceClass
+from syft.core.node.domain_interface import DomainInterface
+from syft.core.node.domain_service import DomainServiceClass
 
 
 def _create_dummy_user(faker: Faker, is_admin=False):
