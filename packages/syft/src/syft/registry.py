@@ -54,6 +54,15 @@ class NetworkRegistry:
             except Exception:
                 online = False
 
+            # networks without frontend have a /ping route in 0.7.0
+            if not online:
+                try:
+                    url += "ping"
+                    res = requests.get(url, timeout=0.5)
+                    online = res.status_code == 200
+                except Exception:
+                    online = False
+
             if online:
                 online_networks.append(network)
         sys.stdout.write("\r                                             ")

@@ -18,6 +18,7 @@ packages = [
     "requests",
     "rich",
     "setuptools",
+    "cryptography==36.0.2",
 ]
 
 if platform.system().lower() != "windows":
