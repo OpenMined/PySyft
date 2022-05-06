@@ -1,6 +1,6 @@
 # stdlib
 import os
-import random
+import secrets
 
 # third party
 import ascii_magic
@@ -51,7 +51,7 @@ def motorcycle() -> None:
 
 
 def hold_on_tight() -> None:
-    out = os.popen("stty size", "r").read().split()
+    out = os.popen("stty size", "r").read().split()  # nosec
     if len(out) == 2:
         rows, columns = out
     else:
@@ -94,7 +94,7 @@ def hagrid1() -> None:
                 img_path=str(asset_path()) + "/img/hagrid.png", columns=83
             )
         )
-    except Exception:
+    except Exception:  # nosec
         pass
 
 
@@ -105,13 +105,13 @@ def hagrid2() -> None:
                 img_path=str(asset_path()) + "/img/hagrid2.png", columns=83
             )
         )
-    except Exception:
+    except Exception:  # nosec
         pass
 
 
 def hagrid() -> None:
     """Print a random hagrid image with the caption "hold on tight harry" """
     options = [motorcycle, hagrid1, hagrid2]
-    i = random.randint(0, 2)
+    i = secrets.randbelow(3)
     options[i]()
     hold_on_tight()

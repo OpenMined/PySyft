@@ -8,6 +8,9 @@ on:
       none:
         description: "Run Nightlies Tests Manually"
         required: false
+  # pull_request:
+  #   branches:
+  #     - dev
 
 jobs:
   call-grid-backend_test:
@@ -45,3 +48,8 @@ jobs:
   call-benchmark:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/benchmark.yml@dev
+    secrets: inherit
+
+  call-stack-integration-public_tests:
+    if: github.repository == 'OpenMined/PySyft' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/stack-integration-public_tests.yml@dev

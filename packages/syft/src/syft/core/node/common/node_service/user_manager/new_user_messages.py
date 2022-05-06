@@ -14,8 +14,8 @@ from typing_extensions import final
 # relative
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
-from ....domain.domain_interface import DomainInterface
-from ....domain.domain_msg_registry import DomainMessageRegistry
+from ....domain_interface import DomainInterface
+from ....domain_msg_registry import DomainMessageRegistry
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError

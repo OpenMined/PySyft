@@ -32,7 +32,7 @@ from .common.node_service.generic_payload.messages import GenericPayloadMessageW
 from .common.node_service.network_search.network_search_messages import (
     NetworkSearchMessage,
 )
-from .domain.enums import RequestAPIFields
+from .enums import RequestAPIFields
 
 
 @final

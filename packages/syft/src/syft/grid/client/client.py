@@ -22,7 +22,7 @@ from .. import GridURL
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
-from ...core.node.domain.domain_client import DomainClient
+from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
@@ -193,21 +193,24 @@ def register(
         password = getpass("Please enter your password")
 
     if url is None:
-        url = input("Please enter URL of domain (ex: 'http://localhost'):")
+        url = input("Please enter URL of domain (ex: 'localhost'):")
 
     if port is None:
         port = int(input("Please enter the port your domain is running on:"))
 
-    register_url = url + ":" + str(port) + "/api/v1/register"
+    grid_url = GridURL(host_or_ip=url, port=port)
+
+    register_url = grid_url.url + "/api/v1/register"
     myobj = {"name": name, "email": email, "password": password}
 
-    x = requests.post(register_url, data=json.dumps(myobj))
+    response = requests.post(register_url, data=json.dumps(myobj))
 
-    if "error" not in json.loads(x.text):
+    if "error" not in json.loads(response.text):
         if verbose:
             print("Successfully registered! Logging in...")
+
         return login(
-            url=url, port=port, email=email, password=password, verbose=verbose
+            url=grid_url, port=port, email=email, password=password, verbose=verbose
         )
 
-    raise Exception(x.text)
+    raise Exception(response.text)

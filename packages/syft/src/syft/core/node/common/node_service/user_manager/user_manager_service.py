@@ -12,7 +12,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from .....common.message import ImmediateSyftMessageWithReply
-from ....domain.domain_interface import DomainInterface
+from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError

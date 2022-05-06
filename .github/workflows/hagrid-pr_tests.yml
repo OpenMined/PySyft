@@ -19,7 +19,8 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10"]
+        # python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
@@ -65,12 +66,17 @@ jobs:
           pip install --upgrade bandit safety setuptools wheel twine tox
           pip install -e .
 
-      - name: Scan for security issues
-        continue-on-error: true
-        if: steps.changes.outputs.hagrid == 'true'
+      - name: Scan for security issues python 3.8+
+        if: steps.changes.outputs.hagrid == 'true' && matrix.python-version != '3.7'
         run: |
-          bandit -r .
-          safety check
+          bandit -r hagrid
+          safety check -i 42923
+
+      - name: Scan for security issues python 3.7
+        if: steps.changes.outputs.hagrid == 'true' && matrix.python-version == '3.7'
+        run: |
+          bandit -r hagrid
+          safety check -i 42923
 
       - name: Build Wheel
         if: steps.changes.outputs.hagrid == 'true'
@@ -106,7 +112,8 @@ jobs:
       max-parallel: 3
       matrix:
         os: [ubuntu-latest, macos-latest, windows-latest]
-        python-version: ["3.10"]
+        # python-version: ["3.7", "3.8", "3.9", "3.10"]
+        python-version: ["3.7", "3.10"]
 
     runs-on: ${{ matrix.os }}
     steps:
