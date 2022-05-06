@@ -568,7 +568,7 @@ def check_azure_cli_installed() -> bool:
         )
         if result.returncode != 0:
             raise FileNotFoundError("az not installed")
-    except Exception:  # nosec  # nosec
+    except Exception:  # nosec
         msg = "\nYou don't appear to have the Azure CLI installed!!! \n\n\
 Please install it and then retry your command.\
 \n\nInstallation Instructions: https://docs.microsoft.com/en-us/cli/azure/install-azure-cli\n"
@@ -632,7 +632,7 @@ def generate_gcloud_key_at_path(key_path: str) -> str:
         cmd = "gcloud compute ssh '' --dry-run"
         try:
             subprocess.check_call(cmd, shell=True)  # nosec
-        except Exception:  # nosec  # nosec
+        except Exception:  # nosec
             pass
         if not os.path.exists(key_path):
             raise Exception(f"gcloud failed to generate ssh-key at: {key_path}")
@@ -1473,7 +1473,7 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
         j = json.loads(output)
         if "publicIpAddress" in j:
             return str(j["publicIpAddress"])
-    except Exception:  # nosec  # nosec
+    except Exception:  # nosec
         matcher = r'publicIpAddress":\s+"(.+)"'
         ips = re.findall(matcher, output)
         if len(ips) > 0:
@@ -1512,7 +1512,7 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
         ips = re.findall(matcher, output)
         if len(ips) == 2:
             return ips[1]
-    except Exception:  # nosec  # nosec
+    except Exception:  # nosec
         pass
 
     return None
@@ -1558,7 +1558,7 @@ def check_ip_for_ssh(
                 else:
                     if not silent:
                         print(".", end="", flush=True)
-        except Exception:  # nosec  # nosec
+        except Exception:  # nosec
             pass
     return False
 
@@ -1584,8 +1584,6 @@ def make_vm_azure(
             else None
         )
     except Exception:  # nosec
-        pass
-    finally:
         temp_dir.cleanup()
 
     authentication_type = "ssh" if key_path else "password"
@@ -1603,6 +1601,8 @@ def make_vm_azure(
         host_ips = get_vm_host_ips(node_name=node_name, resource_group=resource_group)
     except Exception as e:
         print("failed", e)
+    finally:
+        temp_dir.cleanup()
 
     if not host_ips:
         raise Exception("Failed to create vm or get VM public ip")

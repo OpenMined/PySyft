@@ -64,7 +64,7 @@ def docker_desktop_memory() -> int:
         f.close()
         return json.loads(out)["memoryMiB"]
 
-    except Exception:  # nosec  # nosec
+    except Exception:  # nosec
         # docker desktop not found - probably running linux
         return -1
 
@@ -89,7 +89,7 @@ def check_is_git(path: Path) -> bool:
     try:
         git.Repo(path)
         is_repo = True
-    except Exception:  # nosec  # nosec
+    except Exception:  # nosec
         pass
     return is_repo
 
