@@ -8,7 +8,7 @@ RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
   DEBIAN_FRONTEND=noninteractive \
   apt-get update && \
   apt-get install -y --no-install-recommends \
-  curl python3-dev gcc make build-essential cmake
+  curl python3-dev gcc make build-essential cmake git
 
 ENV WAITFORIT_VERSION="v2.4.1"
 RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit/releases/download/$WAITFORIT_VERSION/waitforit-linux_amd64 && \
@@ -22,8 +22,12 @@ RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) = "x86_64" ]; then \
 COPY grid/backend/wheels /wheels
 # apple m1 build PyNaCl for aarch64
 RUN --mount=type=cache,target=/root/.cache if [ $(uname -m) != "x86_64" ]; then \
+  # precompiled jaxlib
   pip install --user /wheels/jaxlib-0.3.7-cp310-none-manylinux2014_aarch64.whl \
   pip install --user pytest-xdist[psutil]; \
+  # get pybind11 source for dm-tree (flax dependency)
+  git clone https://github.com/pybind/pybind11 && cd pybind11 && git checkout v2.6.2; \
+  pip install --user dm-tree==0.1.7; \
   pip install --user torch==1.11.0 -f https://download.pytorch.org/whl/torch_stable.html; \
   fi
 
@@ -43,12 +47,6 @@ COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
 
 ENV PYTHONPATH=/app
 ENV PATH=/root/.local/bin:$PATH
-
-RUN --mount=type=cache,sharing=locked,target=/var/cache/apt \
-  DEBIAN_FRONTEND=noninteractive \
-  apt-get update && \
-  apt-get install -y --no-install-recommends \
-  dnsutils iproute2
 
 # copy start scripts and gunicorn conf
 COPY grid/backend/docker-scripts/start.sh /start.sh
