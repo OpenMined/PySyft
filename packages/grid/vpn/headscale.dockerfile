@@ -1,4 +1,4 @@
-FROM headscale/headscale:0.14.0-alpine
+FROM headscale/headscale:0.15.0-alpine
 
 RUN apk add python3 py3-pip curl
 RUN pip install --upgrade pip
@@ -10,7 +10,7 @@ RUN curl -o /usr/local/bin/waitforit -sSL https://github.com/maxcnunes/waitforit
 WORKDIR /headscale
 COPY ./requirements.txt /headscale/requirements.txt
 RUN --mount=type=cache,target=/root/.cache \
-    pip install --user -r requirements.txt
+  pip install --user -r requirements.txt
 
 COPY ./headscale.sh /headscale/headscale.sh
 COPY ./config.yaml /etc/headscale/config.yaml
