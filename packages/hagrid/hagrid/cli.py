@@ -1267,7 +1267,9 @@ def create_launch_docker_cmd(
 ) -> str:
     host_term = verb.get_named_term_hostgrammar(name="host")
     node_name = verb.get_named_term_type(name="node_name")
-    node_type = verb.get_named_term_type(name="node_type")
+    node_type, docker_tag_input = verb.get_named_term_type(name="node_type")
+    if docker_tag_input is not None:
+        kwargs["tag"] = docker_tag_input
 
     snake_name = str(node_name.snake_input)
     tag = name_tag(name=str(node_name.input))

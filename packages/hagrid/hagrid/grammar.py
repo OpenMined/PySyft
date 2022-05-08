@@ -31,9 +31,16 @@ class GrammarVerb:
         self.full_sentence = full_sentence
         self.abbreviations = abbreviations
 
-    def get_named_term_grammar(self, name: str) -> GrammarTerm:
+    def get_named_term_grammar(self, name: str, term_type: Optional[str] = None) -> GrammarTerm:
         for term in self.grammar:
             if term.name == name and isinstance(term, GrammarTerm):
+                if term_type == 'node_type':
+                    parts = term.split(":")
+                    _term = parts[0]
+                    docker_image_tag = None
+                    if len(parts) > 1:
+                        docker_image_tag = parts[1]
+                    return (_term, docker_image_tag)
                 return term
         raise BadGrammar(f"GrammarTerm with {name} not found in {self.grammar}")
 
@@ -48,7 +55,7 @@ class GrammarVerb:
     ) -> Union[GrammarTerm, HostGrammarTerm]:
         if term_type == "host":
             return self.get_named_term_hostgrammar(name=name)
-        return self.get_named_term_grammar(name=name)
+        return self.get_named_term_grammar(name=name, term_type=term_type)
 
     def set_named_term_type(
         self, name: str, new_term: GrammarTerm, term_type: Optional[str] = None
