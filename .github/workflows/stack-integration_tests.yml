@@ -564,7 +564,7 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.10"]
 
-    runs-on: ${{matrix.os}}
+    runs-on: [self-hosted, linux]
 
     steps:
       - uses: actions/checkout@v2
