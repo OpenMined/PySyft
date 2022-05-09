@@ -6,8 +6,7 @@ from unittest import result
 # third party
 from nacl.signing import VerifyKey
 import tensorflow_federated as tff
-from torch import eq
-
+# import torch as th
 # relative
 from ......util import traceback_and_raise
 from ....abstract.node import AbstractNode
@@ -44,36 +43,56 @@ def custom_data_descriptor(uris, data_type):
                                         arguments, 
                                         # tf.int32
                                         # data_type,
-                                        data_type_proto,
-                                        # tff.FederatedType(data_type, tff.CLIENTS), 
+                                        # data_type_proto,
+                                        tff.FederatedType(data_type, tff.CLIENTS), 
                                         # 1
                                         num_clients
                                         )
 
+def create_keras_model():
+  return tf.keras.models.Sequential([
+      tf.keras.layers.InputLayer(input_shape=(784,)),
+      tf.keras.layers.Dense(10, kernel_initializer='zeros'),
+      tf.keras.layers.Softmax(),
+  ])
+  
+# def model_fn():
+#   keras_model = create_keras_model()
+#   return tff.learning.from_keras_model(
+#       keras_model,
+#       input_spec=preprocessed_example_dataset.element_spec,
+#       loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+#       metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+
+def get_ctx(data_backend):
+  def ex_fn(
+      device: tf.config.LogicalDevice) -> tff.framework.DataExecutor:
+    return tff.framework.DataExecutor(
+        tff.framework.EagerTFExecutor(device),
+        data_backend=data_backend)
+  factory = tff.framework.local_executor_factory(leaf_executor_fn=ex_fn)
+  return async_execution_context.AsyncExecutionContext(executor_fn=factory)
+
 async def test_data_descriptor(node):
     uris = [key.to_string() for key in node.store.keys()]
-    data_type = computation_types.TensorType(tf.int32)
+    data_type = tff.TensorType(dtype=tf.int32, shape=[3])
+    # data_type = computation_types.TensorType(tff.types.SequenceType(tf.int32))
     data_desc = custom_data_descriptor(uris, data_type)
 
-    @computations.tf_computation(tf.int32)
+    # @tff.federated_computation(tff.types.FederatedType(tf.int32, tff.CLIENTS))
+    # def foo(x):
+    #     return tff.federated_sum(x)
+    
+    @tff.federated_computation(tff.types.FederatedType(tff.TensorType(dtype=tf.int32, shape=[3]), tff.CLIENTS))
     def foo(x):
-        return x + 1
+        @tff.tf_computation(tff.TensorType(dtype=tf.int32, shape=[3]))
+        def local_sum(nums):
+            return tf.math.reduce_sum(nums)
+        return tff.federated_sum(tff.federated_map(local_sum, x))
 
     backend = PySyftDataBackend(node.store)
-    ex = tff.framework.DataExecutor(
-        tff.framework.EagerTFExecutor(),
-        backend
-    )
-    ex_fn = lambda device: ex
-    factory = executor_stacks.local_executor_factory(
-        leaf_executor_fn=ex_fn
-        )
-    # context = context_stack_test_utils.TestContext(factory)
-    context = async_execution_context.AsyncExecutionContext(
-        executor_fn=factory,
-        # compiler_fn=compiler.transform_to_native_form,
-    )
-    set_default_context.set_default_context(context)
+    context = get_ctx(backend)
+    tff.framework.set_default_context(context)
 
     result = await foo(data_desc)
     print(result)
@@ -119,6 +138,10 @@ class TFFService(ImmediateNodeServiceWithReply):
             traceback_and_raise("Can't process TFFService with no verification key.")
         tff.backends.native.execution_contexts.set_local_async_python_execution_context(reference_resolving_clients=True)
         asyncio.ensure_future(test_data_descriptor(node))
+        # tensor = node.store.get(node.store.keys()[0])
+        # print(dir(tensor))
+        # print(tensor.data.numpy())
+        # print(dir(tensor.data))
         result = msg.payload.run(node=node, verify_key=verify_key)
         return TFFReplyMessage(payload=result, address=msg.reply_to)
 

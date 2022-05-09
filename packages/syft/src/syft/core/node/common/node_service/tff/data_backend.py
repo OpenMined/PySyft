@@ -10,9 +10,10 @@ class PySyftDataBackend(tff.framework.DataBackend):
         self._store = store
 
     async def materialize(self, data: pb.Data, type_spec: computation_types.Type):
-        print(data.uri)
+        # print(data.uri)
         uid = UID.from_string(data.uri)
-        return self._store.get(uid)
+        # print(self._store.get(uid).data.numpy())
+        return self._store.get(uid).data.numpy()
     
 class TestDataBackend(tff.framework.DataBackend):
 
