@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -23,69 +22,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n(proto/grid/messages/setup_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\xe7\x01\n\x19\x43reateInitialSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\r\n\x05\x65mail\x18\x04 \x01(\t\x12\x10\n\x08password\x18\x05 \x01(\t\x12\x13\n\x0b\x64omain_name\x18\x06 \x01(\t\x12\x0e\n\x06\x62udget\x18\x07 \x01(\x01\x12\'\n\x08reply_to\x18\x08 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetSetUpMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x87\x01\n\x10GetSetUpResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\xf8\x01\n\x12UpdateSetupMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x13\n\x0b\x64omain_name\x18\x03 \x01(\t\x12\x13\n\x0b\x64\x65scription\x18\x04 \x01(\t\x12\x0b\n\x03\x64\x61\x61\x18\x05 \x01(\x08\x12\x0f\n\x07\x63ontact\x18\x06 \x01(\t\x12\x14\n\x0c\x64\x61\x61_document\x18\x08 \x01(\x0c\x12\x0c\n\x04tags\x18\t \x03(\t\x12\'\n\x08reply_to\x18\n \x01(\x0b\x32\x15.syft.core.io.Address"u\n\x13UpdateSetupResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
 )
 
-
-_CREATEINITIALSETUPMESSAGE = DESCRIPTOR.message_types_by_name[
-    "CreateInitialSetUpMessage"
-]
-_GETSETUPMESSAGE = DESCRIPTOR.message_types_by_name["GetSetUpMessage"]
-_GETSETUPRESPONSE = DESCRIPTOR.message_types_by_name["GetSetUpResponse"]
-_UPDATESETUPMESSAGE = DESCRIPTOR.message_types_by_name["UpdateSetupMessage"]
-_UPDATESETUPRESPONSE = DESCRIPTOR.message_types_by_name["UpdateSetupResponse"]
-CreateInitialSetUpMessage = _reflection.GeneratedProtocolMessageType(
-    "CreateInitialSetUpMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _CREATEINITIALSETUPMESSAGE,
-        "__module__": "proto.grid.messages.setup_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateInitialSetUpMessage)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.grid.messages.setup_messages_pb2", globals()
 )
-_sym_db.RegisterMessage(CreateInitialSetUpMessage)
-
-GetSetUpMessage = _reflection.GeneratedProtocolMessageType(
-    "GetSetUpMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETSETUPMESSAGE,
-        "__module__": "proto.grid.messages.setup_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetSetUpMessage)
-    },
-)
-_sym_db.RegisterMessage(GetSetUpMessage)
-
-GetSetUpResponse = _reflection.GeneratedProtocolMessageType(
-    "GetSetUpResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETSETUPRESPONSE,
-        "__module__": "proto.grid.messages.setup_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetSetUpResponse)
-    },
-)
-_sym_db.RegisterMessage(GetSetUpResponse)
-
-UpdateSetupMessage = _reflection.GeneratedProtocolMessageType(
-    "UpdateSetupMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _UPDATESETUPMESSAGE,
-        "__module__": "proto.grid.messages.setup_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateSetupMessage)
-    },
-)
-_sym_db.RegisterMessage(UpdateSetupMessage)
-
-UpdateSetupResponse = _reflection.GeneratedProtocolMessageType(
-    "UpdateSetupResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _UPDATESETUPRESPONSE,
-        "__module__": "proto.grid.messages.setup_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateSetupResponse)
-    },
-)
-_sym_db.RegisterMessage(UpdateSetupResponse)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

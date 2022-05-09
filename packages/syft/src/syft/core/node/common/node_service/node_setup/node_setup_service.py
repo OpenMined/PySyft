@@ -16,7 +16,7 @@ from nacl.signing import VerifyKey
 from .....common import UID
 from .....common.message import ImmediateSyftMessageWithReply
 from .....io.location import SpecificLocation
-from ....domain.domain_interface import DomainInterface
+from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import OwnerAlreadyExistsError

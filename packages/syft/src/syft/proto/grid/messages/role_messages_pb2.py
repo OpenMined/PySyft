@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -24,91 +23,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\'proto/grid/messages/role_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x1bproto/lib/python/dict.proto"\xcb\x03\n\x11\x43reateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1e\n\x16\x63\x61n_make_data_requests\x18\x04 \x01(\x08\x12 \n\x18\x63\x61n_triage_data_requests\x18\x05 \x01(\x08\x12!\n\x19\x63\x61n_manage_privacy_budget\x18\x06 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x07 \x01(\x08\x12\x18\n\x10\x63\x61n_manage_users\x18\x08 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\t \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\n \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\x0b \x01(\x08\x12!\n\x19\x63\x61n_upload_legal_document\x18\x0c \x01(\x08\x12 \n\x18\x63\x61n_edit_domain_settings\x18\r \x01(\x08\x12\'\n\x08reply_to\x18\x0e \x01(\x0b\x32\x15.syft.core.io.Address"\x99\x01\n\x0eGetRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x88\x01\n\x0fGetRoleResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x01(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x0fGetRolesMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x10GetRolesResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x63ontent\x18\x02 \x03(\x0b\x32\x15.syft.lib.python.Dict\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Address"\xdc\x03\n\x11UpdateRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0c\n\x04name\x18\x03 \x01(\t\x12\x1e\n\x16\x63\x61n_make_data_requests\x18\x04 \x01(\x08\x12 \n\x18\x63\x61n_triage_data_requests\x18\x05 \x01(\x08\x12!\n\x19\x63\x61n_manage_privacy_budget\x18\x06 \x01(\x08\x12\x18\n\x10\x63\x61n_create_users\x18\x07 \x01(\x08\x12\x18\n\x10\x63\x61n_manage_users\x18\x08 \x01(\x08\x12\x16\n\x0e\x63\x61n_edit_roles\x18\t \x01(\x08\x12!\n\x19\x63\x61n_manage_infrastructure\x18\n \x01(\x08\x12\x17\n\x0f\x63\x61n_upload_data\x18\x0b \x01(\x08\x12!\n\x19\x63\x61n_upload_legal_document\x18\x0c \x01(\x08\x12 \n\x18\x63\x61n_edit_domain_settings\x18\r \x01(\x08\x12\x0f\n\x07role_id\x18\x0e \x01(\x05\x12\'\n\x08reply_to\x18\x0f \x01(\x0b\x32\x15.syft.core.io.Address"\x9c\x01\n\x11\x44\x65leteRoleMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07role_id\x18\x03 \x01(\x05\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
 )
 
-
-_CREATEROLEMESSAGE = DESCRIPTOR.message_types_by_name["CreateRoleMessage"]
-_GETROLEMESSAGE = DESCRIPTOR.message_types_by_name["GetRoleMessage"]
-_GETROLERESPONSE = DESCRIPTOR.message_types_by_name["GetRoleResponse"]
-_GETROLESMESSAGE = DESCRIPTOR.message_types_by_name["GetRolesMessage"]
-_GETROLESRESPONSE = DESCRIPTOR.message_types_by_name["GetRolesResponse"]
-_UPDATEROLEMESSAGE = DESCRIPTOR.message_types_by_name["UpdateRoleMessage"]
-_DELETEROLEMESSAGE = DESCRIPTOR.message_types_by_name["DeleteRoleMessage"]
-CreateRoleMessage = _reflection.GeneratedProtocolMessageType(
-    "CreateRoleMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _CREATEROLEMESSAGE,
-        "__module__": "proto.grid.messages.role_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.CreateRoleMessage)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.grid.messages.role_messages_pb2", globals()
 )
-_sym_db.RegisterMessage(CreateRoleMessage)
-
-GetRoleMessage = _reflection.GeneratedProtocolMessageType(
-    "GetRoleMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETROLEMESSAGE,
-        "__module__": "proto.grid.messages.role_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetRoleMessage)
-    },
-)
-_sym_db.RegisterMessage(GetRoleMessage)
-
-GetRoleResponse = _reflection.GeneratedProtocolMessageType(
-    "GetRoleResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETROLERESPONSE,
-        "__module__": "proto.grid.messages.role_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetRoleResponse)
-    },
-)
-_sym_db.RegisterMessage(GetRoleResponse)
-
-GetRolesMessage = _reflection.GeneratedProtocolMessageType(
-    "GetRolesMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETROLESMESSAGE,
-        "__module__": "proto.grid.messages.role_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetRolesMessage)
-    },
-)
-_sym_db.RegisterMessage(GetRolesMessage)
-
-GetRolesResponse = _reflection.GeneratedProtocolMessageType(
-    "GetRolesResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _GETROLESRESPONSE,
-        "__module__": "proto.grid.messages.role_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.GetRolesResponse)
-    },
-)
-_sym_db.RegisterMessage(GetRolesResponse)
-
-UpdateRoleMessage = _reflection.GeneratedProtocolMessageType(
-    "UpdateRoleMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _UPDATEROLEMESSAGE,
-        "__module__": "proto.grid.messages.role_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.UpdateRoleMessage)
-    },
-)
-_sym_db.RegisterMessage(UpdateRoleMessage)
-
-DeleteRoleMessage = _reflection.GeneratedProtocolMessageType(
-    "DeleteRoleMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _DELETEROLEMESSAGE,
-        "__module__": "proto.grid.messages.role_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.DeleteRoleMessage)
-    },
-)
-_sym_db.RegisterMessage(DeleteRoleMessage)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

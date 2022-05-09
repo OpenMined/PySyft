@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -23,19 +22,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n<proto/core/node/domain/service/request_answer_response.proto\x12\x1dsyft.core.node.domain.service\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"z\n\x15RequestAnswerResponse\x12\x0e\n\x06status\x18\x01 \x01(\x05\x12)\n\nrequest_id\x18\x02 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x03 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
 )
 
-
-_REQUESTANSWERRESPONSE = DESCRIPTOR.message_types_by_name["RequestAnswerResponse"]
-RequestAnswerResponse = _reflection.GeneratedProtocolMessageType(
-    "RequestAnswerResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _REQUESTANSWERRESPONSE,
-        "__module__": "proto.core.node.domain.service.request_answer_response_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.domain.service.RequestAnswerResponse)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.node.domain.service.request_answer_response_pb2", globals()
 )
-_sym_db.RegisterMessage(RequestAnswerResponse)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

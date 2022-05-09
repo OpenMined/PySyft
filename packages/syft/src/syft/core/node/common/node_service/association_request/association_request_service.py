@@ -20,8 +20,8 @@ from ......logger import error
 from ......logger import info
 from .....common.message import ImmediateSyftMessageWithReply
 from .....common.message import SignedImmediateSyftMessageWithReply
-from ....domain.domain_interface import DomainInterface
-from ....domain.enums import AssociationRequestResponses
+from ....domain_interface import DomainInterface
+from ....enums import AssociationRequestResponses
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...node_service.vpn.vpn_messages import VPNStatusMessageWithReply

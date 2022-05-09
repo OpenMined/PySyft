@@ -15,7 +15,7 @@ from ...core.io.location import SpecificLocation
 from ...core.io.route import SoloRoute
 from ...core.node.common import AbstractNodeClient
 from ...core.node.common.node_service.ping.ping_messages import PingMessageWithReply
-from ...core.node.domain.client import DomainClient
+from ...core.node.domain_client import DomainClient
 from ...logger import error
 from .grid_connection import GridHTTPConnection
 

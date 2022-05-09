@@ -4,10 +4,10 @@ from typing import Dict
 
 # relative
 from ...abstract.node import AbstractNodeClient
-from ...domain.enums import AssociationRequestResponses
-from ...domain.enums import RequestAPIFields
-from ...domain.enums import ResponseObjectEnum
-from ...domain.exceptions import PyGridClientException
+from ...enums import AssociationRequestResponses
+from ...enums import RequestAPIFields
+from ...enums import ResponseObjectEnum
+from ...exceptions import PyGridClientException
 from ..node_service.association_request.association_request_messages import (
     DeleteAssociationRequestMessage,
 )

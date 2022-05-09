@@ -83,7 +83,7 @@ def get_ring_size(x_ring_size: int, y_ring_size: int) -> int:
     """
     if x_ring_size != y_ring_size:
         raise ValueError(
-            "Expected the same ring size for x and y ({x_ring_size} vs {y_ring_size})"
+            f"Expected the same ring size for x and y ({x_ring_size} vs {y_ring_size})"
         )
 
     return x_ring_size

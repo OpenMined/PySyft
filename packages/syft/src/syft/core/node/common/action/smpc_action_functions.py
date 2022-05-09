@@ -13,7 +13,7 @@ import numpy as np
 # relative
 from ....common.uid import UID
 from ....store.storeable_object import StorableObject
-from ....tensor.autodp.ndim_entity_phi import NDimEntityPhiTensor
+from ....tensor.autodp.phi_tensor import PhiTensor
 from ....tensor.smpc import context
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
@@ -89,7 +89,7 @@ def spdz_mask(
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
-    clients = ShareTensor.login_clients(x.parties_info)
+    clients = ShareTensor.login_clients(parties_info=x.parties_info)
 
     eps = x - a_share  # beaver intermediate values.
     delta = y - b_share
@@ -208,7 +208,7 @@ def divide_mask(
     if node is None:
         raise ValueError("Node context should be passed to spdz mask")
 
-    clients = ShareTensor.login_clients(x.parties_info)
+    clients = ShareTensor.login_clients(parties_info=x.parties_info)
 
     z = x + r
 
@@ -342,7 +342,7 @@ def local_decomposition(
                 sh.child = deepcopy(share.child.astype(numpy_type))
 
             if tensor_values is not None:
-                if isinstance(tensor_values.child, NDimEntityPhiTensor):
+                if isinstance(tensor_values.child, PhiTensor):
                     # Remove it when we move PC to share tensor.
                     if ring_size != 2:  # type: ignore
                         sh.child = tensor_values.child.child.encode(sh.child)

@@ -2,24 +2,26 @@
 from datetime import datetime
 import json
 import os
-from os import urandom
 import re
 import socket
 import stat
-import string
-import subprocess
+import subprocess  # nosec
 import sys
+import tempfile
 import time
 from typing import Any
 from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
+from typing import Tuple
 from typing import Tuple as TypeTuple
+from typing import Union
 from typing import cast
 
 # third party
 import click
 import rich
+from rich.live import Live
 
 # relative
 from . import __version__
@@ -50,11 +52,15 @@ from .lib import check_jupyter_server
 from .lib import check_login_page
 from .lib import commit_hash
 from .lib import docker_desktop_memory
+from .lib import generate_process_status_table
+from .lib import generate_user_table
 from .lib import hagrid_root
 from .lib import name_tag
+from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
+from .rand_sec import generate_sec_random_password
 from .style import RichGroup
 
 
@@ -84,17 +90,17 @@ def clean(location: str) -> None:
     if location == "library" or location == "volumes":
         print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
+        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)  # nosec
 
     if location == "containers" or location == "pantry":
         print("Deleting all Docker containers in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
+        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)  # nosec
 
     if location == "images":
         print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker rmi $(docker images -q)", shell=True)
+        subprocess.call("docker rmi $(docker images -q)", shell=True)  # nosec
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -175,6 +181,13 @@ def clean(location: str) -> None:
     help="Optional: enable or disable provisioning VMs",
 )
 @click.option(
+    "--node_count",
+    default=1,
+    required=False,
+    type=click.IntRange(1, 250),
+    help="Optional: number of independent nodes/VMs to launch",
+)
+@click.option(
     "--auth_type",
     default=None,
     type=click.Choice(["key", "password"], case_sensitive=False),
@@ -252,36 +265,118 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         update_repo(repo=GIT_REPO, branch=str(kwargs["build_src"]))
     except Exception as e:
         print(f"Failed to update repo. {e}")
-
     try:
-        cmd = create_launch_cmd(verb=verb, kwargs=kwargs)
+        cmds = create_launch_cmd(verb=verb, kwargs=kwargs)
+        cmds = [cmds] if isinstance(cmds, str) else cmds
     except Exception as e:
         print(f"{e}")
         return
-    print("Running: \n", hide_password(cmd=cmd))
+
+    dry_run = True
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
+        dry_run = False
+
+    try:
+        execute_commands(cmds, dry_run=dry_run)
+    except Exception as e:
+        print(f"{e}")
+        return
+
+
+def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
+    """Execute the launch commands and display their status in realtime.
+
+    Args:
+        cmds (list): list of commands to be executed
+        dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
+    """
+    process_list: TypeList = []
+    console = rich.get_console()
+
+    username, password = (
+        extract_username_and_pass(cmds[0]) if len(cmds) > 0 else ("-", "-")
+    )
+    # display VM credentials
+    console.print(generate_user_table(username=username, password=password))
+
+    for cmd in cmds:
+        if dry_run:
+            print("Running: \n", hide_password(cmd=cmd))
+            continue
+
+        # use powershell if environment is Windows
+        cmd_to_exec = ["powershell.exe", "-Command", cmd] if is_windows() else cmd
+
         try:
-            if is_windows():
-                cmds = ["powershell.exe", "-Command", cmd]
-                output = subprocess.run(cmds, capture_output=True, cwd=GRID_SRC_PATH)
-                out = str(output.stdout.decode("utf-8"))
-                if len(out) > 0:
-                    print(out)
-                # normal output seems to appear here
-                stderr = output.stderr.decode("utf-8")
-                if len(stderr) > 0:
-                    print(stderr)
+            if len(cmds) > 1:
+                process = subprocess.Popen(  # nosec
+                    cmd_to_exec,
+                    stdout=subprocess.PIPE,
+                    stderr=subprocess.PIPE,
+                    cwd=GRID_SRC_PATH,
+                    shell=True,
+                )
+
+                ip_address = extract_host_ip_from_cmd(cmd)
+                jupyter_token = extract_jupyter_token(cmd)
+                process_list.append((ip_address, process, jupyter_token))
             else:
-                subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
+                display_jupyter_token(cmd)
+                subprocess.run(  # nosec
+                    cmd_to_exec,
+                    shell=True,
+                    cwd=GRID_SRC_PATH,
+                )
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
-    display_jupyter_token(cmd)
+
+    if dry_run is False and len(process_list) > 0:
+        # display VM launch status
+        display_vm_status(process_list)
+
+        # save vm details as json
+        save_vm_details_as_json(username, password, process_list)
+
+
+def display_vm_status(process_list: TypeList) -> None:
+    """Display the status of the processes being executed on the VM.
+
+    Args:
+        process_list (list): list of processes executed.
+    """
+
+    # Generate the table showing the status of each process being executed
+    status_table, process_completed = generate_process_status_table(process_list)
+
+    # Render the live table
+    with Live(status_table, refresh_per_second=1) as live:
+
+        # Loop till all processes have not completed executing
+        while not process_completed:
+            status_table, process_completed = generate_process_status_table(
+                process_list
+            )
+            live.update(status_table)  # Update the process status table
 
 
 def display_jupyter_token(cmd: str) -> None:
     token = extract_jupyter_token(cmd=cmd)
     if token is not None:
         print(f"Jupyter Token: {token}")
+
+
+def extract_username_and_pass(cmd: str) -> Tuple:
+    # Extract username
+    matcher = r"--user (.+?) "
+    username = re.findall(matcher, cmd)
+    username = username[0] if len(username) > 0 else None
+
+    # Extract password
+    matcher = r"ansible_ssh_pass='(.+?)'"
+    password = re.findall(matcher, cmd)
+    password = password[0] if len(password) > 0 else None
+
+    return username, password
 
 
 def extract_jupyter_token(cmd: str) -> Optional[str]:
@@ -303,6 +398,22 @@ def hide_password(cmd: str) -> str:
                 f"ansible_ssh_pass='{password}'", f"ansible_ssh_pass='{stars}'"
             )
         return cmd
+    except Exception as e:
+        print("Failed to hide password.")
+        raise e
+
+
+def hide_azure_vm_password(azure_cmd: str) -> str:
+    try:
+        matcher = r"admin-password '(.+?)'"
+        passwords = re.findall(matcher, azure_cmd)
+        if len(passwords) > 0:
+            password = passwords[0]
+            stars = "*" * 4
+            azure_cmd = azure_cmd.replace(
+                f"admin-password '{password}'", f"admin-password '{stars}'"
+            )
+        return azure_cmd
     except Exception as e:
         print("Failed to hide password.")
         raise e
@@ -366,6 +477,11 @@ class Question:
                 f"{value} is not one of the options: {self.options}"
             )
 
+        if self.kind == "password":
+            try:
+                return validate_password(password=value)
+            except Exception as e:
+                raise QuestionInputError(f"Invalid password. {e}")
         return value
 
 
@@ -382,7 +498,11 @@ def ask(question: Question, kwargs: TypeDict[str, str]) -> str:
         else:
             value = click.prompt(question.question, type=str)
 
-    value = question.validate(value=value)
+    try:
+        value = question.validate(value=value)
+    except QuestionInputError as e:
+        print(e)
+        return ask(question=question, kwargs=kwargs)
     if question.cache:
         setattr(arg_cache, question.var_name, value)
 
@@ -404,13 +524,13 @@ def fix_key_permission(private_key_path: str) -> None:
             raise e
 
 
-def private_to_public_key(private_key_path: str, username: str) -> str:
+def private_to_public_key(private_key_path: str, temp_path: str, username: str) -> str:
     # check key permission
     fix_key_permission(private_key_path=private_key_path)
-    output_path = f"/tmp/hagrid_{username}_key.pub"
+    output_path = f"{temp_path}/hagrid_{username}_key.pub"
     cmd = f"ssh-keygen -f {private_key_path} -y > {output_path}"
     try:
-        subprocess.check_call(cmd, shell=True)
+        subprocess.check_call(cmd, shell=True)  # nosec
     except Exception as e:
         print("failed to make ssh key", e)
         raise e
@@ -420,9 +540,9 @@ def private_to_public_key(private_key_path: str, username: str) -> str:
 def check_azure_authed() -> bool:
     cmd = "az account show"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -430,16 +550,16 @@ def check_azure_authed() -> bool:
 def login_azure() -> bool:
     cmd = "az login"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
 
 def check_azure_cli_installed() -> bool:
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             ["az", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
         )
         if result.returncode != 0:
@@ -455,7 +575,7 @@ Please install it and then retry your command.\
 
 def check_gcloud_cli_installed() -> bool:
     try:
-        subprocess.call(["gcloud", "version"])
+        subprocess.call(["gcloud", "version"])  # nosec
         print("Gcloud cli installed!")
     except FileNotFoundError:
         msg = "\nYou don't appear to have the gcloud CLI tool installed! \n\n\
@@ -468,12 +588,12 @@ Please install it and then retry again.\
 
 def check_gcloud_authed() -> bool:
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             ["gcloud", "auth", "print-identity-token"], stdout=subprocess.PIPE
         )
         if result.returncode == 0:
             return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -481,9 +601,9 @@ def check_gcloud_authed() -> bool:
 def login_gcloud() -> bool:
     cmd = "gcloud auth login"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -507,7 +627,7 @@ def generate_gcloud_key_at_path(key_path: str) -> str:
         # triggers a key check
         cmd = "gcloud compute ssh '' --dry-run"
         try:
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
         except Exception:  # nosec
             pass
         if not os.path.exists(key_path):
@@ -523,7 +643,7 @@ def generate_key_at_path(key_path: str) -> str:
     else:
         cmd = f"ssh-keygen -N '' -f {key_path}"
         try:
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
             if not os.path.exists(key_path):
                 raise Exception(f"Failed to generate ssh-key at: {key_path}")
         except Exception as e:
@@ -532,11 +652,68 @@ def generate_key_at_path(key_path: str) -> str:
     return key_path
 
 
+def validate_password(password: str) -> str:
+    """Validate if the password entered by the user is valid.
+
+    Password length should be between 12 - 123 characters
+    Passwords must also meet 3 out of the following 4 complexity requirements:
+    - Have lower characters
+    - Have upper characters
+    - Have a digit
+    - Have a special character
+
+    Args:
+        password (str): password for the vm
+
+    Returns:
+        str: password if it is valid
+    """
+    # Validate password length
+    if len(password) < 12 or len(password) > 123:
+        raise ValueError("Password length should be between 12 - 123 characters")
+
+    # Valid character types
+    character_types = {
+        "upper_case": False,
+        "lower_case": False,
+        "digit": False,
+        "special": False,
+    }
+
+    for ch in password:
+        if ch.islower():
+            character_types["lower_case"] = True
+        elif ch.isupper():
+            character_types["upper_case"] = True
+        elif ch.isdigit():
+            character_types["digit"] = True
+        elif ch.isascii():
+            character_types["special"] = True
+        else:
+            raise ValueError(f"{ch} is not a valid character for password")
+
+    # Validate characters in the password
+    required_character_type_count = sum(
+        [int(value) for value in character_types.values()]
+    )
+
+    if required_character_type_count >= 3:
+        return password
+
+    absent_character_types = ", ".join(
+        char_type for char_type, value in character_types.items() if value is False
+    ).strip(", ")
+
+    raise ValueError(
+        f"At least one {absent_character_types} character types must be present"
+    )
+
+
 def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> str:
+) -> Union[str, TypeList[str]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -556,6 +733,16 @@ def create_launch_cmd(
     parsed_kwargs["use_blob_storage"] = (
         kwargs["use_blob_storage"] if "use_blob_storage" in kwargs else None
     )
+
+    parsed_kwargs["node_count"] = (
+        int(kwargs["node_count"]) if "node_count" in kwargs else 1
+    )
+
+    if parsed_kwargs["node_count"] > 1 and host not in ["azure"]:
+        print("\nArgument `node_count` is only supported with `azure`.\n")
+    else:
+        # Default to detached mode if running more than one nodes
+        tail = False if parsed_kwargs["node_count"] > 1 else tail
 
     headless = False
     if "headless" in kwargs and str_to_bool(cast(str, kwargs["headless"])):
@@ -706,31 +893,71 @@ def create_launch_cmd(
                 kwargs=kwargs,
             )
 
-            key_path_question = Question(
-                var_name="azure_key_path",
-                question=f"Private key to access {username}@{host}?",
-                default=arg_cache.azure_key_path,
-                kind="path",
-                cache=True,
+            parsed_kwargs["auth_type"] = ask(
+                question=Question(
+                    var_name="auth_type",
+                    question="Do you want to login with a key or password",
+                    default=arg_cache.auth_type,
+                    kind="option",
+                    options=["key", "password"],
+                    cache=True,
+                ),
+                kwargs=kwargs,
             )
-            try:
-                key_path = ask(key_path_question, kwargs=kwargs)
-            except QuestionInputPathError as e:
-                print(e)
-                key_path = str(e).split("is not a valid path")[0].strip()
 
-                create_key_question = Question(
+            key_path = None
+            if parsed_kwargs["auth_type"] == "key":
+                key_path_question = Question(
                     var_name="azure_key_path",
-                    question=f"Key {key_path} does not exist. Do you want to create it? (y/n)",
-                    default="y",
-                    kind="yesno",
+                    question=f"Absolute path of the private key to access {username}@{host}?",
+                    default=arg_cache.azure_key_path,
+                    kind="path",
+                    cache=True,
                 )
-                create_key = ask(create_key_question, kwargs=kwargs)
-                if create_key == "y":
-                    key_path = generate_key_at_path(key_path=key_path)
-                else:
-                    raise QuestionInputError(
-                        "Unable to create VM without a private key"
+                try:
+                    key_path = ask(
+                        key_path_question,
+                        kwargs=kwargs,
+                    )
+                except QuestionInputPathError as e:
+                    print(e)
+                    key_path = str(e).split("is not a valid path")[0].strip()
+
+                    create_key_question = Question(
+                        var_name="azure_key_path",
+                        question=f"Key {key_path} does not exist. Do you want to create it? (y/n)",
+                        default="y",
+                        kind="yesno",
+                    )
+                    create_key = ask(
+                        create_key_question,
+                        kwargs=kwargs,
+                    )
+                    if create_key == "y":
+                        key_path = generate_key_at_path(key_path=key_path)
+                    else:
+                        raise QuestionInputError(
+                            "Unable to create VM without a private key"
+                        )
+            elif parsed_kwargs["auth_type"] == "password":
+                auto_generate_password = ask(
+                    question=Question(
+                        var_name="auto_generate_password",
+                        question="Do you want to auto-generate the password? (y/n)",
+                        kind="yesno",
+                    ),
+                    kwargs=kwargs,
+                )
+                if auto_generate_password == "y":  # nosec
+                    parsed_kwargs["password"] = generate_sec_random_password(length=16)
+                elif auto_generate_password == "n":  # nosec
+                    parsed_kwargs["password"] = ask(
+                        question=Question(
+                            var_name="password",
+                            question=f"Password for {username}@{host}?",
+                            kind="password",
+                        ),
+                        kwargs=kwargs,
                     )
 
             repo = ask(
@@ -756,7 +983,14 @@ def create_launch_cmd(
 
             use_branch(branch=branch)
 
-            auth = AuthCredentials(username=username, key_path=key_path)
+            password = parsed_kwargs.get("password")
+
+            auth = AuthCredentials(
+                username=username, key_path=key_path, password=password
+            )
+
+            if not auth.valid:
+                raise Exception(f"Login Credentials are not valid. {auth}")
 
             return create_launch_azure_cmd(
                 verb=verb,
@@ -764,6 +998,7 @@ def create_launch_cmd(
                 location=location,
                 size=size,
                 username=username,
+                password=password,
                 key_path=key_path,
                 repo=repo,
                 branch=branch,
@@ -1096,6 +1331,9 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": use_blob_storage,
+        "STACK_API_KEY": str(
+            generate_sec_random_password(length=48, special_chars=False)
+        ),
     }
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
@@ -1208,16 +1446,16 @@ def get_or_make_resource_group(resource_group: str, location: str = "westus") ->
     cmd = f"az group show --resource-group {resource_group}"
     exists = True
     try:
-        subprocess.check_call(cmd, shell=True)
-    except Exception:
-        # group doesnt exist so lets create it
+        subprocess.check_call(cmd, shell=True)  # nosec
+    except Exception:  # nosec
+        # group doesn't exist so lets create it
         exists = False
 
     if not exists:
         cmd = f"az group create -l {location} -n {resource_group}"
         try:
             print(f"Creating resource group.\nRunning: {cmd}")
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
         except Exception as e:
             raise Exception(
                 f"Unable to create resource group {resource_group} @ {location}. {e}"
@@ -1236,6 +1474,20 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
         ips = re.findall(matcher, output)
         if len(ips) > 0:
             return ips[0]
+
+    return None
+
+
+def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[TypeList]:
+    cmd = f"az vm list-ip-addresses -g {resource_group} --query "
+    cmd += f""""[?starts_with(virtualMachine.name, '{node_name}')]"""
+    cmd += '''.virtualMachine.network.publicIpAddresses[0].ipAddress"'''
+    output = subprocess.check_output(cmd, shell=True)  # nosec
+    try:
+        host_ips = json.loads(output)
+        return host_ips
+    except Exception as e:
+        print(f"Failed to extract ips: {e}")
 
     return None
 
@@ -1262,9 +1514,23 @@ def extract_host_ip_gcp(stdout: bytes) -> Optional[str]:
     return None
 
 
+def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
+
+    try:
+        matcher = r"(?:[0-9]{1,3}\.){3}[0-9]{1,3}"
+        ips = re.findall(matcher, cmd)
+        if ips:
+            return ips[0]
+    except Exception:  # nosec
+        pass
+
+    return None
+
+
 def check_ip_for_ssh(
     host_ip: str, timeout: int = 600, wait_time: int = 5, silent: bool = False
 ) -> bool:
+
     if not silent:
         print(f"Checking VM at {host_ip} is up")
     checks = int(timeout / wait_time)  # 10 minutes in 5 second chunks
@@ -1297,36 +1563,54 @@ def make_vm_azure(
     node_name: str,
     resource_group: str,
     username: str,
-    key_path: str,
+    password: Optional[str],
+    key_path: Optional[str],
     size: str,
     image_name: str,
-) -> Optional[str]:
+    node_count: int,
+) -> TypeList:
     disk_size_gb = "200"
-    public_key_path = private_to_public_key(
-        private_key_path=key_path, username=username
-    )
+    try:
+        temp_dir = tempfile.TemporaryDirectory()
+        public_key_path = (
+            private_to_public_key(
+                private_key_path=key_path, temp_path=temp_dir.name, username=username
+            )
+            if key_path
+            else None
+        )
+    except Exception:  # nosec
+        temp_dir.cleanup()
+
+    authentication_type = "ssh" if key_path else "password"
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
-    cmd += "--public-ip-sku Standard --authentication-type ssh "
-    cmd += f"--ssh-key-values {public_key_path} --admin-username {username}"
-    host_ip: Optional[str] = None
+    cmd += f"--public-ip-sku Standard --authentication-type {authentication_type} --admin-username {username} "
+    cmd += f"--ssh-key-values {public_key_path} " if public_key_path else ""
+    cmd += f"--admin-password '{password}' " if password else ""
+    cmd += f"--count {node_count} " if node_count > 1 else ""
+
+    host_ips: Optional[TypeList] = []
     try:
-        print(f"Creating vm.\nRunning: {cmd}")
-        output = subprocess.check_output(cmd, shell=True)
-        host_ip = extract_host_ip(stdout=output)
+        print(f"Creating vm.\nRunning: {hide_azure_vm_password(cmd)}")
+        subprocess.check_output(cmd, shell=True)  # nosec
+        host_ips = get_vm_host_ips(node_name=node_name, resource_group=resource_group)
     except Exception as e:
         print("failed", e)
+    finally:
+        temp_dir.cleanup()
 
-    if host_ip is None:
+    if not host_ips:
         raise Exception("Failed to create vm or get VM public ip")
 
     try:
         # clean up temp public key
-        os.unlink(public_key_path)
-    except Exception:
+        if public_key_path:
+            os.unlink(public_key_path)
+    except Exception:  # nosec
         pass
 
-    return host_ip
+    return host_ips
 
 
 def open_port_vm_azure(
@@ -1336,7 +1620,7 @@ def open_port_vm_azure(
     cmd += f"--nsg-name {node_name}NSG --name {port_name} --destination-port-ranges {port} --priority {priority}"
     try:
         print(f"Creating {port_name} {port} ngs rule.\nRunning: {cmd}")
-        output = subprocess.check_call(cmd, shell=True)
+        output = subprocess.check_call(cmd, shell=True)  # nosec
         print("output", output)
         pass
     except Exception as e:
@@ -1347,7 +1631,7 @@ def create_project(project_id: str) -> None:
     cmd = f"gcloud projects create {project_id} --set-as-default"
     try:
         print(f"Creating project.\nRunning: {cmd}")
-        subprocess.check_call(cmd, shell=True)
+        subprocess.check_call(cmd, shell=True)  # nosec
     except Exception as e:
         print("failed", e)
 
@@ -1452,7 +1736,7 @@ def make_gcp_vm(
     host_ip = None
     try:
         print(f"Creating vm.\nRunning: {cmd}")
-        output = subprocess.check_output(cmd, shell=True)
+        output = subprocess.check_output(cmd, shell=True)  # nosec
         host_ip = extract_host_ip_gcp(stdout=output)
     except Exception as e:
         print("failed", e)
@@ -1469,21 +1753,33 @@ def create_launch_azure_cmd(
     location: str,
     size: str,
     username: str,
-    key_path: str,
+    password: Optional[str],
+    key_path: Optional[str],
     repo: str,
     branch: str,
     auth: AuthCredentials,
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
-) -> str:
+) -> TypeList[str]:
+
     get_or_make_resource_group(resource_group=resource_group, location=location)
+
+    node_count = kwargs.get("node_count", 1)
+    print("Total VMs to create: ", node_count)
 
     # vm
     node_name = verb.get_named_term_type(name="node_name")
     snake_name = str(node_name.snake_input)
     image_name = get_azure_image(kwargs["image_name"])
-    host_ip = make_vm_azure(
-        snake_name, resource_group, username, key_path, size, image_name
+    host_ips = make_vm_azure(
+        snake_name,
+        resource_group,
+        username,
+        password,
+        key_path,
+        size,
+        image_name,
+        node_count,
     )
 
     # open port 80
@@ -1514,33 +1810,42 @@ def create_launch_azure_cmd(
             priority=502,
         )
 
-    # get old host
-    host_term = verb.get_named_term_hostgrammar(name="host")
+    launch_cmds: TypeList[str] = []
 
-    # replace
-    host_term.parse_input(host_ip)
-    verb.set_named_term_type(name="host", new_term=host_term)
+    for host_ip in host_ips:
+        # get old host
+        host_term = verb.get_named_term_hostgrammar(name="host")
 
-    if "provision" in kwargs and not kwargs["provision"]:
-        print("Skipping automatic provisioning.")
-        print("VM created with:")
-        print(f"IP: {host_ip}")
-        print(f"User: {username}")
-        print(f"Key: {key_path}")
-        print("\nConnect with:")
-        print(f"ssh -i {key_path} {username}@{host_ip}")
-        sys.exit(0)
+        # replace
+        host_term.parse_input(host_ip)
+        verb.set_named_term_type(name="host", new_term=host_term)
 
-    extra_kwargs = {
-        "repo": repo,
-        "branch": branch,
-        "auth_type": "key",
-        "ansible_extras": ansible_extras,
-    }
-    kwargs.update(extra_kwargs)
+        if "provision" in kwargs and not kwargs["provision"]:
+            print("Skipping automatic provisioning.")
+            print("VM created with:")
+            print(f"Name: {snake_name}")
+            print(f"IP: {host_ip}")
+            print(f"User: {username}")
+            print(f"Password: {password}")
+            print(f"Key: {key_path}")
+            print("\nConnect with:")
+            if kwargs["auth_type"] == "key":
+                print(f"ssh -i {key_path} {username}@{host_ip}")
+            else:
+                print(f"ssh {username}@{host_ip}")
+        else:
+            extra_kwargs = {
+                "repo": repo,
+                "branch": branch,
+                "ansible_extras": ansible_extras,
+            }
+            kwargs.update(extra_kwargs)
 
-    # provision
-    return create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+            # provision
+            launch_cmd = create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
+            launch_cmds.append(launch_cmd)
+
+    return launch_cmds
 
 
 def create_ansible_land_cmd(
@@ -1683,7 +1988,7 @@ def create_launch_custom_cmd(
         if kwargs["jupyter"] is True:
             ANSIBLE_ARGS["jupyter"] = "true"
             ANSIBLE_ARGS["jupyter_token"] = generate_sec_random_password(
-                length=48, alphabet=HEX_LOWER_ALPHABET
+                length=48, upper_case=False, special_chars=False
             )
 
         if "ansible_extras" in kwargs and kwargs["ansible_extras"] != "":
@@ -1712,7 +2017,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
 
     if host in ["docker"]:
         if verb.get_named_term_grammar("node_name").input == "all":
-            # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+            # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
             return "docker rm `docker ps -aq` --force"
 
         version = check_docker_version()
@@ -1854,7 +2159,7 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         print("Running: \n", cmd)
         try:
-            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
+            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
@@ -1891,72 +2196,61 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 cli.add_command(debug)
 
 
-@click.command(help="Check health of an IP address or a resource group")
-@click.argument("ip_address", type=str)
-def check(ip_address: str) -> None:
-    if check_host(ip_address, silent=True):
-        base_host_status = "✅"
-    else:
-        base_host_status = "❌"
-
-    if check_login_page(ip_address, silent=True):
-        login_page_status = "✅"
-    else:
-        login_page_status = "❌"
-
-    if check_api_metadata(ip_address, silent=True):
-        backend_status = "✅"
-    else:
-        backend_status = "❌"
-
-    if check_ip_for_ssh(ip_address, silent=True):
-        ssh_status = "✅"
-    else:
-        ssh_status = "❌"
-
-    if check_jupyter_server(ip_address, silent=True):
-        jupyter_status = "✅"
-    else:
-        jupyter_status = "❌"
-
+@click.command(help="Check health of an IP address/addresses or a resource group")
+@click.argument("ip_addresses", type=str, nargs=-1)
+def check(ip_addresses: TypeList[str]) -> None:
     console = rich.get_console()
-    console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
 
-    table_contents = [
-        ["🔌", "Host", f"{ip_address}", base_host_status],
-        ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
-        ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
-        ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
-        ["", "Jupyter", f"http://{ip_address}:8888/", jupyter_status],
-    ]
+    for ip_address in ip_addresses:
 
-    table = rich.table.Table()
+        console.print(
+            "[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:"
+        )
 
-    table.add_column("PyGrid", style="magenta")
-    table.add_column("Info", justify="left")
-    table.add_column("", justify="left")
-    for row in table_contents:
-        table.add_row(row[1], row[2], row[3])
-    console.print(table)
+        if check_host(ip_address, silent=True):
+            base_host_status = "✅"
+        else:
+            base_host_status = "❌"
+
+        if check_login_page(ip_address, silent=True):
+            login_page_status = "✅"
+        else:
+            login_page_status = "❌"
+
+        if check_api_metadata(ip_address, silent=True):
+            backend_status = "✅"
+        else:
+            backend_status = "❌"
+
+        if check_ip_for_ssh(ip_address, silent=True):
+            ssh_status = "✅"
+        else:
+            ssh_status = "❌"
+
+        if check_jupyter_server(ip_address, silent=True):
+            jupyter_status = "✅"
+        else:
+            jupyter_status = "❌"
+
+        table_contents = [
+            ["🔌", "Host", f"{ip_address}", base_host_status],
+            ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
+            ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
+            ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
+            ["", "Jupyter", f"http://{ip_address}:8888/", jupyter_status],
+        ]
+
+        table = rich.table.Table()
+
+        table.add_column("PyGrid", style="magenta")
+        table.add_column("Info", justify="left")
+        table.add_column("", justify="left")
+        for row in table_contents:
+            table.add_row(row[1], row[2], row[3])
+        console.print(table)
 
 
 cli.add_command(check)
-
-DEFAULT_ALPHABET = string.ascii_letters + string.digits + string.punctuation
-HEX_LOWER_ALPHABET = "".join(sorted(list(set(string.hexdigits.lower()))))
-
-
-def generate_sec_random_password(length: int, alphabet: str = DEFAULT_ALPHABET) -> str:
-    if not isinstance(length, int) or length < 10:
-        raise ValueError(
-            "Password should have a positive safe length of at least 10 characters!"
-        )
-
-    # original Python 2 (urandom returns str)
-    # return "".join(chars[ord(c) % len(chars)] for c in urandom(length))
-
-    # Python 3 (urandom returns bytes)
-    return "".join(alphabet[c % len(alphabet)] for c in urandom(length))
 
 
 # add Hagrid info to the cli
@@ -1969,7 +2263,11 @@ cli.add_command(version)
 
 
 def ssh_into_remote_machine(
-    host_ip: str, private_key_path: str, username: str, cmd: str = ""
+    host_ip: str,
+    username: str,
+    auth_type: str,
+    private_key_path: Optional[str],
+    cmd: str = "",
 ) -> None:
     """Access or execute command on the remote machine.
 
@@ -1980,9 +2278,12 @@ def ssh_into_remote_machine(
         cmd (str, optional): Command to execute on the remote machine. Defaults to "".
     """
     try:
-        subprocess.call(
-            ["ssh", "-i", f"{private_key_path}", f"{username}@{host_ip}", cmd]
-        )
+        if auth_type == "key":
+            subprocess.call(  # nosec
+                ["ssh", "-i", f"{private_key_path}", f"{username}@{host_ip}", cmd]
+            )
+        elif auth_type == "password":
+            subprocess.call(["ssh", f"{username}@{host_ip}", cmd])  # nosec
     except Exception as e:
         raise e
 
@@ -1997,19 +2298,11 @@ def ssh_into_remote_machine(
     help="Optional: command to execute on the remote machine.",
 )
 def ssh(ip_address: str, cmd: str) -> None:
-    kwargs: dict = {}
+    kwargs: TypeDict = {}
+    key_path: Optional[str] = None
+
     if check_ip_for_ssh(ip_address, timeout=10, silent=False):
-        azure_key_path = ask(
-            question=Question(
-                var_name="azure_key_path",
-                question="What is the path to the private key of the VM?",
-                default=arg_cache.azure_key_path,
-                kind="string",
-                cache=True,
-            ),
-            kwargs=kwargs,
-        )
-        azure_username = ask(
+        username = ask(
             question=Question(
                 var_name="azure_username",
                 question="What is the username for the VM?",
@@ -2019,12 +2312,36 @@ def ssh(ip_address: str, cmd: str) -> None:
             ),
             kwargs=kwargs,
         )
+        auth_type = ask(
+            question=Question(
+                var_name="auth_type",
+                question="Do you want to login with a key or password",
+                default=arg_cache.auth_type,
+                kind="option",
+                options=["key", "password"],
+                cache=True,
+            ),
+            kwargs=kwargs,
+        )
+
+        if auth_type == "key":
+            key_path = ask(
+                question=Question(
+                    var_name="azure_key_path",
+                    question="Absolute path to the private key of the VM?",
+                    default=arg_cache.azure_key_path,
+                    kind="string",
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
 
         # SSH into the remote and execute the command
         ssh_into_remote_machine(
             host_ip=ip_address,
-            private_key_path=azure_key_path,
-            username=azure_username,
+            username=username,
+            auth_type=auth_type,
+            private_key_path=key_path,
             cmd=cmd,
         )
 

@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -20,31 +19,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n\x1eproto/core/io/connection.proto\x12\x0csyft.core.io\x1a\x1bproto/core/io/address.proto">\n\x17VirtualServerConnection\x12#\n\x04node\x18\x01 \x01(\x0b\x32\x15.syft.core.io.Address"P\n\x17VirtualClientConnection\x12\x35\n\x06server\x18\x01 \x01(\x0b\x32%.syft.core.io.VirtualServerConnectionb\x06proto3'
 )
 
-
-_VIRTUALSERVERCONNECTION = DESCRIPTOR.message_types_by_name["VirtualServerConnection"]
-_VIRTUALCLIENTCONNECTION = DESCRIPTOR.message_types_by_name["VirtualClientConnection"]
-VirtualServerConnection = _reflection.GeneratedProtocolMessageType(
-    "VirtualServerConnection",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _VIRTUALSERVERCONNECTION,
-        "__module__": "proto.core.io.connection_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.io.VirtualServerConnection)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.core.io.connection_pb2", globals()
 )
-_sym_db.RegisterMessage(VirtualServerConnection)
-
-VirtualClientConnection = _reflection.GeneratedProtocolMessageType(
-    "VirtualClientConnection",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _VIRTUALCLIENTCONNECTION,
-        "__module__": "proto.core.io.connection_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.io.VirtualClientConnection)
-    },
-)
-_sym_db.RegisterMessage(VirtualClientConnection)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

@@ -1,6 +1,6 @@
 # coding=utf-8
 # stdlib
-import subprocess
+import subprocess  # nosec
 from typing import Callable
 from typing import List
 
@@ -62,7 +62,7 @@ def where_is(binary: str, req: Requirement) -> bool:
 def path_where_is(binary: str) -> bool:
     try:
         cmds = ["where.exe", binary]
-        output = subprocess.run(cmds, capture_output=True, cwd="C:\\")
+        output = subprocess.run(cmds, capture_output=True, cwd="C:\\")  # nosec
         out = str(output.stdout.decode("utf-8")).split("\r\n")
         if binary in out[0]:
             return True
@@ -76,7 +76,7 @@ def full_where_is(binary: str) -> bool:
     try:
         powershell_cmd = f"where.exe /R C:\ *.exe | findstr \\{binary}$"  # noqa: W605
         cmds = ["powershell.exe", "-Command", powershell_cmd]
-        output = subprocess.run(cmds, capture_output=True, cwd="C:\\")
+        output = subprocess.run(cmds, capture_output=True, cwd="C:\\")  # nosec
         out = str(output.stdout.decode("utf-8")).split("\r\n")
         if binary in out[0]:
             return True
@@ -98,7 +98,7 @@ def detect_wsl2(req: Requirement) -> bool:
     try:
         powershell_cmd = "wsl.exe --status"
         cmds = ["powershell.exe", "-Command", powershell_cmd]
-        output = subprocess.run(cmds, capture_output=True)
+        output = subprocess.run(cmds, capture_output=True)  # nosec
         out = output.stdout.decode("utf-16")
         if "Default Distribution: Ubuntu" in out:
             pass
@@ -154,7 +154,7 @@ def install_elevated_powershell(full_name: str, powershell_cmd: str) -> None:
             "Press enter to start..."
         )
         powershell_cmds = ["-command", powershell_cmd]
-        output = subprocess.run(
+        output = subprocess.run(  # nosec
             ["powershell.exe"] + powershell_cmds, capture_output=True
         )
         _ = output.stdout.decode("utf-8")
@@ -187,7 +187,7 @@ def install_deps(requirements: List[Requirement]) -> None:
         )
         choco_args = f"choco.exe install {' '.join(package_names)} -y"
         powershell_cmds = ["-command", make_admin_cmd(choco_args)]
-        output = subprocess.run(
+        output = subprocess.run(  # nosec
             ["powershell.exe"] + powershell_cmds, capture_output=True
         )
         _ = str(output.stdout.decode("utf-8"))

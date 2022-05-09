@@ -6,7 +6,7 @@ from typing import Dict
 from .....experimental_flags import flags
 from .....logger import logger
 from ...abstract.node import AbstractNodeClient
-from ...domain.enums import ResponseObjectEnum
+from ...enums import ResponseObjectEnum
 from ..exceptions import AuthorizationError
 from ..node_service.user_auth.user_auth_messages import UserLoginMessageWithReply
 

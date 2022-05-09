@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -26,21 +25,12 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\nAproto/core/node/common/action/smpc_action_seq_batch_message.proto\x12\x1csyft.core.node.common.action\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto\x1a\x37proto/core/node/common/action/smpc_action_message.proto"\xb1\x01\n\x19SMPCActionSeqBatchMessage\x12\x45\n\x0csmpc_actions\x18\x01 \x03(\x0b\x32/.syft.core.node.common.action.SMPCActionMessage\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12%\n\x06msg_id\x18\x03 \x01(\x0b\x32\x15.syft.core.common.UIDb\x06proto3'
 )
 
-
-_SMPCACTIONSEQBATCHMESSAGE = DESCRIPTOR.message_types_by_name[
-    "SMPCActionSeqBatchMessage"
-]
-SMPCActionSeqBatchMessage = _reflection.GeneratedProtocolMessageType(
-    "SMPCActionSeqBatchMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _SMPCACTIONSEQBATCHMESSAGE,
-        "__module__": "proto.core.node.common.action.smpc_action_seq_batch_message_pb2"
-        # @@protoc_insertion_point(class_scope:syft.core.node.common.action.SMPCActionSeqBatchMessage)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR,
+    "proto.core.node.common.action.smpc_action_seq_batch_message_pb2",
+    globals(),
 )
-_sym_db.RegisterMessage(SMPCActionSeqBatchMessage)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

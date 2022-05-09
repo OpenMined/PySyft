@@ -7,7 +7,7 @@ installation commands where applicable."""
 # stdlib
 import platform
 import shutil
-import subprocess
+import subprocess  # nosec
 from typing import Any
 from typing import Dict
 from typing import Optional
@@ -55,7 +55,7 @@ DEPENDENCIES = check_deps()
 def docker_info() -> str:
     try:
         cmd = "docker info"
-        output = subprocess.check_output(cmd, shell=True)
+        output = subprocess.check_output(cmd, shell=True)  # nosec
         return str(output.decode("utf-8"))
     except Exception as e:
         print("failed to get docker info", e)
@@ -65,7 +65,7 @@ def docker_info() -> str:
 def wsl_info() -> str:
     try:
         cmd = "wsl --status"
-        output = subprocess.check_output(cmd, shell=True)
+        output = subprocess.check_output(cmd, shell=True)  # nosec
         return str(output.decode("utf-8"))
     except Exception as e:
         print("failed to get wsl info", e)
@@ -75,7 +75,7 @@ def wsl_info() -> str:
 def wsl_linux_info() -> str:
     try:
         cmd = "wsl bash -c 'lsb_release -a'"
-        output = subprocess.check_output(cmd, shell=True)
+        output = subprocess.check_output(cmd, shell=True)  # nosec
         return str(output.decode("utf-8"))
     except Exception as e:
         print("failed to get wsl linux info", e)

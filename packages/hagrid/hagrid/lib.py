@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import hashlib
 import importlib
 import importlib.machinery
@@ -7,13 +8,16 @@ import json
 import os
 from pathlib import Path
 import socket
-import subprocess
+import subprocess  # nosec
+from typing import List
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import git
 import requests
+from rich.table import Table
 
 # relative
 from .cache import DEFAULT_BRANCH
@@ -44,6 +48,12 @@ docker compose version
 """
 
 
+class ProcessStatus(Enum):
+    RUNNING = "[blue]Running"
+    DONE = "[green]Done"
+    FAILED = "[red]Failed"
+
+
 def docker_desktop_memory() -> int:
 
     path = str(Path.home()) + "/Library/Group Containers/group.com.docker/settings.json"
@@ -54,7 +64,7 @@ def docker_desktop_memory() -> int:
         f.close()
         return json.loads(out)["memoryMiB"]
 
-    except Exception:
+    except Exception:  # nosec
         # docker desktop not found - probably running linux
         return -1
 
@@ -95,7 +105,7 @@ def get_git_repo() -> git.Repo:
             git.Repo.clone_from(
                 git_url, repo_src_path(), single_branch=False, b=repo_branch
             )
-        except Exception:
+        except Exception:  # nosec
             print(f"Failed to clone {git_url} to {repo_src_path()}")
     return git.Repo(repo_src_path())
 
@@ -181,14 +191,16 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
 def check_docker_version() -> Optional[str]:
     if is_windows():
         return "N/A"  # todo fix to work with windows
-    result = os.popen("docker compose version", "r").read()
+    result = os.popen("docker compose version", "r").read()  # nosec
     version = None
     if "version" in result:
         version = result.split()[-1]
     else:
         print("This may be a linux machine, either that or docker compose isn't s")
         print("Result:" + result)
-        out = subprocess.run(["docker", "compose"], capture_output=True, text=True)
+        out = subprocess.run(  # nosec
+            ["docker", "compose"], capture_output=True, text=True
+        )
         if "'compose' is not a docker command" in out.stderr:
             raise MissingDependency(DOCKER_ERROR)
 
@@ -223,10 +235,10 @@ def check_host(ip: str, silent: bool = False) -> bool:
 
 
 # Check status of login page
-def check_login_page(ip: str, silent: bool = False) -> bool:
+def check_login_page(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/login"
-        response = requests.get(url)
+        response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
@@ -238,10 +250,10 @@ def check_login_page(ip: str, silent: bool = False) -> bool:
 
 
 # Check api metadata
-def check_api_metadata(ip: str, silent: bool = False) -> bool:
+def check_api_metadata(ip: str, timeout: int = 30, silent: bool = False) -> bool:
     try:
         url = f"http://{ip}/api/v1/syft/metadata"
-        response = requests.get(url)
+        response = requests.get(url, timeout=timeout)
         if response.status_code == 200:
             return True
         else:
@@ -250,6 +262,103 @@ def check_api_metadata(ip: str, silent: bool = False) -> bool:
         if not silent:
             print(f"Failed to check api metadata {ip}. {e}")
         return False
+
+
+def save_vm_details_as_json(username: str, password: str, process_list: List) -> None:
+    """Saves the launched hosts details as json."""
+
+    host_ip_details: List = []
+
+    # file path to save host details
+    dir_path = os.path.expanduser("~/.hagrid")
+    os.makedirs(dir_path, exist_ok=True)
+    file_path = f"{dir_path}/host_ips.json"
+
+    for ip_address, _, jupyter_token in process_list:
+        _data = {
+            "username": username,
+            "password": password,
+            "ip_address": ip_address,
+            "jupyter_token": jupyter_token,
+        }
+        host_ip_details.append(_data)
+
+    # save host details
+    with open(file_path, "w") as fp:
+        json.dump({"host_ips": host_ip_details}, fp)
+
+    print(f"Saved vm details at: {file_path}")
+
+
+def generate_user_table(username: str, password: str) -> Union[Table, str]:
+    if not username and not password:
+        return ""
+
+    table = Table(title="Virtual Machine Credentials")
+    table.add_column("Username")
+    table.add_column("Password")
+
+    table.add_row(f"[green]{username}", f"[green]{password}")
+
+    return table
+
+
+def get_process_status(process: subprocess.Popen) -> str:
+    poll_status = process.poll()
+    if poll_status is None:
+        return ProcessStatus.RUNNING.value
+    elif poll_status != 0:
+        return ProcessStatus.FAILED.value
+    else:
+        return ProcessStatus.DONE.value
+
+
+def generate_process_status_table(process_list: List) -> Tuple[Table, bool]:
+    """Generate a table to show the status of the processes being exected.
+
+    Args:
+        process_list (list): each item in the list
+        is a tuple of ip_address, process and jupyter token
+
+    Returns:
+        Tuple[Table, bool]: table of process status and flag to indicate if all processes are executed.
+    """
+
+    process_statuses: List[str] = []
+    lines_to_display = 5  # Number of lines to display as output
+
+    table = Table(title="Virtual Machine Status")
+    table.add_column("PID", style="cyan")
+    table.add_column("IpAddress", style="magenta")
+    table.add_column("Status")
+    table.add_column("Jupyter Token", style="white on black")
+    table.add_column("Log", overflow="fold", no_wrap=False)
+
+    for ip_address, process, jupyter_token in process_list:
+        process_status = get_process_status(process)
+
+        process_statuses.append(process_status)
+
+        process_log = []
+        if process_status == ProcessStatus.FAILED.value:
+            process_log += process.stderr.readlines(lines_to_display)
+        else:
+            process_log += process.stdout.readlines(lines_to_display)
+
+        process_log_str = "\n".join(log.decode("utf-8") for log in process_log)
+        process_log_str = process_log_str if process_log else "-"
+
+        table.add_row(
+            f"{process.pid}",
+            f"{ip_address}",
+            f"{process_status}",
+            f"{jupyter_token}",
+            f"{process_log_str}",
+        )
+
+    processes_completed = ProcessStatus.RUNNING.value not in process_statuses
+
+    return table, processes_completed
 
 
 def check_jupyter_server(

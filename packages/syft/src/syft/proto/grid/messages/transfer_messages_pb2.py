@@ -4,9 +4,8 @@
 """Generated protocol buffer code."""
 from google.protobuf import descriptor as _descriptor
 from google.protobuf import descriptor_pool as _descriptor_pool
-from google.protobuf import message as _message
-from google.protobuf import reflection as _reflection
 from google.protobuf import symbol_database as _symbol_database
+from google.protobuf.internal import builder as _builder
 
 # @@protoc_insertion_point(imports)
 
@@ -23,55 +22,10 @@ DESCRIPTOR = _descriptor_pool.Default().AddSerializedFile(
     b'\n+proto/grid/messages/transfer_messages.proto\x12\x12syft.grid.messages\x1a%proto/core/common/common_object.proto\x1a\x1bproto/core/io/address.proto"\x9c\x01\n\x11LoadObjectMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12\'\n\x08reply_to\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"\x89\x01\n\x12LoadObjectResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Address"s\n\x11SaveObjectMessage\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12&\n\x07\x61\x64\x64ress\x18\x02 \x01(\x0b\x32\x15.syft.core.io.Address\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t"\x89\x01\n\x12SaveObjectResponse\x12%\n\x06msg_id\x18\x01 \x01(\x0b\x32\x15.syft.core.common.UID\x12\x13\n\x0bstatus_code\x18\x02 \x01(\x05\x12\x0f\n\x07\x63ontent\x18\x03 \x01(\t\x12&\n\x07\x61\x64\x64ress\x18\x04 \x01(\x0b\x32\x15.syft.core.io.Addressb\x06proto3'
 )
 
-
-_LOADOBJECTMESSAGE = DESCRIPTOR.message_types_by_name["LoadObjectMessage"]
-_LOADOBJECTRESPONSE = DESCRIPTOR.message_types_by_name["LoadObjectResponse"]
-_SAVEOBJECTMESSAGE = DESCRIPTOR.message_types_by_name["SaveObjectMessage"]
-_SAVEOBJECTRESPONSE = DESCRIPTOR.message_types_by_name["SaveObjectResponse"]
-LoadObjectMessage = _reflection.GeneratedProtocolMessageType(
-    "LoadObjectMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _LOADOBJECTMESSAGE,
-        "__module__": "proto.grid.messages.transfer_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.LoadObjectMessage)
-    },
+_builder.BuildMessageAndEnumDescriptors(DESCRIPTOR, globals())
+_builder.BuildTopDescriptorsAndMessages(
+    DESCRIPTOR, "proto.grid.messages.transfer_messages_pb2", globals()
 )
-_sym_db.RegisterMessage(LoadObjectMessage)
-
-LoadObjectResponse = _reflection.GeneratedProtocolMessageType(
-    "LoadObjectResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _LOADOBJECTRESPONSE,
-        "__module__": "proto.grid.messages.transfer_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.LoadObjectResponse)
-    },
-)
-_sym_db.RegisterMessage(LoadObjectResponse)
-
-SaveObjectMessage = _reflection.GeneratedProtocolMessageType(
-    "SaveObjectMessage",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _SAVEOBJECTMESSAGE,
-        "__module__": "proto.grid.messages.transfer_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.SaveObjectMessage)
-    },
-)
-_sym_db.RegisterMessage(SaveObjectMessage)
-
-SaveObjectResponse = _reflection.GeneratedProtocolMessageType(
-    "SaveObjectResponse",
-    (_message.Message,),
-    {
-        "DESCRIPTOR": _SAVEOBJECTRESPONSE,
-        "__module__": "proto.grid.messages.transfer_messages_pb2"
-        # @@protoc_insertion_point(class_scope:syft.grid.messages.SaveObjectResponse)
-    },
-)
-_sym_db.RegisterMessage(SaveObjectResponse)
-
 if _descriptor._USE_C_DESCRIPTORS == False:
 
     DESCRIPTOR._options = None

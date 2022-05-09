@@ -14,7 +14,7 @@ from syft import serialize
 from syft.core.common.message import SignedImmediateSyftMessageWithReply
 from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.common.message import SignedMessage
-from syft.core.node.domain.enums import RequestAPIFields
+from syft.core.node.enums import RequestAPIFields
 from syft.util import get_tracer
 
 # grid absolute
