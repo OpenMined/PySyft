@@ -558,23 +558,6 @@ class ShareTensor(PassthroughTensor):
 
         return new_share
 
-    def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:
-        """Apply the "decomposition" operation on self
-
-        Args:
-            ring_size (int): Ring size to decompose the shares
-            bitwise (bool): Flag for bitwise decomposition.
-
-        Returns:
-            ShareTensor. Result of the operation.
-        """
-        # relative
-        from ...node.common.action.smpc_action_functions import _decomposition
-
-        ring_size = int(ring_size)
-
-        _decomposition(self, ring_size, bitwise)
-
     def matmul(
         self, y: Union[int, float, torch.Tensor, np.ndarray, "ShareTensor"]
     ) -> "ShareTensor":
@@ -620,13 +603,11 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        print("Self", self)
-        print("y", y)
-        raise ValueError(
-            "It should not reach this point since we generate SMPCAction for this"
-        )
-        # new_share = ShareTensor.apply_function(self, y, "lt")
-        # return new_share
+        # relative
+        from ...smpc.protocol.aby3 import ABY3
+
+        new_share = ABY3.lt(self, y)
+        return new_share
 
     def gt(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
         """Apply the "gt" operation between "y" and "self".
@@ -637,11 +618,9 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        # raise ValueError(
-        #     "It should not reach this point since we generate SMPCAction for this"
-        # )
-        new_share = ShareTensor.apply_function(self, y, "gt")
-        return new_share
+        raise ValueError(
+            "It should not reach this point since we generate SMPCAction for this"
+        )
 
     def ge(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
         """Apply the "ge" operation between "y" and "self".
@@ -652,11 +631,9 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        # raise ValueError(
-        #     "It should not reach this point since we generate SMPCAction for this"
-        # )
-        new_share = ShareTensor.apply_function(self, y, "ge")
-        return new_share
+        raise ValueError(
+            "It should not reach this point since we generate SMPCAction for this"
+        )
 
     def le(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
         """Apply the "le" operation between "y" and "self".
@@ -667,11 +644,9 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        # raise ValueError(
-        #     "It should not reach this point since we generate SMPCAction for this"
-        # )
-        new_share = ShareTensor.apply_function(self, y, "le")
-        return new_share
+        raise ValueError(
+            "It should not reach this point since we generate SMPCAction for this"
+        )
 
     def ne(self, y: Union[ShareTensor, np.ndarray]) -> "ShareTensor":
         """Apply the "ne" operation between "y" and "self".
@@ -682,11 +657,9 @@ class ShareTensor(PassthroughTensor):
         Returns:
             ShareTensor. Result of the operation.
         """
-        # raise ValueError(
-        #     "It should not reach this point since we generate SMPCAction for this"
-        # )
-        new_share = ShareTensor.apply_function(self, y, "ne")
-        return new_share
+        raise ValueError(
+            "It should not reach this point since we generate SMPCAction for this"
+        )
 
     def eq(self, other: Any) -> bool:
         """Equal operator.
