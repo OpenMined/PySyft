@@ -14,6 +14,8 @@
 # $10 is the path to tls certs if available
 # $11 release mode, production or development with hot reloading
 # $12 docker_tag if set to local, normal local build occurs, otherwise use dockerhub
+# $13 local if set to true, means we're building locally
+# $14 install if set true we will continue to install stuff else exit
 
 # these commands cant be used because they trigger hot reloading
 # however without them accidental changes to the working tree might cause issues
@@ -23,6 +25,12 @@
 # git checkout main --force
 # git branch -D $3 || true
 # git checkout $3 --force
+
+if [[ "${13}" == "false" &&  "${14}" == "false" ]]
+then
+    echo "Skipping cron." && exit 1
+fi
+
 
 pidof -o %PPID -x $0 >/dev/null && echo "ERROR: Script $0 already running" && exit 1
 
