@@ -6,6 +6,7 @@ from syft.core.common.message import SignedImmediateSyftMessageWithoutReply
 from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNJoinSelfMessageWithReply,
 )
+from syft.core.node.common.node_service.vpn.vpn_messages import connect_with_key
 
 # grid absolute
 from grid.core.celery_app import celery_app
@@ -34,6 +35,34 @@ def msg_without_reply(self, obj_msg: Any) -> None:  # type: ignore
 @celery_app.task
 def network_connect_self_task() -> None:
     network_connect_self()
+
+
+@celery_app.task
+def domain_reconnect_network_task() -> None:
+    domain_reconnect_network()
+
+
+def domain_reconnect_network() -> None:
+    for node_connections in node.node.all():
+        if node_connections.keep_connected:
+            routes = list(node.node_route.query(node_id=node_connections.id))
+            for route in routes:
+                try:
+                    status, error = connect_with_key(
+                        tailscale_host="http://tailscale:4000",
+                        headscale_host=route.vpn_endpoint,
+                        vpn_auth_key=route.vpn_key,
+                    )
+
+                    if status:
+                        print({"status": "ok"})
+                    else:
+                        print("connect with key failed", error)
+                # If for some reason this route didn't work (ex: network node offline, etc),
+                # just skip it, show the error and go to the next one.
+                except Exception as e:
+                    print("error: ", str(e))
+                    continue
 
 
 def network_connect_self() -> None:
@@ -66,6 +95,19 @@ if settings.NODE_TYPE.lower() == "network":
             settings.NETWORK_CHECK_INTERVAL,  # Run every second
             network_connect_self_task.s(),
             name="Connect Network VPN to itself",
+            queue="main-queue",
+            options={"queue": "main-queue"},
+        )
+
+
+if settings.NODE_TYPE.lower() == "domain":
+
+    @celery_app.on_after_configure.connect
+    def add_domain_reconnect_periodic_task(sender, **kwargs) -> None:  # type: ignore
+        celery_app.add_periodic_task(
+            settings.NETWORK_CHECK_INTERVAL,  # Run every second
+            domain_reconnect_network_task.s(),
+            name="Reconnect Domain to Network VPN",
             queue="main-queue",
             options={"queue": "main-queue"},
         )
