@@ -628,4 +628,4 @@ jobs:
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         run: |
-          HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration
+          EMULATION="true" HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration
