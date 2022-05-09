@@ -63,7 +63,7 @@ def test_vpn_scan() -> None:
     # run in two containers so that all IPs are scanned externally
     for container in containers:
         try:
-            cmd = f"cat scripts/vpn_scan.sh | docker exec -i {container} ash"
+            cmd = f"cat scripts/vpn_scan.sh | docker exec -i {container} bash"
             print(f"Scanning {container}")
             output = subprocess.check_output(cmd, shell=True)
             output = output.decode("utf-8")

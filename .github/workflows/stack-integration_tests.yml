@@ -628,5 +628,4 @@ jobs:
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         run: |
-          curl -sSf https://lets.tunshell.com/init.sh | sh -s -- T F9yXhCNvg3f6QVP1HaetKL GxaE1wa58nVBD9yzTAvSfQ au.relay.tunshell.com
           HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration
