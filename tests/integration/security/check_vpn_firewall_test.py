@@ -7,7 +7,11 @@ import subprocess
 import pytest
 
 CONTAINER_HOST = os.environ.get("CONTAINER_HOST", "docker")
+EMULATION = os.environ.get("EMULATION", "false")
 print("CONTAINER_HOST", CONTAINER_HOST)
+print("EMULATION", EMULATION)
+
+# QEMU arm64 iptables are not working currently
 
 
 def docker_network_connect(direction: str = "connect") -> None:
@@ -34,14 +38,14 @@ def docker_network_connect(direction: str = "connect") -> None:
 
 @pytest.mark.security
 def test_create_overlay_networks_docker() -> None:
-    if CONTAINER_HOST != "docker":
+    if CONTAINER_HOST != "docker" or EMULATION != "false":
         return
     docker_network_connect(direction="connect")
 
 
 @pytest.mark.security
 def test_vpn_scan() -> None:
-    if CONTAINER_HOST != "docker":
+    if CONTAINER_HOST != "docker" or EMULATION != "false":
         return
     # the tailscale container is currently the same so we can get away with a
     # single external scan
@@ -83,6 +87,6 @@ def test_vpn_scan() -> None:
 
 @pytest.mark.security
 def test_remove_overlay_networks_docker() -> None:
-    if CONTAINER_HOST != "docker":
+    if CONTAINER_HOST != "docker" or EMULATION != "false":
         return
     docker_network_connect(direction="disconnect")
