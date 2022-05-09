@@ -156,12 +156,10 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
             grid_url = grid_url_from_kwargs(self.kwargs).as_container_host(
                 container_host=node.settings.CONTAINER_HOST
             )
-
             res = requests.post(
                 str(grid_url.with_path("/api/v1/vpn/register")), verify=verify_tls()
             )
             res_json = res.json()
-
             if "vpn_auth_key" not in res_json:
                 print("Registration failed", res)
                 return {"status": "error"}
@@ -173,6 +171,16 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
             )
 
             if status:
+                node_id = node.node.create_or_get_node(  # type: ignore
+                    node_uid=res_json["node_id"],
+                    node_name=res_json["node_name"],
+                )
+                node.node_route.update_route_for_node(  # type: ignore
+                    node_id=node_id,
+                    host_or_ip=res_json["host_or_ip"],
+                    vpn_endpoint=str(grid_url.with_path("/vpn")),
+                    vpn_key=res_json["vpn_auth_key"],
+                )
                 return {"status": "ok"}
             else:
                 print("connect with key failed", error)

@@ -159,7 +159,7 @@ def recv_association_request_msg(
     info(
         f"Node {node} - recv_association_request_msg: prev request exists {not _previous_request}."
     )
-
+    print("Message: ", msg.metadata)
     # Create a new Association Request if the handshake value doesn't exist in the database
     if not _previous_request:
         # this side happens on the network
@@ -185,19 +185,6 @@ def recv_association_request_msg(
             f"Node {node} - recv_association_request_msg: answering an existing association request."
         )
         node.association_requests.set(source=msg.source, target=msg.target, response=msg.response)  # type: ignore
-
-    # get or create a new node and node_route which represents the opposing node which
-    # is supplied in the metadata
-    try:
-        node_id = node.node.create_or_get_node(  # type: ignore
-            node_uid=msg.metadata["node_id"], node_name=msg.metadata["node_name"]
-        )
-        is_vpn = check_if_is_vpn(host_or_ip=msg.metadata["host_or_ip"])
-        node.node_route.update_route_for_node(  # type: ignore
-            node_id=node_id, host_or_ip=msg.metadata["host_or_ip"], is_vpn=is_vpn
-        )
-    except Exception as e:
-        error(f"Failed to save the node and node_route rows. {e}")
 
     return SuccessResponseMessage(
         address=msg.reply_to,
