@@ -259,24 +259,24 @@ jobs:
         with:
           args: install visualstudio2019-workload-vctools -y
 
-      - name: Start stacks
-        if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
-        env:
-          HAGRID_ART: false
-        run: |
-          pip install -e packages/hagrid
-          pip install cython
-          pip install pycapnp
-          set HAGRID_ART=false
-          set NETWORK_CHECK_INTERVAL=5
-          hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
-          hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
-          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test
-          bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-          bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-          docker ps
-        shell: cmd
+      # - name: Start stacks
+      #   if: steps.changes.outputs.stack == 'true'
+      #   timeout-minutes: 30
+      #   env:
+      #     HAGRID_ART: false
+      #   run: |
+      #     pip install -e packages/hagrid
+      #     pip install cython
+      #     pip install pycapnp
+      #     set HAGRID_ART=false
+      #     set NETWORK_CHECK_INTERVAL=5
+      #     hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
+      #     hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
+      #     hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test
+      #     bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
+      #     bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
+      #     docker ps
+      #   shell: cmd
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
@@ -284,6 +284,8 @@ jobs:
         env:
           HAGRID_ART: false
         run: |
+          python -c "import platform; import os; os.system('pip install jaxlib===0.3.5 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          pip install pycapnp
           tox -e stack.test.integration.windows
         shell: cmd
 
