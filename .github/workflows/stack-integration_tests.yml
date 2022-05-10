@@ -444,12 +444,12 @@ jobs:
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl
-          sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-          echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-          sudo apt-get update
-          sudo apt-get install -y kubectl
+          # cleanup apt version
+          sudo apt remove kubectl || true
+          # install kubectl 1.22
+          curl -LO https://dl.k8s.io/release/v1.22.9/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo install kubectl /usr/local/bin;
 
       - name: Install jq
         if: steps.changes.outputs.stack == 'true'
