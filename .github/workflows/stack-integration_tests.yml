@@ -173,19 +173,19 @@ jobs:
     steps:
       - name: Start Docker Desktop
         run: |
-          powershell.exe -command 'start "C:\Program Files\Docker\Docker\Docker Desktop.exe"'
+          powershell.exe -Command 'start "C:\Program Files\Docker\Docker\Docker Desktop.exe"'
         shell: cmd
 
       - name: Stop all running containers
         continue-on-error: true
         run: |
-          powershell.exe -command "docker rm $(docker ps -aq) --force"
+          powershell.exe -Command "docker rm $(docker ps -aq) --force"
         shell: cmd
 
       - name: Prune all volumes
         continue-on-error: true
         run: |
-          powershell.exe -command "docker volume prune --force"
+          powershell.exe -Command "docker volume prune --force"
         shell: cmd
 
       - uses: actions/checkout@v2
@@ -284,23 +284,21 @@ jobs:
         env:
           HAGRID_ART: false
         run: |
-          python -c "import platform; import os; os.system('pip install jaxlib===0.3.5 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
-          pip install pycapnp
-          tox -e stack.test.integration.windows
+          powershell.exe -Command "tox -e stack.test.integration.windows"
         shell: cmd
 
       - name: Stop all running containers
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         run: |
-          powershell.exe -command "docker rm $(docker ps -aq) --force"
+          powershell.exe -Command "docker rm $(docker ps -aq) --force"
         shell: cmd
 
       - name: Prune all volumes
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         run: |
-          powershell.exe -command "docker volume prune --force"
+          powershell.exe -Command "docker volume prune --force"
         shell: cmd
 
   stack-integration-tests-smpc:
