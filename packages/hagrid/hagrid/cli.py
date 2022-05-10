@@ -256,6 +256,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: git branch to use for launch / build operations",
 )
+@click.option(
+    "--platform",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: run docker with a different platform like linux/arm64",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -788,6 +795,9 @@ def create_launch_cmd(
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
     else:
         parsed_kwargs["jupyter"] = False
+
+    # allows changing docker platform to other cpu architectures like arm64
+    parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
 
     if host in ["docker"]:
 
@@ -1339,6 +1349,9 @@ def create_launch_docker_cmd(
             generate_sec_random_password(length=48, special_chars=False)
         ),
     }
+
+    if "platform" in kwargs and kwargs["platform"] is not None:
+        envs["DOCKER_DEFAULT_PLATFORM"] = kwargs["platform"]
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
