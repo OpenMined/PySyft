@@ -10,12 +10,12 @@ print("CONTAINER_HOST", CONTAINER_HOST)
 
 
 def make_curl_cmd(url: str, key: str) -> str:
-    add_curl = "apk add curl"
+    add_curl = "apk -U upgrade && apk fix && apk add curl"
     run_curl = f"curl -v -X POST -H 'X-STACK-API-KEY: {key}' {url}"
     if CONTAINER_HOST == "docker":
         container_cmd = f"{add_curl} && {run_curl}"
         container = "test_network_1-tailscale-1"
-        return f'echo "{container_cmd}" | docker exec -i {container} ash 2>&1'
+        return f'echo "{container_cmd}" | docker exec -i {container} bash 2>&1'
     else:
         pod = "tailscale-0"
         container = "container-1"
