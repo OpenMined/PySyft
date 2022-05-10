@@ -3,7 +3,7 @@
 - name: Clean Old Running Cron Jobs
   shell: crontab -r && kill -9 $(pgrep cron)
   become: yes
-  when: vagrant is not defined and {{ not install | bool}} and {{ not local | bool}}
+  when: vagrant is not defined and not install|bool and not local|bool
 
 - name: PySyft Repo Update Cron Job
   ansible.builtin.cron:
