@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 # stdlib
+from dataclasses import field
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
+from xmlrpc.client import Boolean
 
 # third party
 import numpy as np
@@ -15,10 +18,7 @@ import numpy as np
 from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
 from .passthrough import is_acceptable_simple_type  # type: ignore
-from .smpc.utils import get_shape
 
-def lra_matmul(lra1, lra2) -> np.ndarray:
-    return np.matmul(lra1, lra2.to_numpy())
 
 @serializable(recursive_serde=True)
 class lazyrepeatarray:
@@ -32,10 +32,10 @@ class lazyrepeatarray:
     __attr_allowlist__ = ["data", "shape"]
 
     def __init__(
-        self, 
-        data: np.ndarray, 
-        shape: Tuple[int, ...], 
-        transforms: Optional[List] = field(repr=False, default=None)
+        self,
+        data: np.ndarray,
+        shape: Tuple[int, ...],
+        transforms: Optional[List] = field(repr=False, default=None),
     ) -> None:
         """
         data: the raw data values without repeats
@@ -57,9 +57,11 @@ class lazyrepeatarray:
         # verify broadcasting works on shapes
         np.broadcast_shapes(data.shape, shape)
 
-        if self.transforms is None:
+        if transforms is None:
             self.transforms = []
-            
+        else:
+            self.transforms = transforms
+
         self.data = data
         self.shape = shape
         self._shape = self.shape
@@ -71,7 +73,7 @@ class lazyrepeatarray:
         """
         if is_acceptable_simple_type(other):
             return self.__class__(data=self.data + other, shape=self.shape)
-        
+
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):
             if not is_broadcastable(self.shape, other.shape):
                 raise Exception(
@@ -83,7 +85,7 @@ class lazyrepeatarray:
             elif isinstance(other, np.ndarray):
                 self.add_op(function=np.add, args=other)
             return self
-        
+
         else:
             raise Exception(f"not sure how to do this yet: {type(other)}")
 
@@ -94,7 +96,7 @@ class lazyrepeatarray:
         """
         if is_acceptable_simple_type(other):
             return self.__class__(data=self.data - other, shape=self.shape)
-        
+
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):
             if not is_broadcastable(self.shape, other.shape):
                 raise Exception(
@@ -106,7 +108,7 @@ class lazyrepeatarray:
             elif isinstance(other, np.ndarray):
                 self.add_op(function=np.subtract, args=other)
             return self
-        
+
         else:
             raise Exception(f"not sure how to do this yet: {type(other)}")
 
@@ -117,7 +119,7 @@ class lazyrepeatarray:
         """
         if is_acceptable_simple_type(other):
             return self.__class__(data=self.data * other, shape=self.shape)
-        
+
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):
             if not is_broadcastable(self.shape, other.shape):
                 raise Exception(
@@ -129,30 +131,30 @@ class lazyrepeatarray:
             elif isinstance(other, np.ndarray):
                 self.add_op(function=np.multiply, args=other)
             return self
-        
+
         else:
             raise Exception(f"not sure how to do this yet: {type(other)}")
-    
-    def __matmul__(self, other):
+
+    def __matmul__(self, other: Any):  # type: ignore
         if is_acceptable_simple_type(other):
             raise Exception
-            
+
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):
             if len(self.shape) != 2 or len(other.shape) != 2:
                 raise Exception("Matmul only valid for 2D arrays")
-            
+
             if self.shape[-1] != other.shape[0]:
                 raise Exception(
-                "Cannot matrix multiply tensors with different shapes: {self.shape} and {other.shape}"
+                    "Cannot matrix multiply tensors with different shapes: {self.shape} and {other.shape}"
                 )
             else:
                 self.shape = (self.shape[0], other.shape[-1])
                 if isinstance(other, lazyrepeatarray):
-                    self.add_op(function=lra_matmul, args=other
+                    self.add_op(function=np.matmul, args=other.to_numpy())
                 elif isinstance(other, np.ndarray):
                     self.add_op(function=np.matmul, args=other)
                 return self
-    
+
     def __pow__(self, exponent: int) -> lazyrepeatarray:
         if exponent == 2:
             return self * self
@@ -232,12 +234,12 @@ class lazyrepeatarray:
     def astype(self, np_type: np.dtype) -> lazyrepeatarray:
         return self.__class__(self.data.astype(np_type), self.shape)
 
-    def to_numpy(self, original=False) -> np.ndarray:
+    def to_numpy(self, original: Boolean = False) -> np.ndarray:
         if not original:
             return np.ones(self.shape) * self.data
         else:
             return np.ones(self._shape) * self.data
-    
+
     def __repr__(self) -> str:
         return f"<lazyrepeatarray data: {self.data} -> shape: {self.shape}>"
 
@@ -255,17 +257,16 @@ class lazyrepeatarray:
         return lazyrepeatarray(
             data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
         )
-    
-    def add_op(self, function: Callable, selection=slice(None), args={}):
+
+    def add_op(self, function: Callable, selection=slice(None), args=None) -> None:  # type: ignore
         self.transforms.append((function, selection, args))
-        
-    def evaluate(self):
+
+    def evaluate(self):  # type: ignore
         result = self.to_numpy(original=True)
         for func, selection, args in self.transforms:
-            if func == np.matmul or func == lra_matmul:
+            if func == np.matmul:
                 result = func(result[selection], args)
             else:
                 result[selection] = func(result[selection], args)
         self.transforms = []
         return result
-    
