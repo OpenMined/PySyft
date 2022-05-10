@@ -130,9 +130,9 @@ if settings.NODE_TYPE.lower() == "network":
         result = {"status": "error"}
         try:
             result["node_id"] = str(node.target_id.id.no_dash)
-            result["host_or_ip"] = get_status(tailscale_host="http://tailscale:4000")[
-                1
-            ]["ip"]
+            # status = get_status(tailscale_host="http://tailscale:4000")
+            # result["host_or_ip"] = status[1]["ip"]
+            result["host_or_ip"] = "100.64.0.1"
             result["node_name"] = str(node.name)
             result["status"] = str(reply.payload.kwargs.get("status"))
             result["vpn_auth_key"] = str(reply.payload.kwargs.get("vpn_auth_key"))
