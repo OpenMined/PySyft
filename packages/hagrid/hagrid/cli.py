@@ -20,6 +20,7 @@ from typing import cast
 
 # third party
 import click
+import requests
 import rich
 from rich.live import Live
 
@@ -255,6 +256,13 @@ def clean(location: str) -> None:
     required=False,
     type=str,
     help="Optional: git branch to use for launch / build operations",
+)
+@click.option(
+    "--platform",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: run docker with a different platform like linux/arm64",
 )
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
@@ -788,6 +796,9 @@ def create_launch_cmd(
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
     else:
         parsed_kwargs["jupyter"] = False
+
+    # allows changing docker platform to other cpu architectures like arm64
+    parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
 
     if host in ["docker"]:
 
@@ -1340,6 +1351,9 @@ def create_launch_docker_cmd(
         ),
     }
 
+    if "platform" in kwargs and kwargs["platform"] is not None:
+        envs["DOCKER_DEFAULT_PLATFORM"] = kwargs["platform"]
+
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
 
@@ -1846,6 +1860,9 @@ def create_launch_azure_cmd(
             kwargs.update(extra_kwargs)
 
             # provision
+            host_up = check_ip_for_ssh(host_ip=host_ip)
+            if not host_up:
+                print(f"Warning: {host_ip} ssh not available yet")
             launch_cmd = create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
             launch_cmds.append(launch_cmd)
 
@@ -2202,11 +2219,21 @@ cli.add_command(debug)
 
 @click.command(help="Check health of an IP address/addresses or a resource group")
 @click.argument("ip_addresses", type=str, nargs=-1)
-def check(ip_addresses: TypeList[str]) -> None:
+@click.option(
+    "--wait",
+    is_flag=True,
+    help="Optional: wait until checks pass",
+)
+def check(ip_addresses: TypeList[str], wait: str) -> None:
+    if len(ip_addresses) == 0:
+        headers = {"User-Agent": "curl/7.79.1"}
+        ip_res = requests.get("https://ifconfig.co", headers=headers)
+        ip = ip_res.text
+        ip_addresses = [ip]
+
     console = rich.get_console()
 
     for ip_address in ip_addresses:
-
         console.print(
             "[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:"
         )
