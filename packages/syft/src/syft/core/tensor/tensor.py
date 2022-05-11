@@ -108,11 +108,9 @@ class TensorPointer(Pointer):
         op = f"__{op_str}__"
         # remove this to dunder method before merge.
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
-        seed_id_locations = kwargs.get("seed_id_locations", None)
+        seed_id_locations = kwargs.pop("seed_id_locations", None)
         if seed_id_locations is None:
             seed_id_locations = secrets.randbits(64)
-        else:
-            kwargs.pop("seed_id_locations")
 
         id_at_location = smpc_action_functions.get_id_at_location_from_op(
             seed_id_locations, op
@@ -287,6 +285,36 @@ class TensorPointer(Pointer):
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorPointer._apply_op(self, other, "matmul", **kwargs)
+
+    def __truediv__(
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "mul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "truediv", **kwargs)
+
+    def __rtruediv__(
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "mul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        raise NotImplementedError
 
     def __lt__(
         self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
