@@ -20,6 +20,7 @@ from typing import cast
 
 # third party
 import click
+import requests
 import rich
 from rich.live import Live
 
@@ -2218,11 +2219,21 @@ cli.add_command(debug)
 
 @click.command(help="Check health of an IP address/addresses or a resource group")
 @click.argument("ip_addresses", type=str, nargs=-1)
-def check(ip_addresses: TypeList[str]) -> None:
+@click.option(
+    "--wait",
+    is_flag=True,
+    help="Optional: wait until checks pass",
+)
+def check(ip_addresses: TypeList[str], wait: str) -> None:
+    if len(ip_addresses) == 0:
+        headers = {"User-Agent": "curl/7.79.1"}
+        ip_res = requests.get("https://ifconfig.co", headers=headers)
+        ip = ip_res.text
+        ip_addresses = [ip]
+
     console = rich.get_console()
 
     for ip_address in ip_addresses:
-
         console.print(
             "[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:"
         )
