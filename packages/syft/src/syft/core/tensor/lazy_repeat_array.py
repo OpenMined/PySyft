@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 # stdlib
-from dataclasses import field
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -17,7 +16,6 @@ import numpy as np
 # relative
 from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
-from .passthrough import is_acceptable_simple_type  # type: ignore
 
 
 @serializable(recursive_serde=True)
@@ -35,7 +33,7 @@ class lazyrepeatarray:
         self,
         data: np.ndarray,
         shape: Tuple[int, ...],
-        transforms: Optional[List] = field(repr=False, default=None),
+        transforms: Optional[List] = None,
     ) -> None:
         """
         data: the raw data values without repeats
@@ -57,10 +55,10 @@ class lazyrepeatarray:
         # verify broadcasting works on shapes
         np.broadcast_shapes(data.shape, shape)
 
-        # if transforms is None:
-        self.transforms = []
-        # else:
-            # self.transforms = transforms
+        if transforms is None:
+            self.transforms = []
+        else:
+            self.transforms = transforms
 
         self.data = data
         self.shape = shape
@@ -75,7 +73,7 @@ class lazyrepeatarray:
             self.data += other
             return self
 
-        elif isinstance(other, (np.ndarray, lazyrepeatarray)):
+        elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
                 raise Exception(
                     f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}"
@@ -99,7 +97,7 @@ class lazyrepeatarray:
             self.data -= other
             return self
 
-        elif isinstance(other, (np.ndarray, lazyrepeatarray)):
+        elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
                 raise Exception(
                     f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}"
@@ -123,7 +121,7 @@ class lazyrepeatarray:
             self.data *= other
             return self
 
-        elif isinstance(other, (np.ndarray, lazyrepeatarray)):
+        elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
                 raise Exception(
                     f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}"
@@ -142,7 +140,7 @@ class lazyrepeatarray:
         if isinstance(other, (int, np.integer, float, np.floating)):
             raise Exception
 
-        elif isinstance(other, (np.ndarray, lazyrepeatarray)):
+        elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if len(self.shape) != 2 or len(other.shape) != 2:
                 raise Exception("Matmul only valid for 2D arrays")
 
