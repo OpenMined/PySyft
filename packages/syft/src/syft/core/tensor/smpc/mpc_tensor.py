@@ -24,6 +24,7 @@ import torch
 from . import utils
 from .... import logger
 from ....grid import GridURL
+from ...smpc.approximations import APPROXIMATIONS
 from ...smpc.protocol.spdz import spdz
 from ...smpc.store import CryptoPrimitiveProvider
 from ..config import DEFAULT_RING_SIZE
@@ -804,6 +805,42 @@ class MPCTensor(PassthroughTensor):
 
         return mpc_res  # type: ignore
 
+    def truediv(self, y: Union["MPCTensor", np.ndarray, float, int]) -> MPCTensor:
+        """Apply the "div" operation between "self" and "y".
+
+        Args:
+            y (Union["MPCTensor", torch.Tensor, float, int]): Denominator.
+
+        Returns:
+            MPCTensor: Result of the operation.
+
+        Raises:
+            ValueError: If input denominator is float.
+        """
+        is_private = isinstance(y, MPCTensor)
+
+        result: MPCTensor
+        if is_private:
+            reciprocal = APPROXIMATIONS["reciprocal"]
+            result = self.mul(reciprocal(y))  # type: ignore
+        else:
+            result = self * (1 / y)
+
+        return result
+
+    def rtruediv(self, y: Union[np.ndarray, float, int]) -> MPCTensor:
+        """Apply recriprocal of MPCTensor.
+
+        Args:
+            y (Union[torch.Tensor, float, int]): Numerator.
+
+        Returns:
+            MPCTensor: Result of the operation.
+        """
+        reciprocal = APPROXIMATIONS["reciprocal"]
+        result: MPCTensor = reciprocal(self) * y  # type: ignore
+        return result
+
     def put(
         self,
         indices: npt.ArrayLike,
@@ -943,6 +980,8 @@ class MPCTensor(PassthroughTensor):
     __le__ = le
     __eq__ = eq
     __ne__ = ne
+    __truediv__ = truediv
+    __rtruediv__ = rtruediv
 
 
 @implements(MPCTensor, np.add)
