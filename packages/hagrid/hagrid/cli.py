@@ -1859,6 +1859,9 @@ def create_launch_azure_cmd(
             kwargs.update(extra_kwargs)
 
             # provision
+            host_up = check_ip_for_ssh(host_ip=host_ip)
+            if not host_up:
+                print(f"Warning: {host_ip} ssh not available yet")
             launch_cmd = create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
             launch_cmds.append(launch_cmd)
 

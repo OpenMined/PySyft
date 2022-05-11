@@ -44,7 +44,7 @@
     force: yes
   become_user: "{{ om_user }}"
   ignore_errors: yes
-  when: vagrant is not defined and install == "true"
+  when: vagrant is not defined
 
 - name: Check Build Directory
   stat:
