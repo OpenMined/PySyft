@@ -1,16 +1,11 @@
 ---
 # cronjob logs: $ tail -f /var/log/syslog | grep -i cron
-- name: Clean Old Running Cron Jobs
-  shell: crontab -r && kill -9 $(pgrep cron)
-  become: yes
-  when: vagrant is not defined and not install|bool and not local|bool
-
 - name: PySyft Repo Update Cron Job
   ansible.builtin.cron:
     disabled: "{{ not install | bool }}"
     minute: "*/2"
     name: "Update PySyft Repo"
-    job: "{{ syft_dir }}/packages/grid/scripts/cron.sh {{ syft_dir }} {{ github_repo }} {{ repo_branch }} {{ om_user }} {{ om_group }} {{ node_type }} {{ node_name }} {{ build_dir }} {{ tls }} {{ cert_store_path }} {{ release }} {{ docker_tag }} {{ local }} {{ install }} 2>&1 | logger -t cron"
+    job: "{{ syft_dir }}/packages/grid/scripts/cron.sh {{ syft_dir }} {{ github_repo }} {{ repo_branch }} {{ om_user }} {{ om_group }} {{ node_type }} {{ node_name }} {{ build_dir }} {{ tls }} {{ cert_store_path }} {{ release }} {{ docker_tag }} 2>&1 | logger -t cron"
   become: yes
   when: vagrant is not defined
 

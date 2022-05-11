@@ -1967,7 +1967,6 @@ def create_launch_custom_cmd(
             "github_repo": kwargs["repo"],
             "repo_branch": kwargs["branch"],
             "docker_tag": version_string,
-            "local": "false",
         }
 
         if host_term.host != "localhost" and kwargs["auth_type"] == "password":
