@@ -137,6 +137,7 @@ class GammaTensor:
             value = self.value + other.value
             min_val = self.min_val + other.min_val
             max_val = self.max_val + other.max_val
+            dsl = DataSubjectList.combine(self.data_subjects, other.data_subjects)
         else:
 
             def _add(state: dict) -> jax.numpy.DeviceArray:
@@ -145,10 +146,11 @@ class GammaTensor:
             value = self.value + other
             min_val = self.min_val + other
             max_val = self.max_val + other
+            dsl = self.data_subjects
         # print("the state we returned is: ", output_state)
         return GammaTensor(
             value=value,
-            data_subjects=self.data_subjects,
+            data_subjects=dsl,
             min_val=min_val,
             max_val=max_val,
             func=_add,
@@ -166,16 +168,18 @@ class GammaTensor:
 
             state.update(other.state)
             value = self.value * other.value
+            dsl = DataSubjectList.combine(self.data_subjects, other.data_subjects)
         else:
 
             def _mul(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.multiply(self.run(state), other)
 
             value = self.value * other
+            dsl = self.data_subjects
 
         return GammaTensor(
             value=value,
-            data_subjects=self.data_subjects,
+            data_subjects=dsl,
             min_val=0,
             max_val=10,
             func=_mul,
