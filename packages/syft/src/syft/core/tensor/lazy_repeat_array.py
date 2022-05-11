@@ -57,10 +57,10 @@ class lazyrepeatarray:
         # verify broadcasting works on shapes
         np.broadcast_shapes(data.shape, shape)
 
-        if transforms is None:
-            self.transforms = []
-        else:
-            self.transforms = transforms
+        # if transforms is None:
+        self.transforms = []
+        # else:
+            # self.transforms = transforms
 
         self.data = data
         self.shape = shape
@@ -71,8 +71,9 @@ class lazyrepeatarray:
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
         Don't touch it. It's going to get more complicated.
         """
-        if is_acceptable_simple_type(other):
-            return self.__class__(data=self.data + other, shape=self.shape)
+        if isinstance(other, (int, np.integer, float, np.floating)):
+            self.data += other
+            return self
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):
             if not is_broadcastable(self.shape, other.shape):
@@ -94,8 +95,9 @@ class lazyrepeatarray:
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
         Don't touch it. It's going to get more complicated.
         """
-        if is_acceptable_simple_type(other):
-            return self.__class__(data=self.data - other, shape=self.shape)
+        if isinstance(other, (int, np.integer, float, np.floating)):
+            self.data -= other
+            return self
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):
             if not is_broadcastable(self.shape, other.shape):
@@ -117,8 +119,9 @@ class lazyrepeatarray:
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
         Don't touch it. It's going to get more complicated.
         """
-        if is_acceptable_simple_type(other):
-            return self.__class__(data=self.data * other, shape=self.shape)
+        if isinstance(other, (int, np.integer, float, np.floating)):
+            self.data *= other
+            return self
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):
             if not is_broadcastable(self.shape, other.shape):
@@ -136,7 +139,7 @@ class lazyrepeatarray:
             raise Exception(f"not sure how to do this yet: {type(other)}")
 
     def __matmul__(self, other: Any):  # type: ignore
-        if is_acceptable_simple_type(other):
+        if isinstance(other, (int, np.integer, float, np.floating)):
             raise Exception
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):
