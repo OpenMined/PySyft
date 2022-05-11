@@ -16,6 +16,57 @@ from ..common.serde.serializable import serializable
 from .data_subject import DataSubject
 
 
+def combine_overlapping_dsl(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:
+    # dsl1_uniques = dsl1.num_uniques
+    # dsl2_uniques = dsl2.num_uniques
+    dsl1_uniques = len(dsl1.one_hot_lookup)
+    dsl2_uniques = len(dsl2.one_hot_lookup)
+
+    if dsl1_uniques >= dsl2_uniques:
+        search_terms = dsl2.one_hot_lookup
+        bigger_list = dsl1.one_hot_lookup
+        array_to_change = dsl2.data_subjects_indexed
+        unchanged_array = dsl1.data_subjects_indexed
+    else:
+        search_terms = dsl1.one_hot_lookup
+        bigger_list = dsl2.one_hot_lookup
+        array_to_change = dsl1.data_subjects_indexed
+        unchanged_array = dsl2.data_subjects_indexed
+
+    # Array of True/False depending on whether search term exists in bigger list
+    overlap = np.isin(search_terms,
+                      bigger_list)  # TODO: is there a way to use np.searchsorted w/o the index 0 problem?
+    overlapping_indices = (overlap == True).nonzero()[0]  # The DS at these indices of search_terms exist in bigger_list
+    unique_indices = (overlap == False).nonzero()[0]  # The DS at these indices are unique
+
+    if len(overlapping_indices) == 0:  # If there's no overlap, our job is super simple
+        return DataSubjectList(
+            one_hot_lookup=np.concatenate((dsl1.one_hot_lookup, dsl2.one_hot_lookup)),
+            data_subjects_indexed=np.stack((dsl1.data_subjects_indexed, dsl2.data_subjects_indexed + dsl1_uniques))
+        )
+
+    # Task 1- For the overlapping data subjects, we need to find the index already allotted to them.
+    target_overlap_indices = np.searchsorted(bigger_list, search_terms.take(overlapping_indices))
+
+    # Now that we need to replace the previous indices with the new indices
+    output_data_subjects_indexed = np.zeros_like(dsl2.data_subjects_indexed)
+    for old_value, new_value in zip(overlapping_indices, target_overlap_indices):
+        output_data_subjects_indexed[array_to_change == old_value] = new_value
+
+    # Task 2- do the same but for unique data subjects
+    unique_data_subjects = search_terms.take(unique_indices)
+
+    output_one_hot_encoding = np.concatenate((bigger_list, unique_data_subjects))
+    target_unique_indices = np.arange(len(bigger_list), len(output_one_hot_encoding))
+
+    for old_value, new_value in zip(unique_indices, target_unique_indices):
+        output_data_subjects_indexed[array_to_change == old_value] = new_value
+
+    final_dsi = np.stack((unchanged_array, output_data_subjects_indexed))
+
+    return DataSubjectList(one_hot_lookup=output_one_hot_encoding, data_subjects_indexed=final_dsi)
+
+
 # allow us to serialize and deserialize np.arrays with strings inside as two np.arrays
 # one containing the uint8 bytes and the other the offsets between strings
 # TODO: Should move to a vectorized version.
@@ -120,8 +171,58 @@ class DataSubjectList:
             self.one_hot_lookup.copy(), self.data_subjects_indexed.copy(order=order)
         )
 
+    @staticmethod
+    def combine(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:
+        """ This combines multiple data subject lists. For now this will only be done with 2"""
+        # TODO: This can probably be optimized a lot further b/c we repeat searches a lot, and we don't exploit the
+        #  fact that one_hot_lookups are sorted
+        dsl1_uniques = dsl1.num_uniques
+        dsl2_uniques = dsl2.num_uniques
+        if dsl1_uniques == 1 and dsl2_uniques == 1:  # They are both Phi Tensors
+            if dsl1.one_hot_lookup == dsl2.one_hot_lookup: # The one data subject in the Phi Tensor is the same
+                output_one_hot_lookup = dsl1.one_hot_lookup
+                output_data_subjects_indexed = dsl1.data_subjects_indexed
+            else:
+                # Phi Tensors have different data subjects. We expect the output of the operation b/w them to be a
+                # GammaTensor, and our DSL should reflect that
+                output_one_hot_lookup = np.concatenate((dsl1.one_hot_lookup, dsl2.one_hot_lookup))
+                output_data_subjects_indexed = np.stack((dsl1.data_subjects_indexed, dsl2.data_subjects_indexed + 1))
+        elif dsl1_uniques == 1 and dsl2_uniques != 1:
+            # first is a PhiTensor, second is a GammaTensor
+            overlap = dsl1.one_hot_lookup in dsl2.one_hot_lookup
+            if overlap:
+                return combine_overlapping_dsl(dsl1, dsl2)
+            else:
+                offset = dsl2_uniques
+                output_one_hot_lookup = np.concatenate((dsl2.one_hot_lookup, dsl1.one_hot_lookup))
+                output_data_subjects_indexed = np.stack((dsl2.data_subjects_indexed, dsl1.data_subjects_indexed + offset))
+        elif dsl1_uniques != 1 and dsl2_uniques == 1:
+            overlap = dsl2.one_hot_lookup in dsl1.one_hot_lookup
+            if overlap:
+                return combine_overlapping_dsl(dsl1, dsl2)
+            else:
+                offset = dsl1_uniques
+                output_one_hot_lookup = np.concatenate((dsl1.one_hot_lookup, dsl2.one_hot_lookup))
+                output_data_subjects_indexed = np.stack(
+                    (dsl1.data_subjects_indexed, dsl2.data_subjects_indexed + offset))
+        else:
+            # They're both gamma Tensors
+            if dsl1.one_hot_lookup == dsl2.one_hot_lookup:  # through some miracle, same Data subjects, same order
+                output_one_hot_lookup = dsl1.one_hot_lookup
+                output_data_subjects_indexed = np.stack((dsl1.data_subjects_indexed, dsl2.data_subjects_indexed))
+            else:
+                return combine_overlapping_dsl(dsl1, dsl2)
+        return DataSubjectList(
+                    one_hot_lookup=output_one_hot_lookup,
+                    data_subjects_indexed=output_data_subjects_indexed
+                )
+
     def __len__(self) -> int:
         return len(self.data_subjects_indexed)
+
+    @property
+    def num_uniques(self) -> int:
+        return len(self.one_hot_lookup)
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, DataSubjectList):
