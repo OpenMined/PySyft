@@ -1045,11 +1045,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if isinstance(other, np.ndarray):
             # print("We here or what?")
             return PhiTensor(
-                child=np.dot(self.child, other),
-                min_vals=np.dot(self.min_vals, other),
-                max_vals=np.dot(self.max_vals, other),
+                child=self.child.child.dot(other.child.child),
+                min_vals=np.dot(self.min_vals, other.min_vals),
+                max_vals=np.dot(self.max_vals, other.min_vals),
                 data_subjects=self.data_subjects,
             )
+
         elif isinstance(other, PhiTensor):
             if (
                 len(self.data_subjects.one_hot_lookup) > 1
@@ -1069,11 +1070,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     and self.data_subjects.one_hot_lookup
                     == other.data_subjects.one_hot_lookup
                 ):
+
                 return PhiTensor(
-                    child=np.dot(self.child.child, other.child.child),
-                    min_vals=np.dot(self.min_vals, other.min_vals),
-                    max_vals=np.dot(self.max_vals, other.min_vals),
-                    data_subjects=self.data_subjects,
+                    child = self.child.child.dot(other.child.child),
+                    min_vals = np.dot(self.min_vals, other.min_vals),
+                    max_vals = np.dot(self.max_vals, other.min_vals),
+                    data_subjects = self.data_subjects,
                 )
 
             else:
@@ -1084,7 +1086,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             print("NOT here")
             raise NotImplementedError
-
 
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None

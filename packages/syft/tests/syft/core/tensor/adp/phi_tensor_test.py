@@ -364,13 +364,8 @@ def test_dot(
     result_self_tensor = tensor1.dot(tensor1)
 
     assert (result_tensor.value == tensor1.child.child.dot(tensor2.child.child)).all()
-    assert (
-        result_gamma_tensor.value == tensor1.child.child.dot(tensor3.child.child)
-    ).all()
-    assert (
-        result_self_tensor.child.decode()
-        == tensor1.child.child.dot(tensor1.child.child)
-    ).all()
+    assert (result_gamma_tensor.value == tensor1.child.child.dot(tensor3.child.child)).all()
+    assert (result_self_tensor.child.decode() == tensor1.child.child.dot(tensor1.child.child)).all()
 
 
 def test_ne_vals(
