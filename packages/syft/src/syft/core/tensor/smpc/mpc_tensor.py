@@ -569,6 +569,8 @@ class MPCTensor(PassthroughTensor):
                 new_parties = [client]
                 new_parties += parties
                 mpc_tensor = MPCTensor.reshare(mpc_tensor, new_parties)
+            else:
+                new_parties = parties
 
             other = MPCTensor(secret=other, parties=new_parties, shape=public_shape)
 
@@ -866,19 +868,19 @@ class MPCTensor(PassthroughTensor):
         return res
 
     def concatenate(
-        self, other: MPCTensor, *args: List[Any], **kwargs: Dict[str, Any]
+        self,
+        other: Union[MPCTensor, TensorPointer],
+        *args: List[Any],
+        **kwargs: Dict[str, Any],
     ) -> MPCTensor:
-        if not isinstance(other, MPCTensor):
-            raise ValueError(
-                f"Invalid type: {type(other)} for MPCTensor concatenate operation"
-            )
+        new_self, new_other = MPCTensor.sanity_checks(self, other)
 
         shares = []
-        for x, y in zip(self.child, other.child):
+        for x, y in zip(self.child, other.child):  # type: ignore
             shares.append(x.concatenate(y, *args, **kwargs))
 
         dummy_res = np.concatenate(
-            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs
+            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs  # type: ignore
         )
         res = MPCTensor(shares=shares, parties=self.parties, shape=dummy_res.shape)
 

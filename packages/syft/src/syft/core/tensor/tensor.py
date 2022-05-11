@@ -105,9 +105,9 @@ class TensorPointer(Pointer):
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
-        op = f"__{op_str}__"
+        op = f"__{op_str}__" if op_str != "concatenate" else "concatenate"
         # remove this to dunder method before merge.
-        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op}"
         seed_id_locations = kwargs.pop("seed_id_locations", None)
         if seed_id_locations is None:
             seed_id_locations = secrets.randbits(64)
@@ -209,7 +209,6 @@ class TensorPointer(Pointer):
         Returns:
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
-        op = getattr(operator, op_str)
 
         if isinstance(other, TensorPointer) and self.client != other.client:
 
@@ -218,11 +217,18 @@ class TensorPointer(Pointer):
             other_mpc = MPCTensor(
                 secret=other, shape=other.public_shape, parties=parties
             )
-            return op(self_mpc, other_mpc)
+            if op_str != "concatenate":
+                op = getattr(operator, op_str)
+                return op(self_mpc, other_mpc)
+            else:
+                return self_mpc.concatenate(other_mpc)
 
         elif isinstance(other, MPCTensor):
-
-            return op(other, self)
+            if op_str != "concatenate":
+                op = getattr(operator, op_str)
+                return op(other, self)
+            else:
+                return other.concatenate(self)
 
         return self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
@@ -399,6 +405,22 @@ class TensorPointer(Pointer):
         """
 
         return TensorPointer._apply_op(self, other, "ne")
+
+    def concatenate(
+        self,
+        other: TensorPointer,
+        *args: List[Any],
+        **kwargs: Dict[str, Any],
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "add" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "concatenate")
 
 
 def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
