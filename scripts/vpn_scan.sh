@@ -1,8 +1,11 @@
 #!/bin/bash
 
 # use with:
-# $ cat scripts/vpn_scan.sh | docker exec -i test_network_1-tailscale-1 ash
+# $ cat scripts/vpn_scan.sh | docker exec -i test_network_1-tailscale-1 bash
 
+apk -U upgrade || true
+apk fix || true
+apk add bash
 apk add netcat-openbsd
 apk add lsof
 apk add jq
