@@ -2219,12 +2219,13 @@ cli.add_command(debug)
 
 @click.command(help="Check health of an IP address/addresses or a resource group")
 @click.argument("ip_addresses", type=str, nargs=-1)
+@click.argument("self", type=str, required=False)
 @click.option(
     "--wait",
     is_flag=True,
     help="Optional: wait until checks pass",
 )
-def check(ip_addresses: TypeList[str], wait: str) -> None:
+def check(ip_addresses: TypeList[str], wait: str, self: str) -> None:
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         ip_res = requests.get("https://ifconfig.co", headers=headers)
@@ -2232,6 +2233,12 @@ def check(ip_addresses: TypeList[str], wait: str) -> None:
         ip_addresses = [ip]
 
     console = rich.get_console()
+
+    if self:
+        # print hagrid checking self
+        print("HAGrid checking self...")
+        # pop off the first Ip address
+        ip_addresses.pop(0)
 
     for ip_address in ip_addresses:
         console.print(
