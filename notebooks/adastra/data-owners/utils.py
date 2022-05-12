@@ -1,5 +1,6 @@
 # stdlib
 import json
+import os
 import subprocess
 import sys
 
@@ -85,9 +86,24 @@ def get_data_description(data):
     unique_label_cnt = data.label.nunique()
     lable_mapping = json.dumps(get_label_mapping())
     image_size = data.iloc[0]["image"].shape
-    description = f"The MedNIST dataset was gathered from several sets from TCIA, the RSNA Bone Age Challenge, and the NIH Chest X-ray dataset. The dataset is kindly made available by Dr. Bradley J. Erickson M.D., Ph.D. (Department of Radiology, Mayo Clinic) under the Creative Commons CC BY-SA 4.0 license.\n"
+    description = "The MedNIST dataset was gathered from several sets from TCIA, "
+    description += "the RSNA Bone Age Challenge, and the NIH Chest X-ray dataset. "
+    description += (
+        "The dataset is kindly made available by Dr. Bradley J. Erickson M.D., Ph.D. "
+    )
+    description += "(Department of Radiology, Mayo Clinic) under the Creative Commons CC BY-SA 4.0 license.\n"
     description += f"Label Count: {unique_label_cnt}\n"
     description += f"Label Mapping: {lable_mapping}\n"
     description += f"Image Dimensions: {image_size}\n"
     description += f"Total Images: {data.shape[0]}\n"
     return description
+
+
+def download_mednist_dataset():
+    if not os.path.exists("./MedNIST.pkl"):
+        os.system(
+            'curl -O "https://media.githubusercontent.com/media/shubham3121/datasets/main/MedNIST/MedNIST.pkl"'
+        )
+        print("MedNIST is successfully downloaded.")
+    else:
+        print("MedNIST is already downloaded")
