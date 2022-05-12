@@ -469,7 +469,7 @@ class DomainClient(Client):
                 time.sleep(1)
 
             for peer in vpn_status["peers"]:
-                if peer["hostname"] == client.name:  # type: ignore
+                if peer["hostname"].replace("-", "_") == client.name:  # type: ignore
                     network_vpn_ip = peer["ip"]
             try:
                 domain_vpn_ip = self.vpn_status()["host"]["ip"]

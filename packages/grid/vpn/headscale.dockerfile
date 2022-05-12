@@ -1,4 +1,4 @@
-FROM headscale/headscale:0.14.0-alpine
+FROM headscale/headscale:0.15.0-alpine
 
 RUN --mount=type=cache,target=/var/cache/apk \
   apk -U upgrade || true; \
