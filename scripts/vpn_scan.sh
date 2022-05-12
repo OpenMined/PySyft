@@ -22,7 +22,8 @@ apk add jq
 # otherwise they will route all the traffic through a relay and this will be really slow
 # for example:
 # docker network connect test_domain_1_default test_network_1-tailscale-1
-tailscale status | grep -v "$(hostname)" | awk '{print $1}' | while read line; do
+# | tr '_' - replaces all underscores with - because tailscale does that now
+tailscale status | grep -v "$(hostname | tr '_' -)" | awk '{print $1}' | while read line; do
     echo "Scanning $line"
     if [[ $line =~ ^[0-9]+\.[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
         nc -z -v "$line" 1-65535 2>&1 | grep succeeded
