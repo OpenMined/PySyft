@@ -559,7 +559,7 @@ class DomainClient(Client):
         description: Optional[str] = None,
         skip_checks: bool = False,
         chunk_size: int = 536870912,  # 500 MB
-        use_blob_storage: bool = False,
+        use_blob_storage: bool = True,
         **metadata: Dict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
