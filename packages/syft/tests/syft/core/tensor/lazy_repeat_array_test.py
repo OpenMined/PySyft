@@ -27,13 +27,13 @@ def test_create_bad_lazy_repeat_array() -> None:
 def test_equality() -> None:
     array = np.array([1, 1, 1])
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
-    assert lazyarray == array
+    assert (lazyarray == array).evaluate().all()
 
 
 def test_inequality() -> None:
     array = np.array([2, 2, 2])
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
-    assert lazyarray != array
+    assert (lazyarray != array).evaluate().all()
 
 
 def test_serde() -> None:
@@ -44,31 +44,31 @@ def test_serde() -> None:
     de = sy.deserialize(ser, from_bytes=True)
 
     assert lazyarray == de
-    assert array == de
+    assert (array == de).all()
 
 
 def test_add() -> None:
     array = np.array([1, 1, 1])
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
 
-    assert lazyarray + 1 == array + 1
-    assert lazyarray + array == array + array
+    assert ((lazyarray + 1).evaluate() == array + 1).all()
+    assert ((lazyarray + array).evaluate() == array + array).all()
 
 
 def test_sub() -> None:
     array = np.array([1, 1, 1])
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
 
-    assert lazyarray - 1 == array - 1
-    assert lazyarray - array == array - array
+    assert ((lazyarray - 1).evaluate() == array - 1).all()
+    assert ((lazyarray - array == array).evaluate() - array).all()
 
 
 def test_mul() -> None:
     array = np.array([1, 1, 1])
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
 
-    assert lazyarray * 1 == array * 1
-    assert lazyarray * array == array * array
+    assert ((lazyarray * 1).evaluate() == array * 1).all()
+    assert ((lazyarray * array).evaluate() == array * array).all()
 
 
 def test_pow() -> None:
@@ -94,3 +94,35 @@ def test_sum() -> None:
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
 
     assert lazyarray.sum(axis=None) == array.sum(axis=None)
+
+
+def test_lt() -> None:
+    array1 = np.array([1, 1, 1])
+    array2 = np.array([2, 2, 2])
+    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array1.shape)
+    assert not (lazyarray < array1).evaluate().all()
+    assert (lazyarray < array2).evaluate().all()
+
+
+def test_le() -> None:
+    array1 = np.array([1, 1, 1])
+    array2 = np.array([2, 2, 2])
+    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array1.shape)
+    assert (lazyarray <= array1).evaluate().all()
+    assert (lazyarray <= array2).evaluate().all()
+
+
+def test_gt() -> None:
+    array1 = np.array([1, 1, 1])
+    array2 = np.array([2, 2, 2])
+    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array1.shape)
+    assert not (lazyarray > array1).evaluate().all()
+    assert not (lazyarray > array2).evaluate().all()
+
+
+def test_ge() -> None:
+    array1 = np.array([1, 1, 1])
+    array2 = np.array([2, 2, 2])
+    lazyarray = lazyrepeatarray(data=np.array([1]), shape=array1.shape)
+    assert (lazyarray >= array1).evaluate().all()
+    assert not (lazyarray >= array2).evaluate().all()

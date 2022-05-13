@@ -70,8 +70,7 @@ class lazyrepeatarray:
         Don't touch it. It's going to get more complicated.
         """
         if isinstance(other, (int, np.integer, float, np.floating)):
-            self.data += other
-            return self
+            return lazyrepeatarray(data=(self.data + other), shape=self.shape)
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
@@ -94,8 +93,7 @@ class lazyrepeatarray:
         Don't touch it. It's going to get more complicated.
         """
         if isinstance(other, (int, np.integer, float, np.floating)):
-            self.data -= other
-            return self
+            return lazyrepeatarray(data=(self.data - other), shape=self.shape)
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
@@ -118,8 +116,7 @@ class lazyrepeatarray:
         Don't touch it. It's going to get more complicated.
         """
         if isinstance(other, (int, np.integer, float, np.floating)):
-            self.data *= other
-            return self
+            return lazyrepeatarray(data=(self.data * other), shape=self.shape)
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
@@ -269,6 +266,10 @@ class lazyrepeatarray:
 
         else:
             raise Exception(f"not sure how to do this yet: {type(other)}")
+
+    def __neg__(self) -> lazyrepeatarray:
+        self.data *= -1
+        return self
 
     def __pow__(self, exponent: int) -> lazyrepeatarray:
         if exponent == 2:
