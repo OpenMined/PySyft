@@ -21,6 +21,7 @@ services:
       # Enable the Dashboard and API
       - --api # admin panel
       - --api.insecure=true # admin panel no password
+      - --ping=true
 
   frontend:
     build:
