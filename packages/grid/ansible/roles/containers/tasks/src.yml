@@ -5,7 +5,7 @@
   ignore_errors: yes
 
 - name: Delete build directory
-  shell: "rm -rf {{ build_dir }}"
+  shell: "rm -rf {{ build_dir }} || true"
   become: yes
   ignore_errors: yes
   when: vagrant is not defined and install == "true"
