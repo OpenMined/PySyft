@@ -282,3 +282,14 @@ class FixedPrecisionTensor(PassthroughTensor):
         res = FixedPrecisionTensor(base=base, precision=precision)
         res.child = child
         return res
+
+    def __getitem__(
+        self, item: Union[str, int, slice, PassthroughTensor]
+    ) -> FixedPrecisionTensor:
+        res = FixedPrecisionTensor(base=self.base, precision=self.precision)
+        if isinstance(item, PassthroughTensor):
+            res.child = self.child.getitem(item.child)
+        else:
+            res.child = self.child.getitem(item)
+
+        return res

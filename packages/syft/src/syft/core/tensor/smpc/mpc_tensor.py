@@ -24,6 +24,7 @@ import torch
 from . import utils
 from .... import logger
 from ....grid import GridURL
+from ...smpc.approximations import APPROXIMATIONS
 from ...smpc.protocol.spdz import spdz
 from ...smpc.store import CryptoPrimitiveProvider
 from ..config import DEFAULT_RING_SIZE
@@ -564,6 +565,8 @@ class MPCTensor(PassthroughTensor):
                 new_parties = [client]
                 new_parties += parties
                 mpc_tensor = MPCTensor.reshare(mpc_tensor, new_parties)
+            else:
+                new_parties = parties
 
             other = MPCTensor(secret=other, parties=new_parties, shape=public_shape)
 
@@ -798,6 +801,42 @@ class MPCTensor(PassthroughTensor):
 
         return mpc_res  # type: ignore
 
+    def truediv(self, y: Union["MPCTensor", np.ndarray, float, int]) -> MPCTensor:
+        """Apply the "div" operation between "self" and "y".
+
+        Args:
+            y (Union["MPCTensor", torch.Tensor, float, int]): Denominator.
+
+        Returns:
+            MPCTensor: Result of the operation.
+
+        Raises:
+            ValueError: If input denominator is float.
+        """
+        is_private = isinstance(y, MPCTensor)
+
+        result: MPCTensor
+        if is_private:
+            reciprocal = APPROXIMATIONS["reciprocal"]
+            result = self.mul(reciprocal(y))  # type: ignore
+        else:
+            result = self * (1 / y)
+
+        return result
+
+    def rtruediv(self, y: Union[np.ndarray, float, int]) -> MPCTensor:
+        """Apply recriprocal of MPCTensor.
+
+        Args:
+            y (Union[torch.Tensor, float, int]): Numerator.
+
+        Returns:
+            MPCTensor: Result of the operation.
+        """
+        reciprocal = APPROXIMATIONS["reciprocal"]
+        result: MPCTensor = reciprocal(self) * y  # type: ignore
+        return result
+
     def put(
         self,
         indices: npt.ArrayLike,
@@ -823,19 +862,19 @@ class MPCTensor(PassthroughTensor):
         return res
 
     def concatenate(
-        self, other: MPCTensor, *args: List[Any], **kwargs: Dict[str, Any]
+        self,
+        other: Union[MPCTensor, TensorPointer],
+        *args: List[Any],
+        **kwargs: Dict[str, Any],
     ) -> MPCTensor:
-        if not isinstance(other, MPCTensor):
-            raise ValueError(
-                f"Invalid type: {type(other)} for MPCTensor concatenate operation"
-            )
+        self, other = MPCTensor.sanity_checks(self, other)
 
         shares = []
-        for x, y in zip(self.child, other.child):
+        for x, y in zip(self.child, other.child):  # type: ignore
             shares.append(x.concatenate(y, *args, **kwargs))
 
         dummy_res = np.concatenate(
-            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs
+            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs  # type: ignore
         )
         res = MPCTensor(shares=shares, parties=self.parties, shape=dummy_res.shape)
 
@@ -938,6 +977,8 @@ class MPCTensor(PassthroughTensor):
     __le__ = le
     __eq__ = eq
     __ne__ = ne
+    __truediv__ = truediv
+    __rtruediv__ = rtruediv
 
 
 @implements(MPCTensor, np.add)

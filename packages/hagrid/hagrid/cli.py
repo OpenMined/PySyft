@@ -10,6 +10,7 @@ import sys
 import tempfile
 import time
 from typing import Any
+from typing import Callable
 from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
@@ -20,6 +21,7 @@ from typing import cast
 
 # third party
 import click
+import requests
 import rich
 from rich.live import Live
 
@@ -251,6 +253,13 @@ def clean(location: str) -> None:
     required=False,
     type=str,
     help="Optional: git branch to use for launch / build operations",
+)
+@click.option(
+    "--platform",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: run docker with a different platform like linux/arm64",
 )
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
@@ -784,6 +793,9 @@ def create_launch_cmd(
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
     else:
         parsed_kwargs["jupyter"] = False
+
+    # allows changing docker platform to other cpu architectures like arm64
+    parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
 
     if host in ["docker"]:
 
@@ -1336,6 +1348,9 @@ def create_launch_docker_cmd(
         ),
     }
 
+    if "platform" in kwargs and kwargs["platform"] is not None:
+        envs["DOCKER_DEFAULT_PLATFORM"] = kwargs["platform"]
+
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
 
@@ -1842,6 +1857,9 @@ def create_launch_azure_cmd(
             kwargs.update(extra_kwargs)
 
             # provision
+            host_up = check_ip_for_ssh(host_ip=host_ip)
+            if not host_up:
+                print(f"Warning: {host_ip} ssh not available yet")
             launch_cmd = create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
             launch_cmds.append(launch_cmd)
 
@@ -2195,59 +2213,124 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 cli.add_command(debug)
 
+DEFAULT_HEALTH_CHECKS = ["host", "login", "api", "ssh", "jupyter"]
+HEALTH_CHECK_FUNCTIONS = {
+    "host": check_host,
+    "login": check_login_page,
+    "api": check_api_metadata,
+    "ssh": check_ip_for_ssh,
+    "jupyter": check_jupyter_server,
+}
+
+HEALTH_CHECK_ICONS = {
+    "host": "🔌",
+    "login": "🖱",
+    "api": "⚙️",
+    "ssh": "🔐",
+    "jupyter": "📗",
+}
+
+HEALTH_CHECK_URLS = {
+    "host": "{ip_address}",
+    "login": "http://{ip_address}/login",
+    "api": "http://{ip_address}/api/v1",
+    "ssh": "hagrid ssh {ip_address}",
+    "jupyter": "http://{ip_address}:8888",
+}
+
+
+def check_host_health(ip_address: str, keys: TypeList[str]) -> TypeDict[str, bool]:
+    status = {}
+    for key in keys:
+        func: Callable = HEALTH_CHECK_FUNCTIONS[key]  # type: ignore
+        status[key] = func(ip_address, silent=True)
+    return status
+
+
+def icon_status(status: bool) -> str:
+    return "✅" if status else "❌"
+
+
+def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]]]:
+    keys = list(DEFAULT_HEALTH_CHECKS)
+    if "localhost" in ip_address:
+        new_keys = []
+        for key in keys:
+            if key not in ["host", "jupyter", "ssh"]:
+                new_keys.append(key)
+        keys = new_keys
+
+    health_status = check_host_health(ip_address=ip_address, keys=keys)
+    complete_status = all(health_status.values())
+
+    # figure out how to add this back?
+    # console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
+    table_contents = []
+    for key, value in health_status.items():
+        table_contents.append(
+            [
+                HEALTH_CHECK_ICONS[key],
+                key,
+                HEALTH_CHECK_URLS[key].replace("{ip_address}", ip_address),
+                icon_status(value),
+            ]
+        )
+
+    return complete_status, table_contents
+
+
+def create_check_table(
+    table_contents: TypeList[TypeList[str]], time_left: int = 0
+) -> rich.table.Table:
+    table = rich.table.Table()
+    table.add_column("PyGrid", style="magenta")
+    table.add_column("Info", justify="left")
+    time_left_str = "" if time_left == 0 else str(time_left)
+    table.add_column(time_left_str, justify="left")
+    for row in table_contents:
+        table.add_row(row[1], row[2], row[3])
+    return table
+
 
 @click.command(help="Check health of an IP address/addresses or a resource group")
 @click.argument("ip_addresses", type=str, nargs=-1)
-def check(ip_addresses: TypeList[str]) -> None:
+@click.option(
+    "--wait",
+    is_flag=True,
+    help="Optional: wait until checks pass",
+)
+def check(ip_addresses: TypeList[str], wait: bool = False) -> None:
     console = rich.get_console()
-
-    for ip_address in ip_addresses:
-
-        console.print(
-            "[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:"
-        )
-
-        if check_host(ip_address, silent=True):
-            base_host_status = "✅"
-        else:
-            base_host_status = "❌"
-
-        if check_login_page(ip_address, silent=True):
-            login_page_status = "✅"
-        else:
-            login_page_status = "❌"
-
-        if check_api_metadata(ip_address, silent=True):
-            backend_status = "✅"
-        else:
-            backend_status = "❌"
-
-        if check_ip_for_ssh(ip_address, silent=True):
-            ssh_status = "✅"
-        else:
-            ssh_status = "❌"
-
-        if check_jupyter_server(ip_address, silent=True):
-            jupyter_status = "✅"
-        else:
-            jupyter_status = "❌"
-
-        table_contents = [
-            ["🔌", "Host", f"{ip_address}", base_host_status],
-            ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
-            ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
-            ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
-            ["", "Jupyter", f"http://{ip_address}:8888/", jupyter_status],
-        ]
-
-        table = rich.table.Table()
-
-        table.add_column("PyGrid", style="magenta")
-        table.add_column("Info", justify="left")
-        table.add_column("", justify="left")
-        for row in table_contents:
-            table.add_row(row[1], row[2], row[3])
+    if len(ip_addresses) == 0:
+        headers = {"User-Agent": "curl/7.79.1"}
+        print("Detecting External IP...")
+        ip_res = requests.get("https://ifconfig.co", headers=headers)
+        ip_address = ip_res.text.strip()
+        status, table_contents = get_health_checks(ip_address=ip_address)
+        table = create_check_table(table_contents=table_contents)
+        max_timeout = 600
+        if wait and not status:
+            table = create_check_table(
+                table_contents=table_contents, time_left=max_timeout
+            )
+            while not status:
+                with Live(table, refresh_per_second=4, screen=True) as live:
+                    max_timeout -= 1
+                    if max_timeout % 5 == 0:
+                        status, table_contents = get_health_checks(ip_address)
+                    table = create_check_table(
+                        table_contents=table_contents, time_left=max_timeout
+                    )
+                    live.update(table)
+                    if status:
+                        break
+                    time.sleep(1)
         console.print(table)
+    else:
+        for ip_address in ip_addresses:
+            _, table_contents = get_health_checks(ip_address)
+            table = create_check_table(table_contents=table_contents)
+            console.print(table)
 
 
 cli.add_command(check)

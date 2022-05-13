@@ -191,7 +191,7 @@ def public_divide(x: ShareTensor, y: Union[int, np.integer]) -> ShareTensor:
     # Phase 2: Share Corretion Phase:
     theta_x = divide_wrap_correction(x, y, z_id, r_sh, theta_r_sh, node)
 
-    x.child = x.child // y
+    x.child = np.trunc(x.child / y).astype(x.child.dtype)
     # To avoid out-of-bounds when y is small
     res = x - theta_x * 4 * ((x.ring_size // 4) // y)
 
