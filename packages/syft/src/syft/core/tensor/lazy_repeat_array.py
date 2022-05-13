@@ -156,10 +156,9 @@ class lazyrepeatarray:
                     self.add_op(function=np.matmul, args=other)
                 return self
 
-    def __eq__(self, other: Any) -> lazyrepeatarray:
+    def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, (int, np.integer, float, np.floating)):
-            self.data = (self.data == other)
-            return self
+            return lazyrepeatarray(data=(self.data == other), shape=self.shape)
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
@@ -175,11 +174,10 @@ class lazyrepeatarray:
 
         else:
             raise Exception(f"not sure how to do this yet: {type(other)}")
-    
-    def __ne__(self, other: Any) -> lazyrepeatarray:
+
+    def __ne__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, (int, np.integer, float, np.floating)):
-            self.data = (self.data != other)
-            return self
+            return lazyrepeatarray(data=(self.data != other), shape=self.shape)
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
@@ -198,8 +196,7 @@ class lazyrepeatarray:
 
     def __le__(self, other: Any) -> lazyrepeatarray:
         if isinstance(other, (int, np.integer, float, np.floating)):
-            self.data = (self.data <= other)
-            return self
+            return lazyrepeatarray(data=(self.data <= other), shape=self.shape)
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
@@ -215,11 +212,10 @@ class lazyrepeatarray:
 
         else:
             raise Exception(f"not sure how to do this yet: {type(other)}")
-    
+
     def __ge__(self, other: Any) -> lazyrepeatarray:
         if isinstance(other, (int, np.integer, float, np.floating)):
-            self.data = (self.data >= other)
-            return self
+            return lazyrepeatarray(data=(self.data >= other), shape=self.shape)
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
@@ -238,8 +234,7 @@ class lazyrepeatarray:
 
     def __lt__(self, other: Any) -> lazyrepeatarray:
         if isinstance(other, (int, np.integer, float, np.floating)):
-            self.data = (self.data < other)
-            return self
+            return lazyrepeatarray(data=(self.data < other), shape=self.shape)
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
@@ -255,11 +250,10 @@ class lazyrepeatarray:
 
         else:
             raise Exception(f"not sure how to do this yet: {type(other)}")
-    
+
     def __gt__(self, other: Any) -> lazyrepeatarray:
         if isinstance(other, (int, np.integer, float, np.floating)):
-            self.data = (self.data > other)
-            return self
+            return lazyrepeatarray(data=(self.data > other), shape=self.shape)
 
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if not is_broadcastable(self.shape, other.shape):
