@@ -378,7 +378,21 @@ def check_jupyter_server(
         if not silent:
             print(f"Failed to check jupyter server status {host_ip}. {e}")
         return False
-
+def get_docker_ports(silent: bool = False) -> List[str]:
+    try:
+        docker_ports = []
+        output = subprocess.check_output(["docker", "ps", "-a", "-q"])
+        for container in output.decode("utf-8").split("\n"):
+            if container:
+                container_id = container.strip()
+                output = subprocess.check_output(["docker", "port", container_id])
+                for port in output.decode("utf-8").split("\n"):
+                    if port:
+                        docker_ports.append(port.strip())
+    except Exception as e:
+        if not silent:
+            print(f"Failed to get docker ports. {e}")
+        return []
 
 GIT_REPO = get_git_repo()
 GRID_SRC_VERSION = get_version_module()

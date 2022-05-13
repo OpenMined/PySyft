@@ -43,7 +43,7 @@ from .grammar import GrammarVerb
 from .grammar import parse_grammar
 from .land import get_land_verb
 from .launch import get_launch_verb
-from .lib import GIT_REPO
+from .lib import GIT_REPO, get_docker_ports
 from .lib import GRID_SRC_PATH
 from .lib import GRID_SRC_VERSION
 from .lib import check_api_metadata
@@ -2239,6 +2239,8 @@ def check(ip_addresses: TypeList[str], wait: str, self: str) -> None:
         print("HAGrid checking self...")
         # pop off the first Ip address
         ip_addresses.pop(0)
+        #Get the ports of running docker containers
+        ports = get_docker_ports()
 
     for ip_address in ip_addresses:
         console.print(
