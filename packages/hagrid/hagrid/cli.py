@@ -2247,7 +2247,7 @@ def check_host_health(ip_address: str, keys: TypeList[str]) -> TypeDict[str, boo
     status = {}
     for key in keys:
         func: Callable = HEALTH_CHECK_FUNCTIONS[key]  # type: ignore
-        status[key] = func(ip_address, silent=True)  # type: ignore
+        status[key] = func(ip_address, silent=True)
     return status
 
 
