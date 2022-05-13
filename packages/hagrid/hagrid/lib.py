@@ -389,6 +389,7 @@ def get_docker_ports(silent: bool = False) -> List[str]:
                 for port in output.decode("utf-8").split("\n"):
                     if port:
                         docker_ports.append(port.strip())
+        return docker_ports
     except Exception as e:
         if not silent:
             print(f"Failed to get docker ports. {e}")
