@@ -7,6 +7,7 @@
 - name: Delete build directory
   shell: "rm -rf {{ build_dir }}"
   become: yes
+  ignore_errors: yes
   when: vagrant is not defined and install == "true"
 
 - name: Copy code checkout to build
