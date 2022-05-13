@@ -56,7 +56,6 @@ from .lib import commit_hash
 from .lib import docker_desktop_memory
 from .lib import generate_process_status_table
 from .lib import generate_user_table
-from .lib import get_docker_ports
 from .lib import hagrid_root
 from .lib import name_tag
 from .lib import save_vm_details_as_json
