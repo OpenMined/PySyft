@@ -6,6 +6,6 @@
   become: yes
   roles:
     - node
-    - containers
     - jupyter
+    - containers
     - update

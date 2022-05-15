@@ -204,7 +204,7 @@ class HostGrammarTerm(GrammarTerm):
                 int(port[0:-1])
             else:
                 int(port)
-        except Exception:
+        except Exception:  # nosec
             raise BadGrammar(
                 f"{port} is not a valid port option. Try: {self.get_example()}"
             )
