@@ -602,6 +602,22 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         new_tensor.child = child
         return new_tensor
 
+    def __getitem__(self, item: Union[str, int, slice, PassthroughTensor]) -> PhiTensor:
+        if isinstance(item, PassthroughTensor):
+            return PhiTensor(
+                child=self.child.getitem(item.child),
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+                data_subjects=self.data_subjects,
+            )
+        else:
+            return PhiTensor(
+                child=self.child.getitem(item),
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+                data_subjects=self.data_subjects,
+            )
+
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
         # TODO: check if values needs to be a JAX array or if numpy will suffice
