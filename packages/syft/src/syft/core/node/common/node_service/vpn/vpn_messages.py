@@ -70,6 +70,10 @@ class VPNConnectMessageWithReply(GenericPayloadMessageWithReply):
             grid_url = grid_url.with_path("/vpn")
             vpn_auth_key = str(self.kwargs["vpn_auth_key"])
 
+            status, error = disconnect(tailscale_host="http://tailscale:4000")
+            if not status:
+                print("Failed to run tailscale down first", error)
+
             status, error = connect_with_key(
                 tailscale_host="http://tailscale:4000",
                 headscale_host=str(grid_url),
@@ -83,6 +87,33 @@ class VPNConnectMessageWithReply(GenericPayloadMessageWithReply):
         except Exception as e:
             print(f"Failed to run {type(self)}", self.kwargs, e)
             return {"status": "error"}
+
+
+def disconnect(tailscale_host: str) -> Tuple[bool, str]:
+    try:
+        # we need --accept-dns=false because magicDNS replaces /etc/resolv.conf which
+        # breaks using tailscale in network_mode with docker compose because the
+        # /etc/resolv.conf has the mDNS ip nameserver 127.0.0.11
+        data = {
+            "args": [],
+            "timeout": 60,
+            "force_unique_key": True,
+        }
+
+        command_url = f"{tailscale_host}/commands/down"
+
+        headers = {"X-STACK-API-KEY": os.environ.get("STACK_API_KEY", "")}
+        resp = requests.post(command_url, json=data, headers=headers)
+        report = get_result(json=resp.json())
+        report_dict = json.loads(report)
+
+        if int(report_dict["returncode"]) == 0:
+            return (True, "")
+        else:
+            return (False, report_dict.get("report", ""))
+    except Exception as e:
+        critical(f"Failed to disconnect VPN. {e}")
+        raise e
 
 
 def connect_with_key(
@@ -166,6 +197,10 @@ class VPNJoinMessageWithReply(GenericPayloadMessageWithReply):
                 print("Registration failed", res)
                 return {"status": "error"}
 
+            status, error = disconnect(tailscale_host="http://tailscale:4000")
+            if not status:
+                print("Failed to run tailscale down first", error)
+
             status, error = connect_with_key(
                 tailscale_host="http://tailscale:4000",
                 headscale_host=str(grid_url.with_path("/vpn")),
@@ -224,6 +259,10 @@ class VPNJoinSelfMessageWithReply(GenericPayloadMessageWithReply):
 
             if not key_status:
                 raise Exception("Failed to generate key for joining VPN")
+
+            status, error = disconnect(tailscale_host="http://tailscale:4000")
+            if not status:
+                print("Failed to run tailscale down first", error)
 
             connect_status, error = connect_with_key(
                 tailscale_host="http://tailscale:4000",
