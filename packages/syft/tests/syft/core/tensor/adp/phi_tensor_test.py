@@ -239,8 +239,6 @@ def test_serde(
 
     assert de == tensor1
     assert (de.child == tensor1.child).all()
-    assert (de.min_vals == tensor1.min_vals).evaluate().all()
-    assert (de.max_vals == tensor1.max_vals).evaluate().all()
     assert de.data_subjects == tensor1.data_subjects
 
     assert np.shares_memory(tensor1.child.child, tensor1.child.child)

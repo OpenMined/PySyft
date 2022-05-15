@@ -148,7 +148,7 @@ class lazyrepeatarray:
             else:
                 self.shape = (self.shape[0], other.shape[-1])
                 if isinstance(other, lazyrepeatarray):
-                    self.add_op(function=np.matmul, args=other.to_numpy())
+                    self.add_op(function=np.matmul, args=other)
                 elif isinstance(other, np.ndarray):
                     self.add_op(function=np.matmul, args=other)
                 return self
@@ -283,12 +283,13 @@ class lazyrepeatarray:
     def size(self) -> int:
         return np.prod(self.shape)
 
-    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> np.ndarray:
+    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         if "axis" in kwargs and kwargs["axis"] is None:
-            # TODO: make fast
-            return self.to_numpy().sum()
+            self.add_op(function=np.sum, args=None)
         else:
             raise Exception("not sure how to do this yet")
+
+        return self
 
     def concatenate(
         self, other: lazyrepeatarray, *args: List[Any], **kwargs: Dict[str, Any]
@@ -310,9 +311,11 @@ class lazyrepeatarray:
 
     def to_numpy(self, original: Boolean = False) -> np.ndarray:
         if not original:
-            return np.ones(self.shape) * self.data
+            self.add_op(function=np.multiply, args=np.ones(self.shape))
         else:
-            return np.ones(self._shape) * self.data
+            self.add_op(function=np.multiply, args=np.ones(self._shape))
+
+        return self
 
     def __repr__(self) -> str:
         return f"<lazyrepeatarray data: {self.data} -> shape: {self.shape}>"
@@ -336,9 +339,11 @@ class lazyrepeatarray:
         self.transforms.append((function, selection, args))
 
     def evaluate(self):  # type: ignore
-        result = self.to_numpy(original=True)
+        result = np.ones(self._shape) * self.data
         for func, selection, args in self.transforms:
             if func == np.matmul:
+                if isinstance(args, lazyrepeatarray):
+                    args = args.to_numpy().evaluate()
                 result = func(result[selection], args)
             else:
                 result[selection] = func(result[selection], args)

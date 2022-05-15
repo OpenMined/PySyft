@@ -93,7 +93,7 @@ def test_sum() -> None:
     array = np.array([1, 1, 1])
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
 
-    assert lazyarray.sum(axis=None) == array.sum(axis=None)
+    assert (lazyarray.sum(axis=None).evaluate() == array.sum(axis=None)).all()
 
 
 def test_lt() -> None:
