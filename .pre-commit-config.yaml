@@ -15,7 +15,7 @@ repos:
         always_run: true
       - id: check-added-large-files
         always_run: true
-        exclude: ^(notebooks/trade_demo/datasets|packages/syft/src/syft/cache/constant2epsilon_300k.npy|packages/grid/backend/wheels/.*)
+        exclude: ^(notebooks/trade_demo/datasets|packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*)
       - id: check-yaml
         always_run: true
       - id: check-merge-conflict

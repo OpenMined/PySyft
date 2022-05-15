@@ -154,7 +154,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     of all mechanisms releasing informationo about this
     particular subject, stored in a vectorized form"""
 
-    CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_300k.npy"
+    CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_1200k.npy"
     _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
 
     def __init__(
