@@ -43,6 +43,32 @@ from .abstract_ledger_store import AbstractDataSubjectLedger
 from .abstract_ledger_store import AbstractLedgerStore
 
 
+def convert_constants_to_indices(rdp_constant_array: np.ndarray) -> np.ndarray:
+    """
+    Given an array of RDP Constants, this will return an array of the same size/shape telling you which indices in the
+    DataSubjectLedger's cache you need to query.
+
+    This currently assumes the cache generated on May 4th 2022, where there are 1.2M values in total.
+    - 500,000 of these correspond to RDP constants between 0 and 50 (10,000 between any two consecutive integers)
+    - 700,000 of these correspond to RDP constants between 50 and 700,050
+
+    An easy way to check if you're using the right cache is that the very
+    first value in the cache should be 0.05372712063485988
+
+    MAKE SURE THERE ARE NO ZEROS IN THE CACHE!!
+    """
+    # Find indices for all RDP constants <= 50
+    sub50_mask = rdp_constant_array <= 50
+    sub50_indices = (((rdp_constant_array - 1) * sub50_mask) * 10_000).astype(int)
+
+    # Find indices for all RDP constants > 50
+    gt50_mask = rdp_constant_array > 50
+    gt50_indices = ((rdp_constant_array - 51 + 500_000) * gt50_mask).astype(int)
+
+    # We should be able to do a straight addition because
+    return sub50_indices + gt50_indices
+
+
 def get_cache_path(cache_filename: str) -> str:
     here = os.path.dirname(__file__)
     root_dir = Path(here) / ".." / ".." / "cache"
@@ -294,7 +320,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         return constant
 
     def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
-        rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
+        # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
+        rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
         try:
             # needed as np.int64 to use take
             eps_spend = jax.jit(jnp.take)(
