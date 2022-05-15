@@ -115,7 +115,7 @@ class RDPParams:
     coeffs: jnp.array
 
     """
-    This class is meant to store all the data needed to calculate rdp_constants, which is needed to calculate the 
+    This class is meant to store all the data needed to calculate rdp_constants, which is needed to calculate the
     privacy budget spent by a given query.
     """
 
@@ -405,9 +405,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         deduct_epsilon_for_user: Callable,
         rdp_constants: np.ndarray,
     ) -> Tuple[np.ndarray]:
-        """
-        
-        """
+        """ """
         epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants)
 
         # try first time

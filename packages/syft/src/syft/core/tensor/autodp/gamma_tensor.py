@@ -106,26 +106,26 @@ class GammaTensor:
     fpt_values: Optional[FixedPrecisionTensor] = None
 
     """
-    GammaTensor is a vectorized differential privacy (DP) Tensor that has 2+ unique Data Subjects. 
-    This means that we can no longer publicly show the data stored by a GammaTensor- not even to one of its own 
+    GammaTensor is a vectorized differential privacy (DP) Tensor that has 2+ unique Data Subjects.
+    This means that we can no longer publicly show the data stored by a GammaTensor- not even to one of its own
     Data Subjects, as they may be able to infer each other's private data.
-    
+
     GammaTensor, like all DP Tensors, stores metadata needed for DP:
     - data_subjects: keeps track of which data subjects contribute which data points
     - min_val: help figure out how much noise to add w/o drowning out the signal
     - max_val: help figure out how much noise to add w/o drowning out the signal
-    
+
     GammaTensor also has class members to help with publishing:
     - is_linear: a flag used to avoid calculating the Lipschitz bound, if a given query/op is linear (i.e. sum)
     - func: the function that created the current GammaTensor.
     - id: a random number b/w [0, 2^32 - 1] to uniquely identify this GammaTensor
     - state: a computational graph that tracks which tensors and data subjects contributed data to the current Gamma T.
     (Graph is implemented as a dict where keys are GammaTensor ids, and values are the GammaTensors that gave data)
-    (You can find out which Gamma T's are parents that have raw data b/c their "func" is "no_op".)  
-    
+    (You can find out which Gamma T's are parents that have raw data b/c their "func" is "no_op".)
+
     Finally, Gamma Tensor stores values in FixedPrecisionTensor format if the underlying data is a floating point.
     This is to avoid a DP attack
-    
+
     """
 
     def __post_init__(
