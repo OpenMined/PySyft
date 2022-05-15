@@ -400,11 +400,11 @@ class PhiTensorAncestor(TensorChainManager):
             )
             data_subjects = data_subject_creation_wizard(self.child)
 
-        # Check 3: If data_subjects is a string, make it a list with one entity in it
+        # Check 3: If data_subjects is a string, make it a list with one DS per row
         if isinstance(data_subjects, str):
-            data_subjects = [DataSubject(data_subjects)]
+            data_subjects = [DataSubject(data_subjects)] * self.child.shape[0]
         elif isinstance(data_subjects, DataSubject):
-            data_subjects = [data_subjects]
+            data_subjects = [data_subjects] * self.child.shape[0]
         # Check 4: If data_subjects are a list, are the items strings or DataSubject objects.
         # If they're strings lets create DataSubject objects.
 
