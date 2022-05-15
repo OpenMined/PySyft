@@ -47,11 +47,17 @@ services:
       - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
       - "--entrypoints.web.address=:81"
       - "--entrypoints.vpn.address=:80"
-
       # Enable the access log, with HTTP requests
       - "--accesslog"
       # Enable the Traefik log, for configurations and errors
       - "--log"
+      - "--ping=true"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
+      - "traefik.http.routers.ping.rule=PathPrefix(`/ping`)"
+      - "traefik.http.services.ping.loadbalancer.server.port=80"
+      - "traefik.http.routers.ping.service=ping@internal"
 
   frontend:
     restart: always

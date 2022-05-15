@@ -7,11 +7,6 @@
   ignore_errors: yes
   when: docker_volume_destroy is not defined and install == "true"
 
-- name: Kill Docker Containers
-  shell: "docker rm $(docker ps -qa) --force || true"
-  become_user: "{{ om_user }}"
-  ignore_errors: yes
-
 - name: Build Docker Images
   shell: "docker compose build"
   args:
