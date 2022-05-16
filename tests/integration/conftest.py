@@ -78,10 +78,11 @@ def load_dataset() -> None:
                 verbose=False,
             )
 
-            client.load_dataset(
+            client.load_duserataset(
                 assets={"data": data},
                 name="Mars Data",
                 description=f"{client.name}  collected Data",
+                use_blob_storage=False,
             )
             assert len(client.datasets) > 0
             e2e_clients.append(client)
