@@ -225,12 +225,13 @@ class GammaTensor:
             def _dot(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.dot(self.run(state), other.run(state))
 
-            print("THIS is the other.state")#, other.state)
+            print("Enters Here1")
             output_state[other.id] = other
             value = jnp.dot(self.value, other.value)
             min_val = jnp.dot(self.min_val, other.min_val)
             max_val = jnp.dot(self.max_val, other.max_val)
         else:
+            print("Enters Here2")
 
             def _dot(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.dot(self.run(state), other)
@@ -238,7 +239,7 @@ class GammaTensor:
             value = jnp.dot(self.value, other)
             min_val = jnp.dot(self.min_val, other)
             max_val = jnp.dot(self.max_val, other)
-        print("THE state we returned is: ")#, output_state)
+
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
