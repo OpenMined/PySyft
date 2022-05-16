@@ -19,6 +19,7 @@ packages = [
     "rich",
     "setuptools",
     "cryptography>=37.0.2",
+    "pyOpenSSL>=22.0.0",
 ]
 
 if platform.system().lower() != "windows":

@@ -873,7 +873,7 @@ class MPCTensor(PassthroughTensor):
         *args: List[Any],
         **kwargs: Dict[str, Any],
     ) -> MPCTensor:
-        new_self, new_other = MPCTensor.sanity_checks(self, other)
+        self, other = MPCTensor.sanity_checks(self, other)
 
         shares = []
         for x, y in zip(self.child, other.child):  # type: ignore
