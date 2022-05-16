@@ -1043,7 +1043,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 # Re enable after testing
     def dot(self, other: Union[PhiTensor, GammaTensor, np.ndarray]) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, np.ndarray):
-            # print("We here or what?")
             return PhiTensor(
                 child=self.child.child.dot(other.child.child),
                 min_vals=np.dot(self.min_vals, other.min_vals),

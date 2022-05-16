@@ -337,7 +337,7 @@ def test_dot(
     ishan: DataSubject,
     traskmaster: DataSubject,
 ) -> None:
-    '''Tests for both phi and gamma tensors'''
+    '''Tests dot for both phi and gamma tensors'''
 
     tensor1 = PT(
         child=reference_data,
