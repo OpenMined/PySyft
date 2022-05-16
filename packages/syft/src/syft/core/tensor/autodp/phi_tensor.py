@@ -1061,9 +1061,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if isinstance(other, np.ndarray):
             print("Enters Here Phi1")
             return PhiTensor(
-                child=self.child.child.dot(other.child.child),
-                min_vals=np.dot(self.min_vals, other.min_vals),
-                max_vals=np.dot(self.max_vals, other.min_vals),
+                child=self.child.child.dot(other),
+                min_vals=np.dot(self.min_vals, other),
+                max_vals=np.dot(self.max_vals, other),
                 data_subjects=self.data_subjects,
             )
 
