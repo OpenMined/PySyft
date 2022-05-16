@@ -78,7 +78,7 @@ def load_dataset() -> None:
                 verbose=False,
             )
 
-            client.load_duserataset(
+            client.load_dataset(
                 assets={"data": data},
                 name="Mars Data",
                 description=f"{client.name}  collected Data",
