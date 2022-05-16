@@ -360,13 +360,16 @@ def test_dot(
         min_vals=lower_bound,
     )
 
-    result_tensor = tensor1.dot(tensor2)
+
+    result_phi_tensor = tensor1.dot(tensor2)
     result_gamma_tensor = tensor1.dot(tensor3)
     result_self_tensor = tensor1.dot(tensor1)
+    #print("REF: ",type(reference_data))
 
-    assert (result_tensor.value == tensor1.child.child.dot(tensor2.child.child)).all()
+    assert (result_phi_tensor.value == tensor1.child.child.dot(tensor2.child.child)).all()
     assert (result_gamma_tensor.value == tensor1.child.child.dot(tensor3.child.child)).all()
     assert (result_self_tensor.child.decode() == tensor1.child.child.dot(tensor1.child.child)).all()
+    assert 3 == 4
 
 
 def test_ne_vals(

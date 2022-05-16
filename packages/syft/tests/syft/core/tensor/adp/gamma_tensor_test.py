@@ -70,7 +70,7 @@ def test_gamma_serde(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    assert tensor1.data_subjects.data_subjects_indexed.shape == tensor1.child.shape
+    assert tensor1.data_subjects.data_subjects_indexed.shape == reference_data.shape
     gamma_tensor1 = tensor1.sum()
 
     # Checks to ensure gamma tensor was properly created
@@ -102,7 +102,7 @@ def test_gamma_publish(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    assert tensor1.data_subjects.data_subjects_indexed.shape == tensor1.child.shape
+    assert tensor1.data_subjects.data_subjects_indexed.shape == reference_data.shape
     gamma_tensor1 = tensor1.sum()
     assert isinstance(gamma_tensor1, GammaTensor)
     # Gamma Tensor Does not have FPT Values
@@ -142,7 +142,7 @@ def test_pos(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    assert tensor1.data_subjects.data_subjects_indexed.shape == tensor1.child.shape
+    assert tensor1.data_subjects.data_subjects_indexed.shape == reference_data.shape
     gamma_tensor1 = tensor1.sum()
 
     # Checks to ensure gamma tensor was properly created

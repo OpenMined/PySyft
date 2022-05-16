@@ -1043,6 +1043,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 # Re enable after testing
     def dot(self, other: Union[PhiTensor, GammaTensor, np.ndarray]) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, np.ndarray):
+            print("Enters Here Phi1")
             return PhiTensor(
                 child=self.child.child.dot(other.child.child),
                 min_vals=np.dot(self.min_vals, other.min_vals),
@@ -1053,15 +1054,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(other, PhiTensor):
             if (
                 len(self.data_subjects.one_hot_lookup) > 1
-                or len(other.data_subjects.one_hot_lookup) > 1
+                or len(other.data_subjects.one_hot_lookup) > 1 or (self.data_subjects.one_hot_lookup!=
+                                                                   other.data_subjects.one_hot_lookup)
             ):
-                return self.gamma.dot(other.gamma)
-            elif (
-                    len(self.data_subjects.one_hot_lookup) == 1
-                    and len(other.data_subjects.one_hot_lookup) == 1
-                    and self.data_subjects.one_hot_lookup
-                    != other.data_subjects.one_hot_lookup
-            ):
+                print("Enters Here Phi2")
                 return self.gamma.dot(other.gamma)
             elif (
                     len(self.data_subjects.one_hot_lookup) == 1
@@ -1069,17 +1065,19 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     and self.data_subjects.one_hot_lookup
                     == other.data_subjects.one_hot_lookup
                 ):
+                print("Enters Here Phi3")
 
                 return PhiTensor(
-                    child = self.child.child.dot(other.child.child),
-                    min_vals = np.dot(self.min_vals, other.min_vals),
-                    max_vals = np.dot(self.max_vals, other.min_vals),
-                    data_subjects = self.data_subjects,
+                    child=self.child.child.dot(other.child.child),
+                    min_vals=np.dot(self.min_vals, other.min_vals),
+                    max_vals=np.dot(self.max_vals, other.min_vals),
+                    data_subjects=self.data_subjects,
                 )
 
             else:
                 raise NotImplementedError
         elif isinstance(other, GammaTensor):
+            print("Enters Here Phi4")
             return self.gamma.dot(other)
         
         else:
