@@ -484,7 +484,7 @@ class DomainClient(Client):
                 raise Exception(f"No host ip in {vpn_status}")
 
             self.association.create(
-                source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
+                target=network_vpn_ip, vpn=True
             )
 
             print("Application submitted.")

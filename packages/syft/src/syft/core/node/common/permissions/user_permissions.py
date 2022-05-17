@@ -26,6 +26,21 @@ class UserCanTriageRequest(BasePermission):
             else False
         )
 
+class UserCanManageInfra(BasePermission):
+    # TODO: Exceptions could fail silently either depending upon the message
+    # # or the permission (not sure which one, need to discuss)
+
+    def has_permission(
+        self,
+        msg: SyftMessage,
+        node: NodeServiceInterface,
+        verify_key: Optional[VerifyKey],
+    ) -> bool:
+        return (
+            node.users.can_manage_infrastructure(verify_key=verify_key)
+            if verify_key
+            else False
+        )
 
 class UserCanCreateUsers(BasePermission):
     def has_permission(

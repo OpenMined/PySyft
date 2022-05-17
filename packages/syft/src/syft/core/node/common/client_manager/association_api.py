@@ -20,8 +20,8 @@ from ..node_service.association_request.association_request_messages import (
 from ..node_service.association_request.association_request_messages import (
     RespondAssociationRequestMessage,
 )
-from ..node_service.association_request.association_request_messages import (
-    SendAssociationRequestMessage,
+from ..node_service.association_request.new_association_request import (
+    TriggerAssociationRequestMessage,
 )
 from .request_api import RequestAPI
 
@@ -30,7 +30,7 @@ class AssociationRequestAPI(RequestAPI):
     def __init__(self, client: AbstractNodeClient):
         super().__init__(
             client=client,
-            create_msg=SendAssociationRequestMessage,
+            create_msg=TriggerAssociationRequestMessage,
             get_msg=GetAssociationRequestMessage,
             get_all_msg=GetAssociationRequestsMessage,
             delete_msg=DeleteAssociationRequestMessage,
@@ -42,6 +42,13 @@ class AssociationRequestAPI(RequestAPI):
             "You can not update an association request, try to send another one instead."
         )
 
+    def create(self, **kwargs: Any) -> Any:
+        self.perform_request(syft_msg=self._create_message, content=kwargs)
+        content = getattr(
+            association_table, "content", getattr(association_table, "metadata", None)
+        )
+        return content
+    
     def get(self, **kwargs: Any) -> Any:
         association_table = self.perform_api_request(
             syft_msg=self._get_message, content=kwargs
