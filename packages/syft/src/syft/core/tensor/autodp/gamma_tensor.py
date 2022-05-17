@@ -111,12 +111,18 @@ class GammaTensor:
         if len(self.state) == 0 and self.func is not no_op:
             self.state[self.id] = self
 
+        if self.value.child.shape == ():
+            self.value.child = np.expand_dims(self.value.child, 0)
+
+    def decode(self) -> np.ndarray:
+        return self.value.decode()
+
     def run(self, state: dict) -> Callable:
         """This method traverses the computational tree and returns all the private inputs"""
         # TODO: Can we eliminate "state" and use self.state below?
         # we hit a private input
         if self.func is no_op:
-            return self.value
+            return self.decode()
         return self.func(state)
 
     def __add__(self, other: Any) -> GammaTensor:
@@ -155,31 +161,159 @@ class GammaTensor:
             state=output_state,
         )
 
+    def __sub__(self, other: Any) -> GammaTensor:
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, GammaTensor):
+
+            def _sub(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.subtract(self.run(state), other.run(state))
+
+            # print("this is the other.state", other.state)
+            output_state[other.id] = other
+            # state.update(other.state)
+            # print("this is the output_state", output_state)
+
+            value = self.value - other.value
+            min_min = self.min_val - other.min_val
+            min_max = self.min_val - other.max_val
+            max_min = self.max_val - other.min_val
+            max_max = self.max_val - other.max_val
+            min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
+            max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
+        else:
+
+            def _sub(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.subtract(self.run(state), other)
+
+            value = self.value - other
+            min_val = self.min_val - other
+            max_val = self.max_val - other
+        # print("the state we returned is: ", output_state)
+        return GammaTensor(
+            value=value,
+            data_subjects=self.data_subjects,
+            min_val=float(min_val),
+            max_val=float(max_val),
+            func=_sub,
+            state=output_state,
+        )
+
     def __mul__(self, other: Any) -> GammaTensor:
-        state = dict()
-        state.update(self.state)
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
 
         if isinstance(other, GammaTensor):
 
             def _mul(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.multiply(self.run(state), other.run(state))
 
-            state.update(other.state)
+            output_state[other.id] = other
             value = self.value * other.value
+            min_min = self.min_val * other.min_val
+            min_max = self.min_val * other.max_val
+            max_min = self.max_val * other.min_val
+            max_max = self.max_val * other.max_val
+            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
         else:
 
             def _mul(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.multiply(self.run(state), other)
 
             value = self.value * other
+            min_min = self.min_val * other
+            min_max = self.min_val * other
+            max_min = self.max_val * other
+            max_max = self.max_val * other
+            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
 
+        return GammaTensor(
+            value=value,
+            data_subjects=self.data_subjects,
+            min_val=float(min_val),
+            max_val=float(max_val),
+            func=_mul,
+            state=output_state,
+        )
+
+    def __matmul__(self, other: Any) -> GammaTensor:
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, GammaTensor):
+
+            def _matmul(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.matmul(self.run(state), other.run(state))
+
+            output_state[other.id] = other
+            value = self.value @ other.value
+
+        else:
+
+            def _matmul(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.matmul(self.run(state), other)
+
+            value = self.value @ other
+
+        # TODO: implement min and max vals calculation for matmul
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
             min_val=0,
             max_val=10,
-            func=_mul,
-            state=state,
+            func=_matmul,
+            state=output_state,
+        )
+
+    def __gt__(self, other: Any) -> GammaTensor:
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, GammaTensor):
+
+            def _gt(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.greater(self.run(state), other.run(state))
+
+            output_state[other.id] = other
+            value = self.value.__gt__(other.value)
+        else:
+
+            def _gt(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.greater(self.run(state), other)
+
+            value = self.value.__gt__(other)
+
+        return GammaTensor(
+            value=value,
+            data_subjects=self.data_subjects,
+            min_val=0,
+            max_val=1,
+            func=_gt,
+            state=output_state,
+        )
+
+    def transpose(self, *args: Any, **kwargs: Any) -> GammaTensor:
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        def _transpose(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.transpose(self.run(state))
+
+        return GammaTensor(
+            value=self.value.transpose(),
+            data_subjects=self.data_subjects,
+            min_val=self.min_val,
+            max_val=self.max_val,
+            func=_transpose,
+            state=output_state,
         )
 
     def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
@@ -366,8 +500,7 @@ class GammaTensor:
         # what is the difference between inputs and value which do we serde
         # do we need to serde func? if so how?
         # what about the state dict?
-
-        gamma_msg.value = capnp_serialize(jax2numpy(self.value, dtype=self.value.dtype))
+        gamma_msg.value = serialize(self.value, to_bytes=True)
         gamma_msg.state = serialize(self.state, to_bytes=True)
         gamma_msg.dataSubjectsIndexed = capnp_serialize(
             self.data_subjects.data_subjects_indexed
@@ -393,7 +526,7 @@ class GammaTensor:
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
-        value = capnp_deserialize(gamma_msg.value)
+        value = deserialize(gamma_msg.value, from_bytes=True)
         state = deserialize(gamma_msg.state, from_bytes=True)
         data_subjects_indexed = capnp_deserialize(gamma_msg.dataSubjectsIndexed)
         one_hot_lookup = numpyutf8tolist(capnp_deserialize(gamma_msg.oneHotLookup))
@@ -404,7 +537,7 @@ class GammaTensor:
         id_str = gamma_msg.id
 
         return GammaTensor(
-            value=numpy2jax(value, dtype=value.dtype),
+            value=value,
             data_subjects=data_subjects,
             min_val=min_val,
             max_val=max_val,

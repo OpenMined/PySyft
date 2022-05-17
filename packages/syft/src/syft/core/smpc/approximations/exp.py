@@ -28,4 +28,4 @@ def exp(
     Returns:
         MPCTensor: the calculated exponential of the given tensor
     """
-    return (1 + value / 2**iterations) ** (2**iterations)
+    return ((value / 2**iterations) + 1) ** (2**iterations)
