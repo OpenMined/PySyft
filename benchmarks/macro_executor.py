@@ -1,16 +1,11 @@
 # stdlib
 from datetime import date
 import json
-import os
-from pathlib import Path
 import subprocess
 from time import time
-from typing import Dict
-from typing import List
-from typing import Optional
-from typing import Tuple
 
 # third party
+from data import get_data_size
 import pyarrow.parquet as pq
 
 # syft absolute
@@ -19,8 +14,6 @@ from syft.core.adp.data_subject_list import DataSubjectList
 from syft.core.node.common.node_service.user_manager.user_messages import (
     UpdateUserMessage,
 )
-from syft.util import download_file
-from syft.util import get_root_data_path
 
 benchmark_report: dict = {}
 
@@ -28,6 +21,9 @@ today = date.today()
 date = today.strftime("%B %d, %Y")
 
 benchmark_report["date"] = date
+
+key = "1B"
+data_file, key = get_data_size(key)
 
 
 def get_git_revision_short_hash() -> str:
@@ -40,37 +36,7 @@ def get_git_revision_short_hash() -> str:
 
 benchmark_report["git_revision_hash"] = get_git_revision_short_hash()
 
-
-def download_spicy_bird_benchmark(
-    sizes: Optional[List[str]] = None,
-) -> Tuple[Dict[str, Path], List[str]]:
-    sizes = sizes if sizes else ["100K", "250K", "500K", "750K", "1M", "1B"]
-    file_suffix = "_rows_dataset_sample.parquet"
-    BASE_URL = "https://raw.githubusercontent.com/madhavajay/datasets/main/spicy_bird/"
-
-    folder_name = "spicy_bird"
-    dataset_path = get_root_data_path() / folder_name
-    paths = []
-    for size in sizes:
-        filename = f"{size}{file_suffix}"
-        full_path = dataset_path / filename
-        url = f"{BASE_URL}{filename}"
-        if not os.path.exists(full_path):
-            print(url)
-            path = download_file(url=url, full_path=full_path)
-        else:
-            path = Path(full_path)
-        paths.append(path)
-    return dict(zip(sizes, paths)), sizes
-
-
-key_size = "1B"
-files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
-
-
-data_file = files[key_size]
-
-benchmark_report["data_row_size"] = key_size
+benchmark_report["data_row_size"] = key
 t0 = time()
 df = pq.read_table(data_file)
 end_time = time()
