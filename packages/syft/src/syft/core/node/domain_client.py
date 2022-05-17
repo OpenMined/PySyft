@@ -447,9 +447,9 @@ class DomainClient(Client):
                         f"Domain version: {self.version}\nNetwork Version: {client.version}"  # type: ignore
                     )
 
-            print(f"Before join vpn network with {client}. {e}")
+            print(f"Before join vpn network with {client}.")
             self.join_network(client=client)
-            print(f"After join vpn network with {client}. {e}")
+            print(f"After join vpn network with {client}.")
 
             timeout = 30
             connected = False
@@ -486,11 +486,11 @@ class DomainClient(Client):
             if domain_vpn_ip == "":
                 raise Exception(f"No host ip in {vpn_status}")
 
-            print(f"Before association request network with {client}. {e}")
+            print(f"Before association request network with {client}.")
             self.association.create(
                 source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
             )
-            print(f"After association request network with {client}. {e}")
+            print(f"After association request network with {client}.")
 
             print("Application submitted.")
         except Exception as e:
