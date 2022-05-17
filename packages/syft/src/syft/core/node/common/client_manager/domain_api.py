@@ -14,6 +14,9 @@ from .....core.common.uid import UID
 from .....grid.client.proxy_client import ProxyClient
 from .....lib.python import String
 from .....logger import error
+from .....logger import start
+from .....logger import stop
+from .....util import parallel_execution
 from ....node.common import AbstractNodeClient
 from ..node_service.peer_discovery.peer_discovery_messages import (
     GetPeerInfoMessageWithReply,
@@ -47,26 +50,22 @@ class DomainRequestAPI(RequestAPI):
             ):
                 # check for logged in domains if the number of possible domains changes (if a new domain shows up)
                 self.num_known_domains_even_offline_ones = len(_data)
+                n = len(_data)
                 data = list()
-                for i, domain_metadata in enumerate(_data):
-                    sys.stdout.write(
-                        "\rChecking whether domains are online: "
-                        + str(i + 1)
-                        + " of "
-                        + str(len(_data))
-                    )
-                    try:
-                        # syft absolute
-                        import syft
 
-                        syft.logger.stop()
-                        if self.get(domain_metadata["id"]).ping:
-                            data.append(domain_metadata)
-                        syft.logger.start()
-                    except Exception:  # nosec
-                        # if pinging the domain causes an exception we just wont
-                        # include it in the array
-                        pass
+                args = [
+                    (self, i, n, domain_metadata["id"])
+                    for i, domain_metadata in enumerate(_data)
+                ]
+
+                # Check domain status in parallel
+                check_status = parallel_execution(check_domain_status)
+                result = check_status(args=args) if args else []
+
+                for i, status in enumerate(result):
+                    if status is True:
+                        data.append(_data[i])
+
                 sys.stdout.write("\r                                             ")
 
                 self.cache = data
@@ -122,3 +121,25 @@ class DomainRequestAPI(RequestAPI):
 
     def __getitem__(self, key: Union[str, int, UID]) -> ProxyClient:
         return self.get(key=key)
+
+
+def check_domain_status(
+    self: DomainRequestAPI, i: int, n: int, domain_uid: str
+) -> bool:
+
+    sys.stdout.write(
+        "\rChecking whether domains are online: " + str(i + 1) + " of " + str(n)
+    )
+
+    status = False
+    try:
+        stop()
+        status = self.get(domain_uid).ping
+        start()
+    except Exception as e:  # nosec
+        # if pinging the domain causes an exception we just wont
+        # include it in the array
+        print("Error", e)
+        pass
+
+    return status
