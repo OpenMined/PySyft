@@ -1,5 +1,6 @@
 # stdlib
 import os
+import time
 
 # third party
 import pytest
@@ -26,7 +27,7 @@ def test_domain1_association_network1() -> None:
     )
 
     domain.apply_to_network(client=network_guest)
-    
+
     time.sleep(5)
 
     network = sy.login(
@@ -56,7 +57,7 @@ def test_domain2_association_network1() -> None:
     )
 
     domain.apply_to_network(client=network_guest)
-    
+
     time.sleep(5)
 
     network = sy.login(
