@@ -137,6 +137,7 @@ class GammaTensor:
     def run(self, state: dict) -> Callable:
         """This method traverses the computational tree and returns all the private inputs"""
         # TODO: Can we eliminate "state" and use self.state below?
+        # TODO: Rename to something like "fetch_private_inputs"
         # we hit a private input
         if self.func is no_op:
             return self.value

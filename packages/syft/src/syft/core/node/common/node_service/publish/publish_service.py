@@ -29,10 +29,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
             []
         )  # TODO: Ask Andrew why this is a thing- are we able to publish multiple things at once?
         for publish_id in msg.publish_ids_at_location:
-            # print("PublishScalarsService:33")
-            print("Publish_id: ", publish_id)
             try:
-                # print("PublishScalarsService:36: TRY: publish_object = node.store.get(publish_id)")
                 # in memory cache for faster fetch of large objects
                 # if publish_id.no_dash in context.OBJ_CACHE:
                 #     publish_object = context.OBJ_CACHE[publish_id.no_dash]
@@ -57,10 +54,8 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                     sigma=msg.sigma,
                 )
 
-                # print("PublishScalarsService:44: SUCCESS: publish_object.publish()")
                 results.append(result)
             except Exception as e:
-                # print("PublishScalarsService:53: EXCEPTION - missing id")
                 log = (
                     f"Unable to Get Object with ID {publish_id} from store. "
                     + f"Possible dangling Pointer. {e}"
