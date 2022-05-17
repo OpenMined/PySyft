@@ -167,10 +167,10 @@ class GammaTensor:
             state.update(other.state)
             value = self.value * other.value
 
-            min_min = jnp.dot(self.min_val, other.min_val)
-            min_max = jnp.dot(self.min_val, other.max_val)
-            max_min = jnp.dot(self.max_val, other.min_val)
-            max_max = jnp.dot(self.max_val, other.max_val)
+            min_min = jnp.multiply(self.min_val, other.min_val)
+            min_max = jnp.multiply(self.min_val, other.max_val)
+            max_min = jnp.multiply(self.max_val, other.min_val)
+            max_max = jnp.multiply(self.max_val, other.max_val)
 
             _min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
             _max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
@@ -186,11 +186,23 @@ class GammaTensor:
 
             value = self.value * other
 
+            min_min = jnp.multiply(self.min_val, other)
+            min_max = jnp.multiply(self.min_val, other)
+            max_min = jnp.multiply(self.max_val, other)
+            max_max = jnp.multiply(self.max_val, other)
+
+            _min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            _max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_val = self.min_val.copy()
+            min_val.data = _min_val
+            max_val = self.max_val.copy()
+            max_val.data = _max_val
+
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
-            min_val=0,
-            max_val=10,
+            min_val=min_val,
+            max_val=max_val,
             func=_mul,
             state=state,
         )
