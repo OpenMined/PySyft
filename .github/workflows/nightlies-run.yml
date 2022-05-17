@@ -115,14 +115,14 @@ jobs:
 
       - name: Setup linux/arm64 Docker
         run: |
-          docker rm $(docker ps -aq) --force
+          docker rm $(docker ps -aq) --force || true
           docker buildx create --platform linux/arm64 --name arm64builder || true
           docker buildx use arm64builder
           docker run --privileged --rm tonistiigi/binfmt --install arm64
           docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
 
       - name: Run integration tests
-        timeout-minutes: 240
+        timeout-minutes: 600
         continue-on-error: true
         run: |
           EMULATION="true" HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration
