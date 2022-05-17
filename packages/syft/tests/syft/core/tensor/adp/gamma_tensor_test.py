@@ -155,15 +155,3 @@ def test_pos(
     assert output.data_subjects == gamma_tensor1.data_subjects
     assert output.min_val == gamma_tensor1.min_val
     assert output.max_val == gamma_tensor1.max_val
-
-    def __pos__(self) -> GammaTensor:
-        output_state = dict()
-        output_state[self.id] = self
-
-        return GammaTensor(
-            value=self.value,
-            data_subjects=self.data_subjects,
-            min_val=self.min_val,
-            max_val=self.max_val,
-            state=output_state,
-        )
