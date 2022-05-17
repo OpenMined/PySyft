@@ -1,8 +1,29 @@
 import tensorflow_federated as tff
+import tensorflow as tf
 from tensorflow_federated.python.core.impl.types import computation_types
 from tensorflow_federated.proto.v0 import computation_pb2 as pb
 from ......core.common.uid import UID
+import collections
 
+class MedNISTBackend(tff.framework.DataBackend):
+    
+    def __init__(self, node):
+        self._node = node
+
+    async def materialize(self, data: pb.Data, type_spec: computation_types.Type):
+        dataset_objs = self._node.datasets.get(data.uri)[1]
+        images = self._node.store.get(dataset_objs[0].obj).data.child.child.child
+        labels = self._node.store.get(dataset_objs[1].obj).data.child.child.child
+
+        dataset = tf.data.Dataset.from_tensor_slices((images, labels))
+
+        def preprocess(images, labels):
+            return collections.OrderedDict(
+                x = tf.reshape(images, [-1, 64*64]),
+                y = tf.reshape(labels, [-1, 1]) // (2**16),
+            )
+            
+        return dataset.map(preprocess)
 
 class PySyftDataBackend(tff.framework.DataBackend):
     
@@ -13,7 +34,7 @@ class PySyftDataBackend(tff.framework.DataBackend):
         # print(data.uri)
         uid = UID.from_string(data.uri)
         # print(self._store.get(uid).data.numpy())
-        return self._store.get(uid).data.numpy()
+        return self._store.get(uid).data.child.child.child
     
 class TestDataBackend(tff.framework.DataBackend):
 

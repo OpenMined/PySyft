@@ -3,6 +3,8 @@ from typing import List
 from typing import Optional
 from typing import Type
 from unittest import result
+from xml.dom.minidom import Element
+from matplotlib import backend_bases
 # third party
 from nacl.signing import VerifyKey
 import tensorflow_federated as tff
@@ -11,13 +13,14 @@ import tensorflow_federated as tff
 from ......util import traceback_and_raise
 from ....abstract.node import AbstractNode
 from ......core.common.uid import UID
+import numpy as np
 
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import EventualNodeServiceWithoutReply
 from .tff_messages import TFFMessage
 from .tff_messages import TFFReplyMessage
-from .data_backend import TestDataBackend, PySyftDataBackend
+from .data_backend import TestDataBackend, PySyftDataBackend, MedNISTBackend
 from tensorflow_federated.proto.v0 import computation_pb2 as pb
 import tensorflow as tf
 from absl.testing import absltest
@@ -31,6 +34,9 @@ from tensorflow_federated.python.core.impl.context_stack import set_default_cont
 # from tensorflow_federated.python.core.impl.context_stack import context_stack_test_utils
 from tensorflow_federated.python.core.backends.native import compiler
 from tensorflow_federated.python.core.impl.execution_contexts import async_execution_context
+from syft.core.tensor.tensor import Tensor
+import logging
+import collections
 
 # from pybind11_abseil import status
 import torch as th
@@ -51,18 +57,25 @@ def custom_data_descriptor(uris, data_type):
 
 def create_keras_model():
   return tf.keras.models.Sequential([
-      tf.keras.layers.InputLayer(input_shape=(784,)),
-      tf.keras.layers.Dense(10, kernel_initializer='zeros'),
+      tf.keras.layers.InputLayer(input_shape=(64*64,)),
+      tf.keras.layers.Dense(6, kernel_initializer='zeros'),
       tf.keras.layers.Softmax(),
   ])
   
-# def model_fn():
-#   keras_model = create_keras_model()
-#   return tff.learning.from_keras_model(
-#       keras_model,
-#       input_spec=preprocessed_example_dataset.element_spec,
-#       loss=tf.keras.losses.SparseCategoricalCrossentropy(),
-#       metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+def model_fn(input_spec):
+  keras_model = create_keras_model()
+  return tff.learning.from_keras_model(
+      keras_model,
+      input_spec=input_spec,
+      loss=tf.keras.losses.SparseCategoricalCrossentropy(),
+      metrics=[tf.keras.metrics.SparseCategoricalAccuracy()])
+
+async def test_syft_tensor(node):
+    backend = PySyftDataBackend(node.store)
+    uris = [key.to_string() for key in node.store.keys() if type(node.store.get(key).data) == Tensor]
+    for i, uri in enumerate(uris):
+        data = await backend.materialize(pb.Data(uri=uri), tff.to_type(()))
+        print("shape:", i, data.shape)
 
 def get_ctx(data_backend):
   def ex_fn(
@@ -74,8 +87,9 @@ def get_ctx(data_backend):
   return async_execution_context.AsyncExecutionContext(executor_fn=factory)
 
 async def test_data_descriptor(node):
-    uris = [key.to_string() for key in node.store.keys()]
-    data_type = tff.TensorType(dtype=tf.int32, shape=[3])
+    uris = [key.to_string() for key in node.store.keys() if type(node.store.get(key).data) == Tensor]
+    uris = [uris[2]]
+    data_type = tff.TensorType(dtype=tf.int32, shape=[58954,64,64])
     # data_type = computation_types.TensorType(tff.types.SequenceType(tf.int32))
     data_desc = custom_data_descriptor(uris, data_type)
 
@@ -83,9 +97,9 @@ async def test_data_descriptor(node):
     # def foo(x):
     #     return tff.federated_sum(x)
     
-    @tff.federated_computation(tff.types.FederatedType(tff.TensorType(dtype=tf.int32, shape=[3]), tff.CLIENTS))
+    @tff.federated_computation(tff.types.FederatedType(tff.TensorType(dtype=tf.int32, shape=[58954, 64, 64]), tff.CLIENTS))
     def foo(x):
-        @tff.tf_computation(tff.TensorType(dtype=tf.int32, shape=[3]))
+        @tff.tf_computation(tff.TensorType(dtype=tf.int32, shape=[58954, 64, 64]))
         def local_sum(nums):
             return tf.math.reduce_sum(nums)
         return tff.federated_sum(tff.federated_map(local_sum, x))
@@ -95,30 +109,70 @@ async def test_data_descriptor(node):
     tff.framework.set_default_context(context)
 
     result = await foo(data_desc)
-    print(result)
+    print("WUUUT", result)
 
-
-async def train_model(store):
-    backend = PySyftDataBackend(store)
-    ex = tff.framework.DataExecutor(
-        tff.framework.EagerTFExecutor(),
-        backend
+async def test_train_model(node):
+    uris = ['03824e77-3d62-426a-bdea-e836ba210c2b']
+    # element_type = tff.types.StructWithPythonType(
+    #     tff.TensorType(dtype=tf.int32, shape=[58954,64,64]),  
+    #     container_type=collections.OrderedDict)
+    input_spec = collections.OrderedDict(
+            x=tf.TensorSpec(shape=(1,64*64), dtype=tf.int32, name=None),
+            y=tf.TensorSpec(shape=(1,1), dtype=tf.int32, name=None),
     )
     
-    @computations.tf_computation()
-    def foo(x):
-        return x * 20.0
+    # element_type = tff.TensorType(dtype=tf.int32, shape=[58954,64,64])
+    element_type = tff.types.StructWithPythonType(
+        input_spec,
+        container_type=collections.OrderedDict)
+    data_type = tff.types.SequenceType(element_type)
+    # data_type = element_type
 
-    # with executor_test_utils.install_executor(executor_stacks.local_executor_factory()):
-    #     result = foo(ds)
+    data_descriptor = custom_data_descriptor(uris, data_type)
+    backend = MedNISTBackend(node)
+    
+    context = get_ctx(backend)
+    tff.framework.set_default_context(context)
 
-async def test_materialize(store, uri, type_signature, expected_value):
-    backend = PySyftDataBackend(store)
+    iterative_process = tff.learning.build_federated_averaging_process(
+    lambda : model_fn(input_spec),
+    client_optimizer_fn=lambda: tf.keras.optimizers.SGD(learning_rate=0.02),
+    server_optimizer_fn=lambda: tf.keras.optimizers.SGD(learning_rate=1.0))
+
+    state = await iterative_process.initialize()
+    
+    logging.info('Training Ready')
+
+    state, metrics = await iterative_process.next(state, data_descriptor)
+    logging.info('round 1, metrics={}'.format(metrics))
+    
+    NUM_ROUNDS = 5
+    for round_num in range(2, NUM_ROUNDS):
+        state, metrics = await iterative_process.next(state, data_descriptor)
+        logging.info('round {:2d}, metrics={}'.format(round_num, metrics))
+
+    logging.info('Training Succesful')
+    # assert False
+
+async def test_materialize(node, uri, type_signature, expected_value):
+    logger = logging.getLogger('tensorflow_federated')
+    logger.setLevel(level=logging.NOTSET)
+    logger = logging.getLogger()
+    logger.setLevel(level=logging.NOTSET)
+    backend = MedNISTBackend(node)
     value = await backend.materialize(
             pb.Data(uri=uri), tff.to_type(type_signature)
         )
-    print(value)
-    assert value == expected_value
+    # print(value['x'].shape)
+    print(dir(value))
+    # shard_dataset = value.shard(num_shards=1, index=0)
+    # print(dir(shard_dataset))
+    # iter = value.make_one_shot_iterator()
+    # for x in value:
+    #     print(x['y'])
+
+    assert False
+    # assert value == expected_value
 
 async def test_raises_no_uri(store):
     backend = PySyftDataBackend(store)
@@ -136,12 +190,65 @@ class TFFService(ImmediateNodeServiceWithReply):
     ) -> TFFReplyMessage:
         if verify_key is None:
             traceback_and_raise("Can't process TFFService with no verification key.")
+        
+        dataset_id = '03824e77-3d62-426a-bdea-e836ba210c2b'
+
+        
+        print(node.datasets.get(dataset_id))
+        uid_images = node.datasets.get(dataset_id)[1][0].obj
+        uid_labels = node.datasets.get(dataset_id)[1][0].obj
+        # print(node.datasets.get('de6332f0-2c20-4904-9816-96b74b26d4ad')[1][0].obj)
+        # print(uid.replace("-",""))
+        # for key in node.store.keys():
+        #     print(key.to_string())
+        #     # t = node.store.get(key)
+        #     # print(t)
+        # print(dir(node.store))
+        tensor = node.store.get(uid_images)
+        print(tensor.data.child.child.child.shape)
         tff.backends.native.execution_contexts.set_local_async_python_execution_context(reference_resolving_clients=True)
-        asyncio.ensure_future(test_data_descriptor(node))
+        # asyncio.ensure_future(test_data_descriptor(node))
+        logging.basicConfig(level=logging.INFO)
+
+            
+        # logger = logging.getLogger('tensorflow_federated')
+        # logger.setLevel(level=logging.NOTSET)
+        # logger = logging.getLogger()
+        # logger.setLevel(level=logging.NOTSET)
+        asyncio.ensure_future(test_train_model(node))
+        input_spec = collections.OrderedDict(
+            [
+                ('x', tf.TensorSpec(shape=(1,64,64), dtype=np.int32, name=None)),
+                ('y', tf.TensorSpec(shape=(1,1), dtype=np.int32, name=None)),
+            ]
+        )
+        
+        # element_type = tff.TensorType(dtype=tf.int32, shape=[58954,64,64])
+        # element_type = tff.types.StructWithPythonType(
+        #     input_spec,
+        #     container_type=collections.OrderedDict)
+        # data_type = tff.types.SequenceType(element_type)
+        exp_value = collections.OrderedDict(
+            x = node.store.get(uid_images).data.child.child.child,
+            y = node.store.get(uid_labels).data.child.child.child,
+        )
+        
+        asyncio.ensure_future(test_materialize(node, '03824e77-3d62-426a-bdea-e836ba210c2b', (), exp_value))
+        
+        # asyncio.ensure_future(test_syft_tensor(node))
+        
         # tensor = node.store.get(node.store.keys()[0])
         # print(dir(tensor))
         # print(tensor.data.numpy())
         # print(dir(tensor.data))
+        # print(dir(node.store))
+        # for key in node.store.keys():
+        #     tensor = node.store.get(key).data
+        #     if type(tensor) == Tensor:
+        #         # print(dir(node.store.get(tensor).data))
+        #         # print(node.store.get(tensor).data)
+        #         print("CE Plm:", type(tensor.child.child.child))
+                
         result = msg.payload.run(node=node, verify_key=verify_key)
         return TFFReplyMessage(payload=result, address=msg.reply_to)
 

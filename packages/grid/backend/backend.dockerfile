@@ -42,7 +42,7 @@ RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
 
 # Backend
-FROM python:3.10.4-slim as backend
+FROM python:3.9.9-slim as backend
 COPY --from=build /root/.local /root/.local
 COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
 
