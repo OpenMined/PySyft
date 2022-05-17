@@ -59,8 +59,9 @@ def vectorized_publish(
 ) -> Union[np.ndarray, jax.numpy.DeviceArray]:
     """
     Steps:
-    1. We need to collect the parameters needed to calculate the privacy budget spend using RDP
+    1. Get all the input tensors with private data that helped create the tensor we're publishing.
     2. For every tensor with raw private data, we need to:
+        - Collect the parameters needed to calculate the privacy budget spend using RDP
         - Calculate the privacy budget spend for each data subject in that tensor
         - Filter out data for any individual data subject that doesn't have enough PB to be involved in the query
     3. Recalculate the query now that we know we're not including data from anyone over their PB
@@ -80,6 +81,7 @@ def vectorized_publish(
     for input_tensor in tqdm(input_tensors):
         # TODO: Double check with Andrew if this is correct- if we use the individual min/max values
 
+        # Parameters needed for PB calculation as seen here: https://arxiv.org/abs/2008.11193
         l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
             value_array=input_tensor.value,
             min_val_array=input_tensor.min_val,
@@ -87,9 +89,9 @@ def vectorized_publish(
             sigma=sigma,
         )
 
-        if is_linear:
+        if is_linear:  # 2.7 from https://arxiv.org/abs/2008.11193
             lipschitz_bounds = coeffs.copy()
-        else:
+        else:  # 2.8 from https://arxiv.org/abs/2008.11193
             lipschitz_bounds = input_tensor.lipschitz_bound
 
         input_data_subjects = input_tensor.data_subjects.data_subjects_indexed
@@ -103,7 +105,7 @@ def vectorized_publish(
         )
 
         try:
-            # query and save
+            # This method spends the privacy budget needed by this query
             mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
                 unique_entity_ids_query=input_data_subjects,
                 rdp_params=rdp_params,
@@ -113,13 +115,11 @@ def vectorized_publish(
             )
             # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
             reshaped_mask = mask.reshape(input_tensor.value.shape)
-            # here we have the final mask and highest possible spend has been applied
-            # to the data scientists budget field in the database
 
             if mask is None:
                 raise Exception("Failed to publish mask")
 
-            # multiply values by the inverted mask
+            # multiply values by the inverted mask; the only data you see is from data subjects that are UNDER budget
             filtered_input_tensor = input_tensor.value * (
                 1 - reshaped_mask
             )
