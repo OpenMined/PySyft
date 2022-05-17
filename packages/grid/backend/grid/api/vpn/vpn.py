@@ -21,7 +21,6 @@ from syft.core.node.common.node_service.vpn.vpn_messages import (
     VPNStatusMessageWithReply,
 )
 from syft.core.node.common.node_service.vpn.vpn_messages import VPNJoinMessageWithReply
-from syft.core.node.common.node_service.vpn.vpn_messages import get_status
 from syft.grid import GridURL
 from syft.lib.python.util import upcast
 
