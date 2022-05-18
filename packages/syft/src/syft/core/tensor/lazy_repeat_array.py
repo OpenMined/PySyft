@@ -10,11 +10,17 @@ from typing import Optional
 from typing import Tuple
 from xmlrpc.client import Boolean
 
+# syft absolute
+import syft as sy
+
 # third party
 import numpy as np
 
 # relative
+from ...lib.numpy.array import capnp_deserialize, capnp_serialize
 from ..common.serde.serializable import serializable
+from ..common.serde.capnp import get_capnp_schema
+from ..common.serde.capnp import serde_magic_header
 from .broadcastable import is_broadcastable
 
 
@@ -64,6 +70,40 @@ class lazyrepeatarray:
         self.shape = shape
         self._shape = self.shape
 
+    def _object2bytes(self) -> bytes:
+        schema = get_capnp_schema(schema_file="lazy_repeat_array.capnp")
+
+        lazy_repeat_array_struct: CapnpModule = schema.LazyRepeatArray  # type: ignore
+        lazy_repeat_array_msg = lazy_repeat_array_struct.new_message()
+
+        lazy_repeat_array_msg.magicHeader = serde_magic_header(type(self))
+
+        lazy_repeat_array_msg.data = capnp_serialize(self.data, to_bytes=True)
+        lazy_repeat_array_msg.shape = sy.serialize(self.shape, to_bytes=True)
+        lazy_repeat_array_msg.transforms = sy.serialize(self.transforms, to_bytes=True)
+
+        return lazy_repeat_array_msg.to_bytes_packed()
+
+    @staticmethod
+    def _bytes2object(buf: bytes) -> lazyrepeatarray:
+        schema = get_capnp_schema(schema_file="lazy_repeat_array.capnp")
+        lazy_repeat_array_struct: CapnpModule = schema.LazyRepeatArray  # type: ignore
+        MAX_TRAVERSAL_LIMIT = 2**64 - 1
+
+        lazy_repeat_array_msg = lazy_repeat_array_struct.from_bytes_packed(
+            buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        )
+
+        data = capnp_deserialize(lazy_repeat_array_msg.data)
+        shape = sy.deserialize(lazy_repeat_array_msg.shape)
+        transforms = sy.deserialize(lazy_repeat_array_msg.transforms)
+
+        return lazyrepeatarray(
+            data=data,
+            shape=shape,
+            transforms=transforms,
+        )
+
     def __add__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
@@ -79,9 +119,9 @@ class lazyrepeatarray:
                 )
             self.shape = np.broadcast_shapes(self.shape, other.shape)
             if isinstance(other, lazyrepeatarray):
-                self.add_op(function=np.add, args=other.data)
+                self.add_op(function="np.add", args=other.data)
             elif isinstance(other, np.ndarray):
-                self.add_op(function=np.add, args=other)
+                self.add_op(function="np.add", args=other)
             return self
 
         else:
@@ -102,9 +142,9 @@ class lazyrepeatarray:
                 )
             self.shape = np.broadcast_shapes(self.shape, other.shape)
             if isinstance(other, lazyrepeatarray):
-                self.add_op(function=np.subtract, args=other.data)
+                self.add_op(function="np.subtract", args=other.data)
             elif isinstance(other, np.ndarray):
-                self.add_op(function=np.subtract, args=other)
+                self.add_op(function="np.subtract", args=other)
             return self
 
         else:
@@ -125,9 +165,9 @@ class lazyrepeatarray:
                 )
             self.shape = np.broadcast_shapes(self.shape, other.shape)
             if isinstance(other, lazyrepeatarray):
-                self.add_op(function=np.multiply, args=other.data)
+                self.add_op(function="np.multiply", args=other.data)
             elif isinstance(other, np.ndarray):
-                self.add_op(function=np.multiply, args=other)
+                self.add_op(function="np.multiply", args=other)
             return self
 
         else:
@@ -148,9 +188,9 @@ class lazyrepeatarray:
             else:
                 self.shape = (self.shape[0], other.shape[-1])
                 if isinstance(other, lazyrepeatarray):
-                    self.add_op(function=np.matmul, args=other)
+                    self.add_op(function="np.matmul", args=other)
                 elif isinstance(other, np.ndarray):
-                    self.add_op(function=np.matmul, args=other)
+                    self.add_op(function="np.matmul", args=other)
                 return self
 
     def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
@@ -164,9 +204,9 @@ class lazyrepeatarray:
                 )
             self.shape = np.broadcast_shapes(self.shape, other.shape)
             if isinstance(other, lazyrepeatarray):
-                self.add_op(function=np.equal, args=other.data)
+                self.add_op(function="np.equal", args=other.data)
             elif isinstance(other, np.ndarray):
-                self.add_op(function=np.equal, args=other)
+                self.add_op(function="np.equal", args=other)
             return self
 
         else:
@@ -183,9 +223,9 @@ class lazyrepeatarray:
                 )
             self.shape = np.broadcast_shapes(self.shape, other.shape)
             if isinstance(other, lazyrepeatarray):
-                self.add_op(function=np.not_equal, args=other.data)
+                self.add_op(function="np.not_equal", args=other.data)
             elif isinstance(other, np.ndarray):
-                self.add_op(function=np.not_equal, args=other)
+                self.add_op(function="np.not_equal", args=other)
             return self
 
         else:
@@ -202,9 +242,9 @@ class lazyrepeatarray:
                 )
             self.shape = np.broadcast_shapes(self.shape, other.shape)
             if isinstance(other, lazyrepeatarray):
-                self.add_op(function=np.less_equal, args=other.data)
+                self.add_op(function="np.less_equal", args=other.data)
             elif isinstance(other, np.ndarray):
-                self.add_op(function=np.less_equal, args=other)
+                self.add_op(function="np.less_equal", args=other)
             return self
 
         else:
@@ -221,9 +261,9 @@ class lazyrepeatarray:
                 )
             self.shape = np.broadcast_shapes(self.shape, other.shape)
             if isinstance(other, lazyrepeatarray):
-                self.add_op(function=np.greater_equal, args=other.data)
+                self.add_op(function="np.greater_equal", args=other.data)
             elif isinstance(other, np.ndarray):
-                self.add_op(function=np.greater_equal, args=other)
+                self.add_op(function="np.greater_equal", args=other)
             return self
 
         else:
@@ -240,9 +280,9 @@ class lazyrepeatarray:
                 )
             self.shape = np.broadcast_shapes(self.shape, other.shape)
             if isinstance(other, lazyrepeatarray):
-                self.add_op(function=np.less, args=other.data)
+                self.add_op(function="np.less", args=other.data)
             elif isinstance(other, np.ndarray):
-                self.add_op(function=np.less, args=other)
+                self.add_op(function="np.less", args=other)
             return self
 
         else:
@@ -259,9 +299,9 @@ class lazyrepeatarray:
                 )
             self.shape = np.broadcast_shapes(self.shape, other.shape)
             if isinstance(other, lazyrepeatarray):
-                self.add_op(function=np.greater, args=other.data)
+                self.add_op(function="np.greater", args=other.data)
             elif isinstance(other, np.ndarray):
-                self.add_op(function=np.greater, args=other)
+                self.add_op(function="np.greater", args=other)
             return self
 
         else:
@@ -285,7 +325,7 @@ class lazyrepeatarray:
 
     def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         if "axis" in kwargs and kwargs["axis"] is None:
-            self.add_op(function=np.sum, args=None)
+            self.add_op(function="np.sum", args=None)
         else:
             raise Exception("not sure how to do this yet")
 
@@ -311,9 +351,9 @@ class lazyrepeatarray:
 
     def to_numpy(self, original: Boolean = False) -> np.ndarray:
         if not original:
-            self.add_op(function=np.multiply, args=np.ones(self.shape))
+            self.add_op(function="np.multiply", args=np.ones(self.shape))
         else:
-            self.add_op(function=np.multiply, args=np.ones(self._shape))
+            self.add_op(function="np.multiply", args=np.ones(self._shape))
 
         return self
 
@@ -341,11 +381,11 @@ class lazyrepeatarray:
     def evaluate(self):  # type: ignore
         result = np.ones(self._shape) * self.data
         for func, selection, args in self.transforms:
-            if func == np.matmul:
+            if func == "np.matmul":
                 if isinstance(args, lazyrepeatarray):
                     args = args.to_numpy().evaluate()
-                result = func(result[selection], args)
+                result = eval(func)(result[selection], args)
             else:
-                result[selection] = func(result[selection], args)
+                result[selection] = eval(func)(result[selection], args)
         self.transforms = []
         return result
