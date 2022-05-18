@@ -520,6 +520,13 @@ class Tensor(
         return self
 
     @property
+    def shape(self) -> Tuple[Any, ...]:
+        try:
+            return self.child.shape
+        except Exception:  # nosec
+            return self.public_shape
+
+    @property
     def proxy_public_kwargs(self) -> Dict[str, Any]:
         return {"public_shape": self.public_shape, "public_dtype": self.public_dtype}
 
@@ -582,7 +589,12 @@ class Tensor(
         chunk_bytes(sy.serialize(self.child, to_bytes=True), "child", tensor_msg)
 
         tensor_msg.publicShape = sy.serialize(self.public_shape, to_bytes=True)
-        tensor_msg.publicDtype = self.public_dtype
+
+        # upcast the String class before setting to capnp
+        public_dtype_func = getattr(
+            self.public_dtype, "upcast", lambda: self.public_dtype
+        )
+        tensor_msg.publicDtype = public_dtype_func()
         tensor_msg.tagName = self.tag_name
 
         return tensor_msg.to_bytes_packed()
