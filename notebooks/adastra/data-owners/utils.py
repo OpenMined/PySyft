@@ -101,9 +101,7 @@ def get_dataset_name(dataset_url):
 def download_mednist_dataset(dataset_url):
     filename = get_data_filename(dataset_url)
     if not os.path.exists(f"./{filename}"):
-        os.system(
-            f'curl -O "{dataset_url}"'
-        )
+        os.system(f'curl -O "{dataset_url}"')
         print("MedNIST is successfully downloaded.")
     else:
         print("MedNIST is already downloaded")
