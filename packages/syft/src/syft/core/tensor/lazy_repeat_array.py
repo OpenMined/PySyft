@@ -9,6 +9,9 @@ from typing import Optional
 from typing import Tuple
 from xmlrpc.client import Boolean
 
+# syft absolute
+import syft as sy
+
 # third party
 import numpy as np
 
@@ -16,11 +19,10 @@ import numpy as np
 import syft as sy
 
 # relative
-from ...lib.numpy.array import capnp_deserialize
-from ...lib.numpy.array import capnp_serialize
 from ..common.serde.capnp import CapnpModule
 from ..common.serde.capnp import get_capnp_schema
 from ..common.serde.capnp import serde_magic_header
+from ...lib.numpy.array import capnp_deserialize, capnp_serialize
 from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
 
