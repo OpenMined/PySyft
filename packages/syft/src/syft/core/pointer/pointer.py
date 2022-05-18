@@ -469,6 +469,7 @@ class Pointer(AbstractPointer):
 
         # WARNING: This is sending a serialized Address back to the constructor
         # which currently depends on a Client for send_immediate_msg_with_reply
+
         out = pointer_type(
             id_at_location=_deserialize(blob=proto.id_at_location),
             client=_deserialize(blob=proto.location),
@@ -478,7 +479,6 @@ class Pointer(AbstractPointer):
         )
 
         out.public_shape = sy.deserialize(proto.public_shape, from_bytes=True)
-
         return out
 
     @staticmethod
@@ -731,4 +731,6 @@ class Pointer(AbstractPointer):
             return
 
         if self.gc_enabled:
-            self.client.gc.apply(self)
+            # this is not being used in the node currenetly
+            # self.client.gc.apply(self)
+            pass

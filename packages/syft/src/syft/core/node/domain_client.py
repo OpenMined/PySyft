@@ -680,7 +680,7 @@ class DomainClient(Client):
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
         # blob storage can only be used if domain node has blob storage enabled.
-        if use_blob_storage and not self.settings.get("use_blob_storage", False):
+        if not self.settings.get("use_blob_storage", False):
             print(
                 "\n\n**Warning**: Blob Storage is disabled on this domain. Switching to database store.\n"
             )

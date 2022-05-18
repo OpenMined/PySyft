@@ -519,6 +519,10 @@ class Tensor(
         self.tag_name = name
         return self
 
+    @property
+    def proxy_public_kwargs(self) -> Dict[str, Any]:
+        return {"public_shape": self.public_shape, "public_dtype": self.public_dtype}
+
     def init_pointer(
         self,
         client: Any,

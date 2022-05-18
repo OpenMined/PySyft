@@ -684,7 +684,7 @@ class Class(Callable):
             searchable: Optional[bool] = None,
             id_at_location_override: Optional[UID] = None,
             chunk_size: Optional[int] = None,
-            send_to_blob_storage: bool = False,
+            send_to_blob_storage: bool = True,
             **kwargs: Dict[str, Any],
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
 
