@@ -519,6 +519,20 @@ class Tensor(
         self.tag_name = name
         return self
 
+    def exp(self) -> Tensor:
+        # syft absolute
+        from syft.core.smpc.approximations import exp
+
+        res = exp(self)
+        return res
+
+    def reciprocal(self) -> Tensor:
+        # syft absolute
+        from syft.core.smpc.approximations import reciprocal
+
+        res = reciprocal(self)
+        return res
+
     def init_pointer(
         self,
         client: Any,
