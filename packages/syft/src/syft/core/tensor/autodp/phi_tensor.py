@@ -115,11 +115,14 @@ class TensorWrappedPhiTensorPointer(Pointer):
     # TODO: Modify for large arrays
     @property
     def synthetic(self) -> np.ndarray:
+        public_dtype_func = getattr(
+            self.public_dtype, "upcast", lambda: self.public_dtype
+        )
         return (
             np.random.rand(*list(self.public_shape))  # type: ignore
             * (self.max_vals.to_numpy() - self.min_vals.to_numpy())
             + self.min_vals.to_numpy()
-        ).astype(self.public_dtype)
+        ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
         return (
