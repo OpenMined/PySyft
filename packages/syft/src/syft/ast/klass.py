@@ -763,7 +763,7 @@ class Class(Callable):
 
             # Check if the client has blob storage enabled
             # blob storage can only be used if client node has blob storage enabled.
-            if send_to_blob_storage and not client.settings.get(
+            if not hasattr(client, "settings") or not client.settings.get(
                 "use_blob_storage", False
             ):
                 sys.stdout.write(
