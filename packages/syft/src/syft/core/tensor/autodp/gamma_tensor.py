@@ -129,10 +129,7 @@ class GammaTensor:
             def _add(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.add(self.run(state), other.run(state))
 
-            # print("this is the other.state", other.state)
             output_state[other.id] = other
-            # state.update(other.state)
-            # print("this is the output_state", output_state)
 
             value = self.value + other.value
             min_val = self.min_val + other.min_val
@@ -145,7 +142,6 @@ class GammaTensor:
             value = self.value + other
             min_val = self.min_val + other
             max_val = self.max_val + other
-        # print("the state we returned is: ", output_state)
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
@@ -172,13 +168,8 @@ class GammaTensor:
             max_min = jnp.multiply(self.max_val, other.min_val)
             max_max = jnp.multiply(self.max_val, other.max_val)
 
-            _min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            _max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            min_val = self.min_val.copy()
-            min_val.data = _min_val
-            max_val = self.max_val.copy()
-            max_val.data = _max_val
-
+            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
         else:
 
             def _mul(state: dict) -> jax.numpy.DeviceArray:
@@ -191,12 +182,8 @@ class GammaTensor:
             max_min = jnp.multiply(self.max_val, other)
             max_max = jnp.multiply(self.max_val, other)
 
-            _min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            _max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            min_val = self.min_val.copy()
-            min_val.data = _min_val
-            max_val = self.max_val.copy()
-            max_val.data = _max_val
+            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
 
         return GammaTensor(
             value=value,
@@ -253,7 +240,6 @@ class GammaTensor:
             def _dot(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.dot(self.run(state), other.run(state))
 
-            print("Enters Here1")
             output_state[other.id] = other
             value = jnp.dot(self.value, other.value)
 
@@ -262,12 +248,8 @@ class GammaTensor:
             max_min = jnp.dot(self.max_val, other.min_val)
             max_max = jnp.dot(self.max_val, other.max_val)
 
-            _min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            _max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            min_val = self.min_val.copy()
-            min_val.data = _min_val
-            max_val = self.max_val.copy()
-            max_val.data = _max_val
+            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
 
         else:
             def _dot(state: dict) -> jax.numpy.DeviceArray:
@@ -280,12 +262,8 @@ class GammaTensor:
             max_min = jnp.dot(self.max_val, other)
             max_max = jnp.dot(self.max_val, other)
 
-            _min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            _max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            min_val = self.min_val.copy()
-            min_val.data = _min_val
-            max_val = self.max_val.copy()
-            max_val.data = _max_val
+            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
 
         return GammaTensor(
             value=value,
