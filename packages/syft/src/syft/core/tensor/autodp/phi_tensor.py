@@ -1061,7 +1061,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self, other: Union[PhiTensor, GammaTensor, np.ndarray]
     ) -> Union[PhiTensor, GammaTensor]:
         if isinstance(other, np.ndarray):
-            print("Enters Here Phi1")
+
             return PhiTensor(
                 child=self.child.child.dot(other),
                 min_vals=np.dot(self.min_vals, other),
@@ -1078,7 +1078,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     != other.data_subjects.one_hot_lookup
                 )
             ):
-                print("Enters Here Phi2")
+
                 return self.gamma.dot(other.gamma)
             elif (
                 len(self.data_subjects.one_hot_lookup) == 1
@@ -1086,12 +1086,19 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 and self.data_subjects.one_hot_lookup
                 == other.data_subjects.one_hot_lookup
             ):
-                print("Enters Here Phi3")
+
+                min_min = np.dot(self.min_vals.data, other.min_vals.data)
+                min_max = np.dot(self.min_vals.data, other.max_vals.data)
+                max_min = np.dot(self.max_vals.data, other.min_vals.data)
+                max_max = np.dot(self.max_vals.data, other.max_vals.data)
+
+                min_vals = np.min([min_min, min_max, max_min, max_max], axis=0)
+                max_vals = np.max([min_min, min_max, max_min, max_max], axis=0)
 
                 return PhiTensor(
                     child=self.child.child.dot(other.child.child),
-                    min_vals=np.dot(self.min_vals, other.min_vals),
-                    max_vals=np.dot(self.max_vals, other.min_vals),
+                    min_vals=min_vals,
+                    max_vals=max_vals,
                     data_subjects=self.data_subjects,
                 )
 

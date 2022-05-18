@@ -168,22 +168,16 @@ class GammaTensor:
             max_min = jnp.multiply(self.max_val, other.min_val)
             max_max = jnp.multiply(self.max_val, other.max_val)
 
-            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)
+            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)
         else:
 
             def _mul(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.multiply(self.run(state), other)
 
             value = self.value * other
-
-            min_min = jnp.multiply(self.min_val, other)
-            min_max = jnp.multiply(self.min_val, other)
-            max_min = jnp.multiply(self.max_val, other)
-            max_max = jnp.multiply(self.max_val, other)
-
-            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_val = jnp.multiply(self.min_val, other)
+            max_val = jnp.multiply(self.max_val, other)
 
         return GammaTensor(
             value=value,
@@ -248,8 +242,8 @@ class GammaTensor:
             max_min = jnp.dot(self.max_val, other.min_val)
             max_max = jnp.dot(self.max_val, other.max_val)
 
-            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)
+            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)
 
         else:
 
@@ -258,13 +252,8 @@ class GammaTensor:
 
             value = jnp.dot(self.value, other)
 
-            min_min = jnp.dot(self.min_val, other)
-            min_max = jnp.dot(self.min_val, other)
-            max_min = jnp.dot(self.max_val, other)
-            max_max = jnp.dot(self.max_val, other)
-
-            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_val = jnp.dot(self.min_val, other)
+            max_val = jnp.dot(self.max_val, other)
 
         return GammaTensor(
             value=value,
