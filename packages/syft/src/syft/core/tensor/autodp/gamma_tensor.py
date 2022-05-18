@@ -196,7 +196,7 @@ class GammaTensor:
 
     def __pos__(self) -> GammaTensor:
         def _pos(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.asarray(+self.run(state))
+            return jnp.asarray(self.run(state))
 
         output_state = dict()
         output_state[self.id] = self
@@ -252,6 +252,7 @@ class GammaTensor:
             max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
 
         else:
+
             def _dot(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.dot(self.run(state), other)
 
