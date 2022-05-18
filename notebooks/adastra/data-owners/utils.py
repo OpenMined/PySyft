@@ -58,19 +58,9 @@ def split_into_train_test_val_sets(data, test=0.10, val=0.10):
     return data_dict
 
 
-def load_data_as_df(
-    participation_number, total_participants, file_path="./MedNIST.pkl"
-):
+def load_data_as_df(file_path="./MedNIST.pkl"):
     df = pd.read_pickle(file_path)
     df.sort_values("patient_id", inplace=True, ignore_index=True)
-
-    # Calculate start and end index based on your participant number
-    batch_size = df.shape[0] // total_participants
-    start_idx = (participation_number - 1) * batch_size
-    end_idx = start_idx + batch_size
-
-    # Slice the dataframe according
-    df = df[start_idx:end_idx]
 
     # Get label mapping
     mapping = get_label_mapping()
@@ -99,11 +89,23 @@ def get_data_description(data):
     return description
 
 
-def download_mednist_dataset():
-    if not os.path.exists("./MedNIST.pkl"):
+def get_data_filename(dataset_url):
+    return dataset_url.split("/")[-1]
+
+
+def get_dataset_name(dataset_url):
+    filename = dataset_url.split("/")[-1]
+    return filename.split(".pkl")[0]
+
+
+def download_mednist_dataset(dataset_url):
+    filename = get_data_filename(dataset_url)
+    if not os.path.exists(f"./{filename}"):
         os.system(
-            'curl -O "https://media.githubusercontent.com/media/shubham3121/datasets/main/MedNIST/MedNIST.pkl"'
+            f'curl -O "{dataset_url}"'
         )
         print("MedNIST is successfully downloaded.")
     else:
         print("MedNIST is already downloaded")
+
+    return filename
