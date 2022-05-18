@@ -16,7 +16,6 @@ from .....lib.python import String
 from .....logger import error
 from .....logger import start
 from .....logger import stop
-from .....util import parallel_execution
 from ....node.common import AbstractNodeClient
 from ..node_service.peer_discovery.peer_discovery_messages import (
     GetPeerInfoMessageWithReply,
@@ -59,11 +58,16 @@ class DomainRequestAPI(RequestAPI):
                 ]
 
                 # Check domain status in parallel
-                check_status = parallel_execution(check_domain_status)
-                result = check_status(args=args) if args else []
+                # check_status = parallel_execution(check_domain_status)
+                # result = check_status(args=args) if args else []
 
-                for i, status in enumerate(result):
-                    if status is True:
+                # for i, status in enumerate(result):
+                #     if status is True:
+                #         data.append(_data[i])
+
+                # Check domain status sequentially
+                for i, arg in enumerate(args):
+                    if check_domain_status(*arg):
                         data.append(_data[i])
 
                 sys.stdout.write("\r                                             ")
