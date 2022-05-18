@@ -975,7 +975,26 @@ def create_launch_cmd(
                         ),
                         kwargs=kwargs,
                     )
-
+            first_superuser = ask(
+                question=Question(
+                    var_name="first_superuser",
+                    question="What do you want the name for the first superuser to be?",
+                    kind="string",
+                    default=arg_cache.first_superuser,
+                    cache=True,
+                ),
+                kwargs=kwargs,
+            )
+            first_superuser_password = ask(
+                question=Question(
+                    var_name="first_superuser_password",
+                    question="What do you want the password for the first superuser to be?",
+                    kind="password",
+                    default=arg_cache.first_superuser_password,
+                ),
+                kwargs=kwargs,
+            )
+        
             repo = ask(
                 Question(
                     var_name="azure_repo",

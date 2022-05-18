@@ -26,6 +26,8 @@ arg_defaults = {
     "gcp_key_path": "~/.ssh/google_compute_engine",
     "gcp_repo": "OpenMined/PySyft",
     "gcp_branch": STABLE_BRANCH,
+    "first_superuser": "info@openmined.org",
+    "first_superuser_password": "changethis",
 }
 
 
