@@ -994,7 +994,7 @@ def create_launch_cmd(
                 ),
                 kwargs=kwargs,
             )
-        
+
             repo = ask(
                 Question(
                     var_name="azure_repo",
@@ -1034,6 +1034,8 @@ def create_launch_cmd(
                 size=size,
                 username=username,
                 password=password,
+                first_superuser=first_superuser,
+                first_superuser_password=first_superuser_password,
                 key_path=key_path,
                 repo=repo,
                 branch=branch,
