@@ -49,6 +49,15 @@ def reference_data(highest, dims) -> np.ndarray:
     assert dims > 1, "Tensor not large enough"
     return reference_data
 
+@pytest.fixture
+def reference_data2(highest, dims) -> np.ndarray:
+    """This generates random data to test the equality operators"""
+    reference_data = np.random.randint(
+        low=-highest, high=highest, size=(dims+2, dims+2), dtype=np.int32
+    )
+    assert dims > 1, "Tensor not large enough"
+    return reference_data
+
 
 @pytest.fixture
 def upper_bound(reference_data: np.ndarray, highest: int) -> np.ndarray:
@@ -332,13 +341,13 @@ def test_sum(
 
 def test_dot(
     reference_data: np.ndarray,
+    reference_data2: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     ishan: DataSubject,
     traskmaster: DataSubject,
 ) -> None:
     '''Tests dot for both phi and gamma tensors'''
-
     tensor1 = PT(
         child=reference_data,
         data_subjects=ishan,
@@ -369,7 +378,6 @@ def test_dot(
     assert (result_phi_tensor.value == tensor1.child.child.dot(tensor2.child.child)).all()
     assert (result_gamma_tensor.value == tensor1.child.child.dot(tensor3.child.child)).all()
     assert (result_self_tensor.child.decode() == tensor1.child.child.dot(tensor1.child.child)).all()
-    assert 3 == 4
 
 
 def test_ne_vals(
