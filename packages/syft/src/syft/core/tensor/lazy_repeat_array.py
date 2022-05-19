@@ -9,9 +9,6 @@ from typing import Optional
 from typing import Tuple
 from xmlrpc.client import Boolean
 
-# syft absolute
-import syft as sy
-
 # third party
 import numpy as np
 
@@ -22,12 +19,11 @@ import syft as sy
 from ..common.serde.capnp import CapnpModule
 from ..common.serde.capnp import get_capnp_schema
 from ..common.serde.capnp import serde_magic_header
-from ...lib.numpy.array import capnp_deserialize, capnp_serialize
 from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
 
 
-@serializable(recursive_serde=True)
+@serializable(capnp_bytes=True)
 class lazyrepeatarray:
     """
     When data is repeated along one or more dimensions, store it using lazyrepeatarray
@@ -81,7 +77,7 @@ class lazyrepeatarray:
 
         lazy_repeat_array_msg.magicHeader = serde_magic_header(type(self))
 
-        lazy_repeat_array_msg.data = capnp_serialize(self.data, to_bytes=True)
+        lazy_repeat_array_msg.data = sy.serialize(self.data, to_bytes=True)
         lazy_repeat_array_msg.shape = sy.serialize(self.shape, to_bytes=True)
         lazy_repeat_array_msg.transforms = sy.serialize(self.transforms, to_bytes=True)
 
@@ -97,7 +93,7 @@ class lazyrepeatarray:
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
-        data = capnp_deserialize(lazy_repeat_array_msg.data)
+        data = sy.deserialize(lazy_repeat_array_msg.data, from_bytes=True)
         shape = sy.deserialize(lazy_repeat_array_msg.shape, from_bytes=True)
         transforms = sy.deserialize(lazy_repeat_array_msg.transforms, from_bytes=True)
 
