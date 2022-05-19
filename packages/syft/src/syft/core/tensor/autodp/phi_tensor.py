@@ -854,7 +854,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_val=self.max_vals.to_numpy(),
             fpt_values=fpt_values,
         )
-        print("Gamma Tensor", gamma_tensor)
+
         return gamma_tensor
 
     def publish(
@@ -1003,7 +1003,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals = self.min_vals - other
             max_vals = self.max_vals - other
             data_subjects = self.data_subjects
+        elif isinstance(other, GammaTensor):
+            return self.gamma - other
         else:
+            print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
         return PhiTensor(
             child=data,
@@ -1065,13 +1068,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
+        elif isinstance(other, GammaTensor):
+            return self.gamma * other
         else:
-            return NotImplementedError  # type: ignore
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def __matmul__(
         self, other: Union[np.ndarray, PhiTensor]
     ) -> Union[PhiTensor, GammaTensor]:
-        if not isinstance(other, (np.ndarray, PhiTensor)):
+        if not isinstance(other, (np.ndarray, PhiTensor, GammaTensor)):
             raise Exception(
                 f"Matrix multiplication not yet implemented for type {type(other)}"
             )
@@ -1105,7 +1111,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                         min_vals = self.min_vals.__matmul__(other.min_vals)
                         max_vals = self.max_vals.__matmul__(other.max_vals)
 
+                elif isinstance(other, GammaTensor):
+                    return self.gamma @ other
                 else:
+                    print("Type is unsupported:" + str(type(other)))
                     raise NotImplementedError
 
                 return PhiTensor(
@@ -1118,7 +1127,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __rmatmul__(
         self, other: Union[np.ndarray, PhiTensor]
     ) -> Union[PhiTensor, GammaTensor]:
-        if not isinstance(other, (np.ndarray, PhiTensor)):
+        if not isinstance(other, (np.ndarray, PhiTensor, GammaTensor)):
             raise Exception(
                 f"Matrix multiplication not yet implemented for type {type(other)}"
             )
@@ -1153,6 +1162,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                         max_vals = self.max_vals.__rmatmul__(other.max_vals)
 
                 else:
+                    print("Type is unsupported:" + str(type(other)))
                     raise NotImplementedError
 
                 return PhiTensor(
