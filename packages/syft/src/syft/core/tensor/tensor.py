@@ -520,19 +520,19 @@ class Tensor(
         return self
 
     def exp(self) -> Tensor:
-        # syft absolute
-        from syft.core.smpc.approximations import exp
+        # relative
+        from ..smpc.approximations import exp
 
         res = exp(self)
-        return res
+        return res  # type: ignore
 
     def reciprocal(self) -> Tensor:
-        # syft absolute
-        from syft.core.smpc.approximations import reciprocal
+        # relative
+        from ..smpc.approximations import reciprocal
 
         res = reciprocal(self)
         return res
-      
+
     @property
     def shape(self) -> Tuple[Any, ...]:
         try:

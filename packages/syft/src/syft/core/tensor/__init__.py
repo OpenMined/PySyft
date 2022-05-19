@@ -163,7 +163,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.tensor.Tensor.exp",
             "syft.core.tensor.tensor.Tensor",
         ),
-                (
+        (
             "syft.core.tensor.tensor.Tensor.reciprocal",
             "syft.core.tensor.tensor.Tensor",
         ),

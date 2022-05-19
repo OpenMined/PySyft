@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-import operator
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -16,7 +15,6 @@ from typing import Union
 import numpy as np
 
 # relative
-from ... import tensor
 from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
 from ....core.adp.data_subject import DataSubject
@@ -480,7 +478,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.sum"
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
             min_vals=self.min_vals,
@@ -540,7 +538,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.exp"
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.exp"
 
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
@@ -601,7 +599,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.reciprocal"
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.reciprocal"
 
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
@@ -705,44 +703,6 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
         result.public_shape = result_public_shape
         result.public_dtype = self.public_dtype
-
-        return result
-
-    def __pow__(self, power: int) -> TensorWrappedPhiTensorPointer:
-        """Compute integer power of a number iteratively using mul.
-
-        - Divide power by 2 and multiply base to itself (if the power is even)
-        - Decrement power by 1 to make it even and then follow the first step
-
-        Args:
-            power (int): integer value to apply the
-
-        Returns:
-             MPCTensor: Result of the pow operation
-
-        Raises:
-            RuntimeError: if negative power is given
-        """
-        # TODO: Implement after we have reciprocal function.
-        if power < 0:
-            raise RuntimeError("Negative integer powers not supported yet.")
-
-        if power == 0:
-            raise NotImplementedError
-
-        base = self
-        result = 1
-        while power > 0:
-            # If power is odd
-            if power % 2 == 1:
-                result = base * result
-                result.block
-
-            # Divide the power by 2
-            power = power // 2
-            # Multiply base to itself
-            base = base * base
-            base.block
 
         return result
 
@@ -886,11 +846,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """Return a new Gamma tensor based on this phi tensor"""
         # TODO: check if values needs to be a JAX array or if numpy will suffice
         fpt_values = self.child
-        value = (
-            self.child.child.child
-            if isinstance(self.child.child, ShareTensor)
-            else self.child.child
-        )
+
         gamma_tensor = GammaTensor(
             value=self.child,
             data_subjects=self.data_subjects,

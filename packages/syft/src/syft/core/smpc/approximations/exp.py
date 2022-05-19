@@ -8,12 +8,13 @@ from typing import Union
 
 if TYPE_CHECKING:
     # relative
+    from ...tensor import Tensor
     from ...tensor.smpc.mpc_tensor import MPCTensor
 
 
 def exp(
-    value: Union[MPCTensor, int, float], iterations: int = 8
-) -> Union[MPCTensor, float]:
+    value: Union[Tensor, MPCTensor, int, float], iterations: int = 8
+) -> Union[MPCTensor, float, Tensor]:
     """Approximates the exponential function using a limit approximation.
 
     exp(x) = lim_{n -> infty} (1 + x / n) ^ n

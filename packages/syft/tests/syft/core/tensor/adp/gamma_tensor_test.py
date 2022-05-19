@@ -75,7 +75,7 @@ def test_gamma_serde(
 
     # Checks to ensure gamma tensor was properly created
     assert isinstance(gamma_tensor1, GammaTensor)
-    assert gamma_tensor1.value == tensor1.child.child.sum()
+    assert gamma_tensor1.value.child == tensor1.child.child.sum()
 
     ser = sy.serialize(gamma_tensor1, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
