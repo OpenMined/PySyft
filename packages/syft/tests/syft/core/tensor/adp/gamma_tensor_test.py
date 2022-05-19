@@ -10,6 +10,7 @@ import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
+from syft.core.tensor.autodp.gamma_tensor import jax2numpy
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 
 
@@ -80,7 +81,9 @@ def test_gamma_serde(
     ser = sy.serialize(gamma_tensor1, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
 
-    assert de.value == gamma_tensor1.value
+    assert jax2numpy(de.value, dtype=de.value.dtype) == jax2numpy(
+        gamma_tensor1.value, dtype=gamma_tensor1.dtype
+    )
     assert de.data_subjects == gamma_tensor1.data_subjects
     assert de.min_val == gamma_tensor1.min_val
     assert de.max_val == gamma_tensor1.max_val
