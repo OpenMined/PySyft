@@ -951,10 +951,13 @@ class MPCTensor(PassthroughTensor):
     @property
     def synthetic(self) -> np.ndarray:
         # TODO finish. max_vals and min_vals not available at present.
+        public_dtype_func = getattr(
+            self.public_dtype, "upcast", lambda: self.public_dtype
+        )
         return (
             np.random.rand(*list(self.shape)) * (self.max_vals - self.min_vals)  # type: ignore
             + self.min_vals
-        ).astype(self.public_dtype)
+        ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
 
