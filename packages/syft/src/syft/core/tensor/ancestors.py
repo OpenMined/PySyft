@@ -6,6 +6,7 @@ import textwrap
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 
 # third party
@@ -314,7 +315,7 @@ class PhiTensorAncestor(TensorChainManager):
         self.child = child
 
     @property
-    def shape(self) -> List[int]:
+    def shape(self) -> Tuple[Any, ...]:
         return self.child.shape
 
     @property
