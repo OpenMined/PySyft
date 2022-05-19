@@ -93,6 +93,11 @@ def vectorized_publish(
     # print(f"Starting vectorized publish: {type(ledger)}")
     # print("Starting RDP Params Calculation")
     # TODO: Vectorize this to return a larger GammaTensor instead of a list of Tensors
+
+
+    # TODO: Use calibration here
+
+
     input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
 
     filtered_inputs = []

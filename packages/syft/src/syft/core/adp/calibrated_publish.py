@@ -7,6 +7,11 @@ from .data_subject_ledger import compute_rdp_constant
 def calibrate_sigma(rdp_params: RDPParams, query_limit: int = 5) -> None:
     """
     Adjust the value of sigma chosen to have a 90% chance of being less than query_limit
+
+    # TODO
+    - Move this to vectorized_publish
+    - Make sure you're only importing the cache once
+    - Update indexing to reflect the new cache.
     """
     rdp_constants = compute_rdp_constant(rdp_params, private=False)
     CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_300k.npy"

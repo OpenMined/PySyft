@@ -232,9 +232,6 @@ class GammaTensor:
     ) -> jax.numpy.DeviceArray:
         # TODO: Add data scientist privacy budget as an input argument, and pass it
         # into vectorized_publish
-        if sigma is None:
-            sigma = self.value.mean() / 4  # TODO @Ishan: replace this with calibration
-
         if self.value.dtype != np.int64:
             raise Exception(
                 "Data type of private values is not np.int64: ", self.value.dtype
