@@ -1,5 +1,34 @@
-version: "3.8"
 services:
   tailscale:
+    ports:
+      - "8080"
     volumes:
       - ./tls/rootCA.pem:/usr/local/share/ca-certificates/rootCA.pem
+
+  db:
+    ports:
+      - "5432"
+
+  redis:
+    ports:
+      - "6379"
+
+  queue:
+    image: rabbitmq:3-management
+    ports:
+      - "5672"
+      - "15672"
+
+  headscale:
+    profiles:
+      - network
+    ports:
+      - "4000"
+
+  seaweedfs:
+    profiles:
+      - blob-storage
+    ports:
+      - "9333" # admin
+      - "8888" # filer
+      - "8333" # S3

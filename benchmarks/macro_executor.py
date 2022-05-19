@@ -77,7 +77,6 @@ domain_node.load_dataset(
     assets={"1B Tweets dataset": tweets_data},
     name=dataset_name,
     description=" Tweets- 1B rows",
-    use_blob_storage=True,
 )
 tf = round(time() - t0, 3)
 print(f"Time taken to load {dataset_name} dataset: {tf} seconds")

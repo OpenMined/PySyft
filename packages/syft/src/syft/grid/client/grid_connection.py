@@ -42,6 +42,9 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         if "timeout" in kwargs:
             self.timeout = kwargs["timeout"]
             del kwargs["timeout"]
+        if "max_retries" in kwargs:
+            self.max_retries = kwargs["max_retries"]
+            del kwargs["max_retries"]
         super().__init__(*args, **kwargs)
 
     def send(self, request: Any, **kwargs: Any) -> Any:  # type:ignore
