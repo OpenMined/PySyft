@@ -117,11 +117,14 @@ class TensorWrappedPhiTensorPointer(Pointer):
     # TODO: Modify for large arrays
     @property
     def synthetic(self) -> np.ndarray:
+        public_dtype_func = getattr(
+            self.public_dtype, "upcast", lambda: self.public_dtype
+        )
         return (
             np.random.rand(*list(self.public_shape))  # type: ignore
             * (self.max_vals.to_numpy() - self.min_vals.to_numpy())
             + self.min_vals.to_numpy()
-        ).astype(self.public_dtype)
+        ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
         return (
@@ -478,7 +481,6 @@ class TensorWrappedPhiTensorPointer(Pointer):
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.sum"
-
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
             min_vals=self.min_vals,
