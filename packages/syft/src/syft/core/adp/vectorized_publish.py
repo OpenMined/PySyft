@@ -17,6 +17,7 @@ import numpy as np
 from tqdm import tqdm
 
 # relative
+from ..tensor.lazy_repeat_array import lazyrepeatarray
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
@@ -108,10 +109,20 @@ def vectorized_publish(
         while isinstance(value, PassthroughTensor):
             value = value.child
 
+        if isinstance(input_tensor.min_val, lazyrepeatarray):
+            min_val_array = input_tensor.min_val.to_numpy()
+        else:
+            min_val_array = input_tensor.min_val
+
+        if isinstance(input_tensor.max_val, lazyrepeatarray):
+            max_val_array = input_tensor.max_val.to_numpy()
+        else:
+            max_val_array = input_tensor.max_val
+
         l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
             value_array=value,
-            min_val_array=input_tensor.min_val,
-            max_val_array=input_tensor.max_val,
+            min_val_array=min_val_array,
+            max_val_array=max_val_array,
             sigma=sigma,
         )
 
