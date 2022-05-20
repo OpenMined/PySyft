@@ -479,6 +479,8 @@ class Tensor(
             not isinstance(child, PassthroughTensor)
             and not isinstance(child, np.ndarray)
             and not isinstance(child, GammaTensor)
+            and not child.__class__.__name__ == "GammaTensor"
+            # Some isinstance breaks on dataclasses
         ):
 
             raise Exception(
@@ -520,18 +522,22 @@ class Tensor(
         return self
 
     def exp(self) -> Tensor:
-        # relative
-        from ..smpc.approximations import exp
-
-        res = exp(self)
-        return res  # type: ignore
+        if hasattr(self.child, "exp"):
+            return self.__class__(self.child.exp())
+        else:
+            raise ValueError("Tensor Chain does not have exp function")
 
     def reciprocal(self) -> Tensor:
-        # relative
-        from ..smpc.approximations import reciprocal
+        if hasattr(self.child, "exp"):
+            return self.__class__(self.child.exp())
+        else:
+            raise ValueError("Tensor Chain does not have exp function")
 
-        res = reciprocal(self)
-        return res
+    def one_hot(self) -> Tensor:
+        if hasattr(self.child, "one_hot"):
+            return self.__class__(self.child.one_hot())
+        else:
+            raise ValueError("Tensor Chain does not have one_hot function")
 
     @property
     def shape(self) -> Tuple[Any, ...]:

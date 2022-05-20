@@ -69,11 +69,8 @@ class lazyrepeatarray:
         if self.data.shape == other.data.shape:
             return self.__class__(data=self.data + other.data, shape=self.shape)
         else:
-            # Rasswanth : Fix after addition of integration tests.
             print("Lazy Repeat adding with mismatched shapes")
             return self.__class__(data=self.data + other.data, shape=self.shape)
-
-        raise Exception(f"not sure how to do this yet: {type(other)}")
 
     def __sub__(self, other: Any) -> lazyrepeatarray:
         """
@@ -83,13 +80,16 @@ class lazyrepeatarray:
         if is_acceptable_simple_type(other):
             return self.__class__(data=self.data - other, shape=self.shape)
 
-        if self.shape != other.shape:
-            raise Exception("cannot subtract tensors with different shapes")
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}"
+            )
 
         if self.data.shape == other.data.shape:
             return self.__class__(data=self.data - other.data, shape=self.shape)
-
-        raise Exception("not sure how to do this yet")
+        else:
+            print("Lazy Repeat adding with mismatched shapes")
+            return self.__class__(data=self.data - other.data, shape=self.shape)
 
     def __mul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -99,13 +99,13 @@ class lazyrepeatarray:
         if is_acceptable_simple_type(other):
             return self.__class__(data=self.data * other, shape=self.shape)
 
-        if self.shape != other.shape:
-            raise Exception("cannot multiply tensors with different shapes")
-
-        if self.data.shape == other.data.shape:
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray Multiplication:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
             return self.__class__(data=self.data * other.data, shape=self.shape)
-
-        raise Exception("not sure how to do this yet")
 
     def __matmul__(self, other: Any) -> lazyrepeatarray:
         """

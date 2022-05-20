@@ -316,3 +316,17 @@ class FixedPrecisionTensor(PassthroughTensor):
             res.child = self.child.getitem(item)
 
         return res
+
+    def one_hot(self) -> FixedPrecisionTensor:
+        if not isinstance(self.child, np.ndarray):
+            raise ValueError("One hot work only for numpy array child type")
+
+        value = self.decode().astype(DEFAULT_INT_NUMPY_TYPE)
+        one_hot_Y = np.zeros((value.size, value.max() + 1))
+        one_hot_Y[np.arange(value.size), value] = 1
+        one_hot_Y = one_hot_Y.T
+
+        res = FixedPrecisionTensor(
+            value=one_hot_Y, base=self.base, precision=self.precision
+        )
+        return res

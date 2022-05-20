@@ -24,6 +24,7 @@ from ...common.serde.deserialize import _deserialize as deserialize
 from ...common.serde.serializable import serializable
 from ...common.serde.serialize import _serialize as serialize
 from ..fixed_precision_tensor import FixedPrecisionTensor
+from ..lazy_repeat_array import lazyrepeatarray
 
 if TYPE_CHECKING:
     # stdlib
@@ -95,8 +96,8 @@ def numpy2jax(value: np.array, dtype: np.dtype) -> jnp.array:
 class GammaTensor:
     value: jnp.array
     data_subjects: DataSubjectList
-    min_val: float = flax.struct.field(pytree_node=False)
-    max_val: float = flax.struct.field(pytree_node=False)
+    min_val: lazyrepeatarray = flax.struct.field(pytree_node=False)
+    max_val: lazyrepeatarray = flax.struct.field(pytree_node=False)
     is_linear: bool = True
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
     id: str = flax.struct.field(
@@ -126,9 +127,15 @@ class GammaTensor:
         return self.func(state)
 
     def __add__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
         output_state = dict()
         # Add this tensor to the chain
         output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
 
         if isinstance(other, GammaTensor):
 
@@ -162,9 +169,15 @@ class GammaTensor:
         )
 
     def __sub__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
         output_state = dict()
         # Add this tensor to the chain
         output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
 
         if isinstance(other, GammaTensor):
 
@@ -177,12 +190,17 @@ class GammaTensor:
             # print("this is the output_state", output_state)
 
             value = self.value - other.value
-            min_min = self.min_val - other.min_val
-            min_max = self.min_val - other.max_val
-            max_min = self.max_val - other.min_val
-            max_max = self.max_val - other.max_val
-            min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
-            max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
+            min_min = self.min_val.data - other.min_val.data
+            min_max = self.min_val.data - other.max_val.data
+            max_min = self.max_val.data - other.min_val.data
+            max_max = self.max_val.data - other.max_val.data
+            _min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
+            _max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
+            min_val = self.min_val.copy()
+            min_val.data = _min_val
+            max_val = self.max_val.copy()
+            max_val.data = _max_val
+
         else:
 
             def _sub(state: dict) -> jax.numpy.DeviceArray:
@@ -195,16 +213,22 @@ class GammaTensor:
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
-            min_val=float(min_val),
-            max_val=float(max_val),
+            min_val=min_val,
+            max_val=max_val,
             func=_sub,
             state=output_state,
         )
 
     def __mul__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
         output_state = dict()
         # Add this tensor to the chain
         output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
 
         if isinstance(other, GammaTensor):
 
@@ -213,38 +237,50 @@ class GammaTensor:
 
             output_state[other.id] = other
             value = self.value * other.value
-            min_min = self.min_val * other.min_val
-            min_max = self.min_val * other.max_val
-            max_min = self.max_val * other.min_val
-            max_max = self.max_val * other.max_val
-            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_min = self.min_val.data * other.min_val.data
+            min_max = self.min_val.data * other.max_val.data
+            max_min = self.max_val.data * other.min_val.data
+            max_max = self.max_val.data * other.max_val.data
+            _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+            _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+
         else:
 
             def _mul(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.multiply(self.run(state), other)
 
             value = self.value * other
-            min_min = self.min_val * other
-            min_max = self.min_val * other
-            max_min = self.max_val * other
-            max_max = self.max_val * other
-            min_val = np.min([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
-            max_val = np.max([min_min, min_max, max_min, max_max], axis=0)  # type: ignore
+            min_min = self.min_val.data * other
+            min_max = self.min_val.data * other
+            max_min = self.max_val.data * other
+            max_max = self.max_val.data * other
+            _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+            _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+
+        min_val = self.min_val.copy()
+        min_val.data = _min_val
+        max_val = self.max_val.copy()
+        max_val.data = _max_val
 
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
-            min_val=float(min_val),
-            max_val=float(max_val),
+            min_val=min_val,
+            max_val=max_val,
             func=_mul,
             state=output_state,
         )
 
     def __matmul__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
         output_state = dict()
         # Add this tensor to the chain
         output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
 
         if isinstance(other, GammaTensor):
 
@@ -261,20 +297,69 @@ class GammaTensor:
 
             value = self.value @ other
 
+        min_val = lazyrepeatarray(data=np.array(0), shape=())
+        max_val = lazyrepeatarray(data=np.array(10), shape=())
         # TODO: implement min and max vals calculation for matmul
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
-            min_val=0,
-            max_val=10,
+            min_val=min_val,
+            max_val=max_val,
             func=_matmul,
             state=output_state,
         )
 
-    def __gt__(self, other: Any) -> GammaTensor:
+    def __rmatmul__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
         output_state = dict()
         # Add this tensor to the chain
         output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+
+            def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.matmul(
+                    other.run(state),
+                    self.run(state),
+                )
+
+            output_state[other.id] = other
+            value = self.value.__rmatmul__(other.value)
+
+        else:
+
+            def _rmatmul(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.matmul(other, self.run(state))
+
+            value = self.value.__rmatmul__(other)
+
+        min_val = lazyrepeatarray(data=np.array(0), shape=())
+        max_val = lazyrepeatarray(data=np.array(10), shape=())
+        # TODO: implement min and max vals calculation for matmul
+        return GammaTensor(
+            value=value,
+            data_subjects=self.data_subjects,
+            min_val=min_val,
+            max_val=max_val,
+            func=_rmatmul,
+            state=output_state,
+        )
+
+    def __gt__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
 
         if isinstance(other, GammaTensor):
 
@@ -290,12 +375,72 @@ class GammaTensor:
 
             value = self.value.__gt__(other)
 
+        min_val = lazyrepeatarray(data=np.array(0), shape=())
+        max_val = lazyrepeatarray(data=np.array(1), shape=())
         return GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
-            min_val=0,
-            max_val=1,
+            min_val=min_val,
+            max_val=max_val,
             func=_gt,
+            state=output_state,
+        )
+
+    def exp(self) -> GammaTensor:
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        # relative
+        from ...smpc.approximations import exp
+
+        def exp_reduction(val: np.ndarray) -> np.ndarray:
+            pos_index = val >= 0
+            neg_index = val < 0
+            exp = np.exp((pos_index * val * -1) + (neg_index * val))
+            pos_values = (pos_index) * exp
+            neg_values = (neg_index) * exp * -1
+            return pos_values + neg_values
+
+        min_val = self.min_val.copy()
+        min_val.data = np.array(exp_reduction(min_val.data))
+        max_val = self.max_val.copy()
+        max_val.data = np.array(exp_reduction(max_val.data))
+
+        def _exp(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.log(self.run(state))
+
+        return GammaTensor(
+            value=exp(self.value),
+            min_val=min_val,
+            max_val=max_val,
+            data_subjects=self.data_subjects,
+            func=_exp,
+            state=output_state,
+        )
+
+    def reciprocal(self) -> GammaTensor:
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        # relative
+        from ...smpc.approximations import reciprocal
+
+        min_val = self.min_val.copy()
+        min_val.data = 1 / (min_val.data)
+        max_val = self.max_val.copy()
+        max_val.data = 1 / (max_val.data)
+
+        def _reciprocal(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.divide(1, self.run(state))
+
+        return GammaTensor(
+            value=reciprocal(self.value),
+            min_val=min_val,
+            max_val=max_val,
+            data_subjects=self.data_subjects,
+            func=_reciprocal,
             state=output_state,
         )
 
@@ -324,9 +469,10 @@ class GammaTensor:
         output_state[self.id] = self
         # output_state.update(self.state)
 
-        value = jnp.sum(self.value)
-        min_val = float(self.min_val)
-        max_val = float(self.max_val)
+        value = self.value.sum()
+        # Change sum before Merge
+        min_val = self.min_val
+        max_val = self.max_val
 
         return GammaTensor(
             value=value,
@@ -513,7 +659,8 @@ class GammaTensor:
         gamma_msg.isLinear = self.is_linear
         gamma_msg.id = self.id
 
-        return gamma_msg.to_bytes_packed()
+        # return gamma_msg.to_bytes_packed()
+        return gamma_msg.to_bytes()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> GammaTensor:
@@ -522,7 +669,10 @@ class GammaTensor:
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
-        gamma_msg = gamma_struct.from_bytes_packed(
+        # gamma_msg = gamma_struct.from_bytes_packed(
+        #     buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
+        # )
+        gamma_msg = gamma_struct.from_bytes(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
