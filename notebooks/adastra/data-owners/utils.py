@@ -107,3 +107,20 @@ def download_mednist_dataset(dataset_url):
         print("MedNIST is already downloaded")
 
     return filename
+
+
+def validate_ds_credentials(ds_credentials):
+
+    valid = True
+    for key, val in ds_credentials.items():
+        if not val:
+            print(f"Please set a value for '{key}'.")
+            valid = False
+        elif key != "budget" and type(val) != str:
+            print(f"Value for {key} needs to be a string.")
+            valid = False
+
+    if not valid:
+        print("Please set the missing/incorrect values and re-run this cell")
+    else:
+        print("Data Scientist credentials are valid. Move to the next step.")
