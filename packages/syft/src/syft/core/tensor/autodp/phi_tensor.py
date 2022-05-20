@@ -694,8 +694,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         gamma_tensor = GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
-            min_val=self.min_vals.to_numpy(),
-            max_val=self.max_vals.to_numpy(),
+            min_val=self.min_vals,
+            max_val=self.max_vals,
             fpt_values=fpt_values,
         )
         return gamma_tensor
@@ -1167,8 +1167,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return GammaTensor(
             value=np.array(self.child.child.sum()),
             data_subjects=self.data_subjects.sum(),
-            min_val=float(self.min_vals.sum(axis=None)),
-            max_val=float(self.max_vals.sum(axis=None)),
+            min_val=self.min_vals.sum(axis=None),
+            max_val=self.max_vals.sum(axis=None),
         )
 
     def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
