@@ -28,6 +28,7 @@ services:
       target: "grid-ui-development"
     volumes:
       - ./frontend/:/app
+      - /app/node_modules
 
   db:
     ports:
