@@ -375,7 +375,6 @@ class GammaTensor:
         gamma_msg.oneHotLookup = capnp_serialize(
             liststrtonumpyutf8(self.data_subjects.one_hot_lookup)
         )
-
         gamma_msg.minVal = serialize(self.min_val, to_bytes=True)
         gamma_msg.maxVal = serialize(self.max_val, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
@@ -399,8 +398,8 @@ class GammaTensor:
         data_subjects_indexed = capnp_deserialize(gamma_msg.dataSubjectsIndexed)
         one_hot_lookup = numpyutf8tolist(capnp_deserialize(gamma_msg.oneHotLookup))
         data_subjects = DataSubjectList(one_hot_lookup, data_subjects_indexed)
-        min_val = gamma_msg.minVal
-        max_val = gamma_msg.maxVal
+        min_val = deserialize(gamma_msg.minVal, from_bytes=True)
+        max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
         is_linear = gamma_msg.isLinear
         id_str = gamma_msg.id
 
