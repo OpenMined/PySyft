@@ -10,7 +10,7 @@ from syft.core.tensor.lazy_repeat_array import lazyrepeatarray
 def test_create_lazy_repeat_array() -> None:
     array = np.array([1, 1, 1])
     lazyarray = lazyrepeatarray(data=np.array([1]), shape=array.shape)
-    assert (lazyarray.to_numpy() == array).all()
+    assert (lazyarray.evaluate() == array).all()
     assert lazyarray.shape == array.shape
     assert lazyarray.size == array.size
     assert lazyarray.dtype == array.dtype

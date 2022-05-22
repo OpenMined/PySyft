@@ -105,12 +105,12 @@ def vectorized_publish(
         # t1 = time()
         # Calculate everything needed for RDP
         if isinstance(input_tensor.min_val, lazyrepeatarray):
-            min_val_array = input_tensor.min_val.to_numpy().evaluate()
+            min_val_array = input_tensor.min_val.evaluate()
         else:
             min_val_array = input_tensor.min_val
 
         if isinstance(input_tensor.max_val, lazyrepeatarray):
-            max_val_array = input_tensor.max_val.to_numpy().evaluate()
+            max_val_array = input_tensor.max_val.evaluate()
         else:
             max_val_array = input_tensor.max_val
 

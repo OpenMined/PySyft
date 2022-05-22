@@ -7,7 +7,6 @@ from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
-from xmlrpc.client import Boolean
 
 # third party
 import numpy as np
@@ -21,6 +20,20 @@ from ..common.serde.capnp import get_capnp_schema
 from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
+
+func_dict = {
+    "np.add": np.add,
+    "np.subtract": np.subtract,
+    "np.multiply": np.multiply,
+    "np.matmul": np.matmul,
+    "np.equal": np.equal,
+    "np.not_equal": np.not_equal,
+    "np.less_equal": np.less_equal,
+    "np.greater_equal": np.greater_equal,
+    "np.less": np.less,
+    "np.greater": np.greater,
+    "np.sum": np.sum,
+}
 
 
 @serializable(capnp_bytes=True)
@@ -104,10 +117,6 @@ class lazyrepeatarray:
         )
 
     def __add__(self, other: Any) -> lazyrepeatarray:
-        """
-        THIS MIGHT LOOK LIKE COPY-PASTED CODE!
-        Don't touch it. It's going to get more complicated.
-        """
         if isinstance(other, (int, np.integer, float, np.floating)):
             return lazyrepeatarray(data=(self.data + other), shape=self.shape)
 
@@ -127,10 +136,6 @@ class lazyrepeatarray:
             raise Exception(f"not sure how to do this yet: {type(other)}")
 
     def __sub__(self, other: Any) -> lazyrepeatarray:
-        """
-        THIS MIGHT LOOK LIKE COPY-PASTED CODE!
-        Don't touch it. It's going to get more complicated.
-        """
         if isinstance(other, (int, np.integer, float, np.floating)):
             return lazyrepeatarray(data=(self.data - other), shape=self.shape)
 
@@ -150,10 +155,6 @@ class lazyrepeatarray:
             raise Exception(f"not sure how to do this yet: {type(other)}")
 
     def __mul__(self, other: Any) -> lazyrepeatarray:
-        """
-        THIS MIGHT LOOK LIKE COPY-PASTED CODE!
-        Don't touch it. It's going to get more complicated.
-        """
         if isinstance(other, (int, np.integer, float, np.floating)):
             return lazyrepeatarray(data=(self.data * other), shape=self.shape)
 
@@ -348,14 +349,6 @@ class lazyrepeatarray:
     def astype(self, np_type: np.dtype) -> lazyrepeatarray:
         return self.__class__(self.data.astype(np_type), self.shape)
 
-    def to_numpy(self, original: Boolean = False) -> np.ndarray:
-        if not original:
-            self.add_op(function="np.multiply", args=np.ones(self.shape))
-        else:
-            self.add_op(function="np.multiply", args=np.ones(self._shape))
-
-        return self
-
     def __repr__(self) -> str:
         return f"<lazyrepeatarray data: {self.data} -> shape: {self.shape}>"
 
@@ -369,22 +362,22 @@ class lazyrepeatarray:
         return self.data.any()
 
     def transpose(self, *args: List[Any], **kwargs: Dict[str, Any]) -> lazyrepeatarray:
-        dummy_res = self.to_numpy().transpose(*args, **kwargs)
+        dummy_res = self.evaluate().transpose(*args, **kwargs)
         return lazyrepeatarray(
             data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
         )
 
-    def add_op(self, function: str, selection=slice(None), args=None) -> None:  # type: ignore
+    def add_op(self, function: str, selection=slice(None), args: Optional[Any] = None) -> None:  # type: ignore
         self.transforms.append((function, selection, args))
 
-    def evaluate(self):  # type: ignore
+    def evaluate(self) -> np.ndarray:
         result = np.ones(self._shape) * self.data
         for func, selection, args in self.transforms:
             if func == "np.matmul":
                 if isinstance(args, lazyrepeatarray):
-                    args = args.to_numpy().evaluate()
-                result = eval(func)(result[selection], args)
+                    args = args.evaluate()
+                result = func_dict[func](result[selection], args)
             else:
-                result[selection] = eval(func)(result[selection], args)
+                result[selection] = func_dict[func](result[selection], args)
         self.transforms = []
         return result

@@ -82,12 +82,12 @@ class DataSubjectList:
 
         # This will be the equivalent of the DataSubjectList.data_subjects_indexed
         if not isinstance(entities_dataframe_slice, np.ndarray):
-            data_subjects = entities_dataframe_slice.to_numpy()
+            data_subjects = entities_dataframe_slice.evaluate()
         else:
             data_subjects = entities_dataframe_slice
 
         # data_subjects = (
-        #     entities_dataframe_slice.to_numpy()
+        #     entities_dataframe_slice.evaluate()
         #     if not isinstance(entities_dataframe_slice, np.ndarray)
         #     else entities_dataframe_slice
         # )

@@ -120,8 +120,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
         )
         return (
             np.random.rand(*list(self.public_shape))  # type: ignore
-            * (self.max_vals.to_numpy() - self.min_vals.to_numpy())
-            + self.min_vals.to_numpy()
+            * (self.max_vals.evaluate() - self.min_vals.evaluate())
+            + self.min_vals.evaluate()
         ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
@@ -694,8 +694,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         gamma_tensor = GammaTensor(
             value=value,
             data_subjects=self.data_subjects,
-            min_val=self.min_vals.to_numpy(),
-            max_val=self.max_vals.to_numpy(),
+            min_val=self.min_vals.evaluate(),
+            max_val=self.max_vals.evaluate(),
             fpt_values=fpt_values,
         )
         return gamma_tensor
