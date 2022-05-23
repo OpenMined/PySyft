@@ -76,6 +76,12 @@ class GridURL:
         dupe.path = path
         return dupe
 
+    def v1_path(self) -> GridURL:
+        return self.with_path("/api/v1")
+
+    def vpn_path(self) -> GridURL:
+        return self.with_path("/vpn")
+
     def as_container_host(self, container_host: Optional[str] = None) -> GridURL:
         if self.host_or_ip not in ["localhost", "docker-host", "host.k3d.internal"]:
             return self
