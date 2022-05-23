@@ -43,8 +43,8 @@ from .common.node_manager.redis_store import RedisStore
 from .common.node_manager.request_manager import RequestManager
 from .common.node_manager.role_manager import RoleManager
 from .common.node_manager.user_manager import UserManager
-from .common.node_service.association_request.association_request_service import (
-    AssociationRequestService,
+from .common.node_service.association_request.new_association_request import (  # noqa: F401
+    TriggerAssociationRequestMessage,
 )
 from .common.node_service.dataset_manager.dataset_manager_service import (
     DatasetManagerService,
@@ -149,8 +149,6 @@ class Domain(Node):
         # self.immediate_services_with_reply.append(GetAllRequestHandlersService)
 
         # Grid Domain Services
-        self.immediate_services_with_reply.append(AssociationRequestService)
-        # self.immediate_services_with_reply.append(DomainInfrastructureService)
         self.immediate_services_with_reply.append(GetRemainingBudgetService)
         self.immediate_services_with_reply.append(SimpleService)
         self.immediate_services_with_reply.append(PingService)
