@@ -174,10 +174,9 @@ def recv_association_request_msg(
 
         node.association_requests.create_association_request(
             node_name=msg.metadata["node_name"],
+            node_id=msg.metadata["node_id"],
             node_address=msg.reply_to.target_id.id.no_dash,
             status=status,
-            source=msg.source,
-            target=msg.target,
         )
     else:
         # this side happens on the domain
@@ -292,11 +291,12 @@ def get_association_request_msg(
             "You're not allowed to get Association Request information!"
         )
 
+    response = association_request.get_metadata()
     return GetAssociationRequestResponse(
         address=msg.reply_to,
-        content=association_request.get_metadata(),
-        source=association_request.source,
-        target=association_request.target,
+        content=response,
+        source=response["source"],
+        target=response["target"],
     )
 
 
