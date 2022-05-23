@@ -4,6 +4,7 @@ import json
 import logging
 import sys
 import time
+from typing import Any
 from typing import Dict
 from typing import Optional
 from typing import Type
@@ -19,9 +20,18 @@ import syft as sy
 
 # relative
 from .. import GridURL
+from ...core.common.message import EventualSyftMessageWithoutReply
+from ...core.common.message import ImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithReply
+from ...core.common.message import SignedImmediateSyftMessageWithoutReply
+from ...core.common.message import SyftMessage
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
+from ...core.node.common.node_service.generic_payload.syft_message import NewSyftMessage
+from ...core.node.common.node_service.node_service import (
+    ImmediateNodeServiceWithoutReply,
+)
 from ...core.node.domain_client import DomainClient
 from ...core.node.network_client import NetworkClient
 from ...util import verify_tls
@@ -212,5 +222,38 @@ def register(
         return login(
             url=grid_url, port=port, email=email, password=password, verbose=verbose
         )
+    else:
+        raise Exception(response.text)
 
-    raise Exception(response.text)
+
+def send_as_guest(
+    node_url: GridURL, message_class: SyftMessage, **kwargs: Any
+) -> Union[SyftMessage, None]:
+    client = connect(node_url)
+
+    # TODO: Remove old Syft messages when the time comes.
+    new_message_subclass = issubclass(type(message_class), NewSyftMessage)
+    if new_message_subclass or issubclass(
+        type(message_class), ImmediateSyftMessageWithReply
+    ):
+        msg: SignedImmediateSyftMessageWithReply = message_class(  # type: ignore
+            address=client.address,
+            reply_to=client.address,
+            **kwargs,
+        ).sign(signing_key=client.signing_key)
+        return client.send_immediate_msg_with_reply(msg=msg)
+    elif issubclass(type(message_class), ImmediateNodeServiceWithoutReply):
+        msg_without_reply: SignedImmediateSyftMessageWithoutReply = message_class(  # type: ignore
+            address=client.address,
+            **kwargs,
+        ).sign(
+            signing_key=client.signing_key
+        )
+        client.send_immediate_msg_without_reply(msg=msg_without_reply)
+    else:
+        eventual_msg: EventualSyftMessageWithoutReply = message_class(  # type: ignore
+            address=client.address,
+            **kwargs,
+        ).sign(signing_key=client.signing_key)
+        client.send_eventual_msg_without_reply(msg=eventual_msg)
+    return None
