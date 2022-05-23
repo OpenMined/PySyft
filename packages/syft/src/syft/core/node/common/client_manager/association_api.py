@@ -43,12 +43,8 @@ class AssociationRequestAPI(RequestAPI):
         )
 
     def create(self, **kwargs: Any) -> Any:
-        self.perform_request(syft_msg=self._create_message, content=kwargs)
-        content = getattr(
-            association_table, "content", getattr(association_table, "metadata", None)
-        )
-        return content
-    
+        self.perform_request(syft_msg=self._create_message, content=kwargs)  # type: ignore
+
     def get(self, **kwargs: Any) -> Any:
         association_table = self.perform_api_request(
             syft_msg=self._get_message, content=kwargs
