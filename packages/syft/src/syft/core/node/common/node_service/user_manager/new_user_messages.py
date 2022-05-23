@@ -269,6 +269,7 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
         institution: Optional[str] = ""
         website: Optional[str] = ""
         password: Optional[str] = ""
+        new_password: Optional[str] = ""
         role: Optional[str] = ""
         budget: Optional[float] = None
 
@@ -299,7 +300,7 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
 
         _valid_parameters = (
             self.payload.email
-            or self.payload.password
+            or (self.payload.password and self.payload.new_password)
             or self.payload.role
             or self.payload.name
             or self.payload.institution
@@ -365,6 +366,21 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
                 )
             else:
                 raise AuthorizationError("You're not allowed to change User roles!")
+
+        # Note: Maybe we should create a specific message to change password
+        # but in order to accomplish this, we also need to refactory the frontend
+        # methods in order to perform a request to the proper endpoint.
+        elif self.payload.password and self.payload.new_password:
+            node.users.change_password(
+                user_id=user_id,
+                current_pwd=self.payload.password,
+                new_pwd=self.payload.new_password,
+            )
+
+            # Delete password keys from the update parameters dictionary to be updated
+            # in the next step since we already did it in the previous line.
+            del payload_dict["password"]
+            del payload_dict["new_password"]
 
         # Update values of all other parameters
         for param, val in payload_dict.items():
