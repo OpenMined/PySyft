@@ -62,7 +62,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
