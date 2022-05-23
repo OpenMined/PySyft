@@ -105,7 +105,7 @@ def vectorized_publish(
 
         # t1 = time()
         # Calculate everything needed for RDP
-        value = input_tensor.value
+        value = input_tensor.child
         while isinstance(value, PassthroughTensor):
             value = value.child
 

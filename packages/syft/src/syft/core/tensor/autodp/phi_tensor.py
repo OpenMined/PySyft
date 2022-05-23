@@ -903,7 +903,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         fpt_values = self.child
 
         gamma_tensor = GammaTensor(
-            value=self.child,
+            child=self.child,
             data_subjects=self.data_subjects,
             min_val=self.min_vals,
             max_val=self.max_vals,
@@ -1436,7 +1436,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # TODO: Expand this later to include more args/kwargs
         res = GammaTensor(
-            value=self.child.sum(),
+            child=self.child.sum(),
             data_subjects=self.data_subjects.sum(),
             min_val=min_val,
             max_val=max_val,

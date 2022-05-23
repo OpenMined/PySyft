@@ -301,12 +301,15 @@ class MPCTensor(PassthroughTensor):
                 value = None
 
             # relative
+            from ..autodp.gamma_tensor import TensorWrappedGammaTensorPointer
             from ..autodp.phi_tensor import TensorWrappedPhiTensorPointer
 
-            if isinstance(secret, TensorWrappedPhiTensorPointer):
+            if isinstance(
+                secret, (TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer)
+            ):
 
                 share_wrapper = secret.to_local_object_without_private_data_child()
-                share_wrapper_pointer = share_wrapper.send(party)
+                share_wrapper_pointer = share_wrapper.send(party)  # type: ignore
 
                 remote_share = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor(
                     rank=i,
