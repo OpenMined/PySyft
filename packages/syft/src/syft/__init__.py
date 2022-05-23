@@ -70,6 +70,7 @@ from .experimental_flags import flags  # noqa: F401
 from .grid.client.client import connect  # noqa: F401
 from .grid.client.client import login  # noqa: F401
 from .grid.client.client import register  # noqa: F401
+from .grid.client.client import send_as_guest  # noqa: F401
 
 # Convenience Objects
 from .lib import lib_ast  # noqa: F401
