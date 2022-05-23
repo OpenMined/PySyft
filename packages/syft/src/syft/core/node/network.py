@@ -30,9 +30,6 @@ from .common.node_manager.node_manager import NodeManager
 from .common.node_manager.node_route_manager import NodeRouteManager
 from .common.node_manager.role_manager import RoleManager
 from .common.node_manager.user_manager import UserManager
-from .common.node_service.association_request.association_request_service import (
-    AssociationRequestService,
-)
 from .common.node_service.network_search.network_search_service import (
     NetworkSearchService,
 )
@@ -57,6 +54,7 @@ from .common.node_service.vpn.vpn_service import VPNStatusService
 from .domain import Domain
 from .domain_client import DomainClient
 from .network_client import NetworkClient
+from .network_service import NetworkServiceClass
 
 
 class Network(Node):
@@ -107,7 +105,6 @@ class Network(Node):
         self.association_requests = AssociationRequestManager(db_engine)
 
         # Grid Network Services
-        self.immediate_services_with_reply.append(AssociationRequestService)
         self.immediate_services_with_reply.append(NodeSetupService)
         self.immediate_services_with_reply.append(RoleManagerService)
         self.immediate_services_with_reply.append(UserManagerService)
@@ -119,6 +116,9 @@ class Network(Node):
         self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(NetworkSearchService)
         self.immediate_services_with_reply.append(PeerDiscoveryService)
+
+        # TODO: New Service registration process
+        self.immediate_services_with_reply.append(NetworkServiceClass)
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
