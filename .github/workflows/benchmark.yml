@@ -33,7 +33,7 @@ jobs:
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         run: |
@@ -63,4 +63,3 @@ jobs:
         run: |
           mongoimport --uri ${{ secrets.MONGO_URI }} --collection macro_benchmark --file macro_benchmark.json
           mongoimport --uri ${{ secrets.MONGO_URI }} --collection micro_benchmark --file micro_benchmark.json
-

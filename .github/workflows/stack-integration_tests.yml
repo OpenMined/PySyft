@@ -63,7 +63,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -129,7 +129,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -223,7 +223,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
         shell: cmd
 
       - name: Install tox
@@ -349,7 +349,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install build essentials
         if: steps.changes.outputs.stack == 'true'
@@ -434,7 +434,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -537,7 +537,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
