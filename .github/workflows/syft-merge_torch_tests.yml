@@ -66,7 +66,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         if: steps.changes.outputs.syft == 'true'
