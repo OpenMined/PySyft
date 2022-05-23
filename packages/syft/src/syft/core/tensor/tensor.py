@@ -38,6 +38,7 @@ from ..node.common.action.run_class_method_smpc_action import RunClassMethodSMPC
 from ..pointer.pointer import Pointer
 from .ancestors import PhiTensorAncestor
 from .autodp.gamma_tensor import GammaTensor
+from .autodp.gamma_tensor import TensorWrappedGammaTensorPointer
 from .autodp.phi_tensor import PhiTensor
 from .autodp.phi_tensor import TensorWrappedPhiTensorPointer
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
@@ -570,6 +571,19 @@ class Tensor(
                 description=description,
                 min_vals=self.child.min_vals,
                 max_vals=self.child.max_vals,
+                public_shape=getattr(self, "public_shape", None),
+                public_dtype=getattr(self, "public_dtype", None),
+            )
+        elif isinstance(self.child, GammaTensor):
+            return TensorWrappedGammaTensorPointer(
+                data_subjects=self.child.data_subjects,
+                client=client,
+                id_at_location=id_at_location,
+                object_type=object_type,
+                tags=tags,
+                description=description,
+                min_vals=self.child.min_val,
+                max_vals=self.child.max_val,
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
