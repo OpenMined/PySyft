@@ -17,18 +17,17 @@ class AssociationRequest(Base):
     requested_date = Column(String(255))
     accepted_date = Column(String(255), default="")
     node_name = Column(String(255), default="")
+    node_id = Column(String(255), default="")
     node_address = Column(String(255), default="")
     name = Column(String(255), default="")
     email = Column(String(255), default="")
     reason = Column(String(255), default="")
     status = Column(String(255), default="")
-    source = Column(String(255), default="")
-    target = Column(String(255), default="")
 
     def __str__(self) -> str:
         return (
             f"< Association Request id : {self.id}, Name: {self.name},"
-            f" Status: {self.status}, Source: {self.source}, Target: {self.target}"
+            f" Status: {self.status}, Node Address: {self.node_address}"
             f" Date: {self.requested_date}>"
         )
 
@@ -40,8 +39,7 @@ class AssociationRequest(Base):
             "email": self.email,
             "reason": self.reason,
             "status": self.status,
-            "source": self.source,
-            "target": self.target,
-            "node_name": self.node_name,
             "node_address": self.node_address,
+            "node_name": self.node_name,
+            "node_id": self.node_id,
         }

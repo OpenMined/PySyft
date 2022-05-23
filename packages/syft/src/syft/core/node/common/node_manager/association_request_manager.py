@@ -30,33 +30,45 @@ class AssociationRequestManager(DatabaseManager):
         self,
         node_name: str,
         node_address: str,
-        source: str,
-        target: str,
+        node_id: str,
         status: str,
+        name: str = "",
+        email: str = "",
+        reason: str = "",
     ) -> None:
         table_fields = {}
-        table_fields["node_name"] = node_name
+
+        table_fields[RequestAPIFields.NODE_NAME] = node_name
+        table_fields[RequestAPIFields.NODE_ID] = node_id
         table_fields[RequestAPIFields.REQUESTED_DATE] = datetime.now().strftime(
             "%m/%d/%Y"
         )
-
-        table_fields[RequestAPIFields.SOURCE] = source
-        table_fields[RequestAPIFields.TARGET] = target
         table_fields[RequestAPIFields.STATUS] = status
-        table_fields["node_address"] = node_address
+        table_fields[RequestAPIFields.NODE_ADDRESS] = node_address
+        table_fields[RequestAPIFields.NODE_ADDRESS] = node_address
+        table_fields[RequestAPIFields.NODE_ADDRESS] = node_address
+        table_fields[RequestAPIFields.NODE_ADDRESS] = node_address
+        table_fields[RequestAPIFields.NAME] = name
+        table_fields[RequestAPIFields.EMAIL] = email
+        table_fields[RequestAPIFields.REASON] = reason
 
         try:
-            self.first(**{"source": source, "target": target})
-            self.modify(query={"source": source, "target": target}, values=table_fields)
+            self.first(**{RequestAPIFields.NODE_ADDRESS.value: node_address})
+            self.modify(
+                query={RequestAPIFields.NODE_ADDRESS.value: node_address},
+                values=table_fields,
+            )
         except AssociationRequestError:
             # no existing AssociationRequest so lets make one
             self.register(**table_fields)  # type: ignore
 
-    def set(self, source: str, target: str, response: str) -> None:
+    def set(self, node_address: str, response: str) -> None:
         self.modify(
-            query={"source": source, "target": target},
+            query={RequestAPIFields.NODE_ADDRESS.value: node_address},
             values={
-                "status": response,
-                "accepted_date": datetime.now().strftime("%m/%d/%Y"),
+                RequestAPIFields.STATUS.value: response,
+                RequestAPIFields.ACCEPTED_DATE.value: datetime.now().strftime(
+                    "%m/%d/%Y"
+                ),
             },
         )
