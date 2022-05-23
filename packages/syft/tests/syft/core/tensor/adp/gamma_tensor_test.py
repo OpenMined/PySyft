@@ -10,7 +10,6 @@ import syft as sy
 from syft.core.adp.data_subject_ledger import DataSubjectLedger
 from syft.core.adp.ledger_store import DictLedgerStore
 from syft.core.tensor.autodp.gamma_tensor import GammaTensor
-from syft.core.tensor.autodp.gamma_tensor import jax2numpy
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
 
 
