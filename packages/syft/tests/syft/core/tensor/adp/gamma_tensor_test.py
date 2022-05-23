@@ -81,12 +81,10 @@ def test_gamma_serde(
     ser = sy.serialize(gamma_tensor1, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
 
-    assert jax2numpy(de.value, dtype=de.value.dtype) == jax2numpy(
-        gamma_tensor1.value, dtype=gamma_tensor1.dtype
-    )
+    assert de.value == gamma_tensor1.value
     assert de.data_subjects == gamma_tensor1.data_subjects
-    assert de.min_val == gamma_tensor1.min_val
-    assert de.max_val == gamma_tensor1.max_val
+    assert (de.min_val == gamma_tensor1.min_val).all()
+    assert (de.max_val == gamma_tensor1.max_val).all()
     assert de.is_linear == gamma_tensor1.is_linear
     assert de.func == gamma_tensor1.func
     assert de.id == gamma_tensor1.id
