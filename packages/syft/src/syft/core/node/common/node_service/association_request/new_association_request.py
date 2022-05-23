@@ -2,15 +2,12 @@
 from typing import List
 from typing import Optional
 from typing import Type
-from typing import Dict
-from typing import Any
 
 # third party
-from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from typing_extensions import final
 
+# syft absolute
 import syft as sy
 
 # relative
@@ -19,33 +16,17 @@ from .....common.serde.serializable import serializable
 from ....domain_interface import DomainInterface
 from ....domain_msg_registry import DomainMessageRegistry
 from ....enums import AssociationRequestResponses
-from ...node_service.vpn.vpn_messages import VPNStatusMessageWithReply
+from ....enums import RequestAPIFields
+from ....network_interface import NetworkInterface
+from ....network_msg_registry import NetworkMessageRegistry
+from ...node_service.vpn.utils import get_status
 from ...permissions.permissions import BasePermission
+from ...permissions.user_permissions import NoRestriction
 from ...permissions.user_permissions import UserCanManageInfra
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
 from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
-from .association_request_messages import ReceiveAssociationRequestMessage
-
-
-def get_vpn_status_metadata(node: DomainInterface) -> Dict[str, Any]:
-    vpn_status_msg = (
-        VPNStatusMessageWithReply()
-        .to(address=node.address, reply_to=node.address)
-        .sign(signing_key=node.signing_key)
-    )
-    vpn_status = node.recv_immediate_msg_with_reply(msg=vpn_status_msg)
-    vpn_status_message_contents = vpn_status.message
-    status = vpn_status_message_contents.payload.kwargs  # type: ignore
-    network_vpn_ip = status["host"]["ip"]
-    node_name = status["host"]["hostname"]
-    metadata = {
-        "host_or_ip": str(network_vpn_ip),
-        "node_id": str(node.target_id.id.no_dash),
-        "node_name": str(node_name),
-        "type": f"{str(type(node).__name__).lower()}",
-    }
-    return metadata
+from ..node_setup.node_setup_messages import GetSetUpMessage
 
 
 @serializable(recursive_serde=True)
@@ -54,75 +35,210 @@ class TriggerAssociationRequestMessage(SyftMessage, DomainMessageRegistry):
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
-        """Payload fields and types used during a User Creation Request."""
+        """Payload fields and types used by TriggerAssociationRequest message."""
+
         target: str
         vpn: bool
-    
+        source: Optional[str] = ""
+        reason: Optional[str]
+
     # Pydantic Inner class to define expected reply payload fields.
     class Reply(ReplyPayload):
-        """Payload fields and types used during a User Creation Response."""
+        """Payload fields and types used by AssociationRequest response."""
 
         message: str = "Association Request sent!"
 
-    request_payload_type = (
-        Request  # Converts generic syft dict into a CreateUserMessage.Request object.
-    )
-    reply_payload_type = (
-        Reply  # Creates a proper Reply payload message structure as a response.
-    )
+    request_payload_type = Request
+    reply_payload_type = Reply
 
     def run(  # type: ignore
         self, node: DomainInterface, verify_key: Optional[VerifyKey] = None
     ) -> ReplyPayload:  # type: ignore
-        """ Send a Domain's association request to the proper Network node.
 
-        Args:
-            node (DomainInterface): Domain interface node.
-            verify_key (Optional[VerifyKey], optional): User signed verification key. Defaults to None.
+        # 1 -  Get User
+        user = node.users.get_user(verify_key=verify_key)
 
-        Raises:
-            MissingRequestKeyError: If the required request fields are missing.
-            AuthorizationError: If user already exists for given email address.
+        # 2 - If connected in vpn mode, replace source by vpn's ip.
+        source: str = self.payload.source
+        if self.payload.vpn:
+            _, host, _ = get_status()
+            source = str(host["host_or_ip"])
 
-        Returns:
-            ReplyPayload: Message on successful user creation.
-        """
-        target_address = self.payload.target
-        metadata : Dict[str,str] = dict()
+        # 3 - Connect as a guest with the network
+        network_url = GridURL.from_url(self.payload.target).v1_path()
 
-        # Recover user private key
-        user_priv_key = SigningKey(
-            node.users.get_user(verify_key).private_key.encode(), encoder=HexEncoder  # type: ignore
+        # 4 - Get Network Node Name and ID.
+        network_info = sy.send_as_guest(
+            node_url=network_url, message_class=GetSetUpMessage
+        ).content
+
+        # 5- Build and send an association request message to the network node
+        msg_content = {
+            RequestAPIFields.NODE_NAME.value: node.name,
+            RequestAPIFields.NODE_ID.value: node.name,
+            RequestAPIFields.NODE_ADDRESS.value: source,
+            RequestAPIFields.NAME.value: user.name,
+            RequestAPIFields.EMAIL.value: user.email,
+            RequestAPIFields.REASON.value: self.payload.reason,
+        }
+
+        # 6 - Send an Association Request
+        response_msg = sy.send_as_guest(
+            node_url=network_url,
+            message_class=AssociationRequestMessage,
+            kwargs=msg_content,
         )
-        metadata = get_vpn_status_metadata(node=node)
 
-        # Connect as a guest with the network
-        network_url = GridURL.from_url(target_address).with_path("/api/v1")
-        network_client = sy.connect(url=str(network_url))
+        # TODO: Remover
+        # current_status = str(response_msg.kwargs[RequestAPIFields.STATUS])
 
-        # Build an association request to send to the target
-        target_msg: SignedImmediateSyftMessageWithReply = (
-            ReceiveAssociationRequestMessage(
-                address=network_client.address,
-                reply_to=node.address,
-                metadata=metadata,
-                source=metadata["host_or_ip"],
-                target=target_address,
-            ).sign(signing_key=user_priv_key)
-            )
-        network_client.send_immediate_msg_with_reply(msg=target_msg)
-
-
-        # Create a new row in the association request table.
+        # 7 - Create a new row in the association request table.
         node.association_requests.create_association_request(
-            node_name=network_client.name,  # type: ignore
-            node_address=network_client.target_id.id.no_dash,  # type: ignore
-            status=AssociationRequestResponses.PENDING,
-            source=metadata["host_or_ip"],
-            target=target_address,
+            node_name=network_info["domain_name"],  # type: ignore
+            node_id=network_info[RequestAPIFields.NODE_ID.value],  # type: ignore
+            node_address=self.payload.target,
+            status=response_msg.payload.status,  # Update with network's response
+            name=user.name,
+            email=user.email,
+            reason=self.payload.reason,
         )
+
         return TriggerAssociationRequestMessage.Reply()
 
     def get_permissions(self) -> List[Type[BasePermission]]:
         """Returns the list of permission classes."""
         return [UserCanManageInfra]
+
+
+@serializable(recursive_serde=True)
+@final
+class AssociationRequestMessage(SyftMessage, NetworkMessageRegistry):
+
+    # Pydantic Inner class to define expected request payload fields.
+    class Request(RequestPayload):
+        """Payload fields and types used by AssociationRequest message."""
+
+        node_name: str
+        node_id: str
+        node_address: str
+        name: Optional[str]
+        email: Optional[str]
+        reason: Optional[str]
+
+    # Pydantic Inner class to define expected reply payload fields.
+    class Reply(ReplyPayload):
+        """Payload fields and types used by Association Request response."""
+
+        message: str = "Association Request received!"
+        status: str = AssociationRequestResponses.PENDING.value
+
+    request_payload_type = Request
+    reply_payload_type = Reply
+
+    def run(  # type: ignore
+        self, node: NetworkInterface, verify_key: Optional[VerifyKey] = None
+    ) -> ReplyPayload:  # type: ignore
+        # 1 - Check if this association already exists
+        _previous_request = node.association_requests.contain(
+            node_address=self.payload.node_address
+        )
+
+        # 2 - If there's not a previous one ...
+        if not _previous_request:
+            # 3- Check settings to accept automatically
+            if node.settings.DOMAIN_ASSOCIATION_REQUESTS_AUTOMATICALLY_ACCEPTED:
+                status = AssociationRequestResponses.ACCEPT
+            else:
+                status = AssociationRequestResponses.PENDING
+
+            # 4 - Create a new database row
+            node.association_requests.create_association_request(
+                node_name=self.payload.node_name,
+                node_id=self.payload.node_id,
+                node_address=self.payload.node_address,
+                status=status,
+                name=self.payload.name,
+                email=self.payload.email,
+                reason=self.payload.reason,
+            )
+            return AssociationRequestMessage.Reply(status=status)
+        else:
+            status = node.association_requests.first(
+                node_address=self.payload.node_address
+            ).status
+            return AssociationRequestMessage.Reply(status=status)
+
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        """Returns the list of permission classes."""
+        return [NoRestriction]
+
+
+@serializable(recursive_serde=True)
+@final
+class ProcessAssociationRequestMessage(SyftMessage, NetworkMessageRegistry):
+
+    # Pydantic Inner class to define expected request payload fields.
+    class Request(RequestPayload):
+        """Payload fields and types used by ProcessAssociationRequest message."""
+
+        accept: bool
+        node_address: str
+
+    # Pydantic Inner class to define expected reply payload fields.
+    class Reply(ReplyPayload):
+        """Payload fields and types used by ProcessAssociation Request response."""
+
+        message: str = "Association Request sent!"
+
+    request_payload_type = Request
+
+    reply_payload_type = Reply
+
+    def run(  # type: ignore
+        self, node: NetworkInterface, verify_key: Optional[VerifyKey] = None
+    ) -> ReplyPayload:  # type: ignore
+        response = (
+            AssociationRequestResponses.ACCEPT
+            if self.payload.accept
+            else AssociationRequestResponses.DENY
+        )
+        node.association_requests.set(
+            node_adress=self.payload.node_address, response=response
+        )  # type: ignore
+
+        return ProcessAssociationRequestMessage.Reply()
+
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        """Returns the list of permission classes."""
+        return [UserCanManageInfra]
+
+
+@serializable(recursive_serde=True)
+@final
+class CheckAssociationStatusMessage(SyftMessage, NetworkMessageRegistry):
+
+    # Pydantic Inner class to define expected request payload fields.
+    class Request(RequestPayload):
+        """Payload fields and types used by ProcessAssociationRequest message."""
+
+        target: str
+
+    # Pydantic Inner class to define expected reply payload fields.
+    class Reply(ReplyPayload):
+        """Payload fields and types used by ProcessAssociation Request response."""
+
+        status: str
+
+    request_payload_type = Request
+
+    reply_payload_type = Reply
+
+    def run(  # type: ignore
+        self, node: NetworkInterface, verify_key: Optional[VerifyKey] = None
+    ) -> ReplyPayload:  # type: ignore
+        status = node.association_requests.first(source=self.payload.target).status
+        return CheckAssociationStatusMessage.Reply(status=status)
+
+    def get_permissions(self) -> List[Type[BasePermission]]:
+        """Returns the list of permission classes."""
+        return [NoRestriction]
