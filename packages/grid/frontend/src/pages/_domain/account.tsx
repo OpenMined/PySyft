@@ -76,26 +76,58 @@ function AccountSettingsPassword() {
   const {
     handleSubmit,
     register,
+    setError,
     reset,
-    formState: {isValid, isDirty}
+    formState: {isValid, isDirty, errors}
   } = useForm({mode: 'onChange'})
 
+  const [showSuccess, setShowSuccess] = useState(false)
+
   function onSubmit(values) {
-    update(values)
+    update(values, {
+      onSuccess: () => {
+        setShowSuccess(true)
+      },
+      onError: () => {
+        setError('password', {type: 'manual', message: 'Invalid password'}, {shouldFocus: true})
+      }
+    })
   }
 
   return (
     <section className="col-span-5 space-y-6 col-start-1">
       <Heading>{t('password', 'account')}</Heading>
       <Form onSubmit={handleSubmit(onSubmit)} reset={reset} isValid={isValid && isDirty}>
-        <FormControl id="password" label={t('current-password')} required>
+        <FormControl
+          id="password"
+          label={t('current-password')}
+          required
+          error={Boolean(errors.password)}
+          hint={errors.password?.message}>
           <Input {...register('password', {required: true})} type="password" />
         </FormControl>
         <FormControl id="new_password" label={t('new-password')} required>
           <Input {...register('new_password', {required: true})} type="password" />
         </FormControl>
       </Form>
+      <ChangePasswordSuccessModal show={showSuccess} showSuccess={setShowSuccess} reset={reset} />
     </section>
+  )
+}
+
+function ChangePasswordSuccessModal({show, showSuccess, reset}) {
+  const onClose = () => {
+    showSuccess(false)
+    reset()
+  }
+
+  return (
+    <Modal show={show} onClose={onClose}>
+      <div className="col-span-full text-center">
+        <FontAwesomeIcon icon={faCheckCircle} className="text-green-200 text-3xl" />
+        <H4 className="mt-3">{t('change-password-success-heading', 'settings')}</H4>
+      </div>
+    </Modal>
   )
 }
 
