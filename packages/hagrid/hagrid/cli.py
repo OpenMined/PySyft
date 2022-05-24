@@ -2303,7 +2303,14 @@ def create_check_table(
     is_flag=True,
     help="Optional: wait until checks pass",
 )
-def check(ip_addresses: TypeList[str], wait: bool = False) -> None:
+@click.option(
+    "--silent",
+    is_flag=True,
+    help="Optional: don't refresh output during wait",
+)
+def check(
+    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+) -> None:
     console = rich.get_console()
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
@@ -2317,17 +2324,28 @@ def check(ip_addresses: TypeList[str], wait: bool = False) -> None:
             table = create_check_table(
                 table_contents=table_contents, time_left=max_timeout
             )
+            if silent:
+                print("Checking...")
             while not status:
-                with Live(table, refresh_per_second=4, screen=True) as live:
+                if not silent:
+                    with Live(table, refresh_per_second=4, screen=True) as live:
+                        max_timeout -= 1
+                        if max_timeout % 5 == 0:
+                            status, table_contents = get_health_checks(ip_address)
+                        table = create_check_table(
+                            table_contents=table_contents, time_left=max_timeout
+                        )
+                        live.update(table)
+                        if status:
+                            break
+                        time.sleep(1)
+                else:
                     max_timeout -= 1
                     if max_timeout % 5 == 0:
                         status, table_contents = get_health_checks(ip_address)
                     table = create_check_table(
                         table_contents=table_contents, time_left=max_timeout
                     )
-                    live.update(table)
-                    if status:
-                        break
                     time.sleep(1)
         console.print(table)
     else:
