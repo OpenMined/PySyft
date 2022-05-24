@@ -2217,10 +2217,10 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 cli.add_command(debug)
 
-DEFAULT_HEALTH_CHECKS = ["host", "login", "api", "ssh", "jupyter"]
+DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
 HEALTH_CHECK_FUNCTIONS = {
     "host": check_host,
-    "login": check_login_page,
+    "UI (βeta)": check_login_page,
     "api": check_api_metadata,
     "ssh": check_ip_for_ssh,
     "jupyter": check_jupyter_server,
@@ -2228,7 +2228,7 @@ HEALTH_CHECK_FUNCTIONS = {
 
 HEALTH_CHECK_ICONS = {
     "host": "🔌",
-    "login": "🖱",
+    "UI (βeta)": "🖱",
     "api": "⚙️",
     "ssh": "🔐",
     "jupyter": "📗",
@@ -2236,7 +2236,7 @@ HEALTH_CHECK_ICONS = {
 
 HEALTH_CHECK_URLS = {
     "host": "{ip_address}",
-    "login": "http://{ip_address}/login",
+    "UI (βeta)": "http://{ip_address}/login",
     "api": "http://{ip_address}/api/v1",
     "ssh": "hagrid ssh {ip_address}",
     "jupyter": "http://{ip_address}:8888",
