@@ -45,6 +45,7 @@ from ...pointer.pointer import Pointer
 from ..broadcastable import is_broadcastable
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
+from ..lazy_repeat_array import compute_min_max
 from ..lazy_repeat_array import lazyrepeatarray
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -54,9 +55,9 @@ from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.mpc_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
-from ..util import implements
 from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
+from .gamma_tensor import TensorWrappedGammaTensorPointer
 
 
 @serializable(recursive_serde=True)
@@ -149,11 +150,13 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
-
+        min_vals, max_vals = compute_min_max(
+            self.min_vals, self.max_vals, other, op_str
+        )
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             client=self.client,
         )
 
@@ -229,6 +232,21 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
         return result
 
+    @property
+    def gamma(self) -> TensorWrappedGammaTensorPointer:
+        return TensorWrappedGammaTensorPointer(
+            data_subjects=self.data_subjects,
+            client=self.client,
+            id_at_location=self.id_at_location,
+            object_type=self.object_type,
+            tags=self.tags,
+            description=self.description,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            public_shape=getattr(self, "public_shape", None),
+            public_dtype=getattr(self, "public_dtype", None),
+        )
+
     @staticmethod
     def _apply_op(
         self: TensorWrappedPhiTensorPointer,
@@ -243,6 +261,12 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
+        if isinstance(other, TensorWrappedPhiTensorPointer):
+            if self.data_subjects != other.data_subjects:
+                return getattr(self.gamma, op_str)(other.gamma)
+        elif isinstance(other, TensorWrappedGammaTensorPointer):
+            return getattr(self.gamma, op_str)(other)
+
         if (
             isinstance(other, TensorWrappedPhiTensorPointer)
             and self.client != other.client
@@ -260,8 +284,13 @@ class TensorWrappedPhiTensorPointer(Pointer):
         elif isinstance(other, MPCTensor):
 
             return getattr(other, op_str)(self)
-
-        return self._apply_tensor_op(other=other, op_str=op_str)
+        elif is_acceptable_simple_type(other) or isinstance(
+            other, TensorWrappedPhiTensorPointer
+        ):
+            return self._apply_tensor_op(other=other, op_str=op_str)
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def __add__(
         self,
@@ -469,7 +498,9 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def sum(
         self,
-    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+    ) -> Union[
+        TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
+    ]:
         """Apply the "truediv" operation between "self" and "other"
 
         Args:
@@ -479,12 +510,22 @@ class TensorWrappedPhiTensorPointer(Pointer):
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
-        result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            client=self.client,
-        )
+        result: Union[TensorWrappedGammaTensorPointer, TensorWrappedPhiTensorPointer]
+        min_vals, max_vals = compute_min_max(self.min_vals, self.max_vals, None, "sum")
+        if len(self.data_subjects.one_hot_lookup) == 1:
+            result = TensorWrappedPhiTensorPointer(
+                data_subjects=self.data_subjects,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                client=self.client,
+            )
+        else:
+            result = TensorWrappedGammaTensorPointer(
+                data_subjects=self.data_subjects,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                client=self.client,
+            )
 
         # QUESTION can the id_at_location be None?
         result_id_at_location = getattr(result, "id_at_location", None)
@@ -540,10 +581,24 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.exp"
 
+        # TODO: should modify to log reduction.
+        def exp_reduction(val: np.ndarray) -> np.ndarray:
+            pos_index = val >= 0
+            neg_index = val < 0
+            exp = np.exp((pos_index * val * -1) + (neg_index * val))
+            pos_values = (pos_index) * exp
+            neg_values = (neg_index) * exp * -1
+            return pos_values + neg_values
+
+        min_vals = self.min_vals.copy()
+        min_vals.data = np.array(exp_reduction(min_vals.data))
+        max_vals = self.max_vals.copy()
+        max_vals.data = np.array(exp_reduction(max_vals.data))
+
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             client=self.client,
         )
 
@@ -601,10 +656,15 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.reciprocal"
 
+        min_vals = self.min_vals.copy()
+        min_vals.data = np.array(1 / min_vals.data)
+        max_vals = self.max_vals.copy()
+        max_vals.data = np.array(1 / max_vals.data)
+
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             client=self.client,
         )
 
@@ -779,14 +839,6 @@ class TensorWrappedPhiTensorPointer(Pointer):
             public_shape=public_shape,
             public_dtype=public_dtype,
         )
-
-
-@implements(TensorWrappedPhiTensorPointer, np.exp)
-def exp(x: TensorWrappedPhiTensorPointer) -> TensorWrappedPhiTensorPointer:
-    # relative
-    from ...smpc.approximations import exp
-
-    return exp(x)
 
 
 @serializable(capnp_bytes=True)
@@ -1501,7 +1553,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         max_vals.data = np.array(exp_reduction(max_vals.data))
 
         return PhiTensor(
-            child=exp(self.child),
+            child=exp(self.child),  # type: ignore
             min_vals=min_vals,
             max_vals=max_vals,
             data_subjects=self.data_subjects,
@@ -1512,9 +1564,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         from ...smpc.approximations import reciprocal
 
         min_vals = self.min_vals.copy()
-        min_vals.data = 1 / min_vals.data
+        min_vals.data = np.array(1 / min_vals.data)
         max_vals = self.max_vals.copy()
-        max_vals.data = 1 / max_vals.data
+        max_vals.data = np.array(1 / max_vals.data)
 
         return PhiTensor(
             child=reciprocal(self.child),

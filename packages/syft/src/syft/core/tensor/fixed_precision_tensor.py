@@ -86,6 +86,10 @@ class FixedPrecisionTensor(PassthroughTensor):
     def dtype(self) -> np.dtype:
         return getattr(self.child, "dtype", None)
 
+    @property
+    def shape(self) -> Optional[Tuple[int, ...]]:
+        return getattr(self.child, "shape", None)
+
     def decode(self) -> Any:
         # relative
         from .smpc.share_tensor import ShareTensor
@@ -191,7 +195,7 @@ class FixedPrecisionTensor(PassthroughTensor):
             raise ValueError("We do not support Private Division yet.")
 
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        if isinstance(self.child, np.ndarray):
+        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
             res.child = np.trunc(self.child / other).astype(DEFAULT_INT_NUMPY_TYPE)
         else:
             res.child = self.child / other
@@ -267,8 +271,10 @@ class FixedPrecisionTensor(PassthroughTensor):
         fpt_msg.magicHeader = serde_magic_header(type(self))
 
         # child of FPT tensor could either be ShareTensor or np.ndarray
-        if isinstance(self.child, np.ndarray):
-            chunk_bytes(capnp_serialize(self.child, to_bytes=True), "child", fpt_msg)
+        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+            chunk_bytes(
+                capnp_serialize(np.array(self.child), to_bytes=True), "child", fpt_msg
+            )
             fpt_msg.isNumpy = True
         else:
             chunk_bytes(serialize(self.child, to_bytes=True), "child", fpt_msg)  # type: ignore

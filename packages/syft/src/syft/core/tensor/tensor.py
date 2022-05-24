@@ -530,7 +530,7 @@ class Tensor(
 
     def reciprocal(self) -> Tensor:
         if hasattr(self.child, "exp"):
-            return self.__class__(self.child.exp())
+            return self.__class__(self.child.reciprocal())
         else:
             raise ValueError("Tensor Chain does not have exp function")
 

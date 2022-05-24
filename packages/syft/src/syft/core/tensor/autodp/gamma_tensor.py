@@ -49,6 +49,7 @@ from ...node.common.action.run_class_method_action import RunClassMethodAction
 from ...pointer.pointer import Pointer
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
+from ..lazy_repeat_array import compute_min_max
 from ..lazy_repeat_array import lazyrepeatarray
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
@@ -149,14 +150,16 @@ class TensorWrappedGammaTensorPointer(Pointer):
         # so we ask lib_ast for the return type name that matches out
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
-
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
 
+        min_vals, max_vals = compute_min_max(
+            self.min_vals, self.max_vals, other, op_str
+        )
         result = TensorWrappedGammaTensorPointer(
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             client=self.client,
         )
 
@@ -248,6 +251,12 @@ class TensorWrappedGammaTensorPointer(Pointer):
         Returns:
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
+        # relative
+        from ..autodp.phi_tensor import TensorWrappedPhiTensorPointer
+
+        if isinstance(other, TensorWrappedPhiTensorPointer):
+            other = other.gamma
+
         if (
             isinstance(other, TensorWrappedGammaTensorPointer)
             and self.client != other.client
@@ -508,10 +517,12 @@ class TensorWrappedGammaTensorPointer(Pointer):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
+        min_vals, max_vals = compute_min_max(self.min_vals, self.max_vals, None, "sum")
+
         result = TensorWrappedGammaTensorPointer(
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             client=self.client,
         )
 
@@ -569,10 +580,24 @@ class TensorWrappedGammaTensorPointer(Pointer):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.exp"
 
+        # TODO: should modify to log reduction.
+        def exp_reduction(val: np.ndarray) -> np.ndarray:
+            pos_index = val >= 0
+            neg_index = val < 0
+            exp = np.exp((pos_index * val * -1) + (neg_index * val))
+            pos_values = (pos_index) * exp
+            neg_values = (neg_index) * exp * -1
+            return pos_values + neg_values
+
+        min_vals = self.min_vals.copy()
+        min_vals.data = np.array(exp_reduction(min_vals.data))
+        max_vals = self.max_vals.copy()
+        max_vals.data = np.array(exp_reduction(max_vals.data))
+
         result = TensorWrappedGammaTensorPointer(
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             client=self.client,
         )
 
@@ -630,10 +655,15 @@ class TensorWrappedGammaTensorPointer(Pointer):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.reciprocal"
 
+        min_vals = self.min_vals.copy()
+        min_vals.data = np.array(1 / min_vals.data)
+        max_vals = self.max_vals.copy()
+        max_vals.data = np.array(1 / max_vals.data)
+
         result = TensorWrappedGammaTensorPointer(
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             client=self.client,
         )
 
@@ -882,9 +912,6 @@ class GammaTensor:
             # child = the actual private data
             self.child = FixedPrecisionTensor(self.child)
 
-        if hasattr(self.child.child, "shape") and self.child.child.shape == ():
-            self.child.child = np.expand_dims(self.child.child, 0)
-
     def decode(self) -> np.ndarray:
         return self.child.decode()
 
@@ -1059,6 +1086,8 @@ class GammaTensor:
 
             output_state[other.id] = other
             child = self.child @ other.child
+            min_val = self.min_val.__matmul__(other.min_val)
+            max_val = self.max_val.__matmul__(other.max_val)
 
         else:
 
@@ -1066,10 +1095,9 @@ class GammaTensor:
                 return jnp.matmul(self.run(state), other)
 
             child = self.child @ other
+            min_val = self.min_val.__matmul__(other)
+            max_val = self.max_val.__matmul__(other)
 
-        min_val = lazyrepeatarray(data=np.array(0), shape=())
-        max_val = lazyrepeatarray(data=np.array(10), shape=())
-        # TODO: implement min and max vals calculation for matmul
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
@@ -1100,6 +1128,8 @@ class GammaTensor:
 
             output_state[other.id] = other
             child = self.child.__rmatmul__(other.child)
+            min_val = self.min_val.__rmatmul__(other.min_val)
+            max_val = self.max_val.__rmatmul__(other.max_val)
 
         else:
 
@@ -1107,10 +1137,9 @@ class GammaTensor:
                 return jnp.matmul(other, self.run(state))
 
             child = self.child.__rmatmul__(other)
+            min_val = self.min_val.__rmatmul__(other)
+            max_val = self.max_val.__rmatmul__(other)
 
-        min_val = lazyrepeatarray(data=np.array(0), shape=())
-        max_val = lazyrepeatarray(data=np.array(10), shape=())
-        # TODO: implement min and max vals calculation for matmul
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
@@ -1138,6 +1167,7 @@ class GammaTensor:
 
             output_state[other.id] = other
             child = self.child.__gt__(other.child)
+
         else:
 
             def _gt(state: dict) -> jax.numpy.DeviceArray:
@@ -1145,8 +1175,9 @@ class GammaTensor:
 
             child = self.child.__gt__(other)
 
-        min_val = lazyrepeatarray(data=np.array(0), shape=())
-        max_val = lazyrepeatarray(data=np.array(1), shape=())
+        min_val = self.min_val * 0
+        max_val = (self.max_val * 0) + 1
+
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
@@ -1198,15 +1229,25 @@ class GammaTensor:
         from ...smpc.approximations import reciprocal
 
         min_val = self.min_val.copy()
-        min_val.data = 1 / (min_val.data)
+        min_val.data = np.array(1 / (min_val.data))
         max_val = self.max_val.copy()
-        max_val.data = 1 / (max_val.data)
+        max_val.data = np.array(1 / (max_val.data))
 
         def _reciprocal(state: dict) -> jax.numpy.DeviceArray:
             return jnp.divide(1, self.run(state))
 
+        # TODO: Explore why overflow does not occur for arrays
+        fpt = self.child.copy()
+        if hasattr(fpt.child, "shape") and fpt.child.shape == ():
+            fpt.child = np.expand_dims(fpt.child, 0)
+
+        child_inv = reciprocal(fpt)
+
+        if hasattr(self.child.child, "shape") and self.child.child.shape == ():
+            child_inv.child = np.squeeze(child_inv.child)
+
         return GammaTensor(
-            child=reciprocal(self.child),
+            child=child_inv,
             min_val=min_val,
             max_val=max_val,
             data_subjects=self.data_subjects,
@@ -1225,8 +1266,8 @@ class GammaTensor:
         return GammaTensor(
             child=self.child.transpose(),
             data_subjects=self.data_subjects,
-            min_val=self.min_val,
-            max_val=self.max_val,
+            min_val=self.min_val.transpose(),
+            max_val=self.max_val.transpose(),
             func=_transpose,
             state=output_state,
         )
@@ -1241,8 +1282,7 @@ class GammaTensor:
 
         child = self.child.sum()
         # Change sum before Merge
-        min_val = self.min_val
-        max_val = self.max_val
+        min_val, max_val = compute_min_max(self.min_val, self.max_val, None, "sum")
 
         return GammaTensor(
             child=child,
