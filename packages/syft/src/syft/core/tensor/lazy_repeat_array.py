@@ -6,6 +6,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 
@@ -14,10 +15,13 @@ import numpy as np
 
 # relative
 from ..common.serde.serializable import serializable
-from .autodp.phi_tensor import PhiTensor
 from .broadcastable import is_broadcastable
 from .passthrough import is_acceptable_simple_type  # type: ignore
 from .smpc.utils import get_shape
+
+if TYPE_CHECKING:
+    # relative
+    from .autodp.phi_tensor import PhiTensor
 
 
 @serializable(recursive_serde=True)
