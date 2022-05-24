@@ -2306,7 +2306,7 @@ def create_check_table(
 @click.option(
     "--silent",
     is_flag=True,
-    help="Optional: no output during wait",
+    help="Optional: don't refresh output during wait",
 )
 def check(
     ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
@@ -2343,6 +2343,9 @@ def check(
                     max_timeout -= 1
                     if max_timeout % 5 == 0:
                         status, table_contents = get_health_checks(ip_address)
+                    table = create_check_table(
+                        table_contents=table_contents, time_left=max_timeout
+                    )
                     time.sleep(1)
         console.print(table)
     else:
