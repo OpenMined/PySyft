@@ -60,7 +60,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.backend == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.backend == 'true'
