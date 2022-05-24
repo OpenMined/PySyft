@@ -8,6 +8,9 @@ import sys
 import numpy as np
 import pandas as pd
 
+# syft absolute
+from syft.core.adp.data_subject_list import DataSubjectList  # noqa: F401
+
 
 def auto_detect_domain_host_ip() -> str:
     ip_address = subprocess.check_output("echo $(curl -s ifconfig.co)", shell=True)
@@ -36,7 +39,28 @@ def get_label_mapping():
     return mapping
 
 
-def split_into_train_test_val_sets(data, test=0.10, val=0.10):
+class ImageDataClass:
+    def __init__(self, images, labels, patient_ids) -> None:
+        self.images = images
+        self.labels = labels
+        self.patient_ids = patient_ids
+
+    def head(self):
+        return self.as_df().head()
+
+    def as_df(self):
+        df = pd.DataFrame.from_dict(
+            {
+                "patient_ids": self.patient_ids,
+                "images": self.images,
+                "labels": self.labels,
+            }
+        )
+
+        return df
+
+
+def split_into_train_test_val_sets(data, test=0.20, val=0.10):
     train = 1.0 - (test + val)
     data.reset_index(inplace=True, drop=True)
     train_msk = np.random.rand(len(data)) < train
@@ -53,14 +77,12 @@ def split_into_train_test_val_sets(data, test=0.10, val=0.10):
     val.reset_index(inplace=True, drop=True)
     test.reset_index(inplace=True, drop=True)
 
-    data_dict = {"train": train, "val": val, "test": test}
-
-    return data_dict
+    return train, val, test
 
 
 def load_data_as_df(file_path="./MedNIST.pkl"):
     df = pd.read_pickle(file_path)
-    df.sort_values("patient_id", inplace=True, ignore_index=True)
+    df.sort_values("patient_ids", inplace=True, ignore_index=True)
 
     # Get label mapping
     mapping = get_label_mapping()
@@ -70,6 +92,36 @@ def load_data_as_df(file_path="./MedNIST.pkl"):
     print("Total Images:", total_num)
     print("Label Mapping", mapping)
     return df
+
+
+def preprocess_data(data):
+
+    # Convert images to numpy int64 array
+    images = data["images"]
+    images = np.dstack(images.values).astype(np.int64)  # type cast to int64
+    dims = images.shape
+    images = images.reshape(dims[0] * dims[1], dims[2])  # reshape to 2D array
+    images = np.rollaxis(images, -1)
+
+    # Convert labels to numpy int64 array
+    labels = data["labels"].to_numpy().astype("int64")
+
+    patient_ids = data["patient_ids"]
+
+    return {"images": images, "labels": labels, "patient_ids": patient_ids}
+
+
+def split_and_preprocess_dataset(data):
+
+    print("Splitting dataset into train, validation and test sets.")
+    train, val, test = split_into_train_test_val_sets(data)
+
+    print("Preprocessing the dataset...")
+    train_data = preprocess_data(train)
+    val_data = preprocess_data(val)
+    test_data = preprocess_data(test)
+    print("Preprocessing completed.")
+    return train_data, val_data, test_data
 
 
 def get_data_description(data):
@@ -98,15 +150,21 @@ def get_dataset_name(dataset_url):
     return filename.split(".pkl")[0]
 
 
-def download_mednist_dataset(dataset_url):
+def download_dataset(dataset_url):
     filename = get_data_filename(dataset_url)
     if not os.path.exists(f"./{filename}"):
         os.system(f'curl -O "{dataset_url}"')
-        print("MedNIST is successfully downloaded.")
+        print(f"{filename} is successfully downloaded.")
     else:
-        print("MedNIST is already downloaded")
+        print(f"{filename} is already downloaded")
 
     return filename
+
+
+def download_tissue_mnist_dataset(dataset_url):
+    filename = download_dataset(dataset_url)
+    data = load_data_as_df(filename)
+    return data
 
 
 def validate_ds_credentials(ds_credentials):
