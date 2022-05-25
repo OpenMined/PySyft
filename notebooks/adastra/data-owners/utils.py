@@ -29,12 +29,14 @@ def auto_detect_domain_host_ip() -> str:
 def get_label_mapping():
     # the data uses the following mapping
     mapping = {
-        "AbdomenCT": 0,
-        "BreastMRI": 1,
-        "CXR": 2,
-        "ChestCT": 3,
-        "Hand": 4,
-        "HeadCT": 5,
+        "Collecting Duct, Connecting Tubule": 0,
+        "Distal Convoluted Tubule": 1,
+        "Glomerular endothelial cells": 2,
+        "Interstitial endothelial cells": 3,
+        "Leukocytes": 4,
+        "Podocytes": 5,
+        "Proximal Tubule Segments": 6,
+        "Thick Ascending Limb": 7,
     }
     return mapping
 
