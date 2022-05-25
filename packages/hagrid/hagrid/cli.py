@@ -2317,6 +2317,10 @@ def check(
         print("Detecting External IP...")
         ip_res = requests.get("https://ifconfig.co", headers=headers)
         ip_address = ip_res.text.strip()
+        ip_addresses = [ip_address]
+
+    if len(ip_addresses) == 1:
+        ip_address = ip_addresses[0]
         status, table_contents = get_health_checks(ip_address=ip_address)
         table = create_check_table(table_contents=table_contents)
         max_timeout = 600

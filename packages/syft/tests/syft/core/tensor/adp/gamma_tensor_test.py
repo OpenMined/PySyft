@@ -73,14 +73,15 @@ def test_gamma_serde(
     assert tensor1.data_subjects.data_subjects_indexed.shape == tensor1.child.shape
     gamma_tensor1 = tensor1.sum()
 
+    print("gamma tensor", gamma_tensor1)
     # Checks to ensure gamma tensor was properly created
     assert isinstance(gamma_tensor1, GammaTensor)
-    assert gamma_tensor1.value == tensor1.child.child.sum()
+    assert gamma_tensor1.child.child == tensor1.child.child.sum()
 
     ser = sy.serialize(gamma_tensor1, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
 
-    assert de.value == gamma_tensor1.value
+    assert de.child.child == gamma_tensor1.child.child
     assert de.data_subjects == gamma_tensor1.data_subjects
     assert de.min_val == gamma_tensor1.min_val
     assert de.max_val == gamma_tensor1.max_val
@@ -106,7 +107,7 @@ def test_gamma_publish(
     gamma_tensor1 = tensor1.sum()
     assert isinstance(gamma_tensor1, GammaTensor)
     # Gamma Tensor Does not have FPT Values
-    assert tensor1.child.child.sum() == gamma_tensor1.value
+    assert tensor1.child.child.sum() == gamma_tensor1.child.child
 
     ledger_store = DictLedgerStore()
     print(ledger_store.kv_store)
@@ -119,12 +120,15 @@ def test_gamma_publish(
     def deduct_epsilon_for_user(*args: Any, **kwargs: Any) -> bool:
         return True
 
+    gamma_tensor1 = gamma_tensor1 + 1  # dummy operation to set state
     results = gamma_tensor1.publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
         ledger=ledger,
         sigma=0.1,
     )
-    print(results)
-    print(results, results.dtype)
+
+    assert results.dtype == np.float64
+    assert results < upper_bound.sum() + 10
+    assert -10 + lower_bound.sum() < results
     print(ledger_store.kv_store)

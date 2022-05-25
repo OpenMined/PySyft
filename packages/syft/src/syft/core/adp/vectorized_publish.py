@@ -18,6 +18,7 @@ from tqdm import tqdm
 
 # relative
 from ..tensor.lazy_repeat_array import lazyrepeatarray
+from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_list import DataSubjectList
@@ -104,6 +105,10 @@ def vectorized_publish(
 
         # t1 = time()
         # Calculate everything needed for RDP
+        value = input_tensor.child
+        while isinstance(value, PassthroughTensor):
+            value = value.child
+
         if isinstance(input_tensor.min_val, lazyrepeatarray):
             min_val_array = input_tensor.min_val.to_numpy()
         else:
@@ -115,7 +120,7 @@ def vectorized_publish(
             max_val_array = input_tensor.max_val
 
         l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
-            value_array=input_tensor.value,
+            value_array=value,
             min_val_array=min_val_array,
             max_val_array=max_val_array,
             sigma=sigma,
@@ -151,7 +156,7 @@ def vectorized_publish(
                 deduct_epsilon_for_user=deduct_epsilon_for_user,
             )
             # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
-            reshaped_mask = mask.reshape(input_tensor.value.shape)
+            reshaped_mask = mask.reshape(value.shape)
             # print("Fixed mask shape!")
             # here we have the final mask and highest possible spend has been applied
             # to the data scientists budget field in the database
@@ -162,7 +167,7 @@ def vectorized_publish(
             # print("Obtained overbudgeted entity mask", mask.dtype)
 
             # multiply values by the inverted mask
-            filtered_input_tensor = input_tensor.value * (
+            filtered_input_tensor = value * (
                 1 - reshaped_mask
             )  # + gauss(0, sigma)  # Double check that noise has mean of 0
 

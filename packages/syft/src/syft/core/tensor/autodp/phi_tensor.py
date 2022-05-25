@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-import operator
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -46,6 +45,7 @@ from ...pointer.pointer import Pointer
 from ..broadcastable import is_broadcastable
 from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
+from ..lazy_repeat_array import compute_min_max
 from ..lazy_repeat_array import lazyrepeatarray
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -57,6 +57,7 @@ from ..smpc.mpc_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
+from .gamma_tensor import TensorWrappedGammaTensorPointer
 
 
 @serializable(recursive_serde=True)
@@ -148,12 +149,14 @@ class TensorWrappedPhiTensorPointer(Pointer):
         # then set the result to that pointer klass
 
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
-        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
-
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op_str}"
+        min_vals, max_vals = compute_min_max(
+            self.min_vals, self.max_vals, other, op_str
+        )
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
+            min_vals=min_vals,
+            max_vals=max_vals,
             client=self.client,
         )
 
@@ -229,6 +232,21 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
         return result
 
+    @property
+    def gamma(self) -> TensorWrappedGammaTensorPointer:
+        return TensorWrappedGammaTensorPointer(
+            data_subjects=self.data_subjects,
+            client=self.client,
+            id_at_location=self.id_at_location,
+            object_type=self.object_type,
+            tags=self.tags,
+            description=self.description,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            public_shape=getattr(self, "public_shape", None),
+            public_dtype=getattr(self, "public_dtype", None),
+        )
+
     @staticmethod
     def _apply_op(
         self: TensorWrappedPhiTensorPointer,
@@ -243,7 +261,11 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
-        op = getattr(operator, op_str)
+        if isinstance(other, TensorWrappedPhiTensorPointer):
+            if self.data_subjects != other.data_subjects:
+                return getattr(self.gamma, op_str)(other.gamma)
+        elif isinstance(other, TensorWrappedGammaTensorPointer):
+            return getattr(self.gamma, op_str)(other)
 
         if (
             isinstance(other, TensorWrappedPhiTensorPointer)
@@ -257,13 +279,18 @@ class TensorWrappedPhiTensorPointer(Pointer):
                 secret=other, shape=other.public_shape, parties=parties
             )
 
-            return op(self_mpc, other_mpc)
+            return getattr(self_mpc, op_str)(other_mpc)
 
         elif isinstance(other, MPCTensor):
 
-            return op(other, self)
-
-        return self._apply_tensor_op(other=other, op_str=op_str)
+            return getattr(other, op_str)(self)
+        elif is_acceptable_simple_type(other) or isinstance(
+            other, TensorWrappedPhiTensorPointer
+        ):
+            return self._apply_tensor_op(other=other, op_str=op_str)
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def __add__(
         self,
@@ -277,7 +304,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "add")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__add__")
 
     def __sub__(
         self,
@@ -291,7 +318,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "sub")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__sub__")
 
     def __mul__(
         self,
@@ -305,7 +332,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "mul")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__mul__")
 
     def __matmul__(
         self,
@@ -319,7 +346,21 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "matmul")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__matmul__")
+
+    def __rmatmul__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "matmul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__rmatmul__")
 
     def __lt__(
         self,
@@ -333,7 +374,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "lt")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__lt__")
 
     def __gt__(
         self,
@@ -347,7 +388,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "gt")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__gt__")
 
     def __ge__(
         self,
@@ -361,7 +402,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "ge")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__ge__")
 
     def __le__(
         self,
@@ -375,7 +416,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "le")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__le__")
 
     def __eq__(  # type: ignore
         self,
@@ -389,7 +430,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "eq")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__eq__")
 
     def __ne__(  # type: ignore
         self,
@@ -403,7 +444,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        return TensorWrappedPhiTensorPointer._apply_op(self, other, "ne")
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__ne__")
 
     def concatenate(
         self,
@@ -441,7 +482,93 @@ class TensorWrappedPhiTensorPointer(Pointer):
                 "Concatenate method currently works only between two different clients."
             )
 
+    def __truediv__(
+        self,
+        other: Union[TensorWrappedPhiTensorPointer, MPCTensor, int, float, np.ndarray],
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "truediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorWrappedPhiTensorPointer._apply_op(self, other, "__truediv__")
+
     def sum(
+        self,
+    ) -> Union[
+        TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
+    ]:
+        """Apply the "truediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
+        result: Union[TensorWrappedGammaTensorPointer, TensorWrappedPhiTensorPointer]
+        min_vals, max_vals = compute_min_max(self.min_vals, self.max_vals, None, "sum")
+        if len(self.data_subjects.one_hot_lookup) == 1:
+            result = TensorWrappedPhiTensorPointer(
+                data_subjects=self.data_subjects,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                client=self.client,
+            )
+        else:
+            result = TensorWrappedGammaTensorPointer(
+                data_subjects=self.data_subjects,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                client=self.client,
+            )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result.public_shape = np.array([1]).shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def exp(
         self,
     ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
         """Apply the "truediv" operation between "self" and "other"
@@ -452,7 +579,199 @@ class TensorWrappedPhiTensorPointer(Pointer):
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
         """
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.exp"
+
+        # TODO: should modify to log reduction.
+        def exp_reduction(val: np.ndarray) -> np.ndarray:
+            pos_index = val >= 0
+            neg_index = val < 0
+            exp = np.exp((pos_index * val * -1) + (neg_index * val))
+            pos_values = (pos_index) * exp
+            neg_values = (neg_index) * exp * -1
+            return pos_values + neg_values
+
+        min_vals = self.min_vals.copy()
+        min_vals.data = np.array(exp_reduction(min_vals.data))
+        max_vals = self.max_vals.copy()
+        max_vals.data = np.array(exp_reduction(max_vals.data))
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result.public_shape = self.public_shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def reciprocal(
+        self,
+    ) -> Union[TensorWrappedPhiTensorPointer, MPCTensor]:
+        """Apply the "reciprocal" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.reciprocal"
+
+        min_vals = self.min_vals.copy()
+        min_vals.data = np.array(1 / min_vals.data)
+        max_vals = self.max_vals.copy()
+        max_vals.data = np.array(1 / max_vals.data)
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result.public_shape = self.public_shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    @property
+    def T(self) -> TensorWrappedPhiTensorPointer:
+        # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.T"
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=self.min_vals.transpose(),
+            max_vals=self.max_vals.transpose(),
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = GetOrSetPropertyAction(
+                path=attr_path_and_name,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                action=PropertyActions.GET,
+                map_to_dyn=False,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result_public_shape = np.empty(self.public_shape).T.shape
+
+        result.public_shape = result_public_shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
+    def one_hot(self: TensorWrappedPhiTensorPointer) -> np.array:
+        tensor_size = np.empty(self.public_shape).size
+        one_hot_Y = np.zeros((tensor_size, self.max_vals.data[0] + 1))
+        one_hot_Y = one_hot_Y.T
+
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.one_hot"
 
         result = TensorWrappedPhiTensorPointer(
             data_subjects=self.data_subjects,
@@ -497,60 +816,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
             kwargs={},
         )
 
-        result.public_shape = np.array([1]).shape
+        result.public_shape = one_hot_Y.shape
         result.public_dtype = self.public_dtype
-
-        return result
-
-    @property
-    def T(self) -> TensorWrappedPhiTensorPointer:
-        # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
-        attr_path_and_name = "syft.core.tensor.tensor.Tensor.T"
-
-        result = TensorWrappedPhiTensorPointer(
-            data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            client=self.client,
-        )
-
-        # QUESTION can the id_at_location be None?
-        result_id_at_location = getattr(result, "id_at_location", None)
-
-        if result_id_at_location is not None:
-            # first downcast anything primitive which is not already PyPrimitive
-            (
-                downcast_args,
-                downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
-
-            # then we convert anything which isnt a pointer into a pointer
-            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
-                args=downcast_args,
-                kwargs=downcast_kwargs,
-                client=self.client,
-                gc_enabled=False,
-            )
-
-            cmd = GetOrSetPropertyAction(
-                path=attr_path_and_name,
-                id_at_location=result_id_at_location,
-                address=self.client.address,
-                _self=self,
-                args=pointer_args,
-                kwargs=pointer_kwargs,
-                action=PropertyActions.GET,
-                map_to_dyn=False,
-            )
-            self.client.send_immediate_msg_without_reply(msg=cmd)
-
-        inherit_tags(
-            attr_path_and_name=attr_path_and_name,
-            result=result,
-            self_obj=self,
-            args=[],
-            kwargs={},
-        )
 
         return result
 
@@ -686,18 +953,15 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """Return a new Gamma tensor based on this phi tensor"""
         # TODO: check if values needs to be a JAX array or if numpy will suffice
         fpt_values = self.child
-        value = (
-            self.child.child.child
-            if isinstance(self.child.child, ShareTensor)
-            else self.child.child
-        )
+
         gamma_tensor = GammaTensor(
-            value=value,
+            child=self.child,
             data_subjects=self.data_subjects,
             min_val=self.min_vals,
             max_val=self.max_vals,
             fpt_values=fpt_values,
         )
+
         return gamma_tensor
 
     def publish(
@@ -846,7 +1110,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals = self.min_vals - other
             max_vals = self.max_vals - other
             data_subjects = self.data_subjects
+        elif isinstance(other, GammaTensor):
+            return self.gamma - other
         else:
+            print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
         return PhiTensor(
             child=data,
@@ -908,13 +1175,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 min_vals=min_vals,
                 max_vals=max_vals,
             )
+        elif isinstance(other, GammaTensor):
+            return self.gamma * other
         else:
-            return NotImplementedError  # type: ignore
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
 
     def __matmul__(
         self, other: Union[np.ndarray, PhiTensor]
     ) -> Union[PhiTensor, GammaTensor]:
-        if not isinstance(other, (np.ndarray, PhiTensor)):
+        if not isinstance(other, (np.ndarray, PhiTensor, GammaTensor)):
             raise Exception(
                 f"Matrix multiplication not yet implemented for type {type(other)}"
             )
@@ -948,7 +1218,58 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                         min_vals = self.min_vals.__matmul__(other.min_vals)
                         max_vals = self.max_vals.__matmul__(other.max_vals)
 
+                elif isinstance(other, GammaTensor):
+                    return self.gamma @ other
                 else:
+                    print("Type is unsupported:" + str(type(other)))
+                    raise NotImplementedError
+
+                return PhiTensor(
+                    child=data,
+                    max_vals=max_vals,
+                    min_vals=min_vals,
+                    data_subjects=self.data_subjects,
+                )
+
+    def __rmatmul__(
+        self, other: Union[np.ndarray, PhiTensor]
+    ) -> Union[PhiTensor, GammaTensor]:
+        if not isinstance(other, (np.ndarray, PhiTensor, GammaTensor)):
+            raise Exception(
+                f"Matrix multiplication not yet implemented for type {type(other)}"
+            )
+        else:
+            # Modify before merge, to know is broadcast is actually necessary
+            if False:  # and not is_broadcastable(self.shape, other.shape):
+                raise Exception(
+                    f"Shapes not broadcastable: {self.shape} and {other.shape}"
+                )
+            else:
+                if isinstance(other, np.ndarray):
+                    data = self.child.__rmatmul__(other)
+                    min_vals = self.min_vals.__rmatmul__(other)
+                    max_vals = self.max_vals.__rmatmul__(other)
+                elif isinstance(other, PhiTensor):
+                    if self.data_subjects != other.data_subjects:
+                        # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
+                        raise NotImplementedError
+                    else:
+                        data = self.child.__rmatmul__(other.child)
+                        # _min_vals = np.array(
+                        #     [self.min_vals.data.__matmul__(other.min_vals.data)]
+                        # )
+                        # _max_vals = np.array(
+                        #     [self.max_vals.data.__matmul__(other.max_vals.data)]
+                        # )
+                        # min_vals = self.min_vals.copy()
+                        # min_vals.data = _min_vals
+                        # max_vals = self.max_vals.copy()
+                        # max_vals.data = _max_vals
+                        min_vals = self.min_vals.__rmatmul__(other.min_vals)
+                        max_vals = self.max_vals.__rmatmul__(other.max_vals)
+
+                else:
+                    print("Type is unsupported:" + str(type(other)))
                     raise NotImplementedError
 
                 return PhiTensor(
@@ -1153,23 +1474,27 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
+        min_val = lazyrepeatarray(data=np.array(self.min_vals.sum(axis=None)), shape=())
+        max_val = lazyrepeatarray(data=np.array(self.max_vals.sum(axis=None)), shape=())
         if len(self.data_subjects.one_hot_lookup) == 1:
             return PhiTensor(
                 child=self.child.sum(),
-                min_vals=self.min_vals.sum(axis=None),
-                max_vals=self.max_vals.sum(axis=None),
+                min_vals=min_val,
+                max_vals=max_val,
                 data_subjects=DataSubjectList.from_objs(
                     self.data_subjects.one_hot_lookup[0]
                 ),  # Need to check this
             )
 
         # TODO: Expand this later to include more args/kwargs
-        return GammaTensor(
-            value=np.array(self.child.child.sum()),
+        res = GammaTensor(
+            child=self.child.sum(),
             data_subjects=self.data_subjects.sum(),
-            min_val=self.min_vals.sum(axis=None),
-            max_val=self.max_vals.sum(axis=None),
+            min_val=min_val,
+            max_val=max_val,
         )
+        print("Result", res)
+        return res
 
     def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
         # TODO: what about data_subjects and min / max values?
@@ -1205,6 +1530,56 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __pos__(self) -> PhiTensor:
         return PhiTensor(
             child=self.child,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
+            data_subjects=self.data_subjects,
+        )
+
+    def exp(self) -> PhiTensor:
+        # relative
+        from ...smpc.approximations import exp
+
+        def exp_reduction(val: np.ndarray) -> np.ndarray:
+            pos_index = val >= 0
+            neg_index = val < 0
+            exp = np.exp((pos_index * val * -1) + (neg_index * val))
+            pos_values = (pos_index) * exp
+            neg_values = (neg_index) * exp * -1
+            return pos_values + neg_values
+
+        min_vals = self.min_vals.copy()
+        min_vals.data = np.array(exp_reduction(min_vals.data))
+        max_vals = self.max_vals.copy()
+        max_vals.data = np.array(exp_reduction(max_vals.data))
+
+        return PhiTensor(
+            child=exp(self.child),  # type: ignore
+            min_vals=min_vals,
+            max_vals=max_vals,
+            data_subjects=self.data_subjects,
+        )
+
+    def reciprocal(self) -> PhiTensor:
+        # relative
+        from ...smpc.approximations import reciprocal
+
+        min_vals = self.min_vals.copy()
+        min_vals.data = np.array(1 / min_vals.data)
+        max_vals = self.max_vals.copy()
+        max_vals.data = np.array(1 / max_vals.data)
+
+        return PhiTensor(
+            child=reciprocal(self.child),
+            min_vals=min_vals,
+            max_vals=max_vals,
+            data_subjects=self.data_subjects,
+        )
+
+    def one_hot(self) -> PhiTensor:
+        one_hot_child = self.child.one_hot()
+
+        return PhiTensor(
+            child=one_hot_child,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
             data_subjects=self.data_subjects,
