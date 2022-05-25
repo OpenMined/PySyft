@@ -6,7 +6,9 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
+from typing import Union
 
 # third party
 import numpy as np
@@ -16,6 +18,10 @@ from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
 from .passthrough import is_acceptable_simple_type  # type: ignore
 from .smpc.utils import get_shape
+
+if TYPE_CHECKING:
+    # relative
+    from .autodp.phi_tensor import PhiTensor
 
 
 @serializable(recursive_serde=True)
@@ -69,11 +75,8 @@ class lazyrepeatarray:
         if self.data.shape == other.data.shape:
             return self.__class__(data=self.data + other.data, shape=self.shape)
         else:
-            # Rasswanth : Fix after addition of integration tests.
             print("Lazy Repeat adding with mismatched shapes")
             return self.__class__(data=self.data + other.data, shape=self.shape)
-
-        raise Exception(f"not sure how to do this yet: {type(other)}")
 
     def __sub__(self, other: Any) -> lazyrepeatarray:
         """
@@ -83,13 +86,16 @@ class lazyrepeatarray:
         if is_acceptable_simple_type(other):
             return self.__class__(data=self.data - other, shape=self.shape)
 
-        if self.shape != other.shape:
-            raise Exception("cannot subtract tensors with different shapes")
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                f"Cannot broadcast arrays with shapes: {self.shape} & {other.shape}"
+            )
 
         if self.data.shape == other.data.shape:
             return self.__class__(data=self.data - other.data, shape=self.shape)
-
-        raise Exception("not sure how to do this yet")
+        else:
+            print("Lazy Repeat adding with mismatched shapes")
+            return self.__class__(data=self.data - other.data, shape=self.shape)
 
     def __mul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -99,13 +105,13 @@ class lazyrepeatarray:
         if is_acceptable_simple_type(other):
             return self.__class__(data=self.data * other, shape=self.shape)
 
-        if self.shape != other.shape:
-            raise Exception("cannot multiply tensors with different shapes")
-
-        if self.data.shape == other.data.shape:
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray Multiplication:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
             return self.__class__(data=self.data * other.data, shape=self.shape)
-
-        raise Exception("not sure how to do this yet")
 
     def __matmul__(self, other: Any) -> lazyrepeatarray:
         """
@@ -113,7 +119,7 @@ class lazyrepeatarray:
         Don't touch it. It's going to get more complicated.
         """
         if is_acceptable_simple_type(other):
-            new_shape = get_shape("matmul", self.shape, other.shape)
+            new_shape = get_shape("__matmul__", self.shape, other.shape)
 
             if self.data.size == 1:
                 return self.__class__(
@@ -131,6 +137,31 @@ class lazyrepeatarray:
         return self.__class__(data=result, shape=result.shape)
 
         # raise Exception("not sure how to do this yet")
+
+    def __rmatmul__(self, other: Any) -> lazyrepeatarray:
+        """
+        THIS MIGHT LOOK LIKE COPY-PASTED CODE!
+        Don't touch it. It's going to get more complicated.
+        """
+        if is_acceptable_simple_type(other):
+            new_shape = get_shape("__matmul__", other.shape, self.shape)
+
+            if other.size == 1:
+                return self.__class__(
+                    data=np.matmul(np.ones(other.shape), other * self.data),
+                    shape=new_shape,
+                )
+            return self.__class__(
+                data=self.to_numpy().__rmatmul__(other), shape=new_shape
+            )
+
+        if other.shape[-1] != self.shape[0]:
+            raise Exception(
+                "cannot matrix multiply tensors with different shapes: {self.shape} and {other.shape}"
+            )
+
+        result = self.to_numpy().__rmatmul__(other.to_numpy())
+        return self.__class__(data=result, shape=result.shape)
 
     def __pow__(self, exponent: int) -> lazyrepeatarray:
         if exponent == 2:
@@ -231,3 +262,58 @@ class lazyrepeatarray:
         return lazyrepeatarray(
             data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
         )
+
+
+# As the min and max values calculation is the same regardless of the tensor type,
+# We centralize this method as baseline for calculation for min/max values
+def compute_min_max(
+    x_min_vals: lazyrepeatarray,
+    x_max_vals: lazyrepeatarray,
+    other: Union[PhiTensor, int, float, np.ndarray],
+    op_str: str,
+) -> Tuple[lazyrepeatarray, lazyrepeatarray]:
+    min_vals: lazyrepeatarray
+    max_vals: lazyrepeatarray
+
+    if op_str in ["__add__", "__matmul__", "__rmatmul__"]:
+        if is_acceptable_simple_type(other):
+            min_vals = getattr(x_min_vals, op_str)(other)
+            max_vals = getattr(x_max_vals, op_str)(other)
+        elif hasattr(other, "min_vals") and hasattr(other, "max_vals"):
+            min_vals = getattr(x_min_vals, op_str)(other.min_vals)  # type: ignore
+            max_vals = getattr(x_max_vals, op_str)(other.max_vals)  # type: ignore
+        else:
+            raise ValueError(
+                f"Not supported type for lazy repeat array computation: {type(other)}"
+            )
+
+    elif op_str in ["__sub__", "__mul__"]:
+        if is_acceptable_simple_type(other):
+            min_vals = getattr(x_min_vals, op_str)(other)
+            max_vals = getattr(x_max_vals, op_str)(other)
+        elif hasattr(other, "min_vals") and hasattr(other, "max_vals"):
+            min_min = getattr(x_min_vals.data, op_str)(other.min_vals.data)  # type: ignore
+            min_max = getattr(x_min_vals.data, op_str)(other.max_vals.data)  # type: ignore
+            max_min = getattr(x_max_vals.data, op_str)(other.min_vals.data)  # type: ignore
+            max_max = getattr(x_max_vals.data, op_str)(other.max_vals.data)  # type: ignore
+            _min_vals = np.minimum.reduce([min_min, min_max, max_min, max_max])
+            _max_vals = np.maximum.reduce([min_min, min_max, max_min, max_max])
+            min_vals = x_min_vals.copy()
+            min_vals.data = _min_vals
+            max_vals = x_max_vals.copy()
+            max_vals.data = _max_vals
+        else:
+            raise ValueError(
+                f"Not supported type for lazy repeat array computation: {type(other)}"
+            )
+
+    elif op_str in ["__gt__", "__lt__", "__le__", "__ge__", "__eq__", "__ne__"]:
+        min_vals = x_min_vals * 0
+        max_vals = (x_max_vals * 0) + 1
+    elif op_str == "sum":
+        min_vals = lazyrepeatarray(data=np.array(x_min_vals.sum(axis=None)), shape=())
+        max_vals = lazyrepeatarray(data=np.array(x_max_vals.sum(axis=None)), shape=())
+    else:
+        raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
+
+    return (min_vals, max_vals)

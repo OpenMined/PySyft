@@ -20,7 +20,7 @@ def sign(data: MPCTensor) -> MPCTensor:
         MPCTensor: tensor with the determined sign
     """
     pos_values = data > 0
-    neg_values = (data + 1 - (2 * data)) * -1
+    neg_values = (data + 1 - (data * 2)) * -1
     return pos_values + neg_values
 
 
