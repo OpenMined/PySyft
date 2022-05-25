@@ -1478,30 +1478,26 @@ class GammaTensor:
         gamma_struct: CapnpModule = schema.GammaTensor  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
-        # to pack or not to pack?
-        # gamma_msg = gamma_struct.from_bytes_packed(
-        #     buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        # )
-        gamma_msg = gamma_struct.from_bytes(
+        # capnp from_bytes is now a context
+        with gamma_struct.from_bytes(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as gamma_msg:
+            child = deserialize(gamma_msg.child, from_bytes=True)
+            state = deserialize(gamma_msg.state, from_bytes=True)
+            data_subjects_indexed = capnp_deserialize(gamma_msg.dataSubjectsIndexed)
+            one_hot_lookup = numpyutf8tolist(capnp_deserialize(gamma_msg.oneHotLookup))
+            data_subjects = DataSubjectList(one_hot_lookup, data_subjects_indexed)
+            min_val = deserialize(gamma_msg.minVal, from_bytes=True)
+            max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
+            is_linear = gamma_msg.isLinear
+            id_str = gamma_msg.id
 
-        child = deserialize(gamma_msg.child, from_bytes=True)
-        state = deserialize(gamma_msg.state, from_bytes=True)
-        data_subjects_indexed = capnp_deserialize(gamma_msg.dataSubjectsIndexed)
-        one_hot_lookup = numpyutf8tolist(capnp_deserialize(gamma_msg.oneHotLookup))
-        data_subjects = DataSubjectList(one_hot_lookup, data_subjects_indexed)
-        min_val = deserialize(gamma_msg.minVal, from_bytes=True)
-        max_val = deserialize(gamma_msg.maxVal, from_bytes=True)
-        is_linear = gamma_msg.isLinear
-        id_str = gamma_msg.id
-
-        return GammaTensor(
-            child=child,
-            data_subjects=data_subjects,
-            min_val=min_val,
-            max_val=max_val,
-            is_linear=is_linear,
-            state=state,
-            id=id_str,
-        )
+            return GammaTensor(
+                child=child,
+                data_subjects=data_subjects,
+                min_val=min_val,
+                max_val=max_val,
+                is_linear=is_linear,
+                state=state,
+                id=id_str,
+            )
