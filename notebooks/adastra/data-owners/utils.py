@@ -1,4 +1,5 @@
 # stdlib
+from enum import Enum
 import json
 import os
 import subprocess
@@ -25,41 +26,36 @@ def auto_detect_domain_host_ip() -> str:
     return domain_host_ip
 
 
+class DatasetName(Enum):
+    MEDNIST = "MedNIST"
+    TISSUEMNIST = "TissueMNIST"
+
+
 # Dataset Helper Methods
-def get_label_mapping():
+def get_label_mapping(file_name):
     # the data uses the following mapping
-    mapping = {
-        "Collecting Duct, Connecting Tubule": 0,
-        "Distal Convoluted Tubule": 1,
-        "Glomerular endothelial cells": 2,
-        "Interstitial endothelial cells": 3,
-        "Leukocytes": 4,
-        "Podocytes": 5,
-        "Proximal Tubule Segments": 6,
-        "Thick Ascending Limb": 7,
-    }
-    return mapping
-
-
-class ImageDataClass:
-    def __init__(self, images, labels, patient_ids) -> None:
-        self.images = images
-        self.labels = labels
-        self.patient_ids = patient_ids
-
-    def head(self):
-        return self.as_df().head()
-
-    def as_df(self):
-        df = pd.DataFrame.from_dict(
-            {
-                "patient_ids": self.patient_ids,
-                "images": self.images,
-                "labels": self.labels,
-            }
-        )
-
-        return df
+    if DatasetName.MEDNIST.value in file_name:
+        return {
+            "AbdomenCT": 0,
+            "BreastMRI": 1,
+            "CXR": 2,
+            "ChestCT": 3,
+            "Hand": 4,
+            "HeadCT": 5,
+        }
+    elif DatasetName.TISSUEMNIST.value in file_name:
+        return {
+            "Collecting Duct, Connecting Tubule": 0,
+            "Distal Convoluted Tubule": 1,
+            "Glomerular endothelial cells": 2,
+            "Interstitial endothelial cells": 3,
+            "Leukocytes": 4,
+            "Podocytes": 5,
+            "Proximal Tubule Segments": 6,
+            "Thick Ascending Limb": 7,
+        }
+    else:
+        raise ValueError(f"Not a valid Dataset : {file_name}")
 
 
 def split_into_train_test_val_sets(data, test=0.20, val=0.10):
@@ -82,12 +78,12 @@ def split_into_train_test_val_sets(data, test=0.20, val=0.10):
     return train, val, test
 
 
-def load_data_as_df(file_path="./MedNIST.pkl"):
+def load_data_as_df(file_path):
     df = pd.read_pickle(file_path)
     df.sort_values("patient_ids", inplace=True, ignore_index=True)
 
     # Get label mapping
-    mapping = get_label_mapping()
+    mapping = get_label_mapping(file_path)
 
     total_num = df.shape[0]
     print("Columns:", df.columns)
@@ -127,9 +123,9 @@ def split_and_preprocess_dataset(data):
 
 
 def get_data_description(data):
-    unique_label_cnt = data.label.nunique()
+    unique_label_cnt = data.labels.nunique()
     lable_mapping = json.dumps(get_label_mapping())
-    image_size = data.iloc[0]["image"].shape
+    image_size = data.iloc[0]["images"].shape
     description = "The MedNIST dataset was gathered from several sets from TCIA, "
     description += "the RSNA Bone Age Challenge, and the NIH Chest X-ray dataset. "
     description += (
@@ -159,12 +155,6 @@ def download_dataset(dataset_url):
         print(f"{filename} is successfully downloaded.")
     else:
         print(f"{filename} is already downloaded")
-
-    return filename
-
-
-def download_tissue_mnist_dataset(dataset_url):
-    filename = download_dataset(dataset_url)
     data = load_data_as_df(filename)
     return data
 
