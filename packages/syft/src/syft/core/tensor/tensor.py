@@ -480,8 +480,6 @@ class Tensor(
             not isinstance(child, PassthroughTensor)
             and not isinstance(child, np.ndarray)
             and not isinstance(child, GammaTensor)
-            and not child.__class__.__name__ == "GammaTensor"
-            # Some isinstance breaks on dataclasses
         ):
 
             raise Exception(
@@ -529,10 +527,10 @@ class Tensor(
             raise ValueError("Tensor Chain does not have exp function")
 
     def reciprocal(self) -> Tensor:
-        if hasattr(self.child, "exp"):
+        if hasattr(self.child, "reciprocal"):
             return self.__class__(self.child.reciprocal())
         else:
-            raise ValueError("Tensor Chain does not have exp function")
+            raise ValueError("Tensor Chain does not have reciprocal function")
 
     def one_hot(self) -> Tensor:
         if hasattr(self.child, "one_hot"):
