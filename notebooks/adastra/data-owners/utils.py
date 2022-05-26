@@ -159,6 +159,16 @@ def download_dataset(dataset_url):
     return data
 
 
+def get_label_min_max_vals(dataset_url):
+    file_name = get_data_filename(dataset_url)
+    if DatasetName.MEDNIST.value in file_name:
+        return (0, 5)
+    elif DatasetName.TISSUEMNIST.value in file_name:
+        return (0, 7)
+    else:
+        raise ValueError(f"Not a valid Dataset : {file_name}")
+
+
 def validate_ds_credentials(ds_credentials):
 
     valid = True
