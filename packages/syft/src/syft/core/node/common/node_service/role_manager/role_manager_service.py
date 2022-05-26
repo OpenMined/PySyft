@@ -146,7 +146,9 @@ def update_role_msg(
         raise MissingRequestKeyError
 
     # Check if user has permissions to edit roles
-    _allowed = node.users.can_edit_roles(verify_key=verify_key)
+    _allowed = node.users.can_edit_roles(verify_key=verify_key) and str(
+        msg.role_id
+    ) != str(node.roles.owner_role.id)
 
     if _allowed:
         node.roles.set(role_id=msg.role_id, params=params)
