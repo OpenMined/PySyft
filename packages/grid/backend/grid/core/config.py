@@ -14,7 +14,7 @@ from pydantic import EmailStr
 from pydantic import HttpUrl
 from pydantic import PostgresDsn
 from pydantic import validator
-
+from hagrid.rand_sec import generate_sec_random_password 
 
 class Settings(BaseSettings):
     API_V1_STR: str = "/api/v1"
@@ -90,7 +90,7 @@ class Settings(BaseSettings):
         )
 
     FIRST_SUPERUSER: EmailStr = EmailStr("info@openmined.org")
-    FIRST_SUPERUSER_PASSWORD: str = "changethis"
+    FIRST_SUPERUSER_PASSWORD: str = generate_sec_random_password(48)
     USERS_OPEN_REGISTRATION: bool = False
 
     DOMAIN_NAME: str = "default_node_name"
