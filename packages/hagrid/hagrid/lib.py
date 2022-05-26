@@ -173,10 +173,11 @@ def find_available_port(host: str, port: int, search: bool = False) -> int:
             else:
                 if search:
                     port += 1
+                else:
+                    break
 
         except Exception as e:
             print(f"Failed to check port {port}. {e}")
-
     sock.close()
 
     if search is False and port_available is False:
