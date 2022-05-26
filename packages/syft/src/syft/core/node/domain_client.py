@@ -469,7 +469,7 @@ class DomainClient(Client):
                 time.sleep(1)
 
             for peer in vpn_status["peers"]:
-                if peer["hostname"] == client.name:  # type: ignore
+                if peer["hostname"].replace("-", "_") == client.name:  # type: ignore
                     network_vpn_ip = peer["ip"]
             try:
                 domain_vpn_ip = self.vpn_status()["host"]["ip"]
@@ -559,7 +559,7 @@ class DomainClient(Client):
         description: Optional[str] = None,
         skip_checks: bool = False,
         chunk_size: int = 536870912,  # 500 MB
-        use_blob_storage: bool = False,
+        use_blob_storage: bool = True,
         **metadata: Dict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
@@ -680,7 +680,7 @@ class DomainClient(Client):
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
         # blob storage can only be used if domain node has blob storage enabled.
-        if use_blob_storage and not self.settings.get("use_blob_storage", False):
+        if not self.settings.get("use_blob_storage", False):
             print(
                 "\n\n**Warning**: Blob Storage is disabled on this domain. Switching to database store.\n"
             )
@@ -724,3 +724,17 @@ class DomainClient(Client):
         print(
             "\n\nRun `<your client variable>.datasets` to see your new dataset loaded into your machine!"
         )
+
+    def create_user(self, name: str, email: str, password: str, budget: int) -> dict:
+        try:
+            self.users.create(name=name, email=email, password=password, budget=budget)
+            response = {
+                "name": name,
+                "email": email,
+                "password": password,
+                "budget": budget,
+                "host": self.routes[0].connection.base_url.host_or_ip,  # type: ignore
+            }
+            return response
+        except Exception as e:
+            raise e

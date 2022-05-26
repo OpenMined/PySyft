@@ -115,7 +115,12 @@ def update_user_msg(
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     _valid_parameters = (
-        msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
+        msg.email
+        or (msg.password and msg.new_password)
+        or msg.role
+        or msg.groups
+        or msg.name
+        or msg.budget
     )
     _allowed = msg.user_id == 0 or node.users.can_create_users(verify_key=verify_key)
     # Change own information
@@ -149,8 +154,12 @@ def update_user_msg(
         node.users.set(user_id=str(msg.user_id), email=msg.email)
 
     # Change Password Request
-    if msg.password:
-        node.users.set(user_id=str(msg.user_id), password=msg.password)
+    if msg.password and msg.new_password:
+        node.users.change_password(
+            user_id=str(msg.user_id),
+            current_pwd=msg.password,
+            new_pwd=msg.new_password,
+        )
 
     # Change Name Request
     if msg.name:

@@ -325,7 +325,10 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
     def __rmatmul__(
         self, other: Union[Type[PassthroughTensor], np.ndarray]
     ) -> PassthroughTensor:
-        return other.manual_dot(self)
+        if is_acceptable_simple_type(other):
+            return self.__class__(self.child.__rmatmul__(other))
+
+        return self.__class__(self.child.__rmatmul__(other.child))
 
     def __truediv__(
         self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
