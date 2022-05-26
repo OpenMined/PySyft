@@ -584,7 +584,7 @@ jobs:
           docker buildx use default || true
           rm -rf .tox
           docker rm `docker ps -aq` --force || true
-
+          pip install -e packages/hagrid
           docker volume rm test_domain_1_app-db-data --force || true
           docker volume rm test_domain_2_app-db-data --force || true
           docker volume rm test_domain_3_app-db-data --force || true
