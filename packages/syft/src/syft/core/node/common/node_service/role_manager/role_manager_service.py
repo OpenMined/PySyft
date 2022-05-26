@@ -216,7 +216,8 @@ def get_all_roles_msg(
 
     if _allowed:
         roles = node.roles.all()
-        _msg = [model_to_json(role) for role in roles]
+
+        _msg = [model_to_json(role) for role in roles if role.name != "Owner"]
     else:
         raise AuthorizationError("You're not allowed to get Role information!")
 
