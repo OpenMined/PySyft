@@ -6,7 +6,6 @@ from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import EmailStr
 from typing_extensions import final

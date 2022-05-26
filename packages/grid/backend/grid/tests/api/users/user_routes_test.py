@@ -179,9 +179,8 @@ class TestUsersRoutes:
             json={"role": "Data Scientist"},
             headers=headers,
         )
-
-        # Inside of the node it should raise an UnauthorizedException, then UnknownPrivateException
-        # and finally return 500 as a http response code.
+        # Inside of the node it should raise an UnauthorizedException,
+        # then UnknownPrivateException and finally return 500 as a http response code.
         assert res.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
 
     @pytest.mark.asyncio
