@@ -242,6 +242,7 @@ class GammaTensor:
             fpt_encode_func = fpt_values.encode
 
         return vectorized_publish(
+            value=self.value,
             min_vals=self.min_val,
             max_vals=self.max_val,
             state_tree=self.state,

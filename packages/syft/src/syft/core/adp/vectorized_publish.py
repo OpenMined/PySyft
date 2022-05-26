@@ -20,6 +20,9 @@ from tqdm import tqdm
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_list import DataSubjectList
+from .data_subject_ledger import load_cache
+from .data_subject_ledger import compute_rdp_constant
+
 
 if TYPE_CHECKING:
     # relative
@@ -75,6 +78,7 @@ def calculate_bounds_for_mechanism(
 
 
 def vectorized_publish(
+        value: np.ndarray,
     min_vals: np.ndarray,
     max_vals: np.ndarray,
     state_tree: dict[int, "GammaTensor"],
@@ -86,6 +90,7 @@ def vectorized_publish(
     sigma: float = 1.5,
     output_func: Callable = lambda x: x,
     fpt_encode_func: Optional[Callable] = None,
+    query_limit: int = 5
 ) -> Union[np.ndarray, jax.numpy.DeviceArray]:
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
@@ -94,12 +99,55 @@ def vectorized_publish(
     # print("Starting RDP Params Calculation")
     # TODO: Vectorize this to return a larger GammaTensor instead of a list of Tensors
 
-
     # TODO: Use calibration here
+    # RDP Params Initialization
+    l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
+        value_array=value,
+        min_val_array=min_vals,
+        max_val_array=max_vals,
+        sigma=sigma,
+    )
 
+    if is_linear:
+        lipschitz_bounds = coeffs.copy()
+    else:
+        lipschitz_bounds = value.lipschitz_bound
+    input_entities = data_subjects.data_subjects_indexed
 
+    # Query budget spend of all unique data_subjects
+    rdp_params = RDPParams(
+        sigmas=sigmas,
+        l2_norms=l2_norms,
+        l2_norm_bounds=l2_norm_bounds,
+        Ls=lipschitz_bounds,
+        coeffs=coeffs,
+    )
+    rdp_constants = compute_rdp_constant(rdp_params, private=False)
+
+    CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_1200k.npy"
+    _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
+    print("TYPE: ", type(_cache_constant2epsilon))
+
+    ld = DataSubjectLedger(cache_constant2epsilon=_cache_constant2epsilon)
+    print("LEDGER: ", ld)
+
+    max_rdp = np.max(rdp_constants)
+    budget_spend = _cache_constant2epsilon.take((max_rdp - 1).astype(np.int64))
+
+    if budget_spend >= query_limit:
+        # calculate the value of sigma
+        # This is the first index in the cache that has an epsilon >= query limit
+        threshold_index = np.searchsorted(_cache_constant2epsilon, query_limit)
+        # There is a 90% chance the final budget spend will be below the query_limit
+        selected_rdp_value = np.random.choice(np.arange(threshold_index - 9, threshold_index + 1))
+        new_sigma = selected_rdp_value * np.sqrt(max_rdp / selected_rdp_value)
+        rdp_params.sigmas = np.ones_like(rdp_params.sigmas) * new_sigma
+
+    print("GOT RDP CONSTANTS: ", rdp_constants)
+    print("NEW SIGMA: ", new_sigma)
+
+    ##############################
     input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
-
     filtered_inputs = []
 
     # This will reveal the # of input tensors to the user- remove this before merging to dev
@@ -139,7 +187,7 @@ def vectorized_publish(
         try:
             # query and save
             mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
-                unique_entity_ids_query=input_entities,
+                 unique_entity_ids_query=input_entities,
                 rdp_params=rdp_params,
                 private=True,
                 get_budget_for_user=get_budget_for_user,

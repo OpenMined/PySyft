@@ -102,6 +102,31 @@ class RDPParams:
 
         return res
 
+# @dataclass
+# class RDPParams:
+#     sigmas: jnp.array
+#     l2_norms: jnp.array
+#     l2_norm_bounds: jnp.array
+#     Ls: jnp.array
+#     coeffs: jnp.array
+#
+#     def __init__(self):
+#         object.__setattr__(self, "res", self.sigmas)
+#         object.__setattr__(self, "res", self.l2_norms)
+#         object.__setattr__(self, "res", self.l2_norm_bounds)
+#         object.__setattr__(self, "res", self.Ls)
+#         object.__setattr__(self, "res", self.coeffs)
+#
+#     def __repr__(self) -> str:
+#         res = "RDPParams:"
+#         res = f"{res}\n sigmas:{self.sigmas}"
+#         res = f"{res}\n l2_norms:{self.l2_norms}"
+#         res = f"{res}\n l2_norm_bounds:{self.l2_norm_bounds}"
+#         res = f"{res}\n Ls:{self.Ls}"
+#         res = f"{res}\n coeffs:{self.coeffs}"
+#
+#         return res
+
 
 @partial(jax.jit, static_argnums=3, donate_argnums=(1, 2))
 def first_try_branch(
@@ -154,14 +179,15 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
     of all mechanisms releasing informationo about this
     particular subject, stored in a vectorized form"""
 
-    CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_1200k.npy"
-    _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
+    # CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_1200k.npy"
+    # _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
 
     def __init__(
         self,
         constants: Optional[np.ndarray] = None,
         update_number: int = 0,
         timestamp_of_last_update: Optional[float] = None,
+        cache_constant2epsilon: Optional[np.ndarray] = None
     ) -> None:
         self._rdp_constants = (
             constants if constants is not None else np.array([], dtype=np.float64)
@@ -173,6 +199,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             else time.time()
         )
         self._pending_save = False
+        self._cache_constant2epsilon = cache_constant2epsilon
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, DataSubjectLedger):
@@ -254,6 +281,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
 
     def _increase_max_cache(self, new_size: int) -> None:
         new_entries = []
+        print("CACHE CONSTANTS: ",  len(self._cache_constant2epsilon))
         current_size = len(self._cache_constant2epsilon)
         new_alphas = []
         for i in range(new_size - current_size):
