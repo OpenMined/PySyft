@@ -501,7 +501,7 @@ jobs:
 
   stack-integration-tests-smpc:
     strategy:
-      max-parallel: 3
+      max-parallel: 10
       matrix:
         os: [ubuntu-latest]
         python-version: ["3.10"]
