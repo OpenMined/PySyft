@@ -1334,6 +1334,9 @@ class GammaTensor:
         if fpt_values is not None:
             fpt_encode_func = fpt_values.encode
 
+        if not self.state:  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
+            self.state[self.id] = self
+
         return vectorized_publish(
             min_vals=self.min_val,
             max_vals=self.max_val,
