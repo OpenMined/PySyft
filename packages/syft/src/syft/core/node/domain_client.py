@@ -724,3 +724,17 @@ class DomainClient(Client):
         print(
             "\n\nRun `<your client variable>.datasets` to see your new dataset loaded into your machine!"
         )
+
+    def create_user(self, name: str, email: str, password: str, budget: int) -> dict:
+        try:
+            self.users.create(name=name, email=email, password=password, budget=budget)
+            response = {
+                "name": name,
+                "email": email,
+                "password": password,
+                "budget": budget,
+                "host": self.routes[0].connection.base_url.host_or_ip,  # type: ignore
+            }
+            return response
+        except Exception as e:
+            raise e
