@@ -168,6 +168,23 @@ class TestUsersRoutes:
         assert res.status_code == status.HTTP_204_NO_CONTENT
 
     @pytest.mark.asyncio
+    async def test_fail_change_owner_role(
+        self, app: FastAPI, client: AsyncClient
+    ) -> None:
+        headers = await authenticate_owner(app, client)
+
+        # Update the information for the given user
+        res = await client.patch(
+            app.url_path_for("users:update", **{"user_id": 1}),
+            json={"role": "Data Scientist"},
+            headers=headers,
+        )
+
+        # Inside of the node it should raise an UnauthorizedException, then UnknownPrivateException
+        # and finally return 500 as a http response code.
+        assert res.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+    @pytest.mark.asyncio
     async def test_list_users(self, app: FastAPI, client: AsyncClient) -> None:
         headers = await authenticate_owner(app, client)
         res = await client.get(app.url_path_for("users:read_all"), headers=headers)
