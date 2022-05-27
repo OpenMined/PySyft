@@ -75,12 +75,13 @@ export function TableItemOuter({
   )
 }
 
-const TableCheckbox = React.forwardRef((props, ref) => {
-  const defaultRef = React.useRef()
-  const resolvedRef = ref || defaultRef
-
-  return <Checkbox ref={resolvedRef} {...props} />
-})
+const CheckboxComponent = (props, ref) => {
+  // const defaultRef = useRef()
+  // const resolvedRef = ref || defaultRef
+  //
+  return <Checkbox ref={ref} {...props} />
+}
+const TableCheckbox = React.forwardRef(CheckboxComponent)
 
 export function TableItem({
   className,
