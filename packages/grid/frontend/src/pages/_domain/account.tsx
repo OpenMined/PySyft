@@ -19,6 +19,7 @@ import { logout } from '@/lib/auth'
 import { Loader } from '@/components/Loader'
 
 import type { User } from '@/types/user'
+import { EyeOpen, EyeShut } from '@/components/EyeIcon'
 
 const Heading = ({ children }) => (
   <div className="col-span-full space-y-6">
@@ -112,6 +113,7 @@ function AccountSettingsPassword() {
   } = useForm({ mode: 'onChange' })
 
   const [showSuccess, setShowSuccess] = useState(false)
+  const [passwordIsVisible, setPasswordVisible] = useState(false)
 
   function onSubmit(values) {
     update(values, {
@@ -145,13 +147,23 @@ function AccountSettingsPassword() {
         >
           <Input
             {...register('password', { required: true })}
-            type="password"
+            type={passwordIsVisible ? 'text' : 'password'}
+            addonRight={
+              <button onClick={() => setPasswordVisible(!passwordIsVisible)}>
+                {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+              </button>
+            }
           />
         </FormControl>
         <FormControl id="new_password" label={t('new-password')} required>
           <Input
             {...register('new_password', { required: true })}
-            type="password"
+            type={passwordIsVisible ? 'text' : 'password'}
+            addonRight={
+              <button onClick={() => setPasswordVisible(!passwordIsVisible)}>
+                {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+              </button>
+            }
           />
         </FormControl>
       </Form>

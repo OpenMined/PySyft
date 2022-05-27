@@ -27,6 +27,7 @@ import commonStrings from '@/i18n/en/common.json'
 import usersStrings from '@/i18n/en/users.json'
 import { ChangeRoleModal } from '@/components/Users/ChangeRoleModal'
 import { PrivacyBudgetModal } from '@/components/Users/PrivacyBudgetModal'
+import { EyeOpen, EyeShut } from '@/components/EyeIcon'
 
 function Active() {
   const { data: roles } = useRoles().all()
@@ -567,6 +568,7 @@ function parseEpsilon(valueWithEpsilon: string | number) {
 }
 
 function CreateUser({ onClose }) {
+  const [passwordIsVisible, setPasswordVisible] = useState(false)
   const create = useUsers().create(
     { onSuccess: onClose },
     { multipart: true }
@@ -619,16 +621,32 @@ function CreateUser({ onClose }) {
               required
             />
             <Input
-              type="password"
+              type={passwordIsVisible ? 'text' : 'password'}
               {...register('password', { required: true })}
               label="Password"
               required
+              addonRight={
+                <button
+                  type="button"
+                  onClick={() => setPasswordVisible(!passwordIsVisible)}
+                >
+                  {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+                </button>
+              }
             />
             <Input
-              type="password"
+              type={passwordIsVisible ? 'text' : 'password'}
               {...register('confirm_password', { required: true })}
               label="Confirm password"
               required
+              addonRight={
+                <button
+                  type="button"
+                  onClick={() => setPasswordVisible(!passwordIsVisible)}
+                >
+                  {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+                </button>
+              }
             />
             <div className="col-span-full">
               <Controller

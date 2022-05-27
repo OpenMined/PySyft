@@ -18,6 +18,7 @@ import { faDownload, faPlus } from '@fortawesome/free-solid-svg-icons'
 import { FormControl } from '@/omui/components/FormControl/FormControl'
 
 import ky from 'ky'
+import { EyeOpen, EyeShut } from '@/components/EyeIcon'
 
 const SignUpContext = createContext<{
   domain: Domain
@@ -63,8 +64,10 @@ function SignUpBox({ withDAA = false }) {
     formState: { isValid, isDirty },
   } = useForm({ mode: 'onChange' })
 
+  const [passwordIsVisible, setPasswordVisible] = useState(false)
   const isDisabled = !isValid || !isDirty
   const [file, setFile] = useState(null)
+  console.log({ passwordIsVisible })
 
   const signup = (values) => {
     const formData = new FormData()
@@ -110,9 +113,17 @@ function SignUpBox({ withDAA = false }) {
             </div>
             <FormControl label={commonStrings.password} required>
               <Input
-                type="password"
-                placeholder="···········"
+                type={passwordIsVisible ? 'text' : 'password'}
+                placeholder={passwordIsVisible ? 'password' : '···········'}
                 {...register('password', { required: true })}
+                addonRight={
+                  <button
+                    type="button"
+                    onClick={() => setPasswordVisible(!passwordIsVisible)}
+                  >
+                    {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+                  </button>
+                }
               />
             </FormControl>
             <FormControl
@@ -121,9 +132,17 @@ function SignUpBox({ withDAA = false }) {
               required
             >
               <Input
-                type="password"
-                placeholder="···········"
+                type={passwordIsVisible ? 'text' : 'password'}
+                placeholder={passwordIsVisible ? 'password' : '···········'}
                 {...register('confirm_password', { required: true })}
+                addonRight={
+                  <button
+                    type="button"
+                    onClick={() => setPasswordVisible(!passwordIsVisible)}
+                  >
+                    {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+                  </button>
+                }
               />
             </FormControl>
             <div className="col-span-full">
