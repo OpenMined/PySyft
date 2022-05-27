@@ -1,6 +1,6 @@
 import { forwardRef } from 'react'
 import cn from 'classnames'
-import { Spinner } from '@/components'
+import { NewSpinner } from '@/components/NewSpinner'
 import type { ComponentPropsWithRef } from 'react'
 
 export function Button(props: ComponentPropsWithRef<'button'>) {
@@ -55,7 +55,7 @@ export const NormalButton = forwardRef<HTMLButtonElement, GridButton>(
           props.className
         )}
       >
-        {isLoading ? <Spinner className="w-4 h-4" /> : props.children}
+        {isLoading ? <NewSpinner className="w-4 h-4" /> : props.children}
       </button>
     )
   }
