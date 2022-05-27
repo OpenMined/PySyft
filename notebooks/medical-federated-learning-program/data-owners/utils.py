@@ -6,6 +6,7 @@ import subprocess
 import sys
 
 # third party
+from IPython.display import Javascript
 import numpy as np
 import pandas as pd
 
@@ -174,3 +175,14 @@ def validate_ds_credentials(ds_credentials):
         print("Please set the missing/incorrect values and re-run this cell")
     else:
         print("Data Scientist credentials are valid. Move to the next step.")
+
+
+def output_dataset_url():
+    return """
+    var a = window.location.href.split('#')
+    if (a.length > 1) {
+        element.textContent = 'MY_DATASET_URL="https://raw.githubusercontent.com/OpenMined/datasets/main/TissueMNIST/subsets/TissueMNIST-' + a[1] + '.pkl"'
+    } else {
+        element.textContent = 'Unable to automatically get MY_DATASET_URL please locate it from your session details.'
+    }
+    """
