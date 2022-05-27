@@ -1,4 +1,4 @@
-import { useContext, useEffect, useState } from 'react'
+import { useEffect, useState } from 'react'
 import {
   Badge,
   Button,
@@ -21,7 +21,7 @@ import {
   useFormContext,
 } from 'react-hook-form'
 import { t } from '@/i18n'
-import { useDisclosure } from 'react-use-disclosure'
+import { useDisclosure } from '@/hooks/useDisclosure'
 import Modal from '@/components/Modal'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import {
@@ -172,7 +172,9 @@ function Tags() {
 
 function Profile() {
   const { settings } = useDomainSettings()
-  const update = useSettings().create(null, { multipart: true }).mutate
+  const { mutate: update, isLoading } = useSettings().create(null, {
+    multipart: true,
+  })
   const methods = useForm({
     mode: 'onChange',
     defaultValues: {
@@ -198,16 +200,18 @@ function Profile() {
           <DomainDescription />
           <SupportEmail />
           <Tags />
-          <Button type="submit">{t('buttons.save-changes')}</Button>
+          <Button type="submit" isLoading={isLoading}>
+            {t('buttons.save-changes')}
+          </Button>
         </form>
       </FormProvider>
       <Divider color="light" />
-      <ResetNode />
+      <ResetNode isLoading={isLoading} />
     </div>
   )
 }
 
-function ResetNodeConfirmationModal({ show, onClose, onSuccess }) {
+function ResetNodeConfirmationModal({ show, onClose, onSuccess, isLoading }) {
   const onSubmit = () => {
     onSuccess()
   }
@@ -227,10 +231,15 @@ function ResetNodeConfirmationModal({ show, onClose, onSuccess }) {
       </div>
       <div className="col-span-full text-center mt-6 mb-4">
         <ButtonGroup>
-          <Button color="error" onClick={onSubmit}>
+          <Button color="error" onClick={onSubmit} isLoading={isLoading}>
             {t('buttons.reset-purge-node')}
           </Button>
-          <Button variant="ghost" color="error" onClick={onClose}>
+          <Button
+            variant="ghost"
+            color="error"
+            onClick={onClose}
+            disabled={isLoading}
+          >
             {t('buttons.cancel')}
           </Button>
         </ButtonGroup>
@@ -239,7 +248,7 @@ function ResetNodeConfirmationModal({ show, onClose, onSuccess }) {
   )
 }
 
-function ResetNodeSuccessModal({ show }) {
+function ResetNodeSuccessModal({ show, isLoading }) {
   const router = useRouter()
   const { handleSubmit, register } = useForm()
 
@@ -285,8 +294,10 @@ function ResetNodeSuccessModal({ show }) {
         </FormControl>
         <div className="col-span-full text-center mt-6 mb-4">
           <ButtonGroup>
-            <Button onClick={onSubmit}>{t('buttons.submit-response')}</Button>
-            <Button variant="ghost" onClick={onClose}>
+            <Button onClick={onSubmit} isLoading={isLoading}>
+              {t('buttons.submit-response')}
+            </Button>
+            <Button variant="ghost" onClick={onClose} disabled={isLoading}>
               {t('buttons.skip')}
             </Button>
           </ButtonGroup>
@@ -296,7 +307,7 @@ function ResetNodeSuccessModal({ show }) {
   )
 }
 
-function ResetNode() {
+function ResetNode({ isLoading }) {
   const { open, isOpen, close } = useDisclosure(false)
   const { open: openSuccess, isOpen: isOpenSuccess } = useDisclosure(false)
   return (
@@ -310,6 +321,7 @@ function ResetNode() {
         variant="primary"
         type="button"
         onClick={open}
+        isLoading={isLoading}
       >
         {t('buttons.reset-purge-node')}
       </Button>
@@ -317,8 +329,9 @@ function ResetNode() {
         show={isOpen}
         onClose={close}
         onSuccess={openSuccess}
+        isLoading={isLoading}
       />
-      <ResetNodeSuccessModal show={isOpenSuccess} />
+      <ResetNodeSuccessModal show={isOpenSuccess} isLoading={isLoading} />
     </div>
   )
 }

@@ -43,8 +43,7 @@
     "react-hook-form": "^7.16.2",
     "react-query": "^3.24.3",
     "react-table": "^7.7.0",
-    "react-tippy": "^1.4.0",
-    "react-use-disclosure": "^4.0.0"
+    "react-tippy": "^1.4.0"
   },
   "devDependencies": {
     "@babel/core": "^7.12.16",
