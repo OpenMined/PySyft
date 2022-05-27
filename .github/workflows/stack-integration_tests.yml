@@ -506,7 +506,10 @@ jobs:
         os: [ubuntu-latest]
         python-version: ["3.10"]
         test-path:
-          - tests/integration/smpc
+          - tests/integration/smpc/numpy
+          - tests/integration/smpc/protocol
+          - tests/integration/smpc/store
+          - tests/integration/smpc/tensor
 
     runs-on: [self-hosted, linux]
 
