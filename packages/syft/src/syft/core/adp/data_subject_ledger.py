@@ -122,7 +122,9 @@ def first_try_branch(
         pad_length = max_entity - len(rdp_constants) + 1
         rdp_constants = jnp.concatenate([rdp_constants, jnp.zeros(shape=pad_length)])
         # print(constant.shape, rdp_constants.shape)
-        summed_constant = constant.take(entity_ids_query) + rdp_constants.take(entity_ids_query)
+        summed_constant = constant.take(entity_ids_query) + rdp_constants.take(
+            entity_ids_query
+        )
         return rdp_constants.at[entity_ids_query].set(summed_constant)
 
 
