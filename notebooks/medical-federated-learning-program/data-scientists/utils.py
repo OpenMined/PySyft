@@ -31,7 +31,8 @@ def login_to_domains(domain_credentials: set, force: bool = False):
                 details = credentials.copy()
                 del details["name"]
                 client = sy.login(**details)
-                domains["url"] = client
+                url = credentials["url"]
+                domains[url] = client
             except Exception as e:
                 print(e)
 
