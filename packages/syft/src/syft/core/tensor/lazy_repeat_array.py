@@ -84,7 +84,8 @@ class lazyrepeatarray:
         Don't touch it. It's going to get more complicated.
         """
         if is_acceptable_simple_type(other):
-            return self.__class__(data=self.data - other, shape=self.shape)
+            res = self.data - other
+            return self.__class__(data=res, shape=res.shape)
 
         if not is_broadcastable(self.shape, other.shape):
             raise Exception(
