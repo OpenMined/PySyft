@@ -589,6 +589,7 @@ jobs:
           rm -rf .tox
           docker rm `docker ps -aq` --force || true
           pip install -e packages/hagrid
+          pip install -e packages/syft 
           docker volume rm test_domain_1_app-db-data --force || true
           docker volume rm test_domain_2_app-db-data --force || true
           docker volume rm test_domain_3_app-db-data --force || true
