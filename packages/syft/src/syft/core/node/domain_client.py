@@ -732,8 +732,7 @@ class DomainClient(Client):
                 "name": name,
                 "email": email,
                 "password": password,
-                "budget": budget,
-                "host": self.routes[0].connection.base_url.host_or_ip,  # type: ignore
+                "url": self.routes[0].connection.base_url.host_or_ip,  # type: ignore
             }
             return response
         except Exception as e:
