@@ -1474,7 +1474,6 @@ class GammaTensor:
         gamma_msg.isLinear = self.is_linear
         gamma_msg.id = self.id
 
-        # return gamma_msg.to_bytes_packed()
         return gamma_msg.to_bytes()
 
     @staticmethod

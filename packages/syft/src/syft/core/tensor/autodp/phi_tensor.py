@@ -1609,7 +1609,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         # to pack or not to pack?
         # to_bytes = pt_msg.to_bytes()
 
-        return pt_msg.to_bytes_packed()
+        return pt_msg.to_bytes()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> PhiTensor:
@@ -1619,21 +1619,21 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # pt_msg = pt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        pt_msg = pt_struct.from_bytes_packed(
+        with pt_struct.from_bytes(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        )
+        ) as pt_msg:
 
-        child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
-        min_vals = deserialize(pt_msg.minVals, from_bytes=True)
-        max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
-        data_subjects_indexed = capnp_deserialize(pt_msg.dataSubjectsIndexed)
-        one_hot_lookup = numpyutf8tolist(capnp_deserialize(pt_msg.oneHotLookup))
+            child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+            min_vals = deserialize(pt_msg.minVals, from_bytes=True)
+            max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
+            data_subjects_indexed = capnp_deserialize(pt_msg.dataSubjectsIndexed)
+            one_hot_lookup = numpyutf8tolist(capnp_deserialize(pt_msg.oneHotLookup))
 
-        data_subjects_list = DataSubjectList(one_hot_lookup, data_subjects_indexed)
+            data_subjects_list = DataSubjectList(one_hot_lookup, data_subjects_indexed)
 
-        return PhiTensor(
-            child=child,
-            min_vals=min_vals,
-            max_vals=max_vals,
-            data_subjects=data_subjects_list,
-        )
+            return PhiTensor(
+                child=child,
+                min_vals=min_vals,
+                max_vals=max_vals,
+                data_subjects=data_subjects_list,
+            )
