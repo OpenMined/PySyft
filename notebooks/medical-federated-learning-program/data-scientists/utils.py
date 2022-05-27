@@ -4,6 +4,7 @@ import numpy as np
 
 # syft absolute
 import syft as sy
+from syft.core.tensor.smpc.mpc_tensor import MPCTensor
 
 
 def add_credentials(credentials_dict_list):
@@ -116,7 +117,19 @@ def update_params(W1, b1, W2, b2, dW1, db1, dW2, db2, alpha):
     return W1, b1, W2, b2
 
 
+def convert_to_mpc_tensor(*args):
+    parties = [val.client for val in args[0]]
+    for i in range(len(args)):
+        for j in range(len(args[i])):
+            args[i][j] = MPCTensor(
+                secret=args[i][j], shape=args[i][j].public_shape, parties=parties
+            )
+
+    return args
+
+
 def smpc_weight_averaging(W1, b1, W2, b2):
+    W1, b1, W2, b2 = convert_to_mpc_tensor(W1, b1, W2, b2)
     n = len(W1)
     avg_W1, avg_W2, avg_b1, avg_b2 = W1[0], W2[0], b1[0], b2[0]
 
