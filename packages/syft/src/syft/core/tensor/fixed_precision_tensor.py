@@ -286,7 +286,7 @@ class FixedPrecisionTensor(PassthroughTensor):
         # to pack or not to pack?
         # to_bytes = fpt_msg.to_bytes()
 
-        return fpt_msg.to_bytes()
+        return fpt_msg.to_bytes_packed()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> FixedPrecisionTensor:
@@ -296,21 +296,21 @@ class FixedPrecisionTensor(PassthroughTensor):
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
         # to pack or not to pack?
         # fpt_msg = fpt_struct.from_bytes(buf, traversal_limit_in_words=2 ** 64 - 1)
-        with fpt_struct.from_bytes(
+        fpt_msg = fpt_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as fpt_msg:
+        )
 
-            if fpt_msg.isNumpy:
-                child = capnp_deserialize(combine_bytes(fpt_msg.child), from_bytes=True)
-            else:
-                child = deserialize(combine_bytes(fpt_msg.child), from_bytes=True)
+        if fpt_msg.isNumpy:
+            child = capnp_deserialize(combine_bytes(fpt_msg.child), from_bytes=True)
+        else:
+            child = deserialize(combine_bytes(fpt_msg.child), from_bytes=True)
 
-            base = fpt_msg.base
-            precision = fpt_msg.precision
+        base = fpt_msg.base
+        precision = fpt_msg.precision
 
-            res = FixedPrecisionTensor(base=base, precision=precision)
-            res.child = child
-            return res
+        res = FixedPrecisionTensor(base=base, precision=precision)
+        res.child = child
+        return res
 
     def __getitem__(
         self, item: Union[str, int, slice, PassthroughTensor]

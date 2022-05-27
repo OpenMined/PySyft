@@ -629,7 +629,7 @@ class Tensor(
         tensor_msg.publicDtype = public_dtype_func()
         tensor_msg.tagName = self.tag_name
 
-        return tensor_msg.to_bytes()
+        return tensor_msg.to_bytes_packed()
 
     @staticmethod
     def _bytes2object(buf: bytes) -> Tensor:
@@ -637,16 +637,15 @@ class Tensor(
         tensor_struct: CapnpModule = schema.Tensor  # type: ignore
         # https://stackoverflow.com/questions/48458839/capnproto-maximum-filesize
         MAX_TRAVERSAL_LIMIT = 2**64 - 1
-
-        with tensor_struct.from_bytes(
+        tensor_msg = tensor_struct.from_bytes_packed(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
-        ) as tensor_msg:
+        )
 
-            tensor = Tensor(
-                child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
-                public_shape=sy.deserialize(tensor_msg.publicShape, from_bytes=True),
-                public_dtype=tensor_msg.publicDtype,
-            )
-            tensor.tag_name = tensor_msg.tagName
+        tensor = Tensor(
+            child=sy.deserialize(combine_bytes(tensor_msg.child), from_bytes=True),
+            public_shape=sy.deserialize(tensor_msg.publicShape, from_bytes=True),
+            public_dtype=tensor_msg.publicDtype,
+        )
+        tensor.tag_name = tensor_msg.tagName
 
-            return tensor
+        return tensor
