@@ -603,11 +603,9 @@ jobs:
           HAGRID_ART=false hagrid launch test_domain_3 domain to docker:9084 --tag=local --tail=false --headless=true --test
 
           docker ps
-          docker logs test_domain_1-backend_stream-1 -f  | grep -q "Application startup complete" || true
-          docker logs test_domain_2-backend_stream-1 -f  | grep -q "Application startup complete" || true
-          docker logs test_domain_3-backend_stream-1 -f | grep -q "Application startup complete" || true
 
-          sleep 5
+
+          sleep 30
 
           pytest ${{ matrix.test-path }} -p no:randomly --co
 
