@@ -1,14 +1,14 @@
 module.exports = {
   root: true,
-  parserOptions: {ecmaVersion: 8},
+  parserOptions: { ecmaVersion: 8 },
   parser: '@typescript-eslint/parser',
-  settings: {react: {version: 'detect'}},
+  settings: { react: { version: 'detect' } },
   ignorePatterns: ['node_modules/*', '.next/*', '.out/*', '!.prettierrc.js'],
   env: {
     browser: true,
     es6: true,
     node: true,
-    jest: true
+    jest: true,
   },
   plugins: ['jsx-a11y', '@typescript-eslint', 'react-hooks', 'testing-library'],
   extends: [
@@ -17,10 +17,10 @@ module.exports = {
     'plugin:jsx-a11y/recommended',
     'plugin:prettier/recommended',
     'plugin:@typescript-eslint/recommended',
-    'plugin:testing-library/recommended'
+    'plugin:testing-library/recommended',
   ],
   rules: {
-    'prettier/prettier': ['error', {}, {usePrettierrc: true}],
+    'prettier/prettier': ['error', {}, { usePrettierrc: true }],
     'react-hooks/rules-of-hooks': 'error',
     'react-hooks/exhaustive-deps': 'warn',
     'react/react-in-jsx-scope': 'off',
@@ -30,9 +30,9 @@ module.exports = {
       {
         components: ['Link'],
         specialLink: ['hrefLeft', 'hrefRight'],
-        aspects: ['invalidHref', 'preferButton']
-      }
+        aspects: ['invalidHref', 'preferButton'],
+      },
     ],
-    '@typescript-eslint/explicit-module-boundary-types': 'off'
-  }
+    '@typescript-eslint/explicit-module-boundary-types': 'off',
+  },
 }

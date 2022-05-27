@@ -1,8 +1,8 @@
-import {usePermission} from './context'
-import {Button, Divider, Switch, Text} from '@/omui'
-import {t} from '@/i18n'
+import { usePermission } from './context'
+import { Button, Divider, Switch, Text } from '@/omui'
+import { t } from '@/i18n'
 
-import type {SyftPermissions} from '@/types/permissions'
+import type { SyftPermissions } from '@/types/permissions'
 
 // TODO: evaluate creating API endpoints for serving each permission type (!== roles)
 // TODO: should be created via a shared object between backend and frontend
@@ -19,18 +19,22 @@ export const allPermissions: Array<SyftPermissions> = [
 const disabledPermissions = ['can_manage_infrastructure']
 
 function RoleDescription() {
-  const {role} = usePermission()
+  const { role } = usePermission()
   return <Text as="p">{t(`${role.name}.description`, 'permissions')}</Text>
 }
 
-function PermissionToggler({permission}: {permission: SyftPermissions}) {
-  const {permissions, toggle} = usePermission()
+function PermissionToggler({ permission }: { permission: SyftPermissions }) {
+  const { permissions, toggle } = usePermission()
   const isChecked = permissions[permission]
   const isDisabled = disabledPermissions.includes(permission)
 
   return (
     <div className="flex items-center space-x-6">
-      <Switch disabled={isDisabled} checked={isChecked} onChange={() => toggle(permission)} />
+      <Switch
+        disabled={isDisabled}
+        checked={isChecked}
+        onChange={() => toggle(permission)}
+      />
       <div className="w-full flex flex-col">
         <Text size="sm" bold className="capitalize">
           {t(`${permission}.name`, 'permissions')}
@@ -44,7 +48,7 @@ function PermissionToggler({permission}: {permission: SyftPermissions}) {
 }
 
 function PermissionsAccordionPanel() {
-  const {save} = usePermission()
+  const { save } = usePermission()
 
   return (
     <div className="px-10 w-full space-y-6">
@@ -52,7 +56,7 @@ function PermissionsAccordionPanel() {
       <Divider color="light" />
       {/* change to flex box, grid da padding errado */}
       <div className="grid grid-cols-2 gap-y-4 gap-x-6">
-        {allPermissions.map(permission => (
+        {allPermissions.map((permission) => (
           <div key={permission} className="flex px-2 items-start">
             <PermissionToggler permission={permission} />
           </div>
@@ -65,4 +69,4 @@ function PermissionsAccordionPanel() {
   )
 }
 
-export {PermissionsAccordionPanel}
+export { PermissionsAccordionPanel }

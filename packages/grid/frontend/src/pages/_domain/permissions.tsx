@@ -1,17 +1,17 @@
-import {faCheck, faSpinner} from '@fortawesome/free-solid-svg-icons'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {H4, ListInnerContainer, Select, Text} from '@/omui'
-import {SingleCenter} from '@/components/Layouts'
-import {PermissionsAccordion} from '@/components/Permissions/PermissionAccordion'
-import {TopContent} from '@/components/lib'
-import {useRoles} from '@/lib/data'
-import {singularOrPlural} from '@/utils'
-import {t} from '@/i18n'
-import {sections} from '@/content'
+import { faCheck, faSpinner } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { H4, ListInnerContainer, Select, Text } from '@/omui'
+import { SingleCenter } from '@/components/Layouts'
+import { PermissionsAccordion } from '@/components/Permissions/PermissionAccordion'
+import { TopContent } from '@/components/lib'
+import { useRoles } from '@/lib/data'
+import { singularOrPlural } from '@/utils'
+import { t } from '@/i18n'
+import { sections } from '@/content'
 
 export default function Permissions() {
-  const {data: roles, isLoading} = useRoles().all()
-  const results = {length: 4}
+  const { data: roles, isLoading } = useRoles().all()
+  const results = { length: 4 }
 
   return (
     <SingleCenter>
@@ -30,7 +30,8 @@ export default function Permissions() {
           <div className="rounded-full bg-gray-200 w-1.5 h-1.5" />
         </ListInnerContainer>
         <Text className="flex-shrink-0">
-          {results.length} {singularOrPlural(t('result'), t('results'), results.length)}
+          {results.length}{' '}
+          {singularOrPlural(t('result'), t('results'), results.length)}
         </Text>
       </div>
       <div className="col-span-full mt-10 space-y-4">

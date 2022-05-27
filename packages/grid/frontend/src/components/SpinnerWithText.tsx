@@ -1,6 +1,6 @@
-import {Spinner} from '@/components'
+import { Spinner } from '@/components'
 
-export function SpinnerWithText({children}) {
+export function SpinnerWithText({ children }) {
   return (
     <div className="flex space-x-4">
       <p>{children}</p>

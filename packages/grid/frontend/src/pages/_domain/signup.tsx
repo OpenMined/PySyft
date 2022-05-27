@@ -1,22 +1,22 @@
-import {createContext, useContext, useState} from 'react'
+import { createContext, useContext, useState } from 'react'
 import cn from 'classnames'
 import Link from 'next/link'
-import {useForm} from 'react-hook-form'
-import {CardItem} from '@/components/CardItem'
+import { useForm } from 'react-hook-form'
+import { CardItem } from '@/components/CardItem'
 import Modal from '@/components/Modal'
-import {Badge, Button, Divider, Input, H1, Text} from '@/omui'
-import {Footer, Tags} from '@/components/lib'
+import { Badge, Button, Divider, Input, H1, Text } from '@/omui'
+import { Footer, Tags } from '@/components/lib'
 
-import type {Domain} from '@/types/domain'
+import type { Domain } from '@/types/domain'
 
 import loginStrings from 'i18n/en/signup.json'
 import signUpStrings from 'i18n/en/signup.json'
 import commonStrings from 'i18n/en/common.json'
 
-import {useSettings, useUsers} from '@/lib/data'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faDownload, faPlus} from '@fortawesome/free-solid-svg-icons'
-import {FormControl} from '@/omui/components/FormControl/FormControl'
+import { useSettings, useUsers } from '@/lib/data'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { faDownload, faPlus } from '@fortawesome/free-solid-svg-icons'
+import { FormControl } from '@/omui/components/FormControl/FormControl'
 
 import ky from 'ky'
 
@@ -24,15 +24,21 @@ const SignUpContext = createContext<{
   domain: Domain
   error: string
   loading: boolean
-  signup: ({email, password}: {email: string; password: string}) => Promise<any>
+  signup: ({
+    email,
+    password,
+  }: {
+    email: string
+    password: string
+  }) => Promise<any>
 }>({
   domain: null,
   signup: null,
   error: null,
-  loading: null
+  loading: null,
 })
 
-function Container({children}) {
+function Container({ children }) {
   return (
     <div className="flex items-center justify-center py-10 h-full relative">
       <div className={cn('z-50 overflow-auto max-h-full cursor-auto w-full')}>
@@ -40,7 +46,8 @@ function Container({children}) {
           className={cn(
             'grid grid-cols-12 px-6 py-4 shadow-modal rounded mx-auto sm:max-w-modal lg:max-w-mbig',
             'bg-white'
-          )}>
+          )}
+        >
           {children}
         </div>
       </div>
@@ -48,53 +55,88 @@ function Container({children}) {
   )
 }
 
-function SignUpBox({withDAA = false}) {
-  const {domain} = useContext(SignUpContext)
+function SignUpBox({ withDAA = false }) {
+  const { domain } = useContext(SignUpContext)
 
   const {
     handleSubmit,
     register,
-    formState: {isValid, isDirty}
-  } = useForm({mode: 'onChange'})
+    formState: { isValid, isDirty },
+  } = useForm({ mode: 'onChange' })
 
   const isDisabled = !isValid || !isDirty
   const [file, setFile] = useState(null)
 
-  const signup = values => {
+  const signup = (values) => {
     const formData = new FormData()
-    formData.append('new_user', JSON.stringify({...values, role: 1}))
+    formData.append('new_user', JSON.stringify({ ...values, role: 1 }))
     // TODO: unauth api connect
-    ky.post('/api/v1/register', {body: formData})
+    ky.post('/api/v1/register', { body: formData })
   }
 
   return (
     <section className="flex flex-col items-center space-y-4">
-      <Text size={withDAA ? '2xl' : '5xl'} className={cn(withDAA && 'w-full text-left')}>
+      <Text
+        size={withDAA ? '2xl' : '5xl'}
+        className={cn(withDAA && 'w-full text-left')}
+      >
         {withDAA ? signUpStrings['apply-for-account'] : domain?.domain_name}
       </Text>
       <fieldset className="w-full">
         <form onSubmit={handleSubmit(signup)}>
           <div className="grid grid-cols-2 gap-x-6 gap-y-4">
             <FormControl id="name" label={commonStrings['full-name']} required>
-              <Input placeholder={commonStrings.placeholder['full-name']} {...register('name', {required: true})} />
+              <Input
+                placeholder={commonStrings.placeholder['full-name']}
+                {...register('name', { required: true })}
+              />
             </FormControl>
-            <FormControl id="institution" label={commonStrings['company-institution']} optional>
-              <Input placeholder="ABC University" {...register('institution')} />
+            <FormControl
+              id="institution"
+              label={commonStrings['company-institution']}
+              optional
+            >
+              <Input
+                placeholder="ABC University"
+                {...register('institution')}
+              />
             </FormControl>
             <div className="col-span-full">
               <FormControl label={commonStrings.email} required>
-                <Input placeholder={commonStrings.placeholder.email} {...register('email', {required: true})} />
+                <Input
+                  placeholder={commonStrings.placeholder.email}
+                  {...register('email', { required: true })}
+                />
               </FormControl>
             </div>
             <FormControl label={commonStrings.password} required>
-              <Input type="password" placeholder="···········" {...register('password', {required: true})} />
+              <Input
+                type="password"
+                placeholder="···········"
+                {...register('password', { required: true })}
+              />
             </FormControl>
-            <FormControl label={commonStrings['confirm-password']} id="confirm_password" required>
-              <Input type="password" placeholder="···········" {...register('confirm_password', {required: true})} />
+            <FormControl
+              label={commonStrings['confirm-password']}
+              id="confirm_password"
+              required
+            >
+              <Input
+                type="password"
+                placeholder="···········"
+                {...register('confirm_password', { required: true })}
+              />
             </FormControl>
             <div className="col-span-full">
-              <FormControl label={commonStrings['website-profile']} id="website" optional>
-                <Input placeholder={commonStrings['website-profile']} {...register('website')} />
+              <FormControl
+                label={commonStrings['website-profile']}
+                id="website"
+                optional
+              >
+                <Input
+                  placeholder={commonStrings['website-profile']}
+                  {...register('website')}
+                />
               </FormControl>
             </div>
             {withDAA && (
@@ -108,7 +150,9 @@ function SignUpBox({withDAA = false}) {
                   <Button variant="outline" size="sm">
                     <Text size="sm" bold>
                       <FontAwesomeIcon icon={faPlus} className="mr-2" />
-                      {file ? commonStrings.buttons['replace-file'] : commonStrings.buttons['upload-file']}
+                      {file
+                        ? commonStrings.buttons['replace-file']
+                        : commonStrings.buttons['upload-file']}
                     </Text>
                   </Button>
                   <Button variant="link">
@@ -123,7 +167,12 @@ function SignUpBox({withDAA = false}) {
           </div>
           <div className="space-y-4 text-center mt-10">
             <Divider color="light" />
-            <Button type="submit" size="sm" className="my-6 mb-4" disabled={isDisabled}>
+            <Button
+              type="submit"
+              size="sm"
+              className="my-6 mb-4"
+              disabled={isDisabled}
+            >
               {commonStrings.buttons['submit-application']}
             </Button>
             <div>
@@ -144,7 +193,7 @@ function SignUpBox({withDAA = false}) {
 }
 
 function DomainInfoHeader() {
-  const {domain} = useContext(SignUpContext)
+  const { domain } = useContext(SignUpContext)
   return (
     <>
       <Tags tags={domain?.tags} />
@@ -154,41 +203,51 @@ function DomainInfoHeader() {
 }
 
 function DomainInfoDetails() {
-  const {domain} = useContext(SignUpContext)
+  const { domain } = useContext(SignUpContext)
   const information = [
-    {text: 'ID#', value: domain.id, ValueComponent: props => <Badge variant="gray" type="subtle" {...props} />},
+    {
+      text: 'ID#',
+      value: domain.id,
+      ValueComponent: (props) => (
+        <Badge variant="gray" type="subtle" {...props} />
+      ),
+    },
     {
       text: commonStrings['hosted-datasets'],
       value: domain?.total_datasets,
-      ValueComponent: props => <Text mono {...props} />
+      ValueComponent: (props) => <Text mono {...props} />,
     },
     {
       text: commonStrings['deployed-on'],
       value: domain?.created_on,
-      ValueComponent: props => <Text mono {...props} />
+      ValueComponent: (props) => <Text mono {...props} />,
     },
     {
       text: commonStrings['owner'],
       value: `${domain?.owner}, ${domain?.company}`,
-      ValueComponent: props => <Text mono {...props} />
+      ValueComponent: (props) => <Text mono {...props} />,
     },
     {
       text: commonStrings.networks,
-      value: domain?.networks?.map(network => network.name).join(', '),
-      ValueComponent: props => <Text mono {...props} />
-    }
+      value: domain?.networks?.map((network) => network.name).join(', '),
+      ValueComponent: (props) => <Text mono {...props} />,
+    },
   ]
   return (
     <section className="mt-10 space-y-4">
-      {information.map(info => (
-        <CardItem text={info.text} value={info.value} ValueComponent={info.ValueComponent} />
+      {information.map((info) => (
+        <CardItem
+          text={info.text}
+          value={info.value}
+          ValueComponent={info.ValueComponent}
+        />
       ))}
     </section>
   )
 }
 
 function DomainInfoSupport() {
-  const {domain} = useContext(SignUpContext)
+  const { domain } = useContext(SignUpContext)
 
   if (!domain?.email) return null
 
@@ -199,7 +258,11 @@ function DomainInfoSupport() {
         {loginStrings['support-email']}
       </Text>
       <a href={`mailto:${domain.email}`}>
-        <Text as="p" size="sm" className="text-primary-600 hover:text-primary-500">
+        <Text
+          as="p"
+          size="sm"
+          className="text-primary-600 hover:text-primary-500"
+        >
           {domain?.email}
         </Text>
       </a>
@@ -208,7 +271,7 @@ function DomainInfoSupport() {
 }
 
 function DomainInfo() {
-  const {domain} = useContext(SignUpContext)
+  const { domain } = useContext(SignUpContext)
   return (
     <>
       <header className="col-span-4 col-start-2 mb-6">
@@ -234,8 +297,9 @@ function TopRightArt() {
             top: -13,
             width: 246,
             height: 246,
-            background: 'linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%), #20AFDF',
-            filter: 'blur(70px)'
+            background:
+              'linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%), #20AFDF',
+            filter: 'blur(70px)',
           }}
         />
         <div
@@ -245,8 +309,9 @@ function TopRightArt() {
             height: 780,
             top: 36,
             right: -92,
-            background: 'linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%), #EB4913',
-            filter: 'blur(70px)'
+            background:
+              'linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%), #EB4913',
+            filter: 'blur(70px)',
           }}
         />
         <div
@@ -256,8 +321,9 @@ function TopRightArt() {
             height: 808,
             top: 61,
             right: -92,
-            background: 'linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%), #EC9913',
-            filter: 'blur(180px)'
+            background:
+              'linear-gradient(90deg, rgba(255, 255, 255, 0.5) 0%, rgba(255, 255, 255, 0) 100%), #EC9913',
+            filter: 'blur(180px)',
           }}
         />
       </div>
@@ -275,8 +341,9 @@ function SignUpPageWithDAA() {
           "content"
           "footer"
         `,
-        gridTemplateRows: '140px auto 80px'
-      }}>
+        gridTemplateRows: '140px auto 80px',
+      }}
+    >
       <div className="col-span-full col-start-2 mt-10">
         {/* Sub with layout above ^^ */}
         <img src="/assets/small-logo.png" width={100} />
@@ -287,8 +354,10 @@ function SignUpPageWithDAA() {
         <div
           className="col-span-5 col-end-12 shadow-modal p-8"
           style={{
-            background: 'linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%), #F1F0F4'
-          }}>
+            background:
+              'linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%), #F1F0F4',
+          }}
+        >
           <SignUpBox withDAA />
         </div>
       </div>
@@ -307,8 +376,9 @@ function SignUpPageWithoutDAA() {
           "content"
           "footer"
         `,
-        gridTemplateRows: 'minmax(min-content, 200px) auto 80px'
-      }}>
+        gridTemplateRows: 'minmax(min-content, 200px) auto 80px',
+      }}
+    >
       <div className="col-span-full self-end justify-self-center">
         <img src="/assets/small-grid-symbol-logo.png" width={80} height={80} />
       </div>
@@ -321,10 +391,10 @@ function SignUpPageWithoutDAA() {
 }
 
 export default function SignUp() {
-  const {data: domain} = useSettings().all()
+  const { data: domain } = useSettings().all()
   const [error, setError] = useState(null)
 
-  const handleSignUp = async values => {
+  const handleSignUp = async (values) => {
     try {
       await signup(values)
     } catch (err) {
@@ -333,7 +403,9 @@ export default function SignUp() {
   }
 
   return (
-    <SignUpContext.Provider value={{domain, error, loading: null, signup: handleSignUp}}>
+    <SignUpContext.Provider
+      value={{ domain, error, loading: null, signup: handleSignUp }}
+    >
       {domain?.daa ? <SignUpPageWithDAA /> : <SignUpPageWithoutDAA />}
     </SignUpContext.Provider>
   )

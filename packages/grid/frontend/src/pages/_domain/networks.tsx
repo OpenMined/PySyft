@@ -1,10 +1,10 @@
-import {useEffect, useState} from 'react'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {Text} from '@/omui'
-import {TopContent, SearchInput} from '@/components/lib'
-import {NetworkAccordion} from '@/components/NetworkAccordion'
-import {sections} from '@/content'
-import {SingleCenter} from '@/components/Layouts'
+import { useEffect, useState } from 'react'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Text } from '@/omui'
+import { TopContent, SearchInput } from '@/components/lib'
+import { NetworkAccordion } from '@/components/NetworkAccordion'
+import { sections } from '@/content'
+import { SingleCenter } from '@/components/Layouts'
 import ky from 'ky'
 
 export default function Networks() {
@@ -12,7 +12,9 @@ export default function Networks() {
   useEffect(() => {
     const getNetworks = async () => {
       const networkList = await ky
-        .get('https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/networks.json')
+        .get(
+          'https://raw.githubusercontent.com/OpenMined/NetworkRegistry/main/networks.json'
+        )
         .json()
       setNetworks(networkList?.networks ?? [])
     }
@@ -22,7 +24,9 @@ export default function Networks() {
   return (
     <SingleCenter>
       <TopContent
-        icon={() => <FontAwesomeIcon icon={sections.networks.icon} className="text-3xl" />}
+        icon={() => (
+          <FontAwesomeIcon icon={sections.networks.icon} className="text-3xl" />
+        )}
         heading={sections.networks.heading}
       />
       <Text as="p" className="col-span-full mt-8 text-gray-600">

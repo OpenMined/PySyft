@@ -1,18 +1,29 @@
 import React from 'react'
-import {Story, Meta} from '@storybook/react'
+import { Story, Meta } from '@storybook/react'
 
-import {Text, H1, H2, H3, H4, H5, H6, TextSizeProp, TextProps} from './Text'
+import { Text, H1, H2, H3, H4, H5, H6, TextSizeProp, TextProps } from './Text'
 
 export default {
   title: 'Atoms/Type',
-  component: Text
+  component: Text,
 } as Meta
 
-const types = ['xs', 'sm', 'md', 'lg', 'xl', '2xl', '3xl', '4xl', '5xl', '6xl'] as TextSizeProp[]
+const types = [
+  'xs',
+  'sm',
+  'md',
+  'lg',
+  'xl',
+  '2xl',
+  '3xl',
+  '4xl',
+  '5xl',
+  '6xl',
+] as TextSizeProp[]
 
-const Template: Story<TextProps> = args => (
+const Template: Story<TextProps> = (args) => (
   <>
-    {types.map(type => (
+    {types.map((type) => (
       <Text {...args} size={type}>
         {type}
       </Text>
