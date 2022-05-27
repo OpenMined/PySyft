@@ -40,7 +40,8 @@ function Container({children}) {
           className={cn(
             'grid grid-cols-12 px-6 py-4 shadow-modal rounded mx-auto sm:max-w-modal lg:max-w-mbig',
             'bg-white'
-          )}>
+          )}
+        >
           {children}
         </div>
       </div>
@@ -171,11 +172,6 @@ function DomainInfoDetails() {
       text: commonStrings['owner'],
       value: `${domain?.owner}, ${domain?.company}`,
       ValueComponent: props => <Text mono {...props} />
-    },
-    {
-      text: commonStrings.networks,
-      value: domain?.networks?.map(network => network.name).join(', '),
-      ValueComponent: props => <Text mono {...props} />
     }
   ]
   return (
@@ -276,7 +272,8 @@ function SignUpPageWithDAA() {
           "footer"
         `,
         gridTemplateRows: '140px auto 80px'
-      }}>
+      }}
+    >
       <div className="col-span-full col-start-2 mt-10">
         {/* Sub with layout above ^^ */}
         <img src="/assets/small-logo.png" width={100} />
@@ -288,7 +285,8 @@ function SignUpPageWithDAA() {
           className="col-span-5 col-end-12 shadow-modal p-8"
           style={{
             background: 'linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%), #F1F0F4'
-          }}>
+          }}
+        >
           <SignUpBox withDAA />
         </div>
       </div>
@@ -308,7 +306,8 @@ function SignUpPageWithoutDAA() {
           "footer"
         `,
         gridTemplateRows: 'minmax(min-content, 200px) auto 80px'
-      }}>
+      }}
+    >
       <div className="col-span-full self-end justify-self-center">
         <img src="/assets/small-grid-symbol-logo.png" width={80} height={80} />
       </div>

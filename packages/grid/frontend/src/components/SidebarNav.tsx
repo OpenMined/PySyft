@@ -20,8 +20,7 @@ const navItems = [
       {name: 'Data Requests', link: '/requests/data'},
       {name: 'Upgrade Requests', link: '/requests/upgrade'}
     ]
-  },
-  {name: 'Networks', link: '/networks', icon: faHandsHelping}
+  }
 ]
 
 const SidebarNav = () => {
@@ -48,7 +47,8 @@ const SidebarNav = () => {
                         'hover:bg-gray-800 hover:no-underline',
                         isSelected && 'bg-gray-800 text-gray-200',
                         !isSelected && currRoute === navItem && 'bg-gray-800 text-white'
-                      )}>
+                      )}
+                    >
                       {navItem.name}
                     </ListFAIconItem>
                   </a>
@@ -67,7 +67,8 @@ const SidebarNav = () => {
                               className={cn(
                                 'hover:bg-gray-700 hover:no-underline',
                                 currSubRoute && 'bg-gray-700 text-white'
-                              )}>
+                              )}
+                            >
                               {subItem.name}
                             </ListFAIconItem>
                           </a>

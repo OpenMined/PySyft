@@ -16,7 +16,6 @@ const navigation = [
   {name: 'Users', href: '/users'},
   {name: 'Roles & Permissions', href: '/permissions'},
   {name: 'Dashboard', href: '/dashboard', disabled: true},
-  {name: 'Networks', href: '#', disabled: true}, //networks'},
   {name: 'Settings', href: '/settings', disabled: true}
 ]
 
@@ -71,7 +70,8 @@ function MobileSidebar() {
             enterTo="opacity-100"
             leave="transition-opacity ease-linear duration-300"
             leaveFrom="opacity-100"
-            leaveTo="opacity-0">
+            leaveTo="opacity-0"
+          >
             <Dialog.Overlay className="fixed inset-0 w-full bg-gray-600 bg-opacity-90" />
           </Transition.Child>
           <div className="flex-shrink-0 w-14" aria-hidden="true" />
@@ -82,7 +82,8 @@ function MobileSidebar() {
             enterTo="translate-x-0"
             leave="transition ease-in-out duration-300 transform"
             leaveFrom="translate-x-0"
-            leaveTo="translate-x-full">
+            leaveTo="translate-x-full"
+          >
             <MobileSidebarMenuContent />
           </Transition.Child>
           <Transition.Child
@@ -92,11 +93,13 @@ function MobileSidebar() {
             enterTo="opacity-100"
             leave="ease-in-out duration-300"
             leaveFrom="opacity-100"
-            leaveTo="opacity-0">
+            leaveTo="opacity-0"
+          >
             <div className="absolute top-0 left-0 pt-2 -mr-12">
               <button
                 className="flex items-center justify-center w-10 h-10 mr-1 rounded-full focus:outline-none focus:ring-2 focus:ring-inset focus:ring-white"
-                onClick={() => open(false)}>
+                onClick={() => open(false)}
+              >
                 <span className="sr-only">Close menu</span>
                 <XIcon className="w-6 h-6 text-white" aria-hidden="true" />
               </button>
@@ -174,7 +177,8 @@ function Navigation() {
             className={cn(
               'text-gray-400 cursor-default',
               'flex items-center px-2 py-2 text-sm font-regular rounded-sm'
-            )}>
+            )}
+          >
             {item.name}
           </span>
         ) : (
@@ -185,7 +189,8 @@ function Navigation() {
                   ? 'bg-cyan-500 text-white'
                   : 'text-gray-800 hover:text-white hover:bg-sky-600 hover:bg-opacity-75 active:bg-opacity-100',
                 'group flex items-center px-2 py-2 text-sm font-regular rounded-sm'
-              )}>
+              )}
+            >
               {item.name} {item.href === '/requests' && totalRequests > 0 && `(${totalRequests})`}
             </a>
           </Link>
