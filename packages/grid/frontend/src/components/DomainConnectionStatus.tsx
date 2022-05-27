@@ -1,7 +1,7 @@
-import {useDomainStatus} from '@/lib/data'
+import { useDomainStatus } from '@/lib/data'
 
 export function DomainConnectionStatus() {
-  const {isLoading, isError} = useDomainStatus()
+  const { isLoading, isError } = useDomainStatus()
 
   let bgColor = 'green'
   let message = 'Domain online'

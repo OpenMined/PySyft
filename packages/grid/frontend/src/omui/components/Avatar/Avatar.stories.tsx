@@ -1,8 +1,8 @@
 import React from 'react'
-import {Story, Meta} from '@storybook/react'
-import {Avatar} from './Avatar'
+import { Story, Meta } from '@storybook/react'
+import { Avatar } from './Avatar'
 
-const AvatarStory = args => {
+const AvatarStory = (args) => {
   return (
     <Avatar
       src="https://avataaars.io/?avatarStyle=Circle&topType=LongHairStraight&accessoriesType=Blank&hairColor=BrownDark&facialHairType=Blank&clotheType=BlazerShirt&eyeType=Default&eyebrowType=Default&mouthType=Default&skinColor=Light"
@@ -19,12 +19,12 @@ export default {
     size: {
       defaultValue: 'md',
       options: ['sm', 'md', 'lg', 'xl', '2xl', '3xl'],
-      control: {type: 'select'}
+      control: { type: 'select' },
     },
     show: {
-      control: {type: 'boolean'}
-    }
-  }
+      control: { type: 'boolean' },
+    },
+  },
 } as Meta
 
 export const Avatars = AvatarStory.bind({})

@@ -1,10 +1,15 @@
-import React, {useState} from 'react'
-import {Accordion, AccordionButton, AccordionItem, AccordionPanel} from './Accordion'
-import type {AccordionProps} from './Accordion'
-import type {Story, Meta} from '@storybook/react'
-import {Image} from '../Image/Image'
+import React, { useState } from 'react'
+import {
+  Accordion,
+  AccordionButton,
+  AccordionItem,
+  AccordionPanel,
+} from './Accordion'
+import type { AccordionProps } from './Accordion'
+import type { Story, Meta } from '@storybook/react'
+import { Image } from '../Image/Image'
 
-export const Default: Story<AccordionProps> = args => {
+export const Default: Story<AccordionProps> = (args) => {
   return (
     <Accordion className="max-w-xs" {...args}>
       <AccordionItem>
@@ -14,9 +19,10 @@ export const Default: Story<AccordionProps> = args => {
 
         <AccordionPanel>
           <p className="mb-4">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-            ea commodo consequat.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            aliquip ex ea commodo consequat.
           </p>
           <div className="flex flex-col space-y-4">
             <input type="text" />
@@ -32,9 +38,10 @@ export const Default: Story<AccordionProps> = args => {
           <AccordionButton>Text Here</AccordionButton>
         </h2>
         <AccordionPanel>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-          magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-          consequat.
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+          eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+          minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+          aliquip ex ea commodo consequat.
         </AccordionPanel>
       </AccordionItem>
 
@@ -51,9 +58,10 @@ export const Default: Story<AccordionProps> = args => {
         </h2>
         <AccordionPanel>
           <p className="mb-4">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-            ea commodo consequat.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            aliquip ex ea commodo consequat.
           </p>
 
           <div className="flex space-x-4">
@@ -66,7 +74,7 @@ export const Default: Story<AccordionProps> = args => {
   )
 }
 
-const Example: Story<AccordionProps> = args => {
+const Example: Story<AccordionProps> = (args) => {
   return (
     <div className="flex space-x-8">
       <Accordion className="max-w-xs" {...args}>
@@ -77,9 +85,10 @@ const Example: Story<AccordionProps> = args => {
 
           <AccordionPanel>
             <p className="mb-4">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-              dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-              ea commodo consequat.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+              enim ad minim veniam, quis nostrud exercitation ullamco laboris
+              nisi ut aliquip ex ea commodo consequat.
             </p>
             <div className="flex flex-col space-y-4">
               <input type="text" />
@@ -95,9 +104,10 @@ const Example: Story<AccordionProps> = args => {
             <AccordionButton>Text Here</AccordionButton>
           </h2>
           <AccordionPanel>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-            ea commodo consequat.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            aliquip ex ea commodo consequat.
           </AccordionPanel>
         </AccordionItem>
 
@@ -114,9 +124,10 @@ const Example: Story<AccordionProps> = args => {
           </h2>
           <AccordionPanel>
             <p className="mb-4">
-              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-              dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-              ea commodo consequat.
+              Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+              eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut
+              enim ad minim veniam, quis nostrud exercitation ullamco laboris
+              nisi ut aliquip ex ea commodo consequat.
             </p>
 
             <div className="flex space-x-4">
@@ -132,9 +143,10 @@ const Example: Story<AccordionProps> = args => {
             <AccordionButton>Open by default</AccordionButton>
           </h2>
           <AccordionPanel>
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-            ea commodo consequat.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            aliquip ex ea commodo consequat.
           </AccordionPanel>
         </AccordionItem>
       </Accordion>
@@ -143,13 +155,17 @@ const Example: Story<AccordionProps> = args => {
           <h2>
             <AccordionButton>Disabled initially open</AccordionButton>
           </h2>
-          <AccordionPanel>You can not open this accordion after closing it.</AccordionPanel>
+          <AccordionPanel>
+            You can not open this accordion after closing it.
+          </AccordionPanel>
         </AccordionItem>
         <AccordionItem>
           <h2>
             <AccordionButton>Click here</AccordionButton>
           </h2>
-          <AccordionPanel>The disabled accordion is not focusable too.</AccordionPanel>
+          <AccordionPanel>
+            The disabled accordion is not focusable too.
+          </AccordionPanel>
         </AccordionItem>
       </Accordion>
       <Accordion className="max-w-xs">
@@ -169,10 +185,15 @@ const Example: Story<AccordionProps> = args => {
   )
 }
 
-export const ControlledExample: Story<AccordionProps> = args => {
+export const ControlledExample: Story<AccordionProps> = (args) => {
   const [active, setActive] = useState<number | null>(2)
   return (
-    <Accordion className="max-w-2xl" index={active} onChange={setActive} {...args}>
+    <Accordion
+      className="max-w-2xl"
+      index={active}
+      onChange={setActive}
+      {...args}
+    >
       <AccordionItem>
         <h2>
           <AccordionButton>Input example</AccordionButton>
@@ -180,9 +201,10 @@ export const ControlledExample: Story<AccordionProps> = args => {
 
         <AccordionPanel>
           <p className="mb-4">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-            ea commodo consequat.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            aliquip ex ea commodo consequat.
           </p>
           <div className="flex flex-col space-y-4">
             <input type="text" />
@@ -196,9 +218,10 @@ export const ControlledExample: Story<AccordionProps> = args => {
       <AccordionItem>
         <AccordionButton>Lorem ipsum</AccordionButton>
         <AccordionPanel>
-          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et dolore
-          magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex ea commodo
-          consequat.
+          Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+          eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim ad
+          minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+          aliquip ex ea commodo consequat.
         </AccordionPanel>
       </AccordionItem>
 
@@ -211,9 +234,10 @@ export const ControlledExample: Story<AccordionProps> = args => {
         <AccordionButton>Button here</AccordionButton>
         <AccordionPanel>
           <p className="mb-4">
-            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do eiusmod tempor incididunt ut labore et
-            dolore magna aliqua. Ut enim ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut aliquip ex
-            ea commodo consequat.
+            Lorem ipsum dolor sit amet, consectetur adipiscing elit, sed do
+            eiusmod tempor incididunt ut labore et dolore magna aliqua. Ut enim
+            ad minim veniam, quis nostrud exercitation ullamco laboris nisi ut
+            aliquip ex ea commodo consequat.
           </p>
 
           <div className="flex space-x-4">
@@ -226,7 +250,7 @@ export const ControlledExample: Story<AccordionProps> = args => {
   )
 }
 
-export const AllCases: Story<AccordionProps> = args => {
+export const AllCases: Story<AccordionProps> = (args) => {
   return (
     <div className="space-y-12">
       <div className="bg-white mt-8 p-4 rounded-md border border-dashed border-purple-400">
@@ -244,7 +268,7 @@ export default {
   component: Accordion,
   parameters: {
     controls: {
-      include: ['size']
-    }
-  }
+      include: ['size'],
+    },
+  },
 } as Meta

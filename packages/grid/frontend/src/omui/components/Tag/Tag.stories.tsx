@@ -1,10 +1,10 @@
 import React from 'react'
-import {Story, Meta} from '@storybook/react'
+import { Story, Meta } from '@storybook/react'
 
-import {Tag, TagSizeProp} from './Tag'
-import type {TagProps, TagVariantProp} from './Tag'
+import { Tag, TagSizeProp } from './Tag'
+import type { TagProps, TagVariantProp } from './Tag'
 
-const RandomIcon = props => (
+const RandomIcon = (props) => (
   <svg viewBox="0 -2 16 16" xmlns="http://www.w3.org/2000/svg" {...props}>
     <path
       fill="currentColor"
@@ -20,46 +20,57 @@ export default {
     onClick: {
       mapping: {
         true: () => console.log('click:omui-tag'),
-        false: null
+        false: null,
       },
       defaultValue: false,
-      control: 'boolean'
-    }
+      control: 'boolean',
+    },
   },
   parameters: {
     controls: {
-      include: ['variant', 'size', 'disabled', 'tagType', 'className', 'icon', 'iconSide', 'onClick']
-    }
-  }
+      include: [
+        'variant',
+        'size',
+        'disabled',
+        'tagType',
+        'className',
+        'icon',
+        'iconSide',
+        'onClick',
+      ],
+    },
+  },
 } as Meta
 
-const Template: Story<TagProps> = args => (
+const Template: Story<TagProps> = (args) => (
   <Tag {...args} icon={RandomIcon}>
     Text here
   </Tag>
 )
 
-const WithoutIconStory: Story<TagProps> = args => <Tag {...args}>Text here</Tag>
+const WithoutIconStory: Story<TagProps> = (args) => (
+  <Tag {...args}>Text here</Tag>
+)
 
 const variants: TagVariantProp[] = ['gray', 'primary', 'quaternary', 'tertiary']
 const tagSizes: TagSizeProp[] = ['sm', 'md', 'lg']
 
 const rows: Array<Partial<TagProps>> = [
-  {tagType: 'round'},
-  {tagType: 'round', icon: RandomIcon, iconSide: 'right'},
-  {tagType: 'round', icon: RandomIcon, iconSide: 'left'},
-  {tagType: 'square'},
-  {tagType: 'square', icon: RandomIcon, iconSide: 'left'},
-  {tagType: 'square', icon: RandomIcon, iconSide: 'left'}
+  { tagType: 'round' },
+  { tagType: 'round', icon: RandomIcon, iconSide: 'right' },
+  { tagType: 'round', icon: RandomIcon, iconSide: 'left' },
+  { tagType: 'square' },
+  { tagType: 'square', icon: RandomIcon, iconSide: 'left' },
+  { tagType: 'square', icon: RandomIcon, iconSide: 'left' },
 ]
 
-const AllTagsStory: Story<TagProps> = args => (
+const AllTagsStory: Story<TagProps> = (args) => (
   <div className="space-y-8">
-    {rows.map(props => (
+    {rows.map((props) => (
       <div className="space-y-2">
-        {tagSizes.map(size => (
+        {tagSizes.map((size) => (
           <div className="space-x-3">
-            {variants.map(variant => (
+            {variants.map((variant) => (
               <Tag {...args} {...props} size={size} variant={variant}>
                 Text here
               </Tag>
@@ -74,25 +85,33 @@ const AllTagsStory: Story<TagProps> = args => (
 export const DefaultWithIcon = Template.bind({})
 DefaultWithIcon.argTypes = {
   iconSide: {
-    defaultValue: 'left'
-  }
+    defaultValue: 'left',
+  },
 }
 DefaultWithIcon.parameters = {
   controls: {
-    include: ['variant', 'size', 'disabled', 'tagType', 'className', 'iconSide', 'onClick']
-  }
+    include: [
+      'variant',
+      'size',
+      'disabled',
+      'tagType',
+      'className',
+      'iconSide',
+      'onClick',
+    ],
+  },
 }
 
 export const DefaultWithoutIcon = WithoutIconStory.bind({})
 DefaultWithoutIcon.parameters = {
   controls: {
-    include: ['variant', 'size', 'disabled', 'tagType', 'className', 'onClick']
-  }
+    include: ['variant', 'size', 'disabled', 'tagType', 'className', 'onClick'],
+  },
 }
 
 export const AllTags = AllTagsStory.bind({})
 AllTags.parameters = {
   controls: {
-    include: ['className', 'onClick']
-  }
+    include: ['className', 'onClick'],
+  },
 }

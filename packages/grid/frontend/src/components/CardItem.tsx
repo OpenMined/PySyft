@@ -1,5 +1,5 @@
-import {Text} from '@/omui'
-import type {ReactNode} from 'react'
+import { Text } from '@/omui'
+import type { ReactNode } from 'react'
 
 export interface CardItemProps {
   text: string
@@ -8,7 +8,12 @@ export interface CardItemProps {
   ValueComponent?: ReactNode
 }
 
-function CardItem({text, value, TextComponent = CardItemText, ValueComponent = CardItemValue}) {
+function CardItem({
+  text,
+  value,
+  TextComponent = CardItemText,
+  ValueComponent = CardItemValue,
+}) {
   return (
     <div className="flex space-x-2 items-center">
       <TextComponent>{text}:</TextComponent>
@@ -25,4 +30,4 @@ function CardItemValue(props) {
   return <Text size="sm" {...props} />
 }
 
-export {CardItem}
+export { CardItem }
