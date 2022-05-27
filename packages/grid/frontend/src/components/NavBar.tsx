@@ -1,22 +1,28 @@
-import {Fragment, createContext, useContext, useCallback, useState} from 'react'
+import {
+  Fragment,
+  createContext,
+  useContext,
+  useCallback,
+  useState,
+} from 'react'
 import Link from 'next/link'
-import {useRouter} from 'next/router'
+import { useRouter } from 'next/router'
 import cn from 'classnames'
-import {Dialog, Transition} from '@headlessui/react'
-import {MenuIcon, XIcon} from '@heroicons/react/solid'
-import {DomainConnectionStatus} from '@/components'
-import {useMe, useRequests, useDomainStatus} from '@/lib/data'
-import {useAuth} from '@/context/auth-context'
+import { Dialog, Transition } from '@headlessui/react'
+import { MenuIcon, XIcon } from '@heroicons/react/solid'
+import { DomainConnectionStatus } from '@/components'
+import { useMe, useRequests, useDomainStatus } from '@/lib/data'
+import { useAuth } from '@/context/auth-context'
 
 const navigation = [
-  {name: 'Datasets', href: '/datasets', disabled: true},
-  {name: 'Models', href: '/models', disabled: true},
-  {name: 'Requests', href: '/requests'},
-  {name: 'Tensors', href: '/tensors', disabled: true},
-  {name: 'Users', href: '/users'},
-  {name: 'Roles & Permissions', href: '/permissions'},
-  {name: 'Dashboard', href: '/dashboard', disabled: true},
-  {name: 'Settings', href: '/settings', disabled: true}
+  { name: 'Datasets', href: '/datasets', disabled: true },
+  { name: 'Models', href: '/models', disabled: true },
+  { name: 'Requests', href: '/requests' },
+  { name: 'Tensors', href: '/tensors', disabled: true },
+  { name: 'Users', href: '/users' },
+  { name: 'Roles & Permissions', href: '/permissions' },
+  { name: 'Dashboard', href: '/dashboard', disabled: true },
+  { name: 'Settings', href: '/settings', disabled: true },
 ]
 
 const SidebarContext = createContext(null)
@@ -39,7 +45,7 @@ function MobileSidebarMenuContent() {
 }
 
 function MobileSidebarDisplay() {
-  const {open} = useContext(SidebarContext)
+  const { open } = useContext(SidebarContext)
   return (
     <div className="flex items-center justify-between w-full h-20 border cursor-pointer bg-blueGray-50 md:hidden">
       <Link href="/">
@@ -56,13 +62,19 @@ function MobileSidebarDisplay() {
 }
 
 function MobileSidebar() {
-  const {isOpen, open} = useContext(SidebarContext)
+  const { isOpen, open } = useContext(SidebarContext)
 
   return (
     <>
       <MobileSidebarDisplay />
       <Transition.Root show={isOpen} as={Fragment}>
-        <Dialog as="div" static className="fixed inset-0 z-40 flex md:hidden" open={isOpen} onClose={open}>
+        <Dialog
+          as="div"
+          static
+          className="fixed inset-0 z-40 flex md:hidden"
+          open={isOpen}
+          onClose={open}
+        >
           <Transition.Child
             as={Fragment}
             enter="transition-opacity ease-linear duration-300"
@@ -126,7 +138,7 @@ function DesktopSidebar() {
 }
 
 function NodeInfo() {
-  const {data} = useDomainStatus()
+  const { data } = useDomainStatus()
   const domainName = data?.nodeName
 
   return (
@@ -139,8 +151,8 @@ function NodeInfo() {
 
 function LogoutBox() {
   const router = useRouter()
-  const {logout} = useAuth()
-  const {data: me} = useMe()
+  const { logout } = useAuth()
+  const { data: me } = useMe()
 
   const doLogout = useCallback(() => {
     logout()
@@ -153,7 +165,9 @@ function LogoutBox() {
         <div className="flex-shrink-0 block w-full cursor-pointer">
           <div className="flex items-center">
             <div className="text-left font-regular">
-              <p className="text-sm text-gray-500 transition-colors">{me?.email}</p>
+              <p className="text-sm text-gray-500 transition-colors">
+                {me?.email}
+              </p>
               <p className="text-xs group-hover:text-blue-500">Log out</p>
             </div>
           </div>
@@ -164,14 +178,15 @@ function LogoutBox() {
 }
 
 function Navigation() {
-  const {current} = useContext(SidebarContext)
-  const {all} = useRequests()
-  const {data: requests} = all()
-  const totalRequests = requests?.filter(request => request.status === 'pending').length ?? null
+  const { current } = useContext(SidebarContext)
+  const { all } = useRequests()
+  const { data: requests } = all()
+  const totalRequests =
+    requests?.filter((request) => request.status === 'pending').length ?? null
 
   return (
     <nav className="px-2 mt-5 space-y-1">
-      {navigation.map(item =>
+      {navigation.map((item) =>
         item.disabled ? (
           <span
             className={cn(
@@ -191,7 +206,10 @@ function Navigation() {
                 'group flex items-center px-2 py-2 text-sm font-regular rounded-sm'
               )}
             >
-              {item.name} {item.href === '/requests' && totalRequests > 0 && `(${totalRequests})`}
+              {item.name}{' '}
+              {item.href === '/requests' &&
+                totalRequests > 0 &&
+                `(${totalRequests})`}
             </a>
           </Link>
         )
@@ -221,7 +239,7 @@ export function Sidebar() {
   const [isOpen, open] = useState(false)
   const router = useRouter()
   return (
-    <SidebarContext.Provider value={{isOpen, open, current: router.route}}>
+    <SidebarContext.Provider value={{ isOpen, open, current: router.route }}>
       <MobileSidebar />
       <DesktopSidebar />
     </SidebarContext.Provider>

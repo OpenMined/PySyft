@@ -1,28 +1,28 @@
-import {useEffect, useState} from 'react'
+import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import {faCheck} from '@fortawesome/free-solid-svg-icons'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {Button, Divider, FormControl, Text} from '@/omui'
-import {useRoles, useUsers} from '@/lib/data'
-import {t} from '@/i18n'
-import {allPermissions} from '@/components/Permissions/Panel'
+import { faCheck } from '@fortawesome/free-solid-svg-icons'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import { Button, Divider, FormControl, Text } from '@/omui'
+import { useRoles, useUsers } from '@/lib/data'
+import { t } from '@/i18n'
+import { allPermissions } from '@/components/Permissions/Panel'
 import Modal from '../Modal'
 import Select from '@/components/post/Select'
 
-export function ChangeRoleModal({show, onClose, user, role}) {
-  const {data: roles} = useRoles().all()
-  const {mutate} = useUsers().update(user?.id, {onSuccess: onClose})
+export function ChangeRoleModal({ show, onClose, user, role }) {
+  const { data: roles } = useRoles().all()
+  const { mutate } = useUsers().update(user?.id, { onSuccess: onClose })
   const [currentRole, setRole] = useState(role)
-  const matchingRole = roles?.find(defRole => defRole.name === currentRole)
+  const matchingRole = roles?.find((defRole) => defRole.name === currentRole)
   const permissionsList = allPermissions
-    .filter(permission => Boolean(matchingRole?.[permission]))
-    .map(permission => ({
+    .filter((permission) => Boolean(matchingRole?.[permission]))
+    .map((permission) => ({
       name: t(`${permission}.name`, 'permissions'),
-      description: t(`${permission}.description`, 'permissions')
+      description: t(`${permission}.description`, 'permissions'),
     }))
 
   const handleRoleChange = () => {
-    mutate({role: currentRole})
+    mutate({ role: currentRole })
   }
 
   useEffect(() => setRole(role), [role])
@@ -37,8 +37,9 @@ export function ChangeRoleModal({show, onClose, user, role}) {
           Change Roles
         </Text>
         <Text className="mt-4" as="p">
-          Permissions for a user are set by their assigned role. These permissions are used for managing the domain. To
-          review and customize the default set of roles visit the{' '}
+          Permissions for a user are set by their assigned role. These
+          permissions are used for managing the domain. To review and customize
+          the default set of roles visit the{' '}
           <Link href="/permissions">
             <a>Permissions</a>
           </Link>
@@ -48,7 +49,11 @@ export function ChangeRoleModal({show, onClose, user, role}) {
       <div className="col-span-full mt-2.5">
         <FormControl label="Change role" id="role" className="mt-6">
           <div>
-            <Select options={roles} value={currentRole} onChange={props => setRole(props)} />
+            <Select
+              options={roles}
+              value={currentRole}
+              onChange={(props) => setRole(props)}
+            />
           </div>
         </FormControl>
       </div>
@@ -58,12 +63,20 @@ export function ChangeRoleModal({show, onClose, user, role}) {
           <Divider color="light" />
         </div>
         <ul className="space-y-3">
-          {permissionsList.map(permission => (
-            <li>
+          {permissionsList.map((permission) => (
+            <li key={permission.name}>
               <div className="flex space-x-6 items-center">
-                <FontAwesomeIcon icon={faCheck} className="text-success-500 font-bold text-2xl" />
+                <FontAwesomeIcon
+                  icon={faCheck}
+                  className="text-success-500 font-bold text-2xl"
+                />
                 <div className="py-1">
-                  <Text className="text-gray-800 capitalize" bold size="sm" as="p">
+                  <Text
+                    className="text-gray-800 capitalize"
+                    bold
+                    size="sm"
+                    as="p"
+                  >
                     {permission.name}
                   </Text>
                   <Text className="text-gray-400" size="sm" as="p">

@@ -1,31 +1,35 @@
-import {useRouter} from 'next/router'
+import { useRouter } from 'next/router'
 import Link from 'next/link'
-import {useForm} from 'react-hook-form'
-import {Button, Input, Text} from '@/omui'
-import {DomainStatus} from '@/components/DomainStatus'
-import {Footer} from '@/components/lib'
-import {FormControl} from '@/omui/components/FormControl/FormControl'
-import {login} from '@/lib/auth'
-import {useSettings} from '@/lib/data'
-import {t} from '@/i18n'
+import { useForm } from 'react-hook-form'
+import { Button, Input, Text } from '@/omui'
+import { DomainStatus } from '@/components/DomainStatus'
+import { Footer } from '@/components/lib'
+import { FormControl } from '@/omui/components/FormControl/FormControl'
+import { login } from '@/lib/auth'
+import { useSettings } from '@/lib/data'
+import { t } from '@/i18n'
 
 export default function Login() {
   const router = useRouter()
-  const {data: settings} = useSettings().all()
+  const { data: settings } = useSettings().all()
 
   const {
     handleSubmit,
     register,
     setError,
-    formState: {isValid, isDirty, errors}
-  } = useForm<{email: string; password: string}>({mode: 'onChange'})
+    formState: { isValid, isDirty, errors },
+  } = useForm<{ email: string; password: string }>({ mode: 'onChange' })
 
-  const handleLogin = async ({email, password}) => {
+  const handleLogin = async ({ email, password }) => {
     try {
-      await login({email, password})
+      await login({ email, password })
       router.push('/users')
     } catch (err) {
-      setError('email', {type: 'manual', message: 'Invalid credentials'}, {shouldFocus: true})
+      setError(
+        'email',
+        { type: 'manual', message: 'Invalid credentials' },
+        { shouldFocus: true }
+      )
     }
   }
 
@@ -38,8 +42,9 @@ export default function Login() {
           "content"
           "footer"
         `,
-        gridTemplateRows: 'minmax(min-content, 200px) auto 80px'
-      }}>
+        gridTemplateRows: 'minmax(min-content, 200px) auto 80px',
+      }}
+    >
       <div className="col-span-full self-end justify-self-center">
         <img src="/assets/small-grid-symbol-logo.png" width={80} height={80} />
       </div>
@@ -58,13 +63,31 @@ export default function Login() {
                 label={t('email')}
                 error={Boolean(errors.email)}
                 hint={errors.email?.message}
-                required>
-                <Input placeholder="abc@university.edu" {...register('email', {required: true})} />
+                required
+              >
+                <Input
+                  placeholder="abc@university.edu"
+                  {...register('email', { required: true })}
+                />
               </FormControl>
-              <FormControl className="mt-4" id="password" label={t('password')} error={Boolean(errors.email)} required>
-                <Input type="password" placeholder="···········" {...register('password', {required: true})} />
+              <FormControl
+                className="mt-4"
+                id="password"
+                label={t('password')}
+                error={Boolean(errors.email)}
+                required
+              >
+                <Input
+                  type="password"
+                  placeholder="···········"
+                  {...register('password', { required: true })}
+                />
               </FormControl>
-              <Button size="sm" className="mt-6 w-full justify-center" disabled={!isValid || !isDirty}>
+              <Button
+                size="sm"
+                className="mt-6 w-full justify-center"
+                disabled={!isValid || !isDirty}
+              >
                 {t('buttons.login')}
               </Button>
             </form>

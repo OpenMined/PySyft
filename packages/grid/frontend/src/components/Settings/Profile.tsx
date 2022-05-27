@@ -1,25 +1,43 @@
-import {useContext, useEffect, useState} from 'react'
-import {Badge, Button, Divider, H4, H5, Input, Tag, Text, TextArea} from '@/omui'
-import {XIcon} from '@heroicons/react/solid'
-import {Optional, ButtonGroup} from '@/components/lib'
-import {useSettings} from '@/lib/data'
-import {formatDate} from '@/utils'
-import {Controller, FormProvider, useForm, useFormContext} from 'react-hook-form'
-import {t} from '@/i18n'
-import {useDisclosure} from 'react-use-disclosure'
+import { useContext, useEffect, useState } from 'react'
+import {
+  Badge,
+  Button,
+  Divider,
+  H4,
+  H5,
+  Input,
+  Tag,
+  Text,
+  TextArea,
+} from '@/omui'
+import { XIcon } from '@heroicons/react/solid'
+import { Optional, ButtonGroup } from '@/components/lib'
+import { useSettings } from '@/lib/data'
+import { formatDate } from '@/utils'
+import {
+  Controller,
+  FormProvider,
+  useForm,
+  useFormContext,
+} from 'react-hook-form'
+import { t } from '@/i18n'
+import { useDisclosure } from 'react-use-disclosure'
 import Modal from '@/components/Modal'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faCheckCircle, faExclamationTriangle} from '@fortawesome/free-solid-svg-icons'
-import {FormControl} from '@/omui/components/FormControl/FormControl'
-import {logout} from '@/lib/auth'
-import {useRouter} from 'next/router'
-import {useDomainSettings} from './useDomainSettings'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faCheckCircle,
+  faExclamationTriangle,
+} from '@fortawesome/free-solid-svg-icons'
+import { FormControl } from '@/omui/components/FormControl/FormControl'
+import { logout } from '@/lib/auth'
+import { useRouter } from 'next/router'
+import { useDomainSettings } from './useDomainSettings'
 
 function General() {
-  const {settings} = useDomainSettings()
+  const { settings } = useDomainSettings()
 
   const information = [
-    {name: t('domain-name'), value: settings?.domain_name},
+    { name: t('domain-name'), value: settings?.domain_name },
     {
       name: 'ID#',
       value: (
@@ -28,23 +46,27 @@ function General() {
             {settings?.node_id}
           </Badge>
         </span>
-      )
+      ),
     },
-    {name: t('hosted-datasets'), value: settings?.total_datasets},
-    {name: t('deployed-on'), value: formatDate(settings?.deployed_on)},
-    {name: t('owner'), value: settings?.owner}
+    { name: t('hosted-datasets'), value: settings?.total_datasets },
+    { name: t('deployed-on'), value: formatDate(settings?.deployed_on) },
+    { name: t('owner'), value: settings?.owner },
   ]
 
   return (
     <div className="w-full space-y-3 relative">
       <H5>{t('general', 'settings')}</H5>
-      {information.map(info => {
+      {information.map((info) => {
         return (
           <div key={info.name} className="space-x-3">
             <Text bold size="sm">
               {info.name}:
             </Text>
-            {typeof info.value === 'string' ? <Text mono>{info.value}</Text> : info.value}
+            {typeof info.value === 'string' ? (
+              <Text mono>{info.value}</Text>
+            ) : (
+              info.value
+            )}
           </div>
         )
       })}
@@ -53,20 +75,24 @@ function General() {
 }
 
 function DomainDescription() {
-  const {register} = useFormContext()
+  const { register } = useFormContext()
   return (
     <div className="space-y-3">
       <H5>
         {t('domain-description', 'settings')}
         <Optional />
       </H5>
-      <TextArea placeholder={t('placeholder.describe-your-domain')} rows="5" {...register('description')} />
+      <TextArea
+        placeholder={t('placeholder.describe-your-domain')}
+        rows="5"
+        {...register('description')}
+      />
     </div>
   )
 }
 
 function SupportEmail() {
-  const {register} = useFormContext()
+  const { register } = useFormContext()
   return (
     <div className="space-y-3">
       <H5>
@@ -80,12 +106,14 @@ function SupportEmail() {
 }
 
 function Tags() {
-  const {control, setValue} = useFormContext()
-  const {settings} = useDomainSettings()
-  const [tags, setTags] = useState(() => (Array.isArray(settings?.tags) ? settings.tags : []))
+  const { control, setValue } = useFormContext()
+  const { settings } = useDomainSettings()
+  const [tags, setTags] = useState(() =>
+    Array.isArray(settings?.tags) ? settings.tags : []
+  )
 
-  const updateTags = tag => {
-    if (!tags.includes(tag)) setTags(prev => [...prev, tag])
+  const updateTags = (tag) => {
+    if (!tags.includes(tag)) setTags((prev) => [...prev, tag])
   }
 
   useEffect(() => {
@@ -101,8 +129,8 @@ function Tags() {
       <Controller
         control={control}
         name="thisTag"
-        render={({field}) => {
-          const {onChange, onBlur, value} = field
+        render={({ field }) => {
+          const { onChange, onBlur, value } = field
           return (
             <Input
               placeholder={t('placeholder.create-new-tag')}
@@ -115,14 +143,14 @@ function Tags() {
                   updateTags(value)
                   field.onChange('')
                 },
-                className: 'cursor-pointer'
+                className: 'cursor-pointer',
               }}
             />
           )
         }}
       />
       {tags &&
-        [...tags].map(entry => (
+        [...tags].map((entry) => (
           <Tag
             tagType="round"
             variant="gray"
@@ -131,7 +159,10 @@ function Tags() {
             key={entry}
             icon={XIcon}
             iconSide="right"
-            onClick={e => setTags(prev => prev.filter(tag => tag !== entry))}>
+            onClick={(e) =>
+              setTags((prev) => prev.filter((tag) => tag !== entry))
+            }
+          >
             {entry}
           </Tag>
         ))}
@@ -140,20 +171,20 @@ function Tags() {
 }
 
 function Profile() {
-  const {settings} = useDomainSettings()
-  const update = useSettings().create(null, {multipart: true}).mutate
+  const { settings } = useDomainSettings()
+  const update = useSettings().create(null, { multipart: true }).mutate
   const methods = useForm({
     mode: 'onChange',
     defaultValues: {
       description: settings?.description,
       tags: settings?.tags,
-      contact: settings?.contact
-    }
+      contact: settings?.contact,
+    },
   })
 
-  const onSubmit = ({thisTag, ...values}) => {
+  const onSubmit = ({ thisTag, ...values }) => {
     const formData = new FormData()
-    formData.append('settings', JSON.stringify({...values}))
+    formData.append('settings', JSON.stringify({ ...values }))
     formData.append('file', new Blob())
     update(formData)
   }
@@ -176,15 +207,20 @@ function Profile() {
   )
 }
 
-function ResetNodeConfirmationModal({show, onClose, onSuccess}) {
+function ResetNodeConfirmationModal({ show, onClose, onSuccess }) {
   const onSubmit = () => {
     onSuccess()
   }
   return (
     <Modal show={show} onClose={onClose}>
       <div className="col-span-full text-center">
-        <FontAwesomeIcon icon={faExclamationTriangle} className="text-warning-500 text-3xl" />
-        <H4 className="text-gray-800 mt-3">{t('reset-confirmation-heading', 'settings')}</H4>
+        <FontAwesomeIcon
+          icon={faExclamationTriangle}
+          className="text-warning-500 text-3xl"
+        />
+        <H4 className="text-gray-800 mt-3">
+          {t('reset-confirmation-heading', 'settings')}
+        </H4>
       </div>
       <div className="col-span-full text-center mt-4">
         <Text size="sm">{t('reset-confirmation-copy', 'settings')}</Text>
@@ -203,12 +239,12 @@ function ResetNodeConfirmationModal({show, onClose, onSuccess}) {
   )
 }
 
-function ResetNodeSuccessModal({show}) {
+function ResetNodeSuccessModal({ show }) {
   const router = useRouter()
-  const {handleSubmit, register} = useForm()
+  const { handleSubmit, register } = useForm()
 
-  const onSubmit = values => {
-    console.log('submit frustrations, suggestions', {values})
+  const onSubmit = (values) => {
+    console.log('submit frustrations, suggestions', { values })
     onClose()
   }
 
@@ -220,7 +256,10 @@ function ResetNodeSuccessModal({show}) {
   return (
     <Modal show={show} onClose={onClose}>
       <div className="col-span-full text-center">
-        <FontAwesomeIcon icon={faCheckCircle} className="text-green-500 text-3xl" />
+        <FontAwesomeIcon
+          icon={faCheckCircle}
+          className="text-green-500 text-3xl"
+        />
         <H4 className="mt-3">{t('reset-success-heading', 'settings')}</H4>
       </div>
       <div className="col-span-full text-center mt-4">
@@ -228,10 +267,21 @@ function ResetNodeSuccessModal({show}) {
       </div>
       <form onSubmit={handleSubmit(onSubmit)} className="col-span-full mt-8">
         <FormControl id="frustrations" label={t('frustrations')} optional>
-          <TextArea {...register('frustrations')} placeholder={t('placeholder.frustrations')} />
+          <TextArea
+            {...register('frustrations')}
+            placeholder={t('placeholder.frustrations')}
+          />
         </FormControl>
-        <FormControl id="suggestions" label={t('suggestions')} optional className="mt-6">
-          <TextArea {...register('suggestions')} placeholder={t('placeholder.suggestions')} />
+        <FormControl
+          id="suggestions"
+          label={t('suggestions')}
+          optional
+          className="mt-6"
+        >
+          <TextArea
+            {...register('suggestions')}
+            placeholder={t('placeholder.suggestions')}
+          />
         </FormControl>
         <div className="col-span-full text-center mt-6 mb-4">
           <ButtonGroup>
@@ -247,21 +297,30 @@ function ResetNodeSuccessModal({show}) {
 }
 
 function ResetNode() {
-  const {open, isOpen, close} = useDisclosure(false)
-  const {open: openSuccess, isOpen: isOpenSuccess} = useDisclosure(false)
+  const { open, isOpen, close } = useDisclosure(false)
+  const { open: openSuccess, isOpen: isOpenSuccess } = useDisclosure(false)
   return (
     <div className="w-full">
       <H5>{t('reset', 'settings')}</H5>
       <Text as="p" className="mt-4">
         {t('reset-copy', 'settings')}
       </Text>
-      <Button className="mt-8 bg-error-500" variant="primary" type="button" onClick={open}>
+      <Button
+        className="mt-8 bg-error-500"
+        variant="primary"
+        type="button"
+        onClick={open}
+      >
         {t('buttons.reset-purge-node')}
       </Button>
-      <ResetNodeConfirmationModal show={isOpen} onClose={close} onSuccess={openSuccess} />
+      <ResetNodeConfirmationModal
+        show={isOpen}
+        onClose={close}
+        onSuccess={openSuccess}
+      />
       <ResetNodeSuccessModal show={isOpenSuccess} />
     </div>
   )
 }
 
-export {Profile}
+export { Profile }

@@ -1,36 +1,49 @@
-import {createContext, useContext, useMemo, useState} from 'react'
+import { createContext, useContext, useMemo, useState } from 'react'
 import Link from 'next/link'
-import {Badge, Button, Divider, H2, H4, H5, Tabs, Tag, Text} from '@/omui'
-import {SearchInput, TopContent} from '@/components/lib'
-import {Alert} from '@/components/Alert'
-import {FontAwesomeIcon} from '@fortawesome/react-fontawesome'
-import {faCalendar, faCheck, faLink, faTimes} from '@fortawesome/free-solid-svg-icons'
+import { Badge, Divider, H2, H4, H5, Tabs, Tag, Text } from '@/omui'
+import { SearchInput, TopContent } from '@/components/lib'
+import { Alert } from '@/components/Alert'
+import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
+import {
+  faCalendar,
+  faCheck,
+  faLink,
+  faTimes,
+} from '@fortawesome/free-solid-svg-icons'
 import cloneDeep from 'lodash.clonedeep'
-import {TableItem, useOMUITable} from '@/components/Table'
+import { TableItem, useOMUITable } from '@/components/Table'
 import Modal from '@/components/Modal'
-import {Base} from '@/components/Layouts'
-import {AcceptDeny} from '@/components/AcceptDenyButtons'
-import {useDisclosure} from 'react-use-disclosure'
-import {formatDate} from '@/utils'
-import {useDataRequests, useBudgetRequests, useRequests} from '@/lib/data'
-import {RequestStatusBadge} from '@/components/RequestStatusBadge'
+import { Base } from '@/components/Layouts'
+import { AcceptDeny } from '@/components/AcceptDenyButtons'
+import { useDisclosure } from 'react-use-disclosure'
+import { formatDate } from '@/utils'
+import { useDataRequests, useBudgetRequests, useRequests } from '@/lib/data'
+import { RequestStatusBadge } from '@/components/RequestStatusBadge'
 
-const RequestsContext = createContext({data: [], budget: [], highlighted: null, selected: []})
+const RequestsContext = createContext({
+  data: [],
+  budget: [],
+  highlighted: null,
+  selected: [],
+})
 
 function Pending() {
-  const {data} = useContext(RequestsContext)
+  const { data } = useContext(RequestsContext)
   if (!data) return <EmptyDataRequests />
   return <DataRequestsPendingTable />
 }
 
 function DataRequestsPendingTable() {
-  const {open, isOpen, close} = useDisclosure()
+  const { open, isOpen, close } = useDisclosure()
   const [picked, setPicked] = useState(null)
-  const {data} = useContext(RequestsContext)
-  const tableData = useMemo(() => data?.filter(req => req?.req?.status === 'pending') ?? [], [data])
+  const { data } = useContext(RequestsContext)
+  const tableData = useMemo(
+    () => data?.filter((req) => req?.req?.status === 'pending') ?? [],
+    [data]
+  )
 
   function openDetails(id) {
-    setPicked(() => cloneDeep(tableData.find(data => data.req.id === id)))
+    setPicked(() => cloneDeep(tableData.find((data) => data.req.id === id)))
     open()
   }
 
@@ -44,16 +57,16 @@ function DataRequestsPendingTable() {
       {
         Header: 'ID#',
         accessor: 'req.id',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <Badge variant="gray" type="subtle" truncate className="w-24">
             {value}
           </Badge>
-        )
+        ),
       },
       {
         Header: 'Name',
         accessor: 'user.name',
-        Cell: ({cell: {value}}) => <Text size="sm">{value}</Text>
+        Cell: ({ cell: { value } }) => <Text size="sm">{value}</Text>,
       },
       {
         Header: (
@@ -62,11 +75,11 @@ function DataRequestsPendingTable() {
           </Text>
         ),
         accessor: 'req.date',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <Text size="sm" uppercase>
             {formatDate(value)}
           </Text>
-        )
+        ),
       },
       {
         Header: (
@@ -75,44 +88,50 @@ function DataRequestsPendingTable() {
           </Text>
         ),
         accessor: 'linked_datasets',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <TableItem center>
-            {value?.map?.(datasetName => (
-              <Badge type="subtle" variant="gray">
+            {value?.map?.((datasetName) => (
+              <Badge type="subtle" variant="gray" key={datasetName}>
                 {datasetName}
               </Badge>
             ))}
           </TableItem>
-        )
+        ),
       },
       {
         Header: 'Request Size',
         accessor: 'req.size',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <TableItem center>
             <Badge variant="primary" type="subtle">
               {value} ε
             </Badge>
           </TableItem>
-        )
+        ),
       },
       {
         Header: 'Action',
-        accessor: d => d?.req?.id,
-        Cell: ({cell: {value}}) => {
+        accessor: (d) => d?.req?.id,
+        Cell: ({ cell: { value } }) => {
           const update = useRequests().update(value).mutate
           return (
             <div className="flex space-x-5">
               <button onClick={() => openDetails(value)}>
-                <Text underline className="text-primary-600 hover:text-primary-500">
+                <Text
+                  underline
+                  className="text-primary-600 hover:text-primary-500"
+                >
                   See Details
                 </Text>
               </button>
-              <AcceptDeny onAccept={() => update({status: 'accepted'})} onDeny={() => update({status: 'denied'})} />
+              <AcceptDeny
+                onAccept={() => update({ status: 'accepted' })}
+                onDeny={() => update({ status: 'denied' })}
+              />
             </div>
           )
-        }
-      }
+        },
+      },
     ],
     []
   )
@@ -120,7 +139,7 @@ function DataRequestsPendingTable() {
     data: tableData,
     columns: tableColumns,
     selectable: true,
-    sortable: true
+    sortable: true,
   })
 
   const selected = table.instance.selectedFlatRows
@@ -166,20 +185,25 @@ function DataRequestsPendingTable() {
         <Text as="p" size="sm">
           {tableData.length} / {tableData.length} results
         </Text>
-        {picked && <RequestModal onClose={onClose} show={isOpen} data={picked} />}
+        {picked && (
+          <RequestModal onClose={onClose} show={isOpen} data={picked} />
+        )}
       </section>
     </>
   )
 }
 
 function DataRequestsHistoryTable() {
-  const {open, isOpen, close} = useDisclosure()
+  const { open, isOpen, close } = useDisclosure()
   const [picked, setPicked] = useState(null)
-  const {data} = useContext(RequestsContext)
-  const tableData = useMemo(() => data?.filter(req => req?.req?.status !== 'pending') ?? [], [data])
+  const { data } = useContext(RequestsContext)
+  const tableData = useMemo(
+    () => data?.filter((req) => req?.req?.status !== 'pending') ?? [],
+    [data]
+  )
 
   function openDetails(id) {
-    setPicked(() => cloneDeep(tableData.find(data => data.req.id === id)))
+    setPicked(() => cloneDeep(tableData.find((data) => data.req.id === id)))
     open()
   }
 
@@ -188,21 +212,21 @@ function DataRequestsHistoryTable() {
       {
         Header: 'ID#',
         accessor: 'req.id',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <Badge variant="gray" type="subtle" truncate className="w-24">
             {value}
           </Badge>
-        )
+        ),
       },
       {
         Header: 'Name',
         accessor: 'user.name',
-        Cell: ({cell: {value}}) => <Text size="sm">{value}</Text>
+        Cell: ({ cell: { value } }) => <Text size="sm">{value}</Text>,
       },
       {
         Header: 'Status',
         accessor: 'req.status',
-        Cell: ({cell: {value}}) => <RequestStatusBadge status={value} />
+        Cell: ({ cell: { value } }) => <RequestStatusBadge status={value} />,
       },
       {
         Header: (
@@ -211,11 +235,11 @@ function DataRequestsHistoryTable() {
           </Text>
         ),
         accessor: 'req.updated_on',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <Text size="sm" uppercase>
             {formatDate(value)}
           </Text>
-        )
+        ),
       },
       {
         Header: (
@@ -224,34 +248,42 @@ function DataRequestsHistoryTable() {
           </Text>
         ),
         accessor: 'req.updated_by',
-        Cell: ({cell: {value}}) => (
+        Cell: ({ cell: { value } }) => (
           <Text size="sm" uppercase>
             {value}
           </Text>
-        )
+        ),
       },
       {
         Header: 'Request Size',
         accessor: 'req.size',
-        Cell: ({cell: {value, row}}) => (
+        Cell: ({ cell: { value, row } }) => (
           <TableItem center>
-            <Badge variant={row.original.status === 'accepted' ? 'success' : 'danger'} type="subtle">
+            <Badge
+              variant={
+                row.original.status === 'accepted' ? 'success' : 'danger'
+              }
+              type="subtle"
+            >
               {value} ε
             </Badge>
           </TableItem>
-        )
+        ),
       },
       {
         Header: 'Action',
-        accessor: d => d?.req?.id,
-        Cell: ({cell: {value}}) => (
+        accessor: (d) => d?.req?.id,
+        Cell: ({ cell: { value } }) => (
           <div onClick={() => openDetails(value)}>
-            <Text underline className="text-primary-600 hover:text-primary-500 cursor-pointer">
+            <Text
+              underline
+              className="text-primary-600 hover:text-primary-500 cursor-pointer"
+            >
               See Details
             </Text>
           </div>
-        )
-      }
+        ),
+      },
     ],
     []
   )
@@ -259,7 +291,7 @@ function DataRequestsHistoryTable() {
     data: tableData,
     columns: tableColumns,
     selectable: true,
-    sortable: true
+    sortable: true,
   })
 
   const selected = table.instance.selectedFlatRows
@@ -285,12 +317,12 @@ function DataRequestsHistoryTable() {
 }
 
 function History() {
-  const {data} = useContext(RequestsContext)
+  const { data } = useContext(RequestsContext)
   if (data?.length === 0) <EmptyDataRequests />
   return <DataRequestsHistoryTable />
 }
 
-function RequestModal({show, onClose, data}) {
+function RequestModal({ show, onClose, data }) {
   const update = useRequests().update(data?.req?.id).mutate
   const userInformation = [
     {
@@ -299,7 +331,7 @@ function RequestModal({show, onClose, data}) {
         <Badge variant="primary" type="subtle">
           {data?.user?.role}
         </Badge>
-      )
+      ),
     },
     {
       text: 'Privacy Budget',
@@ -313,7 +345,7 @@ function RequestModal({show, onClose, data}) {
             {Number(data?.user?.current_budget).toFixed(2)}
           </Badge>
         </span>
-      )
+      ),
     },
     {
       text: 'Email',
@@ -323,28 +355,34 @@ function RequestModal({show, onClose, data}) {
             {data?.user?.email}
           </Text>
         </a>
-      )
+      ),
     },
-    {text: 'Company/Institution', value: data?.user?.institution},
-    {text: 'Website/Profile', value: data?.user?.website}
+    { text: 'Company/Institution', value: data?.user?.institution },
+    { text: 'Website/Profile', value: data?.user?.website },
   ]
   const requestDetails = [
-    {text: 'Request Date', value: data?.req?.date},
+    { text: 'Request Date', value: data?.req?.date },
     {
       text: 'Tags',
       value: (
         <>
-          {data?.req?.tags?.map(tag => (
-            <Tag size="sm" tagType="round" variant="primary" className="mr-2">
+          {data?.req?.tags?.map((tag) => (
+            <Tag
+              size="sm"
+              tagType="round"
+              variant="primary"
+              className="mr-2"
+              key={tag}
+            >
               {tag}
             </Tag>
           ))}
         </>
-      )
+      ),
     },
-    {text: 'Resource or Result ID', value: data?.req?.result_id},
+    { text: 'Resource or Result ID', value: data?.req?.result_id },
     // {text: 'Actions', property: 'actions'},
-    {text: '# of Values', value: data?.req?.size}
+    { text: '# of Values', value: data?.req?.size },
   ]
 
   return (
@@ -368,10 +406,16 @@ function RequestModal({show, onClose, data}) {
               {data?.req?.status === 'pending' && (
                 <>
                   <div className="rounded-full w-7 h-7 bg-gray-200 justify-center items-center flex text-white hover:bg-primary-500 cursor-pointer">
-                    <FontAwesomeIcon icon={faCheck} onClick={() => update({status: 'accepted'})} />
+                    <FontAwesomeIcon
+                      icon={faCheck}
+                      onClick={() => update({ status: 'accepted' })}
+                    />
                   </div>
                   <div className="rounded-full w-7 h-7 bg-gray-200 justify-center items-center flex text-white hover:bg-primary-500 cursor-pointer">
-                    <FontAwesomeIcon icon={faTimes} onClick={() => update({status: 'denied'})} />
+                    <FontAwesomeIcon
+                      icon={faTimes}
+                      onClick={() => update({ status: 'denied' })}
+                    />
                   </div>
                 </>
               )}
@@ -384,8 +428,9 @@ function RequestModal({show, onClose, data}) {
               className="w-full bg-gray-50 border border-gray-100 pl-6 pr-8 pt-2 pb-4 space-y-4"
               style={{
                 background:
-                  'linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%), #F1F0F4'
-              }}>
+                  'linear-gradient(90deg, rgba(255, 255, 255, 0.8) 0%, rgba(255, 255, 255, 0.5) 100%), #F1F0F4',
+              }}
+            >
               <div className="flex items-center w-full justify-between">
                 <div className="pr-6 border-r border-gray-200">
                   <div className="flex items-center space-x-2">
@@ -418,7 +463,7 @@ function RequestModal({show, onClose, data}) {
                   {/* Linked Datasets <Tooltip position="top">OK</Tooltip> */}
                 </Text>
                 <div className="flex flex-wrap w-full">
-                  {data?.req?.datasets?.map(datasetName => (
+                  {data?.req?.datasets?.map((datasetName) => (
                     <div key={datasetName} className="mr-2">
                       <Badge type="subtle" variant="gray" truncate>
                         {datasetName}
@@ -430,7 +475,7 @@ function RequestModal({show, onClose, data}) {
             </div>
             {/* request details card */}
             <div className="w-full border border-gray-100 p-6 space-y-4">
-              {userInformation.map(info => {
+              {userInformation.map((info) => {
                 return (
                   <div key={info.text} className="w-full truncate">
                     <Text size="sm" bold>
@@ -443,7 +488,12 @@ function RequestModal({show, onClose, data}) {
               <div>
                 <Link href="/">
                   <a>
-                    <Text as="p" underline size="xs" className="text-primary-600">
+                    <Text
+                      as="p"
+                      underline
+                      size="xs"
+                      className="text-primary-600"
+                    >
                       View User Profile
                     </Text>
                   </a>
@@ -462,9 +512,10 @@ function RequestModal({show, onClose, data}) {
                     {data?.req?.id}
                   </Badge>
                 </div>
-                {requestDetails.map(reqDetail => (
+                {requestDetails.map((reqDetail) => (
                   <div key={reqDetail.text}>
-                    <Text bold>{reqDetail.text}:</Text> <Text>{reqDetail.value}</Text>
+                    <Text bold>{reqDetail.text}:</Text>{' '}
+                    <Text>{reqDetail.value}</Text>
                   </div>
                 ))}
                 <Divider color="light" />
@@ -505,23 +556,32 @@ function EmptyDataRequests() {
   return (
     <div className="space-y-2 w-full text-center col-span-8 col-start-3 mt-20">
       <H4>Congratulations</H4>
-      <Text className="text-gray-400">You’ve cleared all data requests in your queue!</Text>
+      <Text className="text-gray-400">
+        You’ve cleared all data requests in your queue!
+      </Text>
     </div>
   )
 }
 
 export default function DataRequests() {
-  const {data: dataReq} = useDataRequests().all()
-  const {data: budgetReq} = useBudgetRequests().all()
+  const { data: dataReq } = useDataRequests().all()
+  const { data: budgetReq } = useBudgetRequests().all()
   const [currentTab, setCurrentTab] = useState(() => 1)
   const tabsList = [
-    {id: 1, title: 'Pending'},
-    {id: 2, title: 'History'}
+    { id: 1, title: 'Pending' },
+    { id: 2, title: 'History' },
   ]
 
   return (
     <Base>
-      <RequestsContext.Provider value={{data: dataReq, budget: budgetReq, highlighted: null, selected: []}}>
+      <RequestsContext.Provider
+        value={{
+          data: dataReq,
+          budget: budgetReq,
+          highlighted: null,
+          selected: [],
+        }}
+      >
         <TopContent heading="Data Requests" />
         <div className="col-span-10">
           <Alert.Info
@@ -530,7 +590,12 @@ export default function DataRequests() {
           />
         </div>
         <div className="col-span-full mt-10">
-          <Tabs tabsList={tabsList} onChange={setCurrentTab} align="auto" active={currentTab} />
+          <Tabs
+            tabsList={tabsList}
+            onChange={setCurrentTab}
+            align="auto"
+            active={currentTab}
+          />
         </div>
         {currentTab === 1 && <Pending />}
         {currentTab === 2 && <History />}
