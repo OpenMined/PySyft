@@ -193,14 +193,16 @@ def deserialize_capnp(buf: bytes) -> Any:
             f"capnp Magic Header {CAPNP_START_MAGIC_HEADER}" + "not found in bytes"
         )
     start_index += len(CAPNP_START_MAGIC_HEADER_BYTES)
-    end_index = header_bytes.index(CAPNP_END_MAGIC_HEADER_BYTES)
+    end_index = start_index + header_bytes[start_index:].index(
+        CAPNP_END_MAGIC_HEADER_BYTES
+    )
     class_name_bytes = header_bytes[start_index:end_index]
-
     class_name = class_name_bytes.decode("utf-8")
+
+    if end_index <= start_index:
+        raise ValueError("End Index should always be greater than Start index")
+
     if class_name not in CAPNP_REGISTRY:
-        print("Class Name", class_name, type(class_name))
-        print("Header bytes", header_bytes)
-        print("Full bytes", buf)
         raise Exception(
             f"Found capnp Magic Header: {CAPNP_START_MAGIC_HEADER} "
             + f"and Class {class_name} but no mapping in capnp registry {CAPNP_REGISTRY}"
