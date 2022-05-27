@@ -6,7 +6,7 @@ import subprocess
 import sys
 
 # third party
-from IPython.display import Javascript
+from IPython.display import Javascript  # noqa: F401
 import numpy as np
 import pandas as pd
 
@@ -185,4 +185,4 @@ def output_dataset_url():
     } else {
         element.textContent = 'Unable to automatically get MY_DATASET_URL please locate it from your session details.'
     }
-    """
+    """  # noqa: E501
