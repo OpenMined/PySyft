@@ -64,7 +64,7 @@ export function ChangeRoleModal({ show, onClose, user, role }) {
         </div>
         <ul className="space-y-3">
           {permissionsList.map((permission) => (
-            <li>
+            <li key={permission.name}>
               <div className="flex space-x-6 items-center">
                 <FontAwesomeIcon
                   icon={faCheck}

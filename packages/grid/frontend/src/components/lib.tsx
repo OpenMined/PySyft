@@ -105,7 +105,13 @@ function Tags({ tags }: { tags: Array<string> }) {
   return (
     <div className="flex flex-wrap -mt-2">
       {tags.map((tag) => (
-        <Tag tagType="round" variant="primary" className="mr-2 mt-2" size="sm">
+        <Tag
+          tagType="round"
+          variant="primary"
+          className="mr-2 mt-2"
+          size="sm"
+          key={tag}
+        >
           {tag}
         </Tag>
       ))}

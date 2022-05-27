@@ -8,7 +8,7 @@ export function PermissionsAccordion({ roles }: { roles: Array<Role> }) {
   return (
     <Accordion>
       {roles.map((role) => (
-        <PermissionsAccordionProvider role={role}>
+        <PermissionsAccordionProvider role={role} key={role.name}>
           <Accordion.Item key={role.name} openClasses="bg-gray-50">
             <PermissionsAccordionTitle />
             <PermissionsAccordionPanel />

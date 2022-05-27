@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react'
+import React from 'react'
 import cn from 'classnames'
 import { ReactNode } from 'react'
 import { useTable, useRowSelect, useSortBy, useGlobalFilter } from 'react-table'
@@ -19,7 +19,6 @@ export function TableHeader({
   className,
   children,
   isLast,
-  sortable,
   isSorted,
   isSortedDesc,
 }: TableContentProps) {
@@ -124,9 +123,12 @@ export function useOMUITable({ data, columns, selectable, sortable }) {
         <table {...getTableProps()} className="w-full border-t">
           <thead>
             {headerGroups.map((headerGroup) => (
-              <tr {...headerGroup.getHeaderGroupProps()}>
+              <tr {...headerGroup.getHeaderGroupProps()} key={headerGroup.id}>
                 {headerGroup.headers.map((column, index) => (
-                  <th {...column.getHeaderProps(column.getSortByToggleProps())}>
+                  <th
+                    {...column.getHeaderProps(column.getSortByToggleProps())}
+                    key={column.id}
+                  >
                     <TableHeader
                       sortable={sortable}
                       isLast={index + 1 === headerGroup.headers.length}
@@ -144,7 +146,7 @@ export function useOMUITable({ data, columns, selectable, sortable }) {
             {rows.map((row) => {
               prepareRow(row)
               return (
-                <tr {...row.getRowProps()}>
+                <tr {...row.getRowProps()} key={row.id}>
                   {row.cells.map((cell, index) => {
                     return (
                       <td
@@ -153,6 +155,7 @@ export function useOMUITable({ data, columns, selectable, sortable }) {
                           cell.column.isSorted && 'bg-gray-50',
                           row.isSelected && 'bg-primary-50'
                         )}
+                        key={`${cell.row.id}-${cell.column.id}-${cell.value}`}
                       >
                         {selectable && index === 0 ? (
                           <div className="flex h-12 space-x-1 w-full items-center border-b border-r">

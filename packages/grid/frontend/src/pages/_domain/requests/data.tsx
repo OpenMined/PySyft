@@ -1,6 +1,6 @@
 import { createContext, useContext, useMemo, useState } from 'react'
 import Link from 'next/link'
-import { Badge, Button, Divider, H2, H4, H5, Tabs, Tag, Text } from '@/omui'
+import { Badge, Divider, H2, H4, H5, Tabs, Tag, Text } from '@/omui'
 import { SearchInput, TopContent } from '@/components/lib'
 import { Alert } from '@/components/Alert'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -91,7 +91,7 @@ function DataRequestsPendingTable() {
         Cell: ({ cell: { value } }) => (
           <TableItem center>
             {value?.map?.((datasetName) => (
-              <Badge type="subtle" variant="gray">
+              <Badge type="subtle" variant="gray" key={datasetName}>
                 {datasetName}
               </Badge>
             ))}
@@ -367,7 +367,13 @@ function RequestModal({ show, onClose, data }) {
       value: (
         <>
           {data?.req?.tags?.map((tag) => (
-            <Tag size="sm" tagType="round" variant="primary" className="mr-2">
+            <Tag
+              size="sm"
+              tagType="round"
+              variant="primary"
+              className="mr-2"
+              key={tag}
+            >
               {tag}
             </Tag>
           ))}

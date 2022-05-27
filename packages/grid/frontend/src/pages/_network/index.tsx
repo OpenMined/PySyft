@@ -23,7 +23,7 @@ export default function NetworkIndex() {
         </p>
         <p className="md:text-lg mt-1">
           If you would like your network to be registered in the official
-          "syft.networks" registry, please create an issue in the{' '}
+          syft.networks registry, please create an issue in the{' '}
           <a
             className="text-primary-500 hover:text-primary-600 hover:underline"
             href="https://github.com/OpenMined/NetworkRegistry"

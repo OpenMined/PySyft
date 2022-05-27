@@ -38,6 +38,8 @@ function PendingUpgrade() {
 }
 
 function RequestsAccordion({ budgets }) {
+  const { update: updateRequest } = useRequests()
+
   const buildUserInfo = (info) => [
     {
       text: 'Role',
@@ -69,12 +71,12 @@ function RequestsAccordion({ budgets }) {
       <div className="col-span-full mt-6">
         <Accordion>
           {budgets?.map((item) => {
-            const update = useRequests().update(item.req.id).mutate
+            const update = updateRequest(item.req.id).mutate
             return (
-              <Accordion.Item>
+              <Accordion.Item key={item.user.name}>
                 <div className="flex justify-between w-full items-center">
                   <div className="items-center flex space-x-2">
-                    <Text>{item.user?.name}</Text>
+                    <Text>{item.user.name}</Text>
                     <Text size="xs">
                       (
                       <a href={`mailto:${item.user.email}`}>

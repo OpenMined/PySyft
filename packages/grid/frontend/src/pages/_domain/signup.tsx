@@ -3,7 +3,6 @@ import cn from 'classnames'
 import Link from 'next/link'
 import { useForm } from 'react-hook-form'
 import { CardItem } from '@/components/CardItem'
-import Modal from '@/components/Modal'
 import { Badge, Button, Divider, Input, H1, Text } from '@/omui'
 import { Footer, Tags } from '@/components/lib'
 
@@ -237,6 +236,7 @@ function DomainInfoDetails() {
     <section className="mt-10 space-y-4">
       {information.map((info) => (
         <CardItem
+          key={info.text}
           text={info.text}
           value={info.value}
           ValueComponent={info.ValueComponent}
