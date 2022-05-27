@@ -4,6 +4,7 @@ import { Badge, H2, Icon, Input, Tag, Text } from '@/omui'
 import { Tooltip } from 'react-tippy'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { faInfoCircle, faSearch } from '@fortawesome/free-solid-svg-icons'
+import { BetaBadge } from '@/components/BetaBadge'
 
 import type { User } from '@/types/user'
 import type { ReactNode } from 'react'
@@ -37,13 +38,14 @@ const TopContent = ({
   heading: string | ReactNode
 }) => (
   <div className="col-span-full">
-    <div className="flex justify-between">
+    <div className="flex justify-between items-center">
       <div className="flex items-center space-x-3">
         {icon && <Icon icon={icon} variant="ghost" size="xl" />}
         {typeof heading === 'string' && <H2>{heading}</H2>}
         {typeof heading === 'object' && heading}
       </div>
       <QuickNav />
+      <BetaBadge />
     </div>
   </div>
 )

@@ -2,10 +2,10 @@ import React, { useState } from 'react'
 import { ReactQueryDevtools } from 'react-query/devtools'
 import { Hydrate, QueryClient, QueryClientProvider } from 'react-query'
 import { config } from '@fortawesome/fontawesome-svg-core'
-import type { AppProps } from 'next/app'
-
+import '@fortawesome/fontawesome-svg-core/styles.css'
 import '@/styles/globals.css'
-import '../../node_modules/@fortawesome/fontawesome-svg-core/styles.css'
+
+import type { AppProps } from 'next/app'
 
 config.autoAddCss = false
 
