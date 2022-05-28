@@ -199,7 +199,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             else time.time()
         )
         self._pending_save = False
-        self._cache_constant2epsilon = cache_constant2epsilon
+        #self._cache_constant2epsilon = cache_constant2epsilon
 
     def __eq__(self, other: Any) -> bool:
         if not isinstance(other, DataSubjectLedger):
@@ -245,7 +245,8 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         rdp_params: RDPParams,
         get_budget_for_user: Callable,
         deduct_epsilon_for_user: Callable,
-        private: bool = True,
+        cache_constant2epsilon: np.ndarray,
+        private: bool = True
     ) -> np.ndarray:
         # coerce to np.int64
         entity_ids_query: np.ndarray = unique_entity_ids_query.astype(np.int64)
@@ -260,6 +261,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             rdp_constants=rdp_constants,
+            cache_constant2epsilon = cache_constant2epsilon
         )
 
         # at this point we are confident that the database budget field has been updated
@@ -279,10 +281,10 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             print(f"Failed to write ledger to ledger store. {e}")
             raise e
 
-    def _increase_max_cache(self, new_size: int) -> None:
+    def _increase_max_cache(self, new_size: int, cache_constant2epsilon:np.ndarray) -> None:
         new_entries = []
-        print("CACHE CONSTANTS: ",  len(self._cache_constant2epsilon))
-        current_size = len(self._cache_constant2epsilon)
+        print("CACHE CONSTANTS: ",  len(cache_constant2epsilon))
+        current_size = len(cache_constant2epsilon)
         new_alphas = []
         for i in range(new_size - current_size):
             alph, eps = self._get_optimal_alpha_for_constant(
@@ -291,9 +293,25 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
             new_entries.append(eps)
             new_alphas.append(alph)
 
-        self._cache_constant2epsilon = np.concatenate(
-            [self._cache_constant2epsilon, np.array(new_entries)]
-        )
+        cache_constant2epsilon = np.concatenate(
+            [cache_constant2epsilon, np.array(new_entries)]
+        ) 
+
+    # def _increase_max_cache(self, new_size: int) -> None:
+    #     new_entries = []
+    #     print("CACHE CONSTANTS: ",  len(self._cache_constant2epsilon))
+    #     current_size = len(self._cache_constant2epsilon)
+    #     new_alphas = []
+    #     for i in range(new_size - current_size):
+    #         alph, eps = self._get_optimal_alpha_for_constant(
+    #             constant=i + 1 + current_size
+    #         )
+    #         new_entries.append(eps)
+    #         new_alphas.append(alph)
+
+    #     self._cache_constant2epsilon = np.concatenate(
+    #         [self._cache_constant2epsilon, np.array(new_entries)]
+    #     )
 
     def _get_fake_rdp_func(self, constant: int) -> Callable:
         def func(alpha: float) -> float:
@@ -347,21 +365,36 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         )
         return constant
 
-    def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
+    def _get_epsilon_spend(self, rdp_constants: np.ndarray, cache_constant2epsilon: np.ndarray) -> np.ndarray:
         # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
         rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
         try:
             # needed as np.int64 to use take
             eps_spend = jax.jit(jnp.take)(
-                self._cache_constant2epsilon, rdp_constants_lookup
+                cache_constant2epsilon, rdp_constants_lookup
             )
         except IndexError:
             print(f"Cache missed the value at {max(rdp_constants_lookup)}")
-            self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
+            self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1), cache_constant2epsilon)
             eps_spend = jax.jit(jnp.take)(
-                self._cache_constant2epsilon, rdp_constants_lookup
+                cache_constant2epsilon, rdp_constants_lookup
             )
         return eps_spend
+    # def _get_epsilon_spend(self, rdp_constants: np.ndarray) -> np.ndarray:
+    #     # rdp_constants_lookup = (rdp_constants - 1).astype(np.int64)
+    #     rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
+    #     try:
+    #         # needed as np.int64 to use take
+    #         eps_spend = jax.jit(jnp.take)(
+    #             self._cache_constant2epsilon, rdp_constants_lookup
+    #         )
+    #     except IndexError:
+    #         print(f"Cache missed the value at {max(rdp_constants_lookup)}")
+    #         self._increase_max_cache(int(max(rdp_constants_lookup) * 1.1))
+    #         eps_spend = jax.jit(jnp.take)(
+    #             self._cache_constant2epsilon, rdp_constants_lookup
+    #         )
+    #     return eps_spend
 
     def _calculate_mask_for_current_budget(
         self, get_budget_for_user: Callable, epsilon_spend: np.ndarray
@@ -375,6 +408,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         get_budget_for_user: Callable,
         deduct_epsilon_for_user: Callable,
         rdp_constants: np.ndarray,
+        cache_constant2epsilon: np.ndarray
     ) -> Tuple[np.ndarray]:
         """TODO:
         In our current implementation, user_budget is obtained by querying the
@@ -382,7 +416,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         When we replace the entity2ledger with something else, we could perhaps directly
         add it into this method
         """
-        epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants)
+        epsilon_spend = self._get_epsilon_spend(rdp_constants=rdp_constants, cache_constant2epsilon=cache_constant2epsilon)
 
         # try first time
         (

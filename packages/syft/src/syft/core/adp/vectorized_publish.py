@@ -3,6 +3,7 @@ from __future__ import annotations
 
 # stdlib
 import secrets
+from signal import Sigmasks
 from typing import Callable
 from typing import List
 from typing import Optional
@@ -14,14 +15,15 @@ from typing import Union
 import jax
 from jax import numpy as jnp
 import numpy as np
+from sympy import Float
 from tqdm import tqdm
 
 # relative
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
-from .data_subject_list import DataSubjectList
 from .data_subject_ledger import load_cache
 from .data_subject_ledger import compute_rdp_constant
+from .data_subject_ledger import convert_constants_to_indices
 
 
 if TYPE_CHECKING:
@@ -74,15 +76,85 @@ def calculate_bounds_for_mechanism(
     )
 
     l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) * one_dim
+    
+    print(sigma)
+    print("BOUND SIGMA TYPE: ", type(sigma))
+    vtype = str(type(sigma))
+    print("VALUE: ", sigma)
+
+    # if not isinstance(sigma, float):
+    #     raise RuntimeError(f"Sigma is of type {type(sigma)}. Expected type float.")
+    
+    if (sigma).shape != min_val_array.shape: 
+        raise RuntimeError(f"Expected Sigma shape of {min_val_array.shape} (same as input array shape) but found {(sigma).shape}")
+
+
+    # if (one_dim * sigma).shape != min_val_array.shape: 
+    #     raise RuntimeError(f"Expected Sigma shape of {min_val_array.shape} (same as input array shape) but found {(one_dim * sigma).shape}")
+
+
     return l2_norm, worst_case_l2_norm, one_dim * sigma, one_dim
 
+def calibrate_sigma(
+    cache_constant2epsilon: np.ndarray,
+    value: np.ndarray,
+    min_vals: np.ndarray,
+    max_vals: np.ndarray,
+    is_linear: bool,
+    query_limit: int=5,
+    sigma=1.5,
+   ) -> np.ndarray:
+
+    print("SIGMA TYPE2: ", type(sigma))
+
+    # RDP Params Initialization
+    l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
+        value_array=value,
+        min_val_array=min_vals,
+        max_val_array=max_vals,
+        sigma=sigma,
+    )
+
+    print("SIGMA TYPE3: ", type(sigmas))
+
+    if is_linear:
+        lipschitz_bounds = coeffs.copy()
+    else:
+        lipschitz_bounds = value.lipschitz_bound
+
+    # Query budget spend of all data_subjects
+    rdp_params = RDPParams(
+        sigmas=sigmas,
+        l2_norms=l2_norms,
+        l2_norm_bounds=l2_norm_bounds,
+        Ls=lipschitz_bounds,
+        coeffs=coeffs,
+    )
+    rdp_constants = compute_rdp_constant(rdp_params, private=False)
+
+    rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
+    max_rdp = np.max(rdp_constants_lookup)
+    budget_spend = cache_constant2epsilon.take((max_rdp).astype(np.int64))
+    
+    if budget_spend >= query_limit:
+        # calculate the value of sigma
+        # This is the first index in the cache that has an epsilon >= query limit
+        threshold_index = np.searchsorted(cache_constant2epsilon, query_limit)
+        # There is a 90% chance the final budget spend will be below the query_limit
+        selected_rdp_value = np.random.choice(np.arange(threshold_index - 9, threshold_index + 1))
+        calibrated_sigma = selected_rdp_value * np.sqrt(max_rdp / selected_rdp_value)
+
+    else:
+        calibrated_sigma = rdp_params.sigmas
+
+    print("CALIBRATE SIGMA TYPE: ",calibrated_sigma)
+    return calibrated_sigma
 
 def vectorized_publish(
         value: np.ndarray,
     min_vals: np.ndarray,
     max_vals: np.ndarray,
     state_tree: dict[int, "GammaTensor"],
-    data_subjects: DataSubjectList,
     ledger: DataSubjectLedger,
     get_budget_for_user: Callable,
     deduct_epsilon_for_user: Callable,
@@ -95,73 +167,35 @@ def vectorized_publish(
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
 
-    # print(f"Starting vectorized publish: {type(ledger)}")
-    # print("Starting RDP Params Calculation")
-    # TODO: Vectorize this to return a larger GammaTensor instead of a list of Tensors
-
-    # TODO: Use calibration here
-    # RDP Params Initialization
-    l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
-        value_array=value,
-        min_val_array=min_vals,
-        max_val_array=max_vals,
-        sigma=sigma,
-    )
-
-    if is_linear:
-        lipschitz_bounds = coeffs.copy()
-    else:
-        lipschitz_bounds = value.lipschitz_bound
-    input_entities = data_subjects.data_subjects_indexed
-
-    # Query budget spend of all unique data_subjects
-    rdp_params = RDPParams(
-        sigmas=sigmas,
-        l2_norms=l2_norms,
-        l2_norm_bounds=l2_norm_bounds,
-        Ls=lipschitz_bounds,
-        coeffs=coeffs,
-    )
-    rdp_constants = compute_rdp_constant(rdp_params, private=False)
-
+    # # TODO: Use calibration here
     CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_1200k.npy"
     _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
-    print("TYPE: ", type(_cache_constant2epsilon))
 
-    ld = DataSubjectLedger(cache_constant2epsilon=_cache_constant2epsilon)
-    print("LEDGER: ", ld)
+    print("SIGMA TYPES: ", type(sigma))
 
-    max_rdp = np.max(rdp_constants)
-    budget_spend = _cache_constant2epsilon.take((max_rdp - 1).astype(np.int64))
+    calibrated_sigma = calibrate_sigma(
+        cache_constant2epsilon=_cache_constant2epsilon,
+        value=value,
+        min_vals=min_vals,
+        max_vals=max_vals,
+        is_linear=is_linear,
+        query_limit=query_limit,
+        sigma=sigma)
 
-    if budget_spend >= query_limit:
-        # calculate the value of sigma
-        # This is the first index in the cache that has an epsilon >= query limit
-        threshold_index = np.searchsorted(_cache_constant2epsilon, query_limit)
-        # There is a 90% chance the final budget spend will be below the query_limit
-        selected_rdp_value = np.random.choice(np.arange(threshold_index - 9, threshold_index + 1))
-        new_sigma = selected_rdp_value * np.sqrt(max_rdp / selected_rdp_value)
-        rdp_params.sigmas = np.ones_like(rdp_params.sigmas) * new_sigma
-
-    print("GOT RDP CONSTANTS: ", rdp_constants)
-    print("NEW SIGMA: ", new_sigma)
-
-    ##############################
     input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
+
     filtered_inputs = []
 
     # This will reveal the # of input tensors to the user- remove this before merging to dev
     for input_tensor in tqdm(input_tensors):
         # TODO: Double check with Andrew if this is correct- if we use the individual min/max values
 
-        # t1 = time()
-        # Calculate everything needed for RDP
-
+        #Calculate everything needed for RDP
         l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
             value_array=input_tensor.value,
             min_val_array=input_tensor.min_val,
             max_val_array=input_tensor.max_val,
-            sigma=sigma,
+            sigma=calibrated_sigma,
         )
 
         if is_linear:
@@ -173,7 +207,6 @@ def vectorized_publish(
         input_entities = input_tensor.data_subjects.data_subjects_indexed
         # data_subjects.data_subjects_indexed[0].reshape(-1)
         # t2 = time()
-        # print("Obtained RDP Params, calculation time", t2 - t1)
 
         # Query budget spend of all unique data_subjects
         rdp_params = RDPParams(
@@ -187,11 +220,12 @@ def vectorized_publish(
         try:
             # query and save
             mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
-                 unique_entity_ids_query=input_entities,
+                unique_entity_ids_query=input_entities,
                 rdp_params=rdp_params,
                 private=True,
                 get_budget_for_user=get_budget_for_user,
                 deduct_epsilon_for_user=deduct_epsilon_for_user,
+                cache_constant2epsilon = _cache_constant2epsilon
             )
             # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
             reshaped_mask = mask.reshape(input_tensor.value.shape)

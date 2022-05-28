@@ -246,7 +246,6 @@ class GammaTensor:
             min_vals=self.min_val,
             max_vals=self.max_val,
             state_tree=self.state,
-            data_subjects=self.data_subjects,
             is_linear=self.is_linear,
             sigma=sigma,
             output_func=self.func,
