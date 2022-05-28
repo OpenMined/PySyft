@@ -57,7 +57,7 @@ from .common.node_service.vpn.vpn_service import VPNStatusService
 from .domain import Domain
 from .domain_client import DomainClient
 from .network_client import NetworkClient
-
+from hagrid.rand_sec import generate_sec_random_password 
 
 class Network(Node):
 
@@ -137,7 +137,7 @@ class Network(Node):
         self,
         first_superuser_name: str = "Jane Doe",
         first_superuser_email: str = "info@openmined.org",
-        first_superuser_password: str = "changethis",
+        first_superuser_password: str = generate_sec_random_password(48),
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
     ) -> Network:
