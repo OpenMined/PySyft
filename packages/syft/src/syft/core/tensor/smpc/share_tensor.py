@@ -35,6 +35,7 @@ from ...smpc.store.crypto_store import CryptoStore
 from ..config import DEFAULT_RING_SIZE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import PassthroughTensor  # type: ignore
+from hagrid.rand_sec import generate_sec_random_password 
 
 if TYPE_CHECKING:
     # relative
@@ -173,7 +174,7 @@ class ShareTensor(PassthroughTensor):
                 client = sy.login(  # nosec
                     url=external_host_info,
                     email="info@openmined.org",
-                    password="changethis",
+                    password=generate_sec_random_password(48),
                     port=external_host_info.port,
                     verbose=False,
                 )
