@@ -66,7 +66,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         if: steps.changes.outputs.syft == 'true'
@@ -88,7 +88,7 @@ jobs:
         run: |
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          python -c "import platform; import os; os.system('pip install jaxlib===0.3.5 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          python -c "import platform; import os; os.system('pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
           pip install pycapnp
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
 

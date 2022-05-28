@@ -396,9 +396,10 @@ class ShareTensor(PassthroughTensor):
                 ring_size=ring_size,
             )
         # relative
+        from ..autodp.gamma_tensor import GammaTensor
         from ..autodp.phi_tensor import PhiTensor
 
-        if isinstance(share_wrapper.child, PhiTensor):
+        if isinstance(share_wrapper.child, (PhiTensor, GammaTensor)):
             share_wrapper.child.child.child = share.child
         else:
             share_wrapper.child.child = share.child

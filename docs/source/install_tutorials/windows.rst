@@ -124,6 +124,8 @@ Step 5: Become the Docker Doctor
 The last tool needed to complete your arsenal is called Docker.
 You can install it by following the instructions `here <https://docs.docker.com/desktop/windows/install/>`_.
 
+Note: The windows user account that launches wsl 2 has to be added to the local group "docker-users". On Windows 10 Home, run netplwiz to add the Windows user to the group "docker-users".
+
 Once you have it running, you just have to ensure the following:
 - You've allocated a sufficient amount of RAM (we recommend atleast 8GB, but you can get by with less)
 - You're using the WSL2 backend
@@ -150,6 +152,8 @@ Everything we've done so far has been to make this next part as easy as possible
 To launch a domain node called "test_domain", ensure your Virtual Environment ("syft_env" in the steps above) is active, that Docker Desktop is running, and run the command below on your WSL terminal::
 
     hagrid launch test_domain
+
+Note: If you get the error message "test_domain is not valid for node_type please use one of the following options: ['domain', 'network']" then rerun the command by changing test_domain to domain.
 
 You should see the containers begin to appear on Docker!
 

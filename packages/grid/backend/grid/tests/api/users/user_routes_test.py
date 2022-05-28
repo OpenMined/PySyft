@@ -13,7 +13,11 @@ from starlette import status
 from syft.core.node.common.node_manager.user_manager import UserManager
 
 # grid absolute
+from grid.tests.utils.auth import OWNER_EMAIL
+from grid.tests.utils.auth import OWNER_PWD
 from grid.tests.utils.auth import authenticate_owner
+from grid.tests.utils.auth import authenticate_user
+from grid.tests.utils.common import random_lower_string
 from grid.tests.utils.user import create_user
 
 
@@ -96,6 +100,72 @@ class TestUsersRoutes:
         # Check if the user details were updated correctly
         for key, val in data.items():
             assert res_json.get(key) == val
+
+    @pytest.mark.asyncio
+    async def test_fail_change_user_password(
+        self, app: FastAPI, client: AsyncClient
+    ) -> None:
+        headers = await authenticate_owner(app, client)
+        new_pwd = random_lower_string()
+        data = {
+            "password": "wrong_pwd",  # wrong password
+            "new_password": new_pwd,
+        }
+
+        # Update the information for the given user
+        res = await client.patch(
+            app.url_path_for("users:update", **{"user_id": 1}),
+            json=data,
+            headers=headers,
+        )
+
+        # Check if it raises unknown private exception triggered by invalid credentials.
+        assert res.status_code == status.HTTP_500_INTERNAL_SERVER_ERROR
+
+        # Check if the user credentails remains the same
+        headers = await authenticate_owner(app, client)
+
+    @pytest.mark.asyncio
+    async def test_successfully_change_user_password(
+        self, app: FastAPI, client: AsyncClient
+    ) -> None:
+        headers = await authenticate_owner(app, client)
+        new_pwd = random_lower_string()
+        data = {
+            "password": OWNER_PWD,
+            "new_password": new_pwd,
+        }
+
+        # Update the information for the given user
+        res = await client.patch(
+            app.url_path_for("users:update", **{"user_id": 1}),
+            json=data,
+            headers=headers,
+        )
+
+        # Check if the request was successful
+        assert res.status_code == status.HTTP_204_NO_CONTENT
+
+        # Check if the user details were updated correctly
+        headers = await authenticate_user(
+            app, client, email=OWNER_EMAIL, password=new_pwd
+        )
+        assert "Authorization" in headers.keys()
+
+        # Return to the standard password
+        data = {
+            "new_password": OWNER_PWD,
+            "password": new_pwd,
+        }
+        # Update the information for the given user
+        res = await client.patch(
+            app.url_path_for("users:update", **{"user_id": 1}),
+            json=data,
+            headers=headers,
+        )
+
+        # Check if the request was successful
+        assert res.status_code == status.HTTP_204_NO_CONTENT
 
     @pytest.mark.asyncio
     async def test_list_users(self, app: FastAPI, client: AsyncClient) -> None:

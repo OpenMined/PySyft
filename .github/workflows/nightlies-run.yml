@@ -53,3 +53,76 @@ jobs:
   call-stack-integration-public_tests:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/stack-integration-public_tests.yml@dev
+
+  stack-integration-tests-arm64:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+
+    runs-on: [self-hosted, linux]
+
+    steps:
+      - name: set permissions on work folder for self-runners
+        run: |
+          sudo chown -R $USER:$USER ~/actions-runner/_work/
+
+      - uses: actions/checkout@v2
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v2
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v2
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Install tox
+        run: |
+          pip install tox --upgrade
+
+      - name: Install Docker Compose
+        if: runner.os == 'Linux'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.3.4
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+
+      - name: Setup linux/arm64 Docker
+        run: |
+          docker rm $(docker ps -aq) --force || true
+          docker buildx create --platform linux/arm64 --name arm64builder || true
+          docker buildx use arm64builder
+          docker run --privileged --rm tonistiigi/binfmt --install arm64
+          docker run --rm --privileged multiarch/qemu-user-static --reset -p yes
+
+      - name: Run integration tests
+        timeout-minutes: 600
+        continue-on-error: true
+        run: |
+          EMULATION="true" HAGRID_FLAGS="--tag=local --test --platform linux/arm64" tox -e stack.test.integration

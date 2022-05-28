@@ -166,12 +166,16 @@ class Client(AbstractNodeClient):
 
     @property
     def settings(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
-        # relative
-        from .node_service.node_setup.node_setup_messages import GetSetUpMessage
+        try:
+            # relative
+            from .node_service.node_setup.node_setup_messages import GetSetUpMessage
 
-        return self._perform_grid_request(  # type: ignore
-            grid_msg=GetSetUpMessage, content=kwargs
-        ).content  # type : ignore
+            return self._perform_grid_request(  # type: ignore
+                grid_msg=GetSetUpMessage, content=kwargs
+            ).content  # type : ignore
+        except Exception:  # nosec
+            # unable to fetch settings
+            return {}
 
     def join_network(
         self,

@@ -43,7 +43,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -136,7 +136,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.hagrid == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache

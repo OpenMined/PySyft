@@ -38,6 +38,7 @@ from ..node.common.action.run_class_method_smpc_action import RunClassMethodSMPC
 from ..pointer.pointer import Pointer
 from .ancestors import PhiTensorAncestor
 from .autodp.gamma_tensor import GammaTensor
+from .autodp.gamma_tensor import TensorWrappedGammaTensorPointer
 from .autodp.phi_tensor import PhiTensor
 from .autodp.phi_tensor import TensorWrappedPhiTensorPointer
 from .config import DEFAULT_FLOAT_NUMPY_TYPE
@@ -105,14 +106,12 @@ class TensorPointer(Pointer):
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
-        op = f"__{op_str}__"
+        op = f"__{op_str}__" if op_str != "concatenate" else "concatenate"
         # remove this to dunder method before merge.
-        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.__{op_str}__"
-        seed_id_locations = kwargs.get("seed_id_locations", None)
+        attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op}"
+        seed_id_locations = kwargs.pop("seed_id_locations", None)
         if seed_id_locations is None:
             seed_id_locations = secrets.randbits(64)
-        else:
-            kwargs.pop("seed_id_locations")
 
         id_at_location = smpc_action_functions.get_id_at_location_from_op(
             seed_id_locations, op
@@ -211,7 +210,6 @@ class TensorPointer(Pointer):
         Returns:
             Tuple[MPCTensor,Union[MPCTensor,int,float,np.ndarray]] : Result of the operation
         """
-        op = getattr(operator, op_str)
 
         if isinstance(other, TensorPointer) and self.client != other.client:
 
@@ -220,11 +218,18 @@ class TensorPointer(Pointer):
             other_mpc = MPCTensor(
                 secret=other, shape=other.public_shape, parties=parties
             )
-            return op(self_mpc, other_mpc)
+            if op_str != "concatenate":
+                op = getattr(operator, op_str)
+                return op(self_mpc, other_mpc)
+            else:
+                return self_mpc.concatenate(other_mpc)
 
         elif isinstance(other, MPCTensor):
-
-            return op(other, self)
+            if op_str != "concatenate":
+                op = getattr(operator, op_str)
+                return op(other, self)
+            else:
+                return other.concatenate(self)
 
         return self._apply_tensor_op(other=other, op_str=op_str, **kwargs)
 
@@ -287,6 +292,36 @@ class TensorPointer(Pointer):
             Union[TensorPointer,MPCTensor] : Result of the operation.
         """
         return TensorPointer._apply_op(self, other, "matmul", **kwargs)
+
+    def __truediv__(
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "mul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "truediv", **kwargs)
+
+    def __rtruediv__(
+        self,
+        other: Union[TensorPointer, MPCTensor, int, float, np.ndarray],
+        **kwargs: Dict[str, Any],
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "mul" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        raise NotImplementedError
 
     def __lt__(
         self, other: Union[TensorPointer, MPCTensor, int, float, np.ndarray]
@@ -371,6 +406,22 @@ class TensorPointer(Pointer):
         """
 
         return TensorPointer._apply_op(self, other, "ne")
+
+    def concatenate(
+        self,
+        other: TensorPointer,
+        *args: List[Any],
+        **kwargs: Dict[str, Any],
+    ) -> Union[TensorPointer, MPCTensor]:
+        """Apply the "add" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorPointer,MPCTensor] : Result of the operation.
+        """
+        return TensorPointer._apply_op(self, other, "concatenate")
 
 
 def to32bit(np_array: np.ndarray, verbose: bool = True) -> np.ndarray:
@@ -469,6 +520,35 @@ class Tensor(
         self.tag_name = name
         return self
 
+    def exp(self) -> Tensor:
+        if hasattr(self.child, "exp"):
+            return self.__class__(self.child.exp())
+        else:
+            raise ValueError("Tensor Chain does not have exp function")
+
+    def reciprocal(self) -> Tensor:
+        if hasattr(self.child, "reciprocal"):
+            return self.__class__(self.child.reciprocal())
+        else:
+            raise ValueError("Tensor Chain does not have reciprocal function")
+
+    def one_hot(self) -> Tensor:
+        if hasattr(self.child, "one_hot"):
+            return self.__class__(self.child.one_hot())
+        else:
+            raise ValueError("Tensor Chain does not have one_hot function")
+
+    @property
+    def shape(self) -> Tuple[Any, ...]:
+        try:
+            return self.child.shape
+        except Exception:  # nosec
+            return self.public_shape
+
+    @property
+    def proxy_public_kwargs(self) -> Dict[str, Any]:
+        return {"public_shape": self.public_shape, "public_dtype": self.public_dtype}
+
     def init_pointer(
         self,
         client: Any,
@@ -489,6 +569,19 @@ class Tensor(
                 description=description,
                 min_vals=self.child.min_vals,
                 max_vals=self.child.max_vals,
+                public_shape=getattr(self, "public_shape", None),
+                public_dtype=getattr(self, "public_dtype", None),
+            )
+        elif isinstance(self.child, GammaTensor):
+            return TensorWrappedGammaTensorPointer(
+                data_subjects=self.child.data_subjects,
+                client=client,
+                id_at_location=id_at_location,
+                object_type=object_type,
+                tags=tags,
+                description=description,
+                min_vals=self.child.min_val,
+                max_vals=self.child.max_val,
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
@@ -528,7 +621,12 @@ class Tensor(
         chunk_bytes(sy.serialize(self.child, to_bytes=True), "child", tensor_msg)
 
         tensor_msg.publicShape = sy.serialize(self.public_shape, to_bytes=True)
-        tensor_msg.publicDtype = self.public_dtype
+
+        # upcast the String class before setting to capnp
+        public_dtype_func = getattr(
+            self.public_dtype, "upcast", lambda: self.public_dtype
+        )
+        tensor_msg.publicDtype = public_dtype_func()
         tensor_msg.tagName = self.tag_name
 
         return tensor_msg.to_bytes_packed()
