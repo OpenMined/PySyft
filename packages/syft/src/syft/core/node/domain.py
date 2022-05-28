@@ -81,6 +81,7 @@ from .device import Device
 from .device import DeviceClient
 from .domain_client import DomainClient
 from .domain_service import DomainServiceClass
+from hagrid.rand_sec import generate_sec_random_password 
 
 
 class Domain(Node):
@@ -196,7 +197,7 @@ class Domain(Node):
         self,
         first_superuser_name: str = "Jane Doe",
         first_superuser_email: str = "info@openmined.org",
-        first_superuser_password: str = "changethis",
+        first_superuser_password: str = generate_sec_random_password(48),
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
     ) -> Domain:
