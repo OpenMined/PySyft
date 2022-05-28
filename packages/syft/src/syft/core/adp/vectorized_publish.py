@@ -77,21 +77,8 @@ def calculate_bounds_for_mechanism(
 
     l2_norm = jnp.sqrt(jnp.sum(jnp.square(value_array))) * one_dim
     
-    print(sigma)
-    print("BOUND SIGMA TYPE: ", type(sigma))
-    vtype = str(type(sigma))
-    print("VALUE: ", sigma)
-
-    # if not isinstance(sigma, float):
-    #     raise RuntimeError(f"Sigma is of type {type(sigma)}. Expected type float.")
-    
-    if (sigma).shape != min_val_array.shape: 
-        raise RuntimeError(f"Expected Sigma shape of {min_val_array.shape} (same as input array shape) but found {(sigma).shape}")
-
-
-    # if (one_dim * sigma).shape != min_val_array.shape: 
-    #     raise RuntimeError(f"Expected Sigma shape of {min_val_array.shape} (same as input array shape) but found {(one_dim * sigma).shape}")
-
+    if "float" not in str(sigma):
+        raise RuntimeError(f"Sigma is of type {type(sigma)}. Expected type float.")
 
     return l2_norm, worst_case_l2_norm, one_dim * sigma, one_dim
 
@@ -105,8 +92,6 @@ def calibrate_sigma(
     sigma=1.5,
    ) -> np.ndarray:
 
-    print("SIGMA TYPE2: ", type(sigma))
-
     # RDP Params Initialization
     l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
         value_array=value,
@@ -114,8 +99,6 @@ def calibrate_sigma(
         max_val_array=max_vals,
         sigma=sigma,
     )
-
-    print("SIGMA TYPE3: ", type(sigmas))
 
     if is_linear:
         lipschitz_bounds = coeffs.copy()
@@ -147,7 +130,6 @@ def calibrate_sigma(
     else:
         calibrated_sigma = rdp_params.sigmas
 
-    print("CALIBRATE SIGMA TYPE: ",calibrated_sigma)
     return calibrated_sigma
 
 def vectorized_publish(
@@ -170,8 +152,6 @@ def vectorized_publish(
     # # TODO: Use calibration here
     CONSTANT2EPSILSON_CACHE_FILENAME = "constant2epsilon_1200k.npy"
     _cache_constant2epsilon = load_cache(filename=CONSTANT2EPSILSON_CACHE_FILENAME)
-
-    print("SIGMA TYPES: ", type(sigma))
 
     calibrated_sigma = calibrate_sigma(
         cache_constant2epsilon=_cache_constant2epsilon,
