@@ -1031,9 +1031,10 @@ def pointerize_args_and_kwargs(
         else:
             pointer_kwargs[k] = arg
 
-    msg = ActionSequence(obj_lst=obj_lst, address=client.address)
+    if obj_lst:
+        msg = ActionSequence(obj_lst=obj_lst, address=client.address)
 
-    # send message to client
-    client.send_immediate_msg_without_reply(msg=msg)
+        # send message to client
+        client.send_immediate_msg_without_reply(msg=msg)
 
     return pointer_args, pointer_kwargs
