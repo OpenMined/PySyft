@@ -13,7 +13,6 @@ import { DomainStatus } from './DomainStatus'
 import {
   faUsers,
   faCheck,
-  faLemon,
   faHandsHelping,
   faChevronDown,
   faUserCircle,
@@ -22,6 +21,7 @@ import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
 import { useMe, useSettings } from '@/lib/data'
 import { t } from '@/i18n'
 import { logout } from '@/lib/auth'
+import { Epsilon } from '@/components/Epsilon'
 
 const navItems = [
   { name: 'Users', link: '/users', icon: faUsers },
@@ -29,7 +29,7 @@ const navItems = [
   {
     name: 'Requests',
     link: '/requests/data',
-    icon: faLemon,
+    customIcon: <Epsilon className="text-white" />,
     children: [
       { name: 'Data Requests', link: '/requests/data' },
       { name: 'Upgrade Requests', link: '/requests/upgrade' },
@@ -58,20 +58,39 @@ const SidebarNav = () => {
               <div key={navItem.link}>
                 <Link href={navItem.link}>
                   <a>
-                    <ListFAIconItem
-                      key={navItem.link}
-                      icon={navItem.icon}
-                      iconColor="text-white"
-                      className={cn(
-                        'hover:bg-gray-800 hover:no-underline',
-                        isSelected && 'bg-gray-800 text-gray-200',
-                        !isSelected &&
-                          currRoute === navItem &&
-                          'bg-gray-800 text-white'
-                      )}
-                    >
-                      {navItem.name}
-                    </ListFAIconItem>
+                    {navItem.icon && (
+                      <ListFAIconItem
+                        icon={navItem.icon}
+                        iconColor="text-white"
+                        className={cn(
+                          'hover:bg-gray-800 hover:no-underline',
+                          isSelected && 'bg-gray-800 text-gray-200',
+                          !isSelected &&
+                            currRoute === navItem &&
+                            'bg-gray-800 text-white'
+                        )}
+                      >
+                        {navItem.name}
+                      </ListFAIconItem>
+                    )}
+                    {navItem.customIcon && (
+                      <li
+                        className={cn(
+                          'flex items-center space-x-2 hover:bg-gray-800 hover:no-underline',
+                          isSelected && 'bg-gray-800 text-gray-200',
+                          !isSelected &&
+                            currRoute === navItem &&
+                            'bg-gray-800 text-white'
+                        )}
+                      >
+                        <div className="flex items-center justify-center w-14 h-14">
+                          {navItem.customIcon}
+                        </div>
+                        <span className="font-roboto font-normal text-md">
+                          {navItem.name}
+                        </span>
+                      </li>
+                    )}
                   </a>
                 </Link>
                 {isSelected && (
@@ -84,7 +103,6 @@ const SidebarNav = () => {
                         <Link key={subItem.link} href={subItem.link}>
                           <a className="group">
                             <ListFAIconItem
-                              key={navItem.link}
                               icon={navItem.icon}
                               iconColor={cn(
                                 currSubRoute
