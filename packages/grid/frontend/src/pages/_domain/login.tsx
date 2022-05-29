@@ -52,7 +52,7 @@ export default function Login() {
         <section className="flex flex-col items-center space-y-4">
           <Text size="2xl">{settings?.domain_name}</Text>
           <Text className="text-gray-600">
-            {t('running-version')} {settings?.version ?? '0.7.0-beta.21'}
+            {t('running-version')} {settings?.version ?? '0.7.0-beta.24'}
           </Text>
         </section>
         <section className="mt-10 space-y-4">
