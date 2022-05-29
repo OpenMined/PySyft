@@ -8,10 +8,12 @@ import { FormControl } from '@/omui/components/FormControl/FormControl'
 import { login } from '@/lib/auth'
 import { useSettings } from '@/lib/data'
 import { t } from '@/i18n'
+import { EyeOpen, EyeShut } from '@/components/EyeIcon'
 import { useState } from 'react'
 
 export default function Login() {
   const router = useRouter()
+  const [isPasswordVisible, setPasswordVisible] = useState(false)
   const [isLoading, setLoading] = useState(false)
   const { data: settings } = useSettings().all()
 
@@ -83,9 +85,17 @@ export default function Login() {
                 required
               >
                 <Input
-                  type="password"
+                  type={isPasswordVisible ? 'text' : 'password'}
                   placeholder="···········"
                   {...register('password', { required: true })}
+                  addonRight={
+                    <button
+                      type="button"
+                      onClick={() => setPasswordVisible(!isPasswordVisible)}
+                    >
+                      {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
+                    </button>
+                  }
                 />
               </FormControl>
               <Button

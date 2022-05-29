@@ -16,6 +16,7 @@ import { entityColors, gridPermissions, cacheKeys } from '@/utils'
 import api from '@/utils/api-axios'
 import type { ChangeEvent } from 'react'
 import type { EnhancedUser, User, Role, Me } from '@/types/grid-types'
+import { EyeOpen, EyeShut } from '@/components/EyeIcon'
 
 interface UsersAsProp {
   users: EnhancedUser[]
@@ -158,6 +159,7 @@ function ChangeRole() {
 }
 
 function ChangePassword() {
+  const [isPasswordVisible, setPasswordVisible] = useState(false)
   const { user } = useContext(UserListContext)
   const [password, setPassword] = useState<string>('')
   const queryClient = useQueryClient()
@@ -173,12 +175,20 @@ function ChangePassword() {
     <div className="flex max-w-xl space-x-4">
       <Input
         id={`user-password-${user.id}`}
-        type="password"
+        type={isPasswordVisible ? 'text' : 'password'}
         placeholder="This overrides the user password"
         label="Change user password"
         container="flex-grow w-full"
         onChange={(e) => setPassword(e.target.value)}
         value={password}
+        addonRight={
+          <button
+            type="button"
+            onClick={() => setPasswordVisible(!isPasswordVisible)}
+          >
+            {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
+          </button>
+        }
       />
       <NormalButton
         className="flex-shrink-0 w-24 mt-auto"
@@ -320,6 +330,7 @@ interface UserSignUp {
 }
 
 export function UserCreate({ onClose }: { onClose: () => void }) {
+  const [isPasswordVisible, setPasswordVisible] = useState(false)
   const {
     register,
     handleSubmit,
@@ -383,12 +394,20 @@ export function UserCreate({ onClose }: { onClose: () => void }) {
           />
           <Input
             id="create-user-password"
-            type="password"
+            type={isPasswordVisible ? 'text' : 'password'}
             label="User Password"
             name="password"
             ref={register}
             error={errors.password}
             required
+            addonRight={
+              <button
+                type="button"
+                onClick={() => setPasswordVisible(!isPasswordVisible)}
+              >
+                {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
+              </button>
+            }
           />
           <Input
             id="create-user-budget"

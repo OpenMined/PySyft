@@ -11,6 +11,7 @@ import { useSettings } from '@/lib/data'
 import { FormControl } from '@/omui/components/FormControl/FormControl'
 
 import ky from 'ky'
+import { EyeOpen, EyeShut } from '@/components/EyeIcon'
 
 export default function SignUp() {
   const { data: domain } = useSettings().all()
@@ -23,6 +24,7 @@ export default function SignUp() {
     formState: { isValid, isDirty },
   } = useForm({ mode: 'onChange' })
 
+  const [isPasswordVisible, setPasswordVisible] = useState(false)
   const isDisabled = !isValid || !isDirty
 
   const signup = async (values) => {
@@ -94,9 +96,17 @@ export default function SignUp() {
                   required
                 >
                   <Input
-                    type="password"
-                    placeholder="···········"
+                    type={isPasswordVisible ? 'text' : 'password'}
+                    placeholder={isPasswordVisible ? 'password' : '···········'}
                     {...register('password', { required: true })}
+                    addonRight={
+                      <button
+                        type="button"
+                        onClick={() => setPasswordVisible(!isPasswordVisible)}
+                      >
+                        {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
+                      </button>
+                    }
                   />
                 </FormControl>
                 <FormControl
@@ -105,9 +115,17 @@ export default function SignUp() {
                   required
                 >
                   <Input
-                    type="password"
-                    placeholder="···········"
+                    type={isPasswordVisible ? 'text' : 'password'}
+                    placeholder={isPasswordVisible ? 'password' : '···········'}
                     {...register('confirm_password', { required: true })}
+                    addonRight={
+                      <button
+                        type="button"
+                        onClick={() => setPasswordVisible(!isPasswordVisible)}
+                      >
+                        {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
+                      </button>
+                    }
                   />
                 </FormControl>
                 <div className="col-span-full">
