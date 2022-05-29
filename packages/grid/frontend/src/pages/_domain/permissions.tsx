@@ -8,6 +8,7 @@ import { useRoles } from '@/lib/data'
 import { singularOrPlural } from '@/utils'
 import { t } from '@/i18n'
 import { sections } from '@/content'
+import { NewSpinner } from '@/components/NewSpinner'
 
 export default function Permissions() {
   const { data: roles, isLoading } = useRoles().all()
@@ -36,11 +37,7 @@ export default function Permissions() {
       </div>
       <div className="col-span-full mt-10 space-y-4">
         <H4>Roles</H4>
-        {isLoading && (
-          <Text size="xl">
-            <FontAwesomeIcon icon={faSpinner} />
-          </Text>
-        )}
+        {isLoading && <NewSpinner className="text-blue-500 w-6 h-6" />}
         {roles?.length > 0 && <PermissionsAccordion roles={roles} />}
       </div>
     </SingleCenter>

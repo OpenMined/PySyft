@@ -9,7 +9,7 @@ import {
   faPlus,
   faUserPlus,
 } from '@fortawesome/free-solid-svg-icons'
-import { useDisclosure } from 'react-use-disclosure'
+import { useDisclosure } from '@/hooks/useDisclosure'
 import { Badge, Button, Divider, Input, H4, Select, Tabs, Text } from '@/omui'
 import { NameAndBadge, SearchInput, TopContent, Dot } from '@/components/lib'
 import { Alert } from '@/components/Alert'
@@ -567,10 +567,10 @@ function parseEpsilon(valueWithEpsilon: string | number) {
 }
 
 function CreateUser({ onClose }) {
-  const create = useUsers().create(
+  const { mutate: create, isLoading } = useUsers().create(
     { onSuccess: onClose },
     { multipart: true }
-  ).mutate
+  )
 
   const { register, control, handleSubmit } = useForm({
     defaultValues: {
@@ -593,10 +593,7 @@ function CreateUser({ onClose }) {
   return (
     <>
       <div className="space-y-3 col-span-12">
-        <FontAwesomeIcon
-          icon={faUserPlus}
-          className="text-3xl"
-        ></FontAwesomeIcon>
+        <FontAwesomeIcon icon={faUserPlus} className="text-3xl" />
         <H4>Create a User</H4>
       </div>
       <div className="col-span-12 mt-4">
@@ -696,10 +693,15 @@ function CreateUser({ onClose }) {
             </div>
           </div>
           <div className="col-span-full flex justify-between mt-6 mb-5">
-            <Button type="button" variant="outline" onClick={onClose}>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={onClose}
+              disabled={isLoading}
+            >
               Cancel
             </Button>
-            <Button variant="primary" type="submit">
+            <Button variant="primary" type="submit" isLoading={isLoading}>
               <Text bold size="sm">
                 <FontAwesomeIcon icon={faPlus} className="mr-1" /> Create
               </Text>
@@ -708,17 +710,6 @@ function CreateUser({ onClose }) {
         </form>
       </div>
     </>
-  )
-}
-
-function EmptyDataRequests() {
-  return (
-    <div className="space-y-2 w-full text-center col-span-8 col-start-3">
-      <H4>Congratulations</H4>
-      <Text className="text-gray-400">
-        You’ve cleared all data requests in your queue!
-      </Text>
-    </div>
   )
 }
 

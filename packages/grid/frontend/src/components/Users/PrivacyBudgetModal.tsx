@@ -7,7 +7,9 @@ import Modal from '../Modal'
 import { useUsers } from '@/lib/data'
 
 export function PrivacyBudgetModal({ show, onClose, user }) {
-  const update = useUsers().update(user?.id, { onSuccess: onClose }).mutate
+  const { mutate: update, isLoading } = useUsers().update(user?.id, {
+    onSuccess: onClose,
+  })
 
   const [value, setValue] = useState(user?.budget)
   // TODO: mitigated for demo
@@ -46,10 +48,20 @@ export function PrivacyBudgetModal({ show, onClose, user }) {
         </FormControl>
       </div>
       <div className="col-span-full flex justify-between mt-12">
-        <Button size="sm" variant="outline" onClick={onClose}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onClose}
+          disabled={isLoading}
+        >
           Cancel
         </Button>
-        <Button size="sm" variant="primary" onClick={upgrade}>
+        <Button
+          size="sm"
+          variant="primary"
+          onClick={upgrade}
+          isLoading={isLoading}
+        >
           Upgrade
         </Button>
       </div>

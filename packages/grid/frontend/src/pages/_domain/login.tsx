@@ -8,9 +8,11 @@ import { FormControl } from '@/omui/components/FormControl/FormControl'
 import { login } from '@/lib/auth'
 import { useSettings } from '@/lib/data'
 import { t } from '@/i18n'
+import { useState } from 'react'
 
 export default function Login() {
   const router = useRouter()
+  const [isLoading, setLoading] = useState(false)
   const { data: settings } = useSettings().all()
 
   const {
@@ -22,6 +24,7 @@ export default function Login() {
 
   const handleLogin = async ({ email, password }) => {
     try {
+      setLoading(true)
       await login({ email, password })
       router.push('/users')
     } catch (err) {
@@ -30,6 +33,8 @@ export default function Login() {
         { type: 'manual', message: 'Invalid credentials' },
         { shouldFocus: true }
       )
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -87,6 +92,7 @@ export default function Login() {
                 size="sm"
                 className="mt-6 w-full justify-center"
                 disabled={!isValid || !isDirty}
+                isLoading={isLoading}
               >
                 {t('buttons.login')}
               </Button>

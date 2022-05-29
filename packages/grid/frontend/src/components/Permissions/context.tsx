@@ -13,6 +13,8 @@ interface PermissionContextProps {
   permissions: AllSyftPermissions
   toggle: (_: SyftPermissions) => void
   save: UseMutateFunction
+  isSuccess: boolean
+  isLoading: boolean
 }
 
 const PermissionContext = createContext<PermissionContextProps>({
@@ -20,6 +22,8 @@ const PermissionContext = createContext<PermissionContextProps>({
   permissions: null,
   save: null,
   toggle: null,
+  isSuccess: false,
+  isLoading: false,
 })
 
 function PermissionsAccordionProvider({ role, children }) {
@@ -28,7 +32,8 @@ function PermissionsAccordionProvider({ role, children }) {
     return allPermissions
   })
 
-  const update = useRoles().update(role.id).mutate
+  const permissionUpdate = useRoles().update(role.id)
+  const { mutate, isLoading, isSuccess } = permissionUpdate
 
   const toggle = (permission: SyftPermissions) =>
     setPermissions((prevPermissions) => ({
@@ -36,10 +41,12 @@ function PermissionsAccordionProvider({ role, children }) {
       [permission]: !prevPermissions[permission],
     }))
 
-  const save = () => update({ ...role, ...permissions })
+  const save = () => mutate({ ...role, ...permissions })
 
   return (
-    <PermissionContext.Provider value={{ permissions, role, save, toggle }}>
+    <PermissionContext.Provider
+      value={{ permissions, role, save, toggle, isLoading, isSuccess }}
+    >
       {children}
     </PermissionContext.Provider>
   )

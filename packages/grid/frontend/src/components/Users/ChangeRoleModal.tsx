@@ -11,7 +11,9 @@ import Select from '@/components/post/Select'
 
 export function ChangeRoleModal({ show, onClose, user, role }) {
   const { data: roles } = useRoles().all()
-  const { mutate } = useUsers().update(user?.id, { onSuccess: onClose })
+  const { mutate, isLoading } = useUsers().update(user?.id, {
+    onSuccess: onClose,
+  })
   const [currentRole, setRole] = useState(role)
   const matchingRole = roles?.find((defRole) => defRole.name === currentRole)
   const permissionsList = allPermissions
@@ -94,10 +96,15 @@ export function ChangeRoleModal({ show, onClose, user, role }) {
         </Link>
       </div>
       <div className="col-span-full flex justify-between mt-12">
-        <Button size="sm" variant="outline" onClick={onClose}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onClose}
+          disabled={isLoading}
+        >
           Cancel
         </Button>
-        <Button size="sm" onClick={handleRoleChange}>
+        <Button size="sm" onClick={handleRoleChange} isLoading={isLoading}>
           Change Role
         </Button>
       </div>
