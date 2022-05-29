@@ -9,6 +9,10 @@ from typing import Dict
 from typing import List
 from typing import Optional
 
+# relative
+from ...common import UID
+from ...node.common.action.beaver_primitive_action import BeaverPrimitiveAction
+
 
 class CryptoPrimitiveProvider:
     """A trusted third party should use this class to generate crypto primitives."""
@@ -87,10 +91,24 @@ class CryptoPrimitiveProvider:
                 f"Primitives length {len(primitives)} != Parties length {len(parties)}"
             )
 
-        for primitives_party, party in zip(primitives, parties):
-            party.syft.core.tensor.smpc.share_tensor.populate_store(
-                op_str, primitives_party, **p_kwargs, ring_size=str(ring_size)
+        for primitives_party, client in zip(primitives, parties):
+
+            args: List[Any] = []
+            kwargs = {
+                "op_str": op_str,
+                "primitives": primitives_party,
+                **p_kwargs,
+                "ring_size": str(ring_size),
+            }
+            path = "syft.core.tensor.smpc.share_tensor.populate_store"
+            cmd = BeaverPrimitiveAction(
+                path=path,
+                args=args,
+                kwargs=kwargs,
+                id_at_location=UID(),
+                address=client.adress,
             )
+            client.send_immediate_msg_without_reply(msg=cmd)
 
     @staticmethod
     def get_state() -> str:

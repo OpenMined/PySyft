@@ -1493,7 +1493,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_val=min_val,
             max_val=max_val,
         )
-        print("Result", res)
+
         return res
 
     def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore

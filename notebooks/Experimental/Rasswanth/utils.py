@@ -131,6 +131,7 @@ def convert_to_mpc_tensor(*args):
 
 def smpc_weight_averaging(W1, b1, W2, b2):
     W1, b1, W2, b2 = convert_to_mpc_tensor(W1, b1, W2, b2)
+    print("finish")
     n = len(W1)
     avg_W1, avg_W2, avg_b1, avg_b2 = W1[0], W2[0], b1[0], b2[0]
 
@@ -139,10 +140,15 @@ def smpc_weight_averaging(W1, b1, W2, b2):
         avg_W1 = avg_W2 + W2[i]
         avg_W1 = avg_b1 + b1[i]
         avg_W1 = avg_b2 + b2[i]
+    print("Addition finish")
 
     avg_W1 = avg_W1 * (1 / n)
+    print("First one finished")
     avg_W1 = avg_W2 * (1 / n)
+    print("Second one finished")
     avg_b1 = avg_b1 * (1 / n)
+    print("Third one finished")
     avg_b2 = avg_b2 * (1 / n)
+    print("Fourth one finished")
 
     return avg_W1, avg_b1, avg_W2, avg_b2
