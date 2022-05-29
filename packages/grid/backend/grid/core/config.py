@@ -106,7 +106,7 @@ class Settings(BaseSettings):
     S3_ENDPOINT: str = os.getenv("S3_ENDPOINT", "seaweedfs")
     S3_PORT: int = int(os.getenv("S3_PORT", 8333))
     S3_ROOT_USER: str = os.getenv("S3_ROOT_USER", "admin")
-    S3_ROOT_PWD: Optional[str] = os.getenv("S3_ROOT_PWD", "admin")
+    S3_ROOT_PWD: Optional[str] = os.getenv("S3_ROOT_PWD", generate_sec_random_password(48))
     S3_REGION: str = os.getenv("S3_REGION", "us-east-1")
     S3_PRESIGNED_TIMEOUT_SECS: int = int(
         os.getenv("S3_PRESIGNED_TIMEOUT_SECS", 1800)
