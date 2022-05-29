@@ -11,7 +11,6 @@ from typing import Optional
 
 # relative
 from ...common import UID
-from ...node.common.action.beaver_primitive_action import BeaverPrimitiveAction
 
 
 class CryptoPrimitiveProvider:
@@ -83,6 +82,9 @@ class CryptoPrimitiveProvider:
         p_kwargs: Dict[str, Any],
         ring_size: int,
     ) -> None:
+        # relative
+        from ...node.common.action.beaver_primitive_action import BeaverPrimitiveAction
+
         if not isinstance(primitives, list):
             raise ValueError("Primitives should be a List")
 
@@ -106,7 +108,7 @@ class CryptoPrimitiveProvider:
                 args=args,
                 kwargs=kwargs,
                 id_at_location=UID(),
-                address=client.adress,
+                address=client.address,
             )
             client.send_immediate_msg_without_reply(msg=cmd)
 

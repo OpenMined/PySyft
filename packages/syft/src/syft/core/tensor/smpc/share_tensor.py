@@ -113,6 +113,7 @@ CACHE_CLIENTS: Dict[str, Any] = {}
 
 def populate_store(*args: List[Any], **kwargs: Dict[Any, Any]) -> None:
     ShareTensor.crypto_store.populate_store(*args, **kwargs)  # type: ignore
+    return None
 
 
 @serializable(capnp_bytes=True)

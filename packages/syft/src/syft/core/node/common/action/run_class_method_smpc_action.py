@@ -24,7 +24,6 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
-from ....tensor.smpc.utils import ispointer
 from ...abstract.node import AbstractNode
 from ..util import check_send_to_blob_storage
 from ..util import upload_result_to_s3
@@ -103,10 +102,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         resolved_args = list()
         tag_args = []
         for arg in self.args:
-            if ispointer(arg):
-                r_arg = retrieve_object(node, arg.id_at_location, self.path)
-            else:
-                r_arg = arg
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
 
             # TODO: Think of a way to free the memory
             # del node.store[arg.id_at_location]
@@ -119,11 +115,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         resolved_kwargs = {}
         tag_kwargs = {}
         for arg_name, arg in self.kwargs.items():
-            if ispointer(arg):
-                r_arg = retrieve_object(node, arg.id_at_location, self.path)
-            else:
-                r_arg = arg
-
+            r_arg = retrieve_object(node, arg.id_at_location, self.path)
             # TODO: Think of a way to free the memory
             # del node.store[arg.id_at_location]
             result_read_permissions = self.intersect_keys(
@@ -146,7 +138,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             "node": node,
             "read_permissions": result_read_permissions,
         }
-
+        print("Path and name", self.path)
         result = method(*upcasted_args, **upcasted_kwargs)
 
         id_at_location = self.id_at_location

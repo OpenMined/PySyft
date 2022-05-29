@@ -21,6 +21,7 @@ import syft as sy
 
 # relative
 from ... import lib
+from ...ast.klass import pointerize_args_and_kwargs
 from ...util import inherit_tags
 from ..common.serde.capnp import CapnpModule
 from ..common.serde.capnp import chunk_bytes
@@ -131,11 +132,19 @@ class TensorPointer(Pointer):
                 args=[self, other], kwargs=kwargs
             )
 
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
             cmd = RunClassMethodSMPCAction(
                 path=attr_path_and_name,
                 _self=self,
-                args=downcast_args,
-                kwargs=downcast_kwargs,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
                 id_at_location=result_id_at_location,
                 seed_id_locations=seed_id_locations,
                 address=self.client.address,

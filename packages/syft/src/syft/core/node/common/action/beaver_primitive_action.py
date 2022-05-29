@@ -13,7 +13,6 @@ from ....common.serde.serializable import serializable
 from ....common.uid import UID
 from ....io.address import Address
 from ....store.storeable_object import StorableObject
-from ....tensor.smpc.share_tensor import ShareTensor
 from ...abstract.node import AbstractNode
 from .common import ImmediateActionWithoutReply
 
@@ -72,12 +71,15 @@ class BeaverPrimitiveAction(ImmediateActionWithoutReply):
         return f"BeaverPrimitiveAction ({arg_names}, {kwargs_names})"
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
+        # relative
+        from ....tensor.smpc.share_tensor import populate_store
+
         (
             upcasted_args,
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(self.args, self.kwargs)
 
-        result = ShareTensor.populate_store(*upcasted_args, **upcasted_kwargs)
+        result = populate_store(*upcasted_args, **upcasted_kwargs)  # type: ignore
 
         result_read_permissions = {
             node.verify_key: node.id,
