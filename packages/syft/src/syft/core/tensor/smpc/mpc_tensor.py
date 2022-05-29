@@ -739,7 +739,6 @@ class MPCTensor(PassthroughTensor):
                 p_kwargs={"shape": new_shape},
                 ring_size=self.ring_size,
             )
-            print("Primitive finish")
             res_shares = [
                 getattr(a, op)(b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
             ]
