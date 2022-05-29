@@ -10,6 +10,7 @@ import { useSettings } from '@/lib/data'
 import { t } from '@/i18n'
 import { EyeOpen, EyeShut } from '@/components/EyeIcon'
 import { useState } from 'react'
+import { BetaBadge } from '@/components/BetaBadge'
 
 export default function Login() {
   const router = useRouter()
@@ -57,9 +58,13 @@ export default function Login() {
       </div>
       <div className="col-span-4 col-start-5 mt-8">
         <section className="flex flex-col items-center space-y-4">
-          <Text size="2xl">{settings?.domain_name}</Text>
-          <Text className="text-gray-600">
-            {t('running-version')} {settings?.version ?? '0.7.0-beta.24'}
+          <Text size="2xl text-center">Login to {settings?.domain_name}</Text>
+          <Text className="text-gray-600 text-center">
+            {t('running-version')}{' '}
+            <span className="text-gray-800">
+              {settings?.version ?? '0.7.0-beta.21'}
+            </span>{' '}
+            <BetaBadge />
           </Text>
         </section>
         <section className="mt-10 space-y-4">
