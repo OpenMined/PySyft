@@ -2,7 +2,7 @@ const omuiColors = require('./src/omui/styles/colors')
 const themes = require('./src/omui/themes')
 
 module.exports = {
-  purge: ['src/**/*.{js,jsx,ts,tsx}'],
+  content: ['src/**/*.{js,jsx,ts,tsx}'],
   // mode: 'jit',
   darkMode: 'class', // or 'media' or 'class'
   theme: {
