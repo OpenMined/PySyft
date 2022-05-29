@@ -159,7 +159,7 @@ function ChangeRole() {
 }
 
 function ChangePassword() {
-  const [passwordIsVisible, setPasswordVisible] = useState(false)
+  const [isPasswordVisible, setPasswordVisible] = useState(false)
   const { user } = useContext(UserListContext)
   const [password, setPassword] = useState<string>('')
   const queryClient = useQueryClient()
@@ -175,7 +175,7 @@ function ChangePassword() {
     <div className="flex max-w-xl space-x-4">
       <Input
         id={`user-password-${user.id}`}
-        type={passwordIsVisible ? 'text' : 'password'}
+        type={isPasswordVisible ? 'text' : 'password'}
         placeholder="This overrides the user password"
         label="Change user password"
         container="flex-grow w-full"
@@ -184,9 +184,9 @@ function ChangePassword() {
         addonRight={
           <button
             type="button"
-            onClick={() => setPasswordVisible(!passwordIsVisible)}
+            onClick={() => setPasswordVisible(!isPasswordVisible)}
           >
-            {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+            {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
           </button>
         }
       />
@@ -330,7 +330,7 @@ interface UserSignUp {
 }
 
 export function UserCreate({ onClose }: { onClose: () => void }) {
-  const [passwordIsVisible, setPasswordVisible] = useState(false)
+  const [isPasswordVisible, setPasswordVisible] = useState(false)
   const {
     register,
     handleSubmit,
@@ -394,7 +394,7 @@ export function UserCreate({ onClose }: { onClose: () => void }) {
           />
           <Input
             id="create-user-password"
-            type={passwordIsVisible ? 'text' : 'password'}
+            type={isPasswordVisible ? 'text' : 'password'}
             label="User Password"
             name="password"
             ref={register}
@@ -403,9 +403,9 @@ export function UserCreate({ onClose }: { onClose: () => void }) {
             addonRight={
               <button
                 type="button"
-                onClick={() => setPasswordVisible(!passwordIsVisible)}
+                onClick={() => setPasswordVisible(!isPasswordVisible)}
               >
-                {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+                {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
               </button>
             }
           />

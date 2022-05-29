@@ -27,15 +27,25 @@ const Heading = ({ children }) => (
   </div>
 )
 
-const Form = ({ isValid, children, onSubmit, reset, defaultValues = {} }) => (
+const Form = ({
+  isValid,
+  children,
+  onSubmit,
+  isLoading,
+  reset,
+  defaultValues = {},
+}) => (
   <form className="col-span-full space-y-6" onSubmit={onSubmit}>
     {children}
     <ButtonGroup>
-      <Button disabled={!isValid}>{t('buttons.save-changes')}</Button>
+      <Button disabled={!isValid} isLoading={isLoading}>
+        {t('buttons.save-changes')}
+      </Button>
       <Button
         variant="ghost"
         type="button"
         onClick={() => reset(defaultValues)}
+        disabled={isLoading}
       >
         {t('buttons.cancel')}
       </Button>
@@ -45,7 +55,7 @@ const Form = ({ isValid, children, onSubmit, reset, defaultValues = {} }) => (
 
 function AccountSettingsProfile() {
   const user = useAccount()
-  const update = useUsers().update(user.id).mutate
+  const { mutate: update, isLoading } = useUsers().update(user.id)
   const {
     handleSubmit,
     register,
@@ -61,7 +71,7 @@ function AccountSettingsProfile() {
     },
   })
 
-  function onSubmit(values) {
+  const onSubmit = (values) => {
     update(values)
   }
 
@@ -73,6 +83,7 @@ function AccountSettingsProfile() {
         reset={reset}
         isValid={isValid && isDirty}
         defaultValues={user}
+        isLoading={isLoading}
       >
         <Input
           label={t('full-name')}
@@ -103,7 +114,7 @@ function AccountSettingsProfile() {
 
 function AccountSettingsPassword() {
   const user = useAccount()
-  const update = useUsers().update(user.id).mutate
+  const { mutate: update, isLoading } = useUsers().update(user.id)
   const {
     handleSubmit,
     register,
@@ -113,7 +124,7 @@ function AccountSettingsPassword() {
   } = useForm({ mode: 'onChange' })
 
   const [showSuccess, setShowSuccess] = useState(false)
-  const [passwordIsVisible, setPasswordVisible] = useState(false)
+  const [isPasswordVisible, setPasswordVisible] = useState(false)
 
   function onSubmit(values) {
     update(values, {
@@ -137,6 +148,7 @@ function AccountSettingsPassword() {
         onSubmit={handleSubmit(onSubmit)}
         reset={reset}
         isValid={isValid && isDirty}
+        isLoading={isLoading}
       >
         <FormControl
           id="password"
@@ -147,10 +159,10 @@ function AccountSettingsPassword() {
         >
           <Input
             {...register('password', { required: true })}
-            type={passwordIsVisible ? 'text' : 'password'}
+            type={isPasswordVisible ? 'text' : 'password'}
             addonRight={
-              <button onClick={() => setPasswordVisible(!passwordIsVisible)}>
-                {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+              <button onClick={() => setPasswordVisible(!isPasswordVisible)}>
+                {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
               </button>
             }
           />
@@ -158,10 +170,10 @@ function AccountSettingsPassword() {
         <FormControl id="new_password" label={t('new-password')} required>
           <Input
             {...register('new_password', { required: true })}
-            type={passwordIsVisible ? 'text' : 'password'}
+            type={isPasswordVisible ? 'text' : 'password'}
             addonRight={
-              <button onClick={() => setPasswordVisible(!passwordIsVisible)}>
-                {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+              <button onClick={() => setPasswordVisible(!isPasswordVisible)}>
+                {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
               </button>
             }
           />
@@ -199,7 +211,7 @@ function ChangePasswordSuccessModal({ show, showSuccess, reset }) {
 
 function DeleteAccountConfirmModal({ show, onClose, onSuccess }) {
   const user = useAccount()
-  const remove = useUsers().remove(user.id).mutate
+  const { mutate: remove, isLoading } = useUsers().remove(user.id)
 
   const onSubmit = () => {
     remove(null, { onSuccess, onError: (err) => console.error({ err }) })
@@ -221,10 +233,15 @@ function DeleteAccountConfirmModal({ show, onClose, onSuccess }) {
       </div>
       <div className="col-span-full text-center mt-6 mb-4">
         <ButtonGroup>
-          <Button color="error" onClick={onSubmit}>
+          <Button color="error" onClick={onSubmit} isLoading={isLoading}>
             {t('buttons.delete-account')}
           </Button>
-          <Button variant="ghost" color="error" onClick={onClose}>
+          <Button
+            variant="ghost"
+            color="error"
+            onClick={onClose}
+            disabled={isLoading}
+          >
             {t('buttons.cancel')}
           </Button>
         </ButtonGroup>

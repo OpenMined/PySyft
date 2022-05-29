@@ -13,7 +13,8 @@ import { useState } from 'react'
 
 export default function Login() {
   const router = useRouter()
-  const [passwordIsVisible, setPasswordVisible] = useState(false)
+  const [isPasswordVisible, setPasswordVisible] = useState(false)
+  const [isLoading, setLoading] = useState(false)
   const { data: settings } = useSettings().all()
 
   const {
@@ -25,6 +26,7 @@ export default function Login() {
 
   const handleLogin = async ({ email, password }) => {
     try {
+      setLoading(true)
       await login({ email, password })
       router.push('/users')
     } catch (err) {
@@ -33,6 +35,8 @@ export default function Login() {
         { type: 'manual', message: 'Invalid credentials' },
         { shouldFocus: true }
       )
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -55,7 +59,7 @@ export default function Login() {
         <section className="flex flex-col items-center space-y-4">
           <Text size="2xl">{settings?.domain_name}</Text>
           <Text className="text-gray-600">
-            {t('running-version')} {settings?.version ?? '0.7.0-beta.21'}
+            {t('running-version')} {settings?.version ?? '0.7.0-beta.24'}
           </Text>
         </section>
         <section className="mt-10 space-y-4">
@@ -81,15 +85,15 @@ export default function Login() {
                 required
               >
                 <Input
-                  type={passwordIsVisible ? 'text' : 'password'}
+                  type={isPasswordVisible ? 'text' : 'password'}
                   placeholder="···········"
                   {...register('password', { required: true })}
                   addonRight={
                     <button
                       type="button"
-                      onClick={() => setPasswordVisible(!passwordIsVisible)}
+                      onClick={() => setPasswordVisible(!isPasswordVisible)}
                     >
-                      {passwordIsVisible ? <EyeOpen /> : <EyeShut />}
+                      {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
                     </button>
                   }
                 />
@@ -98,6 +102,7 @@ export default function Login() {
                 size="sm"
                 className="mt-6 w-full justify-center"
                 disabled={!isValid || !isDirty}
+                isLoading={isLoading}
               >
                 {t('buttons.login')}
               </Button>

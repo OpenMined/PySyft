@@ -48,7 +48,7 @@ function PermissionToggler({ permission }: { permission: SyftPermissions }) {
 }
 
 function PermissionsAccordionPanel() {
-  const { save } = usePermission()
+  const { save, isLoading } = usePermission()
 
   return (
     <div className="px-10 w-full space-y-6">
@@ -62,7 +62,12 @@ function PermissionsAccordionPanel() {
           </div>
         ))}
       </div>
-      <Button variant="primary" type="button" onClick={save}>
+      <Button
+        variant="primary"
+        type="button"
+        onClick={save}
+        isLoading={isLoading}
+      >
         {t('buttons.save-changes')}
       </Button>
     </div>

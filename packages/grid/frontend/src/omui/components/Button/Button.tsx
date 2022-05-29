@@ -7,6 +7,7 @@ import type {
 } from 'react'
 import { Text } from '../Typography/Text'
 import { Icon, IconSizeProp } from '../Icon/Icon'
+import { NewSpinner } from '@/components/NewSpinner'
 
 export type ButtonSize = 'xs' | 'sm' | 'md' | 'lg'
 export type ButtonVariant = 'gray' | 'primary' | 'outline' | 'ghost' | 'link'
@@ -26,6 +27,7 @@ interface Props extends ButtonHTMLAttributes<HTMLButtonElement> {
   color?: ButtonColor
   leftIcon?: ElementType
   rightIcon?: ElementType
+  isLoading?: boolean
 }
 
 export type ButtonProps = PropsWithChildren<Props>
@@ -67,8 +69,7 @@ const variants = (color: string): Record<ButtonVariant, string> => ({
   link: 'text-primary-600 hover:underline dark:text-primary-200',
 })
 
-const defaultClasses =
-  'inline-flex items-center rounded space-x-1.5 outline-none'
+const defaultClasses = 'inline-flex items-center rounded gap-x-1.5 outline-none'
 const disabledClasses = 'opacity-40 pointer-events-none'
 
 const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
@@ -79,6 +80,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     disabled,
     leftIcon,
     rightIcon,
+    isLoading = false,
     className,
     children,
     ...props
@@ -90,11 +92,16 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
     defaultClasses,
     hasBorder ? buttonBorderSizes[size] : buttonBorderlessSize[size],
     variants(color)[variant],
-    disabled && disabledClasses,
+    (isLoading || disabled) && disabledClasses,
     className
   )
   return (
-    <button className={buttonClasses} ref={ref} disabled={disabled} {...props}>
+    <button
+      className={buttonClasses}
+      ref={ref}
+      disabled={isLoading || disabled}
+      {...props}
+    >
       {leftIcon && (
         <Icon
           size={iconSizes[size]}
@@ -104,6 +111,7 @@ const Button = forwardRef<HTMLButtonElement, ButtonProps>(function Button(
         />
       )}
 
+      <NewSpinner className={cn({ hidden: !isLoading })} />
       {typeof children === 'string' ? (
         <Text as="span" size={size} bold>
           {children}
