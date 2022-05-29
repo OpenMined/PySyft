@@ -226,11 +226,6 @@ function DomainInfoDetails() {
       value: `${domain?.owner}, ${domain?.company}`,
       ValueComponent: (props) => <Text mono {...props} />,
     },
-    {
-      text: commonStrings.networks,
-      value: domain?.networks?.map((network) => network.name).join(', '),
-      ValueComponent: (props) => <Text mono {...props} />,
-    },
   ]
   return (
     <section className="mt-10 space-y-4">

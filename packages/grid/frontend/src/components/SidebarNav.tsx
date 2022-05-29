@@ -35,7 +35,6 @@ const navItems = [
       { name: 'Upgrade Requests', link: '/requests/upgrade' },
     ],
   },
-  { name: 'Networks', link: '/networks', icon: faHandsHelping },
 ]
 
 const SidebarNav = () => {
