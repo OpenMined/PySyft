@@ -160,8 +160,12 @@ function AccountSettingsPassword() {
           <Input
             {...register('password', { required: true })}
             type={isPasswordVisible ? 'text' : 'password'}
+            placeholder="Old password"
             addonRight={
-              <button onClick={() => setPasswordVisible(!isPasswordVisible)}>
+              <button
+                type="button"
+                onClick={() => setPasswordVisible(!isPasswordVisible)}
+              >
                 {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
               </button>
             }
@@ -170,9 +174,13 @@ function AccountSettingsPassword() {
         <FormControl id="new_password" label={t('new-password')} required>
           <Input
             {...register('new_password', { required: true })}
+            placeholder="New password"
             type={isPasswordVisible ? 'text' : 'password'}
             addonRight={
-              <button onClick={() => setPasswordVisible(!isPasswordVisible)}>
+              <button
+                type="button"
+                onClick={() => setPasswordVisible(!isPasswordVisible)}
+              >
                 {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
               </button>
             }
