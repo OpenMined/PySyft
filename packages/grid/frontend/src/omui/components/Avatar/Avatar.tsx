@@ -43,7 +43,7 @@ export function Avatar({
 
   return (
     <span className="inline-block relative">
-      <img className={classes} {...props} />
+      <img className={classes} {...props} style={{ maxWidth: '48px' }} />
       <span className={indicatorClasses} />
     </span>
   )
