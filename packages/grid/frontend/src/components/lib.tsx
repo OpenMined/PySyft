@@ -1,5 +1,4 @@
 import cn from 'classnames'
-import { QuickNav } from './QuickNav'
 import { Badge, H2, Icon, Input, Tag, Text } from '@/omui'
 import { Tooltip } from 'react-tippy'
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome'
@@ -44,7 +43,6 @@ const TopContent = ({
         {typeof heading === 'string' && <H2>{heading}</H2>}
         {typeof heading === 'object' && heading}
       </div>
-      <QuickNav />
       <BetaBadge />
     </div>
   </div>

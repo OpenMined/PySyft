@@ -8,10 +8,14 @@ import { FormControl } from '@/omui/components/FormControl/FormControl'
 import { login } from '@/lib/auth'
 import { useSettings } from '@/lib/data'
 import { t } from '@/i18n'
+import { EyeOpen, EyeShut } from '@/components/EyeIcon'
+import { useState } from 'react'
 import { BetaBadge } from '@/components/BetaBadge'
 
 export default function Login() {
   const router = useRouter()
+  const [isPasswordVisible, setPasswordVisible] = useState(false)
+  const [isLoading, setLoading] = useState(false)
   const { data: settings } = useSettings().all()
 
   const {
@@ -23,6 +27,7 @@ export default function Login() {
 
   const handleLogin = async ({ email, password }) => {
     try {
+      setLoading(true)
       await login({ email, password })
       router.push('/users')
     } catch (err) {
@@ -31,6 +36,8 @@ export default function Login() {
         { type: 'manual', message: 'Invalid credentials' },
         { shouldFocus: true }
       )
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -83,15 +90,24 @@ export default function Login() {
                 required
               >
                 <Input
-                  type="password"
+                  type={isPasswordVisible ? 'text' : 'password'}
                   placeholder="···········"
                   {...register('password', { required: true })}
+                  addonRight={
+                    <button
+                      type="button"
+                      onClick={() => setPasswordVisible(!isPasswordVisible)}
+                    >
+                      {isPasswordVisible ? <EyeOpen /> : <EyeShut />}
+                    </button>
+                  }
                 />
               </FormControl>
               <Button
                 size="sm"
                 className="mt-6 w-full justify-center"
                 disabled={!isValid || !isDirty}
+                isLoading={isLoading}
               >
                 {t('buttons.login')}
               </Button>

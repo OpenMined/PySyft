@@ -9,7 +9,9 @@ import { BorderedBox } from '@/components/Boxes'
 import { useUsers } from '@/lib/data'
 
 function UserModal({ show, onClose, user, onEditRole, onAdjustBudget }) {
-  const removeUser = useUsers().remove(user?.id, { onSuccess: onClose }).mutate
+  const { mutate: removeUser, isLoading } = useUsers().remove(user?.id, {
+    onSuccess: onClose,
+  })
 
   if (!user) return null
 
@@ -25,7 +27,8 @@ function UserModal({ show, onClose, user, onEditRole, onAdjustBudget }) {
             variant="ghost"
             size="sm"
             className="flex-shrink-0"
-            onClick={removeUser}
+            onClick={() => removeUser()}
+            isLoading={isLoading}
           >
             <Text size="sm" className="text-gray-400">
               <FontAwesomeIcon icon={faTrash} className="mr-2" />{' '}
@@ -48,7 +51,12 @@ function UserModal({ show, onClose, user, onEditRole, onAdjustBudget }) {
   )
 }
 
-function PrivacyBudgetAdjustCard({ budget_spent, budget, onAdjustBudget }) {
+function PrivacyBudgetAdjustCard({
+  budget_spent,
+  budget,
+  onAdjustBudget,
+  isLoading,
+}) {
   return (
     <div className="col-span-7 space-y-3">
       <H6 bold>
@@ -78,7 +86,12 @@ function PrivacyBudgetAdjustCard({ budget_spent, budget, onAdjustBudget }) {
             </Text>
           </div>
         </div>
-        <Button size="sm" variant="outline" onClick={onAdjustBudget}>
+        <Button
+          size="sm"
+          variant="outline"
+          onClick={onAdjustBudget}
+          isLoading={isLoading}
+        >
           {t('buttons.adjust-budget')}
         </Button>
       </div>
