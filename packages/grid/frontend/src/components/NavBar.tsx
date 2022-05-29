@@ -22,7 +22,6 @@ const navigation = [
   { name: 'Users', href: '/users' },
   { name: 'Roles & Permissions', href: '/permissions' },
   { name: 'Dashboard', href: '/dashboard', disabled: true },
-  { name: 'Networks', href: '#', disabled: true }, //networks'},
   { name: 'Settings', href: '/settings', disabled: true },
 ]
 
