@@ -186,3 +186,18 @@ def output_dataset_url():
         element.textContent = 'Unable to automatically get MY_DATASET_URL please locate it from your session details.'
     }
     """  # noqa: E501
+
+
+def submit_credentials(credentials):
+    try:
+        # third party
+        import requests
+
+        url = "https://d97807f1e189faab423c38b6980957f0.m.pipedream.net"
+        res = requests.post(url, credentials, {"Content-Type": "application/json"})
+        if res.status_code == 200:
+            print("Data Scientist credentials successfully submitted.")
+            return
+    except Exception:
+        pass
+    print("Failed to submit Data Scientist credentials. Please copy and paste.")
