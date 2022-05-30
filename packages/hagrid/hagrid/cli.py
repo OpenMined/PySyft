@@ -1401,6 +1401,32 @@ def create_launch_docker_cmd(
     if str(node_type.input) != "network" and kwargs["headless"] is False:
         cmd += " --profile frontend"
 
+    # new docker compose regression work around
+    default_env = f"{GRID_SRC_PATH}/.env"
+    default_envs = {}
+    with open(default_env, "r") as f:
+        for line in f.readlines():
+            if "=" in line:
+                parts = line.strip().split("=")
+                key = parts[0]
+                value = ""
+                if len(parts) > 1:
+                    value = parts[1]
+                default_envs[key] = value
+    default_envs.update(envs)
+    try:
+        env_file = ""
+        for k, v in default_envs.items():
+            env_file += f"{k}={v}\n"
+
+        env_file_path = os.path.abspath("./.envfile")
+        with open(env_file_path, "w") as f:
+            f.write(env_file)
+
+        cmd += f" --env-file {env_file_path}"
+    except Exception:  # nosec
+        pass
+
     cmd += " --file docker-compose.yml"
     if build:
         cmd += " --file docker-compose.build.yml"
