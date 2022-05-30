@@ -1,6 +1,6 @@
 import React from 'react'
 import cn from 'classnames'
-import type {HTMLAttributes, PropsWithChildren} from 'react'
+import type { HTMLAttributes, PropsWithChildren } from 'react'
 
 interface Props extends HTMLAttributes<HTMLDivElement> {
   unstyled?: boolean
@@ -12,11 +12,23 @@ interface Props extends HTMLAttributes<HTMLDivElement> {
 
 export type InputAddonProps = PropsWithChildren<Props>
 
-const InputAddon = ({unstyled, hasBorder, error, disabled, children, side, ...props}: InputAddonProps) => {
+const InputAddon = ({
+  unstyled,
+  hasBorder,
+  error,
+  disabled,
+  children,
+  side,
+  ...props
+}: InputAddonProps) => {
   const addonClasses = cn(
     'flex items-center justify-center px-3',
     error ? 'border-error-500' : 'border-gray-300',
-    hasBorder && !unstyled && {'border-r': side === 'left', 'border-l': side === 'right'},
+    hasBorder &&
+      !unstyled && {
+        'border-r': side === 'left',
+        'border-l': side === 'right',
+      },
     props.onClick && 'cursor-pointer'
   )
 
@@ -27,4 +39,4 @@ const InputAddon = ({unstyled, hasBorder, error, disabled, children, side, ...pr
   )
 }
 
-export {InputAddon}
+export { InputAddon }
