@@ -30,6 +30,7 @@ def auto_detect_domain_host_ip() -> str:
 class DatasetName(Enum):
     MEDNIST = "MedNIST"
     TISSUEMNIST = "TissueMNIST"
+    BREASTCANCERDATASET = "BreastCancerDataset"
 
 
 # Dataset Helper Methods
@@ -55,11 +56,16 @@ def get_label_mapping(file_name):
             "Proximal Tubule Segments": 6,
             "Thick Ascending Limb": 7,
         }
+    elif DatasetName.BREASTCANCERDATASET.value in file_name:
+        return {
+            "Non-Invasive Ductal Carcinoma (IDC)": 0,
+            "Invasive Ductal Carcinoma (IDC)": 1,
+        }
     else:
         raise ValueError(f"Not a valid Dataset : {file_name}")
 
 
-def split_into_train_test_val_sets(data, test=0.20, val=0.10):
+def split_into_train_test_val_sets(data, test=0.10, val=0.10):
     train = 1.0 - (test + val)
     data.reset_index(inplace=True, drop=True)
     train_msk = np.random.rand(len(data)) < train
@@ -94,10 +100,19 @@ def load_data_as_df(file_path):
 
 
 def preprocess_data(data):
-
+    # TODO: Fix to consider all types of datasets
     # Convert images to numpy int64 array
     images = data["images"]
-    images = np.dstack(images.values).astype(np.int64)  # type cast to int64
+    reshaped_images = []
+    for i in range(len(images)):
+        img = images[i]
+        if ((50, 50, 3)) != images[i].shape:
+            img = np.resize(img, (50, 50, 3))
+        dims = img.shape
+        img = img.reshape(dims[0] * dims[1], dims[2])
+        reshaped_images.append(img)
+
+    images = np.dstack(reshaped_images).astype(np.int64)  # type cast to int64
     dims = images.shape
     images = images.reshape(dims[0] * dims[1], dims[2])  # reshape to 2D array
     images = np.rollaxis(images, -1)
@@ -105,13 +120,12 @@ def preprocess_data(data):
     # Convert labels to numpy int64 array
     labels = data["labels"].to_numpy().astype("int64")
 
-    patient_ids = data["patient_ids"]
+    patient_ids = data["patient_ids"].values
 
     return {"images": images, "labels": labels, "patient_ids": patient_ids}
 
 
 def split_and_preprocess_dataset(data):
-
     print("Splitting dataset into train, validation and test sets.")
     train, val, test = split_into_train_test_val_sets(data)
 
