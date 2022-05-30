@@ -1,25 +1,25 @@
 import cn from 'classnames'
-import {Text} from '@/omui'
-import {useQuery} from 'react-query'
+import { Text } from '@/omui'
+import { useQuery } from 'react-query'
 import api from '@/utils/api'
-import {useEffect, useState} from 'react'
+import { useEffect, useState } from 'react'
 
 const statusColor = {
   online: 'bg-lime-500',
   offline: 'bg-red-500',
-  loading: 'bg-gray-600'
+  loading: 'bg-gray-600',
 }
 
 const states = {
   online: 'domain online',
   offline: 'domain offline',
-  loading: 'checking connection'
+  loading: 'checking connection',
 }
 
 const ComponentStatus = ({
   noBox,
   status,
-  size = 'sm'
+  size = 'sm',
 }: {
   noBox: boolean
   status: keyof typeof states
@@ -39,9 +39,17 @@ const ComponentStatus = ({
   )
 }
 
-const DomainStatus = ({noBox, textSize}: {noBox?: boolean; textSize?: string}) => {
+const DomainStatus = ({
+  noBox,
+  textSize,
+}: {
+  noBox?: boolean
+  textSize?: string
+}) => {
   const [status, setStatus] = useState<keyof typeof states>('loading')
-  const {isLoading, isError} = useQuery('domain-connection-status', () => api.get('status').json())
+  const { isLoading, isError } = useQuery('domain-connection-status', () =>
+    api.get('status').json()
+  )
 
   useEffect(() => {
     if (isLoading) setStatus('loading')
@@ -52,7 +60,7 @@ const DomainStatus = ({noBox, textSize}: {noBox?: boolean; textSize?: string}) =
   return <ComponentStatus noBox={noBox} status={status} size={textSize} />
 }
 
-const CircleStatus = ({status = 'loading', ...props}) => {
+const CircleStatus = ({ status = 'loading', ...props }) => {
   return (
     <span
       aria-label={`Connection status: ${status}`}
@@ -66,4 +74,4 @@ const CircleStatus = ({status = 'loading', ...props}) => {
   )
 }
 
-export {DomainStatus, CircleStatus}
+export { DomainStatus, CircleStatus }
