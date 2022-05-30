@@ -3,16 +3,9 @@ import json
 import sys
 
 
-def add_dataset_url_to_notebook(dataset_url):
-
-    status = True
-
+def replace_variable(search_string: str, replace_string: str) -> bool:
+    status = False
     try:
-        data_url = f'MY_DATASET_URL = "{dataset_url}"'
-
-        # search string
-        search_string = 'MY_DATASET_URL = ""'
-
         # filepath
         file_path = "notebooks/medical-federated-learning-program/data-owners/data-owners-presentation.ipynb"
 
@@ -33,7 +26,7 @@ def add_dataset_url_to_notebook(dataset_url):
                     for i in range(len(cell["source"])):
                         if search_string in cell["source"][i]:
                             cell["source"][i] = cell["source"][i].replace(
-                                search_string, data_url
+                                search_string, replace_string
                             )
                             print("FOUND")
                             status = True
@@ -49,8 +42,14 @@ def add_dataset_url_to_notebook(dataset_url):
 
 
 if __name__ == "__main__":
-    # get data url from args
-    data_url = sys.argv[-1]
-    # update dataset url to notebook
-    status = add_dataset_url_to_notebook(data_url)
-    print(status)
+    data_url_arg = sys.argv[1]
+    data_search_string = 'MY_DATASET_URL = ""'
+    data_url = f'MY_DATASET_URL = "{data_url_arg}"'
+    status = replace_variable(data_search_string, data_url)
+    print("replacing data url", status)
+    if len(sys.argv) > 2:
+        institution = sys.argv[2]
+        institution_search_string = 'DOMAIN_NAME = "My Institution Name"'
+        institution_name = f'DOMAIN_NAME = "{institution}"'
+        status = replace_variable(institution_search_string, institution_name)
+        print("replacing institution name", status)
