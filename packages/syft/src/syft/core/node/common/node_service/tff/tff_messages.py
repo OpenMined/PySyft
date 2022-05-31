@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any
+from typing import Any, Dict
 from typing import Optional
 
 # third party
@@ -31,16 +31,19 @@ from ....abstract.node import AbstractNode
 
 @serializable(recursive_serde=True)
 class TFFMessageWithReply:
-    __attr_allowlist__ = ["stuff"]
+    __attr_allowlist__ = ["id_dataset", "params", "model_bytes"]
 
-    def __init__(self, stuff: str) -> None:
-        self.stuff = stuff
+    def __init__(self, id_dataset: str, params: Dict, model_bytes: bytes) -> None:
+        # self.stuff = stuff
+        self.id_dataset = id_dataset
+        self.params = params
+        self.model_bytes = model_bytes
 
     def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
         # print(tff.federated_computation(lambda: 'Hello World')())
 
         return (
-            "Hello from TFF Service..." + self.stuff
+            "Hello from TFF Service..."
         )  # leaving this in for the test suite
 
     def prepare(self, address: Address, reply_to: Address) -> "TFFMessage":
@@ -48,7 +51,7 @@ class TFFMessageWithReply:
 
     @property
     def pprint(self) -> str:
-        return f"TFFMessageWithReply({self.stuff})"
+        return f"TFFMessageWithReply({self.more_stuff})"
 
 
 @serializable()
