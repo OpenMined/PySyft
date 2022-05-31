@@ -1,6 +1,6 @@
 import React from 'react'
 import cn from 'classnames'
-import type {PropsWithRef} from 'react'
+import type { PropsWithRef } from 'react'
 
 export type ImageRatioProp = '16:9' | '4:3' | '3:2' | '1:1'
 export type ImageOrientationProp = 'portrait' | 'landscape'
@@ -41,19 +41,28 @@ const validAspectRatios: ValidAspectRatios = {
   '3:4': 'aspect-w-3 aspect-h-4',
   '4:3': 'aspect-w-4 aspect-h-3',
   '9:16': 'aspect-w-9 aspect-h-16',
-  '16:9': 'aspect-w-16 aspect-h-9'
+  '16:9': 'aspect-w-16 aspect-h-9',
 }
 
-const defaultContainerClasses = 'bg-gradient-to-tr from-primary-200 to-error-200 hover:opacity-50 color-transparent'
+const defaultContainerClasses =
+  'bg-gradient-to-tr from-primary-200 to-error-200 hover:opacity-50 color-transparent'
 const defaultImageClasses = 'object-cover object-center'
 
 const Image = React.forwardRef<HTMLDivElement, ImageProps>(function Image(
-  {alt = '', orientation = 'landscape', ratio = '16:9', className, containerProps, ...props},
+  {
+    alt = '',
+    orientation = 'landscape',
+    ratio = '16:9',
+    className,
+    containerProps,
+    ...props
+  },
   ref
 ) {
   const role = alt ? 'img' : 'presentation'
   const splitRatio = ratio.split(':')
-  const ratioByOrientation = orientation === 'landscape' ? splitRatio : splitRatio.reverse()
+  const ratioByOrientation =
+    orientation === 'landscape' ? splitRatio : splitRatio.reverse()
   const containerClasses = cn(
     defaultContainerClasses,
     validAspectRatios[ratioByOrientation.join(':')],
@@ -68,4 +77,4 @@ const Image = React.forwardRef<HTMLDivElement, ImageProps>(function Image(
   )
 })
 
-export {Image}
+export { Image }

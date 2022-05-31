@@ -6,7 +6,9 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
+from typing import Union
 
 # third party
 import numpy as np
@@ -20,6 +22,12 @@ from ..common.serde.capnp import get_capnp_schema
 from ..common.serde.capnp import serde_magic_header
 from ..common.serde.serializable import serializable
 from .broadcastable import is_broadcastable
+from .passthrough import is_acceptable_simple_type  # type: ignore
+from .smpc.utils import get_shape
+
+if TYPE_CHECKING:
+    # relative
+    from .autodp.phi_tensor import PhiTensor
 
 func_dict = {
     "np.add": np.add,
@@ -133,8 +141,7 @@ class lazyrepeatarray:
             return self
 
         else:
-            raise Exception(f"not sure how to do this yet: {type(other)}")
-
+          
     def __sub__(self, other: Any) -> lazyrepeatarray:
         if isinstance(other, (int, np.integer, float, np.floating)):
             return lazyrepeatarray(data=(self.data - other), shape=self.shape)
@@ -173,10 +180,9 @@ class lazyrepeatarray:
         else:
             raise Exception(f"not sure how to do this yet: {type(other)}")
 
-    def __matmul__(self, other: Any):  # type: ignore
+    def __matmul__(self, other: Any) -> lazyrepeatarray:
         if isinstance(other, (int, np.integer, float, np.floating)):
             raise Exception
-
         elif isinstance(other, (np.ndarray, lazyrepeatarray)):  # type: ignore
             if len(self.shape) != 2 or len(other.shape) != 2:
                 raise Exception("Matmul only valid for 2D arrays")
@@ -310,6 +316,31 @@ class lazyrepeatarray:
     def __neg__(self) -> lazyrepeatarray:
         self.data *= -1
         return self
+
+    def __rmatmul__(self, other: Any) -> lazyrepeatarray:
+        """
+        THIS MIGHT LOOK LIKE COPY-PASTED CODE!
+        Don't touch it. It's going to get more complicated.
+        """
+        if is_acceptable_simple_type(other):
+            new_shape = get_shape("__matmul__", other.shape, self.shape)
+
+            if other.size == 1:
+                return self.__class__(
+                    data=np.matmul(np.ones(other.shape), other * self.data),
+                    shape=new_shape,
+                )
+            return self.__class__(
+                data=self.to_numpy().__rmatmul__(other), shape=new_shape
+            )
+
+        if other.shape[-1] != self.shape[0]:
+            raise Exception(
+                "cannot matrix multiply tensors with different shapes: {self.shape} and {other.shape}"
+            )
+
+        result = self.to_numpy().__rmatmul__(other.to_numpy())
+        return self.__class__(data=result, shape=result.shape)
 
     def __pow__(self, exponent: int) -> lazyrepeatarray:
         if exponent == 2:

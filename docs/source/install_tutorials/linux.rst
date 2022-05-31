@@ -157,13 +157,14 @@ The final step is to launch a domain node, which is as easy as:
 
 .. code-block:: bash
 
-   hagrid launch test_domain
+   hagrid launch
 
-To stop the running node, you can run:
+To stop the running domain,
+Find the auto-assigned name of your domain (look at the lines just after you executed the above command) and run:
 
 .. code-block:: bash
 
-   hagrid land test_domain
+   hagrid land <name_of_domain>
 
 But before stopping it, you can go to ```localhost:8081`` in your `browser <localhost:8081>`_ to actually interact with the PyGrid Admin UI, where you can manage as a Data Owner your datasets, as well as incoming requests from data scientist.
 You can log in using the following credentials:

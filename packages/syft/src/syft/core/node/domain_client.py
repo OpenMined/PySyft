@@ -435,6 +435,7 @@ class DomainClient(Client):
         **metadata: str,
     ) -> None:
         try:
+            print("1/3 Joining Network")
             # joining the network might take some time and won't block
 
             # Check if the version of the network client is same as the domain client
@@ -454,13 +455,12 @@ class DomainClient(Client):
             domain_vpn_ip = ""
 
             # get the vpn ips
-            print("Waiting to connect to VPN.")
             while timeout > 0 and connected is False:
                 timeout -= 1
                 try:
                     vpn_status = self.vpn_status()
                     if vpn_status["connected"]:
-                        print("Connected to VPN")
+                        print("2/3 Secure VPN Connected")
                         connected = True
                         continue
                 except Exception as e:
@@ -487,7 +487,7 @@ class DomainClient(Client):
                 source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
             )
 
-            print("Application submitted.")
+            print("3/3 Network Registration Complete")
         except Exception as e:
             print(f"Failed to apply to network with {client}. {e}")
 
@@ -724,3 +724,16 @@ class DomainClient(Client):
         print(
             "\n\nRun `<your client variable>.datasets` to see your new dataset loaded into your machine!"
         )
+
+    def create_user(self, name: str, email: str, password: str, budget: int) -> dict:
+        try:
+            self.users.create(name=name, email=email, password=password, budget=budget)
+            response = {
+                "name": name,
+                "email": email,
+                "password": password,
+                "url": self.routes[0].connection.base_url.host_or_ip,  # type: ignore
+            }
+            return response
+        except Exception as e:
+            raise e

@@ -1,10 +1,10 @@
-import {List} from '@/components'
-import type {Tensor} from '@/types/grid-types'
+import { List } from '@/components'
+import type { Tensor } from '@/types/grid-types'
 
-export function TensorList({tensors}: {tensors: Tensor[]}) {
+export function TensorList({ tensors }: { tensors: Tensor[] }) {
   return (
     <List>
-      {tensors.map(tensor => (
+      {tensors.map((tensor) => (
         <List.Item key={tensor.id}>
           <div className="px-4 py-5">
             <div className="flex items-center justify-between w-full">

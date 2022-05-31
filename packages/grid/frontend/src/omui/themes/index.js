@@ -21,5 +21,5 @@ module.exports = {
   magenta,
   marigold,
   orange,
-  lime
+  lime,
 }

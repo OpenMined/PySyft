@@ -1401,6 +1401,32 @@ def create_launch_docker_cmd(
     if str(node_type.input) != "network" and kwargs["headless"] is False:
         cmd += " --profile frontend"
 
+    # new docker compose regression work around
+    default_env = f"{GRID_SRC_PATH}/.env"
+    default_envs = {}
+    with open(default_env, "r") as f:
+        for line in f.readlines():
+            if "=" in line:
+                parts = line.strip().split("=")
+                key = parts[0]
+                value = ""
+                if len(parts) > 1:
+                    value = parts[1]
+                default_envs[key] = value
+    default_envs.update(envs)
+    try:
+        env_file = ""
+        for k, v in default_envs.items():
+            env_file += f"{k}={v}\n"
+
+        env_file_path = os.path.abspath("./.envfile")
+        with open(env_file_path, "w") as f:
+            f.write(env_file)
+
+        cmd += f" --env-file {env_file_path}"
+    except Exception:  # nosec
+        pass
+
     cmd += " --file docker-compose.yml"
     if build:
         cmd += " --file docker-compose.build.yml"
@@ -2303,13 +2329,24 @@ def create_check_table(
     is_flag=True,
     help="Optional: wait until checks pass",
 )
-def check(ip_addresses: TypeList[str], wait: bool = False) -> None:
+@click.option(
+    "--silent",
+    is_flag=True,
+    help="Optional: don't refresh output during wait",
+)
+def check(
+    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+) -> None:
     console = rich.get_console()
     if len(ip_addresses) == 0:
         headers = {"User-Agent": "curl/7.79.1"}
         print("Detecting External IP...")
         ip_res = requests.get("https://ifconfig.co", headers=headers)
         ip_address = ip_res.text.strip()
+        ip_addresses = [ip_address]
+
+    if len(ip_addresses) == 1:
+        ip_address = ip_addresses[0]
         status, table_contents = get_health_checks(ip_address=ip_address)
         table = create_check_table(table_contents=table_contents)
         max_timeout = 600
@@ -2317,17 +2354,28 @@ def check(ip_addresses: TypeList[str], wait: bool = False) -> None:
             table = create_check_table(
                 table_contents=table_contents, time_left=max_timeout
             )
+            if silent:
+                print("Checking...")
             while not status:
-                with Live(table, refresh_per_second=4, screen=True) as live:
+                if not silent:
+                    with Live(table, refresh_per_second=4, screen=True) as live:
+                        max_timeout -= 1
+                        if max_timeout % 5 == 0:
+                            status, table_contents = get_health_checks(ip_address)
+                        table = create_check_table(
+                            table_contents=table_contents, time_left=max_timeout
+                        )
+                        live.update(table)
+                        if status:
+                            break
+                        time.sleep(1)
+                else:
                     max_timeout -= 1
                     if max_timeout % 5 == 0:
                         status, table_contents = get_health_checks(ip_address)
                     table = create_check_table(
                         table_contents=table_contents, time_left=max_timeout
                     )
-                    live.update(table)
-                    if status:
-                        break
                     time.sleep(1)
         console.print(table)
     else:
