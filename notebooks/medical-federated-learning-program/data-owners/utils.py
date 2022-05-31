@@ -7,9 +7,10 @@ import sys
 
 # third party
 from IPython.display import Javascript  # noqa: F401
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import matplotlib.pyplot as plt
+
 
 # syft absolute
 from syft.core.adp.data_subject_list import DataSubjectList  # noqa: F401
@@ -172,17 +173,17 @@ def download_dataset(dataset_url):
     else:
         print(f"{filename} is already downloaded")
     data = load_data_as_df(filename)
-    fig, ax = plt.subplots(5,10,figsize=(20,10))
+    fig, ax = plt.subplots(5, 10, figsize=(20, 10))
 
-    fig.suptitle('\nBreast Histopathology Images', fontsize=24)
+    fig.suptitle("\nBreast Histopathology Images", fontsize=24)
     selection = np.random.choice(data.index.values, size=50)
 
     for n in range(5):
         for m in range(10):
-            idx = selection[m + 10*n]
-            image = data.loc[idx, 'images']
-            ax[n,m].imshow(image)
-            ax[n,m].grid(False)
+            idx = selection[m + 10 * n]
+            image = data.loc[idx, "images"]
+            ax[n, m].imshow(image)
+            ax[n, m].grid(False)
     return data
 
 
