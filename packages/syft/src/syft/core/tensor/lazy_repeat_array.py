@@ -460,8 +460,8 @@ def compute_min_max(
         min_vals = x_min_vals * 0
         max_vals = (x_max_vals * 0) + 1
     elif op_str == "sum":
-        min_vals = lazyrepeatarray(data=np.array(x_min_vals.sum(axis=None)), shape=())
-        max_vals = lazyrepeatarray(data=np.array(x_max_vals.sum(axis=None)), shape=())
+        min_vals = x_min_vals.sum(axis=None).evaluate()
+        max_vals = x_max_vals.sum(axis=None).evaluate()
     else:
         raise ValueError(f"Invaid Operation for LazyRepeatArray: {op_str}")
 

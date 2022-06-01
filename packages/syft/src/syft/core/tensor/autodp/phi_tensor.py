@@ -1474,8 +1474,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
-        min_val = lazyrepeatarray(data=np.array(self.min_vals.sum(axis=None)), shape=())
-        max_val = lazyrepeatarray(data=np.array(self.max_vals.sum(axis=None)), shape=())
+        min_val = self.min_vals.sum(axis=None)
+        max_val = self.max_vals.sum(axis=None)
         if len(self.data_subjects.one_hot_lookup) == 1:
             return PhiTensor(
                 child=self.child.sum(),
