@@ -11,7 +11,6 @@ import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 
-
 # syft absolute
 from syft.core.adp.data_subject_list import DataSubjectList  # noqa: F401
 
