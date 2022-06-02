@@ -169,6 +169,22 @@ class lazyrepeatarray:
             return self * self
         raise Exception("not sure how to do this yet")
 
+    def squeeze(self, dim:Optional[int]=None) -> lazyrepeatarray:
+        if dim is None:
+
+        else:
+            return self.__class__(data=self.data, shape=)
+
+    def unsqueeze(self, dim:int) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            res = self.data.unsqueeze(dim)
+            return self.__class__(data=res, shape=res.shape)
+        else:
+            output = list(self.shape)
+            output.insert(dim, 1)
+            output_shape = tuple(output)
+            return self.__class__(data=self.data, shape=output_shape)
+
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
         return self.__class__(data=self.data.copy(order=order), shape=self.shape)
 

@@ -1170,6 +1170,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=max_vals,
         )
 
+    def __rsub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        return (self - other) * -1
+
     def __mul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
@@ -1228,6 +1231,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
+
+    def __rmul__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+        return self * other  # Multiplication is associative
 
     def __matmul__(
         self, other: Union[np.ndarray, PhiTensor]
@@ -1326,6 +1332,33 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     min_vals=min_vals,
                     data_subjects=self.data_subjects,
                 )
+
+    def ones_like(self) -> np.ndarray:
+        return np.ones_like(self.child)
+
+    def squeeze(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> PhiTensor:
+        return PhiTensor(
+            child=self.child.squeeze(axis),
+            max_vals=self.max_vals.squeeze(axis),
+            min_vals=self.min_vals.squeeze(axis),
+            data_subjects=DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.squeeze(axis)
+            )
+        )
+
+    def unsqueeze(self, axis: int) -> PhiTensor:
+        return PhiTensor(
+            child=self.child.unsqueeze(axis),
+            max_vals=self.max_vals.unsqueeze(axis),
+            min_vals=self.min_vals.unsqueeze(axis),
+            data_subjects=DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.unsqueeze(axis)
+            )
+        )
 
     def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
