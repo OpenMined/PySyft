@@ -174,6 +174,21 @@ class DatasetRequestAPI(RequestAPI):
             out.append(Dataset(raw, self.client, key=key, **a[key]))
         return out
 
+    def purge(self, skip_check: bool = False) -> None:
+        if not skip_check:
+            pref = input(
+                "You are about to delete all datasets ? 🚨 \n"
+                "All information will be permanantely deleted.\n"
+                "Please enter y/n to proceed: "
+            )
+            while pref != "y" and pref != "n":
+                pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
+            if pref == "n":
+                raise Exception("Datasets deletion is cancelled.")
+
+        for dataset in self.all():
+            self.delete(dataset_id=dataset.get("id"))
+
     def __len__(self) -> int:
         return len(self.all())
 
@@ -446,7 +461,7 @@ class Dataset:
             sys.stdout.write("\rLoading dataset... uploading... \nSUCCESS!")
             self.refresh()
 
-    def delete(self, name: str) -> bool:
+    def delete(self, name: str, skip_check: bool = False) -> bool:
         """Delete the asset with the given name."""
 
         asset_id = None
@@ -459,15 +474,16 @@ class Dataset:
         if asset_id is None:
             raise KeyError(f"The asset with name `{name}` does not exists.")
 
-        pref = input(
-            f"You are about to permanantely delete the asset `{name}` ? 🚨 \n"
-            "Please enter y/n to proceed: "
-        )
-        while pref != "y" and pref != "n":
-            pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
-        if pref == "n":
-            sys.stdout.write("Asset deletion cancelled.")
-            return False
+        if not skip_check:
+            pref = input(
+                f"You are about to permanantely delete the asset `{name}` ? 🚨 \n"
+                "Please enter y/n to proceed: "
+            )
+            while pref != "y" and pref != "n":
+                pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
+            if pref == "n":
+                sys.stdout.write("Asset deletion cancelled.")
+                return False
 
         DatasetRequestAPI(self.client).delete(
             dataset_id=self.id, bin_object_id=asset_id
