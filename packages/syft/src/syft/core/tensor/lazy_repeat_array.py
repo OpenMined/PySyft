@@ -169,11 +169,26 @@ class lazyrepeatarray:
             return self * self
         raise Exception("not sure how to do this yet")
 
-    def squeeze(self, dim:Optional[int]=None) -> lazyrepeatarray:
-        if dim is None:
-
+    def squeeze(self, dim: Optional[int]=None) -> lazyrepeatarray:
+        if self.data.shape != self.shape:
+            if dim is None:
+                shape = list(self.shape)
+                shape = [axis for axis in shape if axis != 1]
+                data = self.data
+            else:
+                shape = list(self.shape)
+                del shape[dim]
+                data = self.data
         else:
-            return self.__class__(data=self.data, shape=)
+            if dim is None:
+                shape = list(self.shape)
+                shape = [axis for axis in shape if axis != 1]
+                data = self.data.squeeze()
+            else:
+                shape = list(self.shape)
+                del shape[dim]
+                data = self.data.squeeze(dim)
+        return self.__class__(data=data, shape=tuple(shape))
 
     def unsqueeze(self, dim:int) -> lazyrepeatarray:
         if self.data.shape == self.shape:
