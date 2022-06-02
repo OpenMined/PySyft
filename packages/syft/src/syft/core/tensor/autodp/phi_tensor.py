@@ -1356,7 +1356,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=self.min_vals.unsqueeze(axis),
             data_subjects=DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.unsqueeze(axis)
+                data_subjects_indexed=np.expand_dims(self.data_subjects.data_subjects_indexed, axis)
             )
         )
 

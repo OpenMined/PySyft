@@ -212,6 +212,18 @@ class FixedPrecisionTensor(PassthroughTensor):
     def T(self) -> FixedPrecisionTensor:
         return self.transpose()
 
+    def squeeze(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> FixedPrecisionTensor:
+        res = self.copy()
+        res.child = self.child.squeeze()
+        return res
+
+    def unsqueeze(self, axis: int) -> FixedPrecisionTensor:
+        res = self.copy()
+        res.child = np.expand_dims(self.child, axis)
+        return res
+
     # TODO: Remove after moving private compare to sharetensor level
     def __lt__(self, other: Any) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)

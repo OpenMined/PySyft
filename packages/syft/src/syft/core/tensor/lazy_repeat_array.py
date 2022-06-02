@@ -190,7 +190,7 @@ class lazyrepeatarray:
                 data = self.data.squeeze(dim)
         return self.__class__(data=data, shape=tuple(shape))
 
-    def unsqueeze(self, dim:int) -> lazyrepeatarray:
+    def unsqueeze(self, dim: int) -> lazyrepeatarray:
         if self.data.shape == self.shape:
             res = self.data.unsqueeze(dim)
             return self.__class__(data=res, shape=res.shape)
