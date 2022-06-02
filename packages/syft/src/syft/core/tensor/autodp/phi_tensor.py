@@ -1078,6 +1078,54 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def __radd__(self, other) -> Union[PhiTensor, GammaTensor]:
+        if isinstance(other, PhiTensor):
+            if other.data_subjects != self.data_subjects:
+                return other.gamma + self.gamma
+
+            return PhiTensor(
+                child=other.child + self.child,
+                min_vals=other.min_vals + self.min_vals,
+                max_vals=other.max_vals + self.max_vals,
+                data_subjects=other.data_subjects,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return other + self.gamma
+
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
+    def __iadd__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        # if the tensor being added is also private
+        if isinstance(other, PhiTensor):
+            if self.data_subjects != other.data_subjects:
+                print("Type is unsupported: Unequal data subjects")
+                raise NotImplementedError
+
+            self.child = self.child + other.child
+            self.min_vals = self.min_vals + other.min_vals
+            self.max_vals = self.max_vals + other.max_vals
+            self.data_subjects = self.data_subjects
+
+            return self
+
+        elif is_acceptable_simple_type(other):
+            self.child = self.child + other
+            self.min_vals = self.min_vals + other
+            self.max_vals = self.max_vals + other
+            self.data_subjects = self.data_subjects
+
+            return self
+
+        else:
+            print(
+                f'TypeError: unsupported operand type(s) for +=: "{str(type(self))}" and "{str(type(other))}"'
+            )
+            raise NotImplementedError
+
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
