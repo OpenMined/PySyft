@@ -4,12 +4,13 @@ from optparse import Option
 from typing import List
 from typing import Optional
 from typing import Type
+from typing import Tuple, Any
 from unittest import result
 from xml.dom.minidom import Element
 from matplotlib import backend_bases
 # third party
 from nacl.signing import VerifyKey
-from sympy import total_degree
+from sympy import init_printing, total_degree
 import tensorflow_federated as tff
 # import torch as th
 # relative
@@ -197,7 +198,7 @@ async def tff_train_federated(
     total_rounds: int,
     number_of_clients: int,
     train_output_managers: Optional[List[tff.program.ReleaseManager]] = None,
-    evalution_output_managers: Optional[List[tff.program.ReleaseManager]] = None,
+    evaluation_output_managers: Optional[List[tff.program.ReleaseManager]] = None,
     model_output_manager: Optional[tff.program.ReleaseManager] = None,
     program_state_manager: Optional[tff.program.ProgramStateManager] = None
 ):
@@ -246,7 +247,7 @@ async def tff_train_federated(
         evaluation_metrics = evaluation(state, evaluation_data)
         
         
-        if evalution_output_managers is not None:
+        if evaluation_output_managers is not None:
             tasks.add_all(*[
                 m.release(evaluation_metrics, round_number)
                 for m in train_output_managers
@@ -255,6 +256,74 @@ async def tff_train_federated(
         if model_output_manager is not None:
             tasks.add(model_output_manager.release(state))
 
+METRICS_TOTAL_SUM = 'total_sum'
+
+@tff.tf_computation()
+def initialize() -> int:
+  """Returns the initial state."""
+  return 0
+
+@tff.tf_computation(tff.SequenceType(tf.int32))
+def _sum_dataset(dataset: tf.data.Dataset) -> int:
+  """Returns the sum of all the integers in `dataset`."""
+  return dataset.reduce(tf.cast(0, tf.int32), tf.add)
+
+@tff.tf_computation(tf.int32, tf.int32)
+def _sum_integers(x: int, y: int) -> int:
+  """Returns the sum two integers."""
+  return x + y
+
+@tff.federated_computation(
+    tff.type_at_server(tf.int32),
+    tff.type_at_clients(tff.SequenceType(tf.int32)))
+def train(
+    server_state: int, client_data: tf.data.Dataset
+) -> Tuple[int, collections.OrderedDict[str, Any]]:
+  """Computes the sum of all the integers on the clients.
+  Computes the sum of all the integers on the clients, updates the server state,
+  and returns the updated server state and the following metrics:
+  * `sum_client_data.METRICS_TOTAL_SUM`: The sum of all the client_data on the
+    clients.
+  Args:
+    server_state: The server state.
+    client_data: The data on the clients.
+  Returns:
+    A tuple of the updated server state and the train metrics.
+  """
+  client_sums = tff.federated_map(_sum_dataset, client_data)
+  total_sum = tff.federated_sum(client_sums)
+  updated_state = tff.federated_map(_sum_integers, (server_state, total_sum))
+  metrics = collections.OrderedDict([
+      (METRICS_TOTAL_SUM, total_sum),
+  ])
+  return updated_state, metrics
+
+@tff.federated_computation(
+    tff.type_at_server(tf.int32),
+    tff.type_at_clients(tff.SequenceType(tf.int32)))
+def evaluation(
+    server_state: int,
+    client_data: tf.data.Dataset) -> collections.OrderedDict[str, Any]:
+  """Computes the sum of all the integers on the clients.
+  Computes the sum of all the integers on the clients and returns the following
+  metrics:
+  * `sum_client_data.METRICS_TOTAL_SUM`: The sum of all the client_data on the
+    clients.
+  Args:
+    server_state: The server state.
+    client_data: The data on the clients.
+  Returns:
+    The evaluation metrics.
+  """
+  del server_state  # Unused.
+  client_sums = tff.federated_map(_sum_dataset, client_data)
+  total_sum = tff.federated_sum(client_sums)
+  metrics = collections.OrderedDict([
+      (METRICS_TOTAL_SUM, total_sum),
+  ])
+
+  return metrics
+
 
 def tff_program():
     
@@ -262,8 +331,11 @@ def tff_program():
     number_of_clients = 3
     OUTPUT_DIR = 'some_dir'
     
-    tff.backends.native.execution_contexts.set_local_async_python_execution_context(reference_resolving_clients=True)
-    # context = tff.program.NativeFederatedContext(context)
+    # tff.backends.native.execution_contexts.set_local_async_python_execution_context(reference_resolving_clients=True)
+    context = tff.backends.native.create_local_async_python_execution_context(
+    )
+    context = tff.program.NativeFederatedContext(context)
+    tff.framework.set_default_context(context)
     
     to_int32 = lambda x: tf.cast(x, tf.int32)
     datasets = [tf.data.Dataset.range(10).map(to_int32)] * 3
@@ -271,9 +343,9 @@ def tff_program():
     evaluation_data_source = tff.program.DatasetDataSource(datasets)
 
     #TODO
-    initialize = None
-    train = None
-    evaluation = None
+    # initialize = initialize
+    # train = train
+    # evaluation = evaluation
     
     train_output_managers = [tff.program.LoggingReleaseManager()]
     evaluation_output_managers = [tff.program.LoggingReleaseManager()]
@@ -379,7 +451,7 @@ class TFFService(ImmediateNodeServiceWithReply):
         # print(msg.payload.params)
         # print(msg.payload.model_bytes)
         # print(msg.payload.more_stuff)
-        
+        tff_program()
         result = msg.payload.run(node=node, verify_key=verify_key)
         return TFFReplyMessage(payload=result, address=msg.reply_to)
 
