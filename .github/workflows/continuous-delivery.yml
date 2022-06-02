@@ -172,3 +172,20 @@ jobs:
           file: ./packages/grid/vpn/tailscale.dockerfile
           push: true
           tags: ${{ steps.meta_grid_tailscale.outputs.tags }}
+
+      - name: Docker meta for grid-vpn-iptables
+        id: meta_grid_vpn_iptables
+        uses: docker/metadata-action@v3
+        with:
+          images: openmined/grid-vpn-iptables
+          tags: |
+            type=raw,value=${{ env.GRID_VERSION }}
+            type=raw,value=latest
+
+      - name: Build and push `grid-vpn-iptables` image to DockerHub
+        uses: docker/build-push-action@v2
+        with:
+          context: ./packages/grid/vpn
+          file: ./packages/grid/vpn/iptables.dockerfile
+          push: true
+          tags: ${{ steps.meta_grid_vpn_iptables.outputs.tags }}
