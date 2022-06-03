@@ -432,6 +432,7 @@ class DomainClient(Client):
     def apply_to_network(
         self,
         client: Optional[AbstractNodeClient] = None,
+        retry: int = 3,
         **metadata: str,
     ) -> None:
         try:
@@ -484,7 +485,10 @@ class DomainClient(Client):
                 raise Exception(f"No host ip in {vpn_status}")
 
             self.association.create(
-                source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
+                source=domain_vpn_ip,
+                target=network_vpn_ip,
+                metadata=metadata,
+                retry=retry,
             )
 
             print("3/3 Network Registration Complete")
