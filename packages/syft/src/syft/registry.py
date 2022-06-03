@@ -7,6 +7,7 @@ from typing import Any
 from typing import Dict
 from typing import List
 from typing import Union
+import concurrent.futures
 
 # third party
 import pandas as pd
@@ -39,19 +40,15 @@ class NetworkRegistry:
 
     @property
     def online_networks(self) -> List[Dict]:
-        online_networks = list()
 
-        an = self.all_networks
+        networks = self.all_networks
 
-        for i, network in enumerate(an):
-            sys.stdout.write(
-                "\rChecking network availability: " + str(i + 1) + " of " + str(len(an))
-            )
+        def check_network(network):
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=0.5)
                 online = "This is a PyGrid Network node." in res.text
-            except Exception:
+            except Exception as e:
                 online = False
 
             # networks without frontend have a /ping route in 0.7.0
@@ -64,8 +61,18 @@ class NetworkRegistry:
                     online = False
 
             if online:
-                online_networks.append(network)
-        sys.stdout.write("\r                                             ")
+                return network
+            return None
+
+        # We can use a with statement to ensure threads are cleaned up promptly
+        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+            # map
+            l = list(executor.map(lambda network: check_network(network), networks))
+
+        online_networks = list()
+        for each in l:
+            if each is not None:
+                online_networks.append(each)
         return online_networks
 
     def _repr_html_(self) -> str:
