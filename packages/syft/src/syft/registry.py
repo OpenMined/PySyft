@@ -2,12 +2,12 @@
 from __future__ import annotations
 
 # stdlib
-import sys
+from concurrent import futures
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
-import concurrent.futures
 
 # third party
 import pandas as pd
@@ -43,12 +43,12 @@ class NetworkRegistry:
 
         networks = self.all_networks
 
-        def check_network(network):
+        def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=0.5)
                 online = "This is a PyGrid Network node." in res.text
-            except Exception as e:
+            except Exception:
                 online = False
 
             # networks without frontend have a /ping route in 0.7.0
@@ -65,12 +65,14 @@ class NetworkRegistry:
             return None
 
         # We can use a with statement to ensure threads are cleaned up promptly
-        with concurrent.futures.ThreadPoolExecutor(max_workers=20) as executor:
+        with futures.ThreadPoolExecutor(max_workers=20) as executor:
             # map
-            l = list(executor.map(lambda network: check_network(network), networks))
+            _online_networks = list(
+                executor.map(lambda network: check_network(network), networks)
+            )
 
         online_networks = list()
-        for each in l:
+        for each in _online_networks:
             if each is not None:
                 online_networks.append(each)
         return online_networks
