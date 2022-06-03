@@ -51,25 +51,18 @@ class DomainRequestAPI(RequestAPI):
                 self.num_known_domains_even_offline_ones = len(_data)
                 n = len(_data)
                 data = list()
-
                 args = [
                     (self, i, n, domain_metadata["id"])
                     for i, domain_metadata in enumerate(_data)
                 ]
 
-                # Check domain status in parallel
-                # check_status = parallel_execution(check_domain_status)
-                # result = check_status(args=args) if args else []
-
-                # for i, status in enumerate(result):
-                #     if status is True:
+                # # Check domain status sequentially
+                # for i, arg in enumerate(args):
+                #     if check_domain_status(*arg):
                 #         data.append(_data[i])
 
-                # Check domain status sequentially
-                for i, arg in enumerate(args):
-                    if check_domain_status(*arg):
-                        data.append(_data[i])
-
+                # do not check domain status - assume network will drop stale domains
+                data = _data
                 sys.stdout.write("\r                                             ")
 
                 self.cache = data
@@ -83,7 +76,7 @@ class DomainRequestAPI(RequestAPI):
             return data
         return []
 
-    def get(self, key: Union[str, int, UID, String]) -> ProxyClient:  # type: ignore
+    def get(self, key: Union[str, int, UID, String], timeout: Optional[int] = None) -> ProxyClient:  # type: ignore
         # to make sure we target the remote Domain through the proxy we need to
         # construct an 💠 Address which includes the correct UID for the Domain
         # position in the 4 hierarchical locations
@@ -108,7 +101,7 @@ class DomainRequestAPI(RequestAPI):
             error(msg)
             raise Exception(msg)
         response = self.perform_api_request_generic(
-            syft_msg=GetPeerInfoMessageWithReply, content={"uid": node_uid}
+            syft_msg=GetPeerInfoMessageWithReply, content={"uid": node_uid}, timeout=timeout
         )
 
         result = response.payload.kwargs.upcast()  # type: ignore
@@ -138,7 +131,7 @@ def check_domain_status(
     status = False
     try:
         stop()
-        status = self.get(domain_uid).ping
+        status = self.get(domain_uid, timeout=None).ping
         start()
     except Exception as e:  # nosec
         # if pinging the domain causes an exception we just wont
