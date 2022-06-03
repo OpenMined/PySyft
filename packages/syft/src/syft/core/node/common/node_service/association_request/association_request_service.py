@@ -219,6 +219,7 @@ def respond_association_request_msg(
         )
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
+    resp_msg= "Association request replied!"
 
     info(
         f"Node {node} - respond_association_request_msg: user can approve/deny association requests."
@@ -237,11 +238,13 @@ def respond_association_request_msg(
             metadata = get_vpn_status_metadata(node=node)
         except Exception as e:
             error(f"Failed to get vpn status. {e}")
-
-        # create a client to the source
-        grid_url = GridURL.from_url(msg.source).with_path("/api/v1")
-        source_client = sy.connect(url=str(grid_url), timeout=10)
-
+        
+        try:
+            # create a client to the source
+            grid_url = GridURL.from_url(msg.source).with_path("/api/v1")
+            source_client = sy.connect(url=str(grid_url), timeout=10)
+        except Exception:
+            resp_msg = "You were not able to connect with the node."
         try:
             metadata["node_address"] = node.id.no_dash  # type:ignore
             node_msg: SignedImmediateSyftMessageWithReply = (
@@ -271,7 +274,7 @@ def respond_association_request_msg(
 
     return SuccessResponseMessage(
         address=msg.reply_to,
-        resp_msg="Association request replied!",
+        resp_msg=resp_msg,
     )
 
 
