@@ -92,7 +92,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
                         f"{addr} in store does not have method send_immediate_msg_with_reply"
                     )
                 else:
-                    return func(msg=msg, timeout=10)
+                    return func(msg=msg, timeout=15)
 
         try:
             for scope_id in [
@@ -105,7 +105,7 @@ class SignedMessageWithReplyForwardingService(SignedNodeServiceWithReply):
                     debug(f"> Lookup: {scope_id.emoji()}")
                     client = node.get_peer_client(node_id=scope_id, only_vpn=False)
                     if client:
-                        return client.send_immediate_msg_with_reply(msg=msg, timeout=10)  # type: ignore
+                        return client.send_immediate_msg_with_reply(msg=msg, timeout=15)  # type: ignore
                     else:
                         raise Exception
         except Exception as e:
