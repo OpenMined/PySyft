@@ -114,6 +114,19 @@ class lazyrepeatarray:
         else:
             return self.__class__(data=self.data * other.data, shape=self.shape)
 
+    def __imul__(self, other: Any) -> lazyrepeatarray:
+        if is_acceptable_simple_type(other):
+            self.data *= other
+            return self
+
+        if not is_broadcastable(self.shape, other.shape):
+            raise Exception(
+                "Cannot broadcast arrays with shapes for LazyRepeatArray Multiplication:"
+                + f" {self.shape} & {other.shape}"
+            )
+        else:
+            return self.__class__(data=self.data * other.data, shape=self.shape)
+
     def __matmul__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!
@@ -165,8 +178,11 @@ class lazyrepeatarray:
         return self.__class__(data=result, shape=result.shape)
 
     def __pow__(self, exponent: int) -> lazyrepeatarray:
-        if exponent == 2:
-            return self * self
+        if isinstance(exponent, int):
+            total = 1
+            for _ in range(exponent):
+                total = self * total  # This might need imul or something
+            return total
         raise Exception("not sure how to do this yet")
 
     def squeeze(self, dim: Optional[int]=None) -> lazyrepeatarray:
@@ -289,11 +305,23 @@ class lazyrepeatarray:
     def any(self) -> bool:
         return self.data.any()
 
-    def transpose(self, *args: List[Any], **kwargs: Dict[str, Any]) -> lazyrepeatarray:
-        dummy_res = self.to_numpy().transpose(*args, **kwargs)
-        return lazyrepeatarray(
-            data=self.data.transpose(*args, **kwargs), shape=dummy_res.shape
-        )
+    def transpose(self, *args: List[Any]) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            dummy_res = self.to_numpy().transpose(*args)
+            return lazyrepeatarray(
+                data=self.data.transpose(*args), shape=dummy_res.shape
+            )
+        else:
+            if args:
+                input_shape = list(self.shape)
+                output_shape = tuple([input_shape[i] for i in args])
+                return lazyrepeatarray(
+                    data=self.data, shape=output_shape
+                )
+            else:
+                return lazyrepeatarray(
+                    data=self.data, shape=tuple(list(self.shape)[::-1])
+                )
 
 
 # As the min and max values calculation is the same regardless of the tensor type,

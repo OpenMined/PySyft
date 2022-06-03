@@ -929,8 +929,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self,
         child: Sequence,
         data_subjects: Union[List[DataSubject], DataSubjectList],
-        min_vals: np.ndarray,
-        max_vals: np.ndarray,
+        min_vals: Union[np.ndarray, lazyrepeatarray],
+        max_vals: Union[np.ndarray, lazyrepeatarray]
     ) -> None:
         if isinstance(child, FixedPrecisionTensor):
             # child = the actual private data
@@ -1407,7 +1407,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 )
 
     def ones_like(self) -> np.ndarray:
-        return np.ones_like(self.child)
+        return np.ones(self.shape)
 
     def squeeze(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
@@ -1711,6 +1711,15 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=min_vals,
             max_vals=max_vals,
             data_subjects=self.data_subjects,
+        )
+
+    def __pow__(self, power, modulo=None) -> PhiTensor:
+
+        return PhiTensor(
+            child=FixedPrecisionTensor(self.child.decode() ** power),
+            min_vals=self.min_vals ** power,
+            max_vals=self.max_vals ** power,
+            data_subjects=self.data_subjects
         )
 
     def softmax(self) -> PhiTensor:
