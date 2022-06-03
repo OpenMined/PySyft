@@ -46,6 +46,9 @@ from .common.node_manager.user_manager import UserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
+from .common.node_service.association_request.association_request_service import (
+    AssociationRequestWithoutReplyService,
+)
 from .common.node_service.dataset_manager.dataset_manager_service import (
     DatasetManagerService,
 )
@@ -165,6 +168,9 @@ class Domain(Node):
         self.immediate_services_with_reply.append(UserLoginService)
 
         self.immediate_services_without_reply.append(ObjectRequestServiceWithoutReply)
+        self.immediate_services_without_reply.append(
+            AssociationRequestWithoutReplyService
+        )
 
         # TODO: New Service registration process
         self.immediate_services_with_reply.append(DomainServiceClass)
