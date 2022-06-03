@@ -10,6 +10,7 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import requests
 
 # syft absolute
 import syft as sy
@@ -31,6 +32,7 @@ from ...node_table.association_request import AssociationRequest
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
 from ..node_service import ImmediateNodeServiceWithoutReply
+from ..success_resp_message import ErrorResponseMessage
 from ..success_resp_message import SuccessResponseMessage
 from .association_request_messages import DeleteAssociationRequestMessage
 from .association_request_messages import GetAssociationRequestMessage
@@ -72,7 +74,7 @@ def send_association_request_msg(
     msg: SendAssociationRequestMessage,
     node: DomainInterface,
     verify_key: VerifyKey,
-) -> SuccessResponseMessage:
+) -> Union[ErrorResponseMessage, SuccessResponseMessage]:
     # Check Key permissions
     info(
         f"Node {node} - send_association_request_msg: got SendAssociationRequestMessage. "
@@ -103,8 +105,17 @@ def send_association_request_msg(
         metadata["node_name"] = (
             node.name if node.name else ""
         )  # tell the network what our name is
-        grid_url = GridURL.from_url(msg.target).with_path("/api/v1")
-        target_client = sy.connect(url=str(grid_url), timeout=10)
+
+        try:
+            # create a client to the source
+            grid_url = GridURL.from_url(msg.target).with_path("/api/v1")
+            target_client = sy.connect(url=str(grid_url), timeout=300)
+        except requests.exceptions.ConnectTimeout:
+            return ErrorResponseMessage(
+                address=msg.reply_to,
+                resp_msg="ConnectionTimeoutError: Node was not able to process your request in time.",
+            )
+
         metadata["node_address"] = node.id.no_dash  # type: ignore
 
         target_msg: SignedImmediateSyftMessageWithoutReply = (
@@ -143,7 +154,9 @@ def send_association_request_msg(
         )
     else:  # If not authorized
         raise AuthorizationError("You're not allowed to create an Association Request!")
+
     info(f"Node: {node} received the answer from ReceiveAssociationRequestMessage.")
+
     return SuccessResponseMessage(
         address=msg.reply_to,
         resp_msg="Association request sent!",
@@ -210,7 +223,7 @@ def respond_association_request_msg(
     msg: RespondAssociationRequestMessage,
     node: DomainInterface,
     verify_key: VerifyKey,
-) -> SuccessResponseMessage:
+) -> Union[ErrorResponseMessage, SuccessResponseMessage]:
     # Check if handshake/address/value fields are empty
     missing_paramaters = not msg.target or not msg.response
     if missing_paramaters:
@@ -219,7 +232,7 @@ def respond_association_request_msg(
         )
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
-    resp_msg= "Association request replied!"
+    resp_msg = "Association request replied!"
 
     info(
         f"Node {node} - respond_association_request_msg: user can approve/deny association requests."
@@ -238,13 +251,17 @@ def respond_association_request_msg(
             metadata = get_vpn_status_metadata(node=node)
         except Exception as e:
             error(f"Failed to get vpn status. {e}")
-        
+
         try:
             # create a client to the source
             grid_url = GridURL.from_url(msg.source).with_path("/api/v1")
             source_client = sy.connect(url=str(grid_url), timeout=10)
-        except Exception:
-            resp_msg = "You were not able to connect with the node."
+        except requests.exceptions.ConnectTimeout:
+            return ErrorResponseMessage(
+                address=msg.reply_to,
+                resp_msg="Timeout error node was not able to process your request in time.",
+            )
+
         try:
             metadata["node_address"] = node.id.no_dash  # type:ignore
             node_msg: SignedImmediateSyftMessageWithReply = (
@@ -375,6 +392,7 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
         verify_key: VerifyKey,
     ) -> Union[
         SuccessResponseMessage,
+        ErrorResponseMessage,
         GetAssociationRequestsResponse,
         GetAssociationRequestResponse,
     ]:
