@@ -1,8 +1,8 @@
 name: Continuous Delivery
 
 on:
-  schedule:
-    - cron: "00 12 * * 0" # Sunday 12:00 UTC
+  # schedule:
+  #   - cron: "00 12 * * 0" # Sunday 12:00 UTC
   workflow_dispatch:
     inputs:
       none:
@@ -51,11 +51,11 @@ jobs:
     # needs: [call-stack-integration_tests]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           token: ${{ secrets.SYFT_BUMP_TOKEN }}
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: "3.10"
       - name: Install dependencies
@@ -113,7 +113,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push `grid-backend` image to DockerHub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
@@ -131,7 +131,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push `grid-frontend` image to DockerHub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
@@ -149,7 +149,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push `grid-headscale` image to DockerHub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/headscale.dockerfile
@@ -166,7 +166,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push `grid-tailscale` image to DockerHub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/tailscale.dockerfile
