@@ -288,7 +288,7 @@ def respond_association_request_msg(
                 f"Node {node} - respond_association_request_msg: sending ReceiveAssociationRequestMessage."
             )
 
-            source_client.send_immediate_msg_with_reply(msg=node_msg)
+            source_client.send_immediate_msg_without_reply(msg=node_msg)
 
             info(
                 f"Node {node} - respond_association_request_msg: ReceiveAssociationRequestMessage got back."
