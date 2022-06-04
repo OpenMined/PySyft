@@ -212,22 +212,19 @@ class FixedPrecisionTensor(PassthroughTensor):
     def T(self) -> FixedPrecisionTensor:
         return self.transpose()
 
-    # TODO: Remove after moving private compare to sharetensor level
+    # For comparison , we could skip conversion to FPT , as operation holds without encoding.
     def __lt__(self, other: Any) -> FixedPrecisionTensor:
-        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        if isinstance(other, FixedPrecisionTensor):
-            res.child = (self.child < other.child) * 1
-        else:
-            res.child = (self.child < other) * 1
+        other = self.sanity_check(other)
+        value = (self.child < other.child) * 1
+
+        res = FixedPrecisionTensor(
+            value=value, base=self._base, precision=self._precision
+        )
         return res
 
     def __gt__(self, other: Any) -> FixedPrecisionTensor:
-
-        if isinstance(other, FixedPrecisionTensor):
-            value = (self.child > other.child) * 1
-        else:
-            value = (self.child > other) * 1
-
+        other = self.sanity_check(other)
+        value = (self.child > other.child) * 1
         res = FixedPrecisionTensor(
             value=value, base=self._base, precision=self._precision
         )

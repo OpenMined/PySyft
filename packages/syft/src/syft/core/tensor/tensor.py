@@ -532,6 +532,12 @@ class Tensor(
         else:
             raise ValueError("Tensor Chain does not have reciprocal function")
 
+    def softmax(self) -> Tensor:
+        if hasattr(self.child, "softmax"):
+            return self.__class__(self.child.softmax())
+        else:
+            raise ValueError("Tensor Chain does not have softmax function")
+
     def one_hot(self) -> Tensor:
         if hasattr(self.child, "one_hot"):
             return self.__class__(self.child.one_hot())
