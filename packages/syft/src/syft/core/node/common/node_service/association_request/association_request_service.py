@@ -107,7 +107,7 @@ def send_association_request_msg(
         )  # tell the network what our name is
 
         try:
-            # create a client to the source
+            # create a client to the target
             grid_url = GridURL.from_url(msg.target).with_path("/api/v1")
             target_client = sy.connect(url=str(grid_url), timeout=300)
         except requests.exceptions.ConnectTimeout:
@@ -116,7 +116,7 @@ def send_association_request_msg(
                 resp_msg="ConnectionTimeoutError: Node was not able to process your request in time.",
             )
 
-        metadata["node_address"] = node.id.no_dash  # type: ignore
+        metadata["node_address"] = node.id.no_dash
 
         target_msg: SignedImmediateSyftMessageWithoutReply = (
             ReceiveAssociationRequestMessage(
@@ -136,6 +136,16 @@ def send_association_request_msg(
             target_client.send_immediate_msg_without_reply(msg=target_msg)
         except Exception as e:
             error(f"Failed to send ReceiveAssociationRequestMessage. {e}")
+            error(f"Sending target message: {target_msg}")
+            target_msg_args = {
+                "address": target_client.address,
+                "metadata": metadata,
+                "source": vpn_metadata["host_or_ip"],
+                "target": "msg.target",
+            }
+            error(f"Sending target message: {target_msg}")
+            error(f"Sending target message: {target_msg_args}")
+            raise e
 
         info(
             f"Node {node} - send_association_request_msg: received the answer from ReceiveAssociationRequestMessage."
