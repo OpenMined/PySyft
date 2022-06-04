@@ -101,7 +101,9 @@ class DomainRequestAPI(RequestAPI):
             error(msg)
             raise Exception(msg)
         response = self.perform_api_request_generic(
-            syft_msg=GetPeerInfoMessageWithReply, content={"uid": node_uid}, timeout=timeout
+            syft_msg=GetPeerInfoMessageWithReply,
+            content={"uid": node_uid},
+            timeout=timeout,
         )
 
         result = response.payload.kwargs.upcast()  # type: ignore

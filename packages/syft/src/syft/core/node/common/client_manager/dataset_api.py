@@ -133,7 +133,7 @@ class DatasetRequestAPI(RequestAPI):
         result = [
             content
             for content in self.perform_api_request(
-                syft_msg=self._get_all_message
+                syft_msg=self._get_all_message, timeout=1
             ).metadatas
         ]
 

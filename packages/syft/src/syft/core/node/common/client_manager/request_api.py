@@ -119,6 +119,7 @@ class RequestAPI:
         self,
         syft_msg: Optional[Type[SyftMessage]],
         content: Optional[Dict[Any, Any]] = None,
+        timeout: Optional[int] = None,
     ) -> Any:
         if syft_msg is None:
             raise ValueError(
@@ -135,7 +136,9 @@ class RequestAPI:
         signed_msg = syft_msg_constructor(**content).sign(
             signing_key=self.client.signing_key
         )  # type: ignore
-        response = self.client.send_immediate_msg_with_reply(msg=signed_msg)
+        response = self.client.send_immediate_msg_with_reply(
+            msg=signed_msg, timeout=timeout
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
@@ -145,7 +148,7 @@ class RequestAPI:
         self,
         syft_msg: Optional[Type[GenericPayloadMessageWithReply] | Type[NewSyftMessage]],  # type: ignore
         content: Optional[Dict[Any, Any]] = None,
-        timeout: Optional[int] = None
+        timeout: Optional[int] = None,
     ) -> Any:
         if syft_msg is None:
             raise ValueError(
@@ -171,7 +174,9 @@ class RequestAPI:
                 )
                 .sign(signing_key=self.client.signing_key)
             )
-        response = self.client.send_immediate_msg_with_reply(msg=signed_msg, timeout=timeout)
+        response = self.client.send_immediate_msg_with_reply(
+            msg=signed_msg, timeout=timeout
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
