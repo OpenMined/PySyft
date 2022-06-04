@@ -18,6 +18,7 @@ repos:
         exclude: ^(notebooks/trade_demo/datasets|packages/syft/src/syft/cache/constant2epsilon_1200k.npy|packages/grid/backend/wheels/.*)
       - id: check-yaml
         always_run: true
+        exclude: ^(packages/grid/k8s/rendered/)
       - id: check-merge-conflict
         always_run: true
         args: ["--assume-in-merge"]
