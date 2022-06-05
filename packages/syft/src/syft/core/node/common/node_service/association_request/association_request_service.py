@@ -109,7 +109,7 @@ def send_association_request_msg(
         try:
             # create a client to the target
             grid_url = GridURL.from_url(msg.target).with_path("/api/v1")
-            target_client = sy.connect(url=str(grid_url), timeout=300)
+            target_client = sy.connect(url=str(grid_url), timeout=10)
         except requests.exceptions.ConnectTimeout:
             return ErrorResponseMessage(
                 address=msg.reply_to,
