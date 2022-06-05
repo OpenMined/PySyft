@@ -6,6 +6,7 @@ from typing import Type
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from typing_extensions import final
+import sentry_sdk
 
 # syft absolute
 import syft as sy
@@ -41,6 +42,7 @@ class ExceptionMessage(ImmediateSyftMessageWithoutReply):
         self.msg_id_causing_exception = msg_id_causing_exception
         self.exception_type = exception_type
         self.exception_msg = exception_msg
+        sentry_sdk.capture_exception(exception_type(exception_msg))
 
     def _object2proto(self) -> ExceptionMessage_PB:
         """Returns a protobuf serialization of self.

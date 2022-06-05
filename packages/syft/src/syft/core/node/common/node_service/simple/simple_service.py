@@ -1,10 +1,12 @@
 # stdlib
+from logging import exception
 from typing import List
 from typing import Optional
 from typing import Type
 
 # third party
 from nacl.signing import VerifyKey
+from syft.core.node.common.action.exception_action import ExceptionMessage
 
 # relative
 from ......util import traceback_and_raise
@@ -30,7 +32,15 @@ class SimpleService(ImmediateNodeServiceWithReply):
 
         result = msg.payload.run(node=node, verify_key=verify_key)
 
-        return SimpleReplyMessage(payload=result, address=msg.reply_to)
+        # traceback_and_raise("Some error")
+        response = ExceptionMessage(
+            address=msg.reply_to,
+            msg_id_causing_exception=msg.id,
+            exception_type=Exception,
+            exception_msg="some msg"
+        )
+        return response
+        # return SimpleReplyMessage(payload=result, address=msg.reply_to)
 
     @staticmethod
     def message_handler_types() -> List[Type[SimpleMessage]]:

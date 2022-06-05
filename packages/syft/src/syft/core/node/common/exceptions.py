@@ -1,9 +1,13 @@
 """Specific PyGrid exceptions."""
 
 
+import sentry_sdk
+
+
 class PyGridError(Exception):
     def __init__(self, message: str) -> None:
         super().__init__(message)
+        sentry_sdk.capture_exception(self)
 
 
 class PermissionsNotDefined(PyGridError):

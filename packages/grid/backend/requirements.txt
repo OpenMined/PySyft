@@ -12,3 +12,5 @@ requests==2.27.1
 sqlalchemy==1.4.36
 tenacity==8.0.1
 uvicorn[standard]==0.17.6
+sentry-sdk==1.5.12
+

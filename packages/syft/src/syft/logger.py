@@ -10,6 +10,7 @@ from typing import Union
 
 # third party
 from loguru import logger
+import sentry_sdk
 
 LOG_FORMAT = "[{time}][{level}][{module}]][{process.id}] {message}"
 
@@ -67,6 +68,7 @@ def traceback_and_raise(e: Any, verbose: bool = False) -> NoReturn:
         logger.debug("failed to print exception", ex)
     if not issubclass(type(e), Exception):
         e = Exception(e)
+    sentry_sdk.capture_exception(e)
     raise e
 
 
