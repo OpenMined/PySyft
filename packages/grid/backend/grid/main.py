@@ -2,11 +2,11 @@
 from typing import Dict
 
 # third party
-from fastapi import FastAPI, Request
+from fastapi import FastAPI
 from fastapi.responses import JSONResponse
-from starlette.middleware.cors import CORSMiddleware
 import sentry_sdk
 from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+from starlette.middleware.cors import CORSMiddleware
 
 # grid absolute
 from grid.api.router import api_router
@@ -24,12 +24,11 @@ sentry_sdk.init(
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
     traces_sample_rate=1.0,
-    send_default_pii=True
-)        
+    send_default_pii=True,
+)
 
 # app = SentryAsgiMiddleware(app)
 app.add_middleware(SentryAsgiMiddleware)
-
 
 app.add_event_handler("startup", get_log_handler().init_logger)
 
@@ -44,6 +43,7 @@ if settings.BACKEND_CORS_ORIGINS:
     )
 
 app.include_router(api_router, prefix=settings.API_V1_STR)
+
 
 # needed for Google Kubernetes Engine LoadBalancer Healthcheck
 @app.get(

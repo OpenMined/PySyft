@@ -5,8 +5,8 @@ from typing import Type
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
-from typing_extensions import final
 import sentry_sdk
+from typing_extensions import final
 
 # syft absolute
 import syft as sy

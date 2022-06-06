@@ -1,6 +1,7 @@
 """Specific PyGrid exceptions."""
 
 
+# third party
 import sentry_sdk
 
 

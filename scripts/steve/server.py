@@ -1,10 +1,17 @@
-
-from fastapi import FastAPI
-from fastapi_utils.tasks import repeat_every
+# stdlib
 from datetime import datetime
-import sentry_sdk
+
+# third party
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
-from network_health import get_listed_public_networks, check_ip_port, check_network_status, check_metadata_api, check_login_via_syft
+from fastapi_utils.tasks import repeat_every
+from network_health import check_ip_port
+from network_health import check_login_via_syft
+from network_health import check_metadata_api
+from network_health import check_network_status
+from network_health import get_listed_public_networks
+import sentry_sdk
+
 app = FastAPI()
 # origins = [
 #     "http://localhost.tiangolo.com",
@@ -30,34 +37,41 @@ sentry_sdk.init(
     # of transactions for performance monitoring.
     # We recommend adjusting this value in production.
     traces_sample_rate=1.0,
-    send_default_pii=True
-)    
+    send_default_pii=True,
+)
+
+
 @app.get("/")
 def read_root():
     return {"Hello": "World"}
 
+
 @app.post("/pre_run_cell")
 def pre_run_cell(ip, id):
     pre_run_cells[id] = {"ip": ip, "time": datetime.now()}
-    return 
+    return
+
 
 @app.post("/post_run_cell")
 def post_run_cell(ip, id):
     post_run_cells[id] = {"ip": ip, "time": datetime.now()}
     return
 
+
 @app.get("/running_vms")
 def get_running_vms():
     running_cells = check_cells()
     return running_cells
 
-@app.on_event('startup')
+
+@app.on_event("startup")
 @repeat_every(seconds=5 * 60)
 def check_cells_and_notif():
     running_cells = check_cells()
     send_notif(running_cells)
-    print('SENT sentry')
-    return 
+    print("SENT sentry")
+    return
+
 
 def check_cells():
     running_cells = []
@@ -66,11 +80,13 @@ def check_cells():
             running_cells.append(pre_run_cells[id])
     return running_cells
 
+
 def send_notif(running_cells):
     for cell in running_cells:
         ip = cell["ip"]
         sentry_sdk.capture_exception(Exception(f"notebook blocked {ip}"))
     return
+
 
 @app.post("/clear_cells")
 def clear_cells():
@@ -79,7 +95,8 @@ def clear_cells():
     post_run_cells = {}
     return
 
-@app.get('/check_network')
+
+@app.get("/check_network")
 def check_network():
     status_table_list = []
     network_list = get_listed_public_networks()
@@ -96,4 +113,3 @@ def check_network():
 
         status_table_list.append(status)
     return status_table_list
-
