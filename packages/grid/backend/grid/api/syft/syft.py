@@ -72,7 +72,7 @@ async def syft_route(
             )
             return r
         elif isinstance(obj_msg, SignedImmediateSyftMessageWithoutReply):
-            node.recv_immediate_msg_without_reply(msg=obj_msg)
+            celery_app.send_task("grid.worker.msg_without_reply", args=[obj_msg])
         else:
             node.recv_eventual_msg_without_reply(msg=obj_msg)
         return ""
