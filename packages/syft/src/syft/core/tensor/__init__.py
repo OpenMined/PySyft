@@ -175,6 +175,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.tensor.Tensor",
         ),
         (
+            "syft.core.tensor.tensor.Tensor.softmax",
+            "syft.core.tensor.tensor.Tensor",
+        ),
+        (
             "syft.core.tensor.tensor.Tensor.one_hot",
             "syft.core.tensor.tensor.Tensor",
         ),
