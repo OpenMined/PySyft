@@ -53,8 +53,7 @@ def test_delete_dataset_assets(domain_owner, cleanup_storage):
 
     # Check if the asset key (train_data) is still there
     for asset in domain_owner.datasets[0].data:
-        if asset["name"] == "train_data":
-            raise Exception
+        assert asset["name"] != "train_data"
 
     domain_owner.datasets[0].delete("test_data", skip_check=True)
 
@@ -73,8 +72,7 @@ def test_delete_dataset_assets(domain_owner, cleanup_storage):
 
     # Check if the asset key (train_data) is still there
     for asset in domain_owner.datasets[0].data:
-        if asset["name"] == "val_data":
-            raise Exception
+        assert asset["name"] != "val_data"
 
 
 @pytest.mark.redis
