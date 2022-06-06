@@ -708,6 +708,79 @@ class TensorWrappedGammaTensorPointer(Pointer):
 
         return result
 
+    def softmax(
+        self,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the softmax operation on self
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.softmax"
+
+        # TODO: should modify to log reduction.
+        def softmax(val: np.ndarray) -> np.ndarray:
+            logits = val - val.max()
+            numerator = np.exp(logits)
+            inv = 1 / numerator.sum()
+            return numerator * inv
+
+        min_vals = self.min_vals.copy()
+        min_vals.data = np.array(softmax(min_vals.data))
+        max_vals = self.max_vals.copy()
+        max_vals.data = np.array(softmax(max_vals.data))
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+
+        result.public_shape = self.public_shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
     @property
     def T(self) -> TensorWrappedGammaTensorPointer:
         # We always maintain a Tensor hierarchy Tensor ---> PT--> Actual Data
@@ -1252,6 +1325,45 @@ class GammaTensor:
             max_val=max_val,
             data_subjects=self.data_subjects,
             func=_reciprocal,
+            state=output_state,
+        )
+
+    def softmax(self) -> GammaTensor:
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        # relative
+        from ...smpc.approximations import exp
+        from ...smpc.approximations import reciprocal
+
+        def softmax(val: np.ndarray) -> np.ndarray:
+            logits = val - val.max()
+            numerator = np.exp(logits)
+            inv = 1 / numerator.sum()
+            return numerator * inv
+
+        min_val = self.min_val.copy()
+        min_val.data = np.array(softmax(min_val.data))
+        max_val = self.max_val.copy()
+        max_val.data = np.array(softmax(max_val.data))
+        fpt = self.child.copy()
+        if not isinstance(fpt.child, np.ndarray):
+            raise ValueError("Softmax currently works only for numpy child")
+
+        fpt.child = fpt.child - fpt.child.max()
+        numerator = exp(fpt)
+        inv = reciprocal(numerator.sum())  # type: ignore
+
+        def _softmax(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.exp(self.run(state)) / jnp.exp(self.run(state)).sum()
+
+        return GammaTensor(
+            child=numerator * inv,
+            min_val=min_val,
+            max_val=max_val,
+            data_subjects=self.data_subjects,
+            func=_softmax,
             state=output_state,
         )
 
