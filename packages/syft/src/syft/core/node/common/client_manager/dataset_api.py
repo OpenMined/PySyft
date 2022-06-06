@@ -184,7 +184,8 @@ class DatasetRequestAPI(RequestAPI):
             while pref != "y" and pref != "n":
                 pref = input("Invalid input '" + pref + "', please specify 'y' or 'n'.")
             if pref == "n":
-                raise Exception("Datasets deletion is cancelled.")
+                print("Datasets deletion is cancelled.")
+                return None
 
         for dataset in self.all():
             self.delete(dataset_id=dataset.get("id"))
