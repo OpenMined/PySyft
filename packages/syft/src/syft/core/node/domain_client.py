@@ -469,6 +469,9 @@ class DomainClient(Client):
                 print(".", end="")
                 time.sleep(1)
 
+            if vpn_status.get("status") == "error":
+                raise Exception("Failed to get vpn status.")
+
             for peer in vpn_status["peers"]:
                 # sometimes the hostname we give is different to the one tailscale
                 # reports which can convert _ to - so if we change them on both sides
@@ -476,7 +479,7 @@ class DomainClient(Client):
                 if peer["hostname"].replace("-", "_") == client.name.replace("-", "_"):  # type: ignore
                     network_vpn_ip = peer["ip"]
             try:
-                domain_vpn_ip = self.vpn_status()["host"]["ip"]
+                domain_vpn_ip = vpn_status["host"]["ip"]
             except Exception as e:
                 print(f"Failed to get vpn host ip. {e}")
 
