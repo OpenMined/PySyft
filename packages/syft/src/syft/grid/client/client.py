@@ -101,6 +101,7 @@ def login(
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     verbose: Optional[bool] = True,
+    timeout: Optional[int] = 120,
 ) -> Client:
 
     if password == "changethis":  # nosec
@@ -150,7 +151,14 @@ def login(
         credentials = {"email": email, "password": password}
 
     # connecting to domain
-    node = connect(url=grid_url, credentials=credentials, conn_type=conn_type)
+    try:
+        node = connect(
+            url=grid_url, credentials=credentials, conn_type=conn_type, timeout=timeout
+        )
+    except requests.ConnectTimeout:
+        raise requests.ConnectTimeout(
+            f"Connection to node with: {url} timed out. Please try again !!!"
+        )
 
     if verbose:
         # bit of fanciness
