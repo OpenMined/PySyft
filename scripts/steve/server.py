@@ -3,8 +3,24 @@ from fastapi import FastAPI
 from fastapi_utils.tasks import repeat_every
 from datetime import datetime
 import sentry_sdk
-
+from fastapi.middleware.cors import CORSMiddleware
+from network_health import get_listed_public_networks, check_ip_port, check_network_status, check_metadata_api, check_login_via_syft
 app = FastAPI()
+# origins = [
+#     "http://localhost.tiangolo.com",
+#     "https://localhost.tiangolo.com",
+#     "http://localhost",
+#     "http://localhost:8080",
+# ]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
 
 pre_run_cells = {}
 post_run_cells = {}
@@ -22,12 +38,12 @@ def read_root():
 
 @app.post("/pre_run_cell")
 def pre_run_cell(ip, id):
-    pre_run_cell[id] = {"ip": ip, "time": datetime.now()}
+    pre_run_cells[id] = {"ip": ip, "time": datetime.now()}
     return 
 
 @app.post("/post_run_cell")
 def post_run_cell(ip, id):
-    post_run_cell[id] = {"ip": ip, "time": datetime.now()}
+    post_run_cells[id] = {"ip": ip, "time": datetime.now()}
     return
 
 @app.get("/running_vms")
@@ -35,22 +51,25 @@ def get_running_vms():
     running_cells = check_cells()
     return running_cells
 
-@repeat_every(seconds=10)
+@app.on_event('startup')
+@repeat_every(seconds=5 * 60)
 def check_cells_and_notif():
     running_cells = check_cells()
     send_notif(running_cells)
+    print('SENT sentry')
     return 
 
 def check_cells():
     running_cells = []
     for id in pre_run_cells:
         if id not in post_run_cells:
-            running_cells.append(pre_run_cell[id])
+            running_cells.append(pre_run_cells[id])
     return running_cells
 
 def send_notif(running_cells):
     for cell in running_cells:
-        sentry_sdk.capture_exception(Exception(f"notebook blocked {cell["ip"]}"))
+        ip = cell["ip"]
+        sentry_sdk.capture_exception(Exception(f"notebook blocked {ip}"))
     return
 
 @app.post("/clear_cells")
@@ -60,4 +79,21 @@ def clear_cells():
     post_run_cells = {}
     return
 
+@app.get('/check_network')
+def check_network():
+    status_table_list = []
+    network_list = get_listed_public_networks()
+
+    for network in network_list:
+        host_url = network["host_or_ip"]
+        status = {}
+
+        status["host_or_ip"] = host_url
+        status["ssh_status"] = check_ip_port(host_url, port=80)
+        status["ping_status"] = check_network_status(host_url)
+        status["api_status"] = check_metadata_api(host_url)
+        status["login_status"] = check_login_via_syft(host_url)
+
+        status_table_list.append(status)
+    return status_table_list
 
