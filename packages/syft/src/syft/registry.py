@@ -83,6 +83,12 @@ class NetworkRegistry:
             return "(no networks online - try syft.networks.all_networks to see offline networks)"
         return pd.DataFrame(on)._repr_html_()
 
+    def __repr__(self) -> str:
+        on = self.online_networks
+        if len(on) == 0:
+            return "(no networks online - try syft.networks.all_networks to see offline networks)"
+        return pd.DataFrame(on).to_string()
+
     def create_client(self, network: Dict[str, Any]) -> Client:
         try:
             port = int(network["port"])
