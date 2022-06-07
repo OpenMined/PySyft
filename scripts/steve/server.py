@@ -47,8 +47,8 @@ def read_root():
 
 
 @app.post("/pre_run_cell")
-def pre_run_cell(ip, id):
-    pre_run_cells[id] = {"ip": ip, "time": datetime.now()}
+def pre_run_cell(ip, id, raw_cell):
+    pre_run_cells[id] = {"ip": ip, "time": datetime.now(), "running_cell": raw_cell}
     return
 
 
