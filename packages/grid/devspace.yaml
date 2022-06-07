@@ -428,7 +428,7 @@ deployments:
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
-                value: ${TEST_MODE}
+                value: $!{TEST_MODE}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -526,7 +526,7 @@ deployments:
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
-                value: ${TEST_MODE}
+                value: $!{TEST_MODE}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -612,7 +612,7 @@ deployments:
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
               - name: TEST_MODE
-                value: ${TEST_MODE}
+                value: $!{TEST_MODE}
 
   - name: frontend
     helm:
