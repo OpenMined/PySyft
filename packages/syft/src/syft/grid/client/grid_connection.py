@@ -33,7 +33,7 @@ from ...proto.grid.connections.http_connection_pb2 import (
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
-DEFAULT_TIMEOUT = 5  # seconds
+DEFAULT_TIMEOUT = 30  # seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
@@ -91,7 +91,7 @@ class GridHTTPConnection(HTTPConnection):
         return _header
 
     def _send_msg(
-        self, msg: SyftMessage, timeout: Optional[float] = 10
+        self, msg: SyftMessage, timeout: Optional[float] = None
     ) -> requests.Response:
         """
         Serializes Syft messages in json format and send it using HTTP protocol.
@@ -114,6 +114,9 @@ class GridHTTPConnection(HTTPConnection):
 
         # Perform HTTP request using base_url as a root address
         msg_bytes: bytes = _serialize(obj=msg, to_bytes=True)  # type: ignore
+
+        # timeout = None will wait forever
+        timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
 
         # if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
         # if True:
