@@ -105,8 +105,8 @@ def login(
     retry: Optional[int] = None,
 ) -> Client:
 
-    retry = retry if retry else 5  # Default to 5 retries
-    timeout = timeout if timeout else 60  # Default to 60 seconds
+    retry = 5 if retry is None else retry  # Default to 5 retries
+    timeout = 10 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
 
@@ -156,10 +156,10 @@ def login(
 
     # connecting to domain
     node = None
-    timeout_btw_retries = timeout // retry
+    timeout_btw_retries = timeout
     retry_attempt = 1
 
-    while node is None and retry_attempt < retry:
+    while node is None and retry_attempt <= retry:
         try:
             node = connect(
                 url=grid_url,
@@ -172,7 +172,7 @@ def login(
                 f"Connection to node with: {url} timed out. Please try again !!!"
             )
         except requests.ConnectionError as e:
-            if retry_attempt < retry:
+            if retry_attempt <= retry:
                 print(
                     f"\nConnectionError: Retrying again.... Attempt: {retry_attempt}",
                     end="\r",
