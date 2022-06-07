@@ -6,12 +6,10 @@ import time
 # syft absolute
 import syft as sy
 from syft import DomainClient
-from syft.core.node.common.node_service.object_search.obj_search_service import (
-    ObjectSearchMessage,
+from syft.core.node.common.node_service.sleep.sleep_messages import (
+    SleepMessageWithReply,
 )
-from syft.core.node.common.node_service.object_search.obj_search_service import (
-    ObjectSearchReplyMessage,
-)
+from syft.core.node.common.node_service.sleep.sleep_messages import SleepReplyMessage
 
 NETWORK_PORT = 9081
 HOST_IP = os.environ.get("HOST_IP", "localhost")
@@ -24,8 +22,10 @@ TEST_ROOT_EMAIL = "info@openmined.org"
 TEST_ROOT_PASS = "changethis"
 
 
-def send_msg(domain: DomainClient) -> ObjectSearchReplyMessage:
-    msg = ObjectSearchMessage(address=domain.address, reply_to=domain.address)
+def send_msg(domain: DomainClient) -> SleepMessageWithReply:
+    msg = SleepMessageWithReply(kwargs={"seconds": 0.9}).to(
+        address=domain.address, reply_to=domain.address
+    )
     return domain.send_immediate_msg_with_reply(msg=msg)
 
 
@@ -45,6 +45,6 @@ def test_parallel_sync_io_requests() -> None:
 
     assert len(res) == request_count
     for i in res:
-        assert isinstance(i, ObjectSearchReplyMessage)
+        assert isinstance(i, SleepReplyMessage)
 
     assert abs(total - 1.0) < 0.1
