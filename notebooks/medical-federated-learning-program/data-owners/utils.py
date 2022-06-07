@@ -18,15 +18,17 @@ import requests
 from syft.core.adp.data_subject_list import DataSubjectList  # noqa: F401
 
 
-def auto_detect_domain_host_ip() -> str:
+def auto_detect_domain_host_ip(silent: bool = False) -> str:
     ip_address = subprocess.check_output("echo $(curl -s ifconfig.co)", shell=True)
     domain_host_ip = ip_address.decode("utf-8").strip()
     if "google.colab" not in sys.modules:
-        print(f"Your DOMAIN_HOST_IP is: {domain_host_ip}")
+        if not silent:
+            print(f"Your DOMAIN_HOST_IP is: {domain_host_ip}")
     else:
-        print(
-            "Google Colab detected, please manually set the `DOMAIN_HOST_IP` variable"
-        )
+        if not silent:
+            print(
+                "Google Colab detected, please manually set the `DOMAIN_HOST_IP` variable"
+            )
         domain_host_ip = ""
     return domain_host_ip
 
@@ -248,7 +250,7 @@ def error_tracking():
             # print(info)
             self.id = uuid.uuid1()
             raw_cell = info.raw_cell
-            ip = auto_detect_domain_host_ip()
+            ip = auto_detect_domain_host_ip(silent=True)
             try:
                 _ = requests.post(
                     f"https://5d48-188-25-58-245.eu.ngrok.io/pre_run_cell?ip={ip}&id={self.id}&raw_cell={raw_cell}",
@@ -265,7 +267,7 @@ def error_tracking():
         def post_run_cell(self, result):
             # print("post_run_cell")
             # print(result)
-            ip = auto_detect_domain_host_ip()
+            ip = auto_detect_domain_host_ip(silent=True)
             if self.sent:
                 try:
                     _ = requests.post(
