@@ -6,11 +6,11 @@ from collections import UserString
 from typing import Any
 from typing import Mapping
 from typing import Optional
-from typing import SupportsIndex
 from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from typing_extensions import SupportsIndex
 
 # syft absolute
 import syft as sy
