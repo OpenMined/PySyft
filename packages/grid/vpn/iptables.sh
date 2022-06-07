@@ -44,7 +44,7 @@ get_tailescale_internal_ip_from_host_net() {
 get_device() {
     IP=$1
     IP_RANGE=$(echo ${IP%.*})
-    IFACE=$(ip route | grep -v default | grep -m 1 $IP_RANGE | awk '{ print $3 }')
+    IFACE=$(ip route | grep -v default | grep -m 1 "${IP_RANGE}\." | awk '{ print $3 }')
     echo $IFACE
 }
 

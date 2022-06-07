@@ -177,6 +177,11 @@ class GridHTTPConnection(HTTPConnection):
         metadata_url = str(self.base_url) + "/syft/metadata"
         response = session.get(metadata_url, verify=verify_tls())
 
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch metadata. Response returned with code {response.status_code}"
+            )
+
         # upgrade to tls if available
         try:
             if response.url.startswith("https://") and self.base_url.protocol == "http":
