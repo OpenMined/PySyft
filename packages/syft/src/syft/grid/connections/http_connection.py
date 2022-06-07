@@ -102,6 +102,9 @@ class HTTPConnection(ClientConnection):
         :rtype: requests.Response
         """
 
+        # timeout = None will wait forever
+        timeout = timeout if timeout is not None else 1
+
         # Perform HTTP request using base_url as a root address
         data_bytes: bytes = _serialize(msg, to_bytes=True)  # type: ignore
         r = requests.post(
