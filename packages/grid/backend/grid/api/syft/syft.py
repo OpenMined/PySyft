@@ -29,8 +29,12 @@ router = APIRouter()
 tracer = get_tracer("API")
 
 
+async def get_body(request: Request) -> bytes:
+    return await request.body()
+
+
 @router.get("/metadata", response_model=str)
-async def syft_metadata() -> Response:
+def syft_metadata() -> Response:
     return Response(
         node.get_metadata_for_client()._object2proto().SerializeToString(),
         media_type="application/octet-stream",
@@ -38,7 +42,7 @@ async def syft_metadata() -> Response:
 
 
 @router.delete("", response_model=str)
-async def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
+def delete(current_user: UserPrivate = Depends(get_current_user)) -> Response:
     # If current user is the node owner ...
     success = node.clear(current_user.role)
     if success:
@@ -52,14 +56,9 @@ async def delete(current_user: UserPrivate = Depends(get_current_user)) -> Respo
 
 
 @router.post("", response_model=str)
-async def syft_route(
-    request: Request,
-    #    skip: int = 0,
-    #    limit: int = 100,
-    #    current_user: models.User = Depends(get_current_active_user),
-) -> Any:
+def syft_route(data: bytes = Depends(get_body)) -> Any:
+    print("got a new incoming request")
     with tracer.start_as_current_span("POST syft_route"):
-        data = await request.body()
         obj_msg = deserialize(blob=data, from_bytes=True)
         is_isr = isinstance(obj_msg, SignedImmediateSyftMessageWithReply) or isinstance(
             obj_msg, SignedMessage
@@ -79,12 +78,8 @@ async def syft_route(
 
 
 @router.post("/stream", response_model=str)
-async def syft_stream(
-    request: Request,
-) -> Any:
+def syft_stream(data: bytes = Depends(get_body)) -> Any:
     with tracer.start_as_current_span("POST syft_route /stream"):
-        data = await request.body()
-
         if settings.STREAM_QUEUE:
             print("Queuing streaming message for processing on worker node")
             try:

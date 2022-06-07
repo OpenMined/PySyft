@@ -23,7 +23,7 @@ TEST_ROOT_PASS = "changethis"
 
 
 def send_msg(domain: DomainClient) -> SleepMessageWithReply:
-    msg = SleepMessageWithReply(kwargs={"seconds": 0.9}).to(
+    msg = SleepMessageWithReply(kwargs={"seconds": 0.5}).to(
         address=domain.address, reply_to=domain.address
     )
     return domain.send_immediate_msg_with_reply(msg=msg)
@@ -47,4 +47,4 @@ def test_parallel_sync_io_requests() -> None:
     for i in res:
         assert isinstance(i, SleepReplyMessage)
 
-    assert abs(total - 1.0) < 0.1
+    assert abs(total - 1.0) < 0.2
