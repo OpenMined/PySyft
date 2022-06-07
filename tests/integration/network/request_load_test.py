@@ -3,6 +3,9 @@ from concurrent import futures
 import os
 import time
 
+# third party
+import pytest
+
 # syft absolute
 import syft as sy
 from syft import DomainClient
@@ -29,6 +32,7 @@ def send_msg(domain: DomainClient) -> SleepMessageWithReply:
     return domain.send_immediate_msg_with_reply(msg=msg)
 
 
+@pytest.mark.network
 def test_parallel_sync_io_requests() -> None:
     domain = sy.login(port=DOMAIN1_PORT, email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS)
 

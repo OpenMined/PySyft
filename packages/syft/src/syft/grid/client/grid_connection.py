@@ -33,7 +33,7 @@ from ...proto.grid.connections.http_connection_pb2 import (
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
-DEFAULT_TIMEOUT = 5  # seconds
+DEFAULT_TIMEOUT = 30  # seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
@@ -116,7 +116,7 @@ class GridHTTPConnection(HTTPConnection):
         msg_bytes: bytes = _serialize(obj=msg, to_bytes=True)  # type: ignore
 
         # timeout = None will wait forever
-        timeout = timeout if timeout is not None else 1
+        timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
 
         # if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
         # if True:
