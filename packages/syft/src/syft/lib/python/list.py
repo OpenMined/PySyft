@@ -3,6 +3,7 @@ from collections import UserList
 from typing import Any
 from typing import List as ListType
 from typing import Optional
+from typing import SupportsIndex
 from typing import Union
 
 # third party
@@ -128,7 +129,7 @@ class List(UserList, PyPrimitive):
         res = super().__len__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __getitem__(self, key: Union[int, str, slice, Slice]) -> Any:
+    def __getitem__(self, key: Union[int, str, slice, Slice, SupportsIndex]) -> Any:
         if isinstance(key, Slice):
             key = key.upcast()
         res = super().__getitem__(key)  # type: ignore

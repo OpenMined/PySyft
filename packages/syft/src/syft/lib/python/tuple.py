@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Optional
+from typing import SupportsIndex
 from typing import Union
 
 # third party
@@ -86,7 +87,7 @@ class Tuple(tuple, PyPrimitive):
     def __len__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__len__())
 
-    def __getitem__(self, key: Union[int, slice, Slice]) -> Any:
+    def __getitem__(self, key: Union[int, slice, Slice, SupportsIndex]) -> Any:
         if isinstance(key, Slice):
             key = key.upcast()
         value = super().__getitem__(key)
