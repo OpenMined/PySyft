@@ -51,4 +51,4 @@ def test_parallel_sync_io_requests() -> None:
     for i in res:
         assert isinstance(i, SleepReplyMessage)
 
-    assert abs(total - 1.0) < 0.2
+    assert total <= 2
