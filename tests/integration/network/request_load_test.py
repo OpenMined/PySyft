@@ -1,6 +1,7 @@
 # stdlib
 from concurrent import futures
 import os
+import time
 
 # syft absolute
 import syft as sy
@@ -31,9 +32,19 @@ def send_msg(domain: DomainClient) -> ObjectSearchReplyMessage:
 def test_parallel_sync_io_requests() -> None:
     domain = sy.login(port=DOMAIN1_PORT, email=TEST_ROOT_EMAIL, password=TEST_ROOT_PASS)
 
-    with futures.ThreadPoolExecutor(max_workers=100) as executor:
-        res = list(executor.map(send_msg, [domain] * 300))
+    # FastAPI and Starlette use anyio under the hood to use a threadpool for non async
+    # CapacityLimiter in anyio is default 40 threads
+    request_count = 40
 
-    assert len(res) == 300
+    start = time.time()
+    with futures.ThreadPoolExecutor(max_workers=request_count) as executor:
+        res = list(executor.map(send_msg, [domain] * request_count))
+    end = time.time()
+
+    total = end - start
+
+    assert len(res) == request_count
     for i in res:
         assert isinstance(i, ObjectSearchReplyMessage)
+
+    assert abs(total - 1.0) < 0.1
