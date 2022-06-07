@@ -249,9 +249,13 @@ def error_tracking():
             self.id = uuid.uuid1()
             raw_cell = info.raw_cell
             ip = auto_detect_domain_host_ip()
-            _ = requests.post(
-                f"https://5d48-188-25-58-245.eu.ngrok.io/pre_run_cell?ip={ip}&id={self.id}&raw_cell={raw_cell}",
-            )
+            try:
+                _ = requests.post(
+                    f"https://5d48-188-25-58-245.eu.ngrok.io/pre_run_cell?ip={ip}&id={self.id}&raw_cell={raw_cell}",
+                    timeout=10,
+                )
+            except Exception:
+                pass
             self.sent = True
 
         def post_execute(self):
@@ -263,9 +267,13 @@ def error_tracking():
             # print(result)
             ip = auto_detect_domain_host_ip()
             if self.sent:
-                _ = requests.post(
-                    f"https://5d48-188-25-58-245.eu.ngrok.io/post_run_cell?ip={ip}&id={self.id}",
-                )
+                try:
+                    _ = requests.post(
+                        f"https://5d48-188-25-58-245.eu.ngrok.io/post_run_cell?ip={ip}&id={self.id}",
+                        timeout=10,
+                    )
+                except Exception:
+                    pass
                 self.sent = False
 
     def load_ipython_extension(ip):
