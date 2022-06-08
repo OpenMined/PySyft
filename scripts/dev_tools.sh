@@ -7,7 +7,7 @@ else
     PORT=$1
     if docker ps | grep ":${PORT}" | grep -q 'redis'; then
         open redis://127.0.0.1:${PORT}
-    elif docker ps | grep ":${PORT}" | grep -q 'db'; then
+    elif docker ps | grep ":${PORT}" | grep -q 'postgres'; then
         open postgresql://postgres:changethis@127.0.0.1:${PORT}/app
     else
         open http://localhost:${PORT}
