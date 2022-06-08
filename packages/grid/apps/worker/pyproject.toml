@@ -29,7 +29,6 @@ loguru = "^0.5.3"
 Flask-Executor = "^0.9.4"
 Flask-Cors = "^3.0.10"
 sympc = { git = "https://github.com/OpenMined/SyMPC", rev = "main" }
-python-dp = "^1.1.0"
 terrascript = "^0.9.0"
 PyInquirer = "^1.0.3"
 boto3 = "^1.14.51"

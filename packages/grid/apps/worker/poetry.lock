@@ -676,14 +676,6 @@ python-versions = "!=3.0.*,!=3.1.*,!=3.2.*,>=2.7"
 six = ">=1.5"
 
 [[package]]
-name = "python-dp"
-version = "1.1.0"
-description = "Python API for Google's Differential Privacy library"
-category = "main"
-optional = false
-python-versions = ">=3.6"
-
-[[package]]
 name = "python-editor"
 version = "1.0.4"
 description = "Programmatically open an editor, capture the result."
@@ -1517,20 +1509,6 @@ pytest = [
 python-dateutil = [
     {file = "python-dateutil-2.8.1.tar.gz", hash = "sha256:73ebfe9dbf22e832286dafa60473e4cd239f8592f699aa5adaf10050e6e1823c"},
     {file = "python_dateutil-2.8.1-py2.py3-none-any.whl", hash = "sha256:75bb3f31ea686f1197762692a9ee6a7550b59fc6ca3a1f4b5d7e32fb98e2da2a"},
-]
-python-dp = [
-    {file = "python_dp-1.1.0-cp36-cp36m-macosx_10_14_x86_64.whl", hash = "sha256:b30f9c783dc81804d854c18686e1dd9e6f49119515f7fea42c42455de1bb457f"},
-    {file = "python_dp-1.1.0-cp36-cp36m-manylinux1_x86_64.whl", hash = "sha256:d94ccf53e146eb6cb1865d4dc652500ed8c541f676e82e291ef158424e7e2429"},
-    {file = "python_dp-1.1.0-cp36-cp36m-win_amd64.whl", hash = "sha256:33bb10f5ca9b2cc3ec02727cad32685665c6c06ce5e47f4c1c11dd6aa987e999"},
-    {file = "python_dp-1.1.0-cp37-cp37m-macosx_10_14_x86_64.whl", hash = "sha256:ab490def76bb203b93d9ea3426ea3175dc92659118da9f1213c50c5d1774ad4c"},
-    {file = "python_dp-1.1.0-cp37-cp37m-manylinux1_x86_64.whl", hash = "sha256:309acc396cf0e68e5995f333560a6b173710cec69ecaeccf11f0606759ef60d4"},
-    {file = "python_dp-1.1.0-cp37-cp37m-win_amd64.whl", hash = "sha256:71bd89a80447e9638f83b7b598a392bcf50dc10dce93210a6fbc607931c7ee78"},
-    {file = "python_dp-1.1.0-cp38-cp38-macosx_10_14_x86_64.whl", hash = "sha256:e021dac117be8a12adeb73aa0061b24df9d0e43010a3e6e5ca304f795c5d87aa"},
-    {file = "python_dp-1.1.0-cp38-cp38-manylinux1_x86_64.whl", hash = "sha256:6563386e15391fad9ea778713d6e323195374a5f1167f57f912a48923ed0ade3"},
-    {file = "python_dp-1.1.0-cp38-cp38-win_amd64.whl", hash = "sha256:e51bee300e4b8783289756914f52e2dd6b935ac0c4cf6582a3105c805e5a05c7"},
-    {file = "python_dp-1.1.0-cp39-cp39-macosx_10_14_x86_64.whl", hash = "sha256:9c807f4bad7ef4f462b72d51dd44cf9c8d690438b38d86d25fa074feb9496b93"},
-    {file = "python_dp-1.1.0-cp39-cp39-manylinux1_x86_64.whl", hash = "sha256:4aa62ebf5cfa6f1ae005a78ef48ad17c11388a857f705c34b3f8e887498f24c6"},
-    {file = "python_dp-1.1.0-cp39-cp39-win_amd64.whl", hash = "sha256:36a5671801554153a693445278bbbdc705200c8d545e3fa94f5ad0e8e4a42f1a"},
 ]
 python-editor = [
     {file = "python-editor-1.0.4.tar.gz", hash = "sha256:51fda6bcc5ddbbb7063b2af7509e43bd84bfc32a4ff71349ec7847713882327b"},
