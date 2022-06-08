@@ -158,13 +158,13 @@ allowlist[
     "torchvision.transforms.RandomRotation"
 ] = "torchvision.transforms.RandomRotation"
 allowlist[
-    "torchvision.transforms.RandomSizedCrop"
-] = "torchvision.transforms.RandomSizedCrop"
+    "torchvision.transforms.RandomResizedCrop"
+] = "torchvision.transforms.RandomResizedCrop"
 allowlist[
     "torchvision.transforms.RandomVerticalFlip"
 ] = "torchvision.transforms.RandomVerticalFlip"
 allowlist["torchvision.transforms.Resize"] = "torchvision.transforms.Resize"
-allowlist["torchvision.transforms.Scale"] = "torchvision.transforms.Scale"
+# allowlist["torchvision.transforms.Scale"] = "torchvision.transforms.Scale"
 allowlist["torchvision.transforms.TenCrop"] = "torchvision.transforms.TenCrop"
 allowlist["torchvision.transforms.GaussianBlur"] = {
     "return_type": "torchvision.transforms.GaussianBlur",

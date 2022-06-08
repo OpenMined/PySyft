@@ -45,7 +45,7 @@ class Dict(UserDict, PyPrimitive):
         self, *args = args  # type: ignore
         if len(args) > 1:
             traceback_and_raise(
-                TypeError("expected at most 1 arguments, got %d" % len(args))
+                TypeError(f"expected at most 1 arguments, got {len(args)}")
             )
         if args:
             args_dict = args[0]

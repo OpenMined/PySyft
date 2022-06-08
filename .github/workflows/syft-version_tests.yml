@@ -12,6 +12,7 @@ on:
   push:
     branches:
       - dev
+      - "syft_0.5.0"
     paths:
       - "packages/syft/tests/trigger/version_tests"
   workflow_dispatch:

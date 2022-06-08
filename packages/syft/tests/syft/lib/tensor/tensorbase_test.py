@@ -61,11 +61,11 @@ def test_matmul_floattensor() -> None:
     assert torch.equal(t3.data, torch.tensor([[22.0, 28.0], [49.0, 64.0]]))
 
 
-def test_matmul_inttensor() -> None:
-    t1 = SyftTensor.IntegerTensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
-    t2 = SyftTensor.IntegerTensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
-    t3 = t1 @ t2
-    assert torch.equal(t3.data, torch.IntTensor([[22, 28], [49, 64]]))
+# def test_matmul_inttensor() -> None:
+#     t1 = SyftTensor.IntegerTensor([[1.0, 2.0, 3.0], [4.0, 5.0, 6.0]])
+#     t2 = SyftTensor.IntegerTensor([[1.0, 2.0], [3.0, 4.0], [5.0, 6.0]])
+#     t3 = t1 @ t2
+#     assert torch.equal(t3.data, torch.IntTensor([[22, 28], [49, 64]]))
 
 
 def test_delegation_transpose() -> None:

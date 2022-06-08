@@ -12,6 +12,8 @@ source = "init"
 
 [tool.poetry.dependencies]
 python = "^3.7"
+torch = "*"
+torchvision = "*"
 gevent = "^20.6.2"
 gevent-websocket = "^0.10.1"
 gunicorn = "^20.0.4"
@@ -29,7 +31,6 @@ loguru = "^0.5.3"
 Flask-Executor = "^0.9.4"
 Flask-Cors = "^3.0.10"
 sympc = { git = "https://github.com/OpenMined/SyMPC", rev = "main" }
-python-dp = "^1.1.0"
 terrascript = "^0.9.0"
 PyInquirer = "^1.0.3"
 boto3 = "^1.14.51"

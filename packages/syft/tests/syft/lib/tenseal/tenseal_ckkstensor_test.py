@@ -228,7 +228,7 @@ def test_tenseal_ckkstensor_power(
 
     enc_v1_ptr.link_context(ctx_ptr)
 
-    result_enc_ptr = enc_v1_ptr ** 3
+    result_enc_ptr = enc_v1_ptr**3
 
     result = decrypt(context, result_enc_ptr)
     _almost_equal(result, [0, 1, 8, 27, 64])

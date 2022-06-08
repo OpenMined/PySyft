@@ -28,8 +28,8 @@ from ..pytest_benchmarks.benchmarks_functions_test import string_serde
 
 set_start_method("spawn", force=True)
 
-KB = 2 ** 10
-MB = 2 ** 20
+KB = 2**10
+MB = 2**20
 LIST_TEMPLATE = "a" * (10 * KB)
 
 
@@ -110,10 +110,10 @@ def test_duet_list_multiprocess(
 @pytest.mark.parametrize(
     "chunk_size,max_buffer",
     [
-        (2 ** 14, 2 ** 18),
-        (2 ** 18, 2 ** 23),
-        (2 ** 18, 2 ** 24),
-        (2 ** 18, 2 ** 25),
+        (2**14, 2**18),
+        (2**18, 2**23),
+        (2**18, 2**24),
+        (2**18, 2**25),
     ],
 )
 def test_duet_chunk_size(

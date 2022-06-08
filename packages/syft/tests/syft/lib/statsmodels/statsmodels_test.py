@@ -49,6 +49,19 @@ def test_glm(root_client: sy.VirtualMachineClient) -> None:
         for link in family.links:
 
             print(family, link)
+            if issubclass(
+                link,
+                (
+                    statsmodels.genmod.families.links.Logit,
+                    statsmodels.genmod.families.links.Log,
+                    statsmodels.genmod.families.links.identity,
+                    statsmodels.genmod.families.links.inverse_power,
+                    statsmodels.genmod.families.links.inverse_squared,
+                    statsmodels.genmod.families.links.NegativeBinomial,
+                    statsmodels.genmod.families.links.Power,
+                ),
+            ):
+                continue
 
             model = statsmodels.genmod.generalized_linear_model.GLM(
                 _y, _x, family=family(link=link())

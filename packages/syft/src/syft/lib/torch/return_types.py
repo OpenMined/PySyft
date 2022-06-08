@@ -27,8 +27,8 @@ def get_field_names(obj: Any) -> List[str]:
 
 def get_supported_types_fields() -> Dict[type, List]:
     supported_types = {}
-    A = torch.tensor([[1.0, 1, 1], [2, 3, 4], [3, 5, 2], [4, 2, 5], [5, 4, 3]])
-    B = torch.tensor([[-10.0, -3], [12, 14], [14, 12], [16, 16], [18, 16]])
+    # A = torch.tensor([[1.0, 1, 1], [2, 3, 4], [3, 5, 2], [4, 2, 5], [5, 4, 3]])
+    # B = torch.tensor([[-10.0, -3], [12, 14], [14, 12], [16, 16], [18, 16]])
     x = torch.Tensor([[1, 2], [1, 2]])
     s = torch.tensor(
         [[-0.1000, 0.1000, 0.2000], [0.2000, 0.3000, 0.4000], [0.0000, -0.3000, 0.5000]]
@@ -46,38 +46,38 @@ def get_supported_types_fields() -> Dict[type, List]:
         cummin = x.cummin(0)
         supported_types[type(cummin)] = get_field_names(cummin)
 
-    eig = x.eig(True)
-    supported_types[type(eig)] = get_field_names(eig)
+    # eig = x.eig(True)
+    # supported_types[type(eig)] = get_field_names(eig)
 
     kthvalue = x.kthvalue(1)
     supported_types[type(kthvalue)] = get_field_names(kthvalue)
 
-    lstsq = A.lstsq(B)
-    supported_types[type(lstsq)] = get_field_names(lstsq)
+    # lstsq = A.lstsq(B)
+    # supported_types[type(lstsq)] = get_field_names(lstsq)
 
     slogdet = x.slogdet()
     supported_types[type(slogdet)] = get_field_names(slogdet)
 
-    qr = x.qr()
-    supported_types[type(qr)] = get_field_names(qr)
+    # qr = x.qr()
+    # supported_types[type(qr)] = get_field_names(qr)
 
     mode = x.mode()
     supported_types[type(mode)] = get_field_names(mode)
 
-    solve = s.solve(s)
-    supported_types[type(solve)] = get_field_names(solve)
+    # solve = s.solve(s)
+    # supported_types[type(solve)] = get_field_names(solve)
 
     sort = s.sort()
     supported_types[type(sort)] = get_field_names(sort)
 
-    symeig = s.symeig()
-    supported_types[type(symeig)] = get_field_names(symeig)
+    # symeig = s.symeig()
+    # supported_types[type(symeig)] = get_field_names(symeig)
 
     topk = s.topk(1)
     supported_types[type(topk)] = get_field_names(topk)
 
-    triangular_solve = s.triangular_solve(s)
-    supported_types[type(triangular_solve)] = get_field_names(triangular_solve)
+    # triangular_solve = s.triangular_solve(s)
+    # supported_types[type(triangular_solve)] = get_field_names(triangular_solve)
 
     svd = s.svd()
     supported_types[type(svd)] = get_field_names(svd)

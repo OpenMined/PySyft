@@ -10,6 +10,7 @@ on:
   pull_request:
     branches:
       - dev
+      - "syft_0.5.0"
     paths:
       - ".github/workflows/syft-*.yml"
       - "packages/syft/**.py"
