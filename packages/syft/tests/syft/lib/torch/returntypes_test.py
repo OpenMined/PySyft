@@ -22,17 +22,17 @@ torch_version_ge_1d5d0 = version.parse(
 ) >= version.parse("1.5.0")
 
 parameters = [
-    ("eig", x, True),
+    # ("eig", x, True),
     ("kthvalue", x, 1),
-    ("lstsq", A, B),
+    # ("lstsq", A, B),
     ("slogdet", x, None),
-    ("qr", x, None),
+    # ("qr", x, None),
     ("mode", x, None),
-    ("solve", s, s),
+    # ("solve", s, s),
     ("sort", s, None),
-    ("symeig", s, None),
+    # ("symeig", s, None),
     ("topk", s, 1),
-    ("triangular_solve", s, s),
+    # ("triangular_solve", s, s),
     ("svd", s, None),
     ("geqrf", s, None),
     ("median", s, 0),
