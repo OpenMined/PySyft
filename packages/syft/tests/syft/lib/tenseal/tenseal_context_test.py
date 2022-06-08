@@ -128,4 +128,4 @@ def test_context_options(context: Any, root_client: sy.VirtualMachineClient) -> 
     assert ctx_ptr.auto_mod_switch.get()
     assert ctx_ptr.auto_relin.get()
     assert ctx_ptr.auto_rescale.get()
-    assert ctx_ptr.global_scale.get() == 2 ** 40
+    assert ctx_ptr.global_scale.get() == 2**40

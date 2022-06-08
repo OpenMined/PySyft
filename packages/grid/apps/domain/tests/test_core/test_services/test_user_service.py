@@ -392,6 +392,7 @@ def test_get_user_with_invalid_fields(database, domain, cleanup):
     except Exception as e:
         assert str(e) == "User not found!"
 
+
 @pytest.mark.skip(reason="passes locally but failes in CI for an unknown reason.")
 def test_get_all_users_with_permission(database, domain, cleanup):
     __create_roles(database)

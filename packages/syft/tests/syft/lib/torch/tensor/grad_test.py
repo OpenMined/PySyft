@@ -13,7 +13,7 @@ def torch_grad_test(client: sy.VirtualMachineClient) -> None:
     loss_fn = client.torch.nn.MSELoss()
 
     v = x + 2
-    y = v ** 2
+    y = v**2
 
     loss = loss_fn(y, gt)
     loss.backward()

@@ -81,11 +81,11 @@ import asyncio
 import math
 import os
 import secrets
+import sys
 import time
 from typing import Any
 from typing import Optional
 from typing import Union
-import sys
 
 # third party
 from aiortc import RTCDataChannel
@@ -115,12 +115,12 @@ DC_CHUNK_START_SIGN = b"<<<CHUNK START>>>"
 try:
     DC_MAX_CHUNK_SIZE = int(os.environ["DC_MAX_CHUNK_SIZE"])
 except KeyError:
-    DC_MAX_CHUNK_SIZE = 2 ** 18
+    DC_MAX_CHUNK_SIZE = 2**18
 
 try:
     DC_MAX_BUFSIZE = int(os.environ["DC_MAX_BUFSIZE"])
 except KeyError:
-    DC_MAX_BUFSIZE = 2 ** 22
+    DC_MAX_BUFSIZE = 2**22
 
 
 class OrderedChunk:
@@ -170,7 +170,9 @@ class WebRTCConnection(BidirectionalConnection):
                     loop=self.loop,
                 )  # Request Responses
             else:
-                self.producer_pool: asyncio.Queue = asyncio.Queue()  # Request Messages / Request Responses
+                self.producer_pool: asyncio.Queue = (
+                    asyncio.Queue()
+                )  # Request Messages / Request Responses
                 self.consumer_pool: asyncio.Queue = asyncio.Queue()  # Request Responses
 
             # Initialize a PeerConnection structure

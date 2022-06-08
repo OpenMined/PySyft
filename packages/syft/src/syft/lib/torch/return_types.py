@@ -27,8 +27,8 @@ def get_field_names(obj: Any) -> List[str]:
 
 def get_supported_types_fields() -> Dict[type, List]:
     supported_types = {}
-    A = torch.tensor([[1.0, 1, 1], [2, 3, 4], [3, 5, 2], [4, 2, 5], [5, 4, 3]])
-    B = torch.tensor([[-10.0, -3], [12, 14], [14, 12], [16, 16], [18, 16]])
+    # A = torch.tensor([[1.0, 1, 1], [2, 3, 4], [3, 5, 2], [4, 2, 5], [5, 4, 3]])
+    # B = torch.tensor([[-10.0, -3], [12, 14], [14, 12], [16, 16], [18, 16]])
     x = torch.Tensor([[1, 2], [1, 2]])
     s = torch.tensor(
         [[-0.1000, 0.1000, 0.2000], [0.2000, 0.3000, 0.4000], [0.0000, -0.3000, 0.5000]]
