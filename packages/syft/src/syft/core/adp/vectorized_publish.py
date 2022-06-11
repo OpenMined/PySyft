@@ -19,6 +19,7 @@ from tqdm import tqdm
 # relative
 from ..tensor.lazy_repeat_array import lazyrepeatarray
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
+from ..tensor.fixed_precision_tensor import FixedPrecisionTensor as FPT
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_list import DataSubjectList
@@ -106,6 +107,8 @@ def vectorized_publish(
         # t1 = time()
         # Calculate everything needed for RDP
         value = input_tensor.child
+        if isinstance(value, FPT):
+            value = value.decode()
         while isinstance(value, PassthroughTensor):
             value = value.child
 
@@ -192,9 +195,9 @@ def vectorized_publish(
     )
     noise.resize(original_output.shape)
     print("noise: ", noise)
-    if fpt_encode_func is not None:
-        noise = fpt_encode_func(noise)
-        print("Noise after FPT", noise)
+    # if fpt_encode_func is not None:
+    #     noise = fpt_encode_func(noise)
+    #     print("Noise after FPT", noise)
     output = np.asarray(output_func(filtered_inputs) + noise)
     print("got output", type(output), output.dtype)
     return output.squeeze()

@@ -56,6 +56,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
                     ledger=ledger,
                     sigma=msg.sigma,
                 )
+                print(type(result))
 
                 # print("PublishScalarsService:44: SUCCESS: publish_object.publish()")
                 results.append(result)
@@ -73,6 +74,7 @@ class PublishScalarsService(ImmediateNodeServiceWithoutReply):
 
         if len(results) == 1:
             results = results[0]
+        print(type(result))
 
         storable = StorableObject(
             id=msg.id_at_location,

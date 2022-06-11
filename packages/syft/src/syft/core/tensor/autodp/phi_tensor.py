@@ -1051,27 +1051,27 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         # gamma.func = lambda x: x
         gamma.state[gamma.id] = gamma
 
-        res = gamma.publish(
+        return gamma.publish(
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
             ledger=ledger,
             sigma=sigma,
         )
-        fpt_values = gamma.fpt_values
+        # fpt_values = gamma.fpt_values
 
-        if fpt_values is None:
-            raise ValueError(
-                "FixedPrecisionTensor values should not be None after publish"
-            )
+        # if fpt_values is None:
+        #     raise ValueError(
+        #         "FixedPrecisionTensor values should not be None after publish"
+        #     )
 
-        if isinstance(fpt_values.child, ShareTensor):
-            fpt_values.child.child = res
-        else:
-            fpt_values.child = res
+        # if isinstance(fpt_values.child, ShareTensor):
+        #     fpt_values.child.child = res
+        # else:
+        #     fpt_values.child = res
+        #
+        # print("Final FPT Values", fpt_values)
 
-        print("Final FPT Values", fpt_values)
-
-        return fpt_values
+        # return fpt_values
 
     @property
     def value(self) -> np.ndarray:

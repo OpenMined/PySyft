@@ -1432,19 +1432,14 @@ class GammaTensor:
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
     ) -> jax.numpy.DeviceArray:
-        # TODO: Add data scientist privacy budget as an input argument, and pass it
-        # into vectorized_publish
-        if sigma is None:
-            sigma = self.child.mean() / 4  # TODO @Ishan: replace this with calibration
-
         if self.child.dtype != np.int64:
             raise Exception(
                 "Data type of private values is not np.int64: ", self.child.dtype
             )
-        fpt_values = self.fpt_values
-        fpt_encode_func = None  # Function for encoding noise
-        if fpt_values is not None:
-            fpt_encode_func = fpt_values.encode
+        # fpt_values = self.fpt_values
+        # fpt_encode_func = None  # Function for encoding noise
+        # if fpt_values is not None:
+        #     fpt_encode_func = fpt_values.encode
 
         if (
             not self.state
@@ -1462,7 +1457,7 @@ class GammaTensor:
             ledger=ledger,
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
-            fpt_encode_func=fpt_encode_func,
+            # fpt_encode_func=fpt_encode_func,
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:
