@@ -209,7 +209,7 @@ class ShareTensor(PassthroughTensor):
         )
 
     @staticmethod
-    def get_dummy_value(shape: Tuple[int]) -> "ShareTensor":
+    def get_dummy_value(shape: Tuple[int, ...]) -> "ShareTensor":
         """Return a dummy value used to get the shape when we run an operation"""
         return ShareTensor(
             value=np.ones(shape), rank=-1, ring_size=DEFAULT_RING_SIZE, parties_info=[]

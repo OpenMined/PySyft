@@ -5,7 +5,6 @@ Examples: torch.stack, torch.argmax
 # stdlib
 from typing import Callable
 from typing import Dict
-from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Union
@@ -15,7 +14,6 @@ import numpy as np
 import torch
 
 # relative
-from . import utils
 from ..tensor import Tensor
 from ..util import parallel_execution
 from .mpc_tensor import MPCTensor
@@ -80,7 +78,7 @@ def helper_argmax(
 def argmax(
     x: MPCTensor,
     axis: Optional[int] = None,
-    keepdims=False,
+    keepdims: bool = False,
 ) -> MPCTensor:
     """Compute argmax using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
 
@@ -99,6 +97,11 @@ def argmax(
 
     argmax = helper_argmax(x, axis=axis, keepdims=keepdims, one_hot=False)
     shape = argmax.mpc_shape
+
+    # TODO: We should make shape always to be passed in at the MPCTensor
+    if shape is None:
+        raise ValueError("Shape is not and it should be populated")
+
     if axis is None:
         check = argmax * Tensor(np.arange(np.prod(shape), dtype=np.int64))
         argmax = check.sum()
@@ -137,6 +140,11 @@ def max(
     """
     if keepdims and axis is None:
         raise ValueError("keepdims=True requires 'axis' to be populated")
+
+    if x.mpc_shape is None:
+        raise ValueError(
+            "Received an MPCTensor that has None for the attribute 'mpc_shape'!"
+        )
     argmax_mpc = helper_argmax(x, axis=axis, keepdims=keepdims, one_hot=True)
     argmax = argmax_mpc.reshape(x.mpc_shape)
     max_mpc = argmax * x
@@ -144,6 +152,7 @@ def max(
         res = max_mpc.sum()
     else:
         shape = argmax_mpc.shape
+        assert shape is not None, "Shape for MPCTensor should not be None!"
         size = [1] * len(shape)
         size[axis] = shape[axis]
         argmax_mpc = argmax_mpc * Tensor(np.arange(shape[axis])).reshape(size)

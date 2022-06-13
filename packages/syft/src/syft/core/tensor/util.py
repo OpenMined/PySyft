@@ -3,6 +3,7 @@ import asyncio
 from concurrent.futures import ProcessPoolExecutor
 from concurrent.futures import ThreadPoolExecutor
 import functools
+import itertools
 import operator
 from typing import Any
 from typing import Callable
@@ -81,7 +82,7 @@ def parallel_execution(
         Callable[..., List[Any]]: A Callable that returns a list of results.
     """
 
-    def initializer(event_loop) -> None:
+    def initializer(event_loop: asyncio.AbstractEventLoop) -> None:
         """Set the same event loop to other threads/processes.
 
         This is needed because there are new threads/processes started with
@@ -106,17 +107,14 @@ def parallel_execution(
         Returns:
             List[Any]: Results from the parties
         """
-        executor: Union[Type[ProcessPoolExecutor], Type[ThreadPoolExecutor]]
+        cls_executor: Union[Type[ProcessPoolExecutor], Type[ThreadPoolExecutor]]
         if cpu_bound:
-            executor = ProcessPoolExecutor
+            cls_executor = ProcessPoolExecutor
         else:
-            executor = ThreadPoolExecutor
+            cls_executor = ThreadPoolExecutor
 
         # Each party has a list of args and a dictionary of kwargs
         nr_parties = len(args)
-
-        if args is None:
-            args = [[] for i in range(nr_parties)]
 
         if kwargs is None:
             kwargs = {}
@@ -126,12 +124,12 @@ def parallel_execution(
             attr_getter = operator.attrgetter(func_name)
             funcs = [attr_getter(party) for party in parties]
         else:
-            funcs = list(repeat(fn, nr_parties))
+            funcs = list(itertools.repeat(fn, nr_parties))
 
         futures = []
         loop = asyncio.get_event_loop()
 
-        with executor(
+        with cls_executor(
             max_workers=nr_parties, initializer=initializer, initargs=(loop,)
         ) as executor:
             for i in range(nr_parties):
