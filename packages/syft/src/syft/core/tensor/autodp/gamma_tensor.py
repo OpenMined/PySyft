@@ -973,7 +973,6 @@ class GammaTensor:
         pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
-    fpt_values: Optional[FixedPrecisionTensor] = None
 
     def __post_init__(
         self,
@@ -1441,10 +1440,6 @@ class GammaTensor:
             raise Exception(
                 "Data type of private values is not np.int64: ", self.child.dtype
             )
-        fpt_values = self.fpt_values
-        fpt_encode_func = None  # Function for encoding noise
-        if fpt_values is not None:
-            fpt_encode_func = fpt_values.encode
 
         if (
             not self.state
@@ -1462,7 +1457,6 @@ class GammaTensor:
             ledger=ledger,
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
-            fpt_encode_func=fpt_encode_func,
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:

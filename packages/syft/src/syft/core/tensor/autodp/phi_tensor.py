@@ -47,13 +47,11 @@ from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..lazy_repeat_array import compute_min_max
 from ..lazy_repeat_array import lazyrepeatarray
-from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
-from ..smpc.mpc_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
@@ -1025,14 +1023,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
         # TODO: check if values needs to be a JAX array or if numpy will suffice
-        fpt_values = self.child
 
         gamma_tensor = GammaTensor(
             child=self.child,
             data_subjects=self.data_subjects,
             min_val=self.min_vals,
             max_val=self.max_vals,
-            fpt_values=fpt_values,
         )
 
         return gamma_tensor
@@ -1043,7 +1039,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: float,
-    ) -> AcceptableSimpleType:
+    ) -> np.ndarray:
         print("PUBLISHING TO GAMMA:")
         print(self.child)
 
@@ -1057,21 +1053,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             ledger=ledger,
             sigma=sigma,
         )
-        fpt_values = gamma.fpt_values
 
-        if fpt_values is None:
-            raise ValueError(
-                "FixedPrecisionTensor values should not be None after publish"
-            )
-
-        if isinstance(fpt_values.child, ShareTensor):
-            fpt_values.child.child = res
-        else:
-            fpt_values.child = res
-
-        print("Final FPT Values", fpt_values)
-
-        return fpt_values
+        return res
 
     @property
     def value(self) -> np.ndarray:
