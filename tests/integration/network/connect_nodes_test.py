@@ -103,7 +103,9 @@ def run_network_tests(port: int, hostname: str, vpn_ip: str) -> None:
     if "ip" not in host:
         print(response)
     assert host["ip"] == vpn_ip
-    assert host["hostname"].replace("-", "_") == hostname  # kubernetes forces - not _
+    assert host["hostname"].replace("-", "_") == hostname.replace(
+        "-", "_"
+    )  # kubernetes forces - not _
     assert host["os"] == "linux"
 
     response = join_to_network_rest(

@@ -1,6 +1,6 @@
 import React from 'react'
 import cn from 'classnames'
-import type {HTMLAttributes} from 'react'
+import type { HTMLAttributes } from 'react'
 
 export type DividerOrientation = 'horizontal' | 'vertical'
 export type DividerColor = 'light' | 'black' | 'dark'
@@ -27,7 +27,7 @@ type Themes = {
 const dividerColorClasses: Themes = {
   light: 'border-gray-200',
   dark: 'border-gray-700',
-  black: 'border-gray-900'
+  black: 'border-gray-900',
 }
 
 type Orientation = {
@@ -35,7 +35,7 @@ type Orientation = {
 }
 const orientationClasses: Orientation = {
   horizontal: 'border-t w-full my-2',
-  vertical: 'border-l h-auto min-h-full w-px'
+  vertical: 'border-l h-auto min-h-full w-px',
 }
 
 export function Divider({
@@ -44,6 +44,17 @@ export function Divider({
   className,
   ...props
 }: DividerProps & HTMLAttributes<HTMLHRElement>) {
-  const classes = cn(dividerColorClasses[color], orientationClasses[orientation], className)
-  return <hr aria-orientation={orientation} role="separator" className={classes} {...props} />
+  const classes = cn(
+    dividerColorClasses[color],
+    orientationClasses[orientation],
+    className
+  )
+  return (
+    <hr
+      aria-orientation={orientation}
+      role="separator"
+      className={classes}
+      {...props}
+    />
+  )
 }

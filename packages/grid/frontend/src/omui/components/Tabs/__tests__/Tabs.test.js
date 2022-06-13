@@ -1,21 +1,21 @@
-import {render, screen} from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import cases from 'jest-in-case'
-import {axe} from 'jest-axe'
+import { axe } from 'jest-axe'
 
-import {Tabs} from '../Tabs'
+import { Tabs } from '../Tabs'
 
 const tabsList = [
-  {id: 1, title: 'Tab Name'},
-  {id: 2, title: 'Tab Name'},
-  {id: 3, title: 'Tab Name', disabled: true},
-  {id: 4, title: 'Tab Name'},
-  {id: 5, title: 'Tab Name'}
+  { id: 1, title: 'Tab Name' },
+  { id: 2, title: 'Tab Name' },
+  { id: 3, title: 'Tab Name', disabled: true },
+  { id: 4, title: 'Tab Name' },
+  { id: 5, title: 'Tab Name' },
 ]
 
 cases(
   'styles:classes',
-  ({params, listClasses, tabClasses}) => {
+  ({ params, listClasses, tabClasses }) => {
     render(<Tabs tabsList={tabsList} onChange={jest.fn} {...params} />)
 
     if (listClasses) {
@@ -32,53 +32,53 @@ cases(
       name: 'default: size md, default state and outlined variant',
       params: {},
       listClasses: 'border-b-2 flex w-full border-primary-500',
-      tabClasses: 'py-2.5 px-4 text-md'
+      tabClasses: 'py-2.5 px-4 text-md',
     },
     {
       name: 'size: size should be sm',
-      params: {size: 'sm'},
+      params: { size: 'sm' },
       listClasses: 'border-b-2 flex w-full border-primary-500',
-      tabClasses: 'py-2 px-2.5 text-sm'
+      tabClasses: 'py-2 px-2.5 text-sm',
     },
     {
       name: 'size: size should be lg',
-      params: {size: 'lg'},
+      params: { size: 'lg' },
       listClasses: 'border-b-2 flex w-full border-primary-500',
-      tabClasses: 'py-4 px-8 text-lg'
+      tabClasses: 'py-4 px-8 text-lg',
     },
     {
       name: 'size: size should be xl',
-      params: {size: 'xl'},
+      params: { size: 'xl' },
       listClasses: 'border-b-2 flex w-full border-primary-500',
-      tabClasses: 'py-4.5 px-8 text-xl'
+      tabClasses: 'py-4.5 px-8 text-xl',
     },
     {
       name: 'custom-state/disabled: text opacity',
-      params: {disabled: true},
-      tabClasses: 'text-opacity-40 pointer-events-none'
+      params: { disabled: true },
+      tabClasses: 'text-opacity-40 pointer-events-none',
     },
     {
       name: 'variant: outline default state',
-      params: {variant: 'outline'},
+      params: { variant: 'outline' },
       listClasses: 'border-primary-500',
-      tabClasses: 'border-b-2'
+      tabClasses: 'border-b-2',
     },
     {
       name: 'variant: outline active state',
-      params: {active: 2, variant: 'outline'},
-      tabClasses: 'bg-white border-l-2 border-r-2 border-t-2 rounded-t'
+      params: { active: 2, variant: 'outline' },
+      tabClasses: 'bg-white border-l-2 border-r-2 border-t-2 rounded-t',
     },
     {
       name: 'variant: underline default state',
-      params: {variant: 'underline'},
+      params: { variant: 'underline' },
       listClasses: 'border-gray-200',
-      tabClasses: 'border-gray-200'
+      tabClasses: 'border-gray-200',
     },
     {
       name: 'variant: underline active state',
-      params: {active: 2, variant: 'underline'},
-      tabClasses: 'border-primary-500'
-    }
+      params: { active: 2, variant: 'underline' },
+      tabClasses: 'border-primary-500',
+    },
   ]
 )
 
@@ -105,22 +105,28 @@ describe('mouse navigation', () => {
 describe('keyboard navigation', () => {
   test('active tab is tabbable and can be navigated with arrow keys', () => {
     const mockFn = jest.fn()
-    const {rerender} = render(<Tabs active={1} onChange={mockFn} tabsList={tabsList} />)
+    const { rerender } = render(
+      <Tabs active={1} onChange={mockFn} tabsList={tabsList} />
+    )
     const [first, second] = screen.getAllByRole('tab')
 
     // Tab to focus active tab
     userEvent.tab()
     expect(first).toHaveFocus()
 
-    userEvent.type(first, '{arrowright}', {skipClick: true})
+    userEvent.type(first, '{arrowright}', { skipClick: true })
     expect(mockFn).toHaveBeenCalledWith(tabsList[1].id)
-    rerender(<Tabs active={tabsList[1].id} onChange={mockFn} tabsList={tabsList} />)
+    rerender(
+      <Tabs active={tabsList[1].id} onChange={mockFn} tabsList={tabsList} />
+    )
     expect(second).toHaveFocus()
   })
 
   test('should focus only the active tab', () => {
     const mockFn = jest.fn()
-    const {rerender} = render(<Tabs active={4} onChange={mockFn} tabsList={tabsList} />)
+    const { rerender } = render(
+      <Tabs active={4} onChange={mockFn} tabsList={tabsList} />
+    )
     const [_first, _second, _third, fourth, fifth] = screen.getAllByRole('tab')
 
     userEvent.tab()
@@ -134,7 +140,9 @@ describe('keyboard navigation', () => {
 
   test('disabled tabs are not tabbable and focusable', () => {
     const mockFn = jest.fn()
-    const {rerender} = render(<Tabs active={2} onChange={mockFn} tabsList={tabsList} />)
+    const { rerender } = render(
+      <Tabs active={2} onChange={mockFn} tabsList={tabsList} />
+    )
     const [_first, second, _third, fourth] = screen.getAllByRole('tab')
 
     // Tab to focus component
@@ -142,9 +150,11 @@ describe('keyboard navigation', () => {
     expect(second).toHaveFocus()
 
     // Should skip tabsList[2] (id equals 3) because it is disabled.
-    userEvent.type(second, '{arrowright}', {skipClick: true})
+    userEvent.type(second, '{arrowright}', { skipClick: true })
     expect(mockFn).toHaveBeenCalledWith(tabsList[3].id)
-    rerender(<Tabs active={tabsList[3].id} onChange={mockFn} tabsList={tabsList} />)
+    rerender(
+      <Tabs active={tabsList[3].id} onChange={mockFn} tabsList={tabsList} />
+    )
     expect(fourth).toHaveFocus()
   })
 })

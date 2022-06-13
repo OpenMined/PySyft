@@ -33,6 +33,9 @@ from .common.node_manager.user_manager import UserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
+from .common.node_service.association_request.association_request_service import (
+    AssociationRequestWithoutReplyService,
+)
 from .common.node_service.network_search.network_search_service import (
     NetworkSearchService,
 )
@@ -119,6 +122,10 @@ class Network(Node):
         self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(NetworkSearchService)
         self.immediate_services_with_reply.append(PeerDiscoveryService)
+
+        self.immediate_services_without_reply.append(
+            AssociationRequestWithoutReplyService
+        )
 
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()

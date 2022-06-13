@@ -13,12 +13,14 @@ DATA_FILES = {
 packages = [
     "ascii_magic",
     "click",
+    "cryptography>=37.0.2",
     "gitpython",
     "names",
+    "paramiko",
+    "pyOpenSSL>=22.0.0",
     "requests",
     "rich",
     "setuptools",
-    "cryptography>=37.0.2",
 ]
 
 if platform.system().lower() != "windows":

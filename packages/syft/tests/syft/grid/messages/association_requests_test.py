@@ -56,11 +56,10 @@ test_suite = [
             "source": "127.0.0.1:8082",
             "target": "127.0.0.1:8081",
             "address": Address(),
-            "reply_to": Address(),
             "metadata": metadata,
             "response": "approved",
         },
-        ["source", "target", "metadata", "address", "reply_to", "response"],
+        ["source", "target", "metadata", "address", "response"],
     ),
     (
         RespondAssociationRequestMessage,

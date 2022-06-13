@@ -5,6 +5,9 @@ from typing import Dict
 from fastapi import FastAPI
 from httpx import AsyncClient
 
+OWNER_EMAIL = "info@openmined.org"
+OWNER_PWD = "changethis"
+
 
 async def authenticate_user(
     app: FastAPI, client: AsyncClient, email: str, password: str
@@ -18,5 +21,8 @@ async def authenticate_user(
 
 async def authenticate_owner(app: FastAPI, client: AsyncClient) -> Dict[str, str]:
     return await authenticate_user(
-        app, client, email="info@openmined.org", password="changethis"
+        app,
+        client,
+        email=OWNER_EMAIL,
+        password=OWNER_PWD,
     )
