@@ -16,7 +16,7 @@ A legal agreement under which multiple data owners delegate legal authority (IRB
 
 Differential Privacy
 ~~~~~~~~~~~~~~~~~~~~~
-While the textbook definition can be found here, within the context of remote data science, ``differential privacy`` is a set of algorithms which empower a data owner to limit the probability that a data scientist will be able to use their statistical results to reverse engineer the data owner's def. of too much information about the underlying data that generated those results.
+While the textbook definition can be found here_, within the context of remote data science, ``differential privacy`` is a set of algorithms which empower a data owner to limit the probability that a data scientist will be able to use their statistical results to reverse engineer the data owner's def. of too much information about the underlying data that generated those results. In a nutshell, its aim is to prevent a Data Scientist from identifying any individual from the dataset through reverse-engineering.
 
 Domain Node
 ~~~~~~~~~~~~~~~~~~~~~
@@ -24,7 +24,7 @@ A ``computer system`` (or collection of computer systems) which manages the remo
 
 Network Node
 ~~~~~~~~~~~~~~~~~~~~~
-A server which exists outside of any data owner's institution, providing services to the network of data owners and data scientists such as dataset search and bulk project approval (simultaneous legal/technical approval to participate in a project across groups of domains and data scientists at a time). A Network acts a bridge between between its members and subscribers. The members are ``Domains`` while subscribers are the ``end users`` (e.g. Data Scientist) who explore and perform analysis on the datasets hosted by the members.
+A server which exists outside of any data owner's institution, providing services to the network of data owners and data scientists such as dataset search and bulk project approval (simultaneous legal/technical approval to participate in a project across groups of domains and data scientists at a time). A Network acts as a bridge between between its members and subscribers. The members are ``Domains`` while subscribers are the ``end users`` (e.g. Data Scientist) who explore and perform analysis on the datasets hosted by the members.
 A network is used to provide access to a collection of domains at once i.e. if a user agrees to a ``Network Agreement``, then they automatically agree to the conditions to the Domains enlisted in that Network.
 
 Privacy Budget
@@ -76,7 +76,7 @@ All the personas in an institution that are in charge of making sure that the ut
 
 Network Compliance Officer
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~
-*to be added*
+All the personas in an institution that are in charge of making sure that the access and utilization of data between their network's domains and members (data scientists) fall within the bounds outlined in the network's legal agreements.
 
 User roles
 ============
@@ -112,7 +112,7 @@ Default permissions:
 
 Owner
 """"""""
-There is only one Owner account assigned to any one domain node. The owner account is the highest level permission and is a requirement for deploying a domain node. If you should ever want to transfer ownership of your domain node to someone, you might follow these steps (*to be added*).
+There is only one Owner account assigned to any one domain node. The owner account is the highest level permission and is a requirement for deploying a domain node. If you should ever want to transfer ownership of your domain node to someone, please contact us at support@openmined.org.
 
 Default permissions:
 
@@ -129,7 +129,7 @@ The lowest level of ``network membership``, a guest domain is listed within a ne
 
 Member
 """"""""""""""
-The highest level of ``network membership``, a full domain member is greater than a guest member because, beyond its listing within a network node's registry, the domain has entered into a legal relationship with the network owner such that the network owner can unilaterally give its full data scientists access to data hosted by the domain. Note that this does not mean that the network can control access to all potential users of the ``registered domain``, because the domain's membership in the network is non-exclusive (domains can register in multiple networks and also accept direct data-scientist users on the side). A network node only has authority to give its own full data scientists access to the any full domain within its registry.
+The highest level of ``network membership``, a full domain member is greater than a guest member because, beyond its listing within a network node's registry, the domain has entered into a legal relationship with the network owner such that the network owner can unilaterally give its full data scientists access to data hosted by the domain. Note that this does not mean that the network can control access to all potential users of the ``registered domain``, because the domain's membership in the network is non-exclusive (domains can register in multiple networks and also accept direct data-scientist users on the side). A network node only has authority to give its own full data scientists access to any full domain within its registry.
 
 .. |image0| image:: ../_static/deployment/image2.png
    :width: 95%
@@ -139,3 +139,5 @@ The highest level of ``network membership``, a full domain member is greater tha
 
 .. |image2| image:: ../_static/deployment/image3.png
    :width: 95%
+
+.. _here: https://www.cis.upenn.edu/~aaroth/Papers/privacybook.pdf
