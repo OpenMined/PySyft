@@ -16,7 +16,7 @@ A legal agreement under which multiple data owners delegate legal authority (IRB
 
 Differential Privacy
 ~~~~~~~~~~~~~~~~~~~~~
-While the textbook definition can be found here_, within the context of remote data science, ``differential privacy`` is a set of algorithms which empower a data owner to limit the probability that a data scientist will be able to use their statistical results to reverse engineer the data owner's def. of too much information about the underlying data that generated those results. It is basically aimed at preventing a Data Scientist from reverse-engineering to identify any one individual from the dataset.
+While the textbook definition can be found here_, within the context of remote data science, ``differential privacy`` is a set of algorithms which empower a data owner to limit the probability that a data scientist will be able to use their statistical results to reverse engineer the data owner's def. of too much information about the underlying data that generated those results. In a nutshell, its aim is to prevent a Data Scientist from identifying any individual from the dataset through reverse-engineering.
 
 Domain Node
 ~~~~~~~~~~~~~~~~~~~~~
