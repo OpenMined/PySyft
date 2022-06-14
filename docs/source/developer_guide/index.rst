@@ -133,7 +133,7 @@ see your changes and give you feedback.
 Before sending a PR, it is crucial to make sure you comply with the
 below instructions:
 
--  No commits should be made to the ``master`` branch directly.
+-  No commits should be made to the ``master`` or ``dev`` branch directly.
 -  Always write a clear log message for your commits describing what
    changes you have done and their impacts.
 -  If your PR is still a work in progress and not ready to be merged,
