@@ -12,6 +12,7 @@ import pytest
 
 # syft absolute
 import syft as sy
+from syft.core.node.common.client import Client
 
 clients = []  # clients for smpc test
 PORT = 9082  # domain port start
@@ -58,6 +59,25 @@ def data_max() -> int:
 @pytest.fixture
 def reference_data(data_shape: np.ndarray, data_max: int) -> np.ndarray:
     return np.random.random(size=data_shape) * data_max
+
+
+@pytest.fixture
+def domain_owner() -> Client:
+    return sy.login(email="info@openmined.org", password="changethis", port=PORT)
+
+
+@pytest.fixture
+def cleanup_storage(domain_owner):
+    # Delete any dataset remaining before the test
+    for dataset in domain_owner.datasets.all():
+        domain_owner.datasets.delete(dataset_id=dataset.get("id"))
+
+    # Execute tests
+    yield
+
+    # Delete any dataset remaining after the test
+    for dataset in domain_owner.datasets.all():
+        domain_owner.datasets.delete(dataset_id=dataset.get("id"))
 
 
 e2e_clients = []  # clients for e2e test
