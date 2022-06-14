@@ -1,0 +1,369 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.lib.util &#8212; PySyft  documentation</title>
+    
+  <link href="../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/pysyft.css" />
+    
+  <link rel="preload" as="script" href="../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../index.html">
+  <img src="../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.lib.util</h1><div class="highlight"><pre>
+<span></span><span class="c1"># stdlib</span>
+<span class="kn">import</span> <span class="nn">inspect</span>
+<span class="kn">from</span> <span class="nn">types</span> <span class="kn">import</span> <span class="n">ModuleType</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Callable</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span> <span class="k">as</span> <span class="n">TypeUnion</span>
+
+<span class="c1"># syft relative</span>
+<span class="kn">from</span> <span class="nn">..ast.globals</span> <span class="kn">import</span> <span class="n">Globals</span>
+<span class="kn">from</span> <span class="nn">..core.node.abstract.node</span> <span class="kn">import</span> <span class="n">AbstractNodeClient</span>
+
+<span class="c1"># this gets called on global ast as well as clients</span>
+<span class="c1"># anything which wants to have its ast updated and has an add_attr method</span>
+
+
+<div class="viewcode-block" id="generic_update_ast"><a class="viewcode-back" href="../../../api_reference/syft.lib.html#syft.lib.util.generic_update_ast">[docs]</a><span class="k">def</span> <span class="nf">generic_update_ast</span><span class="p">(</span>
+    <span class="n">lib_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">create_ast</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">ast_or_client</span><span class="p">:</span> <span class="n">TypeUnion</span><span class="p">[</span><span class="n">Globals</span><span class="p">,</span> <span class="n">AbstractNodeClient</span><span class="p">],</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ast_or_client</span><span class="p">,</span> <span class="n">Globals</span><span class="p">):</span>
+        <span class="n">ast</span> <span class="o">=</span> <span class="n">ast_or_client</span>
+        <span class="n">new_lib_ast</span> <span class="o">=</span> <span class="n">create_ast</span><span class="p">(</span><span class="kc">None</span><span class="p">)</span>
+        <span class="n">ast</span><span class="o">.</span><span class="n">add_attr</span><span class="p">(</span><span class="n">attr_name</span><span class="o">=</span><span class="n">lib_name</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="n">new_lib_ast</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">lib_name</span><span class="p">])</span>
+    <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">ast_or_client</span><span class="p">,</span> <span class="n">AbstractNodeClient</span><span class="p">):</span>
+        <span class="n">client</span> <span class="o">=</span> <span class="n">ast_or_client</span>
+        <span class="n">new_lib_ast</span> <span class="o">=</span> <span class="n">create_ast</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+        <span class="n">client</span><span class="o">.</span><span class="n">lib_ast</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">lib_name</span><span class="p">]</span> <span class="o">=</span> <span class="n">new_lib_ast</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">lib_name</span><span class="p">]</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">client</span><span class="p">,</span> <span class="n">lib_name</span><span class="p">,</span> <span class="n">new_lib_ast</span><span class="o">.</span><span class="n">attrs</span><span class="p">[</span><span class="n">lib_name</span><span class="p">])</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ValueError</span><span class="p">(</span>
+            <span class="sa">f</span><span class="s2">&quot;Expected param of type (Globals, AbstractNodeClient), but got </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">ast_or_client</span><span class="p">)</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="is_static_method"><a class="viewcode-back" href="../../../api_reference/syft.lib.html#syft.lib.util.is_static_method">[docs]</a><span class="k">def</span> <span class="nf">is_static_method</span><span class="p">(</span><span class="n">klass</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Test if a value of a class is static method.</span>
+
+<span class="sd">    Example:</span>
+
+<span class="sd">    .. code-block::</span>
+
+<span class="sd">        class MyClass(object):</span>
+<span class="sd">            @staticmethod</span>
+<span class="sd">            def method():</span>
+<span class="sd">                ...</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        klass (type): the class on which we want to check whether the method is statically implemented</span>
+<span class="sd">        attr (str): the name of the method we want to check.</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        bool: whether or not a method named &lt;attr&gt; is a static method of class &lt;klass&gt;</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="ow">not</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">klass</span><span class="p">):</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span> <span class="n">attr</span><span class="p">):</span>
+        <span class="n">value</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="k">return</span> <span class="kc">False</span>
+
+    <span class="k">if</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">klass</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span> <span class="o">!=</span> <span class="n">value</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">AttributeError</span><span class="p">(</span><span class="s2">&quot;Method don&#39;t match&quot;</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="bp">cls</span> <span class="ow">in</span> <span class="n">inspect</span><span class="o">.</span><span class="n">getmro</span><span class="p">(</span><span class="n">klass</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isroutine</span><span class="p">(</span><span class="n">value</span><span class="p">):</span>
+            <span class="k">if</span> <span class="n">attr</span> <span class="ow">in</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">:</span>
+                <span class="n">bound_value</span> <span class="o">=</span> <span class="bp">cls</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">attr</span><span class="p">]</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">bound_value</span><span class="p">,</span> <span class="nb">staticmethod</span><span class="p">):</span>
+                    <span class="k">return</span> <span class="kc">True</span>
+    <span class="k">return</span> <span class="kc">False</span></div>
+
+
+<div class="viewcode-block" id="copy_static_methods"><a class="viewcode-back" href="../../../api_reference/syft.lib.html#syft.lib.util.copy_static_methods">[docs]</a><span class="k">def</span> <span class="nf">copy_static_methods</span><span class="p">(</span><span class="n">from_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span> <span class="n">to_class</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Copies all static methods from one class to another class</span>
+
+<span class="sd">    This utility was initialized during the creation of the Constructor for PyTorch&#39;s &quot;th.Tensor&quot; class. Since we</span>
+<span class="sd">    replace each original constructor (th.Tensor) with on we implement (torch.UppercaseTensorConstructor), we also</span>
+<span class="sd">    need to make sure that our new constructor has any static methods which were previously stored on th.Tensor.</span>
+<span class="sd">    Otherwise, the library might look for them there, not find them, and then trigger an error.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        from_class (Type): the class on which we look for static methods co copy</span>
+<span class="sd">        to_class (Type): the class onto which we copy all static methods found in &lt;from_class&gt;</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="c1"># there are no static methods if from_class itself is not a type (sometimes funcs get passed in)</span>
+
+    <span class="k">for</span> <span class="n">attr</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">from_class</span><span class="p">):</span>
+        <span class="k">if</span> <span class="n">is_static_method</span><span class="p">(</span><span class="n">klass</span><span class="o">=</span><span class="n">from_class</span><span class="p">,</span> <span class="n">attr</span><span class="o">=</span><span class="n">attr</span><span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">to_class</span><span class="p">,</span> <span class="n">attr</span><span class="p">,</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">from_class</span><span class="p">,</span> <span class="n">attr</span><span class="p">))</span></div>
+
+
+<div class="viewcode-block" id="get_original_constructor_name"><a class="viewcode-back" href="../../../api_reference/syft.lib.html#syft.lib.util.get_original_constructor_name">[docs]</a><span class="k">def</span> <span class="nf">get_original_constructor_name</span><span class="p">(</span><span class="n">object_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Generate name for original constructor</span>
+
+<span class="sd">    For each custom constructor, we move the original constructor to a consistent location relative to</span>
+<span class="sd">    the original constructor so that each custom constructor automatically knows where to find the original</span>
+<span class="sd">    method it is overloading. Namely, we move the original constructor to a different attr within the same</span>
+<span class="sd">    module as the original constructor. This method specifies the naming convention that we use to name</span>
+<span class="sd">    the original constructor when it is moved.</span>
+
+<span class="sd">      Args:</span>
+<span class="sd">          object_name (str): the original constructor&#39;s original name</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;original_</span><span class="si">{</span><span class="n">object_name</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="replace_classes_in_module"><a class="viewcode-back" href="../../../api_reference/syft.lib.html#syft.lib.util.replace_classes_in_module">[docs]</a><span class="k">def</span> <span class="nf">replace_classes_in_module</span><span class="p">(</span>
+    <span class="n">module</span><span class="p">:</span> <span class="n">ModuleType</span><span class="p">,</span>
+    <span class="n">from_class</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">to_class</span><span class="p">:</span> <span class="n">Callable</span><span class="p">,</span>
+    <span class="n">ignore_prefix</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Recursively replace occurrence of `from_class` to `to_class` inside module.</span>
+
+<span class="sd">    For example, when syft replaces torch.nn.parameter.Parameter constructor,</span>
+<span class="sd">    there&#39;s also need to replace the same constructor in other modules that has already</span>
+<span class="sd">    imported it.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        module (ModuleType): top-level module to traverse</span>
+<span class="sd">        from_class: Original constructor</span>
+<span class="sd">        to_class: syft&#39;s ObjectConstructor</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">visited_modules</span> <span class="o">=</span> <span class="p">[]</span>
+
+    <span class="k">def</span> <span class="nf">recursive_update</span><span class="p">(</span>
+        <span class="n">module</span><span class="p">:</span> <span class="n">ModuleType</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">str</span><span class="p">,</span> <span class="kc">None</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="c1"># check if we need to skip this attribute to preserve our unmodified</span>
+        <span class="c1"># original copy</span>
+        <span class="k">if</span> <span class="p">(</span>
+            <span class="n">attr_name</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">ignore_prefix</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="ow">and</span> <span class="n">attr_name</span><span class="o">.</span><span class="n">startswith</span><span class="p">(</span><span class="n">ignore_prefix</span><span class="p">)</span>
+        <span class="p">):</span>
+            <span class="c1"># found an attr that should be skipped so lets return</span>
+            <span class="k">return</span>
+        <span class="n">attr</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">)</span> <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="k">else</span> <span class="n">module</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">ModuleType</span><span class="p">)</span> <span class="ow">and</span> <span class="n">attr</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">visited_modules</span><span class="p">:</span>
+            <span class="n">visited_modules</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">child_attr_name</span> <span class="ow">in</span> <span class="nb">dir</span><span class="p">(</span><span class="n">attr</span><span class="p">):</span>
+                <span class="n">recursive_update</span><span class="p">(</span><span class="n">attr</span><span class="p">,</span> <span class="n">child_attr_name</span><span class="p">)</span>
+        <span class="k">elif</span> <span class="p">(</span>
+            <span class="nb">isinstance</span><span class="p">(</span><span class="n">attr_name</span><span class="p">,</span> <span class="nb">str</span><span class="p">)</span> <span class="ow">and</span> <span class="n">inspect</span><span class="o">.</span><span class="n">isclass</span><span class="p">(</span><span class="n">attr</span><span class="p">)</span> <span class="ow">and</span> <span class="n">attr</span> <span class="ow">is</span> <span class="n">from_class</span>
+        <span class="p">):</span>
+            <span class="nb">setattr</span><span class="p">(</span><span class="n">module</span><span class="p">,</span> <span class="n">attr_name</span><span class="p">,</span> <span class="n">to_class</span><span class="p">)</span>
+
+    <span class="n">recursive_update</span><span class="p">(</span><span class="n">module</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="full_name_with_qualname"><a class="viewcode-back" href="../../../api_reference/syft.lib.html#syft.lib.util.full_name_with_qualname">[docs]</a><span class="k">def</span> <span class="nf">full_name_with_qualname</span><span class="p">(</span><span class="n">klass</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">klass</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">klass</span><span class="o">.</span><span class="vm">__qualname__</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="full_name_with_name"><a class="viewcode-back" href="../../../api_reference/syft.lib.html#syft.lib.util.full_name_with_name">[docs]</a><span class="k">def</span> <span class="nf">full_name_with_name</span><span class="p">(</span><span class="n">klass</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">klass</span><span class="o">.</span><span class="vm">__module__</span><span class="si">}</span><span class="s2">.</span><span class="si">{</span><span class="n">klass</span><span class="o">.</span><span class="vm">__name__</span><span class="si">}</span><span class="s2">&quot;</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

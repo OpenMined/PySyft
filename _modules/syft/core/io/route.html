@@ -1,0 +1,412 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.core.io.route &#8212; PySyft  documentation</title>
+    
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/pysyft.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.core.io.route</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;Route is an abstraction between Connection and Client.</span>
+<span class="sd">A Client represents an API for interfacing with a Node of</span>
+<span class="sd">a particular type at a specific location. We assume that</span>
+<span class="sd">a Client may have multiple ways of interacting with a node</span>
+<span class="sd">(such as multiple protocols, http, websockets, broadcast server</span>
+<span class="sd">, etc.). We assume that a Client also has knowledge of the</span>
+<span class="sd">full variety of messages and message types which can be sent</span>
+<span class="sd">to a Node. It is the highest level of abstraction.</span>
+
+<span class="sd">A connection is the lowest level of abstraction, representing</span>
+<span class="sd">a real network interface to a single destination. Importantly,</span>
+<span class="sd">this destination may not even be the ultimate destination</span>
+<span class="sd">for a message. In this sense, a connection is just a single &quot;hop&quot;</span>
+<span class="sd">in a potentially long series of hops between a Client and</span>
+<span class="sd">a Node.</span>
+
+<span class="sd">However, it&#39;s important to note that a Client doesn&#39;t need to</span>
+<span class="sd">have direct access to the node it communicates with because</span>
+<span class="sd">Nodes have a variety of services for forwarding messages</span>
+<span class="sd">around. For example, if I have two clients, one pointing</span>
+<span class="sd">to a Domain node and another pointing to a Device within</span>
+<span class="sd">the Domain, both might use the same connection object</span>
+<span class="sd">because all messages to a device have to go through a domain.</span>
+<span class="sd">This is because, for permissions reasons, the domain represents</span>
+<span class="sd">an intentional information bottleneck.</span>
+
+<span class="sd">This might beg the question, what is the point of Route if</span>
+<span class="sd">the right combination of Clients and Connections can always</span>
+<span class="sd">get a message to where it needs to go?</span>
+
+<span class="sd">The answer is that neither a Connection, Client, or Node are</span>
+<span class="sd">appropriate for the nature of four combined constraints.</span>
+
+<span class="sd">1) the existence of multiple connections from client -&gt; node</span>
+<span class="sd">with varying tradeoffs (websocket, http, webRTC, gRPC, etc.)</span>
+<span class="sd">2) the existence of multiple clients which share the same</span>
+<span class="sd">connection because of intentional information bottlenecks.</span>
+<span class="sd">3) the existence of 1-&gt;many connection types (pub-sub)</span>
+<span class="sd">4) the varying cost of different networks (edge cellular, and</span>
+<span class="sd">cloud networking costs being the biggest)</span>
+
+<span class="sd">We need the ability for an arbitrary client (which represents</span>
+<span class="sd">an abstract, indirect connection to a specific remote node of</span>
+<span class="sd">a specific type) to be able to consider a message, its address</span>
+<span class="sd">, and other metadata, and make a logical decision on which connection</span>
+<span class="sd">should be used. (For example, some messages block for a reply)</span>
+
+<span class="sd">We need the connection decision to take into account the latency,</span>
+<span class="sd">connection health, and overall cost of each connection option as</span>
+<span class="sd">measured by fixed constants as well as previous uses of the</span>
+<span class="sd">connection.</span>
+
+<span class="sd">This necessitates an abstraction which lets us store connection</span>
+<span class="sd">information both about hops we know about and about hops we don&#39;t</span>
+<span class="sd">know about.</span>
+
+<span class="sd">This abstraction is called a &quot;Route&quot; and each hop is called a &quot;Hop&quot;</span>
+<span class="sd">where any collection of hops within the route is called a</span>
+<span class="sd">&quot;RouteSegment&quot;. Note that a Route need only be initialized with</span>
+<span class="sd">its source and destination(s).</span>
+
+<span class="sd">When a route is used by a client, it is used to decide which route</span>
+<span class="sd">would be best to take for a particular message.</span>
+
+<span class="sd">When a route is attached to a message, it implies the expected</span>
+<span class="sd">journey the message is to take to the address. A node may or may</span>
+<span class="sd">not actually respect this journey.</span>
+
+<span class="sd">Routes can be created locally, but they are best created by asking</span>
+<span class="sd">the network for a good route to a remote worker which allows for</span>
+<span class="sd">things like network speed to be interrogated in the creation of</span>
+<span class="sd">a route.</span>
+
+<span class="sd">While in theory, this data-structure could allow for very sophisticated</span>
+<span class="sd">network analysis, in the beginning, it will mostly exist to choose</span>
+<span class="sd">between Pub-sub, Request-Response, and Streaming options. In the</span>
+<span class="sd">long run it will allow us to design routes which explicitly</span>
+<span class="sd">avoid the most costly network bottlenecks. For example, if Grid is</span>
+<span class="sd">advertising a new Federated Learning job, instead of sending the</span>
+<span class="sd">model directly to 10,000 clients (lots of bandwidth costs on the</span>
+<span class="sd">cloud node), it could send it to one cellphone with WiFi which</span>
+<span class="sd">would have instructions for how to forward to a binary tree of other</span>
+<span class="sd">node, propagating the model to all node which asked for it.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">google.protobuf.reflection</span> <span class="kn">import</span> <span class="n">GeneratedProtocolMessageType</span>
+
+<span class="c1"># syft relative</span>
+<span class="kn">from</span> <span class="nn">...logger</span> <span class="kn">import</span> <span class="n">debug</span>
+<span class="kn">from</span> <span class="nn">...logger</span> <span class="kn">import</span> <span class="n">traceback_and_raise</span>
+<span class="kn">from</span> <span class="nn">...proto.core.io.route_pb2</span> <span class="kn">import</span> <span class="n">SoloRoute</span> <span class="k">as</span> <span class="n">SoloRoute_PB</span>
+<span class="kn">from</span> <span class="nn">..common.message</span> <span class="kn">import</span> <span class="n">SignedEventualSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">..common.message</span> <span class="kn">import</span> <span class="n">SignedImmediateSyftMessageWithReply</span>
+<span class="kn">from</span> <span class="nn">..common.message</span> <span class="kn">import</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">..common.object</span> <span class="kn">import</span> <span class="n">ObjectWithID</span>
+<span class="kn">from</span> <span class="nn">.connection</span> <span class="kn">import</span> <span class="n">BidirectionalConnection</span>
+<span class="kn">from</span> <span class="nn">.connection</span> <span class="kn">import</span> <span class="n">ClientConnection</span>
+<span class="kn">from</span> <span class="nn">.location</span> <span class="kn">import</span> <span class="n">Location</span>
+<span class="kn">from</span> <span class="nn">.location</span> <span class="kn">import</span> <span class="n">SpecificLocation</span>
+<span class="kn">from</span> <span class="nn">.virtual</span> <span class="kn">import</span> <span class="n">VirtualClientConnection</span>
+
+
+<div class="viewcode-block" id="RouteSchema"><a class="viewcode-back" href="../../../../api_reference/syft.core.io.route.html#syft.core.io.route.RouteSchema">[docs]</a><span class="k">class</span> <span class="nc">RouteSchema</span><span class="p">(</span><span class="n">ObjectWithID</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;An object which contains the IDs of the origin node and</span>
+<span class="sd">    set of the destination node. Multiple routes can subscribe</span>
+<span class="sd">    to the same RouteSchema and routing, logic is thus split into</span>
+<span class="sd">    two groups of functionality:</span>
+
+<span class="sd">    1) Discovering new routes</span>
+<span class="sd">    2) Comparing known routes to find the best one for a message</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="n">Location</span><span class="p">):</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">destination</span> <span class="o">=</span> <span class="n">destination</span></div>
+
+
+<div class="viewcode-block" id="Route"><a class="viewcode-back" href="../../../../api_reference/syft.core.io.route.html#syft.core.io.route.Route">[docs]</a><span class="k">class</span> <span class="nc">Route</span><span class="p">(</span><span class="n">ObjectWithID</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">schema</span><span class="p">:</span> <span class="n">RouteSchema</span><span class="p">,</span> <span class="n">stops</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">list</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">()</span>
+        <span class="k">if</span> <span class="n">stops</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">stops</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">schema</span> <span class="o">=</span> <span class="n">schema</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">stops</span> <span class="o">=</span> <span class="n">stops</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">icon</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="s2">&quot;🛣️ &quot;</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">pprint</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+        <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">icon</span><span class="si">}</span><span class="s2"> (</span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">class_name</span><span class="si">}</span><span class="s2">)&quot;</span>
+
+    <span class="k">def</span> <span class="nf">send_immediate_msg_without_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">traceback_and_raise</span><span class="p">(</span><span class="ne">NotImplementedError</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">send_immediate_msg_with_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedImmediateSyftMessageWithReply</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span><span class="p">:</span>
+        <span class="n">traceback_and_raise</span><span class="p">(</span><span class="ne">NotImplementedError</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">send_eventual_msg_without_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedEventualSyftMessageWithoutReply</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">traceback_and_raise</span><span class="p">(</span><span class="ne">NotImplementedError</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="SoloRoute"><a class="viewcode-back" href="../../../../api_reference/syft.core.io.route.html#syft.core.io.route.SoloRoute">[docs]</a><span class="k">class</span> <span class="nc">SoloRoute</span><span class="p">(</span><span class="n">Route</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">destination</span><span class="p">:</span> <span class="n">Location</span><span class="p">,</span>
+        <span class="n">connection</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">ClientConnection</span><span class="p">,</span> <span class="n">BidirectionalConnection</span><span class="p">],</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">schema</span><span class="o">=</span><span class="n">RouteSchema</span><span class="p">(</span><span class="n">destination</span><span class="o">=</span><span class="n">destination</span><span class="p">))</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="n">connection</span>
+
+    <span class="k">def</span> <span class="nf">send_immediate_msg_without_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;&gt; Routing </span><span class="si">{</span><span class="n">msg</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2"> via </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">pprint</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">send_immediate_msg_without_reply</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">send_eventual_msg_without_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedEventualSyftMessageWithoutReply</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">send_eventual_msg_without_reply</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">send_immediate_msg_with_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignedImmediateSyftMessageWithReply</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">send_immediate_msg_with_reply</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_object2proto</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SoloRoute_PB</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SoloRoute_PB</span><span class="p">(</span>
+            <span class="n">destination</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">schema</span><span class="o">.</span><span class="n">destination</span><span class="o">.</span><span class="n">_object2proto</span><span class="p">(),</span>
+            <span class="n">connection</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">_object2proto</span><span class="p">(),</span>
+        <span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_proto2object</span><span class="p">(</span><span class="n">proto</span><span class="p">:</span> <span class="n">SoloRoute_PB</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;SoloRoute&quot;</span><span class="p">:</span>
+        <span class="n">connection</span> <span class="o">=</span> <span class="n">VirtualClientConnection</span><span class="o">.</span><span class="n">_proto2object</span><span class="p">(</span><span class="n">proto</span><span class="o">.</span><span class="n">connection</span><span class="p">)</span>
+        <span class="c1"># connection = _deserialize(blob=proto.connection, from_proto=True)</span>
+        <span class="k">return</span> <span class="n">SoloRoute</span><span class="p">(</span>
+            <span class="n">destination</span><span class="o">=</span><span class="n">SpecificLocation</span><span class="o">.</span><span class="n">_proto2object</span><span class="p">(</span><span class="n">proto</span><span class="o">.</span><span class="n">destination</span><span class="p">),</span>
+            <span class="n">connection</span><span class="o">=</span><span class="n">connection</span><span class="p">,</span>
+        <span class="p">)</span>
+
+<div class="viewcode-block" id="SoloRoute.get_protobuf_schema"><a class="viewcode-back" href="../../../../api_reference/syft.core.io.route.html#syft.core.io.route.SoloRoute.get_protobuf_schema">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_protobuf_schema</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GeneratedProtocolMessageType</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">SoloRoute_PB</span></div></div>
+
+
+<div class="viewcode-block" id="BroadcastRoute"><a class="viewcode-back" href="../../../../api_reference/syft.core.io.route.html#syft.core.io.route.BroadcastRoute">[docs]</a><span class="k">class</span> <span class="nc">BroadcastRoute</span><span class="p">(</span><span class="n">SoloRoute</span><span class="p">):</span>
+    <span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">    A route used for pub/sub type systems.</span>
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">destination</span><span class="p">:</span> <span class="n">Location</span><span class="p">,</span> <span class="n">connection</span><span class="p">:</span> <span class="n">ClientConnection</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="n">destination</span><span class="o">=</span><span class="n">destination</span><span class="p">,</span> <span class="n">connection</span><span class="o">=</span><span class="n">connection</span><span class="p">)</span></div>
+        <span class="c1"># self.connection.topic = destination.topic</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

@@ -386,6 +386,11 @@ command doesn’t work for you…</p>
 </pre></div>
 </div>
 </li>
+<li><p>Step 5.5: Install Syft</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install syft
+</pre></div>
+</div>
+</li>
 </ul>
 </section>
 <section id="step-6-install-docker">
@@ -455,7 +460,7 @@ command doesn’t work for you…</p>
 <ul>
 <li><p>Step 8.1: Launch Hagrid</p>
 <p>Just to make sure our installation is correct and working. Open a new terminal and run the following:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda activate syft
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda activate syft_env
 hagrid launch <span class="nb">test</span>
 </pre></div>
 </div>
@@ -468,7 +473,7 @@ internet is slow you’ll need to be patient. The logging should eventually stop
 </li>
 <li><p>Step 8.2: Launch Juptyer Lab</p>
 <p>With hagrid still running, open a new terminal (Command-N if you have Terminal selected) and run the following:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda activate syft
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda activate syft_env
 jupyter lab
 </pre></div>
 </div>

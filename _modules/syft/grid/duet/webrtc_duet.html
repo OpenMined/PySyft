@@ -1,0 +1,535 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.grid.duet.webrtc_duet &#8212; PySyft  documentation</title>
+    
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/pysyft.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.grid.duet.webrtc_duet</h1><div class="highlight"><pre>
+<span></span><span class="sd">&quot;&quot;&quot;</span>
+<span class="sd">PySyft Duet (WebRTC)</span>
+
+<span class="sd">This class aims to implement the PySyft Duet concept by using WebRTC protocol as a</span>
+<span class="sd">connection channel in order to allow two different users to establish a direct</span>
+<span class="sd">connection with high-quality Real-time Communication using private addresses.</span>
+
+<span class="sd">The most common example showing how it can be used is the notebook demo example:</span>
+
+<span class="sd">Two different jupyter / collab notebooks in different machines using private addresses</span>
+<span class="sd">behind routers, proxies and firewalls can connect using a full-duplex channel</span>
+<span class="sd">to perform machine learning and data science tasks, working as a client</span>
+<span class="sd">and server at the same time.</span>
+
+<span class="sd">PS 1: You need a signaling server running somewhere.</span>
+<span class="sd">If you don&#39;t know any public address running this service, or want to set up your own</span>
+<span class="sd">signaling network you can use PyGrid&#39;s network app.</span>
+
+<span class="sd">For local development you can run:</span>
+<span class="sd">$ python src/syft/grid/example_nodes/network.py</span>
+
+<span class="sd">PS 2: The PyGrid repo has a complimentary branch that matches the current PySyft release.</span>
+<span class="sd">To use this feature you must use the correct PyGrid branch.</span>
+<span class="sd">(https://github.com/OpenMined/PyGrid/)</span>
+
+<span class="sd">You can get more details about all this process, in the syft/grid/connections/webrtc.py</span>
+<span class="sd">source code.</span>
+<span class="sd">&quot;&quot;&quot;</span>
+
+<span class="c1"># stdlib</span>
+<span class="kn">import</span> <span class="nn">asyncio</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">SigningKey</span>
+
+<span class="c1"># syft relative</span>
+<span class="kn">from</span> <span class="nn">...</span> <span class="kn">import</span> <span class="n">serialize</span>
+<span class="kn">from</span> <span class="nn">...core.io.route</span> <span class="kn">import</span> <span class="n">SoloRoute</span>
+<span class="kn">from</span> <span class="nn">...core.node.common.metadata</span> <span class="kn">import</span> <span class="n">Metadata</span>
+<span class="kn">from</span> <span class="nn">...core.node.domain.client</span> <span class="kn">import</span> <span class="n">DomainClient</span>
+<span class="kn">from</span> <span class="nn">...core.node.domain.domain</span> <span class="kn">import</span> <span class="n">Domain</span>
+<span class="kn">from</span> <span class="nn">...logger</span> <span class="kn">import</span> <span class="n">error</span>
+<span class="kn">from</span> <span class="nn">...logger</span> <span class="kn">import</span> <span class="n">traceback_and_raise</span>
+<span class="kn">from</span> <span class="nn">..connections.webrtc</span> <span class="kn">import</span> <span class="n">WebRTCConnection</span>
+<span class="kn">from</span> <span class="nn">..duet.signaling_client</span> <span class="kn">import</span> <span class="n">SignalingClient</span>
+<span class="kn">from</span> <span class="nn">..services.signaling_service</span> <span class="kn">import</span> <span class="n">AnswerPullRequestMessage</span>
+<span class="kn">from</span> <span class="nn">..services.signaling_service</span> <span class="kn">import</span> <span class="n">InvalidLoopBackRequest</span>
+<span class="kn">from</span> <span class="nn">..services.signaling_service</span> <span class="kn">import</span> <span class="n">OfferPullRequestMessage</span>
+<span class="kn">from</span> <span class="nn">..services.signaling_service</span> <span class="kn">import</span> <span class="n">SignalingAnswerMessage</span>
+<span class="kn">from</span> <span class="nn">..services.signaling_service</span> <span class="kn">import</span> <span class="n">SignalingOfferMessage</span>
+
+
+<div class="viewcode-block" id="Duet"><a class="viewcode-back" href="../../../../api_reference/syft.grid.duet.webrtc_duet.html#syft.grid.duet.webrtc_duet.Duet">[docs]</a><span class="k">class</span> <span class="nc">Duet</span><span class="p">(</span><span class="n">DomainClient</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">node</span><span class="p">:</span> <span class="n">Domain</span><span class="p">,</span>
+        <span class="n">target_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">signaling_client</span><span class="p">:</span> <span class="n">SignalingClient</span><span class="p">,</span>
+        <span class="n">offer</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">True</span><span class="p">,</span>
+    <span class="p">):</span>
+        <span class="c1"># Generate a signing key</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signing_key</span> <span class="o">=</span> <span class="n">SigningKey</span><span class="o">.</span><span class="n">generate</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">verify_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signing_key</span><span class="o">.</span><span class="n">verify_key</span>
+
+        <span class="c1"># Async Queues</span>
+        <span class="c1"># These queues will be used in order to enqueue/dequeue</span>
+        <span class="c1"># messages to be sent to the signaling server.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_push_msg_queue</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_pull_msg_queue</span><span class="p">:</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">Queue</span><span class="p">()</span>
+
+        <span class="c1"># As we need to inject a node instance inside of</span>
+        <span class="c1"># a bidirectional connection in order to allow this</span>
+        <span class="c1"># connection to work as a client and server using the</span>
+        <span class="c1"># same channel. We need to be aware about forwarding</span>
+        <span class="c1"># node instance references in order to avoid multiple</span>
+        <span class="c1"># references to the same object (this makes the garbage</span>
+        <span class="c1"># collecting difficult).</span>
+        <span class="c1"># A good solution to avoid this problem is forward just</span>
+        <span class="c1"># weak references. These references works like a proxy</span>
+        <span class="c1"># not creating a  strong reference to the object.</span>
+        <span class="c1"># So, If we delete the real object instance, the</span>
+        <span class="c1"># garbage collect will call the __del__ method without problem.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">node</span> <span class="o">=</span> <span class="n">node</span>
+
+        <span class="c1"># WebRTCConnection instance ( Bidirectional Connection )</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span> <span class="o">=</span> <span class="n">WebRTCConnection</span><span class="p">(</span><span class="n">node</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="p">)</span>
+
+        <span class="c1"># Client used to exchange signaling messages in order to establish a connection</span>
+        <span class="c1"># NOTE: In the future it may be a good idea to modularize this client to make</span>
+        <span class="c1"># it pluggable using different connection protocols.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span> <span class="o">=</span> <span class="n">signaling_client</span>
+
+        <span class="c1"># If this peer will not start the signaling process</span>
+        <span class="k">if</span> <span class="ow">not</span> <span class="n">offer</span><span class="p">:</span>
+            <span class="c1"># Start adding an OfferPullRequest in order to verify if</span>
+            <span class="c1"># the desired address pushed an offer request to connect with you.</span>
+            <span class="c1"># This will trigger the pull async task to be check signaling notifications</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pull_msg_queue</span><span class="o">.</span><span class="n">put_nowait</span><span class="p">(</span>
+                <span class="n">OfferPullRequestMessage</span><span class="p">(</span>
+                    <span class="n">address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+                    <span class="n">target_peer</span><span class="o">=</span><span class="n">target_id</span><span class="p">,</span>
+                    <span class="n">host_peer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">duet_id</span><span class="p">,</span>
+                    <span class="n">reply_to</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># Push a WebRTC offer request to the address.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">send_offer</span><span class="p">(</span><span class="n">target_id</span><span class="o">=</span><span class="n">target_id</span><span class="p">)</span>
+
+        <span class="c1"># This flag is used in order to finish the signaling process gracefully</span>
+        <span class="c1"># While self._available is True, the pull/push tasks will be running</span>
+        <span class="c1"># This flag will be setted to false when:</span>
+        <span class="c1"># 1 - End of the signaling process (checked by _update_availability()).</span>
+        <span class="c1"># 2 - Any Exception raised during these tasks.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_available</span> <span class="o">=</span> <span class="kc">True</span>
+
+        <span class="c1"># This attribute will be setted during the signaling messages exchange,</span>
+        <span class="c1"># and used to create a SoloRoute for the both sides.</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_client_metadata</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Metadata</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Start async tasks and wait until one of them finishes.</span>
+        <span class="c1"># As mentioned before, these tasks can be finished by two reasons:</span>
+        <span class="c1"># 1 - Signaling process ends</span>
+        <span class="c1"># 2 - Unexpected Exception</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">notify</span><span class="p">())</span>
+
+            <span class="c1"># If client_metadata != None, then the connection was created successfully.</span>
+            <span class="k">if</span> <span class="bp">self</span><span class="o">.</span><span class="n">_client_metadata</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+                <span class="c1"># Deserialize client&#39;s metadata in order to obtain</span>
+                <span class="c1"># PySyft&#39;s location structure</span>
+                <span class="p">(</span>  <span class="c1"># type: ignore</span>
+                    <span class="n">spec_location</span><span class="p">,</span>
+                    <span class="n">name</span><span class="p">,</span>
+                    <span class="n">_</span><span class="p">,</span>
+                <span class="p">)</span> <span class="o">=</span> <span class="n">DomainClient</span><span class="o">.</span><span class="n">deserialize_client_metadata_from_node</span><span class="p">(</span>
+                    <span class="n">metadata</span><span class="o">=</span><span class="n">serialize</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">_client_metadata</span><span class="p">)</span>
+                <span class="p">)</span>
+
+                <span class="c1"># Create a SoloRoute</span>
+                <span class="n">route</span> <span class="o">=</span> <span class="n">SoloRoute</span><span class="p">(</span><span class="n">destination</span><span class="o">=</span><span class="n">spec_location</span><span class="p">,</span> <span class="n">connection</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="p">)</span>
+
+                <span class="c1"># Intialize the super class</span>
+                <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+                    <span class="n">domain</span><span class="o">=</span><span class="n">spec_location</span><span class="p">,</span>
+                    <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+                    <span class="n">routes</span><span class="o">=</span><span class="p">[</span><span class="n">route</span><span class="p">],</span>
+                    <span class="n">signing_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signing_key</span><span class="p">,</span>
+                    <span class="n">verify_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">verify_key</span><span class="p">,</span>
+                <span class="p">)</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">_client_address</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">address</span>
+            <span class="c1"># If client_metada is None, then an exception occurred during the process</span>
+            <span class="c1"># The exception has been caught and saved in self._exception</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="c1"># NOTE: Maybe we should create a custom exception type.</span>
+                <span class="n">traceback_and_raise</span><span class="p">(</span>
+                    <span class="ne">Exception</span><span class="p">(</span>
+                        <span class="sa">f</span><span class="s2">&quot;Something went wrong during the Duet init process. </span><span class="si">{</span><span class="bp">self</span><span class="o">.</span><span class="n">_exception</span><span class="si">}</span><span class="s2">&quot;</span>
+                    <span class="p">)</span>
+                <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">traceback_and_raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">notify</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Enqueue Pull/Push async tasks</span>
+            <span class="n">push_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">push</span><span class="p">())</span>
+            <span class="n">pull_task</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">ensure_future</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">pull</span><span class="p">())</span>
+
+            <span class="c1"># Wait until one of them finishes</span>
+            <span class="n">done</span><span class="p">,</span> <span class="n">pending</span> <span class="o">=</span> <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">wait</span><span class="p">(</span>
+                <span class="p">[</span><span class="n">pull_task</span><span class="p">,</span> <span class="n">push_task</span><span class="p">],</span> <span class="n">return_when</span><span class="o">=</span><span class="n">asyncio</span><span class="o">.</span><span class="n">FIRST_COMPLETED</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Finish the pending one.</span>
+            <span class="k">for</span> <span class="n">task</span> <span class="ow">in</span> <span class="n">pending</span><span class="p">:</span>
+                <span class="n">task</span><span class="o">.</span><span class="n">cancel</span><span class="p">()</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">traceback_and_raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">close</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">push</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="c1"># This task is responsible for pushing offer/answer messages.</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_available</span><span class="p">:</span>
+                <span class="c1"># If push_msg_queue is empty,</span>
+                <span class="c1"># give up task queue priority, giving</span>
+                <span class="c1"># computing time to the next task.</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_push_msg_queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+                <span class="c1"># If self.push_msg_queue.get() returned a message (SignalingOfferMessage,SignalingAnswerMessage)</span>
+                <span class="c1"># send it to the signaling server.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">send_immediate_msg_without_reply</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Got an exception in Duet push. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">error</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+            <span class="c1"># If any exception raises, set the self._available flag to False</span>
+            <span class="c1"># in order to finish gracefully all the async tasks and save the exception.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_available</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span><span class="p">:</span> <span class="ne">Exception</span> <span class="o">=</span> <span class="n">e</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">pull</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">while</span> <span class="bp">self</span><span class="o">.</span><span class="n">_available</span><span class="p">:</span>
+                <span class="c1"># If pull_msg_queue is empty,</span>
+                <span class="c1"># give up task queue priority, giving</span>
+                <span class="c1"># computing time to the next task.</span>
+                <span class="n">msg</span> <span class="o">=</span> <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pull_msg_queue</span><span class="o">.</span><span class="n">get</span><span class="p">()</span>
+
+                <span class="c1"># If self.pull_msg_queue.get() returned a message (OfferPullRequestMessage,AnswerPullRequestMessage)</span>
+                <span class="c1"># send it to the signaling server.</span>
+                <span class="n">_response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">send_immediate_msg_with_reply</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">)</span>
+
+                <span class="c1"># If Signaling Offer Message was found</span>
+                <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_response</span><span class="p">,</span> <span class="n">SignalingOfferMessage</span><span class="p">):</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_send_answer</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">_response</span><span class="p">)</span>
+                <span class="c1"># If Signaling Answer Message was found</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_response</span><span class="p">,</span> <span class="n">SignalingAnswerMessage</span><span class="p">):</span>
+                    <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_ack</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">_response</span><span class="p">)</span>
+                <span class="c1"># If LoopBack Message it was a loopback request</span>
+                <span class="k">elif</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_response</span><span class="p">,</span> <span class="n">InvalidLoopBackRequest</span><span class="p">):</span>
+                    <span class="n">traceback_and_raise</span><span class="p">(</span>
+                        <span class="ne">Exception</span><span class="p">(</span>
+                            <span class="s2">&quot;You can&#39;t perform p2p connection using your current node address as a destination peer.&quot;</span>
+                        <span class="p">)</span>
+                    <span class="p">)</span>
+
+                <span class="c1"># If Signaling Message weren&#39;t found</span>
+                <span class="k">else</span><span class="p">:</span>
+                    <span class="c1"># Just enqueue the request to be processed later.</span>
+                    <span class="bp">self</span><span class="o">.</span><span class="n">_pull_msg_queue</span><span class="o">.</span><span class="n">put_nowait</span><span class="p">(</span><span class="n">msg</span><span class="p">)</span>
+
+                <span class="c1"># Checks if the signaling process is over.</span>
+                <span class="bp">self</span><span class="o">.</span><span class="n">_available</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">_update_availability</span><span class="p">()</span>
+                <span class="k">await</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">sleep</span><span class="p">(</span><span class="mf">0.5</span><span class="p">)</span>
+
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">log</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Got an exception in Duet pull. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+            <span class="n">error</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+            <span class="c1"># If any exception raises, set the self._available flag to False</span>
+            <span class="c1"># in order to finish gracefully all the async tasks and save the exception.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_available</span> <span class="o">=</span> <span class="kc">False</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_exception</span> <span class="o">=</span> <span class="n">e</span>
+
+<div class="viewcode-block" id="Duet.send_offer"><a class="viewcode-back" href="../../../../api_reference/syft.grid.duet.webrtc_duet.html#syft.grid.duet.webrtc_duet.Duet.send_offer">[docs]</a>    <span class="k">def</span> <span class="nf">send_offer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">target_id</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Starts a new signaling process by creating a new</span>
+<span class="sd">        offer message and pushing it to the Signaling Server.&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Generates an offer request payload containing</span>
+            <span class="c1"># local network description data/metadata (IP, MAC, Mask, etc...)</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">_set_offer</span><span class="p">())</span>
+
+            <span class="c1"># Creates a PySyft&#39;s SignalingOfferMessage</span>
+            <span class="n">signaling_offer</span> <span class="o">=</span> <span class="n">SignalingOfferMessage</span><span class="p">(</span>
+                <span class="n">address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>  <span class="c1"># Target&#39;s address</span>
+                <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>  <span class="c1"># Offer Payload</span>
+                <span class="n">host_metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">get_metadata_for_client</span><span class="p">(),</span>  <span class="c1"># Own Node Metadata</span>
+                <span class="n">target_peer</span><span class="o">=</span><span class="n">target_id</span><span class="p">,</span>
+                <span class="n">host_peer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">duet_id</span><span class="p">,</span>  <span class="c1"># Own Node ID</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Enqueue it in push msg queue to be sent to the signaling server.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_push_msg_queue</span><span class="o">.</span><span class="n">put_nowait</span><span class="p">(</span><span class="n">signaling_offer</span><span class="p">)</span>
+
+            <span class="c1"># Create/enqueue a new AnswerPullRequest in order to wait for signaling response.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_pull_msg_queue</span><span class="o">.</span><span class="n">put_nowait</span><span class="p">(</span>
+                <span class="n">AnswerPullRequestMessage</span><span class="p">(</span>
+                    <span class="n">address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+                    <span class="n">target_peer</span><span class="o">=</span><span class="n">target_id</span><span class="p">,</span>
+                    <span class="n">host_peer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">duet_id</span><span class="p">,</span>
+                    <span class="n">reply_to</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+                <span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">traceback_and_raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_send_answer</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignalingOfferMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Process SignalingOfferMessage and create a new</span>
+<span class="sd">        SignalingAnswerMessage as a response&quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Process received offer message updating target&#39;s remote address</span>
+            <span class="c1"># Generates an answer request payload containing</span>
+            <span class="c1"># local network description data/metadata (IP, MAC, Mask, etc...)</span>
+            <span class="n">payload</span> <span class="o">=</span> <span class="n">asyncio</span><span class="o">.</span><span class="n">run</span><span class="p">(</span><span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">_set_answer</span><span class="p">(</span><span class="n">payload</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">payload</span><span class="p">))</span>
+
+            <span class="c1"># Save remote node&#39;s metadata in roder to create a SoloRoute.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_client_metadata</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">host_metadata</span>
+
+            <span class="c1"># Create a new SignalingAnswerMessage</span>
+            <span class="n">signaling_answer</span> <span class="o">=</span> <span class="n">SignalingAnswerMessage</span><span class="p">(</span>
+                <span class="n">address</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+                <span class="n">payload</span><span class="o">=</span><span class="n">payload</span><span class="p">,</span>  <span class="c1"># Signaling answer payload</span>
+                <span class="n">host_metadata</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">node</span><span class="o">.</span><span class="n">get_metadata_for_client</span><span class="p">(),</span>  <span class="c1"># Own Node Metadata</span>
+                <span class="n">target_peer</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">host_peer</span><span class="p">,</span>  <span class="c1"># Remote Node ID</span>
+                <span class="n">host_peer</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signaling_client</span><span class="o">.</span><span class="n">duet_id</span><span class="p">,</span>
+            <span class="p">)</span>
+
+            <span class="c1"># Enqueue it in the push msg queue to be sent to the signaling server.</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">_push_msg_queue</span><span class="o">.</span><span class="n">put</span><span class="p">(</span><span class="n">signaling_answer</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">traceback_and_raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+    <span class="k">async</span> <span class="k">def</span> <span class="nf">_ack</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">msg</span><span class="p">:</span> <span class="n">SignalingAnswerMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Last signaling message, stores remote Node</span>
+<span class="sd">        metadata and updates target&#39;s remote address&quot;&quot;&quot;</span>
+
+        <span class="k">try</span><span class="p">:</span>
+            <span class="c1"># Save remote node&#39;s metadata in roder to create a SoloRoute.</span>
+            <span class="bp">self</span><span class="o">.</span><span class="n">_client_metadata</span> <span class="o">=</span> <span class="n">msg</span><span class="o">.</span><span class="n">host_metadata</span>
+
+            <span class="c1"># Process received offer message updating target&#39;s remote address</span>
+            <span class="k">await</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">_process_answer</span><span class="p">(</span><span class="n">payload</span><span class="o">=</span><span class="n">msg</span><span class="o">.</span><span class="n">payload</span><span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">traceback_and_raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">_update_availability</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">bool</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;Method used to check if the signaling process is over.</span>
+<span class="sd">        :return: Boolean flag, True if it&#39;s NOT over, and False if it&#39;s over.</span>
+<span class="sd">        :rtype: Boolean</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">try</span><span class="p">:</span>
+            <span class="k">return</span> <span class="p">(</span>
+                <span class="ow">not</span> <span class="bp">self</span><span class="o">.</span><span class="n">_pull_msg_queue</span><span class="o">.</span><span class="n">empty</span><span class="p">()</span>
+                <span class="ow">and</span> <span class="bp">self</span><span class="o">.</span><span class="n">connection</span><span class="o">.</span><span class="n">peer_connection</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span>
+            <span class="p">)</span>
+        <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+            <span class="n">traceback_and_raise</span><span class="p">(</span><span class="n">e</span><span class="p">)</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

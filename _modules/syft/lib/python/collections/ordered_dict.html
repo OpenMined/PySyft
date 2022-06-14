@@ -1,0 +1,400 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.lib.python.collections.ordered_dict &#8212; PySyft  documentation</title>
+    
+  <link href="../../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../../_static/css/pysyft.css" />
+    
+  <link rel="preload" as="script" href="../../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../../" id="documentation_options" src="../../../../../_static/documentation_options.js"></script>
+    <script src="../../../../../_static/jquery.js"></script>
+    <script src="../../../../../_static/underscore.js"></script>
+    <script src="../../../../../_static/doctools.js"></script>
+    <script src="../../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../../index.html">
+  <img src="../../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.lib.python.collections.ordered_dict</h1><div class="highlight"><pre>
+<span></span><span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">collections</span> <span class="kn">import</span> <span class="n">OrderedDict</span> <span class="k">as</span> <span class="n">PyOrderedDict</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">ItemsView</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">KeysView</span>
+<span class="kn">from</span> <span class="nn">collections.abc</span> <span class="kn">import</span> <span class="n">ValuesView</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">google.protobuf.reflection</span> <span class="kn">import</span> <span class="n">GeneratedProtocolMessageType</span>
+
+<span class="c1"># syft relative</span>
+<span class="kn">from</span> <span class="nn">....</span> <span class="kn">import</span> <span class="n">deserialize</span>
+<span class="kn">from</span> <span class="nn">....</span> <span class="kn">import</span> <span class="n">serialize</span>
+<span class="kn">from</span> <span class="nn">....core.common.serde.serializable</span> <span class="kn">import</span> <span class="n">bind_protobuf</span>
+<span class="kn">from</span> <span class="nn">....core.common.uid</span> <span class="kn">import</span> <span class="n">UID</span>
+<span class="kn">from</span> <span class="nn">....logger</span> <span class="kn">import</span> <span class="n">traceback_and_raise</span>
+<span class="kn">from</span> <span class="nn">....proto.lib.python.collections.ordered_dict_pb2</span> <span class="kn">import</span> <span class="p">(</span>
+    <span class="n">OrderedDict</span> <span class="k">as</span> <span class="n">OrderedDict_PB</span><span class="p">,</span>
+<span class="p">)</span>
+<span class="kn">from</span> <span class="nn">..iterator</span> <span class="kn">import</span> <span class="n">Iterator</span>
+<span class="kn">from</span> <span class="nn">..primitive_factory</span> <span class="kn">import</span> <span class="n">PrimitiveFactory</span>
+<span class="kn">from</span> <span class="nn">..primitive_factory</span> <span class="kn">import</span> <span class="n">isprimitive</span>
+<span class="kn">from</span> <span class="nn">..primitive_interface</span> <span class="kn">import</span> <span class="n">PyPrimitive</span>
+<span class="kn">from</span> <span class="nn">..types</span> <span class="kn">import</span> <span class="n">SyPrimitiveRet</span>
+<span class="kn">from</span> <span class="nn">..util</span> <span class="kn">import</span> <span class="n">downcast</span>
+<span class="kn">from</span> <span class="nn">..util</span> <span class="kn">import</span> <span class="n">upcast</span>
+
+
+<div class="viewcode-block" id="OrderedDict"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict">[docs]</a><span class="nd">@bind_protobuf</span>
+<span class="k">class</span> <span class="nc">OrderedDict</span><span class="p">(</span><span class="n">PyOrderedDict</span><span class="p">,</span> <span class="n">PyPrimitive</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">_id</span><span class="p">:</span> <span class="n">UID</span> <span class="o">=</span> <span class="n">UID</span><span class="p">(),</span> <span class="o">**</span><span class="n">kwds</span><span class="p">:</span> <span class="n">Any</span><span class="p">):</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="n">_id</span>
+
+    <span class="nd">@property</span>
+    <span class="k">def</span> <span class="nf">id</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">UID</span><span class="p">:</span>
+        <span class="sd">&quot;&quot;&quot;We reveal PyPrimitive.id as a property to discourage users and</span>
+<span class="sd">        developers of Syft from modifying .id attributes after an object</span>
+<span class="sd">        has been initialized.</span>
+
+<span class="sd">        :return: returns the unique id of the object</span>
+<span class="sd">        :rtype: UID</span>
+<span class="sd">        &quot;&quot;&quot;</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">_id</span>
+
+    <span class="k">def</span> <span class="fm">__contains__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__contains__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__delitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__delitem__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__eq__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__eq__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__getitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__getitem__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">isprimitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># we can have torch.Tensor and other types</span>
+            <span class="k">return</span> <span class="n">res</span>
+
+    <span class="k">def</span> <span class="fm">__iter__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">Iterator</span><span class="p">(</span><span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__iter__</span><span class="p">(),</span> <span class="n">max_len</span><span class="o">=</span><span class="n">max_len</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__len__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__len__</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__ne__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__ne__</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="fm">__reversed__</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="c1"># returns &lt;class &#39;odict_iterator&#39;&gt;</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__reversed__</span><span class="p">()</span>
+
+    <span class="k">def</span> <span class="fm">__setitem__</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__setitem__</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+
+<div class="viewcode-block" id="OrderedDict.clear"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.clear">[docs]</a>    <span class="k">def</span> <span class="nf">clear</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">clear</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.copy"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.copy">[docs]</a>    <span class="k">def</span> <span class="nf">copy</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">copy</span><span class="p">()</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.FromKeys"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.FromKeys">[docs]</a>    <span class="nd">@classmethod</span>
+    <span class="k">def</span> <span class="nf">FromKeys</span><span class="p">(</span><span class="bp">cls</span><span class="p">,</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="bp">cls</span><span class="p">(</span><span class="n">PyOrderedDict</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">value</span><span class="p">))</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.fromkeys"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.fromkeys">[docs]</a>    <span class="k">def</span> <span class="nf">fromkeys</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">iterable</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">value</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">fromkeys</span><span class="p">(</span><span class="n">iterable</span><span class="p">,</span> <span class="n">value</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.dict_get"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.dict_get">[docs]</a>    <span class="k">def</span> <span class="nf">dict_get</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">get</span><span class="p">(</span><span class="n">other</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">isprimitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">):</span>
+            <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="c1"># we can have torch.Tensor and other types</span>
+            <span class="k">return</span> <span class="n">res</span></div>
+
+<div class="viewcode-block" id="OrderedDict.items"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.items">[docs]</a>    <span class="k">def</span> <span class="nf">items</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="k">return</span> <span class="n">Iterator</span><span class="p">(</span><span class="n">ItemsView</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">max_len</span><span class="o">=</span><span class="n">max_len</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.keys"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.keys">[docs]</a>    <span class="k">def</span> <span class="nf">keys</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="k">return</span> <span class="n">Iterator</span><span class="p">(</span><span class="n">KeysView</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">max_len</span><span class="o">=</span><span class="n">max_len</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.move_to_end"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.move_to_end">[docs]</a>    <span class="k">def</span> <span class="nf">move_to_end</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">other</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">last</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">move_to_end</span><span class="p">(</span><span class="n">other</span><span class="p">,</span> <span class="n">last</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.pop"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.pop">[docs]</a>    <span class="k">def</span> <span class="nf">pop</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">pop</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.popitem"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.popitem">[docs]</a>    <span class="k">def</span> <span class="nf">popitem</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">last</span><span class="p">:</span> <span class="n">Any</span> <span class="o">=</span> <span class="kc">True</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">popitem</span><span class="p">(</span><span class="n">last</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.setdefault"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.setdefault">[docs]</a>    <span class="k">def</span> <span class="nf">setdefault</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">key</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">default</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">object</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">setdefault</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="n">default</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.update"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.update">[docs]</a>    <span class="k">def</span> <span class="nf">update</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">SyPrimitiveRet</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="n">res</span> <span class="o">=</span> <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="n">update</span><span class="p">(</span><span class="o">*</span><span class="n">args</span><span class="p">,</span> <span class="o">**</span><span class="n">kwds</span><span class="p">)</span>
+        <span class="k">return</span> <span class="n">PrimitiveFactory</span><span class="o">.</span><span class="n">generate_primitive</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">res</span><span class="p">)</span></div>
+
+<div class="viewcode-block" id="OrderedDict.values"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.values">[docs]</a>    <span class="k">def</span> <span class="nf">values</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="n">args</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">max_len</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">int</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Iterator</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+        <span class="c1"># this is what the super type does and there is a test in dict_test.py</span>
+        <span class="c1"># test_values which checks for this so we could disable the test or</span>
+        <span class="c1"># keep this workaround</span>
+        <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">args</span><span class="p">)</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="p">:</span>
+            <span class="n">traceback_and_raise</span><span class="p">(</span>
+                <span class="ne">TypeError</span><span class="p">(</span><span class="s2">&quot;values() takes 1 positional argument but 2 were given&quot;</span><span class="p">)</span>
+            <span class="p">)</span>
+        <span class="k">return</span> <span class="n">Iterator</span><span class="p">(</span><span class="n">ValuesView</span><span class="p">(</span><span class="bp">self</span><span class="p">),</span> <span class="n">max_len</span><span class="o">=</span><span class="n">max_len</span><span class="p">)</span></div>
+
+    <span class="k">def</span> <span class="nf">_object2proto</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">OrderedDict_PB</span><span class="p">:</span>
+        <span class="n">id_</span> <span class="o">=</span> <span class="n">serialize</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="c1"># serialize to bytes so that we can avoid using StorableObject</span>
+        <span class="c1"># otherwise we get recursion where the permissions of StorableObject</span>
+        <span class="c1"># themselves utilise Dict</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">serialize</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">downcast</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">element</span><span class="p">),</span> <span class="n">to_bytes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">keys</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="c1"># serialize to bytes so that we can avoid using StorableObject</span>
+        <span class="c1"># otherwise we get recursion where the permissions of StorableObject</span>
+        <span class="c1"># themselves utilise Dict</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">serialize</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">downcast</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">element</span><span class="p">),</span> <span class="n">to_bytes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">values</span><span class="p">()</span>
+        <span class="p">]</span>
+        <span class="k">return</span> <span class="n">OrderedDict_PB</span><span class="p">(</span><span class="nb">id</span><span class="o">=</span><span class="n">id_</span><span class="p">,</span> <span class="n">keys</span><span class="o">=</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="o">=</span><span class="n">values</span><span class="p">)</span>
+
+    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">_proto2object</span><span class="p">(</span><span class="n">proto</span><span class="p">:</span> <span class="n">OrderedDict_PB</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="s2">&quot;OrderedDict&quot;</span><span class="p">:</span>
+        <span class="n">id_</span><span class="p">:</span> <span class="n">UID</span> <span class="o">=</span> <span class="n">deserialize</span><span class="p">(</span><span class="n">blob</span><span class="o">=</span><span class="n">proto</span><span class="o">.</span><span class="n">id</span><span class="p">)</span>
+        <span class="c1"># deserialize from bytes so that we can avoid using StorableObject</span>
+        <span class="c1"># otherwise we get recursion where the permissions of StorableObject</span>
+        <span class="c1"># themselves utilise OrederedDict</span>
+        <span class="n">values</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">deserialize</span><span class="p">(</span><span class="n">blob</span><span class="o">=</span><span class="n">upcast</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">element</span><span class="p">),</span> <span class="n">from_bytes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">proto</span><span class="o">.</span><span class="n">values</span>
+        <span class="p">]</span>
+        <span class="c1"># deserialize from bytes so that we can avoid using StorableObject</span>
+        <span class="c1"># otherwise we get recursion where the permissions of StorableObject</span>
+        <span class="c1"># themselves utilise OrderedDict</span>
+        <span class="n">keys</span> <span class="o">=</span> <span class="p">[</span>
+            <span class="n">deserialize</span><span class="p">(</span><span class="n">blob</span><span class="o">=</span><span class="n">upcast</span><span class="p">(</span><span class="n">value</span><span class="o">=</span><span class="n">element</span><span class="p">),</span> <span class="n">from_bytes</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+            <span class="k">for</span> <span class="n">element</span> <span class="ow">in</span> <span class="n">proto</span><span class="o">.</span><span class="n">keys</span>
+        <span class="p">]</span>
+        <span class="n">new_dict</span> <span class="o">=</span> <span class="n">OrderedDict</span><span class="p">(</span><span class="nb">dict</span><span class="p">(</span><span class="nb">zip</span><span class="p">(</span><span class="n">keys</span><span class="p">,</span> <span class="n">values</span><span class="p">)))</span>
+        <span class="n">new_dict</span><span class="o">.</span><span class="n">_id</span> <span class="o">=</span> <span class="n">id_</span>
+        <span class="k">return</span> <span class="n">new_dict</span>
+
+<div class="viewcode-block" id="OrderedDict.get_protobuf_schema"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.get_protobuf_schema">[docs]</a>    <span class="nd">@staticmethod</span>
+    <span class="k">def</span> <span class="nf">get_protobuf_schema</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">GeneratedProtocolMessageType</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">OrderedDict_PB</span></div>
+
+<div class="viewcode-block" id="OrderedDict.upcast"><a class="viewcode-back" href="../../../../../api_reference/syft.lib.python.collections.html#syft.lib.python.collections.ordered_dict.OrderedDict.upcast">[docs]</a>    <span class="k">def</span> <span class="nf">upcast</span><span class="p">(</span><span class="bp">self</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">PyOrderedDict</span><span class="p">:</span>
+        <span class="c1"># recursively upcast</span>
+        <span class="k">return</span> <span class="n">OrderedDict</span><span class="p">((</span><span class="n">k</span><span class="p">,</span> <span class="n">upcast</span><span class="p">(</span><span class="n">v</span><span class="p">))</span> <span class="k">for</span> <span class="n">k</span><span class="p">,</span> <span class="n">v</span> <span class="ow">in</span> <span class="bp">self</span><span class="o">.</span><span class="n">items</span><span class="p">())</span></div></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

@@ -327,11 +327,12 @@ data owners and data scientists who can collectively train AI model using Syft.<
 </ol>
 <p>Congrats for making it this far! You only have one final step remaining, before you unleash the power of Hagrid!
 The final step is to launch a domain node, which is as easy as:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hagrid launch test_domain
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hagrid launch
 </pre></div>
 </div>
-<p>To stop the running node, you can run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hagrid land test_domain
+<p>To stop the running domain,
+Find the auto-assigned name of your domain (look at the lines just after you executed the above command) and run:</p>
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hagrid land &lt;name_of_domain&gt;
 </pre></div>
 </div>
 <p>But before stopping it, you can go to <code class="docutils literal notranslate"><span class="pre">`localhost:8081</span></code> in your <a class="reference external" href="localhost:8081">browser</a> to actually interact with the PyGrid Admin UI, where you can manage as a Data Owner your datasets, as well as incoming requests from data scientist.

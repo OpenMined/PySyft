@@ -1,0 +1,808 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.util &#8212; PySyft  documentation</title>
+    
+  <link href="../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../_static/css/pysyft.css" />
+    
+  <link rel="preload" as="script" href="../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../" id="documentation_options" src="../../_static/documentation_options.js"></script>
+    <script src="../../_static/jquery.js"></script>
+    <script src="../../_static/underscore.js"></script>
+    <script src="../../_static/doctools.js"></script>
+    <script src="../../_static/clipboard.min.js"></script>
+    <script src="../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../genindex.html" />
+    <link rel="search" title="Search" href="../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../index.html">
+  <img src="../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.util</h1><div class="highlight"><pre>
+<span></span><span class="c1"># stdlib</span>
+<span class="kn">import</span> <span class="nn">os</span>
+<span class="kn">from</span> <span class="nn">pathlib</span> <span class="kn">import</span> <span class="n">Path</span>
+<span class="kn">from</span> <span class="nn">secrets</span> <span class="kn">import</span> <span class="n">randbelow</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">forbiddenfruit</span> <span class="kn">import</span> <span class="n">curse</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">SigningKey</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">VerifyKey</span>
+
+<span class="c1"># syft absolute</span>
+<span class="kn">import</span> <span class="nn">syft</span>
+
+<span class="c1"># syft relative</span>
+<span class="kn">from</span> <span class="nn">.logger</span> <span class="kn">import</span> <span class="n">critical</span>
+<span class="kn">from</span> <span class="nn">.logger</span> <span class="kn">import</span> <span class="n">debug</span>
+<span class="kn">from</span> <span class="nn">.logger</span> <span class="kn">import</span> <span class="n">error</span>
+<span class="kn">from</span> <span class="nn">.logger</span> <span class="kn">import</span> <span class="n">traceback_and_raise</span>
+
+
+<div class="viewcode-block" id="validate_type"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.validate_type">[docs]</a><span class="k">def</span> <span class="nf">validate_type</span><span class="p">(</span><span class="n">_object</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">,</span> <span class="n">optional</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">_object</span><span class="p">,</span> <span class="n">_type</span><span class="p">)</span> <span class="ow">or</span> <span class="p">(</span><span class="n">optional</span> <span class="ow">and</span> <span class="p">(</span><span class="n">_object</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">)):</span>
+        <span class="k">return</span> <span class="n">_object</span>
+
+    <span class="n">traceback_and_raise</span><span class="p">(</span>
+        <span class="sa">f</span><span class="s2">&quot;Object </span><span class="si">{</span><span class="n">_object</span><span class="si">}</span><span class="s2"> should&#39;ve been of type </span><span class="si">{</span><span class="n">_type</span><span class="si">}</span><span class="s2">, not </span><span class="si">{</span><span class="n">_object</span><span class="si">}</span><span class="s2">.&quot;</span>
+    <span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="validate_field"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.validate_field">[docs]</a><span class="k">def</span> <span class="nf">validate_field</span><span class="p">(</span><span class="n">_object</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">_field</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+    <span class="nb">object</span> <span class="o">=</span> <span class="nb">getattr</span><span class="p">(</span><span class="n">_object</span><span class="p">,</span> <span class="n">_field</span><span class="p">,</span> <span class="kc">None</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="nb">object</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">object</span>
+
+    <span class="n">traceback_and_raise</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Object </span><span class="si">{</span><span class="n">_object</span><span class="si">}</span><span class="s2"> has no </span><span class="si">{</span><span class="n">_field</span><span class="si">}</span><span class="s2"> field set.&quot;</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="get_subclasses"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.get_subclasses">[docs]</a><span class="k">def</span> <span class="nf">get_subclasses</span><span class="p">(</span><span class="n">obj_type</span><span class="p">:</span> <span class="nb">type</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">List</span><span class="p">[</span><span class="nb">type</span><span class="p">]:</span>
+    <span class="sd">&quot;&quot;&quot;Recursively generate the list of all classes within the sub-tree of an object</span>
+
+<span class="sd">    As a paradigm in Syft, we often allow for something to be known about by another</span>
+<span class="sd">    part of the codebase merely because it has subclassed a particular object. While</span>
+<span class="sd">    this can be a big &quot;magicish&quot; it also can simplify future extensions and reduce</span>
+<span class="sd">    the likelihood of small mistakes (if done right).</span>
+
+<span class="sd">    This is a utility function which allows us to look for sub-classes and the sub-classes</span>
+<span class="sd">    of those sub-classes etc. returning a full list of descendants of a class in the inheritance</span>
+<span class="sd">    hierarchy.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj_type: the type we want to look for sub-classes of</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        the list of subclasses of obj_type</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="n">classes</span> <span class="o">=</span> <span class="nb">list</span><span class="p">()</span>
+    <span class="k">for</span> <span class="n">sc</span> <span class="ow">in</span> <span class="n">obj_type</span><span class="o">.</span><span class="n">__subclasses__</span><span class="p">():</span>
+        <span class="n">classes</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">sc</span><span class="p">)</span>
+        <span class="n">classes</span> <span class="o">+=</span> <span class="n">get_subclasses</span><span class="p">(</span><span class="n">obj_type</span><span class="o">=</span><span class="n">sc</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">classes</span></div>
+
+
+<div class="viewcode-block" id="index_modules"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.index_modules">[docs]</a><span class="k">def</span> <span class="nf">index_modules</span><span class="p">(</span><span class="n">a_dict</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">keys</span><span class="p">:</span> <span class="n">List</span><span class="p">[</span><span class="nb">str</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Recursively find a syft module from its path</span>
+
+<span class="sd">    This is the recursive inner function of index_syft_by_module_name.</span>
+<span class="sd">    See that method for a full description.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        a_dict: a module we&#39;re traversing</span>
+<span class="sd">        keys: the list of string attributes we&#39;re using to traverse the module</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a reference to the final object</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+
+    <span class="k">if</span> <span class="nb">len</span><span class="p">(</span><span class="n">keys</span><span class="p">)</span> <span class="o">==</span> <span class="mi">0</span><span class="p">:</span>
+        <span class="k">return</span> <span class="n">a_dict</span>
+    <span class="k">return</span> <span class="n">index_modules</span><span class="p">(</span><span class="n">a_dict</span><span class="o">=</span><span class="n">a_dict</span><span class="o">.</span><span class="vm">__dict__</span><span class="p">[</span><span class="n">keys</span><span class="p">[</span><span class="mi">0</span><span class="p">]],</span> <span class="n">keys</span><span class="o">=</span><span class="n">keys</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span></div>
+
+
+<div class="viewcode-block" id="index_syft_by_module_name"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.index_syft_by_module_name">[docs]</a><span class="k">def</span> <span class="nf">index_syft_by_module_name</span><span class="p">(</span><span class="n">fully_qualified_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">object</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Look up a Syft class/module/function from full path and name</span>
+
+<span class="sd">    Sometimes we want to use the fully qualified name (such as one</span>
+<span class="sd">    generated from the &#39;get_fully_qualified_name&#39; method below) to</span>
+<span class="sd">    fetch an actual reference. This is most commonly used in deserialization</span>
+<span class="sd">    so that we can have generic protobuf objects which just have a string</span>
+<span class="sd">    representation of the specific object it is meant to deserialize to.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        fully_qualified_name: the name in str of a module, class, or function</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        a reference to the actual object at that string path</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">attr_list</span> <span class="o">=</span> <span class="n">fully_qualified_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)</span>
+
+    <span class="c1"># we deal with VerifyAll differently, because we don&#39;t it be imported and used by users</span>
+    <span class="k">if</span> <span class="n">attr_list</span><span class="p">[</span><span class="o">-</span><span class="mi">1</span><span class="p">]</span> <span class="o">==</span> <span class="s2">&quot;VerifyAll&quot;</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">type</span><span class="p">(</span><span class="n">syft</span><span class="o">.</span><span class="n">core</span><span class="o">.</span><span class="n">common</span><span class="o">.</span><span class="n">group</span><span class="o">.</span><span class="n">VERIFYALL</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="n">attr_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;syft&quot;</span><span class="p">:</span>
+        <span class="k">raise</span> <span class="ne">ReferenceError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reference don&#39;t match: </span><span class="si">{</span><span class="n">attr_list</span><span class="p">[</span><span class="mi">0</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">if</span> <span class="p">(</span>
+        <span class="n">attr_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;core&quot;</span>
+        <span class="ow">and</span> <span class="n">attr_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;lib&quot;</span>
+        <span class="ow">and</span> <span class="n">attr_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;grid&quot;</span>
+        <span class="ow">and</span> <span class="n">attr_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span> <span class="o">!=</span> <span class="s2">&quot;wrappers&quot;</span>
+    <span class="p">):</span>
+        <span class="k">raise</span> <span class="ne">ReferenceError</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Reference don&#39;t match: </span><span class="si">{</span><span class="n">attr_list</span><span class="p">[</span><span class="mi">1</span><span class="p">]</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">index_modules</span><span class="p">(</span><span class="n">a_dict</span><span class="o">=</span><span class="nb">globals</span><span class="p">()[</span><span class="s2">&quot;syft&quot;</span><span class="p">],</span> <span class="n">keys</span><span class="o">=</span><span class="n">attr_list</span><span class="p">[</span><span class="mi">1</span><span class="p">:])</span></div>
+
+
+<div class="viewcode-block" id="get_fully_qualified_name"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.get_fully_qualified_name">[docs]</a><span class="k">def</span> <span class="nf">get_fully_qualified_name</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Return the full path and name of a class</span>
+
+<span class="sd">    Sometimes we want to return the entire path and name encoded</span>
+<span class="sd">    using periods. For example syft.core.common.message.SyftMessage</span>
+<span class="sd">    is the current fully qualified path and name for the SyftMessage</span>
+<span class="sd">    object.</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj: the object we want to get the name of</span>
+
+<span class="sd">    Returns:</span>
+<span class="sd">        the full path and name of the object</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="n">fqn</span> <span class="o">=</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__module__</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fqn</span> <span class="o">+=</span> <span class="s2">&quot;.&quot;</span> <span class="o">+</span> <span class="n">obj</span><span class="o">.</span><span class="vm">__class__</span><span class="o">.</span><span class="vm">__name__</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Failed to get FQN: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">fqn</span></div>
+
+
+<div class="viewcode-block" id="aggressive_set_attr"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.aggressive_set_attr">[docs]</a><span class="k">def</span> <span class="nf">aggressive_set_attr</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span> <span class="n">name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span> <span class="n">attr</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="sd">&quot;&quot;&quot;Different objects prefer different types of monkeypatching - try them all</span>
+
+<span class="sd">    Args:</span>
+<span class="sd">        obj: object whose attribute has to be set</span>
+<span class="sd">        name: attribute name</span>
+<span class="sd">        attr: value given to the attribute</span>
+
+<span class="sd">    &quot;&quot;&quot;</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="nb">setattr</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span><span class="p">:</span>
+        <span class="n">curse</span><span class="p">(</span><span class="n">obj</span><span class="p">,</span> <span class="n">name</span><span class="p">,</span> <span class="n">attr</span><span class="p">)</span></div>
+
+
+<div class="viewcode-block" id="obj2pointer_type"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.obj2pointer_type">[docs]</a><span class="k">def</span> <span class="nf">obj2pointer_type</span><span class="p">(</span><span class="n">obj</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">type</span><span class="p">:</span>
+    <span class="n">fqn</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">fqn</span> <span class="o">=</span> <span class="n">get_fully_qualified_name</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="n">obj</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="c1"># sometimes the object doesn&#39;t have a __module__ so you need to use the type</span>
+        <span class="c1"># like: collections.OrderedDict</span>
+        <span class="n">debug</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Unable to get get_fully_qualified_name of </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s2"> trying type. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">if</span> <span class="n">obj</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">fqn</span> <span class="o">=</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">fqn</span> <span class="o">=</span> <span class="n">get_fully_qualified_name</span><span class="p">(</span><span class="n">obj</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+
+    <span class="k">try</span><span class="p">:</span>
+        <span class="n">ref</span> <span class="o">=</span> <span class="n">syft</span><span class="o">.</span><span class="n">lib_ast</span><span class="o">.</span><span class="n">query</span><span class="p">(</span><span class="n">fqn</span><span class="p">,</span> <span class="n">obj_type</span><span class="o">=</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">))</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">log</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;Cannot find </span><span class="si">{</span><span class="nb">type</span><span class="p">(</span><span class="n">obj</span><span class="p">)</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">fqn</span><span class="si">}</span><span class="s2"> in lib_ast. </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span>
+        <span class="n">critical</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+        <span class="k">raise</span> <span class="ne">Exception</span><span class="p">(</span><span class="n">log</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">ref</span><span class="o">.</span><span class="n">pointer_type</span></div>
+
+
+<div class="viewcode-block" id="key_emoji"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.key_emoji">[docs]</a><span class="k">def</span> <span class="nf">key_emoji</span><span class="p">(</span><span class="n">key</span><span class="p">:</span> <span class="nb">object</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="k">try</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">isinstance</span><span class="p">(</span><span class="n">key</span><span class="p">,</span> <span class="p">(</span><span class="nb">bytes</span><span class="p">,</span> <span class="n">SigningKey</span><span class="p">,</span> <span class="n">VerifyKey</span><span class="p">)):</span>
+            <span class="n">hex_chars</span> <span class="o">=</span> <span class="nb">bytes</span><span class="p">(</span><span class="n">key</span><span class="p">)</span><span class="o">.</span><span class="n">hex</span><span class="p">()[</span><span class="o">-</span><span class="mi">8</span><span class="p">:]</span>
+            <span class="k">return</span> <span class="n">char_emoji</span><span class="p">(</span><span class="n">hex_chars</span><span class="o">=</span><span class="n">hex_chars</span><span class="p">)</span>
+    <span class="k">except</span> <span class="ne">Exception</span> <span class="k">as</span> <span class="n">e</span><span class="p">:</span>
+        <span class="n">error</span><span class="p">(</span><span class="sa">f</span><span class="s2">&quot;Fail to get key emoji: </span><span class="si">{</span><span class="n">e</span><span class="si">}</span><span class="s2">&quot;</span><span class="p">)</span>
+        <span class="k">pass</span>
+    <span class="k">return</span> <span class="s2">&quot;ALL&quot;</span></div>
+
+
+<div class="viewcode-block" id="char_emoji"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.char_emoji">[docs]</a><span class="k">def</span> <span class="nf">char_emoji</span><span class="p">(</span><span class="n">hex_chars</span><span class="p">:</span> <span class="nb">str</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">base</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="s2">&quot;</span><span class="se">\U0001F642</span><span class="s2">&quot;</span><span class="p">)</span>
+    <span class="n">hex_base</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="s2">&quot;0&quot;</span><span class="p">)</span>
+    <span class="n">code</span> <span class="o">=</span> <span class="mi">0</span>
+    <span class="k">for</span> <span class="n">char</span> <span class="ow">in</span> <span class="n">hex_chars</span><span class="p">:</span>
+        <span class="n">offset</span> <span class="o">=</span> <span class="nb">ord</span><span class="p">(</span><span class="n">char</span><span class="p">)</span>
+        <span class="n">code</span> <span class="o">+=</span> <span class="n">offset</span> <span class="o">-</span> <span class="n">hex_base</span>
+    <span class="k">return</span> <span class="nb">chr</span><span class="p">(</span><span class="n">base</span> <span class="o">+</span> <span class="n">code</span><span class="p">)</span></div>
+
+
+<span class="n">left_name</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;admiring&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;adoring&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;affectionate&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;agitated&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;amazing&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;angry&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;awesome&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;beautiful&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;blissful&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bold&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;boring&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;brave&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;busy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;charming&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;clever&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cool&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;compassionate&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;competent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;condescending&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;confident&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cranky&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;crazy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dazzling&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;determined&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;distracted&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dreamy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;eager&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ecstatic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;elastic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;elated&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;elegant&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;eloquent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;epic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;exciting&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fervent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;festive&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;flamboyant&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;focused&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;friendly&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;frosty&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;funny&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gallant&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gifted&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;goofy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gracious&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;great&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;happy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hardcore&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;heuristic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hopeful&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hungry&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;infallible&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;inspiring&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;interesting&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;intelligent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jolly&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jovial&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;keen&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kind&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;laughing&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;loving&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lucid&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;magical&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mystifying&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;modest&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;musing&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;naughty&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nervous&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nice&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nifty&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nostalgic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;objective&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;optimistic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;peaceful&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pedantic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pensive&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;practical&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;priceless&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;quirky&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;quizzical&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;recursing&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;relaxed&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;reverent&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;romantic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sad&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;serene&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sharp&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;silly&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sleepy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stoic&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;strange&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stupefied&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;suspicious&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sweet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tender&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;thirsty&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;trusting&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;unruffled&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;upbeat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;vibrant&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;vigilant&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;vigorous&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wizardly&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wonderful&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;xenodochial&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;youthful&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;zealous&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;zen&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+<span class="n">right_name</span> <span class="o">=</span> <span class="p">[</span>
+    <span class="s2">&quot;albattani&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;allen&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;almeida&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;antonelli&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;agnesi&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;archimedes&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ardinghelli&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;aryabhata&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;austin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;babbage&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;banach&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;banzai&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bardeen&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bartik&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bassi&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;beaver&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bell&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;benz&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bhabha&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bhaskara&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;black&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;blackburn&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;blackwell&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bohr&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;booth&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;borg&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bose&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;bouman&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;boyd&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;brahmagupta&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;brattain&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;brown&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;buck&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;burnell&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cannon&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;carson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cartwright&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;carver&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cerf&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;chandrasekhar&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;chaplygin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;chatelet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;chatterjee&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;chebyshev&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cohen&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;chaum&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;clarke&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;colden&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cori&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;cray&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;curran&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;curie&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;darwin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;davinci&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dewdney&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dhawan&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;diffie&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dijkstra&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dirac&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;driscoll&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;dubinsky&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;easley&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;edison&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;einstein&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;elbakyan&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;elgamal&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;elion&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ellis&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;engelbart&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;euclid&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;euler&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;faraday&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;feistel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fermat&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;fermi&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;feynman&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;franklin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gagarin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;galileo&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;galois&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ganguly&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gates&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gauss&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;germain&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;goldberg&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;goldstine&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;goldwasser&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;golick&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;goodall&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;gould&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;greider&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;grothendieck&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;haibt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hamilton&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;haslett&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hawking&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hellman&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;heisenberg&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hermann&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;herschel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hertz&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;heyrovsky&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hodgkin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hofstadter&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hoover&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hopper&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hugle&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;hypatia&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ishizaka&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jackson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jang&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jemison&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jennings&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jepsen&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;johnson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;joliot&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;jones&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kalam&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kapitsa&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kare&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;keldysh&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;keller&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kepler&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;khayyam&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;khorana&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kilby&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kirch&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;knuth&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;kowalevski&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lalande&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lamarr&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lamport&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;leakey&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;leavitt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lederberg&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lehmann&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lewin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lichterman&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;liskov&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lovelace&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;lumiere&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mahavira&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;margulis&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;matsumoto&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;maxwell&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mayer&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mccarthy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mcclintock&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mclaren&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mclean&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mcnulty&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mendel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mendeleev&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;meitner&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;meninsky&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;merkle&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mestorf&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;mirzakhani&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;moore&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;morse&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;murdock&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;moser&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;napier&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nash&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;neumann&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;newton&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nightingale&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;nobel&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;noether&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;northcutt&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;noyce&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;panini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pare&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pascal&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pasteur&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;payne&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;perlman&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;pike&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;poincare&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;poitras&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;proskuriakova&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ptolemy&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;raman&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ramanujan&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ride&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;montalcini&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;ritchie&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rhodes&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;robinson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;roentgen&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rosalind&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;rubin&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;saha&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sammet&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sanderson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;satoshi&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;shamir&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;shannon&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;shaw&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;shirley&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;shockley&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;shtern&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sinoussi&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;snyder&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;solomon&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;spence&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;stonebraker&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;sutherland&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;swanson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;swartz&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;swirles&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;taussig&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tereshkova&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tesla&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tharp&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;thompson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;torvalds&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;tu&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;turing&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;varahamihira&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;vaughan&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;visvesvaraya&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;volhard&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;villani&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wescoff&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wilbur&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wiles&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;williams&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;williamson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wilson&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wing&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wozniak&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wright&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;wu&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;yalow&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;yonath&quot;</span><span class="p">,</span>
+    <span class="s2">&quot;zhukovsky&quot;</span><span class="p">,</span>
+<span class="p">]</span>
+
+
+<span class="c1"># we could replace these with some favorite AI / Privacy researches and engineers?</span>
+
+
+<div class="viewcode-block" id="random_name"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.random_name">[docs]</a><span class="k">def</span> <span class="nf">random_name</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="nb">str</span><span class="p">:</span>
+    <span class="n">left_i</span> <span class="o">=</span> <span class="n">randbelow</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">left_name</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="n">right_i</span> <span class="o">=</span> <span class="n">randbelow</span><span class="p">(</span><span class="nb">len</span><span class="p">(</span><span class="n">right_name</span><span class="p">)</span> <span class="o">-</span> <span class="mi">1</span><span class="p">)</span>
+    <span class="k">return</span> <span class="sa">f</span><span class="s2">&quot;</span><span class="si">{</span><span class="n">left_name</span><span class="p">[</span><span class="n">left_i</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2"> </span><span class="si">{</span><span class="n">right_name</span><span class="p">[</span><span class="n">right_i</span><span class="p">]</span><span class="o">.</span><span class="n">capitalize</span><span class="p">()</span><span class="si">}</span><span class="s2">&quot;</span></div>
+
+
+<div class="viewcode-block" id="inherit_tags"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.inherit_tags">[docs]</a><span class="k">def</span> <span class="nf">inherit_tags</span><span class="p">(</span>
+    <span class="n">attr_path_and_name</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+    <span class="n">result</span><span class="p">:</span> <span class="nb">object</span><span class="p">,</span>
+    <span class="n">self_obj</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">object</span><span class="p">],</span>
+    <span class="n">args</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="nb">tuple</span><span class="p">,</span> <span class="nb">list</span><span class="p">],</span>
+    <span class="n">kwargs</span><span class="p">:</span> <span class="nb">dict</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+    <span class="n">tags</span> <span class="o">=</span> <span class="p">[]</span>
+    <span class="k">if</span> <span class="n">self_obj</span> <span class="ow">is</span> <span class="ow">not</span> <span class="kc">None</span> <span class="ow">and</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">self_obj</span><span class="p">,</span> <span class="s2">&quot;tags&quot;</span><span class="p">):</span>
+        <span class="n">tags</span><span class="o">.</span><span class="n">extend</span><span class="p">(</span><span class="nb">list</span><span class="p">(</span><span class="n">self_obj</span><span class="o">.</span><span class="n">tags</span><span class="p">))</span>  <span class="c1"># type: ignore</span>
+
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">args</span><span class="p">:</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="s2">&quot;tags&quot;</span><span class="p">):</span>
+            <span class="n">tags</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">tag</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">arg</span><span class="o">.</span><span class="n">tags</span> <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">])</span>
+
+    <span class="k">for</span> <span class="n">arg</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">values</span><span class="p">():</span>
+        <span class="k">if</span> <span class="nb">hasattr</span><span class="p">(</span><span class="n">arg</span><span class="p">,</span> <span class="s2">&quot;tags&quot;</span><span class="p">):</span>
+            <span class="n">tags</span><span class="o">.</span><span class="n">extend</span><span class="p">([</span><span class="n">tag</span> <span class="k">for</span> <span class="n">tag</span> <span class="ow">in</span> <span class="n">arg</span><span class="o">.</span><span class="n">tags</span> <span class="k">if</span> <span class="n">tag</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">tags</span><span class="p">])</span>
+
+    <span class="c1"># only generate new tags if the result actually inherit some tags.</span>
+    <span class="k">if</span> <span class="n">tags</span><span class="p">:</span>
+        <span class="n">tags</span><span class="o">.</span><span class="n">append</span><span class="p">(</span><span class="n">attr_path_and_name</span><span class="o">.</span><span class="n">split</span><span class="p">(</span><span class="s2">&quot;.&quot;</span><span class="p">)[</span><span class="o">-</span><span class="mi">1</span><span class="p">])</span>
+        <span class="n">result</span><span class="o">.</span><span class="n">tags</span> <span class="o">=</span> <span class="n">tags</span>  <span class="c1"># type: ignore</span></div>
+
+
+<div class="viewcode-block" id="get_root_data_path"><a class="viewcode-back" href="../../api_reference/syft.html#syft.util.get_root_data_path">[docs]</a><span class="k">def</span> <span class="nf">get_root_data_path</span><span class="p">()</span> <span class="o">-&gt;</span> <span class="n">Path</span><span class="p">:</span>
+    <span class="c1"># get the PySyft / data directory to share datasets between notebooks</span>
+    <span class="c1"># on Linux and MacOS the directory is: ~/.syft/data&quot;</span>
+    <span class="c1"># on Windows the directory is: C:/Users/$USER/.syft/data</span>
+
+    <span class="n">data_dir</span> <span class="o">=</span> <span class="n">Path</span><span class="o">.</span><span class="n">home</span><span class="p">()</span> <span class="o">/</span> <span class="s2">&quot;.syft&quot;</span> <span class="o">/</span> <span class="s2">&quot;data&quot;</span>
+
+    <span class="n">os</span><span class="o">.</span><span class="n">makedirs</span><span class="p">(</span><span class="n">data_dir</span><span class="p">,</span> <span class="n">exist_ok</span><span class="o">=</span><span class="kc">True</span><span class="p">)</span>
+    <span class="k">return</span> <span class="n">data_dir</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

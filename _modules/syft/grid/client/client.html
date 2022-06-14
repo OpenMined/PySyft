@@ -1,0 +1,466 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.grid.client.client &#8212; PySyft  documentation</title>
+    
+  <link href="../../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../../_static/css/pysyft.css" />
+    
+  <link rel="preload" as="script" href="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../../" id="documentation_options" src="../../../../_static/documentation_options.js"></script>
+    <script src="../../../../_static/jquery.js"></script>
+    <script src="../../../../_static/underscore.js"></script>
+    <script src="../../../../_static/doctools.js"></script>
+    <script src="../../../../_static/clipboard.min.js"></script>
+    <script src="../../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../../index.html">
+  <img src="../../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.grid.client.client</h1><div class="highlight"><pre>
+<span></span><span class="c1"># stdlib</span>
+<span class="kn">import</span> <span class="nn">logging</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Type</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Union</span>
+
+<span class="c1"># third party</span>
+<span class="kn">from</span> <span class="nn">nacl.encoding</span> <span class="kn">import</span> <span class="n">HexEncoder</span>
+<span class="kn">from</span> <span class="nn">nacl.signing</span> <span class="kn">import</span> <span class="n">SigningKey</span>
+<span class="kn">import</span> <span class="nn">names</span>
+<span class="kn">from</span> <span class="nn">pandas</span> <span class="kn">import</span> <span class="n">DataFrame</span>
+
+<span class="c1"># syft relative</span>
+<span class="kn">from</span> <span class="nn">...core.common.message</span> <span class="kn">import</span> <span class="n">EventualSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">...core.common.message</span> <span class="kn">import</span> <span class="n">ImmediateSyftMessageWithReply</span>
+<span class="kn">from</span> <span class="nn">...core.common.message</span> <span class="kn">import</span> <span class="n">ImmediateSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">...core.common.message</span> <span class="kn">import</span> <span class="n">SignedImmediateSyftMessageWithReply</span>
+<span class="kn">from</span> <span class="nn">...core.common.message</span> <span class="kn">import</span> <span class="n">SignedImmediateSyftMessageWithoutReply</span>
+<span class="kn">from</span> <span class="nn">...core.common.message</span> <span class="kn">import</span> <span class="n">SyftMessage</span>
+<span class="kn">from</span> <span class="nn">...core.common.serde.serialize</span> <span class="kn">import</span> <span class="n">_serialize</span> <span class="k">as</span> <span class="n">serialize</span>  <span class="c1"># noqa: F401</span>
+<span class="kn">from</span> <span class="nn">...core.io.address</span> <span class="kn">import</span> <span class="n">Address</span>
+<span class="kn">from</span> <span class="nn">...core.io.connection</span> <span class="kn">import</span> <span class="n">ClientConnection</span>
+<span class="kn">from</span> <span class="nn">...core.io.location.specific</span> <span class="kn">import</span> <span class="n">SpecificLocation</span>
+<span class="kn">from</span> <span class="nn">...core.io.route</span> <span class="kn">import</span> <span class="n">SoloRoute</span>
+<span class="kn">from</span> <span class="nn">...core.node.common.client</span> <span class="kn">import</span> <span class="n">Client</span>
+<span class="kn">from</span> <span class="nn">...core.node.device.client</span> <span class="kn">import</span> <span class="n">DeviceClient</span>
+<span class="kn">from</span> <span class="nn">...core.node.domain.client</span> <span class="kn">import</span> <span class="n">DomainClient</span>
+<span class="kn">from</span> <span class="nn">...core.node.network.client</span> <span class="kn">import</span> <span class="n">NetworkClient</span>
+<span class="kn">from</span> <span class="nn">...core.node.vm.client</span> <span class="kn">import</span> <span class="n">VirtualMachineClient</span>
+<span class="kn">from</span> <span class="nn">...core.pointer.pointer</span> <span class="kn">import</span> <span class="n">Pointer</span>
+<span class="kn">from</span> <span class="nn">..messages.network_search_message</span> <span class="kn">import</span> <span class="n">NetworkSearchMessage</span>
+<span class="kn">from</span> <span class="nn">..messages.setup_messages</span> <span class="kn">import</span> <span class="n">GetSetUpMessage</span>
+<span class="kn">from</span> <span class="nn">..messages.transfer_messages</span> <span class="kn">import</span> <span class="n">LoadObjectMessage</span>
+<span class="kn">from</span> <span class="nn">.enums</span> <span class="kn">import</span> <span class="n">PyGridClientEnums</span>
+<span class="kn">from</span> <span class="nn">.enums</span> <span class="kn">import</span> <span class="n">RequestAPIFields</span>
+<span class="kn">from</span> <span class="nn">.exceptions</span> <span class="kn">import</span> <span class="n">RequestAPIException</span>
+<span class="kn">from</span> <span class="nn">.grid_connection</span> <span class="kn">import</span> <span class="n">GridHTTPConnection</span>
+<span class="kn">from</span> <span class="nn">.request_api.association_api</span> <span class="kn">import</span> <span class="n">AssociationRequestAPI</span>
+<span class="kn">from</span> <span class="nn">.request_api.dataset_api</span> <span class="kn">import</span> <span class="n">DatasetRequestAPI</span>
+<span class="kn">from</span> <span class="nn">.request_api.group_api</span> <span class="kn">import</span> <span class="n">GroupRequestAPI</span>
+<span class="kn">from</span> <span class="nn">.request_api.role_api</span> <span class="kn">import</span> <span class="n">RoleRequestAPI</span>
+<span class="kn">from</span> <span class="nn">.request_api.user_api</span> <span class="kn">import</span> <span class="n">UserRequestAPI</span>
+<span class="kn">from</span> <span class="nn">.request_api.worker_api</span> <span class="kn">import</span> <span class="n">WorkerRequestAPI</span>
+
+<span class="n">DEFAULT_PYGRID_PORT</span> <span class="o">=</span> <span class="mi">5000</span>
+<span class="n">DEFAULT_PYGRID_ADDRESS</span> <span class="o">=</span> <span class="sa">f</span><span class="s2">&quot;http://127.0.0.1:</span><span class="si">{</span><span class="n">DEFAULT_PYGRID_PORT</span><span class="si">}</span><span class="s2">&quot;</span>
+<span class="n">INSECURE_PYGRID_TOKEN</span> <span class="o">=</span> <span class="s2">&quot;9G9MJ06OQH&quot;</span>  <span class="c1"># nosec</span>
+
+
+<div class="viewcode-block" id="GridClient"><a class="viewcode-back" href="../../../../api_reference/syft.grid.client.client.html#syft.grid.client.client.GridClient">[docs]</a><span class="k">class</span> <span class="nc">GridClient</span><span class="p">(</span><span class="n">DomainClient</span><span class="p">):</span>
+    <span class="k">def</span> <span class="fm">__init__</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">credentials</span><span class="p">:</span> <span class="n">Dict</span><span class="p">,</span>
+        <span class="n">url</span><span class="p">:</span> <span class="nb">str</span><span class="p">,</span>
+        <span class="n">conn_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ClientConnection</span><span class="p">],</span>
+        <span class="n">client_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Client</span><span class="p">],</span>
+        <span class="n">user_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SigningKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+
+        <span class="c1"># Use Server metadata</span>
+        <span class="c1"># to build client route</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">conn</span> <span class="o">=</span> <span class="n">conn_type</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">client_type</span> <span class="o">=</span> <span class="n">client_type</span>
+
+        <span class="k">if</span> <span class="n">credentials</span><span class="p">:</span>
+            <span class="n">metadata</span><span class="p">,</span> <span class="n">_user_key</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">login</span><span class="p">(</span><span class="n">credentials</span><span class="o">=</span><span class="n">credentials</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+            <span class="n">_user_key</span> <span class="o">=</span> <span class="n">SigningKey</span><span class="p">(</span><span class="n">_user_key</span><span class="o">.</span><span class="n">encode</span><span class="p">(),</span> <span class="n">encoder</span><span class="o">=</span><span class="n">HexEncoder</span><span class="p">)</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="n">metadata</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">_get_metadata</span><span class="p">()</span>  <span class="c1"># type: ignore</span>
+            <span class="k">if</span> <span class="ow">not</span> <span class="n">user_key</span><span class="p">:</span>
+                <span class="n">_user_key</span> <span class="o">=</span> <span class="n">SigningKey</span><span class="o">.</span><span class="n">generate</span><span class="p">()</span>
+            <span class="k">else</span><span class="p">:</span>
+                <span class="n">_user_key</span> <span class="o">=</span> <span class="n">user_key</span>
+
+        <span class="p">(</span>
+            <span class="n">spec_location</span><span class="p">,</span>
+            <span class="n">name</span><span class="p">,</span>
+            <span class="n">client_id</span><span class="p">,</span>
+        <span class="p">)</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">client_type</span><span class="o">.</span><span class="n">deserialize_client_metadata_from_node</span><span class="p">(</span><span class="n">metadata</span><span class="o">=</span><span class="n">metadata</span><span class="p">)</span>
+
+        <span class="c1"># Create a new Solo Route using the selected connection type</span>
+        <span class="n">route</span> <span class="o">=</span> <span class="n">SoloRoute</span><span class="p">(</span><span class="n">destination</span><span class="o">=</span><span class="n">spec_location</span><span class="p">,</span> <span class="n">connection</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="p">)</span>
+
+        <span class="n">location_args</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__route_client_location</span><span class="p">(</span>
+            <span class="n">client_type</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">client_type</span><span class="p">,</span> <span class="n">location</span><span class="o">=</span><span class="n">spec_location</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">proxy_address</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Address</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span>
+
+        <span class="c1"># Create a new client using the selected client type</span>
+        <span class="nb">super</span><span class="p">()</span><span class="o">.</span><span class="fm">__init__</span><span class="p">(</span>
+            <span class="n">network</span><span class="o">=</span><span class="n">location_args</span><span class="p">[</span><span class="n">NetworkClient</span><span class="p">],</span>
+            <span class="n">domain</span><span class="o">=</span><span class="n">location_args</span><span class="p">[</span><span class="n">DomainClient</span><span class="p">],</span>
+            <span class="n">device</span><span class="o">=</span><span class="n">location_args</span><span class="p">[</span><span class="n">DeviceClient</span><span class="p">],</span>
+            <span class="n">vm</span><span class="o">=</span><span class="n">location_args</span><span class="p">[</span><span class="n">VirtualMachineClient</span><span class="p">],</span>
+            <span class="n">name</span><span class="o">=</span><span class="n">name</span><span class="p">,</span>
+            <span class="n">routes</span><span class="o">=</span><span class="p">[</span><span class="n">route</span><span class="p">],</span>
+            <span class="n">signing_key</span><span class="o">=</span><span class="n">_user_key</span><span class="p">,</span>
+        <span class="p">)</span>
+
+        <span class="bp">self</span><span class="o">.</span><span class="n">groups</span> <span class="o">=</span> <span class="n">GroupRequestAPI</span><span class="p">(</span><span class="n">send</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__perform_grid_request</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">users</span> <span class="o">=</span> <span class="n">UserRequestAPI</span><span class="p">(</span><span class="n">send</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__perform_grid_request</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">roles</span> <span class="o">=</span> <span class="n">RoleRequestAPI</span><span class="p">(</span><span class="n">send</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__perform_grid_request</span><span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">workers</span> <span class="o">=</span> <span class="n">WorkerRequestAPI</span><span class="p">(</span>
+            <span class="n">send</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__perform_grid_request</span><span class="p">,</span> <span class="n">domain_client</span><span class="o">=</span><span class="bp">self</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">association_requests</span> <span class="o">=</span> <span class="n">AssociationRequestAPI</span><span class="p">(</span>
+            <span class="n">send</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__perform_grid_request</span>
+        <span class="p">)</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">datasets</span> <span class="o">=</span> <span class="n">DatasetRequestAPI</span><span class="p">(</span>
+            <span class="n">send</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">__perform_grid_request</span><span class="p">,</span> <span class="n">conn</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="p">,</span> <span class="n">client</span><span class="o">=</span><span class="bp">self</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">load</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">obj_ptr</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">Pointer</span><span class="p">],</span> <span class="n">address</span><span class="p">:</span> <span class="n">Address</span><span class="p">,</span> <span class="n">pointable</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">content</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">RequestAPIFields</span><span class="o">.</span><span class="n">ADDRESS</span><span class="p">:</span> <span class="n">serialize</span><span class="p">(</span><span class="n">address</span><span class="p">)</span>
+            <span class="o">.</span><span class="n">SerializeToString</span><span class="p">()</span>  <span class="c1"># type: ignore</span>
+            <span class="o">.</span><span class="n">decode</span><span class="p">(</span><span class="n">PyGridClientEnums</span><span class="o">.</span><span class="n">ENCODING</span><span class="p">),</span>
+            <span class="n">RequestAPIFields</span><span class="o">.</span><span class="n">UID</span><span class="p">:</span> <span class="nb">str</span><span class="p">(</span><span class="n">obj_ptr</span><span class="o">.</span><span class="n">id_at_location</span><span class="o">.</span><span class="n">value</span><span class="p">),</span>
+            <span class="n">RequestAPIFields</span><span class="o">.</span><span class="n">POINTABLE</span><span class="p">:</span> <span class="n">pointable</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="bp">self</span><span class="o">.</span><span class="n">__perform_grid_request</span><span class="p">(</span><span class="n">grid_msg</span><span class="o">=</span><span class="n">LoadObjectMessage</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">*</span><span class="p">,</span> <span class="n">domain_name</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">],</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+
+        <span class="k">if</span> <span class="n">domain_name</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">domain_name</span> <span class="o">=</span> <span class="n">names</span><span class="o">.</span><span class="n">get_full_name</span><span class="p">()</span> <span class="o">+</span> <span class="s2">&quot;&#39;s Domain&quot;</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;No Domain Name provided... picking randomly as: &quot;</span> <span class="o">+</span> <span class="n">domain_name</span>
+            <span class="p">)</span>
+
+        <span class="k">if</span> <span class="s2">&quot;token&quot;</span> <span class="ow">not</span> <span class="ow">in</span> <span class="n">kwargs</span><span class="o">.</span><span class="n">keys</span><span class="p">():</span>
+            <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;token&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">INSECURE_PYGRID_TOKEN</span>
+            <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+                <span class="s2">&quot;No token provided... trying PyGrid Default (THIS IS NOT SAFE!!!): &quot;</span>
+                <span class="o">+</span> <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;token&quot;</span><span class="p">]</span>
+            <span class="p">)</span>
+
+        <span class="n">kwargs</span><span class="p">[</span><span class="s2">&quot;domain_name&quot;</span><span class="p">]</span> <span class="o">=</span> <span class="n">domain_name</span>
+
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">conn</span><span class="o">.</span><span class="n">setup</span><span class="p">(</span><span class="o">**</span><span class="n">kwargs</span><span class="p">)</span>  <span class="c1"># type: ignore</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span><span class="n">response</span><span class="p">[</span><span class="n">RequestAPIFields</span><span class="o">.</span><span class="n">MESSAGE</span><span class="p">])</span>
+
+    <span class="k">def</span> <span class="nf">get_setup</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="o">**</span><span class="n">kwargs</span><span class="p">:</span> <span class="n">Any</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__perform_grid_request</span><span class="p">(</span><span class="n">grid_msg</span><span class="o">=</span><span class="n">GetSetUpMessage</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">kwargs</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">search</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">query</span><span class="p">:</span> <span class="n">List</span><span class="p">,</span> <span class="n">pandas</span><span class="p">:</span> <span class="nb">bool</span> <span class="o">=</span> <span class="kc">False</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__perform_grid_request</span><span class="p">(</span>
+            <span class="n">grid_msg</span><span class="o">=</span><span class="n">NetworkSearchMessage</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="p">{</span><span class="n">RequestAPIFields</span><span class="o">.</span><span class="n">QUERY</span><span class="p">:</span> <span class="n">query</span><span class="p">}</span>
+        <span class="p">)</span>
+        <span class="k">if</span> <span class="n">pandas</span><span class="p">:</span>
+            <span class="n">response</span> <span class="o">=</span> <span class="n">DataFrame</span><span class="p">(</span><span class="n">response</span><span class="p">)</span>
+
+        <span class="k">return</span> <span class="n">response</span>
+
+    <span class="k">def</span> <span class="nf">send_immediate_msg_with_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span><span class="n">SignedImmediateSyftMessageWithReply</span><span class="p">,</span> <span class="n">ImmediateSyftMessageWithReply</span><span class="p">],</span>
+        <span class="n">route_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Union</span><span class="p">[</span>
+        <span class="n">SignedImmediateSyftMessageWithoutReply</span><span class="p">,</span> <span class="n">ImmediateSyftMessageWithoutReply</span>
+    <span class="p">]:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">GridClient</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">send_immediate_msg_with_reply</span><span class="p">(</span>  <span class="c1"># type: ignore</span>
+            <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">route_index</span><span class="o">=</span><span class="n">route_index</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">send_immediate_msg_without_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="n">Union</span><span class="p">[</span>
+            <span class="n">SignedImmediateSyftMessageWithoutReply</span><span class="p">,</span> <span class="n">ImmediateSyftMessageWithoutReply</span>
+        <span class="p">],</span>
+        <span class="n">route_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="nb">super</span><span class="p">(</span><span class="n">GridClient</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">send_immediate_msg_without_reply</span><span class="p">(</span>
+            <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">route_index</span><span class="o">=</span><span class="n">route_index</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">send_eventual_msg_without_reply</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span>
+        <span class="n">msg</span><span class="p">:</span> <span class="n">EventualSyftMessageWithoutReply</span><span class="p">,</span>
+        <span class="n">route_index</span><span class="p">:</span> <span class="nb">int</span> <span class="o">=</span> <span class="mi">0</span><span class="p">,</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="k">return</span> <span class="nb">super</span><span class="p">(</span><span class="n">GridClient</span><span class="p">,</span> <span class="bp">self</span><span class="p">)</span><span class="o">.</span><span class="n">send_eventual_msg_without_reply</span><span class="p">(</span>
+            <span class="n">msg</span><span class="o">=</span><span class="n">msg</span><span class="p">,</span> <span class="n">route_index</span><span class="o">=</span><span class="n">route_index</span>
+        <span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__route_client_location</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">client_type</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">location</span><span class="p">:</span> <span class="n">SpecificLocation</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="n">locations</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SpecificLocation</span><span class="p">]]</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">NetworkClient</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">DomainClient</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">DeviceClient</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+            <span class="n">VirtualMachineClient</span><span class="p">:</span> <span class="kc">None</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="n">locations</span><span class="p">[</span><span class="n">client_type</span><span class="p">]</span> <span class="o">=</span> <span class="n">location</span>
+        <span class="k">return</span> <span class="n">locations</span>
+
+    <span class="k">def</span> <span class="nf">__perform_grid_request</span><span class="p">(</span>
+        <span class="bp">self</span><span class="p">,</span> <span class="n">grid_msg</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]]</span> <span class="o">=</span> <span class="kc">None</span>
+    <span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="k">if</span> <span class="n">content</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+            <span class="n">content</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">signed_msg</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">__build_msg</span><span class="p">(</span><span class="n">grid_msg</span><span class="o">=</span><span class="n">grid_msg</span><span class="p">,</span> <span class="n">content</span><span class="o">=</span><span class="n">content</span><span class="p">)</span>
+        <span class="n">response</span> <span class="o">=</span> <span class="bp">self</span><span class="o">.</span><span class="n">send_immediate_msg_with_reply</span><span class="p">(</span><span class="n">msg</span><span class="o">=</span><span class="n">signed_msg</span><span class="p">)</span>
+        <span class="c1"># print(&quot;got this intermediary&quot;, response, type(response))</span>
+        <span class="k">return</span> <span class="bp">self</span><span class="o">.</span><span class="n">__process_response</span><span class="p">(</span><span class="n">response</span><span class="o">=</span><span class="n">response</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__build_msg</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">grid_msg</span><span class="p">:</span> <span class="n">Any</span><span class="p">,</span> <span class="n">content</span><span class="p">:</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">])</span> <span class="o">-&gt;</span> <span class="n">Any</span><span class="p">:</span>
+        <span class="n">args</span> <span class="o">=</span> <span class="p">{</span>
+            <span class="n">RequestAPIFields</span><span class="o">.</span><span class="n">ADDRESS</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+            <span class="n">RequestAPIFields</span><span class="o">.</span><span class="n">CONTENT</span><span class="p">:</span> <span class="n">content</span><span class="p">,</span>
+            <span class="n">RequestAPIFields</span><span class="o">.</span><span class="n">REPLY_TO</span><span class="p">:</span> <span class="bp">self</span><span class="o">.</span><span class="n">address</span><span class="p">,</span>
+        <span class="p">}</span>
+        <span class="k">return</span> <span class="n">grid_msg</span><span class="p">(</span><span class="o">**</span><span class="n">args</span><span class="p">)</span><span class="o">.</span><span class="n">sign</span><span class="p">(</span><span class="n">signing_key</span><span class="o">=</span><span class="bp">self</span><span class="o">.</span><span class="n">signing_key</span><span class="p">)</span>
+
+    <span class="k">def</span> <span class="nf">__process_response</span><span class="p">(</span><span class="bp">self</span><span class="p">,</span> <span class="n">response</span><span class="p">:</span> <span class="n">SyftMessage</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Dict</span><span class="p">[</span><span class="n">Any</span><span class="p">,</span> <span class="n">Any</span><span class="p">]:</span>
+        <span class="c1"># print(&quot;calling __process_response&quot;, response, type(response))</span>
+        <span class="k">if</span> <span class="n">response</span><span class="o">.</span><span class="n">status_code</span> <span class="o">==</span> <span class="mi">200</span><span class="p">:</span>  <span class="c1"># type: ignore</span>
+            <span class="k">return</span> <span class="n">response</span><span class="o">.</span><span class="n">content</span>  <span class="c1"># type: ignore</span>
+        <span class="k">else</span><span class="p">:</span>
+            <span class="k">raise</span> <span class="n">RequestAPIException</span><span class="p">(</span><span class="n">message</span><span class="o">=</span><span class="n">response</span><span class="o">.</span><span class="n">content</span><span class="p">[</span><span class="n">RequestAPIFields</span><span class="o">.</span><span class="n">ERROR</span><span class="p">])</span>  <span class="c1"># type: ignore</span></div>
+
+
+<span class="k">def</span> <span class="nf">connect</span><span class="p">(</span>
+    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_PYGRID_ADDRESS</span><span class="p">,</span>
+    <span class="n">conn_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ClientConnection</span><span class="p">]</span> <span class="o">=</span> <span class="n">GridHTTPConnection</span><span class="p">,</span>
+    <span class="n">credentials</span><span class="p">:</span> <span class="n">Dict</span> <span class="o">=</span> <span class="p">{},</span>
+    <span class="n">user_key</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">SigningKey</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridClient</span><span class="p">:</span>
+    <span class="k">return</span> <span class="n">GridClient</span><span class="p">(</span>
+        <span class="n">credentials</span><span class="o">=</span><span class="n">credentials</span><span class="p">,</span>
+        <span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span>
+        <span class="n">conn_type</span><span class="o">=</span><span class="n">conn_type</span><span class="p">,</span>
+        <span class="n">client_type</span><span class="o">=</span><span class="n">DomainClient</span><span class="p">,</span>
+        <span class="n">user_key</span><span class="o">=</span><span class="n">user_key</span><span class="p">,</span>
+    <span class="p">)</span>
+
+
+<span class="k">def</span> <span class="nf">login</span><span class="p">(</span>
+    <span class="n">email</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">password</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="nb">str</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">,</span>
+    <span class="n">url</span><span class="p">:</span> <span class="nb">str</span> <span class="o">=</span> <span class="n">DEFAULT_PYGRID_ADDRESS</span><span class="p">,</span>
+    <span class="n">conn_type</span><span class="p">:</span> <span class="n">Type</span><span class="p">[</span><span class="n">ClientConnection</span><span class="p">]</span> <span class="o">=</span> <span class="n">GridHTTPConnection</span><span class="p">,</span>
+<span class="p">)</span> <span class="o">-&gt;</span> <span class="n">GridClient</span><span class="p">:</span>
+
+    <span class="k">if</span> <span class="n">email</span> <span class="ow">is</span> <span class="kc">None</span> <span class="ow">or</span> <span class="n">password</span> <span class="ow">is</span> <span class="kc">None</span><span class="p">:</span>
+        <span class="n">credentials</span> <span class="o">=</span> <span class="p">{}</span>
+        <span class="n">logging</span><span class="o">.</span><span class="n">info</span><span class="p">(</span>
+            <span class="s2">&quot;</span><span class="se">\n\n</span><span class="s2">No email and password defined in login() - connecting as anonymous user!!!</span><span class="se">\n</span><span class="s2">&quot;</span>
+        <span class="p">)</span>
+    <span class="k">else</span><span class="p">:</span>
+        <span class="n">credentials</span> <span class="o">=</span> <span class="p">{</span><span class="s2">&quot;email&quot;</span><span class="p">:</span> <span class="n">email</span><span class="p">,</span> <span class="s2">&quot;password&quot;</span><span class="p">:</span> <span class="n">password</span><span class="p">}</span>
+
+    <span class="k">return</span> <span class="n">connect</span><span class="p">(</span><span class="n">url</span><span class="o">=</span><span class="n">url</span><span class="p">,</span> <span class="n">credentials</span><span class="o">=</span><span class="n">credentials</span><span class="p">,</span> <span class="n">conn_type</span><span class="o">=</span><span class="n">conn_type</span><span class="p">)</span>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>

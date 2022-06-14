@@ -1,0 +1,786 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>syft.lib.python &#8212; PySyft  documentation</title>
+    
+  <link href="../../../_static/css/theme.css" rel="stylesheet">
+  <link href="../../../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
+
+    
+  <link rel="stylesheet"
+    href="../../../_static/vendor/fontawesome/5.13.0/css/all.min.css">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-solid-900.woff2">
+  <link rel="preload" as="font" type="font/woff2" crossorigin
+    href="../../../_static/vendor/fontawesome/5.13.0/webfonts/fa-brands-400.woff2">
+
+    
+      
+
+    
+    <link rel="stylesheet" type="text/css" href="../../../_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/blank.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/copybutton.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/panels-main.c949a650a448cc0ae9fd3441c0e17fb0.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/panels-variables.06eb56fa6e07937060861dad626602ad.css" />
+    <link rel="stylesheet" type="text/css" href="../../../_static/css/pysyft.css" />
+    
+  <link rel="preload" as="script" href="../../../_static/js/index.be7d3bbb2ef33a8344ce.js">
+
+    <script data-url_root="../../../" id="documentation_options" src="../../../_static/documentation_options.js"></script>
+    <script src="../../../_static/jquery.js"></script>
+    <script src="../../../_static/underscore.js"></script>
+    <script src="../../../_static/doctools.js"></script>
+    <script src="../../../_static/clipboard.min.js"></script>
+    <script src="../../../_static/copybutton.js"></script>
+    <link rel="shortcut icon" href="../../../_static/favicon.ico"/>
+    <link rel="index" title="Index" href="../../../genindex.html" />
+    <link rel="search" title="Search" href="../../../search.html" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="docsearch:language" content="None">
+    
+
+    <!-- Google Analytics -->
+    
+  </head>
+  <body data-spy="scroll" data-target="#bd-toc-nav" data-offset="80">
+    
+    <div class="container-fluid" id="banner"></div>
+
+    
+    <nav class="navbar navbar-light navbar-expand-lg bg-light fixed-top bd-navbar" id="navbar-main"><div class="container-xl">
+
+  <div id="navbar-start">
+    
+    
+
+<a class="navbar-brand" href="../../../index.html">
+  <img src="../../../_static/logo.png" class="logo" alt="logo">
+</a>
+
+
+    
+  </div>
+
+  <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbar-collapsible" aria-controls="navbar-collapsible" aria-expanded="false" aria-label="Toggle navigation">
+    <span class="navbar-toggler-icon"></span>
+  </button>
+
+  
+  <div id="navbar-collapsible" class="col-lg-9 collapse navbar-collapse">
+    <div id="navbar-center" class="mr-auto">
+      
+      <div class="navbar-center-item">
+        <ul id="navbar-main-elements" class="navbar-nav">
+    <li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../getting_started/index.html">
+  Getting started
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../user_guide/index.html">
+  User guide
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../api_reference/index.html">
+  API reference
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../developer_guide/index.html">
+  Contributor Guidelines
+ </a>
+</li>
+
+<li class="toctree-l1 nav-item">
+ <a class="reference internal nav-link" href="../../../deployment/glossary.html">
+  Glossary
+ </a>
+</li>
+
+    
+</ul>
+      </div>
+      
+    </div>
+
+    <div id="navbar-end">
+      
+      <div class="navbar-end-item">
+        <ul id="navbar-icon-links" class="navbar-nav" aria-label="Icon Links">
+        <li class="nav-item">
+          <a class="nav-link" href="https://github.com/OpenMined/PySyft" rel="noopener" target="_blank" title="GitHub">
+            <span><i class="fab fa-github-square"></i></span>
+            <label class="sr-only">GitHub</label>
+          </a>
+        </li>
+        <li class="nav-item">
+          <a class="nav-link" href="https://twitter.com/openminedorg" rel="noopener" target="_blank" title="Twitter">
+            <span><i class="fab fa-twitter-square"></i></span>
+            <label class="sr-only">Twitter</label>
+          </a>
+        </li>
+      </ul>
+      </div>
+      
+    </div>
+  </div>
+</div>
+    </nav>
+    
+
+    <div class="container-xl">
+      <div class="row">
+          
+            
+            <!-- Only show if we have sidebars configured, else just a small margin  -->
+            <div class="col-12 col-md-3 bd-sidebar"><form class="bd-search d-flex align-items-center" action="../../../search.html" method="get">
+  <i class="icon fas fa-search"></i>
+  <input type="search" class="form-control" name="q" id="search-input" placeholder="Search the docs ..." aria-label="Search the docs ..." autocomplete="off" >
+</form><nav class="bd-links" id="bd-docs-nav" aria-label="Main navigation">
+  <div class="bd-toc-item active">
+    
+  </div>
+</nav>
+            </div>
+            
+          
+
+          
+          <div class="d-none d-xl-block col-xl-2 bd-toc">
+            
+          </div>
+          
+
+          
+          
+            
+          
+          <main class="col-12 col-md-9 col-xl-7 py-md-5 pl-md-5 pr-md-4 bd-content" role="main">
+              
+              <div>
+                
+  <h1>Source code for syft.lib.python</h1><div class="highlight"><pre>
+<span></span><span class="c1"># stdlib</span>
+<span class="kn">from</span> <span class="nn">typing</span> <span class="kn">import</span> <span class="n">Optional</span>
+
+<span class="c1"># syft relative</span>
+<span class="kn">from</span> <span class="nn">.</span> <span class="kn">import</span> <span class="n">collections</span>
+<span class="kn">from</span> <span class="nn">...ast</span> <span class="kn">import</span> <span class="n">add_classes</span>
+<span class="kn">from</span> <span class="nn">...ast</span> <span class="kn">import</span> <span class="n">add_dynamic_objects</span>
+<span class="kn">from</span> <span class="nn">...ast</span> <span class="kn">import</span> <span class="n">add_methods</span>
+<span class="kn">from</span> <span class="nn">...ast</span> <span class="kn">import</span> <span class="n">add_modules</span>
+<span class="kn">from</span> <span class="nn">...ast.globals</span> <span class="kn">import</span> <span class="n">Globals</span>
+<span class="kn">from</span> <span class="nn">...core.node.abstract.node</span> <span class="kn">import</span> <span class="n">AbstractNodeClient</span>
+<span class="kn">from</span> <span class="nn">..misc.union</span> <span class="kn">import</span> <span class="n">UnionGenerator</span>
+<span class="kn">from</span> <span class="nn">.bool</span> <span class="kn">import</span> <span class="n">Bool</span>
+<span class="kn">from</span> <span class="nn">.complex</span> <span class="kn">import</span> <span class="n">Complex</span>
+<span class="kn">from</span> <span class="nn">.dict</span> <span class="kn">import</span> <span class="n">Dict</span>
+<span class="kn">from</span> <span class="nn">.float</span> <span class="kn">import</span> <span class="n">Float</span>
+<span class="kn">from</span> <span class="nn">.int</span> <span class="kn">import</span> <span class="n">Int</span>
+<span class="kn">from</span> <span class="nn">.iterator</span> <span class="kn">import</span> <span class="n">Iterator</span>
+<span class="kn">from</span> <span class="nn">.list</span> <span class="kn">import</span> <span class="n">List</span>
+<span class="kn">from</span> <span class="nn">.none</span> <span class="kn">import</span> <span class="n">SyNone</span>
+<span class="kn">from</span> <span class="nn">.none</span> <span class="kn">import</span> <span class="n">_SyNone</span>
+<span class="kn">from</span> <span class="nn">.primitive_container</span> <span class="kn">import</span> <span class="n">Any</span>
+<span class="kn">from</span> <span class="nn">.primitive_interface</span> <span class="kn">import</span> <span class="n">PyPrimitive</span>
+<span class="kn">from</span> <span class="nn">.range</span> <span class="kn">import</span> <span class="n">Range</span>
+<span class="kn">from</span> <span class="nn">.set</span> <span class="kn">import</span> <span class="n">Set</span>
+<span class="kn">from</span> <span class="nn">.slice</span> <span class="kn">import</span> <span class="n">Slice</span>
+<span class="kn">from</span> <span class="nn">.string</span> <span class="kn">import</span> <span class="n">String</span>
+<span class="kn">from</span> <span class="nn">.tuple</span> <span class="kn">import</span> <span class="n">Tuple</span>
+
+<span class="k">for</span> <span class="n">syft_type</span> <span class="ow">in</span> <span class="p">[</span>
+    <span class="n">Bool</span><span class="p">,</span>
+    <span class="n">Complex</span><span class="p">,</span>
+    <span class="n">Dict</span><span class="p">,</span>
+    <span class="n">Float</span><span class="p">,</span>
+    <span class="n">Int</span><span class="p">,</span>
+    <span class="n">SyNone</span><span class="p">,</span>
+    <span class="n">_SyNone</span><span class="p">,</span>
+    <span class="n">Any</span><span class="p">,</span>
+    <span class="n">PyPrimitive</span><span class="p">,</span>
+    <span class="n">Slice</span><span class="p">,</span>
+    <span class="n">String</span><span class="p">,</span>
+    <span class="n">Tuple</span><span class="p">,</span>
+<span class="p">]:</span>
+    <span class="n">syft_type</span><span class="o">.</span><span class="vm">__module__</span> <span class="o">=</span> <span class="vm">__name__</span>
+
+
+<div class="viewcode-block" id="create_python_ast"><a class="viewcode-back" href="../../../api_reference/syft.lib.python.html#syft.lib.python.create_python_ast">[docs]</a><span class="k">def</span> <span class="nf">create_python_ast</span><span class="p">(</span><span class="n">client</span><span class="p">:</span> <span class="n">Optional</span><span class="p">[</span><span class="n">AbstractNodeClient</span><span class="p">]</span> <span class="o">=</span> <span class="kc">None</span><span class="p">)</span> <span class="o">-&gt;</span> <span class="n">Globals</span><span class="p">:</span>
+    <span class="n">ast</span> <span class="o">=</span> <span class="n">Globals</span><span class="p">(</span><span class="n">client</span><span class="p">)</span>
+
+    <span class="n">modules</span> <span class="o">=</span> <span class="p">[</span><span class="s2">&quot;syft&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.collections&quot;</span><span class="p">]</span>
+    <span class="n">classes</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">,</span> <span class="n">Bool</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Complex&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Complex&quot;</span><span class="p">,</span> <span class="n">Complex</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Dict&quot;</span><span class="p">,</span> <span class="n">Dict</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">,</span> <span class="n">Float</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="n">Int</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">,</span> <span class="n">List</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Slice&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Slice&quot;</span><span class="p">,</span> <span class="n">Slice</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Range&quot;</span><span class="p">,</span> <span class="n">Range</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">,</span> <span class="n">String</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">,</span> <span class="n">_SyNone</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.PyPrimitive&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.PyPrimitive&quot;</span><span class="p">,</span> <span class="n">PyPrimitive</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">,</span> <span class="n">Any</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">,</span> <span class="n">Tuple</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">,</span> <span class="n">Iterator</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">,</span> <span class="n">Set</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict&quot;</span><span class="p">,</span>
+            <span class="n">collections</span><span class="o">.</span><span class="n">OrderedDict</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="n">methods</span> <span class="o">=</span> <span class="p">[</span>
+        <span class="c1"># Range methods - quite there</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__eq__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__bool__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__contains__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__getitem__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__iter__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Range.__sizeof__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Range.start&quot;</span><span class="p">,</span>
+            <span class="n">UnionGenerator</span><span class="p">[</span><span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Range.step&quot;</span><span class="p">,</span>
+            <span class="n">UnionGenerator</span><span class="p">[</span><span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Range.stop&quot;</span><span class="p">,</span>
+            <span class="n">UnionGenerator</span><span class="p">[</span><span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Range.count&quot;</span><span class="p">,</span>
+            <span class="n">UnionGenerator</span><span class="p">[</span><span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Range.index&quot;</span><span class="p">,</span>
+            <span class="n">UnionGenerator</span><span class="p">[</span><span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="c1"># Slice methods - quite there</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Slice.__eq__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Slice.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Slice.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Slice.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Slice.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Slice.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Slice.__str__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Slice.indices&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Slice.start&quot;</span><span class="p">,</span>
+            <span class="n">UnionGenerator</span><span class="p">[</span><span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Slice.step&quot;</span><span class="p">,</span>
+            <span class="n">UnionGenerator</span><span class="p">[</span><span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Slice.stop&quot;</span><span class="p">,</span>
+            <span class="n">UnionGenerator</span><span class="p">[</span><span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">],</span>
+        <span class="p">),</span>
+        <span class="c1"># List methods - quite there</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__getitem__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__iter__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__add__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.append&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__iadd__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__imul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__iadd__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__contains__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__delattr__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.None&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__delitem__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.None&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__eq__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__mul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__sizeof__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__getitem__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__setitem__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__rmul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.copy&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.count&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.sort&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.reverse&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.remove&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.pop&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.index&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.insert&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.clear&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.extend&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__reversed__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.List.__delitem__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="c1"># Bool methods - quite there</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__abs__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__eq__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__add__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__and__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__ceil__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__divmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__floor__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__float__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__floordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__invert__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__lshift__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__mod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__mul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__neg__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__or__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__pos__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__pow__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__radd__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rand__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rdivmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rfloordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rlshift__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rmul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__ror__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__round__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rpow__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rrshift__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rshift__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rsub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rtruediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__rxor__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__sub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__truediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__xor__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.__trunc__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.conjugate&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.bit_length&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.as_integer_ratio&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.numerator&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.real&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.imag&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Bool.denominator&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="c1"># Float methods - subject to further change due</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__add__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__truediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__divmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__eq__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__add__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__abs__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__bool__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__sub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__rsub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__mul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__rmul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__divmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__int__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__neg__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__floordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__truediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__mod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__rmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__rdivmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__rfloordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__round__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__rtruediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__sizeof__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__trunc__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.as_integer_ratio&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.is_integer&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__pow__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__rpow__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__iadd__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__isub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__imul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__imod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__ipow__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.__pos__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.conjugate&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.imag&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Float.real&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="c1"># String Methods</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__add__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__contains__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__eq__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__float__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__getitem__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__int__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__iter__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__mod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__mul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__reversed__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__sizeof__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__str__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.capitalize&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.casefold&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.center&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.count&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.encode&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.expandtabs&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.find&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.format&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.format_map&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.index&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isalnum&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isalpha&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isdecimal&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isdigit&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isidentifier&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.islower&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isnumeric&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isprintable&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isspace&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isupper&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.join&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.ljust&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.lower&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.lstrip&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.partition&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.replace&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.rfind&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.rindex&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.rjust&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.rpartition&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.rsplit&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.rstrip&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.split&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.splitlines&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.startswith&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.strip&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.swapcase&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.title&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.translate&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.upper&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.zfill&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__contains__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.__rmul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.endswith&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.isascii&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.String.istitle&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="c1"># Dict methods</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__contains__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__eq__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__format__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__getitem__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__iter__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__sizeof__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.__str__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.copy&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Dict&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.clear&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.fromkeys&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Dict&quot;</span><span class="p">),</span>
+        <span class="c1"># Rename get to dict_get because of conflict</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.dict_get&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.items&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.keys&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.pop&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.popitem&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.setdefault&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Dict.values&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="c1"># Int methods - subject to further change</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__add__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__truediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__divmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__floordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__invert__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__abs__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__bool__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__divmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rdivmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__radd__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__sub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rsub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rtruediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__mul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rmul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__ceil__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__eq__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__float__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__floor__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__floordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rfloordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__truediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__mod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rmod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__pow__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rpow__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__lshift__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rlshift__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__round__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rshift__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rrshift__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__and__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rand__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__xor__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__xor__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__rxor__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__or__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__ror__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__iadd__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__isub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__imul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__ifloordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__itruediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__imod__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__ipow__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__neg__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__pos__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.as_integer_ratio&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.bit_length&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.denominator&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.from_bytes&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.real&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.imag&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.numerator&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.conjugate&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Int.__trunc__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="c1"># Tuple</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__add__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__contains__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__mul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__rmul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Tuple&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__getitem__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.count&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.index&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Tuple.__iter__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="c1"># PyContainer - quite there</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__add__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__iter__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__next__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__radd__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__truediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__rtruediv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__floordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__rfloordiv__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__mul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__rmul__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__sub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Any.__rsub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Iterator.__next__&quot;</span><span class="p">,</span>
+            <span class="n">UnionGenerator</span><span class="p">[</span>
+                <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;syft.lib.python.Float&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;syft.lib.python.String&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;torch.nn.Parameter&quot;</span><span class="p">,</span>
+                <span class="s2">&quot;torch.Tensor&quot;</span><span class="p">,</span>
+            <span class="p">],</span>
+        <span class="p">),</span>  <span class="c1"># temp until casting</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Iterator.__iter__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Iterator.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__and__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__contains__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__eq__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__ge__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__gt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__iand__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__ior__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__isub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__ixor__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__le__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__lt__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__ne__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__or__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__sub__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.__xor__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.add&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.clear&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.difference&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.difference_update&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.discard&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.intersection&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.intersection_update&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.isdisjoint&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.issuperset&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.pop&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.remove&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.Set.symmetric_difference_update&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.symmetric_difference&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.union&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Set&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.Set.update&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__contains__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__delitem__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__eq__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__ge__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__getitem__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__gt__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__le__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__iter__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.collections.OrderedDict.__len__&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__lt__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__ne__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Bool&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.__setitem__&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.clear&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.copy&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.fromkeys&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.collections.OrderedDict.items&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.collections.OrderedDict.keys&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.move_to_end&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.collections.OrderedDict.pop&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.collections.OrderedDict.popitem&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.setdefault&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.update&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python._SyNone&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.values&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Iterator&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+        <span class="p">(</span><span class="s2">&quot;syft.lib.python.collections.OrderedDict.items&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.List&quot;</span><span class="p">),</span>
+        <span class="p">(</span>
+            <span class="s2">&quot;syft.lib.python.collections.OrderedDict.dict_get&quot;</span><span class="p">,</span>
+            <span class="s2">&quot;syft.lib.python.Any&quot;</span><span class="p">,</span>
+        <span class="p">),</span>
+    <span class="p">]</span>
+
+    <span class="n">dynamic_objects</span> <span class="o">=</span> <span class="p">[(</span><span class="s2">&quot;syft.lib.python.Bool.my_field&quot;</span><span class="p">,</span> <span class="s2">&quot;syft.lib.python.Int&quot;</span><span class="p">)]</span>
+
+    <span class="n">add_modules</span><span class="p">(</span><span class="n">ast</span><span class="p">,</span> <span class="n">modules</span><span class="p">)</span>
+    <span class="n">add_classes</span><span class="p">(</span><span class="n">ast</span><span class="p">,</span> <span class="n">classes</span><span class="p">)</span>
+    <span class="n">add_methods</span><span class="p">(</span><span class="n">ast</span><span class="p">,</span> <span class="n">methods</span><span class="p">)</span>
+    <span class="n">add_dynamic_objects</span><span class="p">(</span><span class="n">ast</span><span class="p">,</span> <span class="n">dynamic_objects</span><span class="p">)</span>
+
+    <span class="k">for</span> <span class="n">klass</span> <span class="ow">in</span> <span class="n">ast</span><span class="o">.</span><span class="n">classes</span><span class="p">:</span>
+        <span class="n">klass</span><span class="o">.</span><span class="n">create_pointer_class</span><span class="p">()</span>
+        <span class="n">klass</span><span class="o">.</span><span class="n">create_send_method</span><span class="p">()</span>
+        <span class="n">klass</span><span class="o">.</span><span class="n">create_storable_object_attr_convenience_methods</span><span class="p">()</span>
+
+    <span class="k">return</span> <span class="n">ast</span></div>
+</pre></div>
+
+              </div>
+              
+              
+              <!-- Previous / next buttons -->
+<div class='prev-next-area'>
+</div>
+              
+          </main>
+          
+
+      </div>
+    </div>
+  
+  <script src="../../../_static/js/index.be7d3bbb2ef33a8344ce.js"></script>
+<footer class="footer mt-5 mt-md-0">
+  <div class="container">
+    
+    <div class="footer-item">
+      <p class="copyright">
+    &copy; Copyright 2021, Openmined Community.<br>
+</p>
+    </div>
+    
+    <div class="footer-item">
+      <p class="sphinx-version">
+Created using <a href="http://sphinx-doc.org/">Sphinx</a> 4.3.0.<br>
+</p>
+    </div>
+    
+  </div>
+</footer>
+  </body>
+</html>
