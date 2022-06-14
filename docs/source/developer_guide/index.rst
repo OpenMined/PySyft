@@ -16,7 +16,7 @@ We are always excited to work with new contributors and engage with them
 to build exciting new features or improve existing bugs.
 
 If you are unsure where to start or how your skills fit in, take a look
-at open ``good-first-issues`` or introduce yourself in the #introductions
+at open `Good first issue <https://github.com/OpenMined/PySyft/labels/Good%20first%20issue%20%3Amortar_board%3A>`__ or introduce yourself in the #introductions
 channel on
 `Slack <https://communityinviter.com/apps/openmined/openmined/>`__, and
 we will match you to the issue that fits your expertise or skills.
@@ -65,7 +65,7 @@ picking an issue are:
 -  Find issues related to a bug or want some feature update.
 -  Find duplicate issues and link related ones.
 
-We recommend picking an open issue with the label ``Good first issue``
+We recommend picking an open issue with the label `Good first issue <https://github.com/OpenMined/PySyft/labels/Good%20first%20issue%20%3Amortar_board%3A>`__
 as a starter. These issues should only require general programming
 knowledge and little to no insights into technical aspects of the
 project.
