@@ -1,31 +1,18 @@
-syft.core.node.common.node\_service.testing\_services
-=====================================================
+syft.core.node.common.node\_service.testing\_services package
+=============================================================
 
 .. automodule:: syft.core.node.common.node_service.testing_services
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   
-   
-   
+Submodules
+----------
 
-   
-   
-   
+syft.core.node.common.node\_service.testing\_services.repr\_service module
+--------------------------------------------------------------------------
 
-   
-   
-   
-
-   
-   
-   
-
-
-
-.. rubric:: Modules
-
-.. autosummary::
-   :toctree:
-   :recursive:
-
-   syft.core.node.common.node_service.testing_services.repr_service
-
+.. automodule:: syft.core.node.common.node_service.testing_services.repr_service
+   :members:
+   :undoc-members:
+   :show-inheritance:

@@ -18,7 +18,6 @@ syft.grid.client.grid\_connection
    .. autosummary::
    
       GridHTTPConnection
-      TimeoutHTTPAdapter
    
    
 
