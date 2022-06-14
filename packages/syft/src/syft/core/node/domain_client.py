@@ -337,7 +337,7 @@ class DomainClient(Client):
     @property
     def privacy_budget(self) -> float:
         msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
-        return self.send_immediate_msg_with_reply(msg).budget  # type: ignore
+        return self.send_immediate_msg_with_reply(msg=msg).budget  # type: ignore
 
     def request_budget(
         self,
@@ -432,6 +432,7 @@ class DomainClient(Client):
     def apply_to_network(
         self,
         client: Optional[AbstractNodeClient] = None,
+        retry: int = 3,
         **metadata: str,
     ) -> None:
         try:
@@ -468,11 +469,17 @@ class DomainClient(Client):
                 print(".", end="")
                 time.sleep(1)
 
+            if vpn_status.get("status") == "error":
+                raise Exception("Failed to get vpn status.")
+
             for peer in vpn_status["peers"]:
-                if peer["hostname"].replace("-", "_") == client.name:  # type: ignore
+                # sometimes the hostname we give is different to the one tailscale
+                # reports which can convert _ to - so if we change them on both sides
+                # we can safely compare
+                if peer["hostname"].replace("-", "_") == client.name.replace("-", "_"):  # type: ignore
                     network_vpn_ip = peer["ip"]
             try:
-                domain_vpn_ip = self.vpn_status()["host"]["ip"]
+                domain_vpn_ip = vpn_status["host"]["ip"]
             except Exception as e:
                 print(f"Failed to get vpn host ip. {e}")
 
@@ -484,7 +491,10 @@ class DomainClient(Client):
                 raise Exception(f"No host ip in {vpn_status}")
 
             self.association.create(
-                source=domain_vpn_ip, target=network_vpn_ip, metadata=metadata
+                source=domain_vpn_ip,
+                target=network_vpn_ip,
+                metadata=metadata,
+                retry=retry,
             )
 
             print("3/3 Network Registration Complete")

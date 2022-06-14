@@ -5,6 +5,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from typing_extensions import SupportsIndex
 
 # syft absolute
 import syft as sy
@@ -86,7 +87,7 @@ class Tuple(tuple, PyPrimitive):
     def __len__(self) -> SyPrimitiveRet:
         return PrimitiveFactory.generate_primitive(value=super().__len__())
 
-    def __getitem__(self, key: Union[int, slice, Slice]) -> Any:
+    def __getitem__(self, key: Union[int, slice, Slice, SupportsIndex]) -> Any:
         if isinstance(key, Slice):
             key = key.upcast()
         value = super().__getitem__(key)

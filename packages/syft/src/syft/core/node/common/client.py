@@ -216,8 +216,8 @@ class Client(AbstractNodeClient):
             ImmediateSyftMessageWithReply,
             Any,  # TEMPORARY until we switch everything to NodeRunnableMessage types.
         ],
-        route_index: int = 0,
         timeout: Optional[float] = None,
+        route_index: int = 0,
     ) -> SyftMessage:
 
         # relative

@@ -85,15 +85,16 @@ vars:
     value: traefik-domain.yaml
   - name: NETWORK_CHECK_INTERVAL
     value: "60"
+  - name: TEST_MODE
+    value: "0"
 
 images:
   backend:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
     # rebuildStrategy: ignoreContextChanges
     tags:
-      - "######"
       - latest
-      - "0.7.0-beta.26"
+      - "0.7.0-beta.28"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -103,9 +104,8 @@ images:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
     # rebuildStrategy: ignoreContextChanges
     tags:
-      - "######"
       - latest
-      - "0.7.0-beta.26"
+      - "0.7.0-beta.28"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -122,9 +122,8 @@ images:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
     # rebuildStrategy: ignoreContextChanges
     tags:
-      - "######"
       - latest
-      - "0.7.0-beta.26"
+      - "0.7.0-beta.28"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -134,9 +133,8 @@ images:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
     # rebuildStrategy: ignoreContextChanges
     tags:
-      - "######"
       - latest
-      - "0.7.0-beta.26"
+      - "0.7.0-beta.28"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -146,9 +144,8 @@ images:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
     # rebuildStrategy: ignoreContextChanges
     tags:
-      - "######"
       - latest
-      - "0.7.0-beta.15"
+      - "0.7.0-beta.28"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -197,7 +194,7 @@ deployments:
             env:
               - name: SERVICE_NAME
                 value: ${SERVICE_NAME_TRAEFIK}
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}:${VERSION}
             securityContext:
               capabilities:
                 add: ["NET_ADMIN", "SYS_MODULE"]
@@ -354,7 +351,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}
             command:
               - /start.sh
             securityContext:
@@ -430,6 +427,8 @@ deployments:
                 value: ${RELEASE}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -440,7 +439,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}
             command:
               - waitforit
             args:
@@ -526,6 +525,8 @@ deployments:
                 value: ${RELEASE}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -536,7 +537,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}
             command:
               - waitforit
             args:
@@ -610,13 +611,15 @@ deployments:
                 value: $!{NETWORK_CHECK_INTERVAL}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
 
   - name: frontend
     helm:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}:${VERSION}
             env:
               - name: VERSION
                 value: ${VERSION}
@@ -636,7 +639,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}:${VERSION}
             env:
               - name: NETWORK_NAME
                 value: ${NETWORK_NAME}
@@ -665,7 +668,7 @@ deployments:
       values:
         hostNetwork: true
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}:${VERSION}
             command: ["sh", "-c", "/iptables.sh"]
             resources:
               requests:

@@ -188,7 +188,7 @@ def load(
     if "lib" in kwargs.keys():
         libs += tuple(kwargs["lib"])
 
-    if isinstance(libs[0], Iterable):
+    if len(libs) > 0 and isinstance(libs[0], Iterable):
         if not isinstance(libs[0], str):
             libs = tuple(libs[0])
         for lib in libs:
