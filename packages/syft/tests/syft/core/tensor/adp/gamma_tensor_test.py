@@ -120,7 +120,6 @@ def test_gamma_publish(
     def deduct_epsilon_for_user(*args: Any, **kwargs: Any) -> bool:
         return True
 
-    gamma_tensor1 = gamma_tensor1 + 1  # dummy operation to set state
     results = gamma_tensor1.publish(
         get_budget_for_user=get_budget_for_user,
         deduct_epsilon_for_user=deduct_epsilon_for_user,
@@ -129,6 +128,6 @@ def test_gamma_publish(
     )
 
     assert results.dtype == np.float64
-    assert results < upper_bound.sum() + 10
-    assert -10 + lower_bound.sum() < results
+    assert results < tensor1.child.encode(upper_bound.sum()) + 10
+    assert -10 + tensor1.child.encode(lower_bound.sum()) < results
     print(ledger_store.kv_store)

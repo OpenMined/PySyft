@@ -1,5 +1,3 @@
-import type {Network} from './network.ts'
-
 export interface Domain {
   id: string
   name: string
@@ -9,7 +7,6 @@ export interface Domain {
   created_on: Date | string
   owner: string
   company?: string
-  networks: Array<Partial<Network>>
   tags: Array<string>
   version: string
 }

@@ -2,10 +2,11 @@
 from __future__ import annotations
 
 # stdlib
-import sys
+from concurrent import futures
 from typing import Any
 from typing import Dict
 from typing import List
+from typing import Optional
 from typing import Union
 
 # third party
@@ -39,14 +40,10 @@ class NetworkRegistry:
 
     @property
     def online_networks(self) -> List[Dict]:
-        online_networks = list()
 
-        an = self.all_networks
+        networks = self.all_networks
 
-        for i, network in enumerate(an):
-            sys.stdout.write(
-                "\rChecking network availability: " + str(i + 1) + " of " + str(len(an))
-            )
+        def check_network(network: Dict) -> Optional[Dict[Any, Any]]:
             url = "http://" + network["host_or_ip"] + ":" + str(network["port"]) + "/"
             try:
                 res = requests.get(url, timeout=0.5)
@@ -64,8 +61,20 @@ class NetworkRegistry:
                     online = False
 
             if online:
-                online_networks.append(network)
-        sys.stdout.write("\r                                             ")
+                return network
+            return None
+
+        # We can use a with statement to ensure threads are cleaned up promptly
+        with futures.ThreadPoolExecutor(max_workers=20) as executor:
+            # map
+            _online_networks = list(
+                executor.map(lambda network: check_network(network), networks)
+            )
+
+        online_networks = list()
+        for each in _online_networks:
+            if each is not None:
+                online_networks.append(each)
         return online_networks
 
     def _repr_html_(self) -> str:
@@ -73,6 +82,12 @@ class NetworkRegistry:
         if len(on) == 0:
             return "(no networks online - try syft.networks.all_networks to see offline networks)"
         return pd.DataFrame(on)._repr_html_()
+
+    def __repr__(self) -> str:
+        on = self.online_networks
+        if len(on) == 0:
+            return "(no networks online - try syft.networks.all_networks to see offline networks)"
+        return pd.DataFrame(on).to_string()
 
     def create_client(self, network: Dict[str, Any]) -> Client:
         try:

@@ -6,7 +6,6 @@ from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import EmailStr
 from typing_extensions import final
@@ -340,26 +339,6 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
                 role = payload_dict.pop("role")
                 new_role_id = node.roles.first(name=role).id
                 node.users.set(user_id=user_id, role=new_role_id)  # type: ignore
-            elif (  # Transfering Owner's role
-                self.payload.role == node.roles.owner_role.name  # target role == Owner
-                and node.users.role(verify_key=verify_key).name
-                == node.roles.owner_role.name  # Current user is the current node owner.
-            ):
-                role = payload_dict.pop("role")
-                new_role_id = node.roles.first(name=role).id
-                node.users.set(user_id=str(user_id), role=new_role_id)
-                current_user = node.users.get_user(verify_key=verify_key)
-                node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)  # type: ignore
-                # Updating current node keys
-                root_key = SigningKey(
-                    current_user.private_key.encode("utf-8"), encoder=HexEncoder  # type: ignore
-                )
-                node.signing_key = root_key
-                node.verify_key = root_key.verify_key
-                # IDK why, but we also have a different var (node.root_verify_key)
-                # defined at ...common.node.py that points to the verify_key.
-                # So we need to update it as well.
-                node.root_verify_key = root_key.verify_key
             elif target_user.role == node.roles.owner_role.id:
                 raise AuthorizationError(
                     "You're not allowed to change Owner user roles!"

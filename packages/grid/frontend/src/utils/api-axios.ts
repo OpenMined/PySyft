@@ -1,6 +1,6 @@
-import {camelizeKeys, decamelizeKeys} from 'humps'
-import Axios, {AxiosError, AxiosRequestConfig, AxiosResponse} from 'axios'
-import {getToken} from '@/lib/auth'
+import { camelizeKeys, decamelizeKeys } from 'humps'
+import Axios, { AxiosError, AxiosRequestConfig, AxiosResponse } from 'axios'
+import { getToken } from '@/lib/auth'
 
 export interface ErrorMessage {
   type: 'error'
@@ -11,19 +11,19 @@ export interface ErrorMessage {
 export function handleAxiosError(error: AxiosError): ErrorMessage {
   const message: string = error?.response?.data?.error
   const status: number = error?.response?.status
-  throw {message, status}
+  throw { message, status }
 }
 
 const instance = Axios.create({
   baseURL: process.env.NEXT_PUBLIC_API_URL,
   headers: {
-    'Content-Type': 'application/json'
-  }
+    'Content-Type': 'application/json',
+  },
 })
 
 instance.interceptors.request.use((config: AxiosRequestConfig) => {
   const token = getToken()
-  console.log({token})
+  console.log({ token })
 
   if (config.headers && token) {
     config.headers.Authorization = `Bearer ${token}`
