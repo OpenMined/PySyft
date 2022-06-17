@@ -51,8 +51,10 @@ def helper_argmax(
     parties = x.parties
     args = [[share_ptr_tensor, axis] for share_ptr_tensor in prep_x.child]
 
-    assert isinstance(prep_x.mpc_shape, tuple)
-    assert len(prep_x.mpc_shape) != 0
+    if not isinstance(prep_x.mpc_shape, tuple) and len(prep_x.mpc_shape) != 0:
+        raise ValueError(
+            "Expected shape to be tuple and '> 0', but got {len(prep_x.mpc_shape)}!"
+        )
 
     dummy_val = Tensor(ShareTensor.get_dummy_value(prep_x.mpc_shape))
     compare_shape = tuple(helper_argmax_pairwise(dummy_val, axis).shape)
@@ -152,7 +154,8 @@ def max(
         res = max_mpc.sum()
     else:
         shape = argmax_mpc.shape
-        assert shape is not None, "Shape for MPCTensor should not be None!"
+        if shape is None:
+            raise ValueError("Shape for MPCTensor should not be None!")
         size = [1] * len(shape)
         size[axis] = shape[axis]
         argmax_mpc = argmax_mpc * Tensor(np.arange(shape[axis])).reshape(size)
