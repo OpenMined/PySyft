@@ -172,7 +172,7 @@ class lazyrepeatarray:
 
     def pad(self, pad_width: int, mode: str = "reflect") -> lazyrepeatarray:
         if mode == "reflect":
-            new_shape = tuple([i + pad_width for i in self.shape])
+            new_shape = tuple([i + pad_width * 2 for i in self.shape])
             if self.data.shape == self.shape:
                 return lazyrepeatarray(
                     data=np.pad(self.data, pad_width=pad_width, mode="reflect"),
