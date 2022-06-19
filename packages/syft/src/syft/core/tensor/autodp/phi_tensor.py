@@ -1091,6 +1091,19 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         )
 
+    def normalize(self, mean: Union[float, Sequence[float]], std: Union[float, Sequence[float]]) -> PhiTensor:
+        # TODO: Double check if normalization bounds are correct; they might be data dependent
+        if isinstance(mean, float) and isinstance(std, float):
+            return PhiTensor(
+                child=FixedPrecisionTensor((self.child.decode() - mean)/std),
+                data_subjects=self.data_subjects,
+                min_vals=(self.min_vals - mean) * (1/std),
+                max_vals=(self.max_vals - mean) * (1/std)
+            )
+        else:
+            # This is easily doable in the future
+            raise NotImplementedError
+
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
         # TODO: check if values needs to be a JAX array or if numpy will suffice
