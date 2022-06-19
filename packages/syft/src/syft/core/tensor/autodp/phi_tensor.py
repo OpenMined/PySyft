@@ -1044,6 +1044,36 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=output_max_vals
         )
 
+    def random_horizontal_flip(self, p=0.5) -> PhiTensor:
+        """ Could make more efficient by not encoding/decoding FPT"""
+        if np.random.random() <= p:
+            return PhiTensor(
+                child=FixedPrecisionTensor(np.fliplr(self.child.decode())),
+                data_subjects=DataSubjectList(
+                    one_hot_lookup=self.data_subjects.one_hot_lookup,
+                    data_subjects_indexed=np.fliplr(self.data_subjects.data_subjects_indexed)
+                ),
+                min_vals=self.min_vals.horizontal_flip(),
+                max_vals=self.max_vals.horizontal_flip()
+            )
+        else:
+            return self
+
+    def random_vertical_flip(self, p=0.5) -> PhiTensor:
+        """ Could make more efficient by not encoding/decoding FPT"""
+        if np.random.random() <= p:
+            return PhiTensor(
+                child=FixedPrecisionTensor(np.flipud(self.child.decode())),
+                data_subjects=DataSubjectList(
+                    one_hot_lookup=self.data_subjects.one_hot_lookup,
+                    data_subjects_indexed=np.flipud(self.data_subjects.data_subjects_indexed)
+                ),
+                min_vals=self.min_vals.vertical_flip(),
+                max_vals=self.max_vals.vertical_flip()
+            )
+        else:
+            return self
+
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
         # TODO: check if values needs to be a JAX array or if numpy will suffice

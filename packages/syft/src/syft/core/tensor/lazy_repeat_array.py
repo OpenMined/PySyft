@@ -169,7 +169,7 @@ class lazyrepeatarray:
             return self * self
         raise Exception("not sure how to do this yet")
 
-    def pad(self, pad_width: int, mode: str = "reflect"):
+    def pad(self, pad_width: int, mode: str = "reflect") -> lazyrepeatarray:
         if mode == "reflect":
             new_shape = tuple([i + pad_width for i in self.shape])
             if self.data.shape == self.shape:
@@ -184,6 +184,34 @@ class lazyrepeatarray:
                 )
             else:
                 raise NotImplementedError
+        else:
+            raise NotImplementedError
+
+    def horizontal_flip(self) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            return lazyrepeatarray(
+                data=np.fliplr(self.data),
+                shape=self.shape
+            )
+        elif self.data.size == 1:
+            return lazyrepeatarray(
+                data=self.data,
+                shape=self.shape
+            )
+        else:
+            raise NotImplementedError
+
+    def vertical_flip(self) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            return lazyrepeatarray(
+                data=np.flipud(self.data),
+                shape=self.shape
+            )
+        elif self.data.size == 1:
+            return lazyrepeatarray(
+                data=self.data,
+                shape=self.shape
+            )
         else:
             raise NotImplementedError
 
