@@ -1022,6 +1022,28 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 data_subjects=self.data_subjects,
             )
 
+    def pad(self, width: float, padding_mode: str = "reflect") -> PhiTensor:
+        if padding_mode == "reflect":
+            output_data = np.pad(self.child.decode(), pad_width=width, mode=padding_mode)
+
+            original_indexed = self.data_subjects.data_subjects_indexed.copy()
+            output_subjects = DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=np.pad(original_indexed, pad_width=width, mode=padding_mode)
+            )
+
+            output_min_vals = self.min_vals.pad(pad_width=width, mode=padding_mode)
+            output_max_vals = self.max_vals.pad(pad_width=width, mode=padding_mode)
+
+        else:
+            raise NotImplementedError
+        return PhiTensor(
+            child=FixedPrecisionTensor(output_data),
+            data_subjects=output_subjects,
+            min_vals=output_min_vals,
+            max_vals=output_max_vals
+        )
+
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
         # TODO: check if values needs to be a JAX array or if numpy will suffice

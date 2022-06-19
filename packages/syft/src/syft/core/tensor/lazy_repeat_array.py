@@ -169,6 +169,24 @@ class lazyrepeatarray:
             return self * self
         raise Exception("not sure how to do this yet")
 
+    def pad(self, pad_width: int, mode: str = "reflect"):
+        if mode == "reflect":
+            new_shape = tuple([i + pad_width for i in self.shape])
+            if self.data.shape == self.shape:
+                return lazyrepeatarray(
+                    data=np.pad(self.data, pad_width=pad_width, mode="reflect"),
+                    shape=new_shape
+                )
+            elif self.data.size == 1:
+                return lazyrepeatarray(
+                    data=self.data,
+                    shape=new_shape
+                )
+            else:
+                raise NotImplementedError
+        else:
+            raise NotImplementedError
+
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
         return self.__class__(data=self.data.copy(order=order), shape=self.shape)
 
