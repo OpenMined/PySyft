@@ -11,6 +11,7 @@ from typing import Tuple
 from typing import Union
 
 # third party
+from scipy.ndimage.interpolation import rotate
 import numpy as np
 
 # relative
@@ -208,6 +209,21 @@ class lazyrepeatarray:
                 shape=self.shape
             )
         elif self.data.size == 1:
+            return lazyrepeatarray(
+                data=self.data,
+                shape=self.shape
+            )
+        else:
+            raise NotImplementedError
+
+    def rotate(self, angle:int) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            return lazyrepeatarray(
+                data=rotate(self.data, angle),
+                shape=self.shape
+            )
+        elif self.data.size == 1:
+            # TODO: This is almost certainly incorrect
             return lazyrepeatarray(
                 data=self.data,
                 shape=self.shape

@@ -12,6 +12,7 @@ from typing import Tuple
 from typing import Union
 
 # third party
+from scipy.ndimage.interpolation import rotate
 import numpy as np
 
 # relative
@@ -1073,6 +1074,22 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             )
         else:
             return self
+
+    def random_rotation(self, degrees: Union[int, Tuple]) -> PhiTensor:
+        if isinstance(degrees, int):
+            angle = np.random.randint(low=-degrees, high=degrees)
+        elif isinstance(degrees, tuple):
+            angle = np.random.randint(low=degrees[0], high=degrees[1])
+        return PhiTensor(
+            child=FixedPrecisionTensor(rotate(self.child.decode(), angle)),
+            data_subjects=DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=rotate(self.data_subjects.data_subjects_indexed, angle)  # THIS COULD BE WRONG
+            ),
+            min_vals=self.min_vals.rotate(angle),
+            max_vals=self.max_vals.rotate(angle)
+
+        )
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
