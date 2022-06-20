@@ -1,8 +1,8 @@
 name: Continuous Delivery
 
 on:
-  # schedule:
-  #   - cron: "00 12 * * 0" # Sunday 12:00 UTC
+  schedule:
+    - cron: "00 12 * * 0" # Sunday 12:00 UTC
   workflow_dispatch:
     inputs:
       none:
@@ -35,20 +35,20 @@ jobs:
     uses: OpenMined/PySyft/.github/workflows/syft-version_tests.yml@dev
 
   call-stack-integration_tests:
-    # needs:
-    #   [
-    #     call-linting,
-    #     call-syft_tests,
-    #     call-grid-backend_test,
-    #     call-syft-security,
-    #     call-grid-frontend_test,
-    #     call-syft-version_tests,
-    #   ]
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/stack-integration_tests.yml@dev
 
-  deploy-syft-beta:
-    # needs: [call-stack-integration_tests]
+  deploy-syft:
+    needs:
+      [
+        call-linting,
+        call-syft_tests,
+        call-grid-backend_test,
+        call-syft-security,
+        call-grid-frontend_test,
+        call-syft-version_tests,
+        call-stack-integration_tests,
+      ]
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v3
