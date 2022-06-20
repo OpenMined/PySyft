@@ -29,7 +29,5 @@ syft.core.node.domain
 
    syft.core.node.domain.client
    syft.core.node.domain.domain
-   syft.core.node.domain.domain_interface
-   syft.core.node.domain.enums
-   syft.core.node.domain.exceptions
+   syft.core.node.domain.service
 
