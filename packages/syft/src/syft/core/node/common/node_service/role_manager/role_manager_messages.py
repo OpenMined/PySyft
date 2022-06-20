@@ -102,7 +102,9 @@ class CreateRoleMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: CreateRoleMessage_PB,) -> "CreateRoleMessage":
+    def _proto2object(
+        proto: CreateRoleMessage_PB,
+    ) -> "CreateRoleMessage":
         """Creates a CreateRoleMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -181,7 +183,9 @@ class GetRoleMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetRoleMessage_PB,) -> "GetRoleMessage":
+    def _proto2object(
+        proto: GetRoleMessage_PB,
+    ) -> "GetRoleMessage":
         """Creates a GetRoleMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -243,7 +247,9 @@ class GetRoleResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetRoleResponse_PB,) -> "GetRoleResponse":
+    def _proto2object(
+        proto: GetRoleResponse_PB,
+    ) -> "GetRoleResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -305,7 +311,9 @@ class GetRolesMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetRolesMessage_PB,) -> "GetRolesMessage":
+    def _proto2object(
+        proto: GetRolesMessage_PB,
+    ) -> "GetRolesMessage":
         """Creates a GetRolesMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -368,7 +376,9 @@ class GetRolesResponse(ImmediateSyftMessageWithoutReply):
         return msg
 
     @staticmethod
-    def _proto2object(proto: GetRolesResponse_PB,) -> "GetRolesResponse":
+    def _proto2object(
+        proto: GetRolesResponse_PB,
+    ) -> "GetRolesResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -468,7 +478,9 @@ class UpdateRoleMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: UpdateRoleMessage_PB,) -> "UpdateRoleMessage":
+    def _proto2object(
+        proto: UpdateRoleMessage_PB,
+    ) -> "UpdateRoleMessage":
         """Creates a UpdateRoleMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -548,7 +560,9 @@ class DeleteRoleMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: DeleteRoleMessage_PB,) -> "DeleteRoleMessage":
+    def _proto2object(
+        proto: DeleteRoleMessage_PB,
+    ) -> "DeleteRoleMessage":
         """Creates a DeleteRoleMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

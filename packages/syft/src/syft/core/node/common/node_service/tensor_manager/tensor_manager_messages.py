@@ -80,7 +80,9 @@ class CreateTensorMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: CreateTensorMessage_PB,) -> "CreateTensorMessage":
+    def _proto2object(
+        proto: CreateTensorMessage_PB,
+    ) -> "CreateTensorMessage":
         """Creates a CreateTensorMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -150,7 +152,9 @@ class CreateTensorResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: CreateTensorResponse_PB,) -> "CreateTensorResponse":
+    def _proto2object(
+        proto: CreateTensorResponse_PB,
+    ) -> "CreateTensorResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -219,7 +223,9 @@ class GetTensorMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetTensorMessage_PB,) -> "GetTensorMessage":
+    def _proto2object(
+        proto: GetTensorMessage_PB,
+    ) -> "GetTensorMessage":
         """Creates a GetTensorMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -289,7 +295,9 @@ class GetTensorResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetTensorResponse_PB,) -> "GetTensorResponse":
+    def _proto2object(
+        proto: GetTensorResponse_PB,
+    ) -> "GetTensorResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -358,7 +366,9 @@ class GetTensorsMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetTensorsMessage_PB,) -> "GetTensorsMessage":
+    def _proto2object(
+        proto: GetTensorsMessage_PB,
+    ) -> "GetTensorsMessage":
         """Creates a GetTensorsMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -428,7 +438,9 @@ class GetTensorsResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetTensorsResponse_PB,) -> "GetTensorsResponse":
+    def _proto2object(
+        proto: GetTensorsResponse_PB,
+    ) -> "GetTensorsResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -497,7 +509,9 @@ class UpdateTensorMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: UpdateTensorMessage_PB,) -> "UpdateTensorMessage":
+    def _proto2object(
+        proto: UpdateTensorMessage_PB,
+    ) -> "UpdateTensorMessage":
         """Creates a UpdateTensorMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -567,7 +581,9 @@ class UpdateTensorResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: UpdateTensorResponse_PB,) -> "UpdateTensorResponse":
+    def _proto2object(
+        proto: UpdateTensorResponse_PB,
+    ) -> "UpdateTensorResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -636,7 +652,9 @@ class DeleteTensorMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: DeleteTensorMessage_PB,) -> "DeleteTensorMessage":
+    def _proto2object(
+        proto: DeleteTensorMessage_PB,
+    ) -> "DeleteTensorMessage":
         """Creates a DeleteTensorMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -706,7 +724,9 @@ class DeleteTensorResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: DeleteTensorResponse_PB,) -> "DeleteTensorResponse":
+    def _proto2object(
+        proto: DeleteTensorResponse_PB,
+    ) -> "DeleteTensorResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

@@ -2,15 +2,14 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
 from typing_extensions import final
-import tensorflow_federated as tff
-
 
 # relative
 from ...... import serialize
@@ -42,9 +41,7 @@ class TFFMessageWithReply:
     def run(self, node: AbstractNode, verify_key: Optional[VerifyKey] = None) -> Any:
         # print(tff.federated_computation(lambda: 'Hello World')())
 
-        return (
-            "Hello from TFF Service..."
-        )  # leaving this in for the test suite
+        return "Hello from TFF Service..."  # leaving this in for the test suite
 
     def prepare(self, address: Address, reply_to: Address) -> "TFFMessage":
         return TFFMessage(address=address, reply_to=reply_to, payload=self)

@@ -98,7 +98,9 @@ class CreateRequestMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: CreateRequestMessage_PB,) -> "CreateRequestMessage":
+    def _proto2object(
+        proto: CreateRequestMessage_PB,
+    ) -> "CreateRequestMessage":
         """Creates a CreateRequestMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -236,7 +238,9 @@ class CreateRequestResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: CreateRequestResponse_PB,) -> "CreateRequestResponse":
+    def _proto2object(
+        proto: CreateRequestResponse_PB,
+    ) -> "CreateRequestResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -305,7 +309,9 @@ class GetRequestMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetRequestMessage_PB,) -> "GetRequestMessage":
+    def _proto2object(
+        proto: GetRequestMessage_PB,
+    ) -> "GetRequestMessage":
         """Creates a GetRequestMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -375,7 +381,9 @@ class GetRequestResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetRequestResponse_PB,) -> "GetRequestResponse":
+    def _proto2object(
+        proto: GetRequestResponse_PB,
+    ) -> "GetRequestResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -438,7 +446,9 @@ class GetRequestsMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetRequestsMessage_PB,) -> "GetRequestsMessage":
+    def _proto2object(
+        proto: GetRequestsMessage_PB,
+    ) -> "GetRequestsMessage":
         """Creates a GetRequestsMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -511,7 +521,9 @@ class GetRequestsResponse(ImmediateSyftMessageWithoutReply):
         return msg
 
     @staticmethod
-    def _proto2object(proto: GetRequestsResponse_PB,) -> "GetRequestsResponse":
+    def _proto2object(
+        proto: GetRequestsResponse_PB,
+    ) -> "GetRequestsResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -713,7 +725,9 @@ class UpdateRequestMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: UpdateRequestMessage_PB,) -> "UpdateRequestMessage":
+    def _proto2object(
+        proto: UpdateRequestMessage_PB,
+    ) -> "UpdateRequestMessage":
         """Creates a UpdateRequestMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -787,7 +801,9 @@ class UpdateRequestResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: UpdateRequestResponse_PB,) -> "UpdateRequestResponse":
+    def _proto2object(
+        proto: UpdateRequestResponse_PB,
+    ) -> "UpdateRequestResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -857,7 +873,9 @@ class DeleteRequestMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: DeleteRequestMessage_PB,) -> "DeleteRequestMessage":
+    def _proto2object(
+        proto: DeleteRequestMessage_PB,
+    ) -> "DeleteRequestMessage":
         """Creates a DeleteRequestMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -927,7 +945,9 @@ class DeleteRequestResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: DeleteRequestResponse_PB,) -> "DeleteRequestResponse":
+    def _proto2object(
+        proto: DeleteRequestResponse_PB,
+    ) -> "DeleteRequestResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

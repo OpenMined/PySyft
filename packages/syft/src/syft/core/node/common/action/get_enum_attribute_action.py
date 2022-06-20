@@ -75,7 +75,9 @@ class EnumAttributeAction(ImmediateActionWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetEnumAttributeAction_PB,) -> "EnumAttributeAction":
+    def _proto2object(
+        proto: GetEnumAttributeAction_PB,
+    ) -> "EnumAttributeAction":
         """Creates a ObjectWithID from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

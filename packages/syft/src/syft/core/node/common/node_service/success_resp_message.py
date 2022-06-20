@@ -46,7 +46,9 @@ class SuccessResponseMessage(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: SuccessResponseMessage_PB,) -> "SuccessResponseMessage":
+    def _proto2object(
+        proto: SuccessResponseMessage_PB,
+    ) -> "SuccessResponseMessage":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

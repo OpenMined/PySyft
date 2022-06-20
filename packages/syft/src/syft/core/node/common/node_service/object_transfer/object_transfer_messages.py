@@ -62,7 +62,9 @@ class LoadObjectMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: LoadObjectMessage_PB,) -> "LoadObjectMessage":
+    def _proto2object(
+        proto: LoadObjectMessage_PB,
+    ) -> "LoadObjectMessage":
         """Creates a LoadObjectMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -132,7 +134,9 @@ class LoadObjectResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: LoadObjectResponse_PB,) -> "LoadObjectResponse":
+    def _proto2object(
+        proto: LoadObjectResponse_PB,
+    ) -> "LoadObjectResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -194,7 +198,9 @@ class SaveObjectMessage(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: SaveObjectMessage_PB,) -> "SaveObjectMessage":
+    def _proto2object(
+        proto: SaveObjectMessage_PB,
+    ) -> "SaveObjectMessage":
         """Creates a SaveObjectMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -263,7 +269,9 @@ class SaveObjectResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: SaveObjectResponse_PB,) -> "SaveObjectResponse":
+    def _proto2object(
+        proto: SaveObjectResponse_PB,
+    ) -> "SaveObjectResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

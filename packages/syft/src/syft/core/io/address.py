@@ -353,9 +353,7 @@ class Address:
         if self.device is not None:
             out += f" Device:{self.device.repr_short()},"  # One of UCSF's Dell Servers
         if self.vm is not None:
-            out += (
-                f" VM:{self.vm.repr_short()}"
-            )  # 8GB RAM set aside @Trask - UCSF-Server-5
+            out += f" VM:{self.vm.repr_short()}"  # 8GB RAM set aside @Trask - UCSF-Server-5
 
         # remove extraneous comma and add a close carrot
         return out[:-1] + ">"

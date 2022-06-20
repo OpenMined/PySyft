@@ -56,7 +56,9 @@ class NetworkSearchMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: NetworkSearchMessage_PB,) -> "NetworkSearchMessage":
+    def _proto2object(
+        proto: NetworkSearchMessage_PB,
+    ) -> "NetworkSearchMessage":
         """Creates a NetworkSearchMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -126,7 +128,9 @@ class NetworkSearchResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: NetworkSearchResponse_PB,) -> "NetworkSearchResponse":
+    def _proto2object(
+        proto: NetworkSearchResponse_PB,
+    ) -> "NetworkSearchResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

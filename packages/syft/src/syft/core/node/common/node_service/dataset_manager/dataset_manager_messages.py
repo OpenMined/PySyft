@@ -77,7 +77,9 @@ class CreateDatasetMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: CreateDatasetMessage_PB,) -> "CreateDatasetMessage":
+    def _proto2object(
+        proto: CreateDatasetMessage_PB,
+    ) -> "CreateDatasetMessage":
         """Creates a CreateDatasetMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -148,7 +150,9 @@ class GetDatasetMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetDatasetMessage_PB,) -> "GetDatasetMessage":
+    def _proto2object(
+        proto: GetDatasetMessage_PB,
+    ) -> "GetDatasetMessage":
         """Creates a GetDatasetMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -210,7 +214,9 @@ class GetDatasetResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetDatasetResponse_PB,) -> "GetDatasetResponse":
+    def _proto2object(
+        proto: GetDatasetResponse_PB,
+    ) -> "GetDatasetResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -272,7 +278,9 @@ class GetDatasetsMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetDatasetsMessage_PB,) -> "GetDatasetsMessage":
+    def _proto2object(
+        proto: GetDatasetsMessage_PB,
+    ) -> "GetDatasetsMessage":
         """Creates a GetDatasetsMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -349,7 +357,9 @@ class GetDatasetsResponse(ImmediateSyftMessageWithoutReply):
         return msg
 
     @staticmethod
-    def _proto2object(proto: GetDatasetsResponse_PB,) -> "GetDatasetsResponse":
+    def _proto2object(
+        proto: GetDatasetsResponse_PB,
+    ) -> "GetDatasetsResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -423,7 +433,9 @@ class UpdateDatasetMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: UpdateDatasetMessage_PB,) -> "UpdateDatasetMessage":
+    def _proto2object(
+        proto: UpdateDatasetMessage_PB,
+    ) -> "UpdateDatasetMessage":
         """Creates a UpdateDatasetMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -496,7 +508,9 @@ class DeleteDatasetMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: DeleteDatasetMessage_PB,) -> "DeleteDatasetMessage":
+    def _proto2object(
+        proto: DeleteDatasetMessage_PB,
+    ) -> "DeleteDatasetMessage":
         """Creates a DeleteDatasetMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

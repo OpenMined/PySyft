@@ -211,7 +211,9 @@ class GetOrSetPropertyAction(ImmediateActionWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetOrSetPropertyAction_PB,) -> "GetOrSetPropertyAction":
+    def _proto2object(
+        proto: GetOrSetPropertyAction_PB,
+    ) -> "GetOrSetPropertyAction":
         """Creates a GetOrSetPropertyAction from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

@@ -43,7 +43,7 @@ class FixedPrecisionTensor(PassthroughTensor):
     ) -> None:
         self._base = base
         self._precision = precision
-        self._scale = base ** precision
+        self._scale = base**precision
         if value is not None:
             # TODO :Should modify to be compatiable with torch.
 

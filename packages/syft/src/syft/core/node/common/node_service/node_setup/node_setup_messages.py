@@ -60,7 +60,9 @@ class GetSetUpMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetSetUpMessage_PB,) -> "GetSetUpMessage":
+    def _proto2object(
+        proto: GetSetUpMessage_PB,
+    ) -> "GetSetUpMessage":
         """Creates a GetSetUpMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -121,7 +123,9 @@ class GetSetUpResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetSetUpResponse_PB,) -> "GetSetUpResponse":
+    def _proto2object(
+        proto: GetSetUpResponse_PB,
+    ) -> "GetSetUpResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -291,7 +295,9 @@ class UpdateSetupMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: UpdateSetupMessage_PB,) -> "UpdateSetupMessage":
+    def _proto2object(
+        proto: UpdateSetupMessage_PB,
+    ) -> "UpdateSetupMessage":
         """Creates a UpdateSetupMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -358,7 +364,9 @@ class UpdateSetupResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: UpdateSetupResponse_PB,) -> "UpdateSetupResponse":
+    def _proto2object(
+        proto: UpdateSetupResponse_PB,
+    ) -> "UpdateSetupResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

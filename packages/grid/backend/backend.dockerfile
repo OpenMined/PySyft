@@ -95,7 +95,7 @@ RUN pip install --upgrade tensorflow-federated
 # RUN pip install celery
 # RUN git clone https://github.com/tensorflow/federated
 # RUN pip install tenacity/
-# RUN cp federated/tensorflow_federated/python/core/backends/native/execution_contexts.py /usr/local/lib/python3.9/site-packages/tensorflow_federated/python/core/backends/native/execution_contexts.py 
+# RUN cp federated/tensorflow_federated/python/core/backends/native/execution_contexts.py /usr/local/lib/python3.9/site-packages/tensorflow_federated/python/core/backends/native/execution_contexts.py
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \

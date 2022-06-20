@@ -108,7 +108,9 @@ class CreateUserMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: CreateUserMessage_PB,) -> "CreateUserMessage":
+    def _proto2object(
+        proto: CreateUserMessage_PB,
+    ) -> "CreateUserMessage":
         """Creates a CreateUserMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -184,7 +186,9 @@ class GetUserMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetUserMessage_PB,) -> "GetUserMessage":
+    def _proto2object(
+        proto: GetUserMessage_PB,
+    ) -> "GetUserMessage":
         """Creates a GetUserMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -321,7 +325,9 @@ class GetUserResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetUserResponse_PB,) -> "GetUserResponse":
+    def _proto2object(
+        proto: GetUserResponse_PB,
+    ) -> "GetUserResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -383,7 +389,9 @@ class GetUsersMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetUsersMessage_PB,) -> "GetUsersMessage":
+    def _proto2object(
+        proto: GetUsersMessage_PB,
+    ) -> "GetUsersMessage":
         """Creates a GetUsersMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -445,7 +453,9 @@ class GetCandidatesMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: GetCandidatesMessage_PB,) -> "GetCandidatesMessage":
+    def _proto2object(
+        proto: GetCandidatesMessage_PB,
+    ) -> "GetCandidatesMessage":
         """Creates a GetUsersMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -508,7 +518,9 @@ class GetCandidatesResponse(ImmediateSyftMessageWithoutReply):
         return msg
 
     @staticmethod
-    def _proto2object(proto: GetCandidatesResponse_PB,) -> "GetCandidatesResponse":
+    def _proto2object(
+        proto: GetCandidatesResponse_PB,
+    ) -> "GetCandidatesResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -570,7 +582,9 @@ class GetUsersResponse(ImmediateSyftMessageWithoutReply):
         return msg
 
     @staticmethod
-    def _proto2object(proto: GetUsersResponse_PB,) -> "GetUsersResponse":
+    def _proto2object(
+        proto: GetUsersResponse_PB,
+    ) -> "GetUsersResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -664,7 +678,9 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: UpdateUserMessage_PB,) -> "UpdateUserMessage":
+    def _proto2object(
+        proto: UpdateUserMessage_PB,
+    ) -> "UpdateUserMessage":
         """Creates a UpdateUserMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -742,7 +758,9 @@ class DeleteUserMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: DeleteUserMessage_PB,) -> "DeleteUserMessage":
+    def _proto2object(
+        proto: DeleteUserMessage_PB,
+    ) -> "DeleteUserMessage":
         """Creates a DeleteUserMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -820,7 +838,9 @@ class SearchUsersMessage(ImmediateSyftMessageWithReply):
         )
 
     @staticmethod
-    def _proto2object(proto: SearchUsersMessage_PB,) -> "SearchUsersMessage":
+    def _proto2object(
+        proto: SearchUsersMessage_PB,
+    ) -> "SearchUsersMessage":
         """Creates a SearchUsersMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.
@@ -887,7 +907,9 @@ class SearchUsersResponse(ImmediateSyftMessageWithoutReply):
         )
 
     @staticmethod
-    def _proto2object(proto: SearchUsersResponse_PB,) -> "SearchUsersResponse":
+    def _proto2object(
+        proto: SearchUsersResponse_PB,
+    ) -> "SearchUsersResponse":
         """Creates a SignalingOfferMessage from a protobuf
         As a requirement of all objects which inherit from Serializable,
         this method transforms a protobuf object into an instance of this class.

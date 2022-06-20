@@ -223,8 +223,8 @@ class Client(AbstractNodeClient):
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
         from .node_service.tff.tff_messages import (
-            TFFMessageWithReply,
-        )  # TODO Teo: decide if this is needed, probably it isnt
+            TFFMessageWithReply,  # TODO Teo: decide if this is needed, probably it isnt
+        )
 
         # TEMPORARY: if message is instance of NodeRunnableMessageWithReply then we need to wrap it in a SimpleMessage
         if isinstance(msg, NodeRunnableMessageWithReply) or isinstance(

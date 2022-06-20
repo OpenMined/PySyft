@@ -75,6 +75,7 @@ from .common.node_service.request_receiver.request_receiver_messages import (
 from .common.node_service.role_manager.role_manager_service import RoleManagerService
 from .common.node_service.simple.simple_service import SimpleService
 from .common.node_service.sleep.sleep_service import SleepService
+from .common.node_service.tff.tff_service import TFFService
 from .common.node_service.user_auth.user_auth_service import UserLoginService
 from .common.node_service.user_manager.user_manager_service import UserManagerService
 from .common.node_service.vpn.vpn_service import VPNConnectService
@@ -85,7 +86,6 @@ from .device import Device
 from .device import DeviceClient
 from .domain_client import DomainClient
 from .domain_service import DomainServiceClass
-from .common.node_service.tff.tff_service import TFFService
 
 
 class Domain(Node):
