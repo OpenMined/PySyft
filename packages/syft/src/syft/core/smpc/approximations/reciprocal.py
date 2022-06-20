@@ -17,7 +17,7 @@ if TYPE_CHECKING:
     from ...tensor.smpc.mpc_tensor import MPCTensor
 
 
-def reciprocal(data: MPCTensor, method: str = "NR", nr_iters: int = 10) -> MPCTensor:
+def reciprocal(data: MPCTensor, method: str = "NR", nr_iters: int = 5) -> MPCTensor:
     """Calculate the reciprocal using the algorithm specified in the method args.
     Ref: https://github.com/facebookresearch/CrypTen
 
@@ -40,9 +40,9 @@ def reciprocal(data: MPCTensor, method: str = "NR", nr_iters: int = 10) -> MPCTe
 
     if method == "nr":
         new_data = modulus(data)
-        result = 3 * exp(0.5 - new_data) + 0.003
+        result = exp(new_data * -1 + 0.5) * 3 + 0.003
         for i in range(nr_iters):
-            result = 2 * result - result * result * new_data
+            result = result * 2 - result * result * new_data
         return result * sign(data)
     elif method == "log":
         new_data = modulus(data)

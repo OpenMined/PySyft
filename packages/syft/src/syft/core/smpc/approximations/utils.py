@@ -19,9 +19,7 @@ def sign(data: MPCTensor) -> MPCTensor:
     Returns:
         MPCTensor: tensor with the determined sign
     """
-    pos_values = data > 0
-    neg_values = (data + 1 - (2 * data)) * -1
-    return pos_values + neg_values
+    return (data > 0) + (data < 0) * (-1)
 
 
 def modulus(data: MPCTensor) -> MPCTensor:

@@ -44,7 +44,7 @@ class ProxyClient(DomainClient):
                 .to(address=self.address, reply_to=self.address)
                 .sign(signing_key=self.signing_key)
             )
-            self.send_immediate_msg_with_reply(msg)
+            self.send_immediate_msg_with_reply(msg, timeout=1)
             return True
         except Exception:
             return False

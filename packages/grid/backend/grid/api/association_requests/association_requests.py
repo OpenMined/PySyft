@@ -104,7 +104,7 @@ def receive_association_request(
     ).sign(signing_key=SigningKey.generate())
 
     # Process syft message
-    reply = node.recv_immediate_msg_with_reply(msg=msg).message
+    reply = node.send_immediate_msg_without_reply(msg=msg).message
 
     # Handle Response types
     if isinstance(reply, ExceptionMessage):

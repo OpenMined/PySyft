@@ -1,6 +1,6 @@
 import React from 'react'
-import {render, screen} from '@testing-library/react'
-import {axe} from 'jest-axe'
+import { render, screen } from '@testing-library/react'
+import { axe } from 'jest-axe'
 
 import {
   List,
@@ -12,17 +12,17 @@ import {
   ListAvatarItem,
   ListProgressItem,
   ListIconItem,
-  ListItemContent
+  ListItemContent,
 } from '../List'
 
-const list = Array.from(Array(10).keys()).map(i => `Item ${i}`)
+const list = Array.from(Array(10).keys()).map((i) => `Item ${i}`)
 
 describe('Lists', () => {
   describe('lists:default', () => {
     test('renders the list item as children', () => {
       render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListItem key={i}>{i}</ListItem>
           ))}
         </List>
@@ -35,7 +35,7 @@ describe('Lists', () => {
     test('accepts sizes=[md,lg,xl,2xl,3xl]', async () => {
       render(
         <List data-testid="list-id" size="3xl">
-          {list.map(i => (
+          {list.map((i) => (
             <ListItem key={i}>{i}</ListItem>
           ))}
         </List>
@@ -48,9 +48,9 @@ describe('Lists', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListItem key={i}>{i}</ListItem>
           ))}
         </List>
@@ -65,7 +65,7 @@ describe('Lists', () => {
     test('renders the list as list-disc', () => {
       render(
         <UnorderedList data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <UnorderedListItem key={i}>{i}</UnorderedListItem>
           ))}
         </UnorderedList>
@@ -77,9 +77,9 @@ describe('Lists', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(
+      const { container } = render(
         <UnorderedList data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <UnorderedListItem key={i}>{i}</UnorderedListItem>
           ))}
         </UnorderedList>
@@ -94,7 +94,7 @@ describe('Lists', () => {
     test('renders the list as list-decimal', () => {
       render(
         <OrderedList data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <OrderedListItem key={i}>{i}</OrderedListItem>
           ))}
         </OrderedList>
@@ -106,9 +106,9 @@ describe('Lists', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(
+      const { container } = render(
         <OrderedList data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <OrderedListItem key={i}>{i}</OrderedListItem>
           ))}
         </OrderedList>
@@ -123,7 +123,7 @@ describe('Lists', () => {
     test('renders the list of avatars and labels', () => {
       render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListAvatarItem src={i} alt={i} key={i}>
               Title {i}
             </ListAvatarItem>
@@ -140,7 +140,7 @@ describe('Lists', () => {
     test('renders the list with ListItemContent', () => {
       render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListAvatarItem src={i} alt={i} key={i}>
               <ListItemContent label={`Title ${i}`} description={`Desc ${i}`} />
             </ListAvatarItem>
@@ -157,7 +157,7 @@ describe('Lists', () => {
     test('avatar receives size from the list', () => {
       render(
         <List data-testid="list-id" size="3xl">
-          {list.map(i => (
+          {list.map((i) => (
             <ListAvatarItem src={i} alt={i} key={i}>
               <ListItemContent label={`Title ${i}`} description={`Desc ${i}`} />
             </ListAvatarItem>
@@ -175,9 +175,9 @@ describe('Lists', () => {
     })
 
     test('no axe violations with a string', async () => {
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListAvatarItem src={i} alt="avatar" key={i}>
               {i}
             </ListAvatarItem>
@@ -190,9 +190,9 @@ describe('Lists', () => {
     })
 
     test('no axe violations with a ListItemContent', async () => {
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListAvatarItem src={i} alt="avatar" key={i}>
               <ListItemContent label={i} description={i} />
             </ListAvatarItem>
@@ -209,7 +209,7 @@ describe('Lists', () => {
     test('renders the progress icon and children', () => {
       render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListProgressItem key={i}>{i}</ListProgressItem>
           ))}
         </List>
@@ -222,7 +222,7 @@ describe('Lists', () => {
     test('default progress list size follows the parent list size', () => {
       render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListProgressItem key={i}>{i}</ListProgressItem>
           ))}
         </List>
@@ -240,7 +240,7 @@ describe('Lists', () => {
     test('changing the list size triggers a change of the progress icon size', () => {
       render(
         <List data-testid="list-id" size="2xl">
-          {list.map(i => (
+          {list.map((i) => (
             <ListProgressItem key={i}>{i}</ListProgressItem>
           ))}
         </List>
@@ -256,9 +256,9 @@ describe('Lists', () => {
     })
 
     test('contains no axe violations', async () => {
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListProgressItem key={i}>{i}</ListProgressItem>
           ))}
         </List>
@@ -269,8 +269,13 @@ describe('Lists', () => {
     })
   })
 
-  const RandomIcon = ({className}) => (
-    <svg className={className} role="img" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 496 512">
+  const RandomIcon = ({ className }) => (
+    <svg
+      className={className}
+      role="img"
+      xmlns="http://www.w3.org/2000/svg"
+      viewBox="0 0 496 512"
+    >
       <path
         fill="currentColor"
         d="M248 8C111 8 0 119 0 256s111 248 248 248 248-111 248-248S385 8 248 8zm80 168c17.7 0 32 14.3 32 32s-14.3 32-32 32-32-14.3-32-32 14.3-32 32-32zm-160 0c17.7 0 32 14.3 32 32s-14.3 32-32 32-32-14.3-32-32 14.3-32 32-32zm194.8 170.2C334.3 380.4 292.5 400 248 400s-86.3-19.6-114.8-53.8c-13.6-16.3 11-36.7 24.6-20.5 22.4 26.9 55.2 42.2 90.2 42.2s67.8-15.4 90.2-42.2c13.4-16.2 38.1 4.2 24.6 20.5z"
@@ -283,7 +288,7 @@ describe('Lists', () => {
     test('renders all list elements', () => {
       render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListIconItem icon={RandomIcon} key={i}>
               {i}
             </ListIconItem>
@@ -297,9 +302,9 @@ describe('Lists', () => {
 
     test('icon size is determined by the list size', () => {
       // TODO: Transform with cases
-      const {rerender} = render(
+      const { rerender } = render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListIconItem icon={RandomIcon} key={i}>
               {i}
             </ListIconItem>
@@ -315,7 +320,7 @@ describe('Lists', () => {
 
       rerender(
         <List data-testid="list-id" size="2xl">
-          {list.map(i => (
+          {list.map((i) => (
             <ListIconItem icon={RandomIcon} key={i}>
               {i}
             </ListIconItem>
@@ -323,7 +328,9 @@ describe('Lists', () => {
         </List>
       )
 
-      const newFirstListElement = screen.getByTestId('list-id').querySelector('li')
+      const newFirstListElement = screen
+        .getByTestId('list-id')
+        .querySelector('li')
       const newIconBox = newFirstListElement.firstChild
       expect(newIconBox).toHaveClass('w-20 h-20')
       const newIconSvg = newIconBox.firstChild.firstChild
@@ -332,9 +339,9 @@ describe('Lists', () => {
 
     test('contains no axe violations', async () => {
       // TODO: they should be instantiated using cases, perhaps?
-      const {container} = render(
+      const { container } = render(
         <List data-testid="list-id">
-          {list.map(i => (
+          {list.map((i) => (
             <ListProgressItem key={i}>{i}</ListProgressItem>
           ))}
         </List>

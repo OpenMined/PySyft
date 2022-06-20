@@ -1,32 +1,18 @@
-syft.core.node.common.node\_service.object\_transfer
-====================================================
+syft.core.node.common.node\_service.object\_transfer package
+============================================================
 
 .. automodule:: syft.core.node.common.node_service.object_transfer
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   
-   
-   
+Submodules
+----------
 
-   
-   
-   
+syft.core.node.common.node\_service.object\_transfer.object\_transfer\_messages module
+--------------------------------------------------------------------------------------
 
-   
-   
-   
-
-   
-   
-   
-
-
-
-.. rubric:: Modules
-
-.. autosummary::
-   :toctree:
-   :recursive:
-
-   syft.core.node.common.node_service.object_transfer.object_transfer_messages
-   syft.core.node.common.node_service.object_transfer.object_transfer_service
-
+.. automodule:: syft.core.node.common.node_service.object_transfer.object_transfer_messages
+   :members:
+   :undoc-members:
+   :show-inheritance:
