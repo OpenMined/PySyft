@@ -2,7 +2,7 @@ import numpy as np
 from ..autodp.phi_tensor import PhiTensor
 
 
-def simple_batchnorm(image: np.ndarray, scaler=1, eps: float = 1e-5)-> np.ndarray:
+def simple_batchnorm(image: np.ndarray, scaler=1, eps: float = 1e-5) -> np.ndarray:
     # Assumes Beta parameter = 0
     return (image - image.mean())/np.sqrt(image.var() + eps) * scaler
 
@@ -24,7 +24,8 @@ def batchnorm(input_tensor: PhiTensor, scaler=1, eps: float=1e-5) -> PhiTensor:
     )
 
 
-def trial_BatchNorm2d(num_features: int, eps: float = 1e-5, momentum: float = 0.1, afine:bool = True, track_running_stats: bool = True) -> np.ndarray:
+def trial_BatchNorm2d(num_features: int, eps: float = 1e-5, momentum: float = 0.1,
+                      afine:bool = True, track_running_stats: bool = True) -> np.ndarray:
     # this might be better implemented as a class?
     pass
 
