@@ -3,11 +3,12 @@ from ..autodp.phi_tensor import PhiTensor
 from ...adp.data_subject_list import DataSubjectList as DSL
 from typing import Optional
 from torch import nn
+from torch import Tensor
 
 
 def MaxPool2d(image: PhiTensor, kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False) -> PhiTensor:
     max_pool = nn.MaxPool2d(kernel_size, stride, padding, dilation, return_indices, ceil_mode)
-    data = max_pool(image.child.decode()).detach().numpy()
+    data = max_pool(Tensor(image.child.decode())).detach().numpy()
     return PhiTensor(
         child=data,
         data_subjects=DSL(
@@ -21,7 +22,7 @@ def MaxPool2d(image: PhiTensor, kernel_size, stride=None, padding=0, dilation=1,
 
 def AvgPool2d(image: PhiTensor, kernel_size, stride=None, padding=0) -> PhiTensor:
     avg_pool = nn.AvgPool2d(kernel_size, stride, padding)
-    data = avg_pool(image.child.decode()).detach().numpy()
+    data = avg_pool(Tensor(image.child.decode())).detach().numpy()
     return PhiTensor(
         child=data,
         data_subjects=DSL(
