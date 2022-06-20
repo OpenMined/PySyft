@@ -16,9 +16,7 @@ import syft as sy
 from ..... import lib
 from .....logger import traceback_and_raise
 from .....logger import warning
-from .....proto.core.node.common.action.tff_action_pb2 import (
-    TFFAction as TFFAction_PB,
-)
+from .....proto.core.node.common.action.tff_action_pb2 import TFFAction as TFFAction_PB
 from .....util import inherit_tags
 from ....common.serde.serializable import serializable
 from ....common.uid import UID

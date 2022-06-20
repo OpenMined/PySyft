@@ -2,15 +2,15 @@
 from __future__ import annotations
 
 # stdlib
-from typing import Any, Dict
+from typing import Any
+from typing import Dict
 from typing import Optional
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
 from nacl.signing import VerifyKey
-from typing_extensions import final
 import tensorflow_federated as tff
-
+from typing_extensions import final
 
 # relative
 from ...... import serialize

@@ -1,6 +1,9 @@
+# stdlib
+from typing import Optional
+
+# third party
 from tensorflow_federated.python.core.impl.executors import executor_base
 from tensorflow_federated.python.core.impl.executors import executor_value_base as evb
-from typing import Optional
 
 
 class PySyftExecutor(executor_base.Executor):

@@ -1,51 +1,64 @@
 # stdlib
+import asyncio
+import collections
 from ctypes import Structure
+import functools
+import logging
 from optparse import Option
+import os
+from typing import Any
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
-from typing import Tuple, Any
 from unittest import result
 from xml.dom.minidom import Element
-from matplotlib import backend_bases
-# third party
-from nacl.signing import VerifyKey
-from sympy import init_printing, total_degree
-import tensorflow_federated as tff
-# import torch as th
-# relative
-from ......util import traceback_and_raise
-from ....abstract.node import AbstractNode
-from ......core.common.uid import UID
-import numpy as np
 
-from ..auth import service_auth
-from ..node_service import ImmediateNodeServiceWithReply
-from ..node_service import EventualNodeServiceWithoutReply
-from .tff_messages import TFFMessage
-from .tff_messages import TFFReplyMessage
-from .data_backend import TestDataBackend, PySyftDataBackend, MedNISTBackend
-from tensorflow_federated.proto.v0 import computation_pb2 as pb
-import tensorflow as tf
+# third party
 from absl.testing import absltest
-import asyncio
-from tensorflow_federated.python.core.impl.executors import eager_tf_executor
-from tensorflow_federated.python.core.impl.types import computation_types
+from matplotlib import backend_bases
+from nacl.signing import VerifyKey
+import numpy as np
+from sympy import init_printing
+from sympy import total_degree
+import tensorflow as tf
+import tensorflow_federated as tff
+from tensorflow_federated.proto.v0 import computation_pb2 as pb
 from tensorflow_federated.python.core.api import computations
-# from tensorflow_federated.python.core.impl.executors import executor_test_utils
-from tensorflow_federated.python.core.impl.executors import executor_stacks
-from tensorflow_federated.python.core.impl.context_stack import set_default_context
+
 # from tensorflow_federated.python.core.impl.context_stack import context_stack_test_utils
 from tensorflow_federated.python.core.backends.native import compiler
-from tensorflow_federated.python.core.impl.execution_contexts import async_execution_context
-from syft.core.tensor.tensor import Tensor
-import logging
-import collections
-import os
-import functools
+from tensorflow_federated.python.core.impl.context_stack import set_default_context
+from tensorflow_federated.python.core.impl.execution_contexts import (
+    async_execution_context,
+)
+
+# from tensorflow_federated.python.core.impl.executors import executor_test_utils
+from tensorflow_federated.python.core.impl.executors import eager_tf_executor
+from tensorflow_federated.python.core.impl.executors import executor_stacks
+from tensorflow_federated.python.core.impl.types import computation_types
 
 # from pybind11_abseil import status
 import torch as th
+
+# syft absolute
+from syft.core.tensor.tensor import Tensor
+
+# relative
+from ......core.common.uid import UID
+
+# import torch as th
+from ......util import traceback_and_raise
+from ....abstract.node import AbstractNode
+from ..auth import service_auth
+from ..node_service import EventualNodeServiceWithoutReply
+from ..node_service import ImmediateNodeServiceWithReply
+from .data_backend import MedNISTBackend
+from .data_backend import PySyftDataBackend
+from .data_backend import TestDataBackend
+from .tff_messages import TFFMessage
+from .tff_messages import TFFReplyMessage
+
 
 def custom_data_descriptor(uris, data_type):
     num_clients = len(uris)

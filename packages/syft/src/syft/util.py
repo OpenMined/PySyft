@@ -530,6 +530,7 @@ def initializer(event_loop: Optional[BaseSelectorEventLoop] = None) -> None:
         event_loop: The event loop.
     """
     if event_loop:
+        # stdlib
         import selectors
         print("HIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIi")
         selector = selectors.SelectSelector()
