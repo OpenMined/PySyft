@@ -13,13 +13,17 @@ syft.core.common.serde.serializable
 
    .. autosummary::
    
-      GenerateProtobufWrapper
-      GenerateWrapper
-      serializable
+      bind_protobuf
    
    
 
    
+   
+   .. rubric:: Classes
+
+   .. autosummary::
+   
+      Serializable
    
    
 

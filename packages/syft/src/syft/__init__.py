@@ -26,7 +26,7 @@ Syft "python" functionality includes the following modules:
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
 """
 
-__version__ = "0.7.0-beta.28"
+__version__ = "0.7.0-beta.29"
 
 # stdlib
 from pathlib import Path
