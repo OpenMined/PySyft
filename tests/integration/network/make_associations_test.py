@@ -1,5 +1,6 @@
 # stdlib
 import os
+import time
 
 # third party
 import pytest
@@ -39,6 +40,9 @@ def test_domain1_association_network1() -> None:
             request_id = int(association["association_id"])
 
     network.association[request_id].accept()
+
+    time.sleep(5)
+
     assert domain.association.all()[0]["status"] == "ACCEPTED"
 
 
@@ -67,4 +71,5 @@ def test_domain2_association_network1() -> None:
             request_id = int(association["association_id"])
 
     network.association[request_id].accept()
+    time.sleep(5)
     assert domain.association.all()[0]["status"] == "ACCEPTED"

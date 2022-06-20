@@ -95,8 +95,19 @@ def upload_result_to_s3(
 
     # 3 - Create a ProxyDataset for the given data
     # Retrieve fully qualified name to  use for pointer creation.
+    obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
     data_fqn = str(get_fully_qualified_name(data))
     data_dtype = str(type(data))
+
+    # relative
+    from ...tensor import Tensor
+    from ...tensor.autodp.phi_tensor import PhiTensor as PT
+
+    if isinstance(data, Tensor) and isinstance(data.child, PT):
+        data_fqn = str(get_fully_qualified_name(data.child))
+        child_kwargs = getattr(data.child, "proxy_public_kwargs", {})
+        obj_public_kwargs.update(child_kwargs)
+
     proxy_obj = ProxyDataset(
         asset_name=asset_name,
         dataset_name=dataset_name,
@@ -104,6 +115,7 @@ def upload_result_to_s3(
         dtype=data_dtype,
         fqn=data_fqn,
         shape=data.shape,
+        obj_public_kwargs=obj_public_kwargs,
     )
     return proxy_obj
 
@@ -227,9 +239,19 @@ def upload_to_s3_using_presigned(
 
         # Step 5 - Create a proxy dataset for the uploaded data.
         # Retrieve fully qualified name to  use for pointer creation.
-        obj_public_kwargs = getattr(data, "proxy_public_kwargs", None)
+        obj_public_kwargs = getattr(data, "proxy_public_kwargs", {})
         data_fqn = str(get_fully_qualified_name(data))
         data_dtype = str(type(data))
+
+        # relative
+        from ...tensor import Tensor
+        from ...tensor.autodp.phi_tensor import PhiTensor as PT
+
+        if isinstance(data, Tensor) and isinstance(data.child, PT):
+            data_fqn = str(get_fully_qualified_name(data.child))
+            child_kwargs = getattr(data.child, "proxy_public_kwargs", {})
+            obj_public_kwargs.update(child_kwargs)
+
         proxy_data = ProxyDataset(
             asset_name=asset_name,
             dataset_name=dataset_name,

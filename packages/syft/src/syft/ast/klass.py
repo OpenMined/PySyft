@@ -671,7 +671,7 @@ class Class(Callable):
             searchable: Optional[bool] = None,
             id_at_location_override: Optional[UID] = None,
             chunk_size: Optional[int] = None,
-            send_to_blob_storage: bool = False,
+            send_to_blob_storage: bool = True,
             **kwargs: Dict[str, Any],
         ) -> Union[Pointer, Tuple[Pointer, SaveObjectAction]]:
 
@@ -747,7 +747,7 @@ class Class(Callable):
 
             # Check if the client has blob storage enabled
             # blob storage can only be used if client node has blob storage enabled.
-            if send_to_blob_storage and not client.settings.get(
+            if not hasattr(client, "settings") or not client.settings.get(
                 "use_blob_storage", False
             ):
                 sys.stdout.write(
@@ -1015,9 +1015,10 @@ def pointerize_args_and_kwargs(
         else:
             pointer_kwargs[k] = arg
 
-    msg = ActionSequence(obj_lst=obj_lst, address=client.address)
+    if obj_lst:
+        msg = ActionSequence(obj_lst=obj_lst, address=client.address)
 
-    # send message to client
-    client.send_immediate_msg_without_reply(msg=msg)
+        # send message to client
+        client.send_immediate_msg_without_reply(msg=msg)
 
     return pointer_args, pointer_kwargs

@@ -43,7 +43,7 @@ class RequestAPI:
         self.perform_request = self.perform_api_request_generic
 
     def create(self, **kwargs: Any) -> None:
-        if isinstance(self._delete_message, NewSyftMessage):
+        if self._create_message and issubclass(self._create_message, NewSyftMessage):
             response = self.perform_request(  # type: ignore
                 syft_msg=self._create_message, content=kwargs
             )
@@ -55,7 +55,7 @@ class RequestAPI:
             logging.info(response.resp_msg)
 
     def get(self, **kwargs: Any) -> Any:
-        if isinstance(self._delete_message, NewSyftMessage):
+        if isinstance(self._get_message, NewSyftMessage):
             return self.to_obj(  # type: ignore
                 self.perform_request(syft_msg=self._get_message, content=kwargs)
             )
@@ -65,10 +65,10 @@ class RequestAPI:
             )
 
     def all(self) -> List[Any]:
-        if isinstance(self._delete_message, NewSyftMessage):
-            result = list(  # type: ignore
-                self.perform_request(syft_msg=self._get_all_message).dict().values()
-            )
+        if self._get_all_message and issubclass(self._get_all_message, NewSyftMessage):
+            result = self.perform_request(syft_msg=self._get_all_message).kwargs[
+                "users"
+            ]
         else:
             result = []
             for content in self.perform_api_request(
@@ -119,6 +119,7 @@ class RequestAPI:
         self,
         syft_msg: Optional[Type[SyftMessage]],
         content: Optional[Dict[Any, Any]] = None,
+        timeout: Optional[int] = None,
     ) -> Any:
         if syft_msg is None:
             raise ValueError(
@@ -135,7 +136,9 @@ class RequestAPI:
         signed_msg = syft_msg_constructor(**content).sign(
             signing_key=self.client.signing_key
         )  # type: ignore
-        response = self.client.send_immediate_msg_with_reply(msg=signed_msg)
+        response = self.client.send_immediate_msg_with_reply(
+            msg=signed_msg, timeout=timeout
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:
@@ -145,6 +148,7 @@ class RequestAPI:
         self,
         syft_msg: Optional[Type[GenericPayloadMessageWithReply] | Type[NewSyftMessage]],  # type: ignore
         content: Optional[Dict[Any, Any]] = None,
+        timeout: Optional[int] = None,
     ) -> Any:
         if syft_msg is None:
             raise ValueError(
@@ -170,7 +174,9 @@ class RequestAPI:
                 )
                 .sign(signing_key=self.client.signing_key)
             )
-        response = self.client.send_immediate_msg_with_reply(msg=signed_msg)
+        response = self.client.send_immediate_msg_with_reply(
+            msg=signed_msg, timeout=timeout
+        )
         if isinstance(response, ExceptionMessage):
             raise response.exception_type
         else:

@@ -8,7 +8,7 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           ref: main
       - name: Set up Python
@@ -53,13 +53,12 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push `grid-backend` image to DockerHub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./packages
           file: ./packages/grid/backend/backend.dockerfile
           push: true
           tags: ${{ steps.meta_grid_backend.outputs.tags }}
-
 
       - name: Docker meta for Grid-Frontend
         id: meta_grid_frontend
@@ -71,7 +70,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push `grid-frontend` image to DockerHub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./packages/grid/frontend
           file: ./packages/grid/frontend/frontend.dockerfile
@@ -88,7 +87,7 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push `grid-headscale` image to DockerHub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/headscale.dockerfile
@@ -105,10 +104,9 @@ jobs:
             type=raw,value=latest
 
       - name: Build and push `grid-tailscale` image to DockerHub
-        uses: docker/build-push-action@v2
+        uses: docker/build-push-action@v3
         with:
           context: ./packages/grid/vpn
           file: ./packages/grid/vpn/tailscale.dockerfile
           push: true
           tags: ${{ steps.meta_grid_tailscale.outputs.tags }}
-

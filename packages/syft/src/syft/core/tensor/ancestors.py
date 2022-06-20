@@ -6,6 +6,7 @@ import textwrap
 from typing import Any
 from typing import List
 from typing import Optional
+from typing import Tuple
 from typing import Type
 
 # third party
@@ -314,7 +315,7 @@ class PhiTensorAncestor(TensorChainManager):
         self.child = child
 
     @property
-    def shape(self) -> List[int]:
+    def shape(self) -> Tuple[Any, ...]:
         return self.child.shape
 
     @property
@@ -350,6 +351,21 @@ class PhiTensorAncestor(TensorChainManager):
         satisfy mypy."""
 
         return NotImplemented
+
+    def annotated_with_dp_metadata(
+        self,
+        min_val: ArrayLike,
+        max_val: ArrayLike,
+        data_subjects: Optional[Any] = None,
+        skip_blocking_checks: bool = False,
+    ) -> PhiTensorAncestor:
+        print("Tensor annotated with DP Metadata")
+        return self.private(
+            min_val=min_val,
+            max_val=max_val,
+            data_subjects=data_subjects,
+            skip_blocking_checks=skip_blocking_checks,
+        )
 
     def private(
         self,

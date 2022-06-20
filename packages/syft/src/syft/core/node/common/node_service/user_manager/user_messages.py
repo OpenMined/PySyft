@@ -615,6 +615,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         msg_id: Optional[UID] = None,
         email: Optional[str] = "",
         password: Optional[str] = "",
+        new_password: Optional[str] = "",
         role: Optional[str] = "",
         groups: Optional[str] = "",
         budget: Optional[float] = None,
@@ -632,6 +633,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
         self.budget = budget
         self.institution = institution
         self.website = website
+        self.new_password = new_password
 
     def _object2proto(self) -> UpdateUserMessage_PB:
         """Returns a protobuf serialization of self.
@@ -651,6 +653,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
             user_id=self.user_id,
             email=self.email,
             password=self.password,
+            new_password=self.new_password,
             role=self.role,
             groups=self.groups,
             budget=self.budget,
@@ -678,6 +681,7 @@ class UpdateUserMessage(ImmediateSyftMessageWithReply):
             user_id=proto.user_id,
             email=proto.email,
             password=proto.password,
+            new_password=proto.new_password,
             role=proto.role,
             budget=proto.budget,
             groups=proto.groups,

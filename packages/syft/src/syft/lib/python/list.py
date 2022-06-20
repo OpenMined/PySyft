@@ -7,6 +7,7 @@ from typing import Union
 
 # third party
 from google.protobuf.reflection import GeneratedProtocolMessageType
+from typing_extensions import SupportsIndex
 
 # syft absolute
 import syft as sy
@@ -128,7 +129,7 @@ class List(UserList, PyPrimitive):
         res = super().__len__()
         return PrimitiveFactory.generate_primitive(value=res)
 
-    def __getitem__(self, key: Union[int, str, slice, Slice]) -> Any:
+    def __getitem__(self, key: Union[int, str, slice, Slice, SupportsIndex]) -> Any:
         if isinstance(key, Slice):
             key = key.upcast()
         res = super().__getitem__(key)  # type: ignore

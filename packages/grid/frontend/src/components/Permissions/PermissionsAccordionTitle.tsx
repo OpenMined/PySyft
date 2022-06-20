@@ -1,8 +1,8 @@
-import {Text} from '@/omui'
-import {usePermission} from './context'
+import { Text } from '@/omui'
+import { usePermission } from './context'
 
 function RoleTitle() {
-  const {role} = usePermission()
+  const { role } = usePermission()
   return (
     <Text bold size="lg">
       {role.name}
@@ -14,7 +14,7 @@ function RoleTitle() {
 const defaultRoleIdAsString = '1' // default data scientist id
 
 function DefaultRole() {
-  const {role} = usePermission()
+  const { role } = usePermission()
 
   if (String(role.id) !== defaultRoleIdAsString) return null
 
@@ -34,4 +34,4 @@ function PermissionsAccordionTitle() {
   )
 }
 
-export {RoleTitle, DefaultRole, PermissionsAccordionTitle}
+export { RoleTitle, DefaultRole, PermissionsAccordionTitle }

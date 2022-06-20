@@ -122,18 +122,17 @@ class SendAssociationRequestMessage(ImmediateSyftMessageWithReply):
 
 @final
 @serializable()
-class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
+class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithoutReply):
     def __init__(
         self,
         address: Address,
-        reply_to: Address,
         source: str,
         target: str,
         metadata: Dict[str, str],
         msg_id: Optional[UID] = None,
         response: Optional[str] = "",
     ):
-        super().__init__(address=address, msg_id=msg_id, reply_to=reply_to)
+        super().__init__(address=address, msg_id=msg_id)
         self.metadata = metadata
         self.response = response
         self.source = source
@@ -155,7 +154,6 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return ReceiveAssociationRequestMessage_PB(
             msg_id=serialize(self.id),
             address=serialize(self.address),
-            reply_to=serialize(self.reply_to),
             response=self.response,
             metadata=self.metadata,
             source=self.source,
@@ -179,7 +177,6 @@ class ReceiveAssociationRequestMessage(ImmediateSyftMessageWithReply):
         return ReceiveAssociationRequestMessage(
             msg_id=_deserialize(blob=proto.msg_id),
             address=_deserialize(blob=proto.address),
-            reply_to=_deserialize(blob=proto.reply_to),
             response=proto.response,
             metadata=proto.metadata,
             source=proto.source,
