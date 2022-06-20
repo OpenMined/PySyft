@@ -1,4 +1,6 @@
 import numpy as np
+from torch import Tensor
+from torch import nn
 from ..autodp.phi_tensor import PhiTensor
 
 
@@ -7,7 +9,23 @@ def simple_batchnorm(image: np.ndarray, scaler=1, eps: float = 1e-5) -> np.ndarr
     return (image - image.mean())/np.sqrt(image.var() + eps) * scaler
 
 
-def batchnorm(input_tensor: PhiTensor, scaler=1, eps: float=1e-5) -> PhiTensor:
+def BatchNorm2d(image: PhiTensor, num_features, eps=1e-05, momentum=0.1, affine=True) -> PhiTensor:
+    bn_layer = nn.BatchNorm2d(num_features=num_features, eps=eps, momentum=momentum, affine=affine)
+    data = bn_layer(Tensor(image.child.decode()))
+    minv, maxv = image.min_vals.data, image.max_vals.data
+    public_avg = 0.5 * (maxv + minv)
+    # Assumption: max and min are equally distant from public_avg -> var = 0.25 * (max - min)**2
+    public_var = 0.25 * (maxv - minv) ** 2
+
+    return PhiTensor(
+        child=data.detach().numpy(),
+        data_subjects=image.data_subjects,
+        min_vals=(minv - public_avg) / np.sqrt(public_var + eps),
+        max_vals=(maxv - public_avg) / np.sqrt(public_var + eps),
+    )
+
+
+def np_BatchNorm2d(input_tensor: PhiTensor, scaler=1, eps: float=1e-5) -> PhiTensor:
     # TODO: Think this through a lil' more- output max is when var is highest, output min is when var is lowest
     # var = 0 when all data = min or max, var = public_var when all data is equally distributed b/w min/max
     # Odd vs even shape effects; var = max when all data EXCEPT 1 is max, but 1 is min
