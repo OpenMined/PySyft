@@ -46,6 +46,7 @@ from .config import DEFAULT_INT_NUMPY_TYPE
 from .fixed_precision_tensor_ancestor import FixedPrecisionTensorAncestor
 from .passthrough import PassthroughTensor  # type: ignore
 from .smpc import context
+from .smpc import static  # noqa: F401
 from .smpc import utils
 from .smpc.mpc_tensor import MPCTensor
 

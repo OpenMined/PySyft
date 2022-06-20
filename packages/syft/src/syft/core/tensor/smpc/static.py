@@ -2,10 +2,14 @@
 
 Examples: torch.stack, torch.argmax
 """
+# future
+from __future__ import annotations
+
 # stdlib
 from typing import Callable
 from typing import Dict
 from typing import Optional
+from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
 
@@ -14,10 +18,13 @@ import numpy as np
 import torch
 
 # relative
-from ..tensor import Tensor
 from ..util import parallel_execution
 from .mpc_tensor import MPCTensor
 from .share_tensor import ShareTensor
+
+if TYPE_CHECKING:
+    # relative
+    from ..tensor import Tensor
 
 
 def helper_argmax(
@@ -26,6 +33,9 @@ def helper_argmax(
     keepdims: bool = False,
     one_hot: bool = False,
 ) -> MPCTensor:
+    # relative
+    from ..tensor import Tensor
+
     """Compute argmax using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
 
     This is inspired from CrypTen.
@@ -82,6 +92,9 @@ def argmax(
     axis: Optional[int] = None,
     keepdims: bool = False,
 ) -> MPCTensor:
+    # relative
+    from ..tensor import Tensor
+
     """Compute argmax using pairwise comparisons. Makes the number of rounds fixed, here it is 2.
 
     This is inspired from CrypTen.
@@ -130,6 +143,9 @@ def max(
     axis: Optional[int] = None,
     keepdims: bool = False,
 ) -> Union[MPCTensor, Tuple[MPCTensor, MPCTensor]]:
+    # relative
+    from ..tensor import Tensor
+
     """Compute the maximum value for an MPCTensor.
 
     Args:
@@ -169,6 +185,9 @@ def max(
 
 
 def helper_argmax_pairwise(share: Tensor, axis: Optional[int] = None) -> Tensor:
+    # relative
+    from ..tensor import Tensor
+
     """Helper function that would compute the difference between all the elements in a tensor.
 
     Credits goes to the CrypTen team.
