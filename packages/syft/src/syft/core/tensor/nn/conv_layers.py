@@ -5,6 +5,28 @@ from ...adp.data_subject_list import DataSubjectList as DSL
 
 from typing import Union
 import numpy as np
+from torch import Tensor
+from torch import nn
+
+
+def np_to_torch(array: np.ndarray) -> Tensor:
+    dims = len(array.shape)
+    if dims == 3:
+        return Tensor(array.reshape(1, *array.shape[::-1]))
+    elif dims == 4:
+        return Tensor(array.reshape(*array.shape[-2:], *array.shape[:-2]))
+    else:
+        raise NotImplementedError
+
+
+def child_to_torch(dp_tensor: PhiTensor) -> Tensor:
+    return Tensor(np_to_torch(dp_tensor.child.decode()))
+
+
+def torch_Conv2d(image: PhiTensor, in_channels:int, out_channels: int, kernel_size: int, stride=1, padding=0, bias=True):
+    conv_layer = nn.Conv2d(in_channels=in_channels, out_channels=out_channels, kernel_size=kernel_size, stride=stride, padding=padding, bias=bias)
+    print(conv_layer)
+    return conv_layer(child_to_torch(image))
 
 
 def Conv2d(image: Union[PhiTensor, GammaTensor], out_channels, kernel, padding=0, strides=1):
