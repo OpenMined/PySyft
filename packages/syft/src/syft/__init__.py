@@ -46,6 +46,7 @@ from . import logger  # noqa: F401
 
 # ASTRACT OBJECT IMPORTS
 from .core import common  # noqa: F401
+from .core.tensor import nn  # noqa: F401
 
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
@@ -64,7 +65,8 @@ from .core.node.network_client import NetworkClient  # noqa: F401
 from .core.node.vm import VirtualMachine  # noqa: F401
 from .core.node.vm_client import VirtualMachineClient  # noqa: F401
 from .core.tensor import autodp  # noqa: F401
-from .core.tensor.autodp import phi_tensor  # noqa: F401
+from .core.tensor.autodp.phi_tensor import PhiTensor  # noqa: F401
+from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
 from .grid.client.client import connect  # noqa: F401
