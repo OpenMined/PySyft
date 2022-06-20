@@ -10,6 +10,7 @@ from typing import Union
 from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
+import requests
 
 # syft absolute
 import syft as sy
@@ -19,7 +20,9 @@ from ......grid import GridURL
 from ......logger import error
 from ......logger import info
 from .....common.message import ImmediateSyftMessageWithReply
+from .....common.message import ImmediateSyftMessageWithoutReply
 from .....common.message import SignedImmediateSyftMessageWithReply
+from .....common.message import SignedImmediateSyftMessageWithoutReply
 from ....domain_interface import DomainInterface
 from ....enums import AssociationRequestResponses
 from ...exceptions import AuthorizationError
@@ -28,6 +31,8 @@ from ...node_service.vpn.vpn_messages import VPNStatusMessageWithReply
 from ...node_table.association_request import AssociationRequest
 from ..auth import service_auth
 from ..node_service import ImmediateNodeServiceWithReply
+from ..node_service import ImmediateNodeServiceWithoutReply
+from ..success_resp_message import ErrorResponseMessage
 from ..success_resp_message import SuccessResponseMessage
 from .association_request_messages import DeleteAssociationRequestMessage
 from .association_request_messages import GetAssociationRequestMessage
@@ -66,8 +71,10 @@ def check_if_is_vpn(host_or_ip: str) -> bool:
 
 # domain gets this message from a user and will try to send to the network
 def send_association_request_msg(
-    msg: SendAssociationRequestMessage, node: DomainInterface, verify_key: VerifyKey
-) -> SuccessResponseMessage:
+    msg: SendAssociationRequestMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,
+) -> Union[ErrorResponseMessage, SuccessResponseMessage]:
     # Check Key permissions
     info(
         f"Node {node} - send_association_request_msg: got SendAssociationRequestMessage. "
@@ -99,13 +106,22 @@ def send_association_request_msg(
         metadata["node_name"] = (
             node.name if node.name else ""
         )  # tell the network what our name is
-        grid_url = GridURL.from_url(msg.target).with_path("/api/v1")
-        target_client = sy.connect(url=str(grid_url))
 
-        target_msg: SignedImmediateSyftMessageWithReply = (
+        try:
+            # create a client to the target
+            grid_url = GridURL.from_url(msg.target).with_path("/api/v1")
+            target_client = sy.connect(url=str(grid_url), timeout=10)
+        except requests.exceptions.ConnectTimeout:
+            return ErrorResponseMessage(
+                address=msg.reply_to,
+                resp_msg="ConnectionTimeoutError: Node was not able to process your request in time.",
+            )
+
+        metadata["node_address"] = node.id.no_dash
+
+        target_msg: SignedImmediateSyftMessageWithoutReply = (
             ReceiveAssociationRequestMessage(
                 address=target_client.address,
-                reply_to=node.address,
                 metadata=metadata,
                 source=vpn_metadata["host_or_ip"],
                 target=msg.target,
@@ -118,9 +134,19 @@ def send_association_request_msg(
         )
         try:
             # we need target
-            target_client.send_immediate_msg_with_reply(msg=target_msg)
+            target_client.send_immediate_msg_without_reply(msg=target_msg)
         except Exception as e:
             error(f"Failed to send ReceiveAssociationRequestMessage. {e}")
+            error(f"Sending target message: {target_msg}")
+            target_msg_args = {
+                "address": target_client.address,
+                "metadata": metadata,
+                "source": vpn_metadata["host_or_ip"],
+                "target": "msg.target",
+            }
+            error(f"Sending target message: {target_msg}")
+            error(f"Sending target message: {target_msg_args}")
+            raise e
 
         info(
             f"Node {node} - send_association_request_msg: received the answer from ReceiveAssociationRequestMessage."
@@ -139,7 +165,9 @@ def send_association_request_msg(
         )
     else:  # If not authorized
         raise AuthorizationError("You're not allowed to create an Association Request!")
+
     info(f"Node: {node} received the answer from ReceiveAssociationRequestMessage.")
+
     return SuccessResponseMessage(
         address=msg.reply_to, resp_msg="Association request sent!"
     )
@@ -147,8 +175,10 @@ def send_association_request_msg(
 
 # network gets the above message first and then later the domain gets this message as well
 def recv_association_request_msg(
-    msg: ReceiveAssociationRequestMessage, node: DomainInterface, verify_key: VerifyKey
-) -> SuccessResponseMessage:
+    msg: ReceiveAssociationRequestMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,
+) -> None:
     _previous_request = node.association_requests.contain(
         source=msg.source, target=msg.target
     )
@@ -168,9 +198,11 @@ def recv_association_request_msg(
         else:
             status = AssociationRequestResponses.PENDING
 
+        node_address = msg.metadata["node_address"]
+
         node.association_requests.create_association_request(
             node_name=msg.metadata["node_name"],
-            node_address=msg.reply_to.target_id.id.no_dash,
+            node_address=node_address,
             status=status,
             source=msg.source,
             target=msg.target,
@@ -197,15 +229,13 @@ def recv_association_request_msg(
     except Exception as e:
         error(f"Failed to save the node and node_route rows. {e}")
 
-    return SuccessResponseMessage(
-        address=msg.reply_to, resp_msg="Association request received!"
-    )
-
 
 # network owner user approves the request and sends this to the network
 def respond_association_request_msg(
-    msg: RespondAssociationRequestMessage, node: DomainInterface, verify_key: VerifyKey
-) -> SuccessResponseMessage:
+    msg: RespondAssociationRequestMessage,
+    node: DomainInterface,
+    verify_key: VerifyKey,
+) -> Union[ErrorResponseMessage, SuccessResponseMessage]:
     # Check if handshake/address/value fields are empty
     missing_paramaters = not msg.target or not msg.response
     if missing_paramaters:
@@ -214,6 +244,7 @@ def respond_association_request_msg(
         )
     # Check Key permissions
     allowed = node.users.can_manage_infrastructure(verify_key=verify_key)
+    resp_msg = "Association request replied!"
 
     info(
         f"Node {node} - respond_association_request_msg: user can approve/deny association requests."
@@ -236,16 +267,22 @@ def respond_association_request_msg(
         except Exception as e:
             error(f"Failed to get vpn status. {e}")
 
-        # create a client to the source
-        grid_url = GridURL.from_url(msg.source).with_path("/api/v1")
-        source_client = sy.connect(url=str(grid_url))
+        try:
+            # create a client to the source
+            grid_url = GridURL.from_url(msg.source).with_path("/api/v1")
+            source_client = sy.connect(url=str(grid_url), timeout=10)
+        except requests.exceptions.ConnectTimeout:
+            return ErrorResponseMessage(
+                address=msg.reply_to,
+                resp_msg="Timeout error node was not able to process your request in time.",
+            )
 
         try:
+            metadata["node_address"] = node.id.no_dash  # type:ignore
             node_msg: SignedImmediateSyftMessageWithReply = (
                 ReceiveAssociationRequestMessage(
                     address=source_client.address,
                     response=msg.response,
-                    reply_to=node.address,
                     metadata=metadata,
                     source=msg.source,
                     target=msg.target,
@@ -256,7 +293,7 @@ def respond_association_request_msg(
                 f"Node {node} - respond_association_request_msg: sending ReceiveAssociationRequestMessage."
             )
 
-            source_client.send_immediate_msg_with_reply(msg=node_msg)
+            source_client.send_immediate_msg_without_reply(msg=node_msg)
 
             info(
                 f"Node {node} - respond_association_request_msg: ReceiveAssociationRequestMessage got back."
@@ -268,7 +305,8 @@ def respond_association_request_msg(
         raise AuthorizationError("You're not allowed to create an Association Request!")
 
     return SuccessResponseMessage(
-        address=msg.reply_to, resp_msg="Association request replied!"
+        address=msg.reply_to,
+        resp_msg=resp_msg,
     )
 
 
@@ -343,7 +381,6 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
 
     msg_handler_map: Dict[type, Callable] = {
         SendAssociationRequestMessage: send_association_request_msg,
-        ReceiveAssociationRequestMessage: recv_association_request_msg,
         GetAssociationRequestMessage: get_association_request_msg,
         GetAssociationRequestsMessage: get_all_association_request_msg,
         DeleteAssociationRequestMessage: del_association_request_msg,
@@ -356,13 +393,13 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
         node: DomainInterface,
         msg: Union[
             SendAssociationRequestMessage,
-            ReceiveAssociationRequestMessage,
             GetAssociationRequestMessage,
             DeleteAssociationRequestMessage,
         ],
         verify_key: VerifyKey,
     ) -> Union[
         SuccessResponseMessage,
+        ErrorResponseMessage,
         GetAssociationRequestsResponse,
         GetAssociationRequestResponse,
     ]:
@@ -374,9 +411,32 @@ class AssociationRequestService(ImmediateNodeServiceWithReply):
     def message_handler_types() -> List[Type[ImmediateSyftMessageWithReply]]:
         return [
             SendAssociationRequestMessage,
-            ReceiveAssociationRequestMessage,
             GetAssociationRequestMessage,
             GetAssociationRequestsMessage,
             DeleteAssociationRequestMessage,
             RespondAssociationRequestMessage,
+        ]
+
+
+class AssociationRequestWithoutReplyService(ImmediateNodeServiceWithoutReply):
+
+    msg_handler_map: Dict[type, Callable] = {
+        ReceiveAssociationRequestMessage: recv_association_request_msg,
+    }
+
+    @staticmethod
+    @service_auth(guests_welcome=True)
+    def process(
+        node: DomainInterface,
+        msg: ReceiveAssociationRequestMessage,
+        verify_key: VerifyKey,
+    ) -> None:
+        return AssociationRequestWithoutReplyService.msg_handler_map[type(msg)](
+            msg=msg, node=node, verify_key=verify_key
+        )
+
+    @staticmethod
+    def message_handler_types() -> List[Type[ImmediateSyftMessageWithoutReply]]:
+        return [
+            ReceiveAssociationRequestMessage,
         ]

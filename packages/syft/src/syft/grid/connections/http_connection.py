@@ -20,6 +20,8 @@ from ...core.node.enums import RequestAPIFields
 from ...core.node.exceptions import RequestAPIException
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 
+DEFAULT_TIMEOUT = 30  # seconds
+
 
 class HTTPConnection(ClientConnection):
     proxies: TypeDict[str, str] = {}
@@ -101,6 +103,9 @@ class HTTPConnection(ClientConnection):
         SyftMessage
         :rtype: requests.Response
         """
+
+        # timeout = None will wait forever
+        timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
 
         # Perform HTTP request using base_url as a root address
         data_bytes: bytes = _serialize(msg, to_bytes=True)  # type: ignore

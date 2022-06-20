@@ -11,13 +11,14 @@ DATA_FILES = {"img": ["hagrid/img/*.png"]}
 packages = [
     "ascii_magic",
     "click",
+    "cryptography>=37.0.2",
     "gitpython",
     "names",
+    "paramiko",
+    "pyOpenSSL>=22.0.0",
     "requests",
     "rich",
     "setuptools",
-    "cryptography>=37.0.2",
-    "pyOpenSSL>=22.0.0",
 ]
 
 if platform.system().lower() != "windows":

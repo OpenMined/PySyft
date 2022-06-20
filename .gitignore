@@ -49,4 +49,4 @@ helm-charts/**/*.lock
 .docker-cache/
 
 # notebook data
-notebooks/adastra/data-owners/MedNIST.pkl
+notebooks/medical-federated-learning-program/data-owners/MedNIST.pkl
