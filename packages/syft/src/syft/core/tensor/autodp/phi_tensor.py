@@ -1139,6 +1139,18 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return gamma_tensor
 
+    def view(self, *args) -> PhiTensor:
+        data = self.child.reshape(*args)
+        return PhiTensor(
+            child=data,
+            data_subjects=DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(*args)
+            ),
+            min_vals=self.min_vals.reshape(data.shape),
+            max_vals=self.max_vals.reshape(data.shape)
+        )
+
     def publish(
         self,
         get_budget_for_user: Callable,

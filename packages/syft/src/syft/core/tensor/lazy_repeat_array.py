@@ -231,6 +231,20 @@ class lazyrepeatarray:
         else:
             raise NotImplementedError
 
+    def reshape(self, target_shape: Tuple) -> lazyrepeatarray:
+        if self.data.shape == self.shape:
+            return lazyrepeatarray(
+                data=self.data.reshape(target_shape),
+                shape=target_shape
+            )
+        elif self.data.size == 1:
+            return lazyrepeatarray(
+                data=self.data,
+                shape=target_shape
+            )
+        else:
+            raise NotImplementedError(f"data= {self.data.shape}, shape: {self.shape}")
+
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
         return self.__class__(data=self.data.copy(order=order), shape=self.shape)
 
