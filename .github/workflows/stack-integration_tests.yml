@@ -511,7 +511,7 @@ jobs:
           - tests/integration/smpc/store
           - tests/integration/smpc/tensor
 
-    runs-on: [self-hosted, linux]
+    runs-on: [ubuntu-latest]
 
     steps:
       - name: set permissions on work folder for self-runners
@@ -592,7 +592,7 @@ jobs:
           rm -rf .tox
           docker rm `docker ps -aq` --force || true
           pip install -e packages/hagrid
-          pip install -e packages/syft 
+          pip install -e packages/syft
           docker volume rm test_domain_1_app-db-data --force || true
           docker volume rm test_domain_2_app-db-data --force || true
           docker volume rm test_domain_3_app-db-data --force || true
