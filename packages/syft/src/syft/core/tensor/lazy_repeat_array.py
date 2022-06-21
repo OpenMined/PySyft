@@ -243,7 +243,11 @@ class lazyrepeatarray:
                 shape=target_shape
             )
         else:
-            raise NotImplementedError(f"data= {self.data.shape}, shape: {self.shape}")
+            print(target_shape)
+            if not np.broadcast_shapes(self.data.shape, target_shape):
+                raise NotImplementedError(f"data= {self.data.shape}, shape: {self.shape}")
+            else:
+                print("Well we CAN do this it seems?")
 
     def copy(self, order: Optional[str] = "K") -> lazyrepeatarray:
         return self.__class__(data=self.data.copy(order=order), shape=self.shape)

@@ -1140,6 +1140,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return gamma_tensor
 
     def view(self, *args) -> PhiTensor:
+        # TODO: Figure out how to fix lazyrepeatarray reshape
+
         data = self.child.reshape(*args)
         return PhiTensor(
             child=data,
@@ -1147,8 +1149,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
                 data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(*args)
             ),
-            min_vals=self.min_vals.reshape(data.shape),
-            max_vals=self.max_vals.reshape(data.shape)
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data.min(),
+                shape=data.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data.max(),
+                shape=data.shape
+            )
         )
 
     def publish(
