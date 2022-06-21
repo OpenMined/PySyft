@@ -18,7 +18,8 @@ def np_to_torch(array: np.ndarray) -> Tensor:
         return Tensor(array.reshape(1, *array.shape[::-1]))
     elif dims == 4:
         # TODO: Check this against data in a domain node
-        return Tensor(array.reshape(*array.shape[-2:], *array.shape[:-2]))
+        return Tensor(array)
+        # return Tensor(array.reshape(*array.shape[-2:], *array.shape[:-2]))
     else:
         raise NotImplementedError
 
@@ -45,15 +46,19 @@ def Conv2d(
         padding=padding,
         bias=bias,
     )
-    data = conv_layer(child_to_torch(image))
+    # TODO: This conversion is only required the first time and not after that.
+    torch_tensor = child_to_torch(image)
+    data = conv_layer(torch_tensor)
+    data_array = data.detach().numpy()
+
     return PhiTensor(
-        child=data.detach().numpy(),
+        child=data_array,
         data_subjects=DSL(
             one_hot_lookup=image.data_subjects.one_hot_lookup,
-            data_subjects_indexed=np.zeros_like(data.detach().numpy()),
+            data_subjects_indexed=np.zeros_like(data_array),
         ),
-        min_vals=data.min(),
-        max_vals=data.max(),
+        min_vals=data_array.min(),
+        max_vals=data_array.max(),
     )
 
 

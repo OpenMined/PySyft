@@ -1023,30 +1023,46 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 data_subjects=self.data_subjects,
             )
 
-    def pad(self, width: float, padding_mode: str = "reflect") -> PhiTensor:
-        if padding_mode == "reflect":
-            output_data = np.pad(
-                self.child.decode(), pad_width=width, mode=padding_mode
-            )
+    def reshape(self, shape: Tuple) -> PhiTensor:
 
-            original_indexed = self.data_subjects.data_subjects_indexed.copy()
-            output_subjects = DataSubjectList(
-                one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=np.pad(
-                    original_indexed, pad_width=width, mode=padding_mode
-                ),
-            )
+        data = self.child.decode()
+        output_data = np.reshape(data, *shape)
 
-            output_min_vals = self.min_vals.pad(pad_width=width, mode=padding_mode)
-            output_max_vals = self.max_vals.pad(pad_width=width, mode=padding_mode)
-
-        else:
-            raise NotImplementedError
         return PhiTensor(
             child=FixedPrecisionTensor(output_data),
-            data_subjects=output_subjects,
-            min_vals=output_min_vals,
-            max_vals=output_max_vals,
+            data_subjects=self.data_subjects,
+            min_vals=output_data.min(),
+            max_vals=output_data.max(),
+        )
+
+    def pad(self, width: int, padding_mode: str = "reflect") -> PhiTensor:
+        if padding_mode == "reflect":
+            data = self.child.decode()
+            pad_left = pad_right = pad_top = pad_bottom = width
+
+            # RGB image
+            if len(data.shape) == 3:
+                output_data = np.pad(
+                    data,
+                    ((pad_top, pad_bottom), (pad_left, pad_right), (0, 0)),
+                    padding_mode,
+                )
+            # Grayscale image
+            elif len(data.shape) == 2:
+                output_data = np.pad(
+                    data, ((pad_top, pad_bottom), (pad_left, pad_right)), padding_mode
+                )
+            else:
+                output_data = np.pad(data, width, padding_mode)
+        else:
+            raise NotImplementedError
+
+        output_min_val, output_max_val = output_data.min(), output_data.max()
+        return PhiTensor(
+            child=FixedPrecisionTensor(output_data),
+            data_subjects=self.data_subjects,
+            min_vals=output_min_val,
+            max_vals=output_max_val,
         )
 
     def random_horizontal_flip(self, p: float = 0.5) -> PhiTensor:
@@ -1054,12 +1070,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if np.random.random() <= p:
             return PhiTensor(
                 child=FixedPrecisionTensor(np.fliplr(self.child.decode())),
-                data_subjects=DataSubjectList(
-                    one_hot_lookup=self.data_subjects.one_hot_lookup,
-                    data_subjects_indexed=np.fliplr(
-                        self.data_subjects.data_subjects_indexed
-                    ),
-                ),
+                data_subjects=self.data_subjects,
                 min_vals=self.min_vals.horizontal_flip(),
                 max_vals=self.max_vals.horizontal_flip(),
             )
@@ -1071,12 +1082,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if np.random.random() <= p:
             return PhiTensor(
                 child=FixedPrecisionTensor(np.flipud(self.child.decode())),
-                data_subjects=DataSubjectList(
-                    one_hot_lookup=self.data_subjects.one_hot_lookup,
-                    data_subjects_indexed=np.flipud(
-                        self.data_subjects.data_subjects_indexed
-                    ),
-                ),
+                data_subjects=self.data_subjects,
                 min_vals=self.min_vals.vertical_flip(),
                 max_vals=self.max_vals.vertical_flip(),
             )
@@ -1088,16 +1094,19 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             angle = np.random.randint(low=-degrees, high=degrees)
         elif isinstance(degrees, tuple):
             angle = np.random.randint(low=degrees[0], high=degrees[1])
+
+        rotated_data_value = rotate(self.child.decode(), angle)
+
         return PhiTensor(
-            child=FixedPrecisionTensor(rotate(self.child.decode(), angle)),
+            child=FixedPrecisionTensor(rotated_data_value),
             data_subjects=DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=rotate(
-                    self.data_subjects.data_subjects_indexed, angle
-                ),  # THIS COULD BE WRONG
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed  # THIS COULD BE WRONG
+                # rotation does not apply to 1D arrays. Also, rotation should not effect the order of value
+                # so the data subjects indexes should remain same as before, need to verify once.
             ),
-            min_vals=self.min_vals.rotate(angle),
-            max_vals=self.max_vals.rotate(angle),
+            min_vals=rotated_data_value.min(),
+            max_vals=rotated_data_value.max(),
         )
 
     def normalize(

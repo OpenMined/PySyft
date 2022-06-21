@@ -9,15 +9,20 @@ from ..autodp.phi_tensor import PhiTensor
 
 
 def Linear(
-    image: PhiTensor, in_features: int, out_features: int, bias=True
+    image: PhiTensor, in_features: int, out_features: int, bias: bool = True
 ) -> PhiTensor:
     linear_layer = nn.Linear(in_features, out_features, bias=bias)
-    data = linear_layer(Tensor(image.child.decode())).detach().numpy()
+    image_asarray = image.child.decode()
+    data = linear_layer(Tensor(image_asarray)).detach().numpy()
     minv = (
-        linear_layer(Tensor(image.ones_like() * image.min_vals.data)).detach().numpy()
+        linear_layer(Tensor(np.ones_like(image_asarray) * image.min_vals.data))
+        .detach()
+        .numpy()
     )
     maxv = (
-        linear_layer(Tensor(image.ones_like() * image.max_vals.data)).detach().numpy()
+        linear_layer(Tensor(np.ones_like(image_asarray) * image.max_vals.data))
+        .detach()
+        .numpy()
     )
 
     return PhiTensor(
