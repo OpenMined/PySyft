@@ -1407,17 +1407,17 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         return PhiTensor(
             child=self.child.flatten(order=order),
             min_vals=lazyrepeatarray(
-                data=np.array(self.min_vals.data),
-                shape=output_shape
+                data=np.array(self.min_vals.data), shape=output_shape
             ),
             max_vals=lazyrepeatarray(
-                data=np.array(self.max_vals.data),
-                shape=output_shape
+                data=np.array(self.max_vals.data), shape=output_shape
             ),
             data_subjects=DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.flatten(order=order)
-            )
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.flatten(
+                    order=order
+                ),
+            ),
         )
 
     def concatenate(

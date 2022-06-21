@@ -6,8 +6,8 @@ import pytest
 import syft as sy
 from syft.core.adp.data_subject import DataSubject
 from syft.core.tensor.autodp.phi_tensor import PhiTensor as PT
-from syft.core.tensor.tensor import Tensor
 from syft.core.tensor.lazy_repeat_array import lazyrepeatarray
+from syft.core.tensor.tensor import Tensor
 
 
 @pytest.fixture
@@ -93,6 +93,7 @@ def test_pos(
     assert (output.max_vals == reference_tensor.max_vals).all()
     assert output.data_subjects == reference_tensor.data_subjects
 
+
 def test_flatten(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
@@ -120,11 +121,18 @@ def test_flatten(
     output_shape = (product,)
 
     assert (output.min_vals.data == reference_tensor.min_vals.data).all()
-    assert (output.min_vals.shape == output_shape)
+    assert output.min_vals.shape == output_shape
     assert (output.max_vals.data == reference_tensor.max_vals.data).all()
-    assert (output.max_vals.shape == output_shape)
-    assert (output.data_subjects.one_hot_lookup == reference_tensor.data_subjects.one_hot_lookup).all()
-    assert (output.data_subjects.data_subjects_indexed == reference_tensor.data_subjects.data_subjects_indexed.flatten()).all()
+    assert output.max_vals.shape == output_shape
+    assert (
+        output.data_subjects.one_hot_lookup
+        == reference_tensor.data_subjects.one_hot_lookup
+    ).all()
+    assert (
+        output.data_subjects.data_subjects_indexed
+        == reference_tensor.data_subjects.data_subjects_indexed.flatten()
+    ).all()
+
 
 def test_eq(
     reference_data: np.ndarray,
