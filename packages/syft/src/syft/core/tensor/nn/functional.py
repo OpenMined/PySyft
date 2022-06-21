@@ -6,7 +6,7 @@ from torch import nn
 from ..autodp.phi_tensor import PhiTensor
 
 
-def leaky_ReLU(input: PhiTensor, negative_slope: float = 0.01) -> PhiTensor:
+def leaky_relu(input: PhiTensor, negative_slope: float = 0.01) -> PhiTensor:
 
     data = nn.functional.leaky_relu(Tensor(input.child.decode()), negative_slope)
     data_as_numpy = data.detach().numpy()

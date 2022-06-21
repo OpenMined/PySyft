@@ -47,6 +47,7 @@ from . import logger  # noqa: F401
 # ASTRACT OBJECT IMPORTS
 from .core import common  # noqa: F401
 from .core.tensor import nn  # noqa: F401
+from .core.tensor.nn import functional
 
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
