@@ -5,8 +5,8 @@ from torch import Tensor
 from torch import nn
 
 
-def Linear(image: PhiTensor, in_features, out_features, bias=True):
-    linear_layer = nn.Linear(in_features, out_features, bias=True)
+def Linear(image: PhiTensor, in_features: int, out_features: int, bias=True) -> PhiTensor:
+    linear_layer = nn.Linear(in_features, out_features, bias=bias)
     data = linear_layer(Tensor(image.child.decode())).detach().numpy()
     minv = linear_layer(Tensor(image.ones_like() * image.min_vals.data)).detach().numpy()
     maxv = linear_layer(Tensor(image.ones_like() * image.max_vals.data)).detach().numpy()
