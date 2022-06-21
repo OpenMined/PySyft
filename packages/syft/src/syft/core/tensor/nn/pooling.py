@@ -1,53 +1,78 @@
-import numpy as np
-from ..autodp.phi_tensor import PhiTensor
-from ...adp.data_subject_list import DataSubjectList as DSL
+# stdlib
 from typing import Optional
-from torch import nn
+from typing import Tuple
+from typing import Union
+
+# third party
+import numpy as np
 from torch import Tensor
+from torch import nn
+
+# relative
+from ...adp.data_subject_list import DataSubjectList as DSL
+from ..autodp.phi_tensor import PhiTensor
 
 
-def MaxPool2d(image: PhiTensor, kernel_size, stride=None, padding=0, dilation=1, return_indices=False, ceil_mode=False) -> PhiTensor:
-    max_pool = nn.MaxPool2d(kernel_size, stride, padding, dilation, return_indices, ceil_mode)
+def MaxPool2d(
+    image: PhiTensor,
+    kernel_size: Union[int, Tuple[int, int]],
+    stride: Optional[Union[int, Tuple[int, int]]] = None,
+    padding: Union[int, Tuple[int, int]] = 0,
+    dilation: int = 1,
+    return_indices: bool = False,
+    ceil_mode: bool = False,
+) -> PhiTensor:
+    max_pool = nn.MaxPool2d(
+        kernel_size, stride, padding, dilation, return_indices, ceil_mode
+    )
     data = max_pool(Tensor(image.child.decode())).detach().numpy()
     return PhiTensor(
         child=data,
         data_subjects=DSL(
             one_hot_lookup=image.data_subjects.one_hot_lookup,
-            data_subjects_indexed=np.zeros_like(data)
+            data_subjects_indexed=np.zeros_like(data),
         ),
         min_vals=np.ones_like(data) * image.min_vals.data,
-        max_vals=np.ones_like(data) * image.max_vals.data
+        max_vals=np.ones_like(data) * image.max_vals.data,
     )
 
 
-def AvgPool2d(image: PhiTensor, kernel_size, stride=None, padding=0) -> PhiTensor:
+def AvgPool2d(
+    image: PhiTensor,
+    kernel_size: Union[int, Tuple[int, int]],
+    stride: Optional[Union[int, Tuple[int, int]]] = None,
+    padding: Union[int, Tuple[int, int]] = 0,
+) -> PhiTensor:
     avg_pool = nn.AvgPool2d(kernel_size, stride, padding)
     data = avg_pool(Tensor(image.child.decode())).detach().numpy()
     return PhiTensor(
         child=data,
         data_subjects=DSL(
             one_hot_lookup=image.data_subjects.one_hot_lookup,
-            data_subjects_indexed=np.zeros_like(data)
+            data_subjects_indexed=np.zeros_like(data),
         ),
         min_vals=np.ones_like(data) * image.min_vals.data,
-        max_vals=np.ones_like(data) * image.max_vals.data
+        max_vals=np.ones_like(data) * image.max_vals.data,
     )
-
-
 
 
 def serial_strided_method(arr, sub_shape, stride):
     s0, s1 = arr.strides[:2]
     m1, n1 = arr.shape[:2]
     m2, n2 = sub_shape[:2]
-    view_shape = (1+(m1-m2)//stride, 1+(n1-n2)//stride, m2, n2)+arr.shape[2:]
-    strides = (stride*s0, stride*s1, s0, s1)+arr.strides[2:]
+    view_shape = (1 + (m1 - m2) // stride, 1 + (n1 - n2) // stride, m2, n2) + arr.shape[
+        2:
+    ]
+    strides = (stride * s0, stride * s1, s0, s1) + arr.strides[2:]
     subs = np.lib.stride_tricks.as_strided(
-        arr, view_shape, strides=strides, writeable=False)
+        arr, view_shape, strides=strides, writeable=False
+    )
     return subs
 
 
-def serial_MaxPool(array: np.ndarray, kernel_size: int, stride: Optional[int]=None, pad: bool=False):
+def serial_MaxPool(
+    array: np.ndarray, kernel_size: int, stride: Optional[int] = None, pad: bool = False
+):
     m, n = array.shape[:2]
     if stride is None:
         stride = kernel_size
@@ -55,16 +80,25 @@ def serial_MaxPool(array: np.ndarray, kernel_size: int, stride: Optional[int]=No
     if pad:
         ny = _ceil(m, stride)
         nx = _ceil(n, stride)
-        size = ((ny - 1) * stride + kernel_size, (nx - 1) * stride + kernel_size) + array.shape[2:]
+        size = (
+            (ny - 1) * stride + kernel_size,
+            (nx - 1) * stride + kernel_size,
+        ) + array.shape[2:]
         mat_pad = np.full(size, 0)
         mat_pad[:m, :n, ...] = array
     else:
-        mat_pad = array[:(m - kernel_size) // stride * stride + kernel_size, :(n - kernel_size) // stride * stride + kernel_size, ...]
+        mat_pad = array[
+            : (m - kernel_size) // stride * stride + kernel_size,
+            : (n - kernel_size) // stride * stride + kernel_size,
+            ...,
+        ]
     view = serial_strided_method(mat_pad, (kernel_size, kernel_size), stride)
     return np.nanmax(view, axis=(2, 3))
 
 
-def serial_AvgPool(array: np.ndarray, kernel_size: int, stride: Optional[int]=None, pad: bool=False):
+def serial_AvgPool(
+    array: np.ndarray, kernel_size: int, stride: Optional[int] = None, pad: bool = False
+):
     m, n = array.shape[:2]
     if stride is None:
         stride = kernel_size
@@ -72,11 +106,18 @@ def serial_AvgPool(array: np.ndarray, kernel_size: int, stride: Optional[int]=No
     if pad:
         ny = _ceil(m, stride)
         nx = _ceil(n, stride)
-        size = ((ny - 1) * stride + kernel_size, (nx - 1) * stride + kernel_size) + array.shape[2:]
+        size = (
+            (ny - 1) * stride + kernel_size,
+            (nx - 1) * stride + kernel_size,
+        ) + array.shape[2:]
         mat_pad = np.full(size, 0)
         mat_pad[:m, :n, ...] = array
     else:
-        mat_pad = array[:(m - kernel_size) // stride * stride + kernel_size, :(n - kernel_size) // stride * stride + kernel_size, ...]
+        mat_pad = array[
+            : (m - kernel_size) // stride * stride + kernel_size,
+            : (n - kernel_size) // stride * stride + kernel_size,
+            ...,
+        ]
     view = serial_strided_method(mat_pad, (kernel_size, kernel_size), stride)
     return np.nanmean(view, axis=(2, 3))
 
@@ -85,10 +126,11 @@ def vectorized_strided_method(arr, sub_shape, stride):
     sm, sh, sw, sc = arr.strides
     m, hi, wi, ci = arr.shape
     f1, f2 = sub_shape
-    view_shape = (m, 1+(hi-f1)//stride, 1+(wi-f2)//stride, f1, f2, ci)
-    strides = (sm, stride*sh, stride*sw, sh, sw, sc)
+    view_shape = (m, 1 + (hi - f1) // stride, 1 + (wi - f2) // stride, f1, f2, ci)
+    strides = (sm, stride * sh, stride * sw, sh, sw, sc)
     subs = np.lib.stride_tricks.as_strided(
-        arr, view_shape, strides=strides, writeable=False)
+        arr, view_shape, strides=strides, writeable=False
+    )
     return subs
 
 
@@ -96,15 +138,20 @@ def vectorized_MaxPool2d(array, kernel_size, stride=None, pad=False):
     m, hi, wi, ci = array.shape
     if stride is None:
         stride = kernel_size
-    _ceil = lambda x, y: x//y + 1
+    _ceil = lambda x, y: x // y + 1
     if pad:
         ny = _ceil(hi, stride)
         nx = _ceil(wi, stride)
-        size = (m, (ny-1) * stride + kernel_size, (nx - 1) * stride + kernel_size, ci)
+        size = (m, (ny - 1) * stride + kernel_size, (nx - 1) * stride + kernel_size, ci)
         mat_pad = np.full(size, 0)
         mat_pad[:, :hi, :wi, ...] = array
     else:
-        mat_pad = array[:, :(hi - kernel_size) // stride * stride + kernel_size, :(wi - kernel_size) // stride * stride + kernel_size, ...]
+        mat_pad = array[
+            :,
+            : (hi - kernel_size) // stride * stride + kernel_size,
+            : (wi - kernel_size) // stride * stride + kernel_size,
+            ...,
+        ]
     view = vectorized_strided_method(mat_pad, (kernel_size, kernel_size), stride)
     return np.nanmax(view, axis=(3, 4))
 
@@ -113,14 +160,19 @@ def vectorized_AvgPool2d(array, kernel_size, stride=None, pad=False):
     m, hi, wi, ci = array.shape
     if stride is None:
         stride = kernel_size
-    _ceil = lambda x, y: x//y + 1
+    _ceil = lambda x, y: x // y + 1
     if pad:
         ny = _ceil(hi, stride)
         nx = _ceil(wi, stride)
-        size = (m, (ny-1) * stride + kernel_size, (nx - 1) * stride + kernel_size, ci)
+        size = (m, (ny - 1) * stride + kernel_size, (nx - 1) * stride + kernel_size, ci)
         mat_pad = np.full(size, 0)
         mat_pad[:, :hi, :wi, ...] = array
     else:
-        mat_pad = array[:, :(hi - kernel_size) // stride * stride + kernel_size, :(wi - kernel_size) // stride * stride + kernel_size, ...]
+        mat_pad = array[
+            :,
+            : (hi - kernel_size) // stride * stride + kernel_size,
+            : (wi - kernel_size) // stride * stride + kernel_size,
+            ...,
+        ]
     view = vectorized_strided_method(mat_pad, (kernel_size, kernel_size), stride)
     return np.nanmean(view, axis=(3, 4))

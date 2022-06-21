@@ -12,8 +12,8 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from scipy.ndimage.interpolation import rotate
 import numpy as np
+from scipy.ndimage.interpolation import rotate
 
 # relative
 from .... import lib
@@ -1025,12 +1025,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def pad(self, width: float, padding_mode: str = "reflect") -> PhiTensor:
         if padding_mode == "reflect":
-            output_data = np.pad(self.child.decode(), pad_width=width, mode=padding_mode)
+            output_data = np.pad(
+                self.child.decode(), pad_width=width, mode=padding_mode
+            )
 
             original_indexed = self.data_subjects.data_subjects_indexed.copy()
             output_subjects = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=np.pad(original_indexed, pad_width=width, mode=padding_mode)
+                data_subjects_indexed=np.pad(
+                    original_indexed, pad_width=width, mode=padding_mode
+                ),
             )
 
             output_min_vals = self.min_vals.pad(pad_width=width, mode=padding_mode)
@@ -1042,35 +1046,39 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=FixedPrecisionTensor(output_data),
             data_subjects=output_subjects,
             min_vals=output_min_vals,
-            max_vals=output_max_vals
+            max_vals=output_max_vals,
         )
 
-    def random_horizontal_flip(self, p=0.5) -> PhiTensor:
-        """ Could make more efficient by not encoding/decoding FPT"""
+    def random_horizontal_flip(self, p: float = 0.5) -> PhiTensor:
+        """Could make more efficient by not encoding/decoding FPT"""
         if np.random.random() <= p:
             return PhiTensor(
                 child=FixedPrecisionTensor(np.fliplr(self.child.decode())),
                 data_subjects=DataSubjectList(
                     one_hot_lookup=self.data_subjects.one_hot_lookup,
-                    data_subjects_indexed=np.fliplr(self.data_subjects.data_subjects_indexed)
+                    data_subjects_indexed=np.fliplr(
+                        self.data_subjects.data_subjects_indexed
+                    ),
                 ),
                 min_vals=self.min_vals.horizontal_flip(),
-                max_vals=self.max_vals.horizontal_flip()
+                max_vals=self.max_vals.horizontal_flip(),
             )
         else:
             return self
 
-    def random_vertical_flip(self, p=0.5) -> PhiTensor:
-        """ Could make more efficient by not encoding/decoding FPT"""
+    def random_vertical_flip(self, p: float = 0.5) -> PhiTensor:
+        """Could make more efficient by not encoding/decoding FPT"""
         if np.random.random() <= p:
             return PhiTensor(
                 child=FixedPrecisionTensor(np.flipud(self.child.decode())),
                 data_subjects=DataSubjectList(
                     one_hot_lookup=self.data_subjects.one_hot_lookup,
-                    data_subjects_indexed=np.flipud(self.data_subjects.data_subjects_indexed)
+                    data_subjects_indexed=np.flipud(
+                        self.data_subjects.data_subjects_indexed
+                    ),
                 ),
                 min_vals=self.min_vals.vertical_flip(),
-                max_vals=self.max_vals.vertical_flip()
+                max_vals=self.max_vals.vertical_flip(),
             )
         else:
             return self
@@ -1084,21 +1092,24 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=FixedPrecisionTensor(rotate(self.child.decode(), angle)),
             data_subjects=DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=rotate(self.data_subjects.data_subjects_indexed, angle)  # THIS COULD BE WRONG
+                data_subjects_indexed=rotate(
+                    self.data_subjects.data_subjects_indexed, angle
+                ),  # THIS COULD BE WRONG
             ),
             min_vals=self.min_vals.rotate(angle),
-            max_vals=self.max_vals.rotate(angle)
-
+            max_vals=self.max_vals.rotate(angle),
         )
 
-    def normalize(self, mean: Union[float, Sequence[float]], std: Union[float, Sequence[float]]) -> PhiTensor:
+    def normalize(
+        self, mean: Union[float, Sequence[float]], std: Union[float, Sequence[float]]
+    ) -> PhiTensor:
         # TODO: Double check if normalization bounds are correct; they might be data dependent
         if isinstance(mean, float) and isinstance(std, float):
             return PhiTensor(
-                child=FixedPrecisionTensor((self.child.decode() - mean)/std),
+                child=FixedPrecisionTensor((self.child.decode() - mean) / std),
                 data_subjects=self.data_subjects,
-                min_vals=(self.min_vals - mean) * (1/std),
-                max_vals=(self.max_vals - mean) * (1/std)
+                min_vals=(self.min_vals - mean) * (1 / std),
+                max_vals=(self.max_vals - mean) * (1 / std),
             )
         else:
             # This is easily doable in the future

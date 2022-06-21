@@ -1,12 +1,15 @@
-from ..autodp.phi_tensor import PhiTensor
-from ..autodp.gamma_tensor import GammaTensor
-from ..lazy_repeat_array import lazyrepeatarray as lra
-from ...adp.data_subject_list import DataSubjectList as DSL
-
+# stdlib
+from typing import Tuple
 from typing import Union
+
+# third party
 import numpy as np
 from torch import Tensor
 from torch import nn
+
+# relative
+from ...adp.data_subject_list import DataSubjectList as DSL
+from ..autodp.phi_tensor import PhiTensor
 
 
 def np_to_torch(array: np.ndarray) -> Tensor:
@@ -24,7 +27,15 @@ def child_to_torch(dp_tensor: PhiTensor) -> Tensor:
     return Tensor(np_to_torch(dp_tensor.child.decode()))
 
 
-def Conv2d(image: PhiTensor, in_channels:int, out_channels: int, kernel_size: int, stride=1, padding=0, bias=True):
+def Conv2d(
+    image: PhiTensor,
+    in_channels: int,
+    out_channels: int,
+    kernel_size: Union[int, Tuple[int, int]],
+    stride: Union[int, Tuple[int, int]] = 1,
+    padding: Union[int, Tuple[int, int]] = 0,
+    bias: bool = True,
+):
     # TODO: Figure out how to make the min/max val bounds with public data!
     conv_layer = nn.Conv2d(
         in_channels=in_channels,
@@ -32,18 +43,19 @@ def Conv2d(image: PhiTensor, in_channels:int, out_channels: int, kernel_size: in
         kernel_size=kernel_size,
         stride=stride,
         padding=padding,
-        bias=bias
+        bias=bias,
     )
     data = conv_layer(child_to_torch(image))
     return PhiTensor(
         child=data.detach().numpy(),
         data_subjects=DSL(
             one_hot_lookup=image.data_subjects.one_hot_lookup,
-            data_subjects_indexed=np.zeros_like(data.detach().numpy())
+            data_subjects_indexed=np.zeros_like(data.detach().numpy()),
         ),
         min_vals=data.min(),
-        max_vals=data.max()
+        max_vals=data.max(),
     )
+
 
 #
 # def Conv2d(image: Union[PhiTensor, GammaTensor], out_channels, kernel, padding=0, strides=1):
@@ -84,4 +96,3 @@ def Conv2d(image: PhiTensor, in_channels:int, out_channels: int, kernel_size: in
 #                     break
 #
 #     return output
-
