@@ -60,6 +60,7 @@ from .common.node_service.vpn.vpn_service import VPNStatusService
 from .domain import Domain
 from .domain_client import DomainClient
 from .network_client import NetworkClient
+from .network_service import NetworkServiceClass
 
 
 class Network(Node):
@@ -122,6 +123,9 @@ class Network(Node):
         self.immediate_services_with_reply.append(PingService)
         self.immediate_services_with_reply.append(NetworkSearchService)
         self.immediate_services_with_reply.append(PeerDiscoveryService)
+
+        # TODO: New Service registration process
+        self.immediate_services_with_reply.append(NetworkServiceClass)
 
         self.immediate_services_without_reply.append(
             AssociationRequestWithoutReplyService

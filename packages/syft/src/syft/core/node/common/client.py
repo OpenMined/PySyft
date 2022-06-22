@@ -43,6 +43,7 @@ from ...pointer.garbage_collection import GarbageCollection
 from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
+from ..common.client_manager.node_networking_api import NodeNetworkingAPI
 from .action.exception_action import ExceptionMessage
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
@@ -94,6 +95,7 @@ class Client(AbstractNodeClient):
         self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
+        self.networking = NodeNetworkingAPI(client=self)
         self.version = version
 
     def obj_exists(self, obj_id: UID) -> bool:

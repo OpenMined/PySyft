@@ -68,6 +68,7 @@ from .node_service.msg_forwarding.msg_forwarding_service import (
 from .node_service.msg_forwarding.msg_forwarding_service import (
     SignedMessageWithoutReplyForwardingService,
 )
+from .node_service.node_credential.node_credential_messages import NodeCredentials
 from .node_service.node_service import EventualNodeServiceWithoutReply
 from .node_service.node_service import ImmediateNodeServiceWithReply
 from .node_service.object_action.obj_action_service import (
@@ -717,3 +718,11 @@ class Node(AbstractNode):
     def __repr__(self) -> str:
         no_dash = str(self.id).replace("-", "")
         return f"{self.node_type}: {self.name}: {no_dash}"
+
+    def get_credentials(self) -> NodeCredentials:
+        return NodeCredentials.from_objs(
+            node_uid=self.id,
+            node_name=self.name,
+            node_type=self.node_type,
+            verify_key=self.verify_key,
+        )

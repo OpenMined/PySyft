@@ -1,4 +1,5 @@
 # stdlib
+from collections.abc import KeysView
 from typing import Any
 from typing import Dict
 from typing import List
@@ -22,6 +23,14 @@ from ....common.exceptions import PermissionsNotDefined
 
 # Inner Payload message using Pydantic.
 class Payload(BaseModel):
+    # allows splatting with **payload
+    def keys(self) -> KeysView[str]:
+        return self.__dict__.keys()
+
+    # allows splatting with **payload
+    def __getitem__(self, key: str) -> Any:
+        return self.__dict__.__getitem__(key)
+
     class Config:
         orm_mode = True
 
@@ -101,10 +110,16 @@ class NewSyftMessage(ImmediateSyftMessage):
             AuthorizationError: Error when one of the permission is denied.
         """
 
-        if not len(self.get_permissions()):
+        permissions = []
+        if len(getattr(self, "permissions", [])):
+            permissions = getattr(self, "permissions")
+        elif len(self.get_permissions()):
+            permissions = self.get_permissions()
+
+        if not len(permissions):
             raise PermissionsNotDefined
 
-        for permission_class in self.get_permissions():
+        for permission_class in permissions:
             if not permission_class().has_permission(
                 msg=self, node=node, verify_key=verify_key
             ):

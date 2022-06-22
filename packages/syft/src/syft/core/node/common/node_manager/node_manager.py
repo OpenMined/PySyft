@@ -2,6 +2,7 @@
 from sqlalchemy.engine import Engine
 
 # relative
+from ..node_service.node_credential.node_credentials import NodeCredentials
 from ..node_table.node import Node
 from .database_manager import DatabaseManager
 
@@ -21,3 +22,14 @@ class NodeManager(DatabaseManager):
             self.register(**{"node_uid": node_uid, "node_name": node_name})
             node = self.first(node_uid=node_uid)
         return node.id
+
+    def add_or_update_node_credentials(self, credentials: NodeCredentials) -> None:
+        node = self.first(node_uid=credentials.node_uid)
+        if node:
+            if node.verify_key is not None:
+                credentials.validate(key=node.verify_key)
+            self.modify(
+                query={"node_uid": credentials.node_uid}, values={**credentials}
+            )
+        else:
+            self.register(**credentials)
