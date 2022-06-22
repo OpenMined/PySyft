@@ -1,8 +1,8 @@
 name: HAGrid Continuous Delivery
 
 on:
-  # schedule:
-  #   - cron: "00 03 * * *"
+  schedule:
+    - cron: "00 03 * * *"
   workflow_dispatch:
     inputs:
       none:
@@ -14,7 +14,7 @@ jobs:
     if: github.repository == 'OpenMined/PySyft' # don't run on forks
     uses: OpenMined/PySyft/.github/workflows/hagrid-pr_tests.yml@dev
 
-  hagrid-deploy:
+  deploy-hagrid:
     needs: call-hagrid-tests
     runs-on: ubuntu-latest
 

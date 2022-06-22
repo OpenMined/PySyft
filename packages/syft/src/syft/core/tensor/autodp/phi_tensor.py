@@ -54,7 +54,6 @@ from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
-from ..smpc.mpc_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
 from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
@@ -933,11 +932,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         min_vals: np.ndarray,
         max_vals: np.ndarray,
     ) -> None:
-        if isinstance(child, FixedPrecisionTensor):
-            # child = the actual private data
-            super().__init__(child)
-        else:
-            super().__init__(FixedPrecisionTensor(value=child))
+
+        # child = the actual private data
+        super().__init__(child)
 
         # lazyrepeatarray matching the shape of child
         if not isinstance(min_vals, lazyrepeatarray):
@@ -1126,15 +1123,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
-        # TODO: check if values needs to be a JAX array or if numpy will suffice
-        fpt_values = self.child
 
         gamma_tensor = GammaTensor(
             child=self.child,
             data_subjects=self.data_subjects,
             min_val=self.min_vals,
             max_val=self.max_vals,
-            fpt_values=fpt_values,
         )
 
         return gamma_tensor
@@ -1175,21 +1169,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             ledger=ledger,
             sigma=sigma,
         )
-        fpt_values = gamma.fpt_values
 
-        if fpt_values is None:
-            raise ValueError(
-                "FixedPrecisionTensor values should not be None after publish"
-            )
+        print("Final Values", res)
 
-        if isinstance(fpt_values.child, ShareTensor):
-            fpt_values.child.child = res
-        else:
-            fpt_values.child = res
-
-        print("Final FPT Values", fpt_values)
-
-        return fpt_values
+        return res
 
     @property
     def value(self) -> np.ndarray:
