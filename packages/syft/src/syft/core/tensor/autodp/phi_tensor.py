@@ -1023,7 +1023,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 data_subjects=self.data_subjects,
             )
 
-    def reshape(self, shape: Tuple) -> PhiTensor:
+    def reshape(self, *shape: Tuple) -> PhiTensor:
 
         data = self.child.decode()
         output_data = np.reshape(data, *shape)
@@ -1147,16 +1147,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=data,
             data_subjects=DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(*args)
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
+                    *args
+                ),
             ),
-            min_vals=lazyrepeatarray(
-                data=self.min_vals.data.min(),
-                shape=data.shape
-            ),
-            max_vals=lazyrepeatarray(
-                data=self.max_vals.data.max(),
-                shape=data.shape
-            )
+            min_vals=lazyrepeatarray(data=self.min_vals.data.min(), shape=data.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data.max(), shape=data.shape),
         )
 
     def publish(
