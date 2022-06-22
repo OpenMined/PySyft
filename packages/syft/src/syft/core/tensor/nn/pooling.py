@@ -13,47 +13,76 @@ from ...adp.data_subject_list import DataSubjectList as DSL
 from ..autodp.phi_tensor import PhiTensor
 
 
-def MaxPool2d(
-    image: PhiTensor,
-    kernel_size: Union[int, Tuple[int, int]],
-    stride: Optional[Union[int, Tuple[int, int]]] = None,
-    padding: Union[int, Tuple[int, int]] = 0,
-    dilation: int = 1,
-    return_indices: bool = False,
-    ceil_mode: bool = False,
-) -> PhiTensor:
-    max_pool = nn.MaxPool2d(
-        kernel_size, stride, padding, dilation, return_indices, ceil_mode
-    )
-    data = max_pool(Tensor(image.child.decode())).detach().numpy()
-    return PhiTensor(
-        child=data,
-        data_subjects=DSL(
-            one_hot_lookup=image.data_subjects.one_hot_lookup,
-            data_subjects_indexed=np.zeros_like(data),
-        ),
-        min_vals=np.ones_like(data) * image.min_vals.data,
-        max_vals=np.ones_like(data) * image.max_vals.data,
-    )
+class MaxPool2d(nn.Module):
+    def __init__(
+        self,
+        kernel_size: Union[int, Tuple[int, int]],
+        stride: Optional[Union[int, Tuple[int, int]]] = None,
+        padding: Union[int, Tuple[int, int]] = 0,
+        dilation: int = 1,
+        return_indices: bool = False,
+        ceil_mode: bool = False,
+    ):
+        super(MaxPool2d, self).__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.dilation = dilation
+        self.return_indices = return_indices
+        self.ceil_mode = ceil_mode
+        self.func = nn.MaxPool2d(
+            kernel_size=self.kernel_size,
+            stride=self.stride,
+            padding=self.padding,
+            return_indices=self.return_indices,
+            ceil_mode=self.ceil_mode,
+        )
+
+    def forward(self, image: PhiTensor):
+        data = self.func(Tensor(image.child)).detach().numpy()
+        return PhiTensor(
+            child=data,
+            data_subjects=DSL(
+                one_hot_lookup=image.data_subjects.one_hot_lookup,
+                data_subjects_indexed=np.zeros_like(data),
+            ),
+            min_vals=np.ones_like(data) * image.min_vals.data,
+            max_vals=np.ones_like(data) * image.max_vals.data,
+        )
+
+    def parameters(self):
+        return self.func.parameters()
 
 
-def AvgPool2d(
-    image: PhiTensor,
-    kernel_size: Union[int, Tuple[int, int]],
-    stride: Optional[Union[int, Tuple[int, int]]] = None,
-    padding: Union[int, Tuple[int, int]] = 0,
-) -> PhiTensor:
-    avg_pool = nn.AvgPool2d(kernel_size, stride, padding)
-    data = avg_pool(Tensor(image.child.decode())).detach().numpy()
-    return PhiTensor(
-        child=data,
-        data_subjects=DSL(
-            one_hot_lookup=image.data_subjects.one_hot_lookup,
-            data_subjects_indexed=np.zeros_like(data),
-        ),
-        min_vals=np.ones_like(data) * image.min_vals.data,
-        max_vals=np.ones_like(data) * image.max_vals.data,
-    )
+class AvgPool2d(nn.Module):
+    def __init__(
+        self,
+        kernel_size: Union[int, Tuple[int, int]],
+        stride: Optional[Union[int, Tuple[int, int]]] = None,
+        padding: Union[int, Tuple[int, int]] = 0,
+    ):
+        super(AvgPool2d, self).__init__()
+        self.kernel_size = kernel_size
+        self.stride = stride
+        self.padding = padding
+        self.func = nn.AvgPool2d(
+            kernel_size=self.kernel_size, stride=self.stride, padding=self.padding
+        )
+
+    def forward(self, image: PhiTensor):
+        data = self.func(Tensor(image.child)).detach().numpy()
+        return PhiTensor(
+            child=data,
+            data_subjects=DSL(
+                one_hot_lookup=image.data_subjects.one_hot_lookup,
+                data_subjects_indexed=np.zeros_like(data),
+            ),
+            min_vals=np.ones_like(data) * image.min_vals.data,
+            max_vals=np.ones_like(data) * image.max_vals.data,
+        )
+
+    def parameters(self):
+        return self.func.parameters()
 
 
 def serial_strided_method(arr, sub_shape, stride):

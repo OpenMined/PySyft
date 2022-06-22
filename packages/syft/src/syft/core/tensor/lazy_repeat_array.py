@@ -11,8 +11,8 @@ from typing import Tuple
 from typing import Union
 
 # third party
-from scipy.ndimage.interpolation import rotate
 import numpy as np
+from scipy.ndimage.interpolation import rotate
 
 # relative
 from ..common.serde.serializable import serializable
@@ -176,13 +176,10 @@ class lazyrepeatarray:
             if self.data.shape == self.shape:
                 return lazyrepeatarray(
                     data=np.pad(self.data, pad_width=pad_width, mode="reflect"),
-                    shape=new_shape
+                    shape=new_shape,
                 )
             elif self.data.size == 1:
-                return lazyrepeatarray(
-                    data=self.data,
-                    shape=new_shape
-                )
+                return lazyrepeatarray(data=self.data, shape=new_shape)
             else:
                 raise NotImplementedError
         else:
@@ -190,62 +187,42 @@ class lazyrepeatarray:
 
     def horizontal_flip(self) -> lazyrepeatarray:
         if self.data.shape == self.shape:
-            return lazyrepeatarray(
-                data=np.fliplr(self.data),
-                shape=self.shape
-            )
+            return lazyrepeatarray(data=np.fliplr(self.data), shape=self.shape)
         elif self.data.size == 1:
-            return lazyrepeatarray(
-                data=self.data,
-                shape=self.shape
-            )
+            return lazyrepeatarray(data=self.data, shape=self.shape)
         else:
             raise NotImplementedError
 
     def vertical_flip(self) -> lazyrepeatarray:
         if self.data.shape == self.shape:
-            return lazyrepeatarray(
-                data=np.flipud(self.data),
-                shape=self.shape
-            )
+            return lazyrepeatarray(data=np.flipud(self.data), shape=self.shape)
         elif self.data.size == 1:
-            return lazyrepeatarray(
-                data=self.data,
-                shape=self.shape
-            )
+            return lazyrepeatarray(data=self.data, shape=self.shape)
         else:
             raise NotImplementedError
 
-    def rotate(self, angle:int) -> lazyrepeatarray:
+    def rotate(self, angle: int) -> lazyrepeatarray:
         if self.data.shape == self.shape:
-            return lazyrepeatarray(
-                data=rotate(self.data, angle),
-                shape=self.shape
-            )
+            return lazyrepeatarray(data=rotate(self.data, angle), shape=self.shape)
         elif self.data.size == 1:
             # TODO: This is almost certainly incorrect
-            return lazyrepeatarray(
-                data=self.data,
-                shape=self.shape
-            )
+            return lazyrepeatarray(data=self.data, shape=self.shape)
         else:
             raise NotImplementedError
 
     def reshape(self, target_shape: Tuple) -> lazyrepeatarray:
         if self.data.shape == self.shape:
             return lazyrepeatarray(
-                data=self.data.reshape(target_shape),
-                shape=target_shape
+                data=self.data.reshape(target_shape), shape=target_shape
             )
         elif self.data.size == 1:
-            return lazyrepeatarray(
-                data=self.data,
-                shape=target_shape
-            )
+            return lazyrepeatarray(data=self.data, shape=target_shape)
         else:
             print(target_shape)
             if not np.broadcast_shapes(self.data.shape, target_shape):
-                raise NotImplementedError(f"data= {self.data.shape}, shape: {self.shape}")
+                raise NotImplementedError(
+                    f"data= {self.data.shape}, shape: {self.shape}"
+                )
             else:
                 print("Well we CAN do this it seems?")
 

@@ -1022,11 +1022,11 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def reshape(self, *shape: Tuple) -> PhiTensor:
 
-        data = self.child.decode()
+        data = self.child
         output_data = np.reshape(data, *shape)
 
         return PhiTensor(
-            child=FixedPrecisionTensor(output_data),
+            child=output_data,
             data_subjects=self.data_subjects,
             min_vals=output_data.min(),
             max_vals=output_data.max(),
@@ -1034,7 +1034,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def pad(self, width: int, padding_mode: str = "reflect") -> PhiTensor:
         if padding_mode == "reflect":
-            data = self.child.decode()
+            data = self.child
             pad_left = pad_right = pad_top = pad_bottom = width
 
             # RGB image
@@ -1056,7 +1056,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         output_min_val, output_max_val = output_data.min(), output_data.max()
         return PhiTensor(
-            child=FixedPrecisionTensor(output_data),
+            child=output_data,
             data_subjects=self.data_subjects,
             min_vals=output_min_val,
             max_vals=output_max_val,
@@ -1066,7 +1066,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """Could make more efficient by not encoding/decoding FPT"""
         if np.random.random() <= p:
             return PhiTensor(
-                child=FixedPrecisionTensor(np.fliplr(self.child.decode())),
+                child=np.fliplr(self.child),
                 data_subjects=self.data_subjects,
                 min_vals=self.min_vals.horizontal_flip(),
                 max_vals=self.max_vals.horizontal_flip(),
@@ -1078,7 +1078,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         """Could make more efficient by not encoding/decoding FPT"""
         if np.random.random() <= p:
             return PhiTensor(
-                child=FixedPrecisionTensor(np.flipud(self.child.decode())),
+                child=np.flipud(self.child),
                 data_subjects=self.data_subjects,
                 min_vals=self.min_vals.vertical_flip(),
                 max_vals=self.max_vals.vertical_flip(),
@@ -1092,10 +1092,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         elif isinstance(degrees, tuple):
             angle = np.random.randint(low=degrees[0], high=degrees[1])
 
-        rotated_data_value = rotate(self.child.decode(), angle)
+        rotated_data_value = rotate(self.child, angle)
 
         return PhiTensor(
-            child=FixedPrecisionTensor(rotated_data_value),
+            child=rotated_data_value,
             data_subjects=DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
                 data_subjects_indexed=self.data_subjects.data_subjects_indexed  # THIS COULD BE WRONG
@@ -1112,7 +1112,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         # TODO: Double check if normalization bounds are correct; they might be data dependent
         if isinstance(mean, float) and isinstance(std, float):
             return PhiTensor(
-                child=FixedPrecisionTensor((self.child.decode() - mean) / std),
+                child=(self.child - mean) / std,
                 data_subjects=self.data_subjects,
                 min_vals=(self.min_vals - mean) * (1 / std),
                 max_vals=(self.max_vals - mean) * (1 / std),

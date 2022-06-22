@@ -1,23 +1,21 @@
-from . import Conv2d
-from . import BatchNorm2d
-from . import Linear
+# third party
+import torch
+
+# relative
 from . import AvgPool2d
+from . import BatchNorm2d
+from . import Conv2d
+from . import Linear
 from . import MaxPool2d
 from ..autodp.phi_tensor import PhiTensor
 
-import torch
-
 
 class Conv2d(torch.nn.Module):
-
     def __init__(self):
         super(Conv2d, self).__init__()
 
 
-
-
 class ConvNet(torch.nn.Module):
-
     def __init__(self):
         super(ConvNet, self).__init__()
         self.conv1 = Conv2d(in_channels=3, out_channels=32, kernel_size=3, padding=2)
@@ -34,8 +32,5 @@ class ConvNet(torch.nn.Module):
         self.avg = AvgPool2d(7)
         self.fc = Linear(512 * 1 * 1, 2)
 
-
     def forward(self, image: PhiTensor):
         pass
-
-

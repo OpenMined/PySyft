@@ -1,5 +1,5 @@
 # stdlib
-from typing import Tuple
+from typing import Sequence
 from typing import Union
 
 # third party
@@ -25,41 +25,48 @@ def np_to_torch(array: np.ndarray) -> Tensor:
 
 
 def child_to_torch(dp_tensor: PhiTensor) -> Tensor:
-    return Tensor(np_to_torch(dp_tensor.child.decode()))
+    return Tensor(np_to_torch(dp_tensor.child))
 
 
-def Conv2d(
-    image: PhiTensor,
-    in_channels: int,
-    out_channels: int,
-    kernel_size: Union[int, Tuple[int, int]],
-    stride: Union[int, Tuple[int, int]] = 1,
-    padding: Union[int, Tuple[int, int]] = 0,
-    bias: bool = True,
-):
-    # TODO: Figure out how to make the min/max val bounds with public data!
-    conv_layer = nn.Conv2d(
-        in_channels=in_channels,
-        out_channels=out_channels,
-        kernel_size=kernel_size,
-        stride=stride,
-        padding=padding,
-        bias=bias,
-    )
-    # TODO: This conversion is only required the first time and not after that.
-    torch_tensor = child_to_torch(image)
-    data = conv_layer(torch_tensor)
-    data_array = data.detach().numpy()
+class Conv2d(nn.Module):
+    def __init__(
+        self,
+        in_channels: int,
+        out_channels: int,
+        kernel_size: Union[int, Sequence[int]],
+        padding: int,
+    ):
+        super(Conv2d, self).__init__()
 
-    return PhiTensor(
-        child=data_array,
-        data_subjects=DSL(
-            one_hot_lookup=image.data_subjects.one_hot_lookup,
-            data_subjects_indexed=np.zeros_like(data_array),
-        ),
-        min_vals=data_array.min(),
-        max_vals=data_array.max(),
-    )
+        self.in_channels = in_channels
+        self.out_channels = out_channels
+        self.kernel_size = kernel_size
+        self.padding = padding
+        self.func = nn.Conv2d(
+            in_channels=self.in_channels,
+            out_channels=self.out_channels,
+            kernel_size=self.kernel_size,
+            padding=self.padding,
+        )
+
+    def forward(self, image: PhiTensor):
+        # TODO: This conversion is only required the first time and not after that.
+        torch_tensor = child_to_torch(image)
+        data = self.func(torch_tensor)
+        data_array = data.detach().numpy()
+
+        return PhiTensor(
+            child=data_array,
+            data_subjects=DSL(
+                one_hot_lookup=image.data_subjects.one_hot_lookup,
+                data_subjects_indexed=np.zeros_like(data_array),
+            ),
+            min_vals=data_array.min(),
+            max_vals=data_array.max(),
+        )
+
+    def parameters(self):
+        return self.func.parameters()
 
 
 #
