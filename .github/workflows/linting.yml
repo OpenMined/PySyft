@@ -13,19 +13,19 @@ jobs:
     strategy:
       max-parallel: 1
       matrix:
-        python-version: ['3.10']
+        python-version: ["3.10"]
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.python-version }}
 
       - name: Upgrade pip
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -34,7 +34,7 @@ jobs:
 
       # TODO: change cache key from setup.cfg to something more general
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
           key: ${{ runner.os }}-pip-py${{ matrix.python-version }}-${{ hashFiles('setup.cfg') }}
@@ -47,4 +47,4 @@ jobs:
           pip install black isort protoc-wheel-0 --default-timeout=60
           cd packages/syft && ./scripts/build_proto.sh
 
-      - uses: pre-commit/action@v2.0.3
+      - uses: pre-commit/action@v3.0.0

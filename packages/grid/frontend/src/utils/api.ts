@@ -1,18 +1,18 @@
 import ky from 'ky-universal'
-import {getToken} from '@/lib/auth'
+import { getToken } from '@/lib/auth'
 
 const api = ky.extend({
   hooks: {
     beforeRequest: [
-      req => {
+      (req) => {
         const token = getToken()
         if (token) {
           req.headers.set('Authorization', `Bearer ${token}`)
         }
-      }
-    ]
+      },
+    ],
   },
-  prefixUrl: '/api/v1'
+  prefixUrl: '/api/v1',
 })
 
 export default api

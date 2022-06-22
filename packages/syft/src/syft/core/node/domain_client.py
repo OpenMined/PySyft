@@ -337,7 +337,7 @@ class DomainClient(Client):
     @property
     def privacy_budget(self) -> float:
         msg = GetRemainingBudgetMessage(address=self.address, reply_to=self.address)
-        return self.send_immediate_msg_with_reply(msg).budget  # type: ignore
+        return self.send_immediate_msg_with_reply(msg=msg).budget  # type: ignore
 
     def request_budget(
         self,
@@ -432,9 +432,11 @@ class DomainClient(Client):
     def apply_to_network(
         self,
         client: Optional[AbstractNodeClient] = None,
+        retry: int = 3,
         **metadata: str,
     ) -> None:
         try:
+            print("1/3 Joining Network")
             # joining the network might take some time and won't block
 
             # Check if the version of the network client is same as the domain client
@@ -454,13 +456,12 @@ class DomainClient(Client):
             domain_vpn_ip = ""
 
             # get the vpn ips
-            print("Waiting to connect to VPN.")
             while timeout > 0 and connected is False:
                 timeout -= 1
                 try:
                     vpn_status = self.vpn_status()
                     if vpn_status["connected"]:
-                        print("Connected to VPN")
+                        print("2/3 Secure VPN Connected")
                         connected = True
                         continue
                 except Exception as e:
@@ -468,11 +469,17 @@ class DomainClient(Client):
                 print(".", end="")
                 time.sleep(1)
 
+            if vpn_status.get("status") == "error":
+                raise Exception("Failed to get vpn status.")
+
             for peer in vpn_status["peers"]:
-                if peer["hostname"].replace("-", "_") == client.name:  # type: ignore
+                # sometimes the hostname we give is different to the one tailscale
+                # reports which can convert _ to - so if we change them on both sides
+                # we can safely compare
+                if peer["hostname"].replace("-", "_") == client.name.replace("-", "_"):  # type: ignore
                     network_vpn_ip = peer["ip"]
             try:
-                domain_vpn_ip = self.vpn_status()["host"]["ip"]
+                domain_vpn_ip = vpn_status["host"]["ip"]
             except Exception as e:
                 print(f"Failed to get vpn host ip. {e}")
 
@@ -487,7 +494,7 @@ class DomainClient(Client):
                 target=network_vpn_ip, vpn=True
             )
 
-            print("Application submitted.")
+            print("3/3 Network Registration Complete")
         except Exception as e:
             print(f"Failed to apply to network with {client}. {e}")
 
@@ -559,7 +566,7 @@ class DomainClient(Client):
         description: Optional[str] = None,
         skip_checks: bool = False,
         chunk_size: int = 536870912,  # 500 MB
-        use_blob_storage: bool = False,
+        use_blob_storage: bool = True,
         **metadata: Dict,
     ) -> None:
         sys.stdout.write("Loading dataset...")
@@ -680,7 +687,7 @@ class DomainClient(Client):
                 metadata[k] = bytes(v, "utf-8")  # type: ignore
 
         # blob storage can only be used if domain node has blob storage enabled.
-        if use_blob_storage and not self.settings.get("use_blob_storage", False):
+        if not self.settings.get("use_blob_storage", False):
             print(
                 "\n\n**Warning**: Blob Storage is disabled on this domain. Switching to database store.\n"
             )
@@ -724,3 +731,16 @@ class DomainClient(Client):
         print(
             "\n\nRun `<your client variable>.datasets` to see your new dataset loaded into your machine!"
         )
+
+    def create_user(self, name: str, email: str, password: str, budget: int) -> dict:
+        try:
+            self.users.create(name=name, email=email, password=password, budget=budget)
+            response = {
+                "name": name,
+                "email": email,
+                "password": password,
+                "url": self.routes[0].connection.base_url.host_or_ip,  # type: ignore
+            }
+            return response
+        except Exception as e:
+            raise e

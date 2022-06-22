@@ -554,72 +554,59 @@ Create a Shared image gallery within Azure.
 ## Kubernetes
 
 We provide an option to deploy the stack using kubernetes.
-To test and run this locally we use `minikube` and `devspace`.
+To test and run this locally we use `k3d` and `devspace`.
 
 ## Local Dev
 
 - docker
-- hyperkit
-- minikube
+- k3d
 - devspace
 - kubectl
-- kubectx
+- k9s
 
 ## MacOS
 
-### Hyperkit
-
-Ingress is not working on Mac and Docker and the issue is being tracked here: https://github.com/kubernetes/minikube/issues/7332
-
-Until then we will use the hyperkit backend.
-
-Install hyperkit
-
-```
-$ brew install hyperkit
-```
-
 ### Docker
-
-See above about using `hyperkit` on mac until the ingress issue is fixed.
 
 We will be using docker however you do not need to `enable kubernetes` in your docker desktop app.
 If its enabled, disable it and click `Apply & Restart`.
 
-Instead we will use `minikube` which will create and manage all the k8s resources we require as a normal container in docker engine.
+Instead we will use `k3d` which will create and manage all the k8s resources we require as a normal container in docker engine.
 
 ```
-$ brew install minikube
+$ brew install k3d
 ```
 
-### Minikube
+### k3d
 
-minikube is a mini master k8s node that you can run on your local machine in something like docker.
-To use minikube you need it to be running:
-
-```
-$ minikube config set driver hyperkit
-$ minikube start --memory 16384 --cpus 16 --disk-size=200g
-$ minikube addons enable ingress
-```
-
-If you ever need to reset minikube you can do:
+k3d lets you create a test registry and cluster like so
 
 ```
-$ minikube delete --all --purge
+$ export NODE_NAME=test-network-1
+$ export NODE_PORT=9081
+$ k3d cluster create $NODE_NAME -p "$NODE_PORT:80@loadbalancer" --registry-use k3d-registry.localhost
+$ k3d cluster start $NODE_NAME
 ```
 
-Once minikube is running you should see the container in docker.
+If you ever need to reset things you can just kill the docker containers and volumes:
+
+```
+$ docker rm $(docker ps -aq) --force
+$ docker volume prune --force || true
+```
+
+Once k3s is running you should see the container in docker.
 
 ```
 $ docker ps
 CONTAINER ID   IMAGE                                 COMMAND                  CREATED        STATUS              PORTS                                                                                                                                  NAMES
-57f73851bf08   gcr.io/k8s-minikube/kicbase:v0.0.25   "/usr/local/bin/entr…"   46 hours ago   Up About a minute   127.0.0.1:57954->22/tcp, 127.0.0.1:57955->2376/tcp, 127.0.0.1:57957->5000/tcp, 127.0.0.1:57958->8443/tcp, 127.0.0.1:57956->32443/tcp   minikube
+9b765411a2f2   rancher/k3s:v1.22.7-k3s1         "/bin/k3d-entrypoint…"   20 minutes ago   Up 20 minutes                                                   k3d-test-network-1-server-0
+878bc1bd630c   registry:2                       "/entrypoint.sh /etc…"   20 minutes ago   Up 20 minutes   0.0.0.0:12345->5000/tcp                         k3d-registry.localhost
 ```
 
 ### Kubectl
 
-kubectl is the CLI tool for kubernetes. If you have ran minikube it should have configured your kubectl to point to the local minikube cluster by default.
+kubectl is the CLI tool for kubernetes. If you have ran k3s it should have configured your kubectl to have a context for the local k3s cluster by default.
 
 You should be able to run something like:
 
@@ -643,41 +630,7 @@ kube-system            Active   45h
 kubernetes-dashboard   Active   45h
 ```
 
-All k8s have a default namespace and the other ones here are from kubernetes and minikube.
-
-We will use the namespace `openmined` to make it clear what belongs to the Grid stack and what is something else.
-
-```
-$ kubectl create namespace openmined
-```
-
-```
-$ kubectl get all -n openmined
-No resources found in openmined namespace.
-```
-
-### Kubectx
-
-kubectx is a package of other helpful utilities which can help you do things like set a default namespace.
-
-```
-$ brew install kubectx
-```
-
-Now we can use a tool like `kubens` to change the default namespace to openmined.
-
-```
-$ kubens openmined
-Context "minikube" modified.
-Active namespace is "openmined".
-```
-
-Now when we use commands without `-n` we get openmined by default.
-
-```
-$ kubectl get all
-No resources found in openmined namespace.
-```
+All k8s have a default namespace and the other ones here are from kubernetes.
 
 ### Helm Charts
 
@@ -695,19 +648,6 @@ $ brew install devspace
 
 ### Deploy to local dev
 
-First check that you have the right namespace:
-
-```
-$ devspace list namespaces
-Name                   Default   Exists
-default                false     true
-kube-node-lease        false     true
-kube-public            false     true
-kube-system            false     true
-kubernetes-dashboard   false     true
-openmined              *true*      true
-```
-
 Now run the `dev` command with `devspace`:
 
 To run a network with headscale VPN:
@@ -724,14 +664,37 @@ $ cd packages/grid
 $ devspace dev -b -p domain
 ```
 
-### Connect VPN in dev
-
-You can run the connect VPN settings using all the opened ports with:
+To deploy to your local k3s do the following:
 
 ```
-$ cd packages/grid
-$ python3 vpn/connect_vpn.py http://localhost:8088 http://localhost:8087 http://headscale:8080
+$ export NODE_NAME=test-network-1
+$ export NODE_PORT=9081
+$ devspace --no-warn --kube-context "k3d-$NODE_NAME" --namespace $NODE_NAME \
+           --var DOMAIN_NAME=$NODE_NAME \
+           --var NETWORK_CHECK_INTERVAL=5 \
+           --var CONTAINER_REGISTRY=k3d-registry.localhost:12345/ \
+           deploy -b -p network
 ```
+
+The important thing to note is the custom container registry. This will tag the images with that local registry and k3s will know how to pull them from its custom registry.
+
+You may need to add this to your `/etc/hosts` file if you are not on linux:
+
+```
+127.0.0.1 k3d-registry.localhost
+```
+
+### k9s
+
+There is a tool like ctop which lets you easily see the kubernetes cluster called k9s.
+
+Install it like so:
+
+```
+$ brew install derailed/k9s/k9s
+```
+
+When you run it you can select the local context k3d-test-network-1 and see the namespace you deployed.
 
 ### Destroy the local deployment
 
@@ -854,6 +817,54 @@ Use port forwarding to access an internal service:
 
 ```
 $ kubectl port-forward deployment/tailscale :4000
+```
+
+### Deploy to Azure Kubernetes
+
+Create a cluster and optional registry.
+
+I named my registry: `omazuretest`
+
+Log into the registry with:
+
+```
+$ az acr login -n omazuretest.azurecr.io
+```
+
+Check you have permission by tagging and uploading nginx:
+
+```
+$ docker pull nginx:latest
+$ docker tag nginx omazuretest.azurecr.io/nginx
+$ docker push omazuretest.azurecr.io/nginx
+```
+
+#### Build and Push Images
+
+```
+devspace --no-warn --kube-context "azure-test" --namespace azure-network-1 --var DOMAIN_NAME=azure-network-1 --var CONTAINER_REGISTRY=omazuretest.azurecr.io/ build -b
+```
+
+#### Deploy
+
+```
+devspace --no-warn --kube-context "azure-test" --namespace azure-network-1 --var DOMAIN_NAME=azure-network-1 --var CONTAINER_REGISTRY=omazuretest.azurecr.io/ deploy -p network
+```
+
+### Render Plain Kubernetes Manifests
+
+You can just output plain kubernetes manifests like so:
+
+For domains:
+
+```
+$ devspace render -p domain --skip-build --silent > k8s/rendered/domain.yaml
+```
+
+For networks:
+
+```
+$ devspace render -p network --skip-build --silent > k8s/rendered/network.yaml
 ```
 
 ## Publish

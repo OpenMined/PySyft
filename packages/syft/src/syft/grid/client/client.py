@@ -111,7 +111,12 @@ def login(
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     verbose: Optional[bool] = True,
+    timeout: Optional[float] = None,
+    retry: Optional[int] = None,
 ) -> Client:
+
+    retry = 5 if retry is None else retry  # Default to 5 retries
+    timeout = 10 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
 
@@ -160,7 +165,37 @@ def login(
         credentials = {"email": email, "password": password}
 
     # connecting to domain
-    node = connect(url=grid_url, credentials=credentials, conn_type=conn_type)
+    node = None
+    timeout_btw_retries = timeout
+    retry_attempt = 1
+
+    while node is None and retry_attempt <= retry:
+        try:
+            node = connect(
+                url=grid_url,
+                credentials=credentials,
+                conn_type=conn_type,
+                timeout=timeout,
+            )
+        except requests.ConnectTimeout:
+            raise requests.ConnectTimeout(
+                f"Connection to node with: {url} timed out. Please try again !!!"
+            )
+        except requests.ConnectionError as e:
+            if retry_attempt <= retry:
+                print(
+                    f"\nConnectionError: Retrying again.... Attempt: {retry_attempt}",
+                    end="\r",
+                )
+                time.sleep(timeout_btw_retries)
+            else:
+                raise e
+        retry_attempt += 1
+
+    if node is None:
+        raise requests.ConnectionError(
+            f"Failed to connect to node with: {url}. Please try again !!!"
+        )
 
     if verbose:
         # bit of fanciness

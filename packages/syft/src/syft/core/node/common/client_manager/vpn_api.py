@@ -32,7 +32,8 @@ class VPNAPI:
             pass
 
         if status == "ok":
-            print(f"🔌 {self.client} successfully connected to the VPN: {grid_url}")
+            # print(f"🔌 {self.client} successfully connected to the VPN: {grid_url}")
+            pass
         else:
             print(f"❌ {self.client} failed to connect to the VPN: {grid_url}")
 

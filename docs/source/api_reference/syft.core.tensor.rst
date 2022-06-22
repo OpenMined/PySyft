@@ -1,50 +1,107 @@
-syft.core.tensor
-================
+syft.core.tensor package
+========================
 
 .. automodule:: syft.core.tensor
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   
-   
-   
+Subpackages
+-----------
 
-   
-   
-   .. rubric:: Functions
+.. toctree::
+   :maxdepth: 2
 
-   .. autosummary::
-   
-      create_tensor_ast
-   
-   
-
-   
-   
-   
-
-   
-   
-   
-
-
-
-.. rubric:: Modules
-
-.. autosummary::
-   :toctree:
-   :recursive:
-
-   syft.core.tensor.ancestors
    syft.core.tensor.autodp
-   syft.core.tensor.autograd
-   syft.core.tensor.broadcastable
-   syft.core.tensor.fixed_precision_tensor
-   syft.core.tensor.fixed_precision_tensor_ancestor
-   syft.core.tensor.functions
-   syft.core.tensor.manager
-   syft.core.tensor.passthrough
-   syft.core.tensor.scalar_tensor
    syft.core.tensor.smpc
-   syft.core.tensor.tensor
-   syft.core.tensor.types
-   syft.core.tensor.util
 
+Submodules
+----------
+
+syft.core.tensor.ancestors module
+---------------------------------
+
+.. automodule:: syft.core.tensor.ancestors
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.broadcastable module
+-------------------------------------
+
+.. automodule:: syft.core.tensor.broadcastable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.config module
+------------------------------
+
+.. automodule:: syft.core.tensor.config
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.fixed\_precision\_tensor module
+------------------------------------------------
+
+.. automodule:: syft.core.tensor.fixed_precision_tensor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.fixed\_precision\_tensor\_ancestor module
+----------------------------------------------------------
+
+.. automodule:: syft.core.tensor.fixed_precision_tensor_ancestor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.functions module
+---------------------------------
+
+.. automodule:: syft.core.tensor.functions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.lazy\_repeat\_array module
+-------------------------------------------
+
+.. automodule:: syft.core.tensor.lazy_repeat_array
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.manager module
+-------------------------------
+
+.. automodule:: syft.core.tensor.manager
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.passthrough module
+-----------------------------------
+
+.. automodule:: syft.core.tensor.passthrough
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.tensor module
+------------------------------
+
+.. automodule:: syft.core.tensor.tensor
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.tensor.util module
+----------------------------
+
+.. automodule:: syft.core.tensor.util
+   :members:
+   :undoc-members:
+   :show-inheritance:
