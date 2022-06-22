@@ -973,7 +973,6 @@ class GammaTensor:
         pytree_node=False, default_factory=lambda: str(randint(0, 2**31 - 1))
     )  # TODO: Need to check if there are any scenarios where this is not secure
     state: dict = flax.struct.field(pytree_node=False, default_factory=dict)
-    fpt_values: Optional[FixedPrecisionTensor] = None
 
     def __post_init__(
         self,
@@ -981,12 +980,11 @@ class GammaTensor:
         if len(self.state) == 0 and self.func is not no_op:
             self.state[self.id] = self
 
-        if not isinstance(self.child, FixedPrecisionTensor):
-            # child = the actual private data
-            self.child = FixedPrecisionTensor(self.child)
-
     def decode(self) -> np.ndarray:
-        return self.child.decode()
+        if isinstance(self.child, FixedPrecisionTensor):
+            return self.child.decode()
+        else:
+            return self.child
 
     def run(self, state: dict) -> Callable:
         """This method traverses the computational tree and returns all the private inputs"""
@@ -1393,6 +1391,7 @@ class GammaTensor:
         # output_state.update(self.state)
 
         child = self.child.sum()
+
         # Change sum before Merge
         min_val, max_val = compute_min_max(self.min_val, self.max_val, None, "sum")
 
@@ -1441,10 +1440,6 @@ class GammaTensor:
             raise Exception(
                 "Data type of private values is not np.int64: ", self.child.dtype
             )
-        fpt_values = self.fpt_values
-        fpt_encode_func = None  # Function for encoding noise
-        if fpt_values is not None:
-            fpt_encode_func = fpt_values.encode
 
         if (
             not self.state
@@ -1462,7 +1457,6 @@ class GammaTensor:
             ledger=ledger,
             get_budget_for_user=get_budget_for_user,
             deduct_epsilon_for_user=deduct_epsilon_for_user,
-            fpt_encode_func=fpt_encode_func,
         )
 
     def expand_dims(self, axis: int) -> GammaTensor:
@@ -1573,7 +1567,11 @@ class GammaTensor:
         # what is the difference between inputs and value which do we serde
         # do we need to serde func? if so how?
         # what about the state dict?
-        gamma_msg.child = serialize(self.child, to_bytes=True)
+        if np.isscalar(self.child):
+            child = np.array(self.child)
+        else:
+            child = self.child
+        gamma_msg.child = serialize(child, to_bytes=True)
         gamma_msg.state = serialize(self.state, to_bytes=True)
         gamma_msg.dataSubjectsIndexed = capnp_serialize(
             self.data_subjects.data_subjects_indexed
