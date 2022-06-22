@@ -16,6 +16,7 @@ import numpy as np
 from tqdm import tqdm
 
 # relative
+from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ..tensor.lazy_repeat_array import lazyrepeatarray
 from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
@@ -103,7 +104,12 @@ def vectorized_publish(
 
         # t1 = time()
         # Calculate everything needed for RDP
-        value = input_tensor.child
+
+        if isinstance(input_tensor.child, FixedPrecisionTensor):
+            value = input_tensor.child.decode()
+        else:
+            value = input_tensor.child
+
         while isinstance(value, PassthroughTensor):
             value = value.child
 
