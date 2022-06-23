@@ -507,6 +507,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
 
     def sum(
         self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """Apply the "truediv" operation between "self" and "other"
 
@@ -517,7 +519,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
-        min_vals, max_vals = compute_min_max(self.min_vals, self.max_vals, None, "sum")
+        min_vals = self.min_vals.sum(*args, **kwargs)
+        max_vals = self.max_vals.sum(*args, **kwargs)
 
         result = TensorWrappedGammaTensorPointer(
             data_subjects=self.data_subjects,
@@ -534,7 +537,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -561,8 +564,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
             args=[],
             kwargs={},
         )
-
-        result.public_shape = np.array([1]).shape
+        dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
+        result.public_shape = dummy_res.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -1390,10 +1393,10 @@ class GammaTensor:
         output_state[self.id] = self
         # output_state.update(self.state)
 
-        child = self.child.sum()
+        child = self.child.sum(*args, **kwargs)
 
-        # Change sum before Merge
-        min_val, max_val = compute_min_max(self.min_val, self.max_val, None, "sum")
+        min_val = self.min_val.sum(*args, **kwargs)
+        max_val = self.max_val.sum(*args, **kwargs)
 
         return GammaTensor(
             child=child,

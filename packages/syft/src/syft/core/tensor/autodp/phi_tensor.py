@@ -141,6 +141,13 @@ class TensorWrappedPhiTensorPointer(Pointer):
         )
         return self_mpc
 
+    @property
+    def shape(self) -> Optional[Tuple[int, ...]]:
+        if hasattr(self, "public_shape"):
+            return self.public_shape
+        else:
+            return None
+
     def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
         # we want to get the return type which matches the attr_path_and_name
         # so we ask lib_ast for the return type name that matches out
@@ -497,6 +504,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def sum(
         self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
     ) -> Union[
         TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
     ]:
@@ -510,7 +519,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
         result: Union[TensorWrappedGammaTensorPointer, TensorWrappedPhiTensorPointer]
-        min_vals, max_vals = compute_min_max(self.min_vals, self.max_vals, None, "sum")
+        min_vals = self.min_vals.sum(*args, **kwargs)
+        max_vals = self.max_vals.sum(*args, **kwargs)
         if len(self.data_subjects.one_hot_lookup) == 1:
             result = TensorWrappedPhiTensorPointer(
                 data_subjects=self.data_subjects,
@@ -534,7 +544,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -561,8 +571,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
             args=[],
             kwargs={},
         )
-
-        result.public_shape = np.array([1]).shape
+        dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
+        result.public_shape = dummy_res.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -1527,14 +1537,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     #         raise NotImplementedError
 
     def sum(
-        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
-        min_val = lazyrepeatarray(data=np.array(self.min_vals.sum(axis=None)), shape=())
-        max_val = lazyrepeatarray(data=np.array(self.max_vals.sum(axis=None)), shape=())
+        min_val = self.min_vals.sum(*args, **kwargs)
+        max_val = self.max_vals.sum(*args, **kwargs)
         if len(self.data_subjects.one_hot_lookup) == 1:
             return PhiTensor(
-                child=self.child.sum(),
+                child=self.child.sum(*args, **kwargs),
                 min_vals=min_val,
                 max_vals=max_val,
                 data_subjects=DataSubjectList.from_objs(
@@ -1544,7 +1556,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # TODO: Expand this later to include more args/kwargs
         res = GammaTensor(
-            child=self.child.sum(),
+            child=self.child.sum(*args, **kwargs),
             data_subjects=self.data_subjects.sum(),
             min_val=min_val,
             max_val=max_val,
