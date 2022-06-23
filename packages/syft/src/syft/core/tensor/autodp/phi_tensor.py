@@ -1114,6 +1114,64 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=rotated_data_value.max(),
         )
 
+    def mean(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
+    ) -> PhiTensor:
+        result =self.child.mean(axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=np.zeros_like(result),
+            ),
+            min_vals=lazyrepeatarray(
+                data=self.min_vals.data,
+                shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=self.max_vals.data,
+                shape=result.shape
+            )
+        )
+
+    def std(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> PhiTensor:
+        result = self.child.std(axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=np.zeros_like(result),
+            ),
+            min_vals=lazyrepeatarray(
+                data=0,
+                shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=0.25 * (self.max_vals.data - self.min_vals.data) ** 2,  # rough approximation, could be off
+                shape=result.shape
+            )
+        )
+
+    def sqrt(self) -> PhiTensor:
+        result = np.sqrt(self.child)
+        return PhiTensor(
+            child=result,
+            data_subjects=DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=np.zeros_like(result),
+            ),
+            min_vals=lazyrepeatarray(
+                data=np.sqrt(self.min_vals.data),
+                shape=result.shape
+            ),
+            max_vals=lazyrepeatarray(
+                data=np.sqrt(self.max_vals.data),
+                shape=result.shape
+            )
+        )
+
     def normalize(
         self, mean: Union[float, Sequence[float]], std: Union[float, Sequence[float]]
     ) -> PhiTensor:
