@@ -180,6 +180,10 @@ class lazyrepeatarray:
         res = np.array(self.to_numpy().sum(*args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
+    def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+        res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
+        return lazyrepeatarray(data=res, shape=res.shape)
+
     def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, lazyrepeatarray):
             if self.shape == other.shape:

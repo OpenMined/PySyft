@@ -551,6 +551,11 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
             return tensor
         return self.__class__(result)
 
+    def ones_like(self, *args, **kwargs) -> PassthroughTensor:
+        result = self.child.ones_like(*args, **kwargs)
+
+        return self.__class__(result)
+
     # numpy.take(a, indices, axis=None, out=None, mode='raise')
     def take(
         self,
