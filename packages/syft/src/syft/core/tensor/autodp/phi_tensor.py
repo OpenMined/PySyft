@@ -1599,6 +1599,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     data_subjects=self.data_subjects,
                 )
 
+    def clip(self, a_min: int, a_max: int):
+        data = self.child
+        output_data = np.clip(self.child, a_min,  a_max)
+
+        min_vals = np.clip(self.min_vals.data, a_min, a_max)
+        max_vals = np.clip(self.max_vals.data, a_min, a_max)
+
+        return PhiTensor(
+            child=output_data,
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+        )
+
     def transpose(self, *args: Any, **kwargs: Any) -> PhiTensor:
         """Transposes self.child, min_vals, and max_vals if these can be transposed, otherwise doesn't change them."""
         data: Sequence
