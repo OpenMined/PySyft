@@ -1741,33 +1741,30 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError  # type: ignore
 
     # Re enable after testing
-    # def dot(
-    #     self, other: Union[PhiTensor, GammaTensor, np.ndarray]
-    # ) -> Union[PhiTensor, GammaTensor]:
-    #     if isinstance(other, np.ndarray):
-    #         print("We here or what?")
-    #         return PhiTensor(
-    #             child=np.dot(self.child, other),
-    #             min_vals=np.dot(self.min_vals, other),
-    #             max_vals=np.dot(self.max_vals, other),
-    #             data_subjects=self.data_subjects,
-    #         )
-    #     elif isinstance(other, PhiTensor):
-    #         if (
-    #             len(self.data_subjects.one_hot_lookup) > 1
-    #             or len(other.data_subjects.one_hot_lookup) > 1
-    #         ):
-    #             return self.gamma.dot(other.gamma)
-    #         elif (
-    #             len(self.data_subjects.one_hot_lookup) == 1
-    #             and len(other.data_subjects.one_hot_lookup) == 1
-    #             and self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
-    #         ):
-    #             return self.gamma.dot(other.gamma)
-    #     elif isinstance(other, GammaTensor):
-    #         return self.gamma.dot(other)
-    #     else:
-    #         raise NotImplementedError
+    def dot(
+        self, other: Union[PhiTensor, GammaTensor, np.ndarray]
+    ) -> Union[PhiTensor, GammaTensor]:
+        if isinstance(other, np.ndarray):
+            return PhiTensor(
+                child=np.dot(self.child, other),
+                min_vals=np.dot(self.min_vals, other),
+                max_vals=np.dot(self.max_vals, other),
+                data_subjects=self.data_subjects,
+            )
+        elif isinstance(other, PhiTensor):
+            if self.data_subjects.one_hot_lookup == other.data_subjects.one_hot_lookup:
+                return PhiTensor(
+                    child=np.dot(self.child, other.child),
+                    min_vals=np.dot(self.min_vals, other.min_vals),
+                    max_vals=np.dot(self.max_vals, other.max_vals),
+                    data_subjects=self.data_subjects
+                )
+            else:
+                raise NotImplementedError
+        elif isinstance(other, GammaTensor):
+            return self.gamma.dot(other)
+        else:
+            raise NotImplementedError
 
     def sum(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
