@@ -63,8 +63,13 @@ class leaky_ReLU(Activation):
         self.last_forward = input_array
         return dp_leakyrelu(dp_tensor=input_array, slope=self.slope)
 
-    def derivative(self, input_array: Optional[PhiTensor]=None):
+    def derivative(self, input_array: Optional[PhiTensor] = None):
         last_forward = input_array if input_array else self.last_forward
         res = np.ones(last_forward.shape)
-        res[last_forward <= 0] = self.slope
-        return res
+        idx = last_forward <= 0
+        res[idx.child] = self.slope
+
+        return PhiTensor(child=res,
+                         data_subjects=last_forward.data_subjects,
+                         min_vals=last_forward.min_vals * 0,
+                         max_vals=last_forward.max_vals * 1)

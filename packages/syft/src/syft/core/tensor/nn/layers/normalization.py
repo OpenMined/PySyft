@@ -28,12 +28,10 @@ class BatchNorm(Layer):
 
         # step1: calculate the mean
         xmu = input - input.mean(axis=0)
-        print("Subtracted mean")
         # step3:
         var = xmu.std(axis=0)
         sqrtvar = (var + self.epsilon).sqrt()
 
-        print("square rooted")
         ivar = PhiTensor(
             child=sqrtvar.child ** -1,
             data_subjects=sqrtvar.data_subjects,
@@ -41,21 +39,14 @@ class BatchNorm(Layer):
             max_vals=lra(data=1/sqrtvar.max_vals.data,shape=sqrtvar.shape)
         )
 
-        print("got past reciprocal")
-
-
         # step5: normalization->x^
         xhat = xmu * ivar
-        print("got xhat")
 
         # step6: scale and shift
         gammax = xhat * self.gamma
-        print("got gammax")
         out = gammax + self.beta
-        print("got out")
 
         self.cache = (xhat, xmu, ivar, sqrtvar, var)
-        print("cached")
 
         return out
 
