@@ -1205,6 +1205,15 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=lazyrepeatarray(data=result.max(), shape=result.shape),
         )
 
+    def _argmax(self, axis: Optional[int]) -> PhiTensor:
+        return self.child.argmax(axis)
+
+    def unravel_argmax(self, axis: Optional[int] = None) -> Tuple[np.ndarray]:  # possible privacy violation?
+        arg_result = self._argmax(axis=axis)
+        shape = self.shape
+        return np.unravel_index(arg_result, shape)
+
+
     def mean(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
     ) -> PhiTensor:
