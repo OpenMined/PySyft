@@ -1028,6 +1028,49 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 ),
             )
 
+    def __setitem__(self, key, value: Union[PhiTensor, np.ndarray]) -> PhiTensor:
+        if isinstance(value, PhiTensor):
+            self.child[key] = value.child
+            minv = value.child.min()
+            maxv = value.child.max()
+
+            if minv < self.min_vals.data.min():
+                self.min_vals.data = minv
+
+            if maxv > self.max_vals.data.max():
+                self.max_vals.data = maxv
+
+            if self.data_subjects.one_hot_lookup != value.data_subjects.one_hot_lookup:
+                raise NotImplementedError
+
+            return PhiTensor(
+                child=self.child,
+                data_subjects=self.data_subjects,
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+            )
+        elif isinstance(value, np.ndarray):
+            self.child[key] = value
+            minv = value.min()
+            maxv = value.max()
+
+            if minv < self.min_vals.data.min():
+                self.min_vals.data = minv
+
+            if maxv > self.max_vals.data.max():
+                self.max_vals.data = maxv
+
+            return PhiTensor(
+                child=self.child,
+                data_subjects=self.data_subjects,
+                min_vals=self.min_vals,
+                max_vals=self.max_vals
+            )
+        else:
+            raise NotImplementedError
+
+
+
     def reshape(self, *shape: Tuple) -> PhiTensor:
 
         data = self.child
@@ -1113,6 +1156,22 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=rotated_data_value.min(),
             max_vals=rotated_data_value.max(),
         )
+
+    def max(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+    ) -> PhiTensor:
+        subject = self.data_subjects.data_subjects_indexed.argmax(axis)
+        result = self.child.max(axis)
+        return PhiTensor(
+            child=result,
+            data_subjects=DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup[subject],
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed[subject]
+            ),
+            min_vals=lazyrepeatarray(data=result.min(), shape=result.shape),
+            max_vals=lazyrepeatarray(data=result.max(), shape=result.shape)
+        )
+
 
     def mean(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
