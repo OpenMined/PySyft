@@ -221,7 +221,7 @@ async def tff_train_federated(
 def tff_program(
     node,
     params,
-    model
+    func_model
 ):
     dataset_id = str(params['dataset_id'])
     total_rounds = int(params['rounds'])
@@ -238,6 +238,7 @@ def tff_program(
     dataset_objs = node.datasets.get(dataset_id)[1]
     images = node.store.get(dataset_objs[0].obj).data.child.child.decode()
     labels = node.store.get(dataset_objs[1].obj).data.child.child.decode()
+
 
 
     def preprocess(images, labels):
@@ -264,15 +265,23 @@ def tff_program(
     aggregation_factory = tff.learning.model_update_aggregator.dp_aggregator(
       noise_multiplier, clients_per_round)
 
+    print(type(func_model))
+    print(func_model.initial_weights)
+
+    # model = tff.learning.models.model_from_functional(func_model)
+    model = func_model
+
+    debug('model created')
+    
     iterative_process = tff.learning.algorithms.build_unweighted_fed_avg(
-    lambda: model_fn(input_spec),
+    lambda: model,
     client_optimizer_fn=lambda: tf.keras.optimizers.SGD(learning_rate=0.02),
     server_optimizer_fn=lambda: tf.keras.optimizers.SGD(learning_rate=1.0),
     )
 
     initialize = iterative_process.initialize
     train = iterative_process.next
-    evaluation = tff.learning.build_federated_evaluation(lambda: model_fn(input_spec))
+    evaluation = tff.learning.build_federated_evaluation(model)
 
     debug('TFF computations createad')
 

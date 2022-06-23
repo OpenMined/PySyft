@@ -1,12 +1,18 @@
-import tensorflow_federated as tff
-import tensorflow as tf
-from tensorflow_federated.python.core.impl.types import computation_types
-from tensorflow_federated.proto.v0 import computation_pb2 as pb
-from ......core.common.uid import UID
+# stdlib
 import collections
 
+# third party
+import tensorflow as tf
+import tensorflow_federated as tff
+from tensorflow_federated.proto.v0 import computation_pb2 as pb
+from tensorflow_federated.python.core.impl.types import computation_types
+
+# relative
+from ......core.common.uid import UID
+
+
 class MedNISTBackend(tff.framework.DataBackend):
-    
+
     def __init__(self, node):
         self._node = node
 
@@ -22,11 +28,11 @@ class MedNISTBackend(tff.framework.DataBackend):
                 x = tf.reshape(images, [-1, 64*64]),
                 y = tf.reshape(labels, [-1, 1]) // (2**16),
             )
-            
+
         return dataset.map(preprocess)
 
 class PySyftDataBackend(tff.framework.DataBackend):
-    
+
     def __init__(self, store):
         self._store = store
 
@@ -35,7 +41,7 @@ class PySyftDataBackend(tff.framework.DataBackend):
         uid = UID.from_string(data.uri)
         # print(self._store.get(uid).data.numpy())
         return self._store.get(uid).data.child.child.child
-    
+
 class TestDataBackend(tff.framework.DataBackend):
 
   def __init__(self, uri, value, type_spec):
@@ -51,8 +57,8 @@ class TestDataBackend(tff.framework.DataBackend):
     return self._value
 
 # class TestDatasetDataSource():
-    
+
 #     def __init__(self):
 #         pass
-    
+
 #     def
