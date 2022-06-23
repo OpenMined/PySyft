@@ -2,11 +2,10 @@
 from __future__ import annotations
 
 # stdlib
-from collections.abc import KeysView
 from typing import Any
-from typing import Dict
 from typing import Tuple
 from typing import Union
+from typing.collections import KeysView
 
 # third party
 from nacl.encoding import HexEncoder
@@ -31,7 +30,7 @@ class NodeCredentials(BaseModel):
         return self.__dict__.__getitem__(key)
 
     @staticmethod
-    def from_objs(*args: Tuple[Any], **kwargs: Dict[str, Any]) -> NodeCredentials:
+    def from_objs(*args: Tuple[Any], **kwargs: Any) -> NodeCredentials:
         # TODO: we should investigate a way to automatically coerce the right types
         # back and forth with Pydantic and our storage layer
         return NodeCredentials(

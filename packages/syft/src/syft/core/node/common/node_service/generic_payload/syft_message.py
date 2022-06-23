@@ -1,7 +1,9 @@
 # stdlib
-from collections.abc import KeysView
+
+# stdlib
 from typing import Any
 from typing import Dict
+from typing import KeysView
 from typing import List
 from typing import Optional
 
