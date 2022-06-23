@@ -1,9 +1,13 @@
-from typing import Optional, Callable
+# stdlib
+from typing import Callable
+from typing import Optional
 
+# third party
 import torch
-
-from ..autodp.phi_tensor import PhiTensor
 from torch.optim import Optimizer
+
+# relative
+from ..autodp.phi_tensor import PhiTensor
 
 
 class AdaMax(Optimizer):
