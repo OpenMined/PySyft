@@ -3,9 +3,9 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
+from typing import KeysView
 from typing import Tuple
 from typing import Union
-from typing.collections import KeysView
 
 # third party
 from nacl.encoding import HexEncoder
