@@ -139,6 +139,10 @@ class lazyrepeatarray:
         return self.__class__(data=result, shape=result.shape)
 
         # raise Exception("not sure how to do this yet")
+    
+    def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+        res = np.array(np.zeros_like(self.to_numpy(), *args, **kwargs))
+        return lazyrepeatarray(data=res, shape=res.shape)
 
     def __rmatmul__(self, other: Any) -> lazyrepeatarray:
         """

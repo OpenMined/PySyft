@@ -1032,6 +1032,28 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 ),
             )
 
+    def zeros_like(
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Union[PhiTensor, GammaTensor]:
+        # TODO: Add support for axes arguments later
+        min_vals = self.min_vals.zeros_like(*args, **kwargs)
+        max_vals = self.max_vals.zeros_like(*args, **kwargs)
+
+        child = (
+            np.zeros_like(self.child, *args, **kwargs)
+            if isinstance(self.child, np.ndarray)
+            else self.child.ones_like(*args, **kwargs)
+        )
+
+        return PhiTensor(
+            child=child,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            data_subjects=self.data_subjects,
+        )
+
     def __setitem__(self, key, value: Union[PhiTensor, np.ndarray]) -> PhiTensor:
         if isinstance(value, PhiTensor):
             self.child[key] = value.child
