@@ -1103,7 +1103,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=output,
             data_subjects=self.data_subjects,
             min_vals=np.abs(self.min_vals.data),
-            max_vals=np.abs(self.min_vals.data)
+            max_vals=np.abs(self.min_vals.data),
         )
 
     def reshape(self, *shape: Tuple) -> PhiTensor:
@@ -1501,6 +1501,23 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
+    def __rtruediv__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
+
+        if is_acceptable_simple_type(other):
+            return PhiTensor(
+                child=(1 / self.child) * other,
+                min_vals=(1 / self.min_vals) * other,
+                max_vals=(1 / self.max_vals) * other,
+                data_subjects=self.data_subjects,
+                # scalar_manager=self.scalar_manager,
+            )
+
+        elif isinstance(other, GammaTensor):
+            return (1 / self.gamma) * other
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
     def __matmul__(
         self, other: Union[np.ndarray, PhiTensor]
     ) -> Union[PhiTensor, GammaTensor]:
@@ -1601,7 +1618,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def clip(self, a_min: int, a_max: int):
         data = self.child
-        output_data = np.clip(self.child, a_min,  a_max)
+        output_data = np.clip(self.child, a_min, a_max)
 
         min_vals = np.clip(self.min_vals.data, a_min, a_max)
         max_vals = np.clip(self.max_vals.data, a_min, a_max)
