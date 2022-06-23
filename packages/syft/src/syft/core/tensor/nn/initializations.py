@@ -34,7 +34,6 @@ class Uniform(Initializer):
         return np.array(np.random.uniform(-self.scale, self.scale, size=size))
 
 
-
 def decompose_size(size):
     if len(size) == 2:
         fan_in = size[0]

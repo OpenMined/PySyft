@@ -9,60 +9,43 @@ from torch import nn
 # relative
 from ...adp.data_subject_list import DataSubjectList as DSL
 from ..autodp.phi_tensor import PhiTensor
+from .utils import dp_log
+from .utils import dp_maximum
 
 
-class CrossEntropyLoss(nn.Module):
-    def __init__(
-        self,
-        weight: Optional[Tensor] = None,
-        size_average=None,
-        ignore_index: int = -100,
-        reduce=None,
-        reduction: str = "mean",
-    ):
-        super(CrossEntropyLoss, self).__init__()
-        self.weight = weight
-        self.size_average = size_average
-        self.ignore_index = ignore_index
-        self.reduce = reduce
-        self.reduction = reduction
-        self.func = nn.CrossEntropyLoss(
-            self.weight,
-            self.size_average,
-            self.ignore_index,
-            self.reduce,
-            self.reduction,
-        )
+class BinaryCrossEntropy:
+    def __init__(self, epsilon=1e-11):
+        self.epsilon = epsilon
 
-    def forward(self, input: PhiTensor, target: PhiTensor):
-        input_asarray = input.child
-        target_asarray = target.child
+    def forward(self, outputs, targets):
+        """Forward pass.
 
-        data = (
-            self.func(Tensor(input_asarray), Tensor(target_asarray).long())
-            .detach()
-            .numpy()
-        )
+        .. math:: L = -t \\log(p) - (1 - t) \\log(1 - p)
 
-        minv = (
-            self.func(
-                Tensor(np.ones_like(input_asarray) * input.min_vals.data),
-                Tensor(np.ones_like(target_asarray) * target.min_vals.data).long(),
-            )
-            .detach()
-            .numpy()
-        )
-        maxv = self.func(
-            Tensor(np.ones_like(input_asarray) * input.max_vals.data),
-            Tensor(np.ones_like(target_asarray) * target.max_vals.data).long(),
-        )
+        Parameters
+        ----------
+        outputs : numpy.array
+            Predictions in (0, 1), such as sigmoidal output of a neural network.
+        targets : numpy.array
+            Targets in [0, 1], such as ground truth labels.
+        """
+        outputs = outputs.clip(self.epsilon, 1 - self.epsilon)
+        log_loss = targets * dp_log(outputs) + ((targets * -1) + 1) * dp_log((outputs * -1) + 1)
+        log_loss = log_loss.sum(axis=1) * -1
+        return log_loss.mean()
 
-        return PhiTensor(
-            child=data,
-            data_subjects=DSL(
-                one_hot_lookup=input.data_subjects.one_hot_lookup,
-                data_subjects_indexed=np.zeros_like(data),
-            ),
-            min_vals=minv,
-            max_vals=maxv,
-        )
+    def backward(self, outputs: PhiTensor, targets: PhiTensor):
+        """Backward pass.
+        Parameters
+        ----------
+        outputs : numpy.array
+            Predictions in (0, 1), such as sigmoidal output of a neural network.
+        targets : numpy.array
+            Targets in [0, 1], such as ground truth labels.
+        """
+        outputs = outputs.clip(self.epsilon, 1 - self.epsilon)
+        divisor = dp_maximum(outputs * ((outputs * -1) + 1), self.epsilon)
+        return (outputs - targets) * divisor.reciprocal()
+
+    def __str__(self):
+        return self.__class__.__name__

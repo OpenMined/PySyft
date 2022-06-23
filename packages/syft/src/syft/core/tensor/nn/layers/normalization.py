@@ -31,14 +31,7 @@ class BatchNorm(Layer):
         # step3:
         var = xmu.std(axis=0)
         sqrtvar = (var + self.epsilon).sqrt()
-
-        ivar = PhiTensor(
-            child=sqrtvar.child ** -1,
-            data_subjects=sqrtvar.data_subjects,
-            min_vals=lra(data=1/sqrtvar.min_vals.data,shape=sqrtvar.shape),
-            max_vals=lra(data=1/sqrtvar.max_vals.data,shape=sqrtvar.shape)
-        )
-
+        ivar = sqrtvar.reciprocal()
         # step5: normalization->x^
         xhat = xmu * ivar
 
@@ -47,38 +40,59 @@ class BatchNorm(Layer):
         out = gammax + self.beta
 
         self.cache = (xhat, xmu, ivar, sqrtvar, var)
-
         return out
 
     def backward(self, pre_grad, *args, **kwargs):
+        """
+        If you get stuck, here's a resource:
+        https://kratzert.github.io/2016/02/12/understanding-the-
+        gradient-flow-through-the-batch-normalization-layer.html
+
+        Note:
+            - I removed the np.ones() at a few places where I
+               thought it wasn't making a difference
+            - I occasionally have kernel crashes on my 8GB machine
+            when running this. Perhaps too many large temp vars?
+            could also be due to too many large numbers.
+        """
+
         xhat, xmu, ivar, sqrtvar, var = self.cache
 
-        N, D = pre_grad.shape
+        N, D,x,y = pre_grad.shape
+        #         print(f"input shape of (N,D,x,y) = {(N, D, x, y)}")
 
         # step6
-        self.dbeta = np.sum(pre_grad, axis=0)
+        self.dbeta = pre_grad.sum(axis=0)
         dgammax = pre_grad
-        self.dgamma = np.sum(dgammax * xhat, axis=0)
+        self.dgamma = (dgammax * xhat).sum( axis=0)
         dxhat = dgammax * self.gamma
+        #         print(f"step 6: shaep of dbeta = {self.dbeta.shape}")
+        #         print(f"step 6: shaep of dgamma = {self.dgamma.shape}")
+        #         print(f"step 6: shaep of dxhat = {dxhat.shape}")
 
         # step5
-        divar = np.sum(dxhat * xmu, axis=0)
+        divar = (dxhat * xmu).sum(axis=0)
         dxmu1 = dxhat * ivar
 
         # step4
-        dsqrtvar = -1. / (sqrtvar ** 2) * divar
-        dvar = 0.5 * 1. / np.sqrt(var + self.epsilon) * dsqrtvar
+        dsqrtvar = -1. / (sqrtvar * sqrtvar) * divar
+        #         print(f"step 4: shaep of dsqrtvar = {dsqrtvar.shape}")
+        inv_var_eps_sqrt = (var + self.epsilon).sqrt().reciprocal()
+
+        #         print(f"var + eps shape:", inv_var_eps_sqrt.shape)
+        dvar = dsqrtvar * 0.5 * inv_var_eps_sqrt
+        #         print(f"dvar shape:", dvar.shape)
+
 
         # step3
-        dsq = 1. / N * np.ones((N, D)) * dvar
-        dxmu2 = 2 * xmu * dsq
+        dxmu2 = xmu * dvar * (2/N)
 
         # step2,
         dx1 = (dxmu1 + dxmu2)
 
-        # step1,
-        dmu = -1 * np.sum(dxmu1 + dxmu2, axis=0)
-        dx2 = 1. / N * np.ones((N, D)) * dmu
+        #         # step1,
+        dmu = (dxmu1 + dxmu2).sum(axis=0) * -1
+        dx2 = dmu * (1/N)
 
         # step0 done!
         dx = dx1 + dx2

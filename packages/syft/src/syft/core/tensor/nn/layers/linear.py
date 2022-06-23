@@ -35,11 +35,12 @@ class Linear(Layer):
         self.last_input = input
         return input.dot(self.W) + self.b
 
-    def backward(self, pre_grad, *args, **kwargs):
-        self.dW = np.dot(self.last_input.T, pre_grad)
-        self.db = np.mean(pre_grad, axis=0)
+    def backward(self, pre_grad: PhiTensor, *args, **kwargs):
+        self.dW = self.last_input.T.dot(pre_grad)  # Should this transpose just the last 2 indices?
+        #         self.dW = self.last_input.swapaxes(-1, -2)
+        self.db = pre_grad.mean(axis=0)
         if not self.first_layer:
-            return np.dot(pre_grad, self.W.T)
+            return pre_grad.dot(self.W.T)
 
     @property
     def params(self):

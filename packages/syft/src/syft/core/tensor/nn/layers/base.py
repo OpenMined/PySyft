@@ -2,7 +2,7 @@
 from ...autodp.phi_tensor import PhiTensor
 
 
-class Layer(object):
+class Layer:
     """
     Subclassed when implementing new types of layers.
 

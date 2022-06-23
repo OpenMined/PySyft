@@ -53,7 +53,6 @@ class Convolution(Layer):
 
         # output shape
         self.out_shape = (nb_batch, self.nb_filter, height, width)
-        print(self.out_shape)
 
         # filters
         self.W = self.init((self.nb_filter, pre_nb_filter, filter_height, filter_width))
@@ -117,7 +116,7 @@ class Convolution(Layer):
         else:
             raise NotImplementedError
 
-#         filter_h, filter_w = self.filter_size
+        #         filter_h, filter_w = self.filter_size
         old_img_h, old_img_w = self.last_input.shape[-2:]
 
         # gradients
@@ -134,24 +133,26 @@ class Convolution(Layer):
                                        h:old_img_h - filter_height + h + 1:self.stride,
                                        w:old_img_w - filter_width + w + 1:self.stride]
                         delta_window = delta[:, r]
-                        self.dW[r, t, h, w] = np.sum(input_window * delta_window) / nb_batch
-
+                        self.dW[r, t, h, w] = ((input_window * delta_window).sum() * (1/nb_batch)).child
         # db
         for r in np.arange(self.nb_filter):
-            self.db[r] = np.sum(delta[:, r]) / nb_batch
+            self.db[r] = (delta[:, r].sum() * (1/nb_batch)).child
 
         # dX
         if not self.first_layer:
-            layer_grads = np.zeros(self.last_input.shape)
+            layer_grads = self.last_input.zeros_like()
             for b in np.arange(nb_batch):
                 for r in np.arange(self.nb_filter):
                     for t in np.arange(input_depth):
                         for h in np.arange(new_img_h):
                             for w in np.arange(new_img_w):
                                 h_shift, w_shift = h * self.stride, w * self.stride
-                                layer_grads[b, t, h_shift:h_shift + filter_height, w_shift:w_shift + filter_width] += \
-                                    self.W[r, t] * delta[b, r, h, w]
+                                temp = layer_grads[b, t, h_shift:h_shift + filter_height, w_shift:w_shift + filter_width]
+                                layer_grads[b, t, h_shift:h_shift + filter_height, w_shift:w_shift + filter_width] = temp+ (delta[b, r, h, w] * self.W[r, t])
+
             return layer_grads
+
+
 
     @property
     def params(self):
@@ -160,3 +161,4 @@ class Convolution(Layer):
     @property
     def grads(self):
         return self.dW, self.db
+
