@@ -29,12 +29,25 @@ To that end, we will also be installing everything you might need to run Jupyter
 notebooks with PySyft installed, such as if you're pretending to be
 both Data Owner and Data Scientist as a part of a tutorial or course.
 
+
+**We will be setting up the following dependencies before PySyft and PyGrid:**
+
+* Python >=3.9
+* pip
+* Conda 
+* Jupyter notebook
+* Docker
+
+If you already have all of them, jump here!
+
+.. TODO: add href to a page w only syft grid and hagrid commands
+
+
 What OS are you on?
 --------------------------------
 
-Installation differs greatly depending on whether your personal machine is
-running OSX, Linux, or Windows. The first
-step of your journey is to figure out which operating system you are running
+If you are unsure about the above, don't worry, we got you covered.
+The first step of your journey is to figure out which operating system you are running
 and choose the right tutorial for installation. 
 There are 3 types of operating systems for you to choose from:
 
