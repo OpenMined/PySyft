@@ -1006,18 +1006,26 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __getitem__(self, item: Union[str, int, slice, PassthroughTensor]) -> PhiTensor:
         if isinstance(item, PassthroughTensor):
+            data = self.child[item.child]
             return PhiTensor(
-                child=self.child.getitem(item.child),
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-                data_subjects=self.data_subjects,
+                child=data,
+                min_vals=lazyrepeatarray(data=data, shape=data.shape),
+                max_vals=lazyrepeatarray(data=data, shape=data.shape),
+                data_subjects=DataSubjectList(
+                    one_hot_lookup=self.data_subjects.one_hot_lookup,
+                    data_subjects_indexed=self.data_subjects.data_subjects_indexed[item.child]
+                ),
             )
         else:
+            data =self.child[item]
             return PhiTensor(
-                child=self.child.getitem(item),
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-                data_subjects=self.data_subjects,
+                child=data,
+                min_vals=lazyrepeatarray(data=data, shape=data.shape),
+                max_vals=lazyrepeatarray(data=data, shape=data.shape),
+                data_subjects=DataSubjectList(
+                    one_hot_lookup=self.data_subjects.one_hot_lookup,
+                    data_subjects_indexed=self.data_subjects.data_subjects_indexed[item]
+                ),
             )
 
     def reshape(self, *shape: Tuple) -> PhiTensor:
