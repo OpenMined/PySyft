@@ -4,11 +4,11 @@ from .layers.linear import Linear
 from .layers.normalization import BatchNorm
 from .layers.pooling import AvgPool
 from .layers.pooling import MaxPool
-from .loss import CrossEntropyLoss
+from .loss import BinaryCrossEntropy
 
 __all__ = [
     "Linear",
-    "CrossEntropyLoss",
+    "BinaryCrossEntropy",
     "Convolution",
     "BatchNorm",
     "AvgPool",
