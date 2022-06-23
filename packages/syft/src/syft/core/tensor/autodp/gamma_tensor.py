@@ -51,9 +51,11 @@ from ..config import DEFAULT_INT_NUMPY_TYPE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..lazy_repeat_array import compute_min_max
 from ..lazy_repeat_array import lazyrepeatarray
+from ..passthrough import PassthroughTensor  # type: ignore
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
+from ..util import implements
 
 if TYPE_CHECKING:
     # stdlib
@@ -64,7 +66,7 @@ else:
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedGammaTensorPointer(Pointer):
+class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
     __name__ = "TensorWrappedGammaTensorPointer"
     __module__ = "syft.core.tensor.autodp.gamma_tensor"
     __attr_allowlist__ = [
@@ -507,6 +509,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
 
     def sum(
         self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
     ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
         """Apply the "truediv" operation between "self" and "other"
 
@@ -517,7 +521,8 @@ class TensorWrappedGammaTensorPointer(Pointer):
             Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
-        min_vals, max_vals = compute_min_max(self.min_vals, self.max_vals, None, "sum")
+        min_vals = self.min_vals.sum(*args, **kwargs)
+        max_vals = self.max_vals.sum(*args, **kwargs)
 
         result = TensorWrappedGammaTensorPointer(
             data_subjects=self.data_subjects,
@@ -534,7 +539,7 @@ class TensorWrappedGammaTensorPointer(Pointer):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -561,8 +566,73 @@ class TensorWrappedGammaTensorPointer(Pointer):
             args=[],
             kwargs={},
         )
+        dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
+        result.public_shape = dummy_res.shape
+        result.public_dtype = self.public_dtype
 
-        result.public_shape = np.array([1]).shape
+        return result
+
+    def ones_like(
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Union[TensorWrappedGammaTensorPointer, MPCTensor]:
+        """Apply the "ones like" operation on self"
+
+        Args:
+            y (Union[TensorWrappedGammaTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedGammaTensorPointer,MPCTensor] : Result of the operation.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.ones_like"
+        min_vals = self.min_vals.ones_like(*args, **kwargs)
+        max_vals = self.max_vals.ones_like(*args, **kwargs)
+
+        result = TensorWrappedGammaTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        dummy_res = np.ones_like(np.empty(self.public_shape), *args, **kwargs)
+        result.public_shape = dummy_res.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -911,6 +981,15 @@ class TensorWrappedGammaTensorPointer(Pointer):
             public_shape=public_shape,
             public_dtype=public_dtype,
         )
+
+
+@implements(TensorWrappedGammaTensorPointer, np.ones_like)
+def ones_like(
+    tensor: TensorWrappedGammaTensorPointer,
+    *args: Tuple[Any, ...],
+    **kwargs: Dict[Any, Any],
+) -> TensorWrappedGammaTensorPointer:
+    return tensor.ones_like(*args, **kwargs)
 
 
 def create_lookup_tables(dictionary: dict) -> Tuple[List[str], dict, List[dict]]:
@@ -1390,10 +1469,10 @@ class GammaTensor:
         output_state[self.id] = self
         # output_state.update(self.state)
 
-        child = self.child.sum()
+        child = self.child.sum(*args, **kwargs)
 
-        # Change sum before Merge
-        min_val, max_val = compute_min_max(self.min_val, self.max_val, None, "sum")
+        min_val = self.min_val.sum(*args, **kwargs)
+        max_val = self.max_val.sum(*args, **kwargs)
 
         return GammaTensor(
             child=child,
@@ -1401,6 +1480,32 @@ class GammaTensor:
             min_val=min_val,
             max_val=max_val,
             func=_sum,
+            state=output_state,
+        )
+
+    def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
+        def _ones_like(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.ones_like(self.run(state))
+
+        output_state = dict()
+        output_state[self.id] = self
+        # output_state.update(self.state)
+
+        child = (
+            np.ones_like(self.child, *args, **kwargs)
+            if isinstance(self.child, np.ndarray)
+            else self.child.ones_like(*args, **kwargs)
+        )
+
+        min_val = self.min_val.ones_like(*args, **kwargs)
+        max_val = self.max_val.ones_like(*args, **kwargs)
+
+        return GammaTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_val=min_val,
+            max_val=max_val,
+            func=_ones_like,
             state=output_state,
         )
 
