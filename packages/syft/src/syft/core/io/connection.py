@@ -25,7 +25,10 @@ class BidirectionalConnection:
         traceback_and_raise(NotImplementedError)
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
+        self,
+        msg: SignedImmediateSyftMessageWithReply,
+        timeout: Optional[float] = None,
+        return_signed: bool = False,
     ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 
@@ -70,7 +73,10 @@ class ClientConnection:
         self.opt_bidirectional_conn = BidirectionalConnection()
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
+        self,
+        msg: SignedImmediateSyftMessageWithReply,
+        timeout: Optional[float] = None,
+        return_signed: bool = False,
     ) -> SignedImmediateSyftMessageWithoutReply:
         traceback_and_raise(NotImplementedError)
 

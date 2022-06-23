@@ -68,20 +68,30 @@ class InitiateExchangeCredentialsWithNodeMessage(
             .with_path("/api/v1")
             .as_container_host()
         )
-        target_client = connect(url=target_url, timeout=10)
+
+        # we use our local keys so that signing and verification matches our node
+        target_client = connect(url=target_url, timeout=10, user_key=node.signing_key)
 
         # send credentials to other node
         credentials = node.get_credentials()
 
         # see ExchangeCredentialsWithNodeMessage below
-        response = target_client.networking.exchange_credentials_with_node(
+        signed_response = target_client.networking.exchange_credentials_with_node(
             credentials=credentials
         )
 
-        response_credentials = NodeCredentials(**response.payload.credentials)
+        # since we're getting back the SignedMessage it can't hurt to check once more
+        if not signed_response.is_valid:
+            raise Exception(
+                "Response was signed by a fake key or was corrupted in transit."
+            )
+
+        response_credentials = NodeCredentials(
+            **signed_response.message.payload.credentials  # type: ignore
+        )
 
         # can we get the associated verify_key?
-        response_credentials.validate(key=verify_key)
+        response_credentials.validate(key=signed_response.verify_key)
 
         # add response NodeCredentials
         node.node.add_or_update_node_credentials(credentials=response_credentials)

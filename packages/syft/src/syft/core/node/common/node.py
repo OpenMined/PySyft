@@ -1,12 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-CODING GUIDELINES:
-
-Do NOT (without talking to trask):
-- add another high level method for sending or receiving messages (like recv_eventual_msg_without_reply)
-- add a service to the list of services below unless you're SURE all nodes will need it!
-- serialize anything with pickle
-"""
+# future
+from __future__ import annotations
 
 # stdlib
 from typing import Any
@@ -18,6 +11,7 @@ from typing import TypeVar
 from typing import Union
 
 # third party
+from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
@@ -281,20 +275,11 @@ class Node(AbstractNode):
         # comes from the node. In order to do that, the node needs to generate keys
         # for itself to sign and verify with.
 
-        # create a signing key if one isn't provided
-        if signing_key is None:
-            self.signing_key = SigningKey.generate()
-        else:
-            self.signing_key = signing_key
-
-        # if verify key isn't provided, get verify key from signing key
-        if verify_key is None:
-            self.verify_key = self.signing_key.verify_key
-        else:
-            self.verify_key = verify_key
+        # update keys
+        if signing_key:
+            Node.set_keys(node=self, signing_key=signing_key)
 
         # PERMISSION REGISTRY:
-        self.root_verify_key = self.verify_key  # TODO: CHANGE
         self.guest_verify_key_registry = set()
         self.admin_verify_key_registry = set()
         self.cpl_ofcr_verify_key_registry = set()
@@ -326,9 +311,21 @@ class Node(AbstractNode):
                 elif type(self).__name__ == "Network":
                     self.network = location
                 info(f"Finished setting Node UID. {location}")
+            if setup.signing_key:
+                signing_key = SigningKey(setup.signing_key, encoder=HexEncoder)
+                Node.set_keys(node=self, signing_key=signing_key)
         except Exception:
             info("Setup hasnt run yet so ignoring set_node_uid")
             pass
+
+    @staticmethod
+    def set_keys(node: Node, signing_key: Optional[SigningKey] = None) -> None:
+        if signing_key is None:
+            signing_key = SigningKey.generate()
+
+        node.signing_key = signing_key
+        node.verify_key = signing_key.verify_key
+        node.root_verify_key = node.verify_key  # TODO: CHANGE
 
     @property
     def icon(self) -> str:

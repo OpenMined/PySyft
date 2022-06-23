@@ -37,7 +37,7 @@ class AbstractNodeClient(Address):
         raise NotImplementedError
 
     def send_immediate_msg_with_reply(
-        self, msg: Any, timeout: Optional[float] = None
+        self, msg: Any, timeout: Optional[float] = None, return_signed: bool = False
     ) -> Any:
         raise NotImplementedError
 

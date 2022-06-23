@@ -12,7 +12,8 @@ from nacl.encoding import HexEncoder
 from nacl.signing import VerifyKey
 from pydantic import BaseModel
 
-# from ......core.node.common.exceptions import InvalidNodeCredentials
+# relative
+from ......core.node.common.exceptions import InvalidNodeCredentials
 
 
 class NodeCredentials(BaseModel):
@@ -46,13 +47,9 @@ class NodeCredentials(BaseModel):
         else:
             verify_key = self.verify_key
 
-        # print("comparing credentials key", key)
-        # print("comparing credentials verify_key", verify_key)
-
         if verify_key == key:
             return True
-        return True
 
-        # raise InvalidNodeCredentials(
-        #     f"Credentials for {self.node_name}: {self.node_uid} do not match"
-        # )
+        raise InvalidNodeCredentials(
+            f"Credentials for {self.node_name}: {self.node_uid} do not match"
+        )

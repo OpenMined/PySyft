@@ -206,12 +206,14 @@ class Domain(Node):
 
     def initial_setup(  # nosec
         self,
+        signing_key: SigningKey,
         first_superuser_name: str = "Jane Doe",
         first_superuser_email: str = "info@openmined.org",
         first_superuser_password: str = "changethis",
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
     ) -> Domain:
+        Node.set_keys(node=self, signing_key=signing_key)
 
         # Build Syft Message
         msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
@@ -222,6 +224,7 @@ class Domain(Node):
             domain_name=domain_name,
             budget=first_superuser_budget,
             reply_to=self.address,
+            signing_key=signing_key,
         ).sign(signing_key=self.signing_key)
 
         # Process syft message
@@ -457,7 +460,7 @@ class Domain(Node):
             self.environments.clear()
             self.association_requests.clear()
             self.datasets.clear()
-            self.initial_setup()
+            self.initial_setup(signing_key=self.signing_key)
             return True
 
         return False

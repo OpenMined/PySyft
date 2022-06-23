@@ -1,4 +1,5 @@
 # relative
+from .....core.common.message import SignedMessage
 from ...abstract.node import AbstractNodeClient
 from ..action.exception_action import ExceptionMessage
 from ..node_service.node_credential.node_credential_messages import (
@@ -19,7 +20,6 @@ class NodeNetworkingAPI(NewRequestAPI):
     def initiate_exchange_credentials(self, client: ClientLike) -> None:
         # this should be run by a user on their node (probably a domain)
         target_url = self.get_client_url(client).base_url
-
         signed_msg = InitiateExchangeCredentialsWithNodeMessage(
             address=self.client.address,
             reply_to=self.client.address,
@@ -36,9 +36,10 @@ class NodeNetworkingAPI(NewRequestAPI):
 
     def exchange_credentials_with_node(
         self, credentials: NodeCredentials
-    ) -> NodeCredentials:
+    ) -> SignedMessage:
         # this should be run by a node (probably a domain) against a network
         # in this case the self context will be a NetworkClient
+
         signed_msg = ExchangeCredentialsWithNodeMessage(
             address=self.client.address,
             reply_to=self.client.address,
@@ -47,9 +48,11 @@ class NodeNetworkingAPI(NewRequestAPI):
             signing_key=self.client.signing_key
         )  # type: ignore
 
-        response = self.client.send_immediate_msg_with_reply(msg=signed_msg)
+        signed_response = self.client.send_immediate_msg_with_reply(
+            msg=signed_msg, return_signed=True
+        )
 
-        if isinstance(response, ExceptionMessage):
-            raise response.exception_type
+        if isinstance(signed_response, ExceptionMessage):
+            raise signed_response.exception_type
         else:
-            return response
+            return signed_response
