@@ -232,6 +232,7 @@ class DataSubjectLedger(AbstractDataSubjectLedger):
         rdp_constants = self._get_batch_rdp_constants(
             entity_ids_query=entity_ids_query, rdp_params=rdp_params, private=private
         )
+        print("rdp constants", rdp_constants)
 
         # here we iteratively attempt to calculate the overbudget mask and save
         # changes to the database
