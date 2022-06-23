@@ -1095,6 +1095,17 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             raise NotImplementedError
 
+    def abs(self) -> PhiTensor:
+        data = self.child
+        output = np.abs(data)
+
+        return PhiTensor(
+            child=output,
+            data_subjects=self.data_subjects,
+            min_vals=np.abs(self.min_vals.data),
+            max_vals=np.abs(self.min_vals.data)
+        )
+
     def reshape(self, *shape: Tuple) -> PhiTensor:
 
         data = self.child
