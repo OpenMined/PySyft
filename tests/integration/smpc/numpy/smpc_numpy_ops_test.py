@@ -294,7 +294,7 @@ def test_take(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_1
 def test_abs(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(
@@ -314,7 +314,7 @@ def test_abs(get_clients) -> None:
     assert (res == exp_res.child).all()
 
 
-@pytest.mark.smpc
+@pytest.mark.smpc_1
 def test_sign(get_clients) -> None:
     clients = get_clients(2)
     value = Tensor(

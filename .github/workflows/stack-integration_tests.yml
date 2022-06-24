@@ -85,138 +85,6 @@ jobs:
         run: |
           tox -e stack.test.integration
 
-  # stack-integration-tests-network:
-  #   strategy:
-  #     max-parallel: 3
-  #     matrix:
-  #       os: [ubuntu-latest]
-  #       python-version: ["3.10"]
-
-  #   runs-on: ${{matrix.os}}
-
-  #   steps:
-  #     - uses: actions/checkout@v2
-
-  #     - name: Check for file changes
-  #       uses: dorny/paths-filter@v2
-  #       id: changes
-  #       with:
-  #         base: ${{ github.ref }}
-  #         token: ${{ github.token }}
-  #         filters: .github/file-filters.yml
-
-  #     - name: Set up Python ${{ matrix.python-version }}
-  #       uses: actions/setup-python@v2
-  #       if: steps.changes.outputs.stack == 'true'
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-
-  #     - name: Get pip cache dir
-  #       if: steps.changes.outputs.stack == 'true'
-  #       id: pip-cache
-  #       run: |
-  #         echo "::set-output name=dir::$(pip cache dir)"
-
-  #     - name: pip cache
-  #       uses: actions/cache@v2
-  #       if: steps.changes.outputs.stack == 'true'
-  #       with:
-  #         path: ${{ steps.pip-cache.outputs.dir }}
-  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
-  #     - name: Upgrade pip
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         python -m pip install --upgrade --user pip
-
-  #     - name: Install tox
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         pip install tox --upgrade
-
-  #     - name: Install Docker Compose
-  #       if: runner.os == 'Linux'
-  #       shell: bash
-  #       run: |
-  #         mkdir -p ~/.docker/cli-plugins
-  #         DOCKER_COMPOSE_VERSION=v2.3.4
-  #         curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-  #         chmod +x ~/.docker/cli-plugins/docker-compose
-
-  #     - name: Run integration tests
-  #       if: steps.changes.outputs.stack == 'true'
-  #       timeout-minutes: 30
-  #       run: |
-  #         tox -e stack.test.integration.network
-
-  # stack-integration-tests-security:
-  #   strategy:
-  #     max-parallel: 3
-  #     matrix:
-  #       os: [ubuntu-latest]
-  #       python-version: ["3.10"]
-
-  #   runs-on: ${{matrix.os}}
-
-  #   steps:
-  #     - uses: actions/checkout@v2
-
-  #     - name: Check for file changes
-  #       uses: dorny/paths-filter@v2
-  #       id: changes
-  #       with:
-  #         base: ${{ github.ref }}
-  #         token: ${{ github.token }}
-  #         filters: .github/file-filters.yml
-
-  #     - name: Set up Python ${{ matrix.python-version }}
-  #       uses: actions/setup-python@v2
-  #       if: steps.changes.outputs.stack == 'true'
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-
-  #     - name: Get pip cache dir
-  #       if: steps.changes.outputs.stack == 'true'
-  #       id: pip-cache
-  #       run: |
-  #         echo "::set-output name=dir::$(pip cache dir)"
-
-  #     - name: pip cache
-  #       uses: actions/cache@v2
-  #       if: steps.changes.outputs.stack == 'true'
-  #       with:
-  #         path: ${{ steps.pip-cache.outputs.dir }}
-  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
-  #     - name: Upgrade pip
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         python -m pip install --upgrade --user pip
-
-  #     - name: Install tox
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         pip install tox --upgrade
-
-  #     - name: Install Docker Compose
-  #       if: runner.os == 'Linux'
-  #       shell: bash
-  #       run: |
-  #         mkdir -p ~/.docker/cli-plugins
-  #         DOCKER_COMPOSE_VERSION=v2.3.4
-  #         curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-  #         chmod +x ~/.docker/cli-plugins/docker-compose
-
-  #     - name: Run integration tests
-  #       if: steps.changes.outputs.stack == 'true'
-  #       timeout-minutes: 30
-  #       run: |
-  #         tox -e stack.test.integration.security
-
   stack-integration-tests-e2e:
     strategy:
       max-parallel: 3
@@ -586,6 +454,97 @@ jobs:
           docker buildx use default || true
           rm -rf .tox
           tox -e stack.test.integration.smpc
+          docker rm `docker ps -aq` --force || true
+          docker system prune --volumes --force || true
+          docker ps
+
+  stack-integration-tests-smpc_1:
+    strategy:
+      max-parallel: 100
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
+
+    runs-on: [linux, self-hosted]
+
+    steps:
+      - name: set permissions on work folder for self-runners
+        run: |
+          sudo chown -R $USER:$USER ~/actions-runner/_work/
+
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Install build essentials
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake libssl-dev build-essential
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
+
+      - name: Install pytest
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install pytest --upgrade
+
+      - name: docker cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        with:
+          path: .docker-cache
+          key: ${{ runner.os }}-docker
+          restore-keys: |
+            ${{ runner.os }}-docker
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.3.4
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+          docker rm `docker ps -aq` --force || true
+          docker buildx use default || true
+          rm -rf .tox
+          tox -e stack.test.integration.smpc_1
           docker rm `docker ps -aq` --force || true
           docker system prune --volumes --force || true
           docker ps
