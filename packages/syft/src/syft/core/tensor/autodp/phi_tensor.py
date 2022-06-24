@@ -1015,8 +1015,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self,
         child: Sequence,
         data_subjects: Union[List[DataSubject], DataSubjectList],
-        min_vals: np.ndarray,
-        max_vals: np.ndarray,
+        min_vals: Union[np.ndarray, lazyrepeatarray],
+        max_vals: Union[np.ndarray, lazyrepeatarray],
     ) -> None:
 
         # child = the actual private data

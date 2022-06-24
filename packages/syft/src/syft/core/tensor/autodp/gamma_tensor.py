@@ -1370,6 +1370,36 @@ class GammaTensor:
             state=output_state,
         )
 
+    def log(self) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        if isinstance(self.min_val, lazyrepeatarray):
+            min_val = lazyrepeatarray(data=np.log(self.min_val.data.min()), shape=self.shape)
+            max_val = lazyrepeatarray(data=np.log(self.max_val.data.max()), shape=self.shape)
+        elif isinstance(self.min_val, np.ndarray):
+            min_val = lazyrepeatarray(data=np.log(self.min_val), shape=self.shape)
+            max_val = lazyrepeatarray(data=np.log(self.max_val), shape=self.shape)
+        elif isinstance(self.min_val, (int, float)):
+            min_val = lazyrepeatarray(data=np.log(self.min_val), shape=self.shape)
+            max_val = lazyrepeatarray(data=np.log(self.max_val), shape=self.shape)
+            # min_val = np.log(self.min_val),
+            # max_val = np.log(self.max_val)
+        else:
+            raise NotImplementedError(f"Undefined behaviour for type: {type(self.min_val)}")
+
+        def _log(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.log(self.run(state))
+
+        return GammaTensor(
+            child=np.log(self.child),
+            min_val=min_val,
+            max_val=max_val,
+            data_subjects=self.data_subjects,
+            func=_log,
+            state=output_state
+        )
+
     def reciprocal(self) -> GammaTensor:
         output_state = dict()
         # Add this tensor to the chain

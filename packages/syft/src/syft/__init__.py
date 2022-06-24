@@ -67,6 +67,7 @@ from .core.node.vm_client import VirtualMachineClient  # noqa: F401
 from .core.tensor import autodp  # noqa: F401
 from .core.tensor.autodp.phi_tensor import PhiTensor  # noqa: F401
 from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401
+from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401
 from .grid.client.client import connect  # noqa: F401

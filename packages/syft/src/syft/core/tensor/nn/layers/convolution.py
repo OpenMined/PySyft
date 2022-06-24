@@ -1,9 +1,11 @@
 # third party
 import numpy as np
+from typing import Union
 
 
 # relative
 from ...autodp.phi_tensor import PhiTensor
+from ...autodp.gamma_tensor import GammaTensor
 from ..activations import leaky_ReLU
 from ..initializations import XavierInitialization
 from .base import Layer
@@ -60,7 +62,7 @@ class Convolution(Layer):
         self.W = self.init((self.nb_filter, pre_nb_filter, filter_height, filter_width))
         self.b = np.zeros((self.nb_filter,))
 
-    def forward(self, input: PhiTensor, *args, **kwargs):
+    def forward(self, input: Union[PhiTensor, GammaTensor], *args, **kwargs):
 
         self.last_input = input
 
