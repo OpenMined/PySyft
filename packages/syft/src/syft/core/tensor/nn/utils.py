@@ -40,19 +40,28 @@ def dp_log(input: Union[PhiTensor, GammaTensor]) -> Union[PhiTensor, GammaTensor
             max_vals=max_v,
         )
     elif isinstance(input, GammaTensor):
-        return input.log()  # TODO: this doesn't technically match np API so 
+        return input.log()  # TODO: this doesn't technically match np API so
     else:
         raise NotImplementedError(f"Undefined behaviour for type: {type(input)}")
 
 
 def dp_zeros(shape: Tuple, data_subjects: DataSubjectList) -> Union[PhiTensor, GammaTensor]:
+    """
+    TODO: Passing in the shape seems unnecessary- it can be inferred from data_subjects.data_subjects_indexed.shape
+    output = np.zeros_like(data_subjects.data_subjects_indexed)
+
+    :param shape:
+    :param data_subjects:
+    :return:
+    """
+
     output = np.zeros(shape)
 
     result = PhiTensor(
         child=output,
         data_subjects=DataSubjectList(
             one_hot_lookup=data_subjects.one_hot_lookup,
-            data_subjects_indexed=np.zeros_like(output)
+            data_subjects_indexed=np.zeros_like(output)  # This shouldn't matter b/c it will be replaced
         ),
         min_vals=output.min(),
         max_vals=output.max()
