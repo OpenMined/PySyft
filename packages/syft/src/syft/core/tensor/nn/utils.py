@@ -1,3 +1,4 @@
+from typing import Tuple
 import numpy as np
 from ...adp.data_subject_list import DataSubjectList
 from ..autodp.phi_tensor import PhiTensor
@@ -35,4 +36,19 @@ def dp_log(input: PhiTensor):
         data_subjects=dsl,
         min_vals=min_v,
         max_vals=max_v,
+    )
+
+
+def dp_zeros(shape: Tuple, data_subjects: DataSubjectList):
+
+    output = np.zeros(shape)
+
+    return PhiTensor(
+        child=output,
+        data_subjects=DataSubjectList(
+            one_hot_lookup=data_subjects.one_hot_lookup,
+            data_subjects_indexed=np.zeros_like(output)
+        ),
+        min_vals=output.min(),
+        max_vals=output.max()
     )

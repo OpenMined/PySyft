@@ -1,11 +1,13 @@
 # third party
 import numpy as np
 
+
 # relative
 from ...autodp.phi_tensor import PhiTensor
 from ..activations import leaky_ReLU
 from ..initializations import XavierInitialization
 from .base import Layer
+from ..utils import dp_zeros
 
 
 class Convolution(Layer):
@@ -76,9 +78,7 @@ class Convolution(Layer):
         new_img_h, new_img_w = self.out_shape[2:]
 
         # init
-        outputs = np.zeros((nb_batch, self.nb_filter, new_img_h, new_img_w))
-
-
+        outputs = dp_zeros((nb_batch, self.nb_filter, new_img_h, new_img_w), input.data_subjects)
 
         # convolution operation
         for x in np.arange(nb_batch):
@@ -88,16 +88,12 @@ class Convolution(Layer):
                         h_shift, w_shift = h * self.stride, w * self.stride
                         # patch: (input_depth, filter_h, filter_w)
                         patch = input[x, :, h_shift: h_shift + filter_height, w_shift: w_shift + filter_width]
-                        outputs[x, y, h, w] = np.sum(patch.child * self.W[y]) + self.b[y]
+                        outputs[x, y, h, w] = (patch * self.W[y]).sum() + self.b[y]
 
         # nonlinear activation
         # self.last_output: (nb_batch, output_depth, image height, image width)
 
         # TODO: Min/max vals are direct function of private data- fix this when we have time
-        outputs = PhiTensor(
-            child=outputs,data_subjects=np.zeros_like(outputs),
-            min_vals=outputs.min(), max_vals=outputs.max()
-        )
         self.last_output = self.activation.forward(outputs)
 
         return self.last_output
@@ -120,6 +116,7 @@ class Convolution(Layer):
         old_img_h, old_img_w = self.last_input.shape[-2:]
 
         # gradients
+        # TODO: Decide if dW and db needs to be DP Tensors or can they live as numpy arrays
         self.dW = np.zeros((self.W.shape))
         self.db = np.zeros((self.b.shape))
         delta = pre_grad * self.activation.derivative()
@@ -151,7 +148,6 @@ class Convolution(Layer):
                                 layer_grads[b, t, h_shift:h_shift + filter_height, w_shift:w_shift + filter_width] = temp+ (delta[b, r, h, w] * self.W[r, t])
 
             return layer_grads
-
 
 
     @property
