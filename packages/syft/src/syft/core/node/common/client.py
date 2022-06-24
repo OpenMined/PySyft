@@ -195,7 +195,7 @@ class Client(AbstractNodeClient):
             if client is not None:
                 grid_url = client.routes[0].connection.base_url  # type: ignore
             else:
-                grid_url = GridURL.from_url(str(host_or_ip))
+                grid_url = GridURL.from_url(str(host_or_ip)).v1_path()
 
             return self.vpn.join_network_vpn(grid_url=grid_url)  # type: ignore
         except Exception as e:
