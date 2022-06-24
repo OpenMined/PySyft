@@ -43,11 +43,11 @@ from .common.node_manager.redis_store import RedisStore
 from .common.node_manager.request_manager import RequestManager
 from .common.node_manager.role_manager import RoleManager
 from .common.node_manager.user_manager import UserManager
-from .common.node_service.association_request.new_association_request import (  # noqa: F401
-    TriggerAssociationRequestMessage,
-)
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestWithoutReplyService,
+)
+from .common.node_service.association_request.new_association_request import (  # noqa: F401
+    TriggerAssociationRequestMessage,
 )
 from .common.node_service.dataset_manager.dataset_manager_service import (
     DatasetManagerService,
