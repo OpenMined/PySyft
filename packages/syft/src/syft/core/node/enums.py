@@ -15,7 +15,7 @@ class RequestAPIFields(str, Enum):
     REPLY_TO = "reply_to"
     MESSAGE = "message"
     ERROR = "error"
-    RESPONSE = "response"
+    ACCEPT = "accept"
     SOURCE = "source"
     TARGET = "target"
     NODE_ID = "node_id"
