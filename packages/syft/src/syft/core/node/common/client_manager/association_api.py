@@ -1,6 +1,7 @@
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import List
 
 # relative
 from ...abstract.node import AbstractNodeClient
@@ -11,17 +12,18 @@ from ...exceptions import PyGridClientException
 from ..node_service.association_request.association_request_messages import (
     DeleteAssociationRequestMessage,
 )
-from ..node_service.association_request.association_request_messages import (
-    GetAssociationRequestMessage,
+
+from ..node_service.association_request.new_association_request import (
+    GetAllAssociationsMessage,
 )
-from ..node_service.association_request.association_request_messages import (
-    GetAssociationRequestsMessage,
-)
-from ..node_service.association_request.association_request_messages import (
-    RespondAssociationRequestMessage,
+from ..node_service.association_request.new_association_request import (
+    GetAssociationRequestMessage
 )
 from ..node_service.association_request.new_association_request import (
     TriggerAssociationRequestMessage,
+)
+from ..node_service.association_request.new_association_request import (
+    ProcessAssociationRequestMessage,
 )
 from ..node_service.success_resp_message import ErrorResponseMessage
 from .request_api import RequestAPI
@@ -33,7 +35,7 @@ class AssociationRequestAPI(RequestAPI):
             client=client,
             create_msg=TriggerAssociationRequestMessage,
             get_msg=GetAssociationRequestMessage,
-            get_all_msg=GetAssociationRequestsMessage,
+            get_all_msg=GetAllAssociationsMessage,
             delete_msg=DeleteAssociationRequestMessage,
             response_key=ResponseObjectEnum.ASSOCIATION_REQUEST,
         )
@@ -61,21 +63,26 @@ class AssociationRequestAPI(RequestAPI):
         self.perform_request(syft_msg=self._create_message, content=kwargs)  # type: ignore
 
     def get(self, **kwargs: Any) -> Any:
-        association_table = self.perform_api_request(
-            syft_msg=self._get_message, content=kwargs
-        )
+        content = self.perform_request(syft_msg=self._get_message, content=kwargs).kwargs["association_request"]
 
-        content = getattr(
-            association_table, "content", getattr(association_table, "metadata", None)
-        )
+        #association_table = self.perform_api_request(
+        #    syft_msg=self._get_message, content=kwargs
+        #)
+
+        #content = getattr(
+        #    association_table, "content", getattr(association_table, "metadata", None)
+        #)
+        
         if content is None:
             raise Exception(f"{type(self)} has no content or metadata field")
+        
+        return self.to_obj(dict(content))
 
-        obj_data = dict(content)
-        obj_data[RequestAPIFields.SOURCE] = association_table.source
-        obj_data[RequestAPIFields.TARGET] = association_table.target
-
-        return self.to_obj(obj_data)
+    def all(self) -> List[Any]:
+        result = self.perform_request(syft_msg=self._get_all_message).kwargs[
+            "association_requests"
+        ]
+        return result
 
     def __getitem__(self, key: int) -> Any:
         return self.get(association_id=key)
@@ -86,21 +93,18 @@ class AssociationRequestAPI(RequestAPI):
     def to_obj(self, result: Dict[Any, Any]) -> Any:
         _association_obj = super().to_obj(result)
 
-        _content = {
-            RequestAPIFields.SOURCE: result[RequestAPIFields.SOURCE],
-            RequestAPIFields.TARGET: result[RequestAPIFields.TARGET],
-        }
-
+        _content = {}
+        _content[RequestAPIFields.NODE_ADDRESS.value] = _association_obj.node_address
         def _accept() -> Dict[str, str]:
-            _content[RequestAPIFields.RESPONSE] = AssociationRequestResponses.ACCEPT
-            return self.perform_api_request(
-                syft_msg=RespondAssociationRequestMessage, content=_content
+            _content[RequestAPIFields.ACCEPT.value] = True
+            return self.perform_request(
+                syft_msg=ProcessAssociationRequestMessage, content=_content
             )
 
         def _deny() -> Dict[str, str]:
-            _content[RequestAPIFields.RESPONSE] = AssociationRequestResponses.DENY
-            return self.perform_api_request(
-                syft_msg=RespondAssociationRequestMessage, content=_content
+            _content[RequestAPIFields.ACCEPT.value] = False
+            return self.perform_request(
+                syft_msg=ProcessAssociationRequestMessage, content=_content
             )
 
         _association_obj.accept = _accept
