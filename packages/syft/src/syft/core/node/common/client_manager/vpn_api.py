@@ -25,15 +25,9 @@ class VPNAPI:
             syft_msg=VPNJoinMessage, content={"node_url": str(grid_url)}
         )
         logging.info(reply.payload)
-        status = "error"
-        try:
-            status = str(reply.payload.kwargs.get("status"))
-        except Exception:  # nosec
-            pass
 
-        if status == "ok":
-            # print(f"🔌 {self.client} successfully connected to the VPN: {grid_url}")
-            pass
+        if reply.payload.status == "ok":
+            print(f"🔌 {self.client} successfully connected to the VPN: {grid_url}")
         else:
             print(f"❌ {self.client} failed to connect to the VPN: {grid_url}")
 

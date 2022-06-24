@@ -146,10 +146,10 @@ class RequestAPI:
 
     def perform_api_request_generic(
         self,
-        syft_msg: Optional[Type[GenericPayloadMessageWithReply] | Type[NewSyftMessage]],  # type: ignore
+        syft_msg: Optional[Type[GenericPayloadMessageWithReply] | Type[NewSyftMessage]],
         content: Optional[Dict[Any, Any]] = None,
         timeout: Optional[int] = None,
-    ) -> Any:
+    ) -> Any:  # type: ignore
         if syft_msg is None:
             raise ValueError(
                 "Can't perform this type of api request, the message is None."

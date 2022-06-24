@@ -364,7 +364,7 @@ class UserManager(DatabaseManager):
             raise UserNotFoundError
         return self.roles.first(id=user.role)
 
-    def get_user(self, verify_key: VerifyKey) -> Optional[SyftUser]:
+    def get_user(self, verify_key: VerifyKey) -> SyftUser:
         """Returns the user for the given public digital signature."""
         return self.first(
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
