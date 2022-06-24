@@ -10,11 +10,11 @@ from typing_extensions import final
 
 # syft absolute
 import syft as sy
-from syft.core.node.abstract.node_service_interface import NodeServiceInterface
 
 # relative
 from ......grid import GridURL
 from .....common.serde.serializable import serializable
+from ....abstract.node_service_interface import NodeServiceInterface
 from ....domain_msg_registry import DomainMessageRegistry
 from ....network_interface import NetworkInterface
 from ....network_msg_registry import NetworkMessageRegistry
@@ -59,7 +59,8 @@ class VPNJoinMessage(SyftMessage, DomainMessageRegistry, NetworkMessageRegistry)
         # 1.2 - It it's network type ask their own headscale service.
         is_domain = type(node).__name__ == "Domain"
         if is_domain:
-            url = self.payload.grid_url.as_container_host(
+
+            url = GridURL.from_url(self.payload.node_url).as_container_host(
                 container_host=node.settings.CONTAINER_HOST
             )
 
@@ -89,7 +90,6 @@ class VPNJoinMessage(SyftMessage, DomainMessageRegistry, NetworkMessageRegistry)
             headscale_host=headscale_url,
             vpn_auth_key=vpn_key,
         )
-
         return VPNJoinMessage.Reply()
 
     def get_permissions(self) -> List[Type[BasePermission]]:
