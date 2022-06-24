@@ -36,9 +36,9 @@ def test_domain1_association_network1() -> None:
     )
     associations = network.association.all()
     for association in associations:
-        if association["node_address"] == domain.target_id.id.no_dash:
+        if association["node_id"] == domain.target_id.id.no_dash:
             request_id = int(association["association_id"])
-
+    
     network.association[request_id].accept()
 
     time.sleep(5)
@@ -67,7 +67,7 @@ def test_domain2_association_network1() -> None:
     )
     associations = network.association.all()
     for association in associations:
-        if association["node_address"] == domain.target_id.id.no_dash:
+        if association["node_id"] == domain.target_id.id.no_dash:
             request_id = int(association["association_id"])
 
     network.association[request_id].accept()
