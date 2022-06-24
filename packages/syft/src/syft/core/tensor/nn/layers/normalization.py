@@ -31,7 +31,7 @@ class BatchNorm(Layer):
         # step3:
         var = xmu.std(axis=0)
         sqrtvar = (var + self.epsilon).sqrt()
-        ivar = sqrtvar.reciprocal()
+        ivar = 1.0 / sqrtvar
         # step5: normalization->x^
         xhat = xmu * ivar
 
@@ -58,13 +58,13 @@ class BatchNorm(Layer):
 
         xhat, xmu, ivar, sqrtvar, var = self.cache
 
-        N, D,x,y = pre_grad.shape
+        N, D, x, y = pre_grad.shape
         #         print(f"input shape of (N,D,x,y) = {(N, D, x, y)}")
 
         # step6
         self.dbeta = pre_grad.sum(axis=0)
         dgammax = pre_grad
-        self.dgamma = (dgammax * xhat).sum( axis=0)
+        self.dgamma = (dgammax * xhat).sum(axis=0)
         dxhat = dgammax * self.gamma
         #         print(f"step 6: shaep of dbeta = {self.dbeta.shape}")
         #         print(f"step 6: shaep of dgamma = {self.dgamma.shape}")
@@ -75,9 +75,9 @@ class BatchNorm(Layer):
         dxmu1 = dxhat * ivar
 
         # step4
-        dsqrtvar = -1. / (sqrtvar * sqrtvar) * divar
+        dsqrtvar = -1.0 / (sqrtvar * sqrtvar) * divar
         #         print(f"step 4: shaep of dsqrtvar = {dsqrtvar.shape}")
-        inv_var_eps_sqrt = (var + self.epsilon).sqrt().reciprocal()
+        inv_var_eps_sqrt = 1.0 / (var + self.epsilon).sqrt()
 
         #         print(f"var + eps shape:", inv_var_eps_sqrt.shape)
         dvar = dsqrtvar * 0.5 * inv_var_eps_sqrt

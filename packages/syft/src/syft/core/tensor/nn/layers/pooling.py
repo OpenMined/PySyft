@@ -1,5 +1,6 @@
 # third party
 import numpy as np
+from packages.syft.src.syft.core.tensor.nn.utils import dp_zeros
 
 # relative
 from ...autodp.phi_tensor import PhiTensor
@@ -47,8 +48,9 @@ class AvgPool(Layer):
         new_h, new_w = self.out_shape[-2:]
 
         # forward
-        outputs = np.zeros(self.input_shape[:-2] + self.out_shape[-2:])
-        outputs = PhiTensor(child=outputs, data_subjects=np.zeros_like(outputs), min_vals=0, max_vals=1)
+        # outputs = np.zeros(self.input_shape[:-2] + self.out_shape[-2:])
+        #outputs = PhiTensor(child=outputs, data_subjects=np.zeros_like(outputs), min_vals=0, max_vals=1)
+        outputs = dp_zeros(self.input_shape[:-2] + self.out_shape[-2:], data_subjects=input.data_subjects)
 
         ndim = len(input.shape)
         if ndim == 4:
@@ -66,7 +68,7 @@ class AvgPool(Layer):
             for a in np.arange(nb_batch):
                 for h in np.arange(new_h):
                     for w in np.arange(new_w):
-                        outputs[a, h, w] = np.mean(input[a, h:h + pool_h, w:w + pool_w])
+                        outputs[a, h, w] = input[a, h:h + pool_h, w:w + pool_w].mean()
 
         else:
             raise ValueError()
@@ -78,8 +80,8 @@ class AvgPool(Layer):
         pool_h, pool_w = self.pool_size
         length = np.prod(self.pool_size)
 
-        layer_grads = np.zeros(self.input_shape)
-        layer_grads = PhiTensor(child=layer_grads, data_subjects=np.zeros_like(layer_grads), min_vals=0, max_vals=1)
+        layer_grads = dp_zeros(self.input_shape, pre_grad.data_subjects)
+        # layer_grads = PhiTensor(child=layer_grads, data_subjects=self.input_data_subjects, min_vals=0, max_vals=1)
 
         ndim = len(pre_grad.shape)
 
@@ -92,7 +94,7 @@ class AvgPool(Layer):
                         for w in np.arange(new_w):
                             h_shift, w_shift = h * pool_h, w * pool_w
                             layer_grads[a, b, h_shift: h_shift + pool_h, w_shift: w_shift + pool_w] = \
-                                pre_grad[a, b, h, w] * (1/length)
+                                pre_grad[a, b, h, w] * (1.0/length)
 
         elif ndim == 3:
             nb_batch, _, _ = pre_grad.shape
@@ -102,7 +104,7 @@ class AvgPool(Layer):
                     for w in np.arange(new_w):
                         h_shift, w_shift = h * pool_h, w * pool_w
                         layer_grads[a, h_shift: h_shift + pool_h, w_shift: w_shift + pool_w] = \
-                            pre_grad[a, h, w] * (1/length)
+                            pre_grad[a, h, w] * (1.0/length)
 
         else:
             raise ValueError()
