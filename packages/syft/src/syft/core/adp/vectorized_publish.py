@@ -5,7 +5,6 @@ from __future__ import annotations
 import secrets
 from typing import Callable
 from typing import List
-from typing import Optional
 from typing import TYPE_CHECKING
 from typing import Tuple
 from typing import Union
@@ -17,6 +16,9 @@ import numpy as np
 from tqdm import tqdm
 
 # relative
+from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
+from ..tensor.lazy_repeat_array import lazyrepeatarray
+from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_list import DataSubjectList
@@ -85,7 +87,6 @@ def vectorized_publish(
     is_linear: bool = True,
     sigma: float = 1.5,
     output_func: Callable = lambda x: x,
-    fpt_encode_func: Optional[Callable] = None,
 ) -> Union[np.ndarray, jax.numpy.DeviceArray]:
     # relative
     from ..tensor.autodp.gamma_tensor import GammaTensor
@@ -104,10 +105,28 @@ def vectorized_publish(
         # t1 = time()
         # Calculate everything needed for RDP
 
+        if isinstance(input_tensor.child, FixedPrecisionTensor):
+            value = input_tensor.child.decode()
+        else:
+            value = input_tensor.child
+
+        while isinstance(value, PassthroughTensor):
+            value = value.child
+
+        if isinstance(input_tensor.min_val, lazyrepeatarray):
+            min_val_array = input_tensor.min_val.to_numpy()
+        else:
+            min_val_array = input_tensor.min_val
+
+        if isinstance(input_tensor.max_val, lazyrepeatarray):
+            max_val_array = input_tensor.max_val.to_numpy()
+        else:
+            max_val_array = input_tensor.max_val
+
         l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
-            value_array=input_tensor.value,
-            min_val_array=input_tensor.min_val,
-            max_val_array=input_tensor.max_val,
+            value_array=value,
+            min_val_array=min_val_array,
+            max_val_array=max_val_array,
             sigma=sigma,
         )
 
@@ -141,7 +160,7 @@ def vectorized_publish(
                 deduct_epsilon_for_user=deduct_epsilon_for_user,
             )
             # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
-            reshaped_mask = mask.reshape(input_tensor.value.shape)
+            reshaped_mask = mask.reshape(value.shape)
             # print("Fixed mask shape!")
             # here we have the final mask and highest possible spend has been applied
             # to the data scientists budget field in the database
@@ -152,7 +171,7 @@ def vectorized_publish(
             # print("Obtained overbudgeted entity mask", mask.dtype)
 
             # multiply values by the inverted mask
-            filtered_input_tensor = input_tensor.value * (
+            filtered_input_tensor = value * (
                 1 - reshaped_mask
             )  # + gauss(0, sigma)  # Double check that noise has mean of 0
 
@@ -177,9 +196,7 @@ def vectorized_publish(
     )
     noise.resize(original_output.shape)
     print("noise: ", noise)
-    if fpt_encode_func is not None:
-        noise = fpt_encode_func(noise)
-        print("Noise after FPT", noise)
+
     output = np.asarray(output_func(filtered_inputs) + noise)
     print("got output", type(output), output.dtype)
     return output.squeeze()
