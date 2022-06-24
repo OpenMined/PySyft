@@ -79,7 +79,7 @@ class Adamax(Optimizer):
         for i, (m, v, p, g) in enumerate(zip(self.ms, self.vs, params, grads)):
             m = m * self.beta1 + g * (1 - self.beta1)
             v = dp_maximum(v * self.beta2, g.abs())
-            p = p - m * (v + self.epsilon).reciprocal() * a_t
+            p = p - (m * (1.0 / (v + self.epsilon)) * a_t)
 
             self.ms[i] = m
             self.vs[i] = v

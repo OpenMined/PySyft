@@ -6,7 +6,6 @@ import numpy as np
 
 # relative
 from ..autodp.phi_tensor import PhiTensor
-from ..lazy_repeat_array import lazyrepeatarray as lra
 
 
 class Activation(object):
@@ -40,18 +39,6 @@ class Activation(object):
         return self.__class__.__name__
 
 
-def dp_leakyrelu(dp_tensor: PhiTensor, slope: float=0.01) -> PhiTensor:
-    # TODO: Should we have an index in DSLs that corresponds to no data?
-
-    gt = (dp_tensor.child > 0)
-    return PhiTensor(
-        child= gt * dp_tensor.child + (1 - gt) * dp_tensor.child * slope,
-        data_subjects=dp_tensor.data_subjects,
-        min_vals= lra(data=dp_tensor.min_vals.data * slope, shape=dp_tensor.min_vals.shape),
-        max_vals= lra(data=dp_tensor.max_vals.data * slope, shape=dp_tensor.max_vals.shape),
-    )
-
-
 class leaky_ReLU(Activation):
 
     def __init__(self, slope=0.01):
@@ -61,7 +48,10 @@ class leaky_ReLU(Activation):
     def forward(self, input_array: PhiTensor):
         # Last image that has been forward passed through this activation function
         self.last_forward = input_array
-        return dp_leakyrelu(dp_tensor=input_array, slope=self.slope)
+
+        gt = input_array > 0
+
+        return gt * input_array + ((gt * -1) + 1) * input_array * self.slope
 
     def derivative(self, input_array: Optional[PhiTensor] = None):
         last_forward = input_array if input_array else self.last_forward
