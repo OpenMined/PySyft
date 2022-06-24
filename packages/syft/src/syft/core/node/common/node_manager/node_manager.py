@@ -1,4 +1,9 @@
+# stdlib
+from typing import Optional
+
 # third party
+from nacl.encoding import HexEncoder
+from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
 
 # relative
@@ -33,3 +38,11 @@ class NodeManager(DatabaseManager):
             )
         else:
             self.register(**credentials)
+
+    def validate_id_and_key(
+        self, node_uid: str, verify_key: VerifyKey
+    ) -> Optional[Node]:
+        return self.first(
+            node_uid=node_uid,
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
+        )

@@ -11,17 +11,21 @@ from ....domain_msg_registry import DomainMessageRegistry
 from ....network_msg_registry import NetworkMessageRegistry
 from ....node_service import NodeServiceInterface
 from ...permissions.user_permissions import NoRestriction
+from ...permissions.user_permissions import UserIsOwner
 from ..generic_payload.syft_message import NewSyftMessage as SyftMessage
 from ..generic_payload.syft_message import ReplyPayload
 from ..generic_payload.syft_message import RequestPayload
 from .node_credentials import NodeCredentials
 
 
+# ExchangeCredentials Messages
+# Step 1: InitiateExchangeCredentialsWithNodeMessage
+# Step 2: ExchangeCredentialsWithNodeMessage
 @serializable(recursive_serde=True)
 class InitiateExchangeCredentialsWithNodeMessage(
     SyftMessage, DomainMessageRegistry, NetworkMessageRegistry
 ):
-    permissions = [NoRestriction]
+    permissions = [NoRestriction | UserIsOwner]  # UserIsOwner not working
 
     # Pydantic Inner class to define expected request payload fields.
     class Request(RequestPayload):
