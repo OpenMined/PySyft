@@ -1,6 +1,6 @@
 # third party
 import numpy as np
-from packages.syft.src.syft.core.tensor.nn.utils import dp_zeros
+from ..utils import dp_zeros
 
 # relative
 from ...autodp.phi_tensor import PhiTensor
