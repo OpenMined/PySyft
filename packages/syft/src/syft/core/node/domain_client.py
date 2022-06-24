@@ -490,9 +490,7 @@ class DomainClient(Client):
             if domain_vpn_ip == "":
                 raise Exception(f"No host ip in {vpn_status}")
 
-            self.association.create(
-                target=network_vpn_ip, vpn=True
-            )
+            self.association.create(target=network_vpn_ip, vpn=True)
 
             print("3/3 Network Registration Complete")
         except Exception as e:
