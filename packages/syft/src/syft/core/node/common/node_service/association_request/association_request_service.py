@@ -198,8 +198,6 @@ def recv_association_request_msg(
         else:
             status = AssociationRequestResponses.PENDING
 
-        node_address = msg.metadata["node_address"]
-
         node.association_requests.create_association_request(
             node_name=msg.metadata["node_name"],
             node_id=msg.metadata["node_id"],
