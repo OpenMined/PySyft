@@ -267,10 +267,8 @@ def send_as_guest(
     client = connect(node_url)
 
     # TODO: Remove old Syft messages when the time comes.
-    new_message_subclass = issubclass(type(message_class), NewSyftMessage)
-    if new_message_subclass or issubclass(
-        type(message_class), ImmediateSyftMessageWithReply
-    ):
+    new_message_subclass = issubclass(message_class, NewSyftMessage)  # type: ignore
+    if new_message_subclass or issubclass(message_class, ImmediateSyftMessageWithReply):  # type: ignore
         msg: SignedImmediateSyftMessageWithReply = message_class(  # type: ignore
             address=client.address,
             reply_to=client.address,
