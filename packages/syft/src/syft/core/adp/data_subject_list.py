@@ -16,8 +16,6 @@ from ..common.serde.serializable import serializable
 from .data_subject import DataSubject
 
 
-
-
 # allow us to serialize and deserialize np.arrays with strings inside as two np.arrays
 # one containing the uint8 bytes and the other the offsets between strings
 # TODO: Should move to a vectorized version.
@@ -165,63 +163,155 @@ class DataSubjectList:
         :param dsl2:
         :return:
         """
-        # dsl1_uniques = dsl1.num_uniques
-        # dsl2_uniques = dsl2.num_uniques
-        dsl1_uniques = len(dsl1.one_hot_lookup)
-        dsl2_uniques = len(dsl2.one_hot_lookup)
 
-        if dsl1_uniques >= dsl2_uniques:
-            search_terms = dsl2.one_hot_lookup
-            bigger_list = dsl1.one_hot_lookup
-            array_to_change = dsl2.data_subjects_indexed
-            unchanged_array = dsl1.data_subjects_indexed
+        if dsl1.one_hot_lookup.size == 0:
+            return dsl2
+        elif dsl2.one_hot_lookup.size == 0:
+            return dsl1
         else:
-            search_terms = dsl1.one_hot_lookup
-            bigger_list = dsl2.one_hot_lookup
-            array_to_change = dsl1.data_subjects_indexed
-            unchanged_array = dsl2.data_subjects_indexed
 
-        # Array of True/False depending on whether search term exists in bigger list
-        overlap = np.isin(
-            search_terms, bigger_list
-        )  # TODO: is there a way to use np.searchsorted w/o the index 0 problem?
+            # dsl1_uniques = dsl1.num_uniques
+            # dsl2_uniques = dsl2.num_uniques
+            dsl1_uniques = len(dsl1.one_hot_lookup)
+            dsl2_uniques = len(dsl2.one_hot_lookup)
 
-        # The DS at these indices of search_terms exist in bigger_list
-        overlapping_indices = (overlap == True).nonzero()[0]  # noqa: E712
-        # The DS at these indices are unique
-        unique_indices = (overlap == False).nonzero()[0]  # noqa: E712
+            if dsl1_uniques >= dsl2_uniques:
+                search_terms = dsl2.one_hot_lookup
+                bigger_list = dsl1.one_hot_lookup
+                array_to_change = dsl2.data_subjects_indexed
+                unchanged_array = dsl1.data_subjects_indexed
+            else:
+                search_terms = dsl1.one_hot_lookup
+                bigger_list = dsl2.one_hot_lookup
+                array_to_change = dsl1.data_subjects_indexed
+                unchanged_array = dsl2.data_subjects_indexed
 
-        # Suppressing E712 above because the recommended way (is True) does not work elementwise
+            # Array of True/False depending on whether search term exists in bigger list
+            overlap = np.isin(
+                search_terms, bigger_list
+            )  # TODO: is there a way to use np.searchsorted w/o the index 0 problem?
 
-        if len(overlapping_indices) == 0:  # If there's no overlap, our job is super simple
-            return DataSubjectList(
-                one_hot_lookup=np.concatenate((dsl1.one_hot_lookup, dsl2.one_hot_lookup)),
-                data_subjects_indexed=np.stack(
-                    (dsl1.data_subjects_indexed, dsl2.data_subjects_indexed + dsl1_uniques)
-                ),
+            # The DS at these indices of search_terms exist in bigger_list
+            overlapping_indices = (overlap == True).nonzero()[0]  # noqa: E712
+            # The DS at these indices are unique
+            unique_indices = (overlap == False).nonzero()[0]  # noqa: E712
+
+            # Suppressing E712 above because the recommended way (is True) does not work elementwise
+
+            if len(overlapping_indices) == 0:  # If there's no overlap, our job is super simple
+                return DataSubjectList(
+                    one_hot_lookup=np.concatenate((dsl1.one_hot_lookup, dsl2.one_hot_lookup)),
+                    data_subjects_indexed=np.stack(
+                        (dsl1.data_subjects_indexed, dsl2.data_subjects_indexed + dsl1_uniques)
+                    ),
+                )
+
+            # Task 1- For the overlapping data subjects, we need to find the index already allotted to them.
+            target_overlap_indices = np.searchsorted(
+                bigger_list, search_terms.take(overlapping_indices)
             )
 
-        # Task 1- For the overlapping data subjects, we need to find the index already allotted to them.
-        target_overlap_indices = np.searchsorted(
-            bigger_list, search_terms.take(overlapping_indices)
-        )
+            # Now that we need to replace the previous indices with the new indices
+            output_data_subjects_indexed = np.zeros_like(dsl2.data_subjects_indexed)
+            for old_value, new_value in zip(overlapping_indices, target_overlap_indices):
+                output_data_subjects_indexed[array_to_change == old_value] = new_value
 
-        # Now that we need to replace the previous indices with the new indices
-        output_data_subjects_indexed = np.zeros_like(dsl2.data_subjects_indexed)
-        for old_value, new_value in zip(overlapping_indices, target_overlap_indices):
-            output_data_subjects_indexed[array_to_change == old_value] = new_value
+            # Task 2- do the same but for unique data subjects
+            unique_data_subjects = search_terms.take(unique_indices)
 
-        # Task 2- do the same but for unique data subjects
-        unique_data_subjects = search_terms.take(unique_indices)
+            output_one_hot_encoding = np.concatenate((bigger_list, unique_data_subjects))
+            target_unique_indices = np.arange(len(bigger_list), len(output_one_hot_encoding))
 
-        output_one_hot_encoding = np.concatenate((bigger_list, unique_data_subjects))
-        target_unique_indices = np.arange(len(bigger_list), len(output_one_hot_encoding))
+            for old_value, new_value in zip(unique_indices, target_unique_indices):
+                output_data_subjects_indexed[array_to_change == old_value] = new_value
 
-        for old_value, new_value in zip(unique_indices, target_unique_indices):
-            output_data_subjects_indexed[array_to_change == old_value] = new_value
+            final_dsi = np.stack((unchanged_array, output_data_subjects_indexed))
 
-        final_dsi = np.stack((unchanged_array, output_data_subjects_indexed))
+            return DataSubjectList(
+                one_hot_lookup=output_one_hot_encoding, data_subjects_indexed=final_dsi
+            )
 
-        return DataSubjectList(
-            one_hot_lookup=output_one_hot_encoding, data_subjects_indexed=final_dsi
-        )
+    @staticmethod
+    def absorb(
+            dsl1: DataSubjectList, dsl2: DataSubjectList
+    ) -> DataSubjectList:
+
+
+        """
+        Unlike Combine() which creates a DSL for a GammaTensor where one data point is owned
+        by multiple data subjects, Absorb() creates a GammaTensor where each data point is
+        still only owned by a single data subject.
+
+
+        :param dsl1:
+        :param dsl2:
+        :return:
+        """
+
+        if dsl1.one_hot_lookup.size == 0:
+            return dsl2
+        elif dsl2.one_hot_lookup.size == 0:
+            return dsl1
+        else:
+
+            # dsl1_uniques = dsl1.num_uniques
+            # dsl2_uniques = dsl2.num_uniques
+            dsl1_uniques = len(dsl1.one_hot_lookup)
+            dsl2_uniques = len(dsl2.one_hot_lookup)
+
+            if dsl1_uniques >= dsl2_uniques:
+                search_terms = dsl2.one_hot_lookup
+                bigger_list = dsl1.one_hot_lookup
+                array_to_change = dsl2.data_subjects_indexed
+                unchanged_array = dsl1.data_subjects_indexed
+            else:
+                search_terms = dsl1.one_hot_lookup
+                bigger_list = dsl2.one_hot_lookup
+                array_to_change = dsl1.data_subjects_indexed
+                unchanged_array = dsl2.data_subjects_indexed
+
+            # Array of True/False depending on whether search term exists in bigger list
+            overlap = np.isin(
+                search_terms, bigger_list
+            )  # TODO: is there a way to use np.searchsorted w/o the index 0 problem?
+
+            # The DS at these indices of search_terms exist in bigger_list
+            overlapping_indices = (overlap == True).nonzero()[0]  # noqa: E712
+            # The DS at these indices are unique
+            unique_indices = (overlap == False).nonzero()[0]  # noqa: E712
+
+            # Suppressing E712 above because the recommended way (is True) does not work elementwise
+
+            if len(overlapping_indices) == 0:  # If there's no overlap, our job is super simple
+                return DataSubjectList(
+                    one_hot_lookup=np.concatenate((dsl1.one_hot_lookup, dsl2.one_hot_lookup)),
+                    data_subjects_indexed=np.append(  # Should this be concatenate?
+                        dsl1.data_subjects_indexed, dsl2.data_subjects_indexed + dsl1_uniques
+                    ),
+                )
+
+            # Task 1- For the overlapping data subjects, we need to find the index already allotted to them.
+            target_overlap_indices = np.searchsorted(
+                bigger_list, search_terms.take(overlapping_indices)
+            )
+
+            # Now that we need to replace the previous indices with the new indices
+            output_data_subjects_indexed = np.zeros_like(dsl2.data_subjects_indexed)
+            for old_value, new_value in zip(overlapping_indices, target_overlap_indices):
+                output_data_subjects_indexed[array_to_change == old_value] = new_value
+
+            # Task 2- do the same but for unique data subjects
+            unique_data_subjects = search_terms.take(unique_indices)
+
+            output_one_hot_encoding = np.concatenate((bigger_list, unique_data_subjects))
+            target_unique_indices = np.arange(len(bigger_list), len(output_one_hot_encoding))
+
+            for old_value, new_value in zip(unique_indices, target_unique_indices):
+                output_data_subjects_indexed[array_to_change == old_value] = new_value
+
+            final_dsi = np.append(unchanged_array, output_data_subjects_indexed)
+
+            return DataSubjectList(
+                one_hot_lookup=output_one_hot_encoding, data_subjects_indexed=final_dsi
+            )
+

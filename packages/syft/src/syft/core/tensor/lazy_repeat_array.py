@@ -60,6 +60,17 @@ class lazyrepeatarray:
         self.data = data
         self.shape = shape
 
+    def __getitem__(self, item) -> lazyrepeatarray:
+        print(item)
+        if self.data.shape == self.shape:
+            output = self.data[item]
+            return lazyrepeatarray(data=output, shape=output.shape)
+        elif self.data.size == 1:
+            test_arr = np.ones(self.shape)[item]  # TODO: Is there a better way to determine output shape?
+            return lazyrepeatarray(data=self.data, shape=test_arr.shape)
+        else:
+            raise NotImplementedError
+
     def __add__(self, other: Any) -> lazyrepeatarray:
         """
         THIS MIGHT LOOK LIKE COPY-PASTED CODE!

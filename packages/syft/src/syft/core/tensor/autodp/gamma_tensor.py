@@ -1559,6 +1559,53 @@ class GammaTensor:
             state=state,
         )
 
+    @staticmethod
+    def combine(gt_list: List[GammaTensor], target_shape: Tuple) -> GammaTensor:
+        data = np.zeros(np.prod(target_shape))
+        last_index = 0
+        min_val = 1e20
+        max_val = -1e20
+
+        data_subs = DataSubjectList(one_hot_lookup=np.empty(0), data_subjects_indexed=np.empty(0))
+
+        for gamma_tensor in gt_list:
+            # Add data points
+            input_size = int(np.prod(gamma_tensor.shape))
+            data[last_index: last_index + input_size] = gamma_tensor.child.flatten()
+            last_index += input_size
+
+            # Add min/max values
+            if isinstance(gamma_tensor.min_val, lazyrepeatarray):
+                local_min = gamma_tensor.min_val.data.min()
+                if local_min < min_val:
+                    min_val = local_min
+
+                local_max = gamma_tensor.max_val.data.max()
+                if local_max < max_val:
+                    max_val = local_max
+
+            elif isinstance(gamma_tensor.min_val, (int, float)):
+                if gamma_tensor.min_val < min_val:
+                    min_val = gamma_tensor.min_val
+
+                if gamma_tensor.max_val < max_val:
+                    max_val = local_max
+            else:
+                raise NotImplementedError(f"Undefined behaviour for type: {type(gamma_tensor.min_val)}")
+
+            # Add data subjects
+            data_subs = DataSubjectList.absorb(data_subs, gamma_tensor.data_subjects)
+
+        data_subs.data_subjects_indexed = data_subs.data_subjects_indexed.reshape(target_shape)
+
+        return GammaTensor(
+            child=data.reshape(target_shape),
+            data_subjects=data_subs,
+            min_val=min_val,
+            max_val=max_val
+        )
+
+
     def publish(
         self,
         get_budget_for_user: Callable,
@@ -1628,9 +1675,53 @@ class GammaTensor:
     def __len__(self) -> int:
         return len(self.child)
 
+    def __getitem__(self, item: Union[str, int, slice, PassthroughTensor]) -> GammaTensor:
+        # TODO: Technically we could reduce ds.one_hot_lookup to remove any DS that won't be there
+        # There technically isn't any penalty for keeping it as is, but maybe there's a sidechannel attack
+        # where you index into one value in a GammaTensor and get all the data subjects of that Tensor?
+
+        if isinstance(self.min_val, (int, float)):
+            minv = self.min_val
+            maxv = self.max_val
+        elif isinstance(self.min_val, lazyrepeatarray):
+            minv = self.min_val[item]
+            maxv = self.max_val[item]
+        else:
+            raise NotImplementedError
+
+        if isinstance(item, PassthroughTensor):
+            data = self.child[item.child]
+            return GammaTensor(
+                child=data,
+                min_val=minv,
+                max_val=maxv,
+                data_subjects=DataSubjectList(
+                    one_hot_lookup=self.data_subjects.one_hot_lookup,
+                    data_subjects_indexed=self.data_subjects.data_subjects_indexed[
+                        item.child
+                    ],
+                ),
+            )
+        else:
+            data = self.child[item]
+            return GammaTensor(
+                child=data,
+                min_val=minv,
+                max_val=maxv,
+                data_subjects=DataSubjectList(
+                    one_hot_lookup=self.data_subjects.one_hot_lookup,
+                    data_subjects_indexed=self.data_subjects.data_subjects_indexed[item]
+                ),
+            )
+
+    def __setitem__(self, key, value):
+        pass
+
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape
+
+
 
     @property
     def lipschitz_bound(self) -> float:

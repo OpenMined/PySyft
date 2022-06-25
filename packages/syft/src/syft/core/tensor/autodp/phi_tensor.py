@@ -1153,6 +1153,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 self.max_vals.data = maxv
 
             if self.data_subjects.one_hot_lookup != value.data_subjects.one_hot_lookup:
+                # return self.gamma[key] = value
                 raise NotImplementedError
 
             return PhiTensor(
