@@ -49,6 +49,7 @@ from .passthrough import PassthroughTensor  # type: ignore
 from .smpc import context
 from .smpc import utils
 from .smpc.mpc_tensor import MPCTensor
+from .util import implements
 
 
 class TensorPointer(Pointer):
@@ -667,3 +668,12 @@ class Tensor(
         tensor.tag_name = tensor_msg.tagName
 
         return tensor
+
+
+@implements(Tensor, np.stack)
+def stack(tensors: List[Tensor]) -> Tensor:
+    child = np.stack([tensor.child for tensor in tensors])
+    public_shape = (len(tensors),) + tensors[0].public_shape
+    public_dtype = tensors[0].public_dtype
+    res = Tensor(child=child, public_dtype=public_dtype, public_shape=public_shape)
+    return res

@@ -19,6 +19,8 @@ from tqdm import tqdm
 from .....ast.klass import get_run_class_method
 from ....common import UID
 from ....tensor.config import DEFAULT_RING_SIZE
+from ....tensor.fixed_precision_tensor import FixedPrecisionTensor
+from ....tensor.smpc import static
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
 from ....tensor.smpc.utils import get_nr_bits
@@ -113,6 +115,10 @@ class ABY3:
 
         TODO: Should modify ripple carry adder to parallel prefix adder.
         """
+        if len(a) != len(b):
+            raise ValueError(
+                "Expected the same amount of bit shares for 'a' and 'b' (Got {len(a)} and {len(b)})"
+            )
         parties = a[0].parties
         parties_info = a[0].parties_info
 
@@ -123,7 +129,7 @@ class ABY3:
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
             "beaver_mul",
-            nr_instances=128,
+            nr_instances=64,
             parties=parties,
             g_kwargs={
                 "a_shape": shape_x,
@@ -134,15 +140,36 @@ class ABY3:
             ring_size=2,
         )
 
+        CryptoPrimitiveProvider.generate_primitives(
+            "beaver_mul",
+            nr_instances=1,
+            parties=parties,
+            g_kwargs={
+                "a_shape": (len(a),) + shape_x,
+                "b_shape": (len(b),) + shape_y,
+                "parties_info": parties_info,
+            },
+            p_kwargs={"a_shape": (len(a),) + shape_x, "b_shape": (len(b),) + shape_y},
+            ring_size=2,
+        )
+
         ring_bits = get_nr_bits(ring_size)
         c = np.array([0], dtype=np.bool)  # carry bits of addition.
+        stacked_a = static.stack(a)
+        stacked_b = static.stack(b)
+        stacked_a.block
+        stacked_b.block
+
+        mul_a_b = stacked_a * stacked_b
+        mul_a_b.block
+
         result: List[MPCTensor] = []
         for idx in range(ring_bits):
             print("Bit Number :", idx)
             s_tmp = a[idx] + b[idx]
             s = s_tmp + c
             if idx != ring_bits - 1:
-                c = a[idx] * b[idx] + c * s_tmp
+                c = mul_a_b[idx] + c * s_tmp
                 c.block
             result.append(s)
         return result

@@ -41,6 +41,7 @@ from ...smpc.store.crypto_store import CryptoStore
 from ..config import DEFAULT_RING_SIZE
 from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import PassthroughTensor  # type: ignore
+from ..util import implements
 
 if TYPE_CHECKING:
     # relative
@@ -929,3 +930,10 @@ class ShareTensor(PassthroughTensor):
     __le__ = le
     __eq__ = eq
     __ne__ = ne
+
+
+@implements(ShareTensor, np.stack)
+def stack(share_tensors: List[ShareTensor]) -> ShareTensor:
+    res = share_tensors[0].copy_tensor()
+    res.child = np.stack([share_tensor.child for share_tensor in share_tensors])
+    return res

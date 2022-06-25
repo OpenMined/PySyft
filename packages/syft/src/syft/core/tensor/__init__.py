@@ -26,6 +26,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         "syft.core.tensor",
         "syft.core.tensor.tensor",
         "syft.core.tensor.smpc",
+        "syft.core.tensor.smpc.static",
         "syft.core.tensor.smpc.share_tensor",
         "syft.core.tensor.fixed_precision_tensor",
         "syft.core.tensor.autodp",
@@ -324,6 +325,9 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.core.tensor.nn.Model.step",
             "syft.lib.python._SyNone",
+        (
+            "syft.core.tensor.smpc.static.stack_helper",
+            "syft.core.tensor.tensor.Tensor",
         ),
     ]
 

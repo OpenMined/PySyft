@@ -509,7 +509,6 @@ class MPCTensor(PassthroughTensor):
         return functools.partial(method_all_shares, __self)
 
     def __getattribute__(self, attr_name: str) -> Any:
-
         if attr_name in METHODS_FORWARD_ALL_SHARES:
             return MPCTensor.hook_method(self, attr_name)
 
@@ -918,6 +917,30 @@ class MPCTensor(PassthroughTensor):
             MPCTensor: with computed sign.
         """
         res: MPCTensor = 2 * (self > 0) - 1  # type: ignore
+        return res
+
+    def __getitem__(self, *args: List[Any], **kwargs: Dict[str, Any]) -> "MPCTensor":
+        shares = []
+        method_name = "__getitem__"
+
+        for share in self.child:
+            method = getattr(share, method_name)
+            new_share = method(*args, **kwargs)
+            shares.append(new_share)
+
+            dummy_res = np.ones(self.mpc_shape, dtype=np.int64)
+            if method_name not in INPLACE_OPS:
+                dummy_res = getattr(dummy_res, method_name)(*args, **kwargs)
+            else:
+                getattr(dummy_res, method_name)(*args, **kwargs)
+
+            new_shape = dummy_res.shape
+        res = MPCTensor(
+            parties=self.parties,
+            shares=shares,
+            shape=new_shape,
+            ring_size=self.ring_size,
+        )
         return res
 
     def __abs__(self) -> MPCTensor:
