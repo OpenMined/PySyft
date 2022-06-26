@@ -1,15 +1,16 @@
-# third party
-import numpy as np
+# stdlib
 from typing import Union
 
+# third party
+import numpy as np
 
 # relative
-from ...autodp.phi_tensor import PhiTensor
 from ...autodp.gamma_tensor import GammaTensor
+from ...autodp.phi_tensor import PhiTensor
 from ..activations import leaky_ReLU
 from ..initializations import XavierInitialization
-from .base import Layer
 from ..utils import dp_zeros
+from .base import Layer
 
 
 class Convolution(Layer):

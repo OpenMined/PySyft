@@ -1,7 +1,10 @@
+# third party
 import numpy as np
-from .optimizers import Adamax
-from .loss import BinaryCrossEntropy
+
+# relative
 from .layers.base import Layer
+from .loss import BinaryCrossEntropy
+from .optimizers import Adamax
 
 
 class Model():
@@ -64,7 +67,7 @@ class Model():
 
                 # forward propagation
                 y_pred = self.predict(x_batch)
-
+    
                 # backward propagation
                 next_grad = self.loss.backward(y_pred, y_batch)
                 for layer in self.layers[::-1]:

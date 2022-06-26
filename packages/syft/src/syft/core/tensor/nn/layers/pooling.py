@@ -1,9 +1,9 @@
 # third party
 import numpy as np
-from ..utils import dp_zeros
 
 # relative
 from ...autodp.phi_tensor import PhiTensor
+from ..utils import dp_zeros
 from .base import Layer
 
 
