@@ -2,9 +2,11 @@
 import numpy as np
 
 # relative
+from ...common.serde.serializable import serializable
 from .utils import dp_maximum
 
 
+@serializable(recursive_serde=True)
 class Optimizer:
     """Abstract optimizer base class.
 
@@ -42,6 +44,7 @@ class Optimizer:
         return self.__class__.__name__
 
 
+@serializable(recursive_serde=True)
 class Adamax(Optimizer):
     """
     Parameters

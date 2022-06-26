@@ -2,12 +2,19 @@
 import numpy as np
 
 # relative
+from ...common.serde.serializable import serializable
 from .layers.base import Layer
 from .loss import BinaryCrossEntropy
 from .optimizers import Adamax
 
 
-class Model():
+@serializable(recursive_serde=True)
+class Model:
+    __name__ = "ModelPointer"
+    __module__ = "syft.core.tensor.nn.model"
+    __attr_allowlist__ = [
+        "layers"
+    ]
     def __init__(self, layers=None):
         self.layers = [] if layers is None else layers
 
@@ -26,8 +33,8 @@ class Model():
             layer.connect_to(next_layer)
             next_layer = layer
 
-        self.loss = BinaryCrossEntropy()
-        self.optimizer = Adamax()
+        self.loss = loss
+        self.optimizer = optimizer
 
     def fit(self, X, Y, max_iter=100, batch_size=64, shuffle=True,
             validation_split=0., validation_data=None):
@@ -67,7 +74,7 @@ class Model():
 
                 # forward propagation
                 y_pred = self.predict(x_batch)
-    
+
                 # backward propagation
                 next_grad = self.loss.backward(y_pred, y_batch)
                 for layer in self.layers[::-1]:
