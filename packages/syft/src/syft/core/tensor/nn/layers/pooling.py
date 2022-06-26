@@ -2,11 +2,13 @@
 import numpy as np
 
 # relative
+from ....common.serde.serializable import serializable
 from ...autodp.phi_tensor import PhiTensor
 from ..utils import dp_zeros
 from .base import Layer
 
 
+@serializable(recursive_serde=True)
 class AvgPool(Layer):
     """Average pooling operation for spatial data.
     Parameters
@@ -112,6 +114,7 @@ class AvgPool(Layer):
         return layer_grads
 
 
+@serializable(recursive_serde=True)
 class MaxPool(Layer):
     """Max pooling operation for spatial data.
     Parameters

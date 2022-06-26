@@ -2,11 +2,12 @@
 import numpy as np
 
 # relative
+from ....common.serde.serializable import serializable
 from ...autodp.phi_tensor import PhiTensor
-from ...lazy_repeat_array import lazyrepeatarray as lra
 from .base import Layer
 
 
+@serializable(recursive_serde=True)
 class BatchNorm(Layer):
     def __init__(self, epsilon=1e-6, momentum=0.9, axis=0):
         self.epsilon = epsilon

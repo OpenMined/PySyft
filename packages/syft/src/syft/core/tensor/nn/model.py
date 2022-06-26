@@ -13,7 +13,9 @@ class Model:
     __name__ = "ModelPointer"
     __module__ = "syft.core.tensor.nn.model"
     __attr_allowlist__ = [
-        "layers"
+        "layers",
+        "loss",
+        "optimizer",
     ]
     def __init__(self, layers=None):
         self.layers = [] if layers is None else layers

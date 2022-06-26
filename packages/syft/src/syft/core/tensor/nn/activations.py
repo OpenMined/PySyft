@@ -5,9 +5,11 @@ from typing import Optional
 import numpy as np
 
 # relative
+from ...common.serde.serializable import serializable
 from ..autodp.phi_tensor import PhiTensor
 
 
+@serializable(recursive_serde=True)
 class Activation(object):
     """Base class for activations.
 
