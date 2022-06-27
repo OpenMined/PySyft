@@ -2,11 +2,13 @@
 import numpy as np
 
 # relative
+from ....common.serde.serializable import serializable
 from ...autodp.phi_tensor import PhiTensor
 from ..initializations import XavierInitialization
 from .base import Layer
 
 
+@serializable(recursive_serde=True)
 class Linear(Layer):
     def __init__(self, n_out, n_in=None):
         self.n_out = n_out

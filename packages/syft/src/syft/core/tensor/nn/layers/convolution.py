@@ -1,23 +1,41 @@
-# third party
-import numpy as np
+# stdlib
 from typing import Union
 
+# third party
+import numpy as np
 
 # relative
-from ...autodp.phi_tensor import PhiTensor
+from ....common.serde.serializable import serializable
 from ...autodp.gamma_tensor import GammaTensor
+from ...autodp.phi_tensor import PhiTensor
 from ..activations import leaky_ReLU
 from ..initializations import XavierInitialization
-from .base import Layer
 from ..utils import dp_zeros
+from .base import Layer
 
 
+@serializable(recursive_serde=True)
 class Convolution(Layer):
     """
     If this is the first layer in a model, provide the keyword argument `input_shape`
     (tuple of integers, does NOT include the sample axis, N.),
     e.g. `input_shape=(3, 128, 128)` for 128x128 RGB pictures.
     """
+    __name__ = "ConvPointer"
+    __module__ = "syft.core.tensor.nn.layers.convolution"
+    __attr_allowlist__ = [
+        "nb_filter",
+        "filter_size",
+        "input_shape",
+        "stride",
+        "W",
+        "b",
+        "dW",
+        "db",
+        "out_shape",
+        "last_output",
+        "last_input"
+    ]
 
     def __init__(self, nb_filter, filter_size, input_shape=None, stride=1):
         self.nb_filter = nb_filter

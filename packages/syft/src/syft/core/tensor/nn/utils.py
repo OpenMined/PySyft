@@ -1,9 +1,14 @@
+# stdlib
 from typing import Tuple
 from typing import Union
+
+# third party
 import numpy as np
+
+# relative
 from ...adp.data_subject_list import DataSubjectList
-from ..autodp.phi_tensor import PhiTensor
 from ..autodp.gamma_tensor import GammaTensor
+from ..autodp.phi_tensor import PhiTensor
 from ..lazy_repeat_array import lazyrepeatarray
 
 
