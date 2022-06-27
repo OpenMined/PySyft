@@ -1577,6 +1577,113 @@ class GammaTensor:
             state=output_state,
         )
 
+    def mean(self, axis) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        def _mean(state, axis=axis):
+            return jnp.mean(self.run(state), axis)
+
+        result = self.child.mean(axis)
+        minv = self.min_vals.data if isinstance(self.min_vals, lazyrepeatarray) else self.min_vals
+        maxv = self.max_vals.data if isinstance(self.max_vals, lazyrepeatarray) else self.max_vals
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.reshape(result.shape),
+            min_vals=lazyrepeatarray(data=minv, shape=result.shape),
+            max_vals=lazyrepeatarray(data=(maxv + minv)/2, shape=result.shape),
+            state=output_state,
+            func=_mean
+        )
+
+    def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
+        # TODO: These bounds might not be super tight- if min,max = [-1, 1], there might be a dot product
+        # such that the minimum value should be 0
+        if isinstance(other, np.ndarray):
+            result = jnp.dot(self.child, other)
+
+            if isinstance(self.min_vals, lazyrepeatarray):
+                minv = lazyrepeatarray(
+                    data=jnp.dot(np.ones_like(self.child) * self.min_vals.data, other).min(),
+                    shape=result.shape
+                )
+                maxv = lazyrepeatarray(
+                    data=jnp.dot(np.ones_like(self.child) * self.max_vals.data, other).max(),
+                    shape=result.shape
+                )
+            elif isinstance(self.min_vals, (int, float)):
+                minv = lazyrepeatarray(
+                    data=jnp.dot(np.ones_like(self.child) * self.min_vals, other).min(),
+                    shape=result.shape
+                )
+                maxv = lazyrepeatarray(
+                    data=jnp.dot(np.ones_like(self.child) * self.max_vals, other).max(),
+                    shape=result.shape
+                )
+            else:
+                raise NotImplementedError
+
+            return GammaTensor(
+                child=result,
+                data_subjects=self.data_subjects,
+                min_vals=minv,
+                max_vals=maxv
+            )
+        elif isinstance(other, GammaTensor):
+            output_state = dict()
+            output_state[self.id] = self
+            output_state[other.id] = other
+
+            def _dot(state: dict):
+                return jnp.dot(self.run(state))
+
+            result = jnp.dot(self.child, other.child)
+
+            if isinstance(self.min_vals, lazyrepeatarray):
+
+                minv = lazyrepeatarray(
+                    data=jnp.dot(
+                        np.ones_like(self.child) * self.min_vals.data,
+                        np.ones_like(other.child) * other.min_vals.data,
+                    ).min(),
+                    shape=result.shape
+                )
+                maxv = lazyrepeatarray(
+                    data=jnp.dot(
+                        np.ones_like(self.child) * self.max_vals.data,
+                        np.ones_like(other.child) * other.max_vals.data,
+                    ).max(),
+                    shape=result.shape
+                )
+            elif isinstance(self.min_vals, (int, float)):
+                minv = lazyrepeatarray(
+                    data=jnp.dot(
+                        np.ones_like(self.child) * self.min_vals,
+                        np.ones_like(other.child) * other.min_vals,
+                    ).min(),
+                    shape=result.shape
+                )
+                maxv = lazyrepeatarray(
+                    data=jnp.dot(
+                        np.ones_like(self.child) * self.max_vals,
+                        np.ones_like(other.child) * other.max_vals
+                    ).max(),
+                    shape=result.shape
+                )
+            else:
+                raise NotImplementedError
+
+            return GammaTensor(
+                child=result,
+                data_subjects=self.data_subjects,
+                min_vals=minv,
+                max_vals=maxv,
+                func=_dot,
+                state=output_state
+            )
+        else:
+            raise NotImplementedError(f"Undefined behaviour for GT.dot with {type(other)}")
+
     def sqrt(self) -> GammaTensor:
         def _sqrt(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sqrt(self.run(state))
