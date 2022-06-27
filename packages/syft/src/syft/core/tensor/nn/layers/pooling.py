@@ -27,9 +27,9 @@ class AvgPool(Layer):
     def __init__(self, pool_size):
         self.pool_size = pool_size
 
-        self.out_shape = 0
-        self.out_shape = None
         self.input_shape = None
+        self.out_shape = None
+        self.last_input = None
 
     def connect_to(self, prev_layer):
         assert 5 > len(prev_layer.out_shape) >= 3
@@ -50,8 +50,6 @@ class AvgPool(Layer):
         new_h, new_w = self.out_shape[-2:]
 
         # forward
-        # outputs = np.zeros(self.input_shape[:-2] + self.out_shape[-2:])
-        #outputs = PhiTensor(child=outputs, data_subjects=np.zeros_like(outputs), min_vals=0, max_vals=1)
         outputs = dp_zeros(self.input_shape[:-2] + self.out_shape[-2:], data_subjects=input.data_subjects)
 
         ndim = len(input.shape)
@@ -129,7 +127,7 @@ class MaxPool(Layer):
         or 4D tensor with shape:
         `(samples, pooled_rows, pooled_cols, channels)` if dim_ordering='tf'.
     """
-    def __init__(self, pool_size):
+    def __init__(self, pool_size, stride=1):
         self.pool_size = pool_size
 
         self.input_shape = None
@@ -156,8 +154,10 @@ class MaxPool(Layer):
 
         # forward
         self.last_input = input
-        outputs = np.zeros(self.input_shape[:-2] + self.out_shape[-2:])
-        outputs = PhiTensor(child=outputs, data_subjects=np.zeros_like(outputs), min_vals=0, max_vals=1)
+        outputs = dp_zeros(
+            self.input_shape[:-2] + self.out_shape[-2:],
+            data_subjects=input.data_subjects
+        )
 
         ndim = len(input.shape)
 
@@ -181,15 +181,13 @@ class MaxPool(Layer):
         else:
             raise ValueError()
 
-
         return outputs
 
     def backward(self, pre_grad, *args, **kwargs):
         new_h, new_w = self.out_shape[-2:]
         pool_h, pool_w = self.pool_size
 
-        layer_grads = np.zeros(self.input_shape)
-        layer_grads = PhiTensor(child=layer_grads, data_subjects=np.zeros_like(layer_grads), min_vals=0, max_vals=1)
+        layer_grads = input.zeros_like()
 
         ndim = len(pre_grad.shape)
 

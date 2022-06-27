@@ -2,20 +2,15 @@
 from typing import Optional
 from typing import Union
 
-# third party
-import numpy as np
-
 # relative
 from ...common.serde.serializable import serializable
-from ..autodp.phi_tensor import PhiTensor
 from ..autodp.gamma_tensor import GammaTensor
+from ..autodp.phi_tensor import PhiTensor
 
 
 @serializable(recursive_serde=True)
 class Activation(object):
-    """Base class for activations.
-
-    """
+    """Base class for activations."""
 
     def __init__(self):
         self.last_forward = None
@@ -46,7 +41,7 @@ class Activation(object):
 
 class leaky_ReLU(Activation):
 
-    def __init__(self, slope=0.01):
+    def __init__(self, slope: float=0.01):
         super(leaky_ReLU, self).__init__()
         self.slope = slope
 
@@ -77,3 +72,16 @@ class leaky_ReLU(Activation):
             )
         else:
             raise NotImplementedError(f"Undefined behaviour for type {type(input_array)}")
+
+
+def get(activation: Optional[Activation]):
+    if activation is None:
+        return leaky_ReLU()
+    elif callable(activation):
+        return activation()
+    elif isinstance(activation, Activation):
+        return activation
+    else:
+        raise TypeError(
+            f"Could not interpret activation function identifier: {activation}"
+        )

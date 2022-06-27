@@ -31,7 +31,7 @@ class Model:
         self.layers[0].first_layer = True
 
         next_layer = None
-        for layer in self.layers:
+        for _, layer in enumerate(self.layers):
             layer.connect_to(next_layer)
             next_layer = layer
 

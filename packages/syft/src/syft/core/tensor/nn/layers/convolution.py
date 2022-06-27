@@ -1,14 +1,17 @@
 # stdlib
+from typing import Dict
+from typing import Optional
+from typing import Tuple
 from typing import Union
 
 # third party
 import numpy as np
 
 # relative
+from .. import activations
 from ....common.serde.serializable import serializable
 from ...autodp.gamma_tensor import GammaTensor
 from ...autodp.phi_tensor import PhiTensor
-from ..activations import leaky_ReLU
 from ..initializations import XavierInitialization
 from ..utils import dp_zeros
 from .base import Layer
@@ -37,11 +40,12 @@ class Convolution(Layer):
         "last_input"
     ]
 
-    def __init__(self, nb_filter, filter_size, input_shape=None, stride=1):
+    def __init__(self, nb_filter, filter_size, input_shape: Optional[Tuple]=None, stride: int=1, padding: int=0, activation: Optional[activations.Activation]=None):
         self.nb_filter = nb_filter
         self.filter_size = filter_size
         self.input_shape = input_shape
         self.stride = stride
+        self.padding = padding
 
         self.W, self.dW = None, None
         self.b, self.db = None, None
@@ -50,9 +54,9 @@ class Convolution(Layer):
         self.last_input = None
 
         self.init = XavierInitialization()
-        self.activation = leaky_ReLU()
+        self.activation = activations.get(activation)
 
-    def connect_to(self, prev_layer=None):
+    def connect_to(self, prev_layer: Optional[Layer]=None):
         if prev_layer is None:
             assert self.input_shape is not None
             input_shape = self.input_shape
@@ -70,8 +74,8 @@ class Convolution(Layer):
         else:
             raise NotImplementedError
 
-        height = (pre_height - filter_height) // self.stride + 1
-        width = (pre_width - filter_width) // self.stride + 1
+        height = (pre_height - filter_height + 2 * self.padding) // self.stride + 1
+        width = (pre_width - filter_width +  2 * self.padding) // self.stride + 1
 
         # output shape
         self.out_shape = (nb_batch, self.nb_filter, height, width)
@@ -80,7 +84,7 @@ class Convolution(Layer):
         self.W = self.init((self.nb_filter, pre_nb_filter, filter_height, filter_width))
         self.b = np.zeros((self.nb_filter,))
 
-    def forward(self, input: Union[PhiTensor, GammaTensor], *args, **kwargs):
+    def forward(self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict):
 
         self.last_input = input
 
@@ -114,7 +118,8 @@ class Convolution(Layer):
         # self.last_output: (nb_batch, output_depth, image height, image width)
 
         # TODO: Min/max vals are direct function of private data- fix this when we have time
-        self.last_output = self.activation.forward(outputs)
+
+        self.last_output = self.activation.forward(outputs) if self.activation is not None else outputs
 
         return self.last_output
 
@@ -139,7 +144,7 @@ class Convolution(Layer):
         # TODO: Decide if dW and db needs to be DP Tensors or can they live as numpy arrays
         self.dW = np.zeros((self.W.shape))
         self.db = np.zeros((self.b.shape))
-        delta = pre_grad * self.activation.derivative()
+        delta = (pre_grad * self.activation.derivative()) if self.activation is not None else pre_grad
 
         # dW
         for r in np.arange(self.nb_filter):
