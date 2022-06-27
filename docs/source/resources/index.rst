@@ -1,0 +1,51 @@
+.. _glossary:
+
+.. toctree::
+   :maxdepth: 3
+
+Resources
+==============
+This is a collection of resources in various multimedia and text formats to help you with different topics related to PySyft.
+
+.. note::
+  If you have seen an article/video/talk that has helped you but is not listed here, feel free to open a Pull Request to add the same.
+
+Papers
+~~~~~~~~~~~~~~~~~~~~~
+
+Video Courses
+~~~~~~~~~~~~~~~~~~~~~
+* `Our Privacy Opportunity by OpenMined <https://courses.openmined.org/courses/our-privacy-opportunity>`_
+
+* `Foundations of Private Computation by OpenMined <https://courses.openmined.org/courses/foundations-of-private-computation>`_
+
+* `Introduction to Remote Data Science by OpenMined <https://courses.openmined.org/courses/introduction-to-remote-data-science>`_
+
+Articles or Blogs
+~~~~~~~~~~~~~~~~~~~~~
+* `Official OpenMined Blog <https://blog.openmined.org/>`_
+
+Conference Talks or Videos
+~~~~~~~~~~~~~~~~~~~~~
+
+* `Official OpenMined YouTube Channel <https://www.youtube.com/c/OpenMinedOrg>`_
+
+* `Privacy Preserving AI by Andrew Trask <https://www.youtube.com/watch?v=NJBBE_SN90A>`_
+
+* `How do we Democratize Access to Data? by Siraj Raval <https://www.youtube.com/watch?v=HAC6sqq7_-U>`_
+
+* `PETs: Remote Data Science Unleashed by Madhava Jay <https://www.youtube.com/watch?v=qVf0tPBzr2k>`_
+
+* `Federared Learning Explained by Mukul Rathi <https://youtu.be/nBGQQHPkyNY>`_
+
+* `Deep Learning with Differential Privacy by Mukul Rathi <https://www.youtube.com/watch?v=oNSelFJnPaM>`_
+
+Jupyter Notebooks
+~~~~~~~~~~~~~~~~~~~~~
+
+
+Reference Books
+~~~~~~~~~~~~~~~~~~~~~
+* `Designing Data-Intensive Applications by Martin Kleppmann <https://dataintensive.net/>`_
+
+* `Real-World Cryptography by David Wang <https://www.manning.com/books/real-world-cryptography>`_

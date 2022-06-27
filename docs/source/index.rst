@@ -60,6 +60,12 @@ Resources
 
   deployment/glossary
 
+.. toctree::
+  :maxdepth: 1
+  :hidden:
+
+  resources/index
+
 
 .. toctree:
    :caption: API Docs
