@@ -1753,6 +1753,7 @@ class GammaTensor:
             )
 
     def __setitem__(self, key, value):
+        # relative
         from .phi_tensor import PhiTensor
 
         if isinstance(value, (PhiTensor, GammaTensor)):
