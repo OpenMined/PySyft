@@ -29,4 +29,5 @@ syft.core.node.device
 
    syft.core.node.device.client
    syft.core.node.device.device
+   syft.core.node.device.device_type
 

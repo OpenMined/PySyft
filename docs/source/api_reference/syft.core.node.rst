@@ -32,5 +32,6 @@ syft.core.node
    syft.core.node.device
    syft.core.node.domain
    syft.core.node.network
+   syft.core.node.pki
    syft.core.node.vm
 

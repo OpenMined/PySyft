@@ -13,7 +13,7 @@ echo $COMMAND | docker exec -i $TAILSCALE_CONTAINER_NAME ash 2>&1
 
 # reset node and node_route tables in db
 DB_CONTAINER_NAME=$(docker ps --format '{{.Names}}' | grep -m 1 db)
-FLUSH_COMMAND='psql -U postgres -d app -c "TRUNCATE node, node_route RESTART IDENTITY;"'
+FLUSH_COMMAND='psql -U postgres -d app -c "TRUNCATE node, node_route, association_request RESTART IDENTITY;"'
 echo $FLUSH_COMMAND | docker exec -i $DB_CONTAINER_NAME bash 2>&1
 
 # flush the worker queue

@@ -89,14 +89,14 @@ class BeaverAction(ImmediateActionWithoutReply):
             BeaverAction.beaver_populate(value, location, node)
 
     def _object2proto(self) -> BeaverAction_PB:
-        values = [sy.serialize(value) for value in self.values]
+        values = [sy.serialize(value, to_bytes=True) for value in self.values]
         locations = [sy.serialize(location) for location in self.locations]
         addr = sy.serialize(self.address)
         return BeaverAction_PB(values=values, locations=locations, address=addr)
 
     @staticmethod
     def _proto2object(proto: BeaverAction_PB) -> "BeaverAction":
-        values = [sy.deserialize(value) for value in proto.values]
+        values = [sy.deserialize(value, from_bytes=True) for value in proto.values]
         locations = [sy.deserialize(location) for location in proto.locations]
         addr = sy.deserialize(blob=proto.address)
         return BeaverAction(values=values, locations=locations, address=addr)

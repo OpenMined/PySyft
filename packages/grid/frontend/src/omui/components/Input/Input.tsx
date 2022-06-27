@@ -1,10 +1,16 @@
-import React, {forwardRef} from 'react'
+import React, { forwardRef } from 'react'
 import cn from 'classnames'
-import {InputAddon} from './InputAddon'
-import {Text} from '@/omui'
-import {Optional} from '@/components/lib'
+import { InputAddon } from './InputAddon'
+import { Text } from '@/omui'
+import { Optional } from '@/components/lib'
 
-import type {ReactChild, ReactNode, PropsWithRef, ComponentProps, HTMLAttributes} from 'react'
+import type {
+  ReactChild,
+  ReactNode,
+  PropsWithRef,
+  ComponentProps,
+  HTMLAttributes,
+} from 'react'
 
 export type InputVariantProp = 'outline' | 'flushed' | 'filled'
 
@@ -89,8 +95,10 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const errorClasses = cn(
     'border-error-500 text-error-600 dark:border-error-400',
     variant === 'flushed' ? 'border-b rounded-t' : 'border rounded',
-    addonUnstyled ? 'dark:text-error-300' : 'bg-error-50 dark:text-white dark:bg-error-600',
-    {'dark:bg-gray-800': addonUnstyled && variant === 'filled'}
+    addonUnstyled
+      ? 'dark:text-error-300'
+      : 'bg-error-50 dark:text-white dark:bg-error-600',
+    { 'dark:bg-gray-800': addonUnstyled && variant === 'filled' }
   )
 
   const variantClasses = cn(
@@ -99,11 +107,12 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       'border rounded': variant === 'outline',
       'border-b rounded-t': variant === 'flushed',
       'border-0 rounded bg-gray-100 focus-within:bg-primary-100 dark:bg-gray-600 dark:focus-within:bg-primary-600':
-        variant === 'filled'
+        variant === 'filled',
     },
     (variant === 'outline' || variant === 'flushed') && {
-      'bg-gray-50 focus-within:bg-primary-50 dark:bg-gray-700 dark:focus-within:bg-primary-600': !addonUnstyled,
-      'dark:bg-gray-900 dark:focus-within:text-primary-300': addonUnstyled
+      'bg-gray-50 focus-within:bg-primary-50 dark:bg-gray-700 dark:focus-within:bg-primary-600':
+        !addonUnstyled,
+      'dark:bg-gray-900 dark:focus-within:text-primary-300': addonUnstyled,
     }
   )
 
@@ -129,7 +138,7 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   const ariaAttributes = {
     'aria-invalid': error ? true : undefined,
     'aria-required': required ? true : undefined,
-    'aria-readonly': readOnly ? true : undefined
+    'aria-readonly': readOnly ? true : undefined,
   }
 
   return (
@@ -156,7 +165,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             error={error}
             disabled={disabled}
             side="left"
-            {...addonLeftProps}>
+            {...addonLeftProps}
+          >
             {addonLeft}
           </InputAddon>
         )}
@@ -179,7 +189,8 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
             error={error}
             disabled={disabled}
             side="right"
-            {...addonRightProps}>
+            {...addonRightProps}
+          >
             {addonRight}
           </InputAddon>
         )}
@@ -187,8 +198,14 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
       {hint && (
         <Text
           as="p"
-          className={cn('m-2 mb-0', error ? 'text-error-600 dark:text-error-200' : 'text-gray-500 dark:text-gray-200')}
-          size="sm">
+          className={cn(
+            'm-2 mb-0',
+            error
+              ? 'text-error-600 dark:text-error-200'
+              : 'text-gray-500 dark:text-gray-200'
+          )}
+          size="sm"
+        >
           {hint}
         </Text>
       )}
@@ -196,4 +213,4 @@ const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
   )
 })
 
-export {Input}
+export { Input }
