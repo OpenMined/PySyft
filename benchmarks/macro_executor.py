@@ -116,7 +116,7 @@ tf = round(time() - t0, 3)
 print(f"Time taken to load {dataset_name} dataset: {tf} seconds")
 benchmark_report["load_dataset"] = tf
 
-data = domain_node.datasets[-1]["1B Tweets dataset"]
+data = domain_node.datasets[-1]["1M Tweets dataset"]
 
 print(data)
 
