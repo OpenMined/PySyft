@@ -1,36 +1,39 @@
 # stdlib
 from typing import Optional
+from typing import Union
 
 # third party
 import numpy as np
 
 # relative
 from ..autodp.phi_tensor import PhiTensor
+from ..autodp.gamma_tensor import GammaTensor
 
 
 class Activation(object):
     """Base class for activations.
 
     """
+
     def __init__(self):
         self.last_forward = None
 
-    def forward(self, input: PhiTensor):
+    def forward(self, input: Union[PhiTensor, GammaTensor]):
         """Forward Step.
 
         Args:
-            input (PhiTensor): the input matrix
+            input (PhiTensor or GammaTensor): the input matrix
         """
 
         raise NotImplementedError
 
-    def derivative(self, input: Optional[PhiTensor]=None):
+    def derivative(self, input: Optional[Union[PhiTensor, GammaTensor]] = None):
         """Backward Step.
 
         _extended_summary_
 
         Args:
-            input (Optional[PhiTensor], optional): If provide `input`, this function will not use `last_forward`. Defaults to None.
+            input (Optional[PhiTensor, GammaTensor], optional): If provide `input`, this function will not use `last_forward`. Defaults to None.
         """
 
         raise NotImplementedError
@@ -45,7 +48,7 @@ class leaky_ReLU(Activation):
         super(leaky_ReLU, self).__init__()
         self.slope = slope
 
-    def forward(self, input_array: PhiTensor):
+    def forward(self, input_array: Union[PhiTensor, GammaTensor]):
         # Last image that has been forward passed through this activation function
         self.last_forward = input_array
 
@@ -53,13 +56,22 @@ class leaky_ReLU(Activation):
 
         return gt * input_array + ((gt * -1) + 1) * input_array * self.slope
 
-    def derivative(self, input_array: Optional[PhiTensor] = None):
+    def derivative(self, input_array: Optional[Union[PhiTensor, GammaTensor]] = None) -> Union[PhiTensor, GammaTensor]:
         last_forward = input_array if input_array else self.last_forward
-        res = np.ones(last_forward.shape)
-        idx = last_forward <= 0
-        res[idx.child] = self.slope
+        res = (last_forward > 0).child * 1 + (last_forward <= 0).child * self.slope
 
-        return PhiTensor(child=res,
-                         data_subjects=last_forward.data_subjects,
-                         min_vals=last_forward.min_vals * 0,
-                         max_vals=last_forward.max_vals * 1)
+        if isinstance(input_array, PhiTensor):
+            return PhiTensor(child=res,
+                             data_subjects=last_forward.data_subjects,
+                             min_vals=last_forward.min_vals * 0,
+                             max_vals=last_forward.max_vals * 1
+                             )
+        elif isinstance(input_array, GammaTensor):
+            return GammaTensor(
+                child=res,
+                data_subjects=last_forward.data_subjects,
+                min_val=last_forward.min_val * 0,
+                max_val=last_forward.max_val * 1
+            )
+        else:
+            raise NotImplementedError(f"Undefined behaviour for type {type(input_array)}")

@@ -139,6 +139,12 @@ class DataSubjectList:
             self.data_subjects_indexed.flatten(),
         )
 
+    def flatten(self) -> DataSubjectList:
+        return DataSubjectList(
+            one_hot_lookup=self.one_hot_lookup.copy(),
+            data_subjects_indexed=self.data_subjects_indexed.flatten()
+        )
+
     @property
     def shape(self) -> Tuple:
         return self.data_subjects_indexed.shape
@@ -235,7 +241,7 @@ class DataSubjectList:
     def absorb(
             dsl1: DataSubjectList, dsl2: DataSubjectList
     ) -> DataSubjectList:
-
+        # TODO: Check if DSLs need to be flattened before appending, if different sizes?
 
         """
         Unlike Combine() which creates a DSL for a GammaTensor where one data point is owned

@@ -1337,6 +1337,44 @@ class GammaTensor:
             state=output_state,
         )
 
+    def __le__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+
+            def _le(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.less_equal(self.run(state), other.run(state))
+
+            output_state[other.id] = other
+            child = self.child.__le__(other.child)
+
+        else:
+
+            def _le(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.less_equal(self.run(state), other)
+
+            child = self.child.__le__(other)
+
+        min_val = self.min_val * 0
+        max_val = (self.max_val * 0) + 1
+
+        return GammaTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_val=min_val,
+            max_val=max_val,
+            func=_le,
+            state=output_state,
+        )
+
     def exp(self) -> GammaTensor:
         output_state = dict()
         # Add this tensor to the chain
