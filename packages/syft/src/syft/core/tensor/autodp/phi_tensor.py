@@ -1140,7 +1140,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects,
         )
 
-    def __setitem__(self, key, value: Union[PhiTensor, np.ndarray]) -> PhiTensor:
+    def __setitem__(self, key, value: Union[PhiTensor, np.ndarray]) -> Union[PhiTensor, GammaTensor]:
         if isinstance(value, PhiTensor):
             self.child[key] = value.child
             minv = value.child.min()
@@ -1153,8 +1153,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 self.max_vals.data = maxv
 
             if self.data_subjects.one_hot_lookup != value.data_subjects.one_hot_lookup:
-                # return self.gamma[key] = value
-                raise NotImplementedError
+                gamma_output = self.gamma
+                gamma_output[key] = value
+                return gamma_output
 
             return PhiTensor(
                 child=self.child,
@@ -1162,6 +1163,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 min_vals=self.min_vals,
                 max_vals=self.max_vals,
             )
+        elif isinstance(value, GammaTensor):
+            gamma = self.gamma
+            gamma[key] = value
+            return gamma
         elif isinstance(value, np.ndarray):
             self.child[key] = value
             minv = value.min()
@@ -1369,8 +1374,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         gamma_tensor = GammaTensor(
             child=self.child,
             data_subjects=self.data_subjects,
-            min_val=self.min_vals,
-            max_val=self.max_vals,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
         )
 
         return gamma_tensor
@@ -1742,7 +1747,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             data = self.child.transpose(*args)
 
-        # TODO: Should we give warnings for min_val and max_val being single floats/integers/booleans too?
+        # TODO: Should we give warnings for min_vals and max_vals being single floats/integers/booleans too?
         if (
             isinstance(self.min_vals, int)
             or isinstance(self.min_vals, float)
@@ -1954,7 +1959,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     data_subjects=self.data_subjects,
                 )
             else:
-                raise NotImplementedError
+                return self.gamma.dot(other.gamma)
         elif isinstance(other, GammaTensor):
             return self.gamma.dot(other)
         else:
@@ -1982,8 +1987,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         res = GammaTensor(
             child=self.child.sum(*args, **kwargs),
             data_subjects=self.data_subjects.sum(),
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
         )
 
         return res

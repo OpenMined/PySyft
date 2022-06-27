@@ -83,8 +83,8 @@ def test_gamma_serde(
 
     assert de.child == gamma_tensor1.child
     assert de.data_subjects == gamma_tensor1.data_subjects
-    assert de.min_val == gamma_tensor1.min_val
-    assert de.max_val == gamma_tensor1.max_val
+    assert de.min_vals == gamma_tensor1.min_vals
+    assert de.max_vals == gamma_tensor1.max_vals
     assert de.is_linear == gamma_tensor1.is_linear
     assert de.func == gamma_tensor1.func
     assert de.id == gamma_tensor1.id

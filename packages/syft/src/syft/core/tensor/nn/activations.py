@@ -72,8 +72,8 @@ class leaky_ReLU(Activation):
             return GammaTensor(
                 child=res,
                 data_subjects=last_forward.data_subjects,
-                min_val=last_forward.min_val * 0,
-                max_val=last_forward.max_val * 1
+                min_val=last_forward.min_vals * 0,
+                max_val=last_forward.max_vals * 1
             )
         else:
             raise NotImplementedError(f"Undefined behaviour for type {type(input_array)}")

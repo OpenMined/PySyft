@@ -171,10 +171,10 @@ def test_add_tensor_types(
         assert isinstance(result, PT), "PT + Tensor != PT"
         assert (
             result.max_vals == reference_tensor.max_vals + simple_tensor.child.max()
-        ), "PT + Tensor: incorrect max_val"
+        ), "PT + Tensor: incorrect max_vals"
         assert (
             result.min_vals == reference_tensor.min_vals + simple_tensor.child.min()
-        ), "PT + Tensor: incorrect min_val"
+        ), "PT + Tensor: incorrect min_vals"
 
 
 def test_add_single_data_subjects(
@@ -201,10 +201,10 @@ def test_add_single_data_subjects(
     assert isinstance(result, PT), "Addition of two PTs is wrong type"
     assert (
         result.max_vals == 2 * upper_bound
-    ).all(), "Addition of two PTs results in incorrect max_val"
+    ).all(), "Addition of two PTs results in incorrect max_vals"
     assert (
         result.min_vals == 2 * lower_bound
-    ).all(), "Addition of two PTs results in incorrect min_val"
+    ).all(), "Addition of two PTs results in incorrect min_vals"
 
     # Try with negative values
     tensor3 = PT(
@@ -218,10 +218,10 @@ def test_add_single_data_subjects(
     assert isinstance(result, PT), "Addition of two PTs is wrong type"
     assert (
         result.max_vals == tensor3.max_vals + tensor1.max_vals
-    ).all(), "PT + PT results in incorrect max_val"
+    ).all(), "PT + PT results in incorrect max_vals"
     assert (
         result.min_vals == tensor3.min_vals + tensor1.min_vals
-    ).all(), "PT + PT results in incorrect min_val"
+    ).all(), "PT + PT results in incorrect min_vals"
 
 
 def test_serde(

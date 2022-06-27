@@ -1044,8 +1044,8 @@ class GammaTensor:
 
     child: jnp.array
     data_subjects: DataSubjectList
-    min_val: lazyrepeatarray = flax.struct.field(pytree_node=False)
-    max_val: lazyrepeatarray = flax.struct.field(pytree_node=False)
+    min_vals: lazyrepeatarray = flax.struct.field(pytree_node=False)
+    max_vals: lazyrepeatarray = flax.struct.field(pytree_node=False)
     is_linear: bool = True
     func: Callable = flax.struct.field(pytree_node=False, default_factory=lambda: no_op)
     id: str = flax.struct.field(
@@ -1095,22 +1095,22 @@ class GammaTensor:
             # print("this is the output_state", output_state)
 
             child = self.child + other.child
-            min_val = self.min_val + other.min_val
-            max_val = self.max_val + other.max_val
+            min_val = self.min_vals + other.min_vals
+            max_val = self.max_vals + other.max_vals
         else:
 
             def _add(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.add(self.run(state), other)
 
             child = self.child + other
-            min_val = self.min_val + other
-            max_val = self.max_val + other
+            min_val = self.min_vals + other
+            max_val = self.max_vals + other
         # print("the state we returned is: ", output_state)
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_add,
             state=output_state,
         )
@@ -1137,15 +1137,15 @@ class GammaTensor:
             # print("this is the output_state", output_state)
 
             child = self.child - other.child
-            min_min = self.min_val.data - other.min_val.data
-            min_max = self.min_val.data - other.max_val.data
-            max_min = self.max_val.data - other.min_val.data
-            max_max = self.max_val.data - other.max_val.data
+            min_min = self.min_vals.data - other.min_vals.data
+            min_max = self.min_vals.data - other.max_vals.data
+            max_min = self.max_vals.data - other.min_vals.data
+            max_max = self.max_vals.data - other.max_vals.data
             _min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
             _max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
-            min_val = self.min_val.copy()
+            min_val = self.min_vals.copy()
             min_val.data = _min_val
-            max_val = self.max_val.copy()
+            max_val = self.max_vals.copy()
             max_val.data = _max_val
 
         else:
@@ -1154,14 +1154,14 @@ class GammaTensor:
                 return jnp.subtract(self.run(state), other)
 
             child = self.child - other
-            min_val = self.min_val - other
-            max_val = self.max_val - other
+            min_val = self.min_vals - other
+            max_val = self.max_vals - other
         # print("the state we returned is: ", output_state)
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_sub,
             state=output_state,
         )
@@ -1184,10 +1184,10 @@ class GammaTensor:
 
             output_state[other.id] = other
             child = self.child * other.child
-            min_min = self.min_val.data * other.min_val.data
-            min_max = self.min_val.data * other.max_val.data
-            max_min = self.max_val.data * other.min_val.data
-            max_max = self.max_val.data * other.max_val.data
+            min_min = self.min_vals.data * other.min_vals.data
+            min_max = self.min_vals.data * other.max_vals.data
+            max_min = self.max_vals.data * other.min_vals.data
+            max_max = self.max_vals.data * other.max_vals.data
             _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
             _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
 
@@ -1197,23 +1197,23 @@ class GammaTensor:
                 return jnp.multiply(self.run(state), other)
 
             child = self.child * other
-            min_min = self.min_val.data * other
-            min_max = self.min_val.data * other
-            max_min = self.max_val.data * other
-            max_max = self.max_val.data * other
+            min_min = self.min_vals.data * other
+            min_max = self.min_vals.data * other
+            max_min = self.max_vals.data * other
+            max_max = self.max_vals.data * other
             _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
             _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
 
-        min_val = self.min_val.copy()
+        min_val = self.min_vals.copy()
         min_val.data = _min_val
-        max_val = self.max_val.copy()
+        max_val = self.max_vals.copy()
         max_val.data = _max_val
 
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_mul,
             state=output_state,
         )
@@ -1236,8 +1236,8 @@ class GammaTensor:
 
             output_state[other.id] = other
             child = self.child @ other.child
-            min_val = self.min_val.__matmul__(other.min_val)
-            max_val = self.max_val.__matmul__(other.max_val)
+            min_val = self.min_vals.__matmul__(other.min_vals)
+            max_val = self.max_vals.__matmul__(other.max_vals)
 
         else:
 
@@ -1245,14 +1245,14 @@ class GammaTensor:
                 return jnp.matmul(self.run(state), other)
 
             child = self.child @ other
-            min_val = self.min_val.__matmul__(other)
-            max_val = self.max_val.__matmul__(other)
+            min_val = self.min_vals.__matmul__(other)
+            max_val = self.max_vals.__matmul__(other)
 
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_matmul,
             state=output_state,
         )
@@ -1278,8 +1278,8 @@ class GammaTensor:
 
             output_state[other.id] = other
             child = self.child.__rmatmul__(other.child)
-            min_val = self.min_val.__rmatmul__(other.min_val)
-            max_val = self.max_val.__rmatmul__(other.max_val)
+            min_val = self.min_vals.__rmatmul__(other.min_vals)
+            max_val = self.max_vals.__rmatmul__(other.max_vals)
 
         else:
 
@@ -1287,14 +1287,14 @@ class GammaTensor:
                 return jnp.matmul(other, self.run(state))
 
             child = self.child.__rmatmul__(other)
-            min_val = self.min_val.__rmatmul__(other)
-            max_val = self.max_val.__rmatmul__(other)
+            min_val = self.min_vals.__rmatmul__(other)
+            max_val = self.max_vals.__rmatmul__(other)
 
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_rmatmul,
             state=output_state,
         )
@@ -1325,14 +1325,14 @@ class GammaTensor:
 
             child = self.child.__gt__(other)
 
-        min_val = self.min_val * 0
-        max_val = (self.max_val * 0) + 1
+        min_val = self.min_vals * 0
+        max_val = (self.max_vals * 0) + 1
 
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_gt,
             state=output_state,
         )
@@ -1363,14 +1363,14 @@ class GammaTensor:
 
             child = self.child.__le__(other)
 
-        min_val = self.min_val * 0
-        max_val = (self.max_val * 0) + 1
+        min_val = self.min_vals * 0
+        max_val = (self.max_vals * 0) + 1
 
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_le,
             state=output_state,
         )
@@ -1391,9 +1391,9 @@ class GammaTensor:
             neg_values = (neg_index) * exp * -1
             return pos_values + neg_values
 
-        min_val = self.min_val.copy()
+        min_val = self.min_vals.copy()
         min_val.data = np.array(exp_reduction(min_val.data))
-        max_val = self.max_val.copy()
+        max_val = self.max_vals.copy()
         max_val.data = np.array(exp_reduction(max_val.data))
 
         def _exp(state: dict) -> jax.numpy.DeviceArray:
@@ -1401,8 +1401,8 @@ class GammaTensor:
 
         return GammaTensor(
             child=exp(self.child),
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             data_subjects=self.data_subjects,
             func=_exp,
             state=output_state,
@@ -1412,27 +1412,27 @@ class GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        if isinstance(self.min_val, lazyrepeatarray):
-            min_val = lazyrepeatarray(data=np.log(self.min_val.data.min()), shape=self.shape)
-            max_val = lazyrepeatarray(data=np.log(self.max_val.data.max()), shape=self.shape)
-        elif isinstance(self.min_val, np.ndarray):
-            min_val = lazyrepeatarray(data=np.log(self.min_val), shape=self.shape)
-            max_val = lazyrepeatarray(data=np.log(self.max_val), shape=self.shape)
-        elif isinstance(self.min_val, (int, float)):
-            min_val = lazyrepeatarray(data=np.log(self.min_val), shape=self.shape)
-            max_val = lazyrepeatarray(data=np.log(self.max_val), shape=self.shape)
-            # min_val = np.log(self.min_val),
-            # max_val = np.log(self.max_val)
+        if isinstance(self.min_vals, lazyrepeatarray):
+            min_val = lazyrepeatarray(data=np.log(self.min_vals.data.min()), shape=self.shape)
+            max_val = lazyrepeatarray(data=np.log(self.max_vals.data.max()), shape=self.shape)
+        elif isinstance(self.min_vals, np.ndarray):
+            min_val = lazyrepeatarray(data=np.log(self.min_vals), shape=self.shape)
+            max_val = lazyrepeatarray(data=np.log(self.max_vals), shape=self.shape)
+        elif isinstance(self.min_vals, (int, float)):
+            min_val = lazyrepeatarray(data=np.log(self.min_vals), shape=self.shape)
+            max_val = lazyrepeatarray(data=np.log(self.max_vals), shape=self.shape)
+            # min_vals = np.log(self.min_vals),
+            # max_vals = np.log(self.max_vals)
         else:
-            raise NotImplementedError(f"Undefined behaviour for type: {type(self.min_val)}")
+            raise NotImplementedError(f"Undefined behaviour for type: {type(self.min_vals)}")
 
         def _log(state: dict) -> jax.numpy.DeviceArray:
             return jnp.log(self.run(state))
 
         return GammaTensor(
             child=np.log(self.child),
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             data_subjects=self.data_subjects,
             func=_log,
             state=output_state
@@ -1446,9 +1446,9 @@ class GammaTensor:
         # relative
         from ...smpc.approximations import reciprocal
 
-        min_val = self.min_val.copy()
+        min_val = self.min_vals.copy()
         min_val.data = np.array(1 / (min_val.data))
-        max_val = self.max_val.copy()
+        max_val = self.max_vals.copy()
         max_val.data = np.array(1 / (max_val.data))
 
         def _reciprocal(state: dict) -> jax.numpy.DeviceArray:
@@ -1466,8 +1466,8 @@ class GammaTensor:
 
         return GammaTensor(
             child=child_inv,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             data_subjects=self.data_subjects,
             func=_reciprocal,
             state=output_state,
@@ -1488,9 +1488,9 @@ class GammaTensor:
             inv = 1 / numerator.sum()
             return numerator * inv
 
-        min_val = self.min_val.copy()
+        min_val = self.min_vals.copy()
         min_val.data = np.array(softmax(min_val.data))
-        max_val = self.max_val.copy()
+        max_val = self.max_vals.copy()
         max_val.data = np.array(softmax(max_val.data))
         fpt = self.child.copy()
         if not isinstance(fpt.child, np.ndarray):
@@ -1505,8 +1505,8 @@ class GammaTensor:
 
         return GammaTensor(
             child=numerator * inv,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             data_subjects=self.data_subjects,
             func=_softmax,
             state=output_state,
@@ -1523,8 +1523,8 @@ class GammaTensor:
         return GammaTensor(
             child=self.child.transpose(),
             data_subjects=self.data_subjects,
-            min_val=self.min_val.transpose(),
-            max_val=self.max_val.transpose(),
+            min_vals=self.min_vals.transpose(),
+            max_vals=self.max_vals.transpose(),
             func=_transpose,
             state=output_state,
         )
@@ -1539,14 +1539,14 @@ class GammaTensor:
 
         child = self.child.sum(*args, **kwargs)
 
-        min_val = self.min_val.sum(*args, **kwargs)
-        max_val = self.max_val.sum(*args, **kwargs)
+        min_val = self.min_vals.sum(*args, **kwargs)
+        max_val = self.max_vals.sum(*args, **kwargs)
 
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_sum,
             state=output_state,
         )
@@ -1565,14 +1565,14 @@ class GammaTensor:
             else self.child.ones_like(*args, **kwargs)
         )
 
-        min_val = self.min_val.ones_like(*args, **kwargs)
-        max_val = self.max_val.ones_like(*args, **kwargs)
+        min_val = self.min_vals.ones_like(*args, **kwargs)
+        max_val = self.max_vals.ones_like(*args, **kwargs)
 
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_ones_like,
             state=output_state,
         )
@@ -1585,14 +1585,14 @@ class GammaTensor:
         state.update(self.state)
 
         child = jnp.sqrt(self.child)
-        min_val = jnp.sqrt(self.min_val)
-        max_val = jnp.sqrt(self.max_val)
+        min_val = jnp.sqrt(self.min_vals)
+        max_val = jnp.sqrt(self.max_vals)
 
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects,
-            min_val=min_val,
-            max_val=max_val,
+            min_vals=min_val,
+            max_vals=max_val,
             func=_sqrt,
             state=state,
         )
@@ -1613,23 +1613,23 @@ class GammaTensor:
             last_index += input_size
 
             # Add min/max values
-            if isinstance(gamma_tensor.min_val, lazyrepeatarray):
-                local_min = gamma_tensor.min_val.data.min()
+            if isinstance(gamma_tensor.min_vals, lazyrepeatarray):
+                local_min = gamma_tensor.min_vals.data.min()
                 if local_min < min_val:
                     min_val = local_min
 
-                local_max = gamma_tensor.max_val.data.max()
+                local_max = gamma_tensor.max_vals.data.max()
                 if local_max < max_val:
                     max_val = local_max
 
-            elif isinstance(gamma_tensor.min_val, (int, float)):
-                if gamma_tensor.min_val < min_val:
-                    min_val = gamma_tensor.min_val
+            elif isinstance(gamma_tensor.min_vals, (int, float)):
+                if gamma_tensor.min_vals < min_val:
+                    min_val = gamma_tensor.min_vals
 
-                if gamma_tensor.max_val < max_val:
+                if gamma_tensor.max_vals < max_val:
                     max_val = local_max
             else:
-                raise NotImplementedError(f"Undefined behaviour for type: {type(gamma_tensor.min_val)}")
+                raise NotImplementedError(f"Undefined behaviour for type: {type(gamma_tensor.min_vals)}")
 
             # Add data subjects
             data_subs = DataSubjectList.absorb(data_subs, gamma_tensor.data_subjects)
@@ -1639,8 +1639,8 @@ class GammaTensor:
         return GammaTensor(
             child=data.reshape(target_shape),
             data_subjects=data_subs,
-            min_val=min_val,
-            max_val=max_val
+            min_vals=min_val,
+            max_vals=max_val
         )
 
 
@@ -1667,8 +1667,8 @@ class GammaTensor:
             self.state[self.id] = self
 
         return vectorized_publish(
-            min_vals=self.min_val,
-            max_vals=self.max_val,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
             state_tree=self.state,
             data_subjects=self.data_subjects,
             is_linear=self.is_linear,
@@ -1689,8 +1689,8 @@ class GammaTensor:
         return GammaTensor(
             child=jnp.expand_dims(self.child, axis),
             data_subjects=self.data_subjects,
-            min_val=self.min_val,
-            max_val=self.max_val,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
             func=_expand_dims,
             state=state,
         )
@@ -1704,8 +1704,8 @@ class GammaTensor:
         return GammaTensor(
             child=jnp.squeeze(self.child, axis),
             data_subjects=self.data_subjects,
-            min_val=self.min_val,
-            max_val=self.max_val,
+            min_vals=self.min_vals,
+            max_vals=self.max_vals,
             func=_squeeze,
             state=state,
         )
@@ -1718,12 +1718,12 @@ class GammaTensor:
         # There technically isn't any penalty for keeping it as is, but maybe there's a sidechannel attack
         # where you index into one value in a GammaTensor and get all the data subjects of that Tensor?
 
-        if isinstance(self.min_val, (int, float)):
-            minv = self.min_val
-            maxv = self.max_val
-        elif isinstance(self.min_val, lazyrepeatarray):
-            minv = self.min_val[item]
-            maxv = self.max_val[item]
+        if isinstance(self.min_vals, (int, float)):
+            minv = self.min_vals
+            maxv = self.max_vals
+        elif isinstance(self.min_vals, lazyrepeatarray):
+            minv = self.min_vals[item]
+            maxv = self.max_vals[item]
         else:
             raise NotImplementedError
 
@@ -1731,8 +1731,8 @@ class GammaTensor:
             data = self.child[item.child]
             return GammaTensor(
                 child=data,
-                min_val=minv,
-                max_val=maxv,
+                min_vals=minv,
+                max_vals=maxv,
                 data_subjects=DataSubjectList(
                     one_hot_lookup=self.data_subjects.one_hot_lookup,
                     data_subjects_indexed=self.data_subjects.data_subjects_indexed[
@@ -1744,8 +1744,8 @@ class GammaTensor:
             data = self.child[item]
             return GammaTensor(
                 child=data,
-                min_val=minv,
-                max_val=maxv,
+                min_vals=minv,
+                max_vals=maxv,
                 data_subjects=DataSubjectList(
                     one_hot_lookup=self.data_subjects.one_hot_lookup,
                     data_subjects_indexed=self.data_subjects.data_subjects_indexed[item]
@@ -1753,7 +1753,46 @@ class GammaTensor:
             )
 
     def __setitem__(self, key, value):
-        pass
+        from .phi_tensor import PhiTensor
+
+        if isinstance(value, (PhiTensor, GammaTensor)):
+            self.child[key] = value.child
+            minv = value.child.min()
+            maxv = value.child.max()
+
+            if minv < self.min_vals.data.min():
+                self.min_vals.data = minv
+
+            if maxv > self.max_vals.data.max():
+                self.max_vals.data = maxv
+
+            self.data_subjects[key] = value.data_subjects
+
+            return GammaTensor(
+                child=self.child,
+                data_subjects=self.data_subjects,
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+            )
+        elif isinstance(value, np.ndarray):
+            self.child[key] = value
+            minv = value.min()
+            maxv = value.max()
+
+            if minv < self.min_vals.data.min():
+                self.min_vals.data = minv
+
+            if maxv > self.max_vals.data.max():
+                self.max_vals.data = maxv
+
+            return PhiTensor(
+                child=self.child,
+                data_subjects=self.data_subjects,
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+            )
+        else:
+            raise NotImplementedError
 
     @property
     def shape(self) -> Tuple[int, ...]:
@@ -1843,8 +1882,8 @@ class GammaTensor:
         gamma_msg.oneHotLookup = capnp_serialize(
             liststrtonumpyutf8(self.data_subjects.one_hot_lookup)
         )
-        gamma_msg.minVal = serialize(self.min_val, to_bytes=True)
-        gamma_msg.maxVal = serialize(self.max_val, to_bytes=True)
+        gamma_msg.minVal = serialize(self.min_vals, to_bytes=True)
+        gamma_msg.maxVal = serialize(self.max_vals, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
         gamma_msg.id = self.id
 
@@ -1874,8 +1913,8 @@ class GammaTensor:
             return GammaTensor(
                 child=child,
                 data_subjects=data_subjects,
-                min_val=min_val,
-                max_val=max_val,
+                min_vals=min_val,
+                max_vals=max_val,
                 is_linear=is_linear,
                 state=state,
                 id=id_str,

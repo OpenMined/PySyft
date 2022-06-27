@@ -118,8 +118,8 @@ def dp_zeros(shape: Tuple, data_subjects: DataSubjectList) -> Union[PhiTensor, G
         return GammaTensor(
             child=output,
             data_subjects=data_subjects,
-            min_val=lazyrepeatarray(0, shape),
-            max_val=lazyrepeatarray(1, shape)
+            min_vals=lazyrepeatarray(0, shape),
+            max_vals=lazyrepeatarray(1, shape)
         )
     else:
         raise NotImplementedError("Zero or negative data subject behaviour undefined.")

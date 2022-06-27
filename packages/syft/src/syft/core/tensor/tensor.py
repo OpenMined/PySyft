@@ -586,8 +586,8 @@ class Tensor(
                 object_type=object_type,
                 tags=tags,
                 description=description,
-                min_vals=self.child.min_val,
-                max_vals=self.child.max_val,
+                min_vals=self.child.min_vals,
+                max_vals=self.child.max_vals,
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )

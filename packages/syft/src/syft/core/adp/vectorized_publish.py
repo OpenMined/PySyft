@@ -113,15 +113,15 @@ def vectorized_publish(
         while isinstance(value, PassthroughTensor):
             value = value.child
 
-        if isinstance(input_tensor.min_val, lazyrepeatarray):
-            min_val_array = input_tensor.min_val.to_numpy()
+        if isinstance(input_tensor.min_vals, lazyrepeatarray):
+            min_val_array = input_tensor.min_vals.to_numpy()
         else:
-            min_val_array = input_tensor.min_val
+            min_val_array = input_tensor.min_vals
 
-        if isinstance(input_tensor.max_val, lazyrepeatarray):
-            max_val_array = input_tensor.max_val.to_numpy()
+        if isinstance(input_tensor.max_vals, lazyrepeatarray):
+            max_val_array = input_tensor.max_vals.to_numpy()
         else:
-            max_val_array = input_tensor.max_val
+            max_val_array = input_tensor.max_vals
 
         l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
             value_array=value,

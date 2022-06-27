@@ -285,7 +285,7 @@ protect the people or the business)"""
             )
             print()
             print(
-                "\t\ttensor.private(min_val=0, max_val=1, data_subjects=data_subjects))"
+                "\t\ttensor.private(min_vals=0, max_vals=1, data_subjects=data_subjects))"
             )
             print()
             print(
@@ -472,7 +472,7 @@ class PhiTensorAncestor(TensorChainManager):
                 min_vals = np.array(min_val).ravel()  # make it 1D
             else:
                 raise Exception(
-                    "min_val should be either float,int,bool got "
+                    "min_vals should be either float,int,bool got "
                     + str(type(min_val))
                     + " instead."
                 )
@@ -481,7 +481,7 @@ class PhiTensorAncestor(TensorChainManager):
                 max_vals = np.array(max_val).ravel()  # make it 1D
             else:
                 raise Exception(
-                    "min_val should be either float,int,bool got "
+                    "min_vals should be either float,int,bool got "
                     + str(type(max_val))
                     + " instead."
                 )
