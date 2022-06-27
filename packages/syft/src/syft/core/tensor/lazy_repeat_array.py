@@ -61,7 +61,6 @@ class lazyrepeatarray:
         self.shape = shape
 
     def __getitem__(self, item) -> lazyrepeatarray:
-        print(item)
         if self.data.shape == self.shape:
             output = self.data[item]
             return lazyrepeatarray(data=output, shape=output.shape)

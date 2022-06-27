@@ -99,24 +99,27 @@ def dp_zeros(shape: Tuple, data_subjects: DataSubjectList) -> Union[PhiTensor, G
     :param data_subjects:
     :return:
     """
-
     output = np.zeros(shape)
-
-    result = PhiTensor(
-        child=output,
-        data_subjects=DataSubjectList(
-            one_hot_lookup=data_subjects.one_hot_lookup,
-            data_subjects_indexed=np.zeros_like(output)  # This shouldn't matter b/c it will be replaced
-        ),
-        min_vals=output.min(),
-        max_vals=output.max()
-    )
-
     ds_count = len(data_subjects.one_hot_lookup)
 
     if ds_count == 1:
-        return result
+
+        return PhiTensor(
+            child=output,
+            data_subjects=DataSubjectList(
+                one_hot_lookup=data_subjects.one_hot_lookup,
+                data_subjects_indexed=np.zeros_like(output)  # This shouldn't matter b/c it will be replaced
+            ),
+            min_vals=output.min(),
+            max_vals=output.max()
+        )
     elif ds_count > 1:
-        return result.gamma  # TODO @Ishan: will the lack of a `gamma.func` here hurt us in any way?
+        # TODO @Ishan: will the lack of a `gamma.func` here hurt us in any way?
+        return GammaTensor(
+            child=output,
+            data_subjects=data_subjects,
+            min_val=lazyrepeatarray(0, shape),
+            max_val=lazyrepeatarray(1, shape)
+        )
     else:
         raise NotImplementedError("Zero or negative data subject behaviour undefined.")
