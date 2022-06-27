@@ -70,7 +70,7 @@ class InitiateExchangeCredentialsWithNodeMessage(
         target_url = (
             GridURL.from_url(self.payload.target_node_url)
             .with_path("/api/v1")
-            .as_container_host()
+            .as_container_host(container_host=node.settings.CONTAINER_HOST)
         )
 
         # we use our local keys so that signing and verification matches our node

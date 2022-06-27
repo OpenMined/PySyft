@@ -1,3 +1,6 @@
+# stdlib
+from typing import List
+
 # third party
 from nacl.signing import VerifyKey
 from sqlalchemy.engine import Engine
@@ -87,3 +90,6 @@ class NodeRouteManager(DatabaseManager):
         if new_node_route_row:
             return new_node_route_row
         raise Exception("Failed to update node_route")
+
+    def get_routes(self, node_row: NodeRow) -> List[NodeRoute]:
+        return self.query(node_id=node_row.id)

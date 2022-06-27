@@ -9,14 +9,26 @@ ClientLike = Union[AbstractNodeClient, GridURL]
 
 
 class NewRequestAPI:
-    # def get_client(client: ClientLike) -> AbstractNodeClient:
-    #     if isinstance(client, AbstractNodeClient):
-    #         return client
+    def __init__(self, client: AbstractNodeClient):
+        self.client = client
 
-    #     # relative
-    #     from .....grid.client.client import connect
+    def get_client(self, client: ClientLike) -> AbstractNodeClient:
+        if isinstance(client, AbstractNodeClient):
+            client.signing_key = self.client.signing_key
+            client.verify_key = self.client.signing_key.verify_key
+            return client
 
-    #     return connect(url=client.with_path("/api/v1"), timeout=10)
+        if isinstance(client, str):
+            client = GridURL.from_url(client)
+
+        # relative
+        from .....grid.client.client import connect
+
+        return connect(
+            url=client.with_path("/api/v1"),
+            timeout=10,
+            user_key=self.client.signing_key,
+        )
 
     def get_client_url(self, client: ClientLike) -> GridURL:
         if isinstance(client, (str, GridURL)):

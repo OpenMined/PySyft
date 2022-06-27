@@ -272,7 +272,7 @@ jobs:
           set NETWORK_CHECK_INTERVAL=5
           hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
           hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
-          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test
+          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test --vpn=false
           bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           docker ps

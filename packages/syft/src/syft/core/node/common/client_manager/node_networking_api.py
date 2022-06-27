@@ -18,6 +18,7 @@ from ..node_service.node_route.node_route_messages import (
 from ..node_service.node_route.node_route_messages import (
     NotifyNodeWithRouteUpdateMessage,
 )
+from ..node_service.node_route.node_route_messages import RoutesListMessage
 from ..node_service.node_route.node_route_messages import VerifyRouteUpdateMessage
 from ..node_service.node_route.route_update import RouteUpdate
 from .new_request_api import ClientLike
@@ -148,3 +149,20 @@ class NodeNetworkingAPI(NewRequestAPI):
             raise signed_response.exception_type
         else:
             return signed_response
+
+    def list_routes(self, client: ClientLike) -> RoutesListMessage.Reply:
+        # this should be run by a Domain owner against a network
+        target_client = self.get_client(client)
+        signed_msg = RoutesListMessage(
+            address=target_client.address,
+            reply_to=target_client.address,
+            kwargs={},
+        ).sign(
+            signing_key=target_client.signing_key
+        )  # type: ignore
+
+        response = target_client.send_immediate_msg_with_reply(msg=signed_msg)
+        if isinstance(response, ExceptionMessage):
+            raise response.exception_type
+        else:
+            return response.payload

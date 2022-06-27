@@ -1,4 +1,6 @@
 # stdlib
+from typing import Dict
+from typing import List
 from typing import Optional
 
 # third party
@@ -80,7 +82,7 @@ class InitiateRouteUpdateToNodeMessage(
         target_url = (
             GridURL.from_url(self.payload.target_node_url)
             .with_path("/api/v1")
-            .as_container_host()
+            .as_container_host(container_host=node.settings.CONTAINER_HOST)
         )
 
         # we use our local keys so that signing and verification matches our node
@@ -178,7 +180,9 @@ class NotifyNodeWithRouteUpdateMessage(
 
         # we may be trying to call another local test host like localhost so we need
         # to also call as_container_host
-        target_url = source_node_url.with_path("/api/v1").as_container_host()
+        target_url = source_node_url.with_path("/api/v1").as_container_host(
+            container_host=node.settings.CONTAINER_HOST
+        )
 
         # we use our local keys so that signing and verification matches our node
         target_client = connect(url=target_url, timeout=10, user_key=node.signing_key)
@@ -243,3 +247,54 @@ class VerifyRouteUpdateMessage(
         print("Responding to VerifyRouteUpdateMessage")
 
         return self.Reply()
+
+
+# RoutesListMessage
+# Step 1: RoutesListMessage
+# If the user has the right key they can manage their routes
+
+
+@serializable(recursive_serde=True)
+class RoutesListMessage(SyftMessage, DomainMessageRegistry, NetworkMessageRegistry):
+    # TODO: Change to known verify_key of domain UserIsForeignNodeOwner?
+    permissions = [NoRestriction]
+
+    # Pydantic Inner class to define expected request payload fields.
+    class Request(RequestPayload):
+        """Payload fields and types used during a Request."""
+
+        pass
+
+    # Pydantic Inner class to define expected reply payload fields.
+    class Reply(ReplyPayload):
+        """Payload fields and types used during a Response."""
+
+        routes_list: List[Dict]
+
+    request_payload_type = Request
+    reply_payload_type = Reply
+
+    def run(  # type: ignore
+        self, node: NodeServiceInterface, verify_key: Optional[VerifyKey] = None
+    ) -> ReplyPayload:  # type: ignore
+        """Validates the request parameters and exchanges credentials.
+
+        Args:
+            node (NodeServiceInterface): Node either Domain or Network.
+            verify_key (Optional[VerifyKey], optional): User signed verification key. Defaults to None.
+
+        Raises:
+            NodeTimeout: If the destination node is unavailable
+            NodeError: If the destination node says there was an issue
+
+        Returns:
+            ReplyPayload: Message on successful user creation.
+        """
+
+        node_row = node.node.get_node_for(verify_key=verify_key)
+        if not node_row:
+            raise Exception("There is no node for this verify_key")
+
+        routes = node.node_route.get_routes(node_row=node_row)
+        routes_list = [row._asdict() for row in routes]
+        return self.Reply(routes_list=routes_list)

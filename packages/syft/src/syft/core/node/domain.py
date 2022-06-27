@@ -203,6 +203,8 @@ class Domain(Node):
     def post_init(self) -> None:
         super().post_init()
         self.set_node_uid()
+        if not hasattr(self, "signing_key"):
+            Node.set_keys(node=self)
 
     def initial_setup(  # nosec
         self,

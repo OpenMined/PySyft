@@ -381,6 +381,9 @@ class Node(AbstractNode):
                     node_name=peer.node_name,
                     host_or_ip=route.host_or_ip,
                     is_vpn=route.is_vpn,
+                    private=route.private,
+                    port=route.port,
+                    protocol=route.protocol,
                 )
         except Exception as e:
             error(f"Failed to add route to peer {peer}. {e}")
@@ -395,33 +398,53 @@ class Node(AbstractNode):
         # get all the routes for each client and sort by VPN first
         all_clients = {}
         for node_id in self.peer_route_clients.keys():
-            all_clients[node_id] = list(
-                self.peer_route_clients[node_id]["vpn"].values()
-            ) + list(self.peer_route_clients[node_id]["public"].values())
+            all_clients[node_id] = (
+                list(self.peer_route_clients[node_id]["vpn"].values())
+                + list(self.peer_route_clients[node_id]["https"].values())
+                + list(self.peer_route_clients[node_id]["http"].values())
+            )
 
         return all_clients
 
     def add_route(
-        self, node_id: UID, node_name: str, host_or_ip: str, is_vpn: bool
+        self,
+        node_id: UID,
+        node_name: str,
+        host_or_ip: str,
+        is_vpn: bool,
+        private: bool,
+        port: int,
+        protocol: str,
     ) -> None:
-        debug(f"Adding route {node_id}, {node_name}, {host_or_ip}, {is_vpn}")
+        debug(
+            f"Adding route {node_id}, {node_name}, "
+            + f"{protocol}://{host_or_ip}:{port}, vpn: {is_vpn}, private: {private}"
+        )
         try:
-            vpn_key = "vpn" if is_vpn else "public"
+            grid_url = GridURL.from_url(
+                f"{protocol}://{host_or_ip}:{port}"
+            ).as_container_host(container_host=self.settings.CONTAINER_HOST)
+            security_key = "vpn" if is_vpn else protocol
             # make sure the node_id is in the Dict
-            node_id_dict: Dict[str, Dict[str, Client]] = {"vpn": {}, "public": {}}
+            node_id_dict: Dict[str, Dict[str, Client]] = {
+                "vpn": {},
+                "http": {},
+                "https": {},
+            }
             if node_id in self.peer_route_clients:
                 node_id_dict = self.peer_route_clients[node_id]
 
-            if host_or_ip not in node_id_dict[vpn_key]:
+            if grid_url.base_url not in node_id_dict[security_key]:
                 # connect and save the client
-                grid_url = GridURL.from_url(host_or_ip)
                 client = sy.connect(url=grid_url.with_path("/api/v1"), timeout=0.3)
-                node_id_dict[vpn_key][host_or_ip] = client
+                node_id_dict[security_key][grid_url.base_url] = client
 
             self.peer_route_clients[node_id] = node_id_dict
         except Exception as e:
             debug(
-                f"Failed to add_route {node_id} {node_name} {host_or_ip} {is_vpn}. {e}"
+                f"Adding route {node_id}, {node_name}, "
+                + f"{protocol}://{host_or_ip}:{port}, vpn: {is_vpn}, "
+                + f"private: {private}. {e}"
             )
 
     def get_peer_client(self, node_id: UID, only_vpn: bool = True) -> Optional[Client]:
@@ -440,9 +463,12 @@ class Node(AbstractNode):
                 elif "vpn" in routes and len(routes["vpn"]) > 0:
                     # if we have VPN lets use it
                     return list(routes["vpn"].values())[0]
-                elif "public" in routes and len(routes["public"]) > 0:
-                    # we only have public and don't care
-                    return list(routes["public"].values())[0]
+                elif "https" in routes and len(routes["https"]) > 0:
+                    # we only have https
+                    return list(routes["https"].values())[0]
+                elif "http" in routes and len(routes["http"]) > 0:
+                    # we only have http and don't care
+                    return list(routes["http"].values())[0]
         except Exception as e:
             error(
                 f"Exception while selecting node_id {node_id} from peer_route_clients. "

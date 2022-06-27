@@ -58,7 +58,7 @@ def get_stack_key() -> str:
 def test_api_auth() -> None:
     urls = [
         "http://headscale:4000/commands/generate_key",
-        "http://tailscale:4000/commands/status",
+        "http://proxy:4000/commands/status",
     ]
 
     old_stack_key = "hex_key_value"

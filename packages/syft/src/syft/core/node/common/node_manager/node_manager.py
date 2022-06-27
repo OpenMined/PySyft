@@ -46,3 +46,8 @@ class NodeManager(DatabaseManager):
             node_uid=node_uid,
             verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8"),
         )
+
+    def get_node_for(self, verify_key: VerifyKey) -> Optional[Node]:
+        return self.first(
+            verify_key=verify_key.encode(encoder=HexEncoder).decode("utf-8")
+        )

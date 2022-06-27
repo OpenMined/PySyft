@@ -26,6 +26,7 @@ class AbstractNodeClient(Address):
     # TODO: remove hacky in_memory_client_registry
     in_memory_client_registry: Dict[Any, Any]
     signing_key: SigningKey
+    verify_key: VerifyKey
     """"""
 
     @property
