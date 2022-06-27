@@ -1,20 +1,20 @@
-import {render, screen} from '@testing-library/react'
+import { render, screen } from '@testing-library/react'
 import cases from 'jest-in-case'
-import {axe} from 'jest-axe'
+import { axe } from 'jest-axe'
 
-import {Divider} from '../Divider'
+import { Divider } from '../Divider'
 
 describe('Divider', () => {
   describe('accessibility', () => {
     test('No accessibility violation caught', async () => {
-      const {container} = render(<Divider />)
+      const { container } = render(<Divider />)
       const result = await axe(container)
       expect(result).toHaveNoViolations()
     })
 
     cases(
       'accesibility:aria-orientation',
-      ({params, result}) => {
+      ({ params, result }) => {
         render(<Divider data-testid="test-id" {...params} />)
         const dividerElement = screen.getByTestId('test-id')
         expect(dividerElement).toHaveAttribute('aria-orientation', result)
@@ -23,24 +23,24 @@ describe('Divider', () => {
         {
           name: 'Default props, divider aria-orientation is horizontal',
           params: {},
-          result: 'horizontal'
+          result: 'horizontal',
         },
         {
           name: 'Prop orientation="horizontal", then aria-orientation=horizontal',
-          params: {orientation: 'horizontal'},
-          result: 'horizontal'
+          params: { orientation: 'horizontal' },
+          result: 'horizontal',
         },
         {
           name: 'Prop orientation="vertical", then aria-orientation=vertical',
-          params: {orientation: 'vertical'},
-          result: 'vertical'
-        }
+          params: { orientation: 'vertical' },
+          result: 'vertical',
+        },
       ]
     )
 
     cases(
       'accesibility:role',
-      ({params}) => {
+      ({ params }) => {
         render(<Divider data-testid="test-id" {...params} />)
         const dividerElement = screen.getByTestId('test-id')
         expect(dividerElement).toHaveAttribute('role', 'separator')
@@ -48,16 +48,16 @@ describe('Divider', () => {
       [
         {
           name: 'Default props',
-          params: {}
+          params: {},
         },
         {
           name: 'Prop orientation="horizontal"',
-          params: {orientation: 'horizontal'}
+          params: { orientation: 'horizontal' },
         },
         {
           name: 'Prop orientation="vertical"',
-          params: {orientation: 'vertical'}
-        }
+          params: { orientation: 'vertical' },
+        },
       ]
     )
   })
@@ -65,7 +65,7 @@ describe('Divider', () => {
   describe('styles:classes', () => {
     cases(
       'styles:classes:color',
-      ({params, result}) => {
+      ({ params, result }) => {
         render(<Divider data-testid="test-id" {...params} />)
         const dividerElement = screen.getByTestId('test-id')
         expect(dividerElement).toHaveClass(result)
@@ -74,18 +74,18 @@ describe('Divider', () => {
         {
           name: 'Default props',
           params: {},
-          result: 'border-gray-200 dark:border-gray-700'
+          result: 'border-gray-200 dark:border-gray-700',
         },
         {
           name: 'Prop color="dynamic"',
-          params: {color: 'dynamic'},
-          result: 'border-gray-200 dark:border-gray-700'
+          params: { color: 'dynamic' },
+          result: 'border-gray-200 dark:border-gray-700',
         },
         {
           name: 'Prop color="black"',
-          params: {color: 'black'},
-          result: 'border-gray-900'
-        }
+          params: { color: 'black' },
+          result: 'border-gray-900',
+        },
       ]
     )
   })

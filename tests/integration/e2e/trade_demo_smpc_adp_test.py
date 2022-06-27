@@ -168,7 +168,7 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     # the turn 🕳
     print("running the turn 🕳")
 
-    public_result = result.publish(sigma=2)
+    public_result = result.publish(sigma=200)
 
     """
     Cutter: But you wouldn't clap yet. Because making information disappear isn't enough;
@@ -187,8 +187,8 @@ def test_end_to_end_smpc_adp_trade_demo() -> None:
     print("after it", it.privacy_budget)
 
     assert len(sycure_result) == 10
-    assert sum(sycure_result) > -300
-    assert sum(sycure_result) < 2000
+    assert sum(sycure_result) > -6000
+    assert sum(sycure_result) < 6000
 
     assert ca.privacy_budget < 9_999_999
     assert ca.privacy_budget > 10

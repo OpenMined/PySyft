@@ -1,41 +1,34 @@
-syft.core.smpc.store
-====================
+syft.core.smpc.store package
+============================
 
 .. automodule:: syft.core.smpc.store
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   
-   
-   
+Submodules
+----------
 
-   
-   
-   .. rubric:: Functions
+syft.core.smpc.store.crypto\_primitive\_provider module
+-------------------------------------------------------
 
-   .. autosummary::
-   
-      register_primitive_generator
-      register_primitive_store_add
-      register_primitive_store_get
-   
-   
+.. automodule:: syft.core.smpc.store.crypto_primitive_provider
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   
-   
-   
+syft.core.smpc.store.crypto\_store module
+-----------------------------------------
 
-   
-   
-   
+.. automodule:: syft.core.smpc.store.crypto_store
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
+syft.core.smpc.store.exceptions module
+--------------------------------------
 
-
-.. rubric:: Modules
-
-.. autosummary::
-   :toctree:
-   :recursive:
-
-   syft.core.smpc.store.crypto_primitive_provider
-   syft.core.smpc.store.crypto_store
-   syft.core.smpc.store.exceptions
-
+.. automodule:: syft.core.smpc.store.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:

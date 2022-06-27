@@ -14,7 +14,7 @@ const avatarSizes = {
   lg: 'w-10 h-10',
   xl: 'w-12 h-12',
   '2xl': 'w-16 h-16',
-  '3xl': 'w-20 h-20'
+  '3xl': 'w-20 h-20',
 }
 
 const alertSizes = {
@@ -23,10 +23,16 @@ const alertSizes = {
   lg: 'w-3 h-3',
   xl: 'w-3.5 h-3.5',
   '2xl': 'w-4 h-4',
-  '3xl': 'w-6 h-6'
+  '3xl': 'w-6 h-6',
 }
 
-export function Avatar({size = 'md', variant = 'primary', show, className, ...props}: AvatarProps) {
+export function Avatar({
+  size = 'md',
+  variant = 'primary',
+  show,
+  className,
+  ...props
+}: AvatarProps) {
   const classes = cn(avatarSizes[size], 'rounded-full', className)
   const indicatorClasses = cn(
     !show && 'hidden',
@@ -37,7 +43,7 @@ export function Avatar({size = 'md', variant = 'primary', show, className, ...pr
 
   return (
     <span className="inline-block relative">
-      <img className={classes} {...props} />
+      <img className={classes} {...props} style={{ maxWidth: '48px' }} />
       <span className={indicatorClasses} />
     </span>
   )
