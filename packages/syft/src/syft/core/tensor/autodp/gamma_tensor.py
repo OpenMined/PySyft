@@ -1610,6 +1610,44 @@ class GammaTensor:
             func=_mean,
         )
 
+    def std(self, axis) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        def _std(state, axis=axis):
+            return jnp.std(self.run(state), axis)
+
+        result = self.child.std(axis)
+        minv = self.min_vals.data if isinstance(self.min_vals, lazyrepeatarray) else self.min_vals
+        maxv = self.max_vals.data if isinstance(self.max_vals, lazyrepeatarray) else self.max_vals
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.reshape(result.shape),
+            min_vals=lazyrepeatarray(data=0, shape=result.shape),
+            max_vals=lazyrepeatarray(data=0.25 * (maxv + minv)**2, shape=result.shape),
+            state=output_state,
+            func=_std
+        )
+
+    def std(self, axis) -> GammaTensor:
+        output_state = dict()
+        output_state[self.id] = self
+
+        def _std(state, axis=axis):
+            return jnp.std(self.run(state), axis)
+
+        result = self.child.std(axis)
+        minv = self.min_vals.data if isinstance(self.min_vals, lazyrepeatarray) else self.min_vals
+        maxv = self.max_vals.data if isinstance(self.max_vals, lazyrepeatarray) else self.max_vals
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.reshape(result.shape),
+            min_vals=lazyrepeatarray(data=0, shape=result.shape),
+            max_vals=lazyrepeatarray(data=0.25 * (maxv + minv)**2, shape=result.shape),
+            state=output_state,
+            func=_std
+        )
+
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
         # TODO: These bounds might not be super tight- if min,max = [-1, 1], there might be a dot product
         # such that the minimum value should be 0

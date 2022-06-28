@@ -1,9 +1,11 @@
 # third party
 import numpy as np
+from typing import Union
 
 # relative
 from ....common.serde.serializable import serializable
 from ...autodp.phi_tensor import PhiTensor
+from ...autodp.gamma_tensor import GammaTensor
 from ..initializations import XavierInitialization
 from .base import Layer
 
@@ -45,7 +47,7 @@ class Linear(Layer):
         self.W = self.init((n_in, self.n_out))
         self.b = np.zeros((self.n_out,))
 
-    def forward(self, input: PhiTensor, *args, **kwargs):
+    def forward(self, input: Union[PhiTensor, GammaTensor], *args, **kwargs):
         self.last_input = input
         return input.dot(self.W) + self.b
 
