@@ -160,13 +160,14 @@ class DataSubjectList:
     def __getitem__(self, item) -> DataSubjectList:
         result = self.data_subjects_indexed[item]
         return DataSubjectList(
-            one_hot_lookup=np.unique(self.one_hot_lookup[result]),
+            one_hot_lookup=self.one_hot_lookup,  # np.unique(self.one_hot_lookup[result]),
             data_subjects_indexed=result,
         )
 
     def __setitem__(self, key, value) -> None:
         if isinstance(value, DataSubjectList):
             overlapping_ds = np.isin(value.one_hot_lookup, self.one_hot_lookup)
+            copied = value.copy()
             if any(overlapping_ds):
                 # Find which Data Subjects have been assigned an index already
                 search = overlapping_ds == True  # noqa: E712
@@ -174,20 +175,20 @@ class DataSubjectList:
 
                 # Find what index they've been assigned
                 target_overlap_indices = np.searchsorted(
-                    self.one_hot_lookup, value.one_hot_lookup.take(overlapping_indices)
+                    self.one_hot_lookup, copied.one_hot_lookup.take(overlapping_indices)
                 )
 
                 # Give them the index that was assigned to them
                 for old_value, new_value in zip(
                     overlapping_indices, target_overlap_indices
                 ):
-                    value.data_subjects_indexed[
-                        value.data_subjects_indexed == old_value
+                    copied.data_subjects_indexed[
+                        copied.data_subjects_indexed == old_value
                     ] = new_value
 
                 # Now do the same but for unique data subjects
                 unique_indices = np.invert(search).nonzero()[0]  # noqa: E712
-                unique_data_subjects = value.data_subjects_indexed.take(unique_indices)
+                unique_data_subjects = copied.data_subjects_indexed.take(unique_indices)
 
                 output_one_hot_encoding = np.append(
                     self.one_hot_lookup, unique_data_subjects
@@ -197,20 +198,18 @@ class DataSubjectList:
                 )
 
                 for old_value, new_value in zip(unique_indices, target_unique_indices):
-                    value.data_subjects_indexed[
-                        value.data_subjects_indexed == old_value
+                    copied.data_subjects_indexed[
+                        copied.data_subjects_indexed == old_value
                     ] = new_value
 
                 self.one_hot_lookup = output_one_hot_encoding
-                print("key", key)
-                print("value", value.data_subjects_indexed)
-                self.data_subjects_indexed[key] = value.data_subjects_indexed
+                self.data_subjects_indexed[key] = copied.data_subjects_indexed
 
             else:
-                value.data_subjects_indexed += len(self.one_hot_lookup)
-                output_lookup = np.append(self.one_hot_lookup, value.one_hot_lookup)
+                copied.data_subjects_indexed += len(self.one_hot_lookup)
+                output_lookup = np.append(self.one_hot_lookup, copied.one_hot_lookup)
                 new_data_subjects = self.data_subjects_indexed.copy()
-                new_data_subjects[key] = value.data_subjects_indexed
+                new_data_subjects[key] = copied.data_subjects_indexed
 
                 self.one_hot_lookup = output_lookup
                 self.data_subjects_indexed = new_data_subjects

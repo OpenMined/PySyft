@@ -1583,6 +1583,17 @@ class GammaTensor:
             state=output_state,
         )
 
+    def reshape(self, shape):
+        return GammaTensor(
+            child=self.child.reshape(shape),
+            data_subjects=DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(shape)
+            ),
+            min_vals=self.min_vals.reshape(shape) if isinstance(self.min_vals, lazyrepeatarray) else self.min_vals,
+            max_vals=self.max_vals.reshape(shape) if isinstance(self.max_vals, lazyrepeatarray) else self.max_vals
+        )
+
     def mean(self, axis) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
