@@ -16,11 +16,14 @@ import requests
 import syft as sy
 
 NETWORK_PORT = 9081
+NETWORK_TLS_PORT = 444
 HOST_IP = os.environ.get("HOST_IP", "localhost")
 NETWORK_PUBLIC_HOST = f"{HOST_IP}:{NETWORK_PORT}"
 print("Network IP", NETWORK_PUBLIC_HOST)
 DOMAIN1_PORT = 9082
+DOMAIN1_TLS_PORT = 445
 DOMAIN2_PORT = 9083
+DOMAIN2_TLS_PORT = 446
 NETWORK_VPN_IP = "100.64.0.1"
 DOMAIN1_VPN_IP = "100.64.0.2"
 TEST_ROOT_EMAIL = "info@openmined.org"
@@ -287,12 +290,15 @@ def test_1_exchange_credentials_domain1_to_network() -> None:
 
 @pytest.mark.network
 def test_2_add_route_domain1_to_network() -> None:
+    SOURCE_NODE_URL_PORT = DOMAIN1_TLS_PORT if sy.util.ssl_test() else DOMAIN1_PORT
+    source_node_url = f"{PROTOCOL}://localhost:{SOURCE_NODE_URL_PORT}"
+
     add_route(
         email=TEST_ROOT_EMAIL,
         password=TEST_ROOT_PASS,
         port=DOMAIN1_PORT,
         network_host=NETWORK_PUBLIC_HOST,
-        source_node_url=f"{PROTOCOL}://localhost:{DOMAIN1_PORT}",
+        source_node_url=source_node_url,
         private=False,
         autodetect=False,
     )
@@ -306,11 +312,11 @@ def test_2_add_route_domain1_to_network() -> None:
 
     matching_route = None
     for route in routes:
-        if route["port"] == DOMAIN1_PORT:
+        if route["port"] == SOURCE_NODE_URL_PORT:
             matching_route = route
             break
 
-    assert matching_route["port"] == DOMAIN1_PORT
+    assert matching_route["port"] == SOURCE_NODE_URL_PORT
     assert matching_route["is_vpn"] is False
     assert matching_route["private"] is False
     assert matching_route["protocol"] == PROTOCOL
@@ -346,12 +352,14 @@ def test_4_exchange_credentials_domain2_to_network() -> None:
 
 @pytest.mark.network
 def test_5_add_route_domain2_to_network() -> None:
+    SOURCE_NODE_URL_PORT = DOMAIN2_TLS_PORT if sy.util.ssl_test() else DOMAIN2_PORT
+    source_node_url = f"{PROTOCOL}://localhost:{SOURCE_NODE_URL_PORT}"
     add_route(
         email=TEST_ROOT_EMAIL,
         password=TEST_ROOT_PASS,
         port=DOMAIN2_PORT,
         network_host=NETWORK_PUBLIC_HOST,
-        source_node_url=f"{PROTOCOL}://localhost:{DOMAIN2_PORT}",
+        source_node_url=source_node_url,
         private=False,
         autodetect=False,
     )
@@ -365,11 +373,11 @@ def test_5_add_route_domain2_to_network() -> None:
 
     matching_route = None
     for route in routes:
-        if route["port"] == DOMAIN2_PORT:
+        if route["port"] == SOURCE_NODE_URL_PORT:
             matching_route = route
             break
 
-    assert matching_route["port"] == DOMAIN2_PORT
+    assert matching_route["port"] == SOURCE_NODE_URL_PORT
     assert matching_route["is_vpn"] is False
     assert matching_route["private"] is False
     assert matching_route["protocol"] == PROTOCOL
