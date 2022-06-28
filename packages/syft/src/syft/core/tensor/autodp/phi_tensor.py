@@ -53,15 +53,15 @@ from ..passthrough import SupportedChainType  # type: ignore
 from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
-from ..smpc.mpc_tensor import ShareTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
+from ..util import implements
 from .adp_tensor import ADPTensor
 from .gamma_tensor import GammaTensor
 from .gamma_tensor import TensorWrappedGammaTensorPointer
 
 
 @serializable(recursive_serde=True)
-class TensorWrappedPhiTensorPointer(Pointer):
+class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     __name__ = "TensorWrappedPhiTensorPointer"
     __module__ = "syft.core.tensor.autodp.phi_tensor"
     __attr_allowlist__ = [
@@ -141,6 +141,13 @@ class TensorWrappedPhiTensorPointer(Pointer):
             parties=all_parties,
         )
         return self_mpc
+
+    @property
+    def shape(self) -> Optional[Tuple[int, ...]]:
+        if hasattr(self, "public_shape"):
+            return self.public_shape
+        else:
+            return None
 
     def _apply_tensor_op(self, other: Any, op_str: str) -> Any:
         # we want to get the return type which matches the attr_path_and_name
@@ -498,6 +505,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
 
     def sum(
         self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
     ) -> Union[
         TensorWrappedPhiTensorPointer, MPCTensor, TensorWrappedGammaTensorPointer
     ]:
@@ -511,7 +520,8 @@ class TensorWrappedPhiTensorPointer(Pointer):
         """
         attr_path_and_name = "syft.core.tensor.tensor.Tensor.sum"
         result: Union[TensorWrappedGammaTensorPointer, TensorWrappedPhiTensorPointer]
-        min_vals, max_vals = compute_min_max(self.min_vals, self.max_vals, None, "sum")
+        min_vals = self.min_vals.sum(*args, **kwargs)
+        max_vals = self.max_vals.sum(*args, **kwargs)
         if len(self.data_subjects.one_hot_lookup) == 1:
             result = TensorWrappedPhiTensorPointer(
                 data_subjects=self.data_subjects,
@@ -535,7 +545,7 @@ class TensorWrappedPhiTensorPointer(Pointer):
             (
                 downcast_args,
                 downcast_kwargs,
-            ) = lib.python.util.downcast_args_and_kwargs(args=[], kwargs={})
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
 
             # then we convert anything which isnt a pointer into a pointer
             pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
@@ -562,8 +572,74 @@ class TensorWrappedPhiTensorPointer(Pointer):
             args=[],
             kwargs={},
         )
+        dummy_res = np.empty(self.public_shape).sum(*args, **kwargs)
+        result.public_shape = dummy_res.shape
+        result.public_dtype = self.public_dtype
 
-        result.public_shape = np.array([1]).shape
+        return result
+
+    def ones_like(
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> TensorWrappedPhiTensorPointer:
+        """Apply the "truediv" operation between "self" and "other"
+
+        Args:
+            y (Union[TensorWrappedPhiTensorPointer,MPCTensor,int,float,np.ndarray]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.ones_like"
+        result: TensorWrappedPhiTensorPointer
+        min_vals = self.min_vals.ones_like(*args, **kwargs)
+        max_vals = self.max_vals.ones_like(*args, **kwargs)
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=args, kwargs=kwargs)
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[],
+            kwargs={},
+        )
+        dummy_res = np.ones_like(np.empty(self.public_shape), *args, **kwargs)
+        result.public_shape = dummy_res.shape
         result.public_dtype = self.public_dtype
 
         return result
@@ -914,6 +990,15 @@ class TensorWrappedPhiTensorPointer(Pointer):
         )
 
 
+@implements(TensorWrappedPhiTensorPointer, np.ones_like)
+def ones_like(
+    tensor: TensorWrappedPhiTensorPointer,
+    *args: Tuple[Any, ...],
+    **kwargs: Dict[Any, Any],
+) -> TensorWrappedPhiTensorPointer:
+    return tensor.ones_like(*args, **kwargs)
+
+
 @serializable(capnp_bytes=True)
 class PhiTensor(PassthroughTensor, ADPTensor):
     PointerClassOverride = TensorWrappedPhiTensorPointer
@@ -932,11 +1017,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         min_vals: np.ndarray,
         max_vals: np.ndarray,
     ) -> None:
-        if isinstance(child, FixedPrecisionTensor):
-            # child = the actual private data
-            super().__init__(child)
-        else:
-            super().__init__(FixedPrecisionTensor(value=child))
+
+        # child = the actual private data
+        super().__init__(child)
 
         # lazyrepeatarray matching the shape of child
         if not isinstance(min_vals, lazyrepeatarray):
@@ -1024,15 +1107,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
-        # TODO: check if values needs to be a JAX array or if numpy will suffice
-        fpt_values = self.child
 
         gamma_tensor = GammaTensor(
             child=self.child,
             data_subjects=self.data_subjects,
             min_val=self.min_vals,
             max_val=self.max_vals,
-            fpt_values=fpt_values,
         )
 
         return gamma_tensor
@@ -1057,21 +1137,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             ledger=ledger,
             sigma=sigma,
         )
-        fpt_values = gamma.fpt_values
 
-        if fpt_values is None:
-            raise ValueError(
-                "FixedPrecisionTensor values should not be None after publish"
-            )
+        print("Final Values", res)
 
-        if isinstance(fpt_values.child, ShareTensor):
-            fpt_values.child.child = res
-        else:
-            fpt_values.child = res
-
-        print("Final FPT Values", fpt_values)
-
-        return fpt_values
+        return res
 
     @property
     def value(self) -> np.ndarray:
@@ -1544,14 +1613,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     #         raise NotImplementedError
 
     def sum(
-        self, axis: Optional[Union[int, Tuple[int, ...]]] = None
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
-        min_val = lazyrepeatarray(data=np.array(self.min_vals.sum(axis=None)), shape=())
-        max_val = lazyrepeatarray(data=np.array(self.max_vals.sum(axis=None)), shape=())
+        min_val = self.min_vals.sum(*args, **kwargs)
+        max_val = self.max_vals.sum(*args, **kwargs)
         if len(self.data_subjects.one_hot_lookup) == 1:
             return PhiTensor(
-                child=self.child.sum(),
+                child=self.child.sum(*args, **kwargs),
                 min_vals=min_val,
                 max_vals=max_val,
                 data_subjects=DataSubjectList.from_objs(
@@ -1561,13 +1632,35 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         # TODO: Expand this later to include more args/kwargs
         res = GammaTensor(
-            child=self.child.sum(),
+            child=self.child.sum(*args, **kwargs),
             data_subjects=self.data_subjects.sum(),
             min_val=min_val,
             max_val=max_val,
         )
 
         return res
+
+    def ones_like(
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Union[PhiTensor, GammaTensor]:
+        # TODO: Add support for axes arguments later
+        min_vals = self.min_vals.ones_like(*args, **kwargs)
+        max_vals = self.max_vals.ones_like(*args, **kwargs)
+
+        child = (
+            np.ones_like(self.child, *args, **kwargs)
+            if isinstance(self.child, np.ndarray)
+            else self.child.ones_like(*args, **kwargs)
+        )
+
+        return PhiTensor(
+            child=child,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            data_subjects=self.data_subjects,
+        )
 
     def __ne__(self, other: Any) -> Union[PhiTensor, GammaTensor]:  # type: ignore
         # TODO: what about data_subjects and min / max values?
