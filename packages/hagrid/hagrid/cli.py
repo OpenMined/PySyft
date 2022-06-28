@@ -198,6 +198,7 @@ def clean(location: str) -> None:
 @click.option("--tls", is_flag=True, help="Launch with TLS configuration")
 @click.option("--test", is_flag=True, help="Launch with test configuration")
 @click.option("--dev", is_flag=True, help="Shortcut for development release")
+@click.option("--tff", is_flag=True, help="Build with TFF")
 @click.option(
     "--release",
     default="production",
@@ -261,6 +262,7 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: run docker with a different platform like linux/arm64",
 )
+
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -315,6 +317,8 @@ def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
 
         # use powershell if environment is Windows
         cmd_to_exec = ["powershell.exe", "-Command", cmd] if is_windows() else cmd
+        # print("")
+        print(cmd_to_exec)
 
         try:
             if len(cmds) > 1:
@@ -761,6 +765,7 @@ def create_launch_cmd(
     parsed_kwargs["tls"] = bool(kwargs["tls"]) if "tls" in kwargs else False
     parsed_kwargs["test"] = bool(kwargs["test"]) if "test" in kwargs else False
     parsed_kwargs["dev"] = bool(kwargs["dev"]) if "dev" in kwargs else False
+    parsed_kwargs["tff"] = bool(kwargs["tff"]) if "tff" in kwargs else False
 
     parsed_kwargs["release"] = "production"
     if "release" in kwargs and kwargs["release"] != "production":
@@ -1432,6 +1437,8 @@ def create_launch_docker_cmd(
         cmd += " --file docker-compose.tls.yml"
     if "test" in kwargs and kwargs["test"] is True:
         cmd += " --file docker-compose.test.yml"
+    if "tff" in kwargs and kwargs["tff"] is True:
+        cmd += " --file docker-compose.tff.yml"
     cmd += " up"
 
     if not tail:

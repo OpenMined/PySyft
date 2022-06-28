@@ -1,0 +1,15 @@
+services:
+  backend:
+    build:
+      args:
+        - TFF=True
+
+  backend_stream:
+    build:
+      args:
+        - TFF=True
+
+  celeryworker:
+    build:
+      args:
+        - TFF=True

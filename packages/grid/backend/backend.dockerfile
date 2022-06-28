@@ -43,6 +43,7 @@ RUN --mount=type=cache,target=/root/.cache \
 
 # Backend
 FROM python:3.9.9-slim as backend
+ARG TFF
 COPY --from=build /root/.local /root/.local
 COPY --from=build /usr/local/bin/waitforit /usr/local/bin/waitforit
 
@@ -79,23 +80,10 @@ COPY syft/src /app/syft/src
 RUN --mount=type=cache,target=/root/.cache \
   pip install --user -r requirements.txt
 
-RUN apt-get update
-RUN apt-get install -y git
-RUN apt-get install build-essential --assume-yes
-RUN pip install psycopg2-binary
-RUN apt-get install libpq-dev python3-dev --assume-yes
-# RUN pip install psycopg2
-RUN pip install --upgrade tensorflow-federated
-# RUN pip install alembic
-# RUN pip install uvicorn
-# RUN pip install fastapi
-# RUN pip install python-jose
-# RUN pip install passlib
-# RUN pip install python-multipart
-# RUN pip install celery
-# RUN git clone https://github.com/tensorflow/federated
-# RUN pip install tenacity/
-# RUN cp federated/tensorflow_federated/python/core/backends/native/execution_contexts.py /usr/local/lib/python3.9/site-packages/tensorflow_federated/python/core/backends/native/execution_contexts.py
+# RUN echo "$TFF" && sleep 3
+RUN if [ "$TFF" = "True" ] ; then pip install --upgrade tensorflow-federated; fi
+
+
 
 # install syft
 RUN --mount=type=cache,target=/root/.cache \
