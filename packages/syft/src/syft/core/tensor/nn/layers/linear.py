@@ -10,6 +10,18 @@ from .base import Layer
 
 @serializable(recursive_serde=True)
 class Linear(Layer):
+    __attr_allowlist__ = (
+        "n_out",
+        "n_in",
+        "out_shape",
+        "W",
+        "b",
+        "dW",
+        "db",
+        "last_input",
+        "init",
+    )
+
     def __init__(self, n_out, n_in=None):
         self.n_out = n_out
         self.n_in = n_in
@@ -38,7 +50,9 @@ class Linear(Layer):
         return input.dot(self.W) + self.b
 
     def backward(self, pre_grad: PhiTensor, *args, **kwargs):
-        self.dW = self.last_input.T.dot(pre_grad)  # Should this transpose just the last 2 indices?
+        self.dW = self.last_input.T.dot(
+            pre_grad
+        )  # Should this transpose just the last 2 indices?
         #         self.dW = self.last_input.swapaxes(-1, -2)
         self.db = pre_grad.mean(axis=0)
         if not self.first_layer:

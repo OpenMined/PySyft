@@ -1,8 +1,13 @@
 # third party
 import numpy as np
 
+# syft absolute
+from syft.core.common.serde.serializable import serializable
 
+
+@serializable(recursive_serde=True)
 class Initializer(object):
+    __attr_allowlist__ = ()
     """Base class for parameter weight initializers.
 
     The :class:`Initializer` class represents a weight initializer used
@@ -26,7 +31,10 @@ class Initializer(object):
         return self.__class__.__name__
 
 
+@serializable(recursive_serde=True)
 class Uniform(Initializer):
+    __attr_allowlist__ = ("scale",)
+
     def __init__(self, scale=0.05):
         self.scale = scale
 
@@ -50,7 +58,10 @@ def decompose_size(size):
     return fan_in, fan_out
 
 
+@serializable(recursive_serde=True)
 class XavierInitialization(Initializer):
+    __attr_allowlist__ = ()
+
     def call(self, size):
         fan_in, fan_out = decompose_size(size)
         return Uniform(np.sqrt(6 / (fan_in + fan_out)))(size)

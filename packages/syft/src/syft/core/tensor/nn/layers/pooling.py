@@ -24,6 +24,8 @@ class AvgPool(Layer):
         `(samples, pooled_rows, pooled_cols, channels)` if dim_ordering='tf'.
     """
 
+    __attr_allowlist__ = ("pool_size", "input_shape", "out_shape", "last_input")
+
     def __init__(self, pool_size):
         self.pool_size = pool_size
 
@@ -50,7 +52,10 @@ class AvgPool(Layer):
         new_h, new_w = self.out_shape[-2:]
 
         # forward
-        outputs = dp_zeros(self.input_shape[:-2] + self.out_shape[-2:], data_subjects=input.data_subjects)
+        outputs = dp_zeros(
+            self.input_shape[:-2] + self.out_shape[-2:],
+            data_subjects=input.data_subjects,
+        )
 
         ndim = len(input.shape)
         if ndim == 4:
@@ -60,7 +65,9 @@ class AvgPool(Layer):
                 for b in np.arange(nb_axis):
                     for h in np.arange(new_h):
                         for w in np.arange(new_w):
-                            outputs[a, b, h, w] = input[a, b, h:h + pool_h, w:w + pool_w].mean()
+                            outputs[a, b, h, w] = input[
+                                a, b, h : h + pool_h, w : w + pool_w
+                            ].mean()
 
         elif ndim == 3:
             nb_batch, _, _ = input.shape
@@ -68,7 +75,9 @@ class AvgPool(Layer):
             for a in np.arange(nb_batch):
                 for h in np.arange(new_h):
                     for w in np.arange(new_w):
-                        outputs[a, h, w] = input[a, h:h + pool_h, w:w + pool_w].mean()
+                        outputs[a, h, w] = input[
+                            a, h : h + pool_h, w : w + pool_w
+                        ].mean()
 
         else:
             raise ValueError()
@@ -93,8 +102,12 @@ class AvgPool(Layer):
                     for h in np.arange(new_h):
                         for w in np.arange(new_w):
                             h_shift, w_shift = h * pool_h, w * pool_w
-                            layer_grads[a, b, h_shift: h_shift + pool_h, w_shift: w_shift + pool_w] = \
-                                pre_grad[a, b, h, w] * (1.0/length)
+                            layer_grads[
+                                a,
+                                b,
+                                h_shift : h_shift + pool_h,
+                                w_shift : w_shift + pool_w,
+                            ] = pre_grad[a, b, h, w] * (1.0 / length)
 
         elif ndim == 3:
             nb_batch, _, _ = pre_grad.shape
@@ -103,8 +116,9 @@ class AvgPool(Layer):
                 for h in np.arange(new_h):
                     for w in np.arange(new_w):
                         h_shift, w_shift = h * pool_h, w * pool_w
-                        layer_grads[a, h_shift: h_shift + pool_h, w_shift: w_shift + pool_w] = \
-                            pre_grad[a, h, w] * (1.0/length)
+                        layer_grads[
+                            a, h_shift : h_shift + pool_h, w_shift : w_shift + pool_w
+                        ] = pre_grad[a, h, w] * (1.0 / length)
 
         else:
             raise ValueError()
@@ -127,6 +141,9 @@ class MaxPool(Layer):
         or 4D tensor with shape:
         `(samples, pooled_rows, pooled_cols, channels)` if dim_ordering='tf'.
     """
+
+    __attr_allowlist__ = ("pool_size", "input_shape", "out_shape", "last_input")
+
     def __init__(self, pool_size, stride=1):
         self.pool_size = pool_size
 
@@ -156,7 +173,7 @@ class MaxPool(Layer):
         self.last_input = input
         outputs = dp_zeros(
             self.input_shape[:-2] + self.out_shape[-2:],
-            data_subjects=input.data_subjects
+            data_subjects=input.data_subjects,
         )
 
         ndim = len(input.shape)
@@ -168,7 +185,9 @@ class MaxPool(Layer):
                 for b in np.arange(nb_axis):
                     for h in np.arange(new_h):
                         for w in np.arange(new_w):
-                            outputs[a, b, h, w] = input[a, b, h:h + pool_h, w:w + pool_w].max()
+                            outputs[a, b, h, w] = input[
+                                a, b, h : h + pool_h, w : w + pool_w
+                            ].max()
 
         elif ndim == 3:
             nb_batch, _, _ = input.shape
@@ -176,7 +195,9 @@ class MaxPool(Layer):
             for a in np.arange(nb_batch):
                 for h in np.arange(new_h):
                     for w in np.arange(new_w):
-                        outputs[a, h, w] = input[a, h:h + pool_h, w:w + pool_w].max()
+                        outputs[a, h, w] = input[
+                            a, h : h + pool_h, w : w + pool_w
+                        ].max()
 
         else:
             raise ValueError()
@@ -198,11 +219,16 @@ class MaxPool(Layer):
                 for b in np.arange(nb_axis):
                     for h in np.arange(new_h):
                         for w in np.arange(new_w):
-                            patch = self.last_input[a, b, h:h + pool_h, w:w + pool_w]
+                            patch = self.last_input[
+                                a, b, h : h + pool_h, w : w + pool_w
+                            ]
                             max_idx = patch.unravel_argmax()
                             #                             max_idx = np.unravel_index(patch.argmax(), patch.shape)
 
-                            h_shift, w_shift = h * pool_h + max_idx[0], w * pool_w + max_idx[1]
+                            h_shift, w_shift = (
+                                h * pool_h + max_idx[0],
+                                w * pool_w + max_idx[1],
+                            )
                             layer_grads[a, b, h_shift, w_shift] = pre_grad[a, b, h, w]
         #                             layer_grads[a, b, h_shift, w_shift] = pre_grad[a, b, a, w]
 
@@ -212,10 +238,13 @@ class MaxPool(Layer):
             for a in np.arange(nb_batch):
                 for h in np.arange(new_h):
                     for w in np.arange(new_w):
-                        patch = self.last_input[a, h:h + pool_h, w:w + pool_w]
+                        patch = self.last_input[a, h : h + pool_h, w : w + pool_w]
                         max_idx = patch.unravel_argmax()
                         #                         max_idx = np.unravel_index(patch.argmax(), patch.shape)
-                        h_shift, w_shift = h * pool_h + max_idx[0], w * pool_w + max_idx[1]
+                        h_shift, w_shift = (
+                            h * pool_h + max_idx[0],
+                            w * pool_w + max_idx[1],
+                        )
                         layer_grads[a, h_shift, w_shift] = pre_grad[a, h, w]
         #                         layer_grads[a, h_shift, w_shift] = pre_grad[a, a, w]
 

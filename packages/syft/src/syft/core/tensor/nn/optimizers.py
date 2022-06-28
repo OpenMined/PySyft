@@ -25,7 +25,9 @@ class Optimizer:
         When adapting step rates, do not move above this value. Default is inf.
     """
 
-    def __init__(self, lr=0.001, clip=-1, decay=0., lr_min=0., lr_max=np.inf):
+    __attr_allowlist__ = ("lr", "clip", "decay", "lr_min", "lr_max", "iterations")
+
+    def __init__(self, lr=0.001, clip=-1, decay=0.0, lr_min=0.0, lr_max=np.inf):
         self.lr = lr
         self.clip = clip
         self.decay = decay
@@ -37,7 +39,7 @@ class Optimizer:
     def update(self, params, grads):
         self.iterations += 1
 
-        self.lr *= (1. / 1 + self.decay * self.iterations)
+        self.lr *= 1.0 / 1 + self.decay * self.iterations
         self.lr = np.clip(self.lr, self.lr_min, self.lr_max)
 
     def __str__(self):
@@ -61,6 +63,16 @@ class Adamax(Optimizer):
            Adam: A Method for Stochastic Optimization.
            arXiv preprint arXiv:1412.6980.
     """
+
+    __attr_allowlist__ = (
+        "beta1",
+        "beta2",
+        "epsilon",
+        "ms",
+        "vs",
+        "lr",
+        "iterations",
+    )
 
     def __init__(self, beta1=0.9, beta2=0.999, epsilon=1e-8, *args, **kwargs):
         super(Adamax, self).__init__(*args, **kwargs)

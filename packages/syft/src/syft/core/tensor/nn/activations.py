@@ -12,6 +12,8 @@ from ..autodp.phi_tensor import PhiTensor
 class Activation(object):
     """Base class for activations."""
 
+    __attr_allowlist__ = ("last_forward",)
+
     def __init__(self):
         self.last_forward = None
 
@@ -39,9 +41,14 @@ class Activation(object):
         return self.__class__.__name__
 
 
+@serializable(recursive_serde=True)
 class leaky_ReLU(Activation):
+    __attr_allowlist__ = (
+        "slope",
+        "last_forward",
+    )
 
-    def __init__(self, slope: float=0.01):
+    def __init__(self, slope: float = 0.01):
         super(leaky_ReLU, self).__init__()
         self.slope = slope
 
@@ -53,25 +60,30 @@ class leaky_ReLU(Activation):
 
         return gt * input_array + ((gt * -1) + 1) * input_array * self.slope
 
-    def derivative(self, input_array: Optional[Union[PhiTensor, GammaTensor]] = None) -> Union[PhiTensor, GammaTensor]:
+    def derivative(
+        self, input_array: Optional[Union[PhiTensor, GammaTensor]] = None
+    ) -> Union[PhiTensor, GammaTensor]:
         last_forward = input_array if input_array else self.last_forward
         res = (last_forward > 0).child * 1 + (last_forward <= 0).child * self.slope
 
         if isinstance(input_array, PhiTensor):
-            return PhiTensor(child=res,
-                             data_subjects=last_forward.data_subjects,
-                             min_vals=last_forward.min_vals * 0,
-                             max_vals=last_forward.max_vals * 1
-                             )
+            return PhiTensor(
+                child=res,
+                data_subjects=last_forward.data_subjects,
+                min_vals=last_forward.min_vals * 0,
+                max_vals=last_forward.max_vals * 1,
+            )
         elif isinstance(input_array, GammaTensor):
             return GammaTensor(
                 child=res,
                 data_subjects=last_forward.data_subjects,
                 min_val=last_forward.min_vals * 0,
-                max_val=last_forward.max_vals * 1
+                max_val=last_forward.max_vals * 1,
             )
         else:
-            raise NotImplementedError(f"Undefined behaviour for type {type(input_array)}")
+            raise NotImplementedError(
+                f"Undefined behaviour for type {type(input_array)}"
+            )
 
 
 def get(activation: Optional[Activation]):

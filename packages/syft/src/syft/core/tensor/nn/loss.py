@@ -11,9 +11,11 @@ class Loss(object):
     function) is one of the two parameters required to compile a model.
 
     """
+
+    __attr_allowlist__ = ()
+
     def forward(self, outputs: PhiTensor, targets: PhiTensor):
-        """ Forward function.
-        """
+        """Forward function."""
         raise NotImplementedError()
 
     def backward(self, outputs: PhiTensor, targets: PhiTensor):
@@ -37,6 +39,8 @@ class Loss(object):
 
 @serializable(recursive_serde=True)
 class BinaryCrossEntropy(Loss):
+    __attr_allowlist__ = ("epsilon",)
+
     def __init__(self, epsilon=1e-11):
         self.epsilon = epsilon
 
@@ -53,7 +57,9 @@ class BinaryCrossEntropy(Loss):
             Targets in [0, 1], such as ground truth labels.
         """
         outputs = outputs.clip(self.epsilon, 1 - self.epsilon)
-        log_loss = targets * dp_log(outputs) + ((targets * -1) + 1) * dp_log((outputs * -1) + 1)
+        log_loss = targets * dp_log(outputs) + ((targets * -1) + 1) * dp_log(
+            (outputs * -1) + 1
+        )
         log_loss = log_loss.sum(axis=1) * -1
         return log_loss.mean()
 

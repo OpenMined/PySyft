@@ -16,7 +16,27 @@ from .base import Layer
 
 @serializable(recursive_serde=True)
 class BatchNorm(Layer):
-    def __init__(self, epsilon: float=1e-6, momentum: float=0.9, axis: int=0, activation: activations.Activation=None):
+    __attr_allowlist__ = (
+        "epsilon",
+        "momentum",
+        "axis",
+        "activation",
+        "beta",
+        "dbeta",
+        "gamma",
+        "dgamma",
+        "cache",
+        "input_shape",
+        "out_shape",
+    )
+
+    def __init__(
+        self,
+        epsilon: float = 1e-6,
+        momentum: float = 0.9,
+        axis: int = 0,
+        activation: activations.Activation = None,
+    ):
         self.epsilon = epsilon
         self.momentum = momentum
         self.axis = axis
@@ -27,7 +47,6 @@ class BatchNorm(Layer):
         self.cache = None
         self.input_shape = None
         self.out_shape = None
-
 
     def connect_to(self, prev_layer):
         n_in = prev_layer.out_shape[-1]
@@ -62,7 +81,9 @@ class BatchNorm(Layer):
 
         return out
 
-    def backward(self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict):
+    def backward(
+        self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+    ):
         """
         If you get stuck, here's a resource:
         https://kratzert.github.io/2016/02/12/understanding-the-
@@ -79,7 +100,11 @@ class BatchNorm(Layer):
         xhat, xmu, ivar, sqrtvar, var = self.cache
 
         N, D, x, y = pre_grad.shape
-        pre_grad = (pre_grad * self.activation.derivative()) if self.activation is not None else pre_grad
+        pre_grad = (
+            (pre_grad * self.activation.derivative())
+            if self.activation is not None
+            else pre_grad
+        )
 
         # step6
         self.dbeta = pre_grad.sum(axis=0)
@@ -101,11 +126,11 @@ class BatchNorm(Layer):
         dxmu2 = xmu * dsq * 2
 
         # step2,
-        dx1 = (dxmu1 + dxmu2)
+        dx1 = dxmu1 + dxmu2
 
         # step1,
         dmu = (dxmu1 + dxmu2).sum(axis=0) * -1
-        dx2 = ((1/N) * pre_grad.ones_like()) * dmu
+        dx2 = ((1 / N) * pre_grad.ones_like()) * dmu
 
         # step0 done!
         dx = dx1 + dx2
