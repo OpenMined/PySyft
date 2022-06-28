@@ -2,7 +2,6 @@
 from typing import Dict
 from typing import Optional
 from typing import Tuple
-from typing import Union
 
 # third party
 import numpy as np
@@ -10,10 +9,10 @@ import numpy as np
 # relative
 from .. import activations
 from ....common.serde.serializable import serializable
-from ...autodp.gamma_tensor import GammaTensor
 from ...autodp.phi_tensor import PhiTensor
 from ..initializations import XavierInitialization
-from ..utils import dp_zeros
+from ..utils import col2im_indices
+from ..utils import im2col_indices
 from .base import Layer
 
 
@@ -62,6 +61,7 @@ class Convolution(Layer):
         self.out_shape = None
         self.last_output = None
         self.last_input = None
+        self.X_col = None
 
         self.init = XavierInitialization()
         self.activation = activations.get(activation)
@@ -94,125 +94,41 @@ class Convolution(Layer):
         self.W = self.init((self.nb_filter, pre_nb_filter, filter_height, filter_width))
         self.b = np.zeros((self.nb_filter,))
 
-    def forward(
-        self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
-    ):
-
+    def forward(self, input: PhiTensor, *args: Tuple, **kwargs: Dict):
         self.last_input = input
 
-        # TODO: This could fail if the DP Tensor has < 4 dimensions
+        n_filters, d_filter, h_filter, w_filter = self.W.shape
+        n_x, d_x, h_x, w_x = input.shape
 
-        # shape
-        nb_batch, input_depth, old_img_h, old_img_w = input.shape
-        if isinstance(self.filter_size, tuple):
-            filter_height, filter_width = self.filter_size
-        elif isinstance(self.filter_size, int):
-            filter_height = filter_width = self.filter_size
-        else:
-            raise NotImplementedError
+        _, _, h_out, w_out, = self.out_shape
 
-        new_img_h, new_img_w = self.out_shape[2:]
+        self.X_col = im2col_indices(input, h_filter, w_filter, padding=self.padding, stride=self.stride)
 
-        # init
-        outputs = dp_zeros(
-            (nb_batch, self.nb_filter, new_img_h, new_img_w), input.data_subjects
-        )
+        W_col = self.W.reshape((n_filters, -1))
 
-        # convolution operation
-        for x in np.arange(nb_batch):
-            for y in np.arange(self.nb_filter):
-                for h in np.arange(new_img_h):
-                    for w in np.arange(new_img_w):
-                        h_shift, w_shift = h * self.stride, w * self.stride
-                        # patch: (input_depth, filter_h, filter_w)
-                        patch = input[
-                            x,
-                            :,
-                            h_shift : h_shift + filter_height,
-                            w_shift : w_shift + filter_width,
-                        ]
-                        outputs[x, y, h, w] = (patch * self.W[y]).sum() + self.b[y]
+        out = self.X_col.T @ W_col.T + self.b # Transpose is required here because W_col is numpy array
+        out = out.reshape((n_filters, h_out, w_out, n_x))
+        out = out.transpose((3, 0, 1, 2))
 
-        # nonlinear activation
-        # self.last_output: (nb_batch, output_depth, image height, image width)
+        self.last_output = self.activation.forward(out) if self.activation is not None else out
+        return out
 
-        # TODO: Min/max vals are direct function of private data- fix this when we have time
+    def backward(self, pre_grad: PhiTensor, *args: Tuple, **kwargs: Dict):
+        n_filter, d_filter, h_filter, w_filter = self.W.shape
 
-        self.last_output = (
-            self.activation.forward(outputs) if self.activation is not None else outputs
-        )
+        pre_grads = (pre_grad * self.activation.derivative(pre_grad)) if self.activation is not None else pre_grad
+        db = pre_grads.sum(axis=(0, 2, 3))
+        self.db = db.reshape((n_filter, -1))
 
-        return self.last_output
+        pre_grads_reshaped = pre_grads.transpose((1, 2, 3, 0)).reshape((n_filter, -1))
 
-    def backward(self, pre_grad, *args, **kwargs):
+        dW = pre_grads_reshaped @ self.X_col.T
+        self.dW = dW.reshape(self.W.shape)
 
-        # shape
-        assert pre_grad.shape == self.last_output.shape
-        nb_batch, input_depth, old_img_h, old_img_w = self.last_input.shape
-        new_img_h, new_img_w = self.out_shape[2:]
-
-        if isinstance(self.filter_size, tuple):
-            filter_height, filter_width = self.filter_size
-        elif isinstance(self.filter_size, int):
-            filter_height = filter_width = self.filter_size
-        else:
-            raise NotImplementedError
-
-        #         filter_h, filter_w = self.filter_size
-        old_img_h, old_img_w = self.last_input.shape[-2:]
-
-        # gradients
-        # TODO: Decide if dW and db needs to be DP Tensors or can they live as numpy arrays
-        self.dW = np.zeros((self.W.shape))
-        self.db = np.zeros((self.b.shape))
-        delta = (
-            (pre_grad * self.activation.derivative())
-            if self.activation is not None
-            else pre_grad
-        )
-
-        # dW
-        for r in np.arange(self.nb_filter):
-            for t in np.arange(input_depth):
-                for h in np.arange(filter_height):
-                    for w in np.arange(filter_width):
-                        input_window = self.last_input[
-                            :,
-                            t,
-                            h : old_img_h - filter_height + h + 1 : self.stride,
-                            w : old_img_w - filter_width + w + 1 : self.stride,
-                        ]
-                        delta_window = delta[:, r]
-                        self.dW[r, t, h, w] = (
-                            (input_window * delta_window).sum() * (1 / nb_batch)
-                        ).child
-        # db
-        for r in np.arange(self.nb_filter):
-            self.db[r] = (delta[:, r].sum() * (1 / nb_batch)).child
-
-        # dX
-        if not self.first_layer:
-            layer_grads = self.last_input.zeros_like()
-            for b in np.arange(nb_batch):
-                for r in np.arange(self.nb_filter):
-                    for t in np.arange(input_depth):
-                        for h in np.arange(new_img_h):
-                            for w in np.arange(new_img_w):
-                                h_shift, w_shift = h * self.stride, w * self.stride
-                                temp = layer_grads[
-                                    b,
-                                    t,
-                                    h_shift : h_shift + filter_height,
-                                    w_shift : w_shift + filter_width,
-                                ]
-                                layer_grads[
-                                    b,
-                                    t,
-                                    h_shift : h_shift + filter_height,
-                                    w_shift : w_shift + filter_width,
-                                ] = temp + (delta[b, r, h, w] * self.W[r, t])
-
-            return layer_grads
+        W_reshape = self.W.reshape(n_filter, -1)
+        dX_col = pre_grads_reshaped.T @ W_reshape
+        dX = col2im_indices(dX_col, self.input_shape, h_filter, w_filter, padding=self.padding, stride=self.stride)
+        return dX
 
     @property
     def params(self):

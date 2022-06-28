@@ -1213,10 +1213,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         )
 
     def pad(self, width: int, padding_mode: str = "reflect") -> PhiTensor:
-        if padding_mode == "reflect":
-            data = self.child
-            pad_left = pad_right = pad_top = pad_bottom = width
+        data = self.child
 
+        if padding_mode == "reflect":
+            pad_left = pad_right = pad_top = pad_bottom = width
             # RGB image
             if len(data.shape) == 3:
                 output_data = np.pad(
@@ -1760,7 +1760,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals = self.min_vals
             # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
         else:
-            min_vals = self.min_vals.transpose(*args)
+            min_vals = data.min()
 
         if (
             isinstance(self.max_vals, int)
@@ -1771,7 +1771,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals = self.max_vals
             # print(f'Warning: Tensor data was of type {type(data)}, transpose operation had no effect.')
         else:
-            max_vals = self.max_vals.transpose(*args)
+            max_vals = data.max()
 
         return PhiTensor(
             child=data,
