@@ -176,12 +176,13 @@ class lazyrepeatarray:
     def size(self) -> int:
         return np.prod(self.shape)
 
-    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> np.ndarray:
-        if "axis" in kwargs and kwargs["axis"] is None:
-            # TODO: make fast
-            return np.array(self.to_numpy().sum())
-        else:
-            raise Exception("not sure how to do this yet")
+    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+        res = np.array(self.to_numpy().sum(*args, **kwargs))
+        return lazyrepeatarray(data=res, shape=res.shape)
+
+    def ones_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
+        res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
+        return lazyrepeatarray(data=res, shape=res.shape)
 
     def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, lazyrepeatarray):
