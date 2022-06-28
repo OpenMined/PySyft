@@ -16,6 +16,30 @@ from ..common.serde.serializable import serializable
 from .data_subject import DataSubject
 
 
+def get_output_shape(shape1, shape2):
+    """
+    When you insert values from one DP Tensor into another, this will help the DSL
+    figure out what its output shape will be. (DSL.insert())
+
+    Assumptions:
+    - shape1 reflects the shape of the datapoints, i.e. (n, ... , r, c)
+        - n = MAXIMUM number of data subjects for any given data point
+        - r, c = rows/cols of data points
+    - shape2 can either be:
+        - the same shape as shape1 (if shape1 already has multiple DS per
+            datapoint, or
+        - 1 extra dimension that shape1 (if shape1 has only 1 DS per datapoint)
+    """
+
+    if len(shape1) > len(shape2) or len(shape2) - len(shape1) > 1:
+        raise NotImplementedError
+
+    first_dim = max(shape1[0], shape2[0]) if len(shape1) == len(shape2) else shape2[0]
+    other_dims = shape1 if len(shape1) < len(shape2) else shape1[1:]
+    output_size = (first_dim, *other_dims)
+    return output_size
+
+
 # allow us to serialize and deserialize np.arrays with strings inside as two np.arrays
 # one containing the uint8 bytes and the other the offsets between strings
 # TODO: Should move to a vectorized version.
@@ -215,6 +239,50 @@ class DataSubjectList:
                 self.data_subjects_indexed = new_data_subjects
         else:
             raise NotImplementedError(f"Undefined behaviour for type: {type(value)}")
+
+    @staticmethod
+    def insert(dsl1: DataSubjectList, dsl2: DataSubjectList, index) -> DataSubjectList:
+        output_shape = get_output_shape(dsl1.shape, dsl2.shape)
+
+        # TODO: Broadcasting with [1] over multiple indices?
+        dsl1_len = dsl1.shape[0] if len(dsl1.shape) == len(dsl2.shape) else 1
+        dsl2_len = dsl2.shape[0]
+
+        if dsl1_len < dsl2_len:
+            # We need to create a bigger array
+            bigger_array = np.full(output_shape, np.nan)
+
+            # Fill current dsl1 values into this bigger_array
+            # TODO: Ask Madhava if there's a smarter/vectorized way to do this
+            if dsl1_len == 1:
+                bigger_array[0] = dsl1.data_subjects_indexed
+            else:
+                for i in range(dsl1_len):
+                    bigger_array[i] = dsl1[i]
+
+            output_dsl = DataSubjectList(one_hot_lookup=dsl1.one_hot_lookup, data_subjects_indexed=bigger_array)
+            # bigger_array[:, index] = dsl2.data_subjects_indexed.squeeze()
+            dsl2_copy = dsl2.copy()
+            dsl2_copy.data_subjects_indexed = dsl2_copy.data_subjects_indexed.squeeze()
+            output_dsl[:, index] = dsl2_copy
+            return output_dsl
+
+        elif dsl1_len == dsl2_len:
+            # it fits perfectly
+            output_dsl = dsl1.copy()
+            output_dsl[index] = dsl2
+            return output_dsl
+        else:
+            # add some nans
+            extra_nans = np.array([np.nan] * (dsl1_len - dsl2_len) * np.prod(dsl2.shape[1:])).reshape(
+                (dsl1_len - dsl2_len, *dsl2.shape[1:]))
+            array_to_append = np.concatenate((dsl2.data_subjects_indexed, extra_nans)).squeeze()
+            new_dsl = dsl2.copy()
+            new_dsl.data_subjects_indexed = array_to_append
+
+            output_dsl = dsl1.copy()
+            output_dsl[:, index] = new_dsl
+            return output_dsl
 
     @staticmethod
     def combine(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:

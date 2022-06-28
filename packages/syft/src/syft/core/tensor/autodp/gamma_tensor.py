@@ -1952,11 +1952,11 @@ class GammaTensor:
             if maxv > self.max_vals.data.max():
                 self.max_vals.data = maxv
 
-            self.data_subjects[key] = value.data_subjects
+            output_ds = DataSubjectList.insert(dsl1=self.data_subjects, dsl2=value.data_subjects, index=key)
 
             return GammaTensor(
                 child=self.child,
-                data_subjects=self.data_subjects,
+                data_subjects=output_ds,
                 min_vals=self.min_vals,
                 max_vals=self.max_vals,
             )
