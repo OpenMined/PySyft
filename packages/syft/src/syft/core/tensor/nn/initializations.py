@@ -1,8 +1,8 @@
 # third party
 import numpy as np
 
-# syft absolute
-from syft.core.common.serde.serializable import serializable
+# relative
+from ...common.serde.serializable import serializable
 
 
 @serializable(recursive_serde=True)

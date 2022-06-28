@@ -1413,8 +1413,12 @@ class GammaTensor:
         output_state[self.id] = self
 
         if isinstance(self.min_vals, lazyrepeatarray):
-            min_val = lazyrepeatarray(data=np.log(self.min_vals.data.min()), shape=self.shape)
-            max_val = lazyrepeatarray(data=np.log(self.max_vals.data.max()), shape=self.shape)
+            min_val = lazyrepeatarray(
+                data=np.log(self.min_vals.data.min()), shape=self.shape
+            )
+            max_val = lazyrepeatarray(
+                data=np.log(self.max_vals.data.max()), shape=self.shape
+            )
         elif isinstance(self.min_vals, np.ndarray):
             min_val = lazyrepeatarray(data=np.log(self.min_vals), shape=self.shape)
             max_val = lazyrepeatarray(data=np.log(self.max_vals), shape=self.shape)
@@ -1424,7 +1428,9 @@ class GammaTensor:
             # min_vals = np.log(self.min_vals),
             # max_vals = np.log(self.max_vals)
         else:
-            raise NotImplementedError(f"Undefined behaviour for type: {type(self.min_vals)}")
+            raise NotImplementedError(
+                f"Undefined behaviour for type: {type(self.min_vals)}"
+            )
 
         def _log(state: dict) -> jax.numpy.DeviceArray:
             return jnp.log(self.run(state))
@@ -1435,7 +1441,7 @@ class GammaTensor:
             max_vals=max_val,
             data_subjects=self.data_subjects,
             func=_log,
-            state=output_state
+            state=output_state,
         )
 
     def reciprocal(self) -> GammaTensor:
@@ -1585,15 +1591,23 @@ class GammaTensor:
             return jnp.mean(self.run(state), axis)
 
         result = self.child.mean(axis)
-        minv = self.min_vals.data if isinstance(self.min_vals, lazyrepeatarray) else self.min_vals
-        maxv = self.max_vals.data if isinstance(self.max_vals, lazyrepeatarray) else self.max_vals
+        minv = (
+            self.min_vals.data
+            if isinstance(self.min_vals, lazyrepeatarray)
+            else self.min_vals
+        )
+        maxv = (
+            self.max_vals.data
+            if isinstance(self.max_vals, lazyrepeatarray)
+            else self.max_vals
+        )
         return GammaTensor(
             child=result,
             data_subjects=self.data_subjects.reshape(result.shape),
             min_vals=lazyrepeatarray(data=minv, shape=result.shape),
-            max_vals=lazyrepeatarray(data=(maxv + minv)/2, shape=result.shape),
+            max_vals=lazyrepeatarray(data=(maxv + minv) / 2, shape=result.shape),
             state=output_state,
-            func=_mean
+            func=_mean,
         )
 
     def dot(self, other: Union[np.ndarray, GammaTensor]) -> GammaTensor:
@@ -1604,21 +1618,25 @@ class GammaTensor:
 
             if isinstance(self.min_vals, lazyrepeatarray):
                 minv = lazyrepeatarray(
-                    data=jnp.dot(np.ones_like(self.child) * self.min_vals.data, other).min(),
-                    shape=result.shape
+                    data=jnp.dot(
+                        np.ones_like(self.child) * self.min_vals.data, other
+                    ).min(),
+                    shape=result.shape,
                 )
                 maxv = lazyrepeatarray(
-                    data=jnp.dot(np.ones_like(self.child) * self.max_vals.data, other).max(),
-                    shape=result.shape
+                    data=jnp.dot(
+                        np.ones_like(self.child) * self.max_vals.data, other
+                    ).max(),
+                    shape=result.shape,
                 )
             elif isinstance(self.min_vals, (int, float)):
                 minv = lazyrepeatarray(
                     data=jnp.dot(np.ones_like(self.child) * self.min_vals, other).min(),
-                    shape=result.shape
+                    shape=result.shape,
                 )
                 maxv = lazyrepeatarray(
                     data=jnp.dot(np.ones_like(self.child) * self.max_vals, other).max(),
-                    shape=result.shape
+                    shape=result.shape,
                 )
             else:
                 raise NotImplementedError
@@ -1627,7 +1645,7 @@ class GammaTensor:
                 child=result,
                 data_subjects=self.data_subjects,
                 min_vals=minv,
-                max_vals=maxv
+                max_vals=maxv,
             )
         elif isinstance(other, GammaTensor):
             output_state = dict()
@@ -1646,14 +1664,14 @@ class GammaTensor:
                         np.ones_like(self.child) * self.min_vals.data,
                         np.ones_like(other.child) * other.min_vals.data,
                     ).min(),
-                    shape=result.shape
+                    shape=result.shape,
                 )
                 maxv = lazyrepeatarray(
                     data=jnp.dot(
                         np.ones_like(self.child) * self.max_vals.data,
                         np.ones_like(other.child) * other.max_vals.data,
                     ).max(),
-                    shape=result.shape
+                    shape=result.shape,
                 )
             elif isinstance(self.min_vals, (int, float)):
                 minv = lazyrepeatarray(
@@ -1661,14 +1679,14 @@ class GammaTensor:
                         np.ones_like(self.child) * self.min_vals,
                         np.ones_like(other.child) * other.min_vals,
                     ).min(),
-                    shape=result.shape
+                    shape=result.shape,
                 )
                 maxv = lazyrepeatarray(
                     data=jnp.dot(
                         np.ones_like(self.child) * self.max_vals,
-                        np.ones_like(other.child) * other.max_vals
+                        np.ones_like(other.child) * other.max_vals,
                     ).max(),
-                    shape=result.shape
+                    shape=result.shape,
                 )
             else:
                 raise NotImplementedError
@@ -1679,10 +1697,12 @@ class GammaTensor:
                 min_vals=minv,
                 max_vals=maxv,
                 func=_dot,
-                state=output_state
+                state=output_state,
             )
         else:
-            raise NotImplementedError(f"Undefined behaviour for GT.dot with {type(other)}")
+            raise NotImplementedError(
+                f"Undefined behaviour for GT.dot with {type(other)}"
+            )
 
     def sqrt(self) -> GammaTensor:
         def _sqrt(state: dict) -> jax.numpy.DeviceArray:
@@ -1711,12 +1731,14 @@ class GammaTensor:
         min_val = 1e20
         max_val = -1e20
 
-        data_subs = DataSubjectList(one_hot_lookup=np.empty(0), data_subjects_indexed=np.empty(0))
+        data_subs = DataSubjectList(
+            one_hot_lookup=np.empty(0), data_subjects_indexed=np.empty(0)
+        )
 
         for gamma_tensor in gt_list:
             # Add data points
             input_size = int(np.prod(gamma_tensor.shape))
-            data[last_index: last_index + input_size] = gamma_tensor.child.flatten()
+            data[last_index : last_index + input_size] = gamma_tensor.child.flatten()
             last_index += input_size
 
             # Add min/max values
@@ -1736,20 +1758,23 @@ class GammaTensor:
                 if gamma_tensor.max_vals < max_val:
                     max_val = local_max
             else:
-                raise NotImplementedError(f"Undefined behaviour for type: {type(gamma_tensor.min_vals)}")
+                raise NotImplementedError(
+                    f"Undefined behaviour for type: {type(gamma_tensor.min_vals)}"
+                )
 
             # Add data subjects
             data_subs = DataSubjectList.absorb(data_subs, gamma_tensor.data_subjects)
 
-        data_subs.data_subjects_indexed = data_subs.data_subjects_indexed.reshape(target_shape)
+        data_subs.data_subjects_indexed = data_subs.data_subjects_indexed.reshape(
+            target_shape
+        )
 
         return GammaTensor(
             child=data.reshape(target_shape),
             data_subjects=data_subs,
             min_vals=min_val,
-            max_vals=max_val
+            max_vals=max_val,
         )
-
 
     def publish(
         self,
@@ -1820,7 +1845,9 @@ class GammaTensor:
     def __len__(self) -> int:
         return len(self.child)
 
-    def __getitem__(self, item: Union[str, int, slice, PassthroughTensor]) -> GammaTensor:
+    def __getitem__(
+        self, item: Union[str, int, slice, PassthroughTensor]
+    ) -> GammaTensor:
         # TODO: Technically we could reduce ds.one_hot_lookup to remove any DS that won't be there
         # There technically isn't any penalty for keeping it as is, but maybe there's a sidechannel attack
         # where you index into one value in a GammaTensor and get all the data subjects of that Tensor?
@@ -1855,7 +1882,9 @@ class GammaTensor:
                 max_vals=maxv,
                 data_subjects=DataSubjectList(
                     one_hot_lookup=self.data_subjects.one_hot_lookup,
-                    data_subjects_indexed=self.data_subjects.data_subjects_indexed[item]
+                    data_subjects_indexed=self.data_subjects.data_subjects_indexed[
+                        item
+                    ],
                 ),
             )
 
@@ -1905,8 +1934,6 @@ class GammaTensor:
     @property
     def shape(self) -> Tuple[int, ...]:
         return self.child.shape
-
-
 
     @property
     def lipschitz_bound(self) -> float:

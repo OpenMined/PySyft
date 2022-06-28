@@ -142,13 +142,15 @@ class DataSubjectList:
     def flatten(self) -> DataSubjectList:
         return DataSubjectList(
             one_hot_lookup=self.one_hot_lookup.copy(),
-            data_subjects_indexed=self.data_subjects_indexed.flatten()
+            data_subjects_indexed=self.data_subjects_indexed.flatten(),
         )
 
     def reshape(self, target_shape) -> DataSubjectList:
         return DataSubjectList(
             one_hot_lookup=self.one_hot_lookup,
-            data_subjects_indexed=self.data_subjects_indexed.reshape((-1, *target_shape))
+            data_subjects_indexed=self.data_subjects_indexed.reshape(
+                (-1, *target_shape)
+            ),
         )
 
     @property
@@ -157,7 +159,10 @@ class DataSubjectList:
 
     def __getitem__(self, item) -> DataSubjectList:
         result = self.data_subjects_indexed[item]
-        return DataSubjectList(one_hot_lookup=np.unique(self.one_hot_lookup[result]), data_subjects_indexed=result)
+        return DataSubjectList(
+            one_hot_lookup=np.unique(self.one_hot_lookup[result]),
+            data_subjects_indexed=result,
+        )
 
     def __setitem__(self, key, value) -> None:
         if isinstance(value, DataSubjectList):
@@ -173,18 +178,28 @@ class DataSubjectList:
                 )
 
                 # Give them the index that was assigned to them
-                for old_value, new_value in zip(overlapping_indices, target_overlap_indices):
-                    value.data_subjects_indexed[value.data_subjects_indexed == old_value] = new_value
+                for old_value, new_value in zip(
+                    overlapping_indices, target_overlap_indices
+                ):
+                    value.data_subjects_indexed[
+                        value.data_subjects_indexed == old_value
+                    ] = new_value
 
                 # Now do the same but for unique data subjects
                 unique_indices = np.invert(search).nonzero()[0]  # noqa: E712
                 unique_data_subjects = value.data_subjects_indexed.take(unique_indices)
 
-                output_one_hot_encoding = np.append(self.one_hot_lookup, unique_data_subjects)
-                target_unique_indices = np.arange(len(self.data_subjects_indexed), len(output_one_hot_encoding))
+                output_one_hot_encoding = np.append(
+                    self.one_hot_lookup, unique_data_subjects
+                )
+                target_unique_indices = np.arange(
+                    len(self.data_subjects_indexed), len(output_one_hot_encoding)
+                )
 
                 for old_value, new_value in zip(unique_indices, target_unique_indices):
-                    value.data_subjects_indexed[value.data_subjects_indexed == old_value] = new_value
+                    value.data_subjects_indexed[
+                        value.data_subjects_indexed == old_value
+                    ] = new_value
 
                 self.one_hot_lookup = output_one_hot_encoding
                 print("key", key)
@@ -203,10 +218,7 @@ class DataSubjectList:
             raise NotImplementedError(f"Undefined behaviour for type: {type(value)}")
 
     @staticmethod
-    def combine(
-            dsl1: DataSubjectList, dsl2: DataSubjectList
-    ) -> DataSubjectList:
-
+    def combine(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:
 
         """
         From Ishan's PR: https://github.com/OpenMined/PySyft/pull/6490/
@@ -257,11 +269,18 @@ class DataSubjectList:
 
             # Suppressing E712 above because the recommended way (is True) does not work elementwise
 
-            if len(overlapping_indices) == 0:  # If there's no overlap, our job is super simple
+            if (
+                len(overlapping_indices) == 0
+            ):  # If there's no overlap, our job is super simple
                 return DataSubjectList(
-                    one_hot_lookup=np.concatenate((dsl1.one_hot_lookup, dsl2.one_hot_lookup)),
+                    one_hot_lookup=np.concatenate(
+                        (dsl1.one_hot_lookup, dsl2.one_hot_lookup)
+                    ),
                     data_subjects_indexed=np.stack(
-                        (dsl1.data_subjects_indexed, dsl2.data_subjects_indexed + dsl1_uniques)
+                        (
+                            dsl1.data_subjects_indexed,
+                            dsl2.data_subjects_indexed + dsl1_uniques,
+                        )
                     ),
                 )
 
@@ -272,14 +291,20 @@ class DataSubjectList:
 
             # Now that we need to replace the previous indices with the new indices
             output_data_subjects_indexed = np.zeros_like(dsl2.data_subjects_indexed)
-            for old_value, new_value in zip(overlapping_indices, target_overlap_indices):
+            for old_value, new_value in zip(
+                overlapping_indices, target_overlap_indices
+            ):
                 output_data_subjects_indexed[array_to_change == old_value] = new_value
 
             # Task 2- do the same but for unique data subjects
             unique_data_subjects = search_terms.take(unique_indices)
 
-            output_one_hot_encoding = np.concatenate((bigger_list, unique_data_subjects))
-            target_unique_indices = np.arange(len(bigger_list), len(output_one_hot_encoding))
+            output_one_hot_encoding = np.concatenate(
+                (bigger_list, unique_data_subjects)
+            )
+            target_unique_indices = np.arange(
+                len(bigger_list), len(output_one_hot_encoding)
+            )
 
             for old_value, new_value in zip(unique_indices, target_unique_indices):
                 output_data_subjects_indexed[array_to_change == old_value] = new_value
@@ -291,9 +316,7 @@ class DataSubjectList:
             )
 
     @staticmethod
-    def absorb(
-            dsl1: DataSubjectList, dsl2: DataSubjectList
-    ) -> DataSubjectList:
+    def absorb(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:
         # TODO: Check if DSLs need to be flattened before appending, if different sizes?
 
         """
@@ -342,11 +365,16 @@ class DataSubjectList:
 
             # Suppressing E712 above because the recommended way (is True) does not work elementwise
 
-            if len(overlapping_indices) == 0:  # If there's no overlap, our job is super simple
+            if (
+                len(overlapping_indices) == 0
+            ):  # If there's no overlap, our job is super simple
                 return DataSubjectList(
-                    one_hot_lookup=np.concatenate((dsl1.one_hot_lookup, dsl2.one_hot_lookup)),
+                    one_hot_lookup=np.concatenate(
+                        (dsl1.one_hot_lookup, dsl2.one_hot_lookup)
+                    ),
                     data_subjects_indexed=np.append(  # Should this be concatenate?
-                        dsl1.data_subjects_indexed, dsl2.data_subjects_indexed + dsl1_uniques
+                        dsl1.data_subjects_indexed,
+                        dsl2.data_subjects_indexed + dsl1_uniques,
                     ),
                 )
 
@@ -357,14 +385,20 @@ class DataSubjectList:
 
             # Now that we need to replace the previous indices with the new indices
             output_data_subjects_indexed = np.zeros_like(dsl2.data_subjects_indexed)
-            for old_value, new_value in zip(overlapping_indices, target_overlap_indices):
+            for old_value, new_value in zip(
+                overlapping_indices, target_overlap_indices
+            ):
                 output_data_subjects_indexed[array_to_change == old_value] = new_value
 
             # Task 2- do the same but for unique data subjects
             unique_data_subjects = search_terms.take(unique_indices)
 
-            output_one_hot_encoding = np.concatenate((bigger_list, unique_data_subjects))
-            target_unique_indices = np.arange(len(bigger_list), len(output_one_hot_encoding))
+            output_one_hot_encoding = np.concatenate(
+                (bigger_list, unique_data_subjects)
+            )
+            target_unique_indices = np.arange(
+                len(bigger_list), len(output_one_hot_encoding)
+            )
 
             for old_value, new_value in zip(unique_indices, target_unique_indices):
                 output_data_subjects_indexed[array_to_change == old_value] = new_value
@@ -374,4 +408,3 @@ class DataSubjectList:
             return DataSubjectList(
                 one_hot_lookup=output_one_hot_encoding, data_subjects_indexed=final_dsi
             )
-

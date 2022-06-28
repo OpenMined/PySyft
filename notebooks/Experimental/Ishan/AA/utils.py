@@ -118,13 +118,12 @@ def preprocess_data(data):
         img = img.reshape(dims[2], dims[0], dims[1]).astype(np.int64)
         reshaped_images.append(img)
 
-
-#     images = np.vstack(reshaped_images).astype(np.int64)  # type cast to int64
+    #     images = np.vstack(reshaped_images).astype(np.int64)  # type cast to int64
     images = np.array(reshaped_images)
     dims = images.shape
     print("Dims", dims)
     # images = images.reshape(dims[0] * dims[1], dims[2])  # reshape to 2D array
-#     images = np.rollaxis(images, -1)
+    #     images = np.rollaxis(images, -1)
 
     # Convert labels to numpy int64 array
     labels = data["labels"].to_numpy().astype("int64")

@@ -59,7 +59,7 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.nn",
             "syft.core.tensor.nn",
             Model,
-        )
+        ),
     ]
 
     methods = [

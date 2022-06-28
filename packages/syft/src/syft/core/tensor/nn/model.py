@@ -17,6 +17,7 @@ class Model:
         "loss",
         "optimizer",
     ]
+
     def __init__(self, layers=None):
         self.layers = [] if layers is None else layers
 
@@ -38,14 +39,22 @@ class Model:
         self.loss = loss
         self.optimizer = optimizer
 
-    def fit(self, X, Y, max_iter=100, batch_size=64, shuffle=True,
-            validation_split=0., validation_data=None):
+    def fit(
+        self,
+        X,
+        Y,
+        max_iter=100,
+        batch_size=64,
+        shuffle=True,
+        validation_split=0.0,
+        validation_data=None,
+    ):
 
         # prepare data
-        train_X = X #.astype(get_dtype()) if np.issubdtype(np.float64, X.dtype) else X
-        train_Y = Y #.astype(get_dtype()) if np.issubdtype(np.float64, Y.dtype) else Y
+        train_X = X  # .astype(get_dtype()) if np.issubdtype(np.float64, X.dtype) else X
+        train_Y = Y  # .astype(get_dtype()) if np.issubdtype(np.float64, Y.dtype) else Y
 
-        if 1. > validation_split > 0.:
+        if 1.0 > validation_split > 0.0:
             split = int(train_Y.shape[0] * validation_split)
             valid_X, valid_Y = train_X[-split:], train_Y[-split:]
             train_X, train_Y = train_X[:-split], train_Y[:-split]
@@ -99,7 +108,10 @@ class Model:
 
             # output train status
             runout = "iter %d, train-[loss %.4f, acc %.4f]; " % (
-                iter_idx, float(np.mean(train_losses)), float(self.accuracy(train_predicts, train_targets)))
+                iter_idx,
+                float(np.mean(train_losses)),
+                float(self.accuracy(train_predicts, train_targets)),
+            )
 
             # runout = "iter %d, train-[loss %.4f, ]; " % (
             #     iter_idx, float(np.mean(train_losses)))
@@ -123,10 +135,12 @@ class Model:
 
                 # output valid status
                 runout += "valid-[loss %.4f, acc %.4f]; " % (
-                    float(np.mean(valid_losses)), float(self.accuracy(valid_predicts, valid_targets)))
+                    float(np.mean(valid_losses)),
+                    float(self.accuracy(valid_predicts, valid_targets)),
+                )
 
     def predict(self, X):
-        """ Calculate an output Y for the given input X. """
+        """Calculate an output Y for the given input X."""
         x_next = X
         for layer in self.layers[:]:
             x_next = layer.forward(x_next)

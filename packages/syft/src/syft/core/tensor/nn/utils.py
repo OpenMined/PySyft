@@ -12,8 +12,11 @@ from ..autodp.phi_tensor import PhiTensor
 from ..lazy_repeat_array import lazyrepeatarray
 
 
-def gamma_output(x: Union[np.ndarray, PhiTensor, GammaTensor], y: Union[np.ndarray, PhiTensor, GammaTensor]) -> bool:
-    """ This function will tell you if the inputs to dp_maximum will be a GammaTensor.
+def gamma_output(
+    x: Union[np.ndarray, PhiTensor, GammaTensor],
+    y: Union[np.ndarray, PhiTensor, GammaTensor],
+) -> bool:
+    """This function will tell you if the inputs to dp_maximum will be a GammaTensor.
 
     This will be the case if:
     - either x or y are gamma tensors
@@ -39,8 +42,9 @@ def gamma_output(x: Union[np.ndarray, PhiTensor, GammaTensor], y: Union[np.ndarr
         return False
 
 
-def dp_maximum(x: Union[PhiTensor, GammaTensor], y: Union[np.ndarray, PhiTensor, GammaTensor]
-               ) -> Union[PhiTensor, GammaTensor]:
+def dp_maximum(
+    x: Union[PhiTensor, GammaTensor], y: Union[np.ndarray, PhiTensor, GammaTensor]
+) -> Union[PhiTensor, GammaTensor]:
     # TODO: Make this work for GammaTensors
     x_data = x.child
     y_data = y.child if hasattr(y, "child") else y
@@ -60,7 +64,7 @@ def dp_maximum(x: Union[PhiTensor, GammaTensor], y: Union[np.ndarray, PhiTensor,
     min_v, max_v = output.min(), output.max()
     dsl = DataSubjectList(
         one_hot_lookup=x.data_subjects.one_hot_lookup,
-        data_subjects_indexed=np.zeros_like(output)
+        data_subjects_indexed=np.zeros_like(output),
     )
     return PhiTensor(
         child=output,
@@ -74,8 +78,12 @@ def dp_log(input: Union[PhiTensor, GammaTensor]) -> Union[PhiTensor, GammaTensor
     if isinstance(input, PhiTensor):
         output = np.log(input.child)
         # min_v, max_v = output.min(), output.max()  # These bounds are a function of private data
-        min_v = lazyrepeatarray(data=np.log(input.min_vals.data.min()), shape=output.shape)
-        max_v = lazyrepeatarray(data=np.log(input.max_vals.data.max()), shape=output.shape)
+        min_v = lazyrepeatarray(
+            data=np.log(input.min_vals.data.min()), shape=output.shape
+        )
+        max_v = lazyrepeatarray(
+            data=np.log(input.max_vals.data.max()), shape=output.shape
+        )
         dsl = input.data_subjects
 
         return PhiTensor(
@@ -90,7 +98,9 @@ def dp_log(input: Union[PhiTensor, GammaTensor]) -> Union[PhiTensor, GammaTensor
         raise NotImplementedError(f"Undefined behaviour for type: {type(input)}")
 
 
-def dp_zeros(shape: Tuple, data_subjects: DataSubjectList) -> Union[PhiTensor, GammaTensor]:
+def dp_zeros(
+    shape: Tuple, data_subjects: DataSubjectList
+) -> Union[PhiTensor, GammaTensor]:
     """
     TODO: Passing in the shape seems unnecessary- it can be inferred from data_subjects.data_subjects_indexed.shape
     output = np.zeros_like(data_subjects.data_subjects_indexed)
@@ -108,10 +118,12 @@ def dp_zeros(shape: Tuple, data_subjects: DataSubjectList) -> Union[PhiTensor, G
             child=output,
             data_subjects=DataSubjectList(
                 one_hot_lookup=data_subjects.one_hot_lookup,
-                data_subjects_indexed=np.zeros_like(output)  # This shouldn't matter b/c it will be replaced
+                data_subjects_indexed=np.zeros_like(
+                    output
+                ),  # This shouldn't matter b/c it will be replaced
             ),
             min_vals=output.min(),
-            max_vals=output.max()
+            max_vals=output.max(),
         )
     elif ds_count > 1:
         # TODO @Ishan: will the lack of a `gamma.func` here hurt us in any way?
@@ -119,7 +131,7 @@ def dp_zeros(shape: Tuple, data_subjects: DataSubjectList) -> Union[PhiTensor, G
             child=output,
             data_subjects=data_subjects,
             min_vals=lazyrepeatarray(0, shape),
-            max_vals=lazyrepeatarray(1, shape)
+            max_vals=lazyrepeatarray(1, shape),
         )
     else:
         raise NotImplementedError("Zero or negative data subject behaviour undefined.")

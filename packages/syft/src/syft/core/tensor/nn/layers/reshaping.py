@@ -1,10 +1,8 @@
 # third party
 import numpy as np
 
-# syft absolute
-from syft.core.common.serde.serializable import serializable
-
 # relative
+from ....common.serde.serializable import serializable
 from ...autodp.phi_tensor import PhiTensor
 from .base import Layer
 

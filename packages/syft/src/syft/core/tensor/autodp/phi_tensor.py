@@ -1140,7 +1140,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects=self.data_subjects,
         )
 
-    def __setitem__(self, key, value: Union[PhiTensor, np.ndarray]) -> Union[PhiTensor, GammaTensor]:
+    def __setitem__(
+        self, key, value: Union[PhiTensor, np.ndarray]
+    ) -> Union[PhiTensor, GammaTensor]:
         if isinstance(value, PhiTensor):
             self.child[key] = value.child
             minv = value.child.min()
@@ -1300,11 +1302,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def _argmax(self, axis: Optional[int]) -> PhiTensor:
         return self.child.argmax(axis)
 
-    def unravel_argmax(self, axis: Optional[int] = None) -> Tuple[np.ndarray]:  # possible privacy violation?
+    def unravel_argmax(
+        self, axis: Optional[int] = None
+    ) -> Tuple[np.ndarray]:  # possible privacy violation?
         arg_result = self._argmax(axis=axis)
         shape = self.shape
         return np.unravel_index(arg_result, shape)
-
 
     def mean(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs

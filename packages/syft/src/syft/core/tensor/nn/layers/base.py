@@ -24,7 +24,7 @@ class Layer:
 
     @property
     def params(self):
-        """ Layer parameters.
+        """Layer parameters.
 
         Returns a list of numpy.array variables or expressions that
         parameterize the layer.
@@ -40,12 +40,12 @@ class Layer:
 
     @property
     def grads(self):
-        """ Get layer parameter gradients as calculated from backward(). """
+        """Get layer parameter gradients as calculated from backward()."""
         return []
 
     @property
     def param_grads(self):
-        """ Layer parameters and corresponding gradients. """
+        """Layer parameters and corresponding gradients."""
         return list(zip(self.params, self.grads))
 
     def __str__(self):
