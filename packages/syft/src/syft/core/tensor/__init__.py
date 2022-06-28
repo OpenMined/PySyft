@@ -56,8 +56,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             FixedPrecisionTensor,
         ),
         (
-            "syft.core.tensor.nn",
-            "syft.core.tensor.nn",
+            "syft.core.tensor.nn.Model",
+            "syft.core.tensor.nn.Model",
             Model,
         ),
     ]
@@ -318,8 +318,8 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         ),
         # nn Modules
         (
-            "syft.core.tensor.nn.fit",
-            "syft.core.tensor.nn.Model",
+            "syft.core.tensor.nn.Model.fit",
+            "syft.lib.python._SyNone",
         ),
     ]
 

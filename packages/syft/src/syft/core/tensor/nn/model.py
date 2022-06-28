@@ -10,8 +10,6 @@ from .optimizers import Adamax
 
 @serializable(recursive_serde=True)
 class Model:
-    __name__ = "ModelPointer"
-    __module__ = "syft.core.tensor.nn.model"
     __attr_allowlist__ = [
         "layers",
         "loss",
@@ -48,7 +46,7 @@ class Model:
         shuffle=True,
         validation_split=0.0,
         validation_data=None,
-    ):
+    ) -> None:
 
         # prepare data
         train_X = X  # .astype(get_dtype()) if np.issubdtype(np.float64, X.dtype) else X

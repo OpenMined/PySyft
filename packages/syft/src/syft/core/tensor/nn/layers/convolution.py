@@ -25,13 +25,12 @@ class Convolution(Layer):
     e.g. `input_shape=(3, 128, 128)` for 128x128 RGB pictures.
     """
 
-    __name__ = "ConvPointer"
-    __module__ = "syft.core.tensor.nn.layers.convolution"
     __attr_allowlist__ = [
         "nb_filter",
         "filter_size",
         "input_shape",
         "stride",
+        "padding",
         "W",
         "b",
         "dW",
@@ -39,6 +38,8 @@ class Convolution(Layer):
         "out_shape",
         "last_output",
         "last_input",
+        "init",
+        "activation",
     ]
 
     def __init__(
