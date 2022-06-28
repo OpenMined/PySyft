@@ -387,110 +387,110 @@ jobs:
           docker rm `docker ps -aq` --force || true
           docker system prune --volumes --force || true
 
-  stack-integration-tests-k8s:
-    strategy:
-      max-parallel: 3
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
+  # stack-integration-tests-k8s:
+  #   strategy:
+  #     max-parallel: 3
+  #     matrix:
+  #       os: [ubuntu-latest]
+  #       python-version: ["3.10"]
 
-    # runs-on: [self-hosted, linux]
-    runs-on: ${{ matrix.os }}
+  #   # runs-on: [self-hosted, linux]
+  #   runs-on: ${{ matrix.os }}
 
-    steps:
-      # - name: set permissions on work folder for self-runners
-      #   run: |
-      #     sudo chown -R $USER:$USER ~/actions-runner/_work/
+  #   steps:
+  #     # - name: set permissions on work folder for self-runners
+  #     #   run: |
+  #     #     sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-      - uses: actions/checkout@v3
+  #     - uses: actions/checkout@v3
 
-      - name: Check for file changes
-        uses: dorny/paths-filter@v2
-        id: changes
-        with:
-          base: ${{ github.ref }}
-          token: ${{ github.token }}
-          filters: .github/file-filters.yml
+  #     - name: Check for file changes
+  #       uses: dorny/paths-filter@v2
+  #       id: changes
+  #       with:
+  #         base: ${{ github.ref }}
+  #         token: ${{ github.token }}
+  #         filters: .github/file-filters.yml
 
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v3
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          python-version: ${{ matrix.python-version }}
+  #     - name: Set up Python ${{ matrix.python-version }}
+  #       uses: actions/setup-python@v3
+  #       if: steps.changes.outputs.stack == 'true'
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
 
-      - name: Get pip cache dir
-        if: steps.changes.outputs.stack == 'true'
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
+  #     - name: Get pip cache dir
+  #       if: steps.changes.outputs.stack == 'true'
+  #       id: pip-cache
+  #       run: |
+  #         echo "::set-output name=dir::$(pip cache dir)"
 
-      - name: pip cache
-        uses: actions/cache@v3
-        if: steps.changes.outputs.stack == 'true'
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+  #     - name: pip cache
+  #       uses: actions/cache@v3
+  #       if: steps.changes.outputs.stack == 'true'
+  #       with:
+  #         path: ${{ steps.pip-cache.outputs.dir }}
+  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+  #         restore-keys: |
+  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
-      - name: Upgrade pip
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          python -m pip install --upgrade --user pip
+  #     - name: Upgrade pip
+  #       if: steps.changes.outputs.stack == 'true'
+  #       run: |
+  #         python -m pip install --upgrade --user pip
 
-      - name: Install tox
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          pip install tox --upgrade
+  #     - name: Install tox
+  #       if: steps.changes.outputs.stack == 'true'
+  #       run: |
+  #         pip install tox --upgrade
 
-      - name: Install kubectl
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          # cleanup apt version
-          sudo apt remove kubectl || true
-          # install kubectl 1.22
-          curl -LO https://dl.k8s.io/release/v1.22.9/bin/linux/amd64/kubectl
-          chmod +x kubectl
-          sudo install kubectl /usr/local/bin;
+  #     - name: Install kubectl
+  #       if: steps.changes.outputs.stack == 'true'
+  #       run: |
+  #         # cleanup apt version
+  #         sudo apt remove kubectl || true
+  #         # install kubectl 1.22
+  #         curl -LO https://dl.k8s.io/release/v1.22.9/bin/linux/amd64/kubectl
+  #         chmod +x kubectl
+  #         sudo install kubectl /usr/local/bin;
 
-      - name: Install jq
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          # needed for the wait_for.sh script
-          sudo apt update && sudo apt install jq -y
+  #     - name: Install jq
+  #       if: steps.changes.outputs.stack == 'true'
+  #       run: |
+  #         # needed for the wait_for.sh script
+  #         sudo apt update && sudo apt install jq -y
 
-      - name: Install k9s
-        if: steps.changes.outputs.stack == 'true'
-        run: |
-          # install k9s
-          wget https://github.com/derailed/k9s/releases/download/v0.25.18/k9s_Linux_x86_64.tar.gz
-          tar -xvf k9s_Linux_x86_64.tar.gz
-          chmod +x k9s
-          sudo install k9s /usr/local/bin;
+  #     - name: Install k9s
+  #       if: steps.changes.outputs.stack == 'true'
+  #       run: |
+  #         # install k9s
+  #         wget https://github.com/derailed/k9s/releases/download/v0.25.18/k9s_Linux_x86_64.tar.gz
+  #         tar -xvf k9s_Linux_x86_64.tar.gz
+  #         chmod +x k9s
+  #         sudo install k9s /usr/local/bin;
 
-      - name: Remove existing containers
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        shell: bash
-        run: |
-          docker rm $(docker ps -aq) --force || true
-          docker buildx use default || true
+  #     - name: Remove existing containers
+  #       if: steps.changes.outputs.stack == 'true'
+  #       continue-on-error: true
+  #       shell: bash
+  #       run: |
+  #         docker rm $(docker ps -aq) --force || true
+  #         docker buildx use default || true
 
-      - name: Run integration tests
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
-        shell: bash
-        run: |
-          # install k3d
-          wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
-          mv k3d-linux-amd64 k3d
-          chmod +x k3d
-          export PATH=`pwd`:$PATH
-          k3d version
-          curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
-          sudo install devspace /usr/local/bin;
-          tox -e stack.test.integration.k8s
-          docker rm $(docker ps -aq) --force || true
+  #     - name: Run integration tests
+  #       if: steps.changes.outputs.stack == 'true'
+  #       continue-on-error: true
+  #       shell: bash
+  #       run: |
+  #         # install k3d
+  #         wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
+  #         mv k3d-linux-amd64 k3d
+  #         chmod +x k3d
+  #         export PATH=`pwd`:$PATH
+  #         k3d version
+  #         curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
+  #         sudo install devspace /usr/local/bin;
+  #         tox -e stack.test.integration.k8s
+  #         docker rm $(docker ps -aq) --force || true
 
   stack-tests-course:
     strategy:
