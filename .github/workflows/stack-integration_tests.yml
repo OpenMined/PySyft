@@ -476,7 +476,6 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
         shell: bash
         run: |
           # install k3d
