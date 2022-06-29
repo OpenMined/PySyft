@@ -4,7 +4,8 @@ import numpy as np
 # relative
 from ....common.serde.serializable import serializable
 from ...autodp.phi_tensor import PhiTensor
-from ..utils import col2im_indices, im2col_indices
+from ..utils import col2im_indices
+from ..utils import im2col_indices
 from .base import Layer
 
 
@@ -45,7 +46,7 @@ class AvgPool(Layer):
 
         old_h, old_w = prev_layer.out_shape[-2:]
         pool_h, pool_w = self.pool_size
-        
+
         new_h = (old_h - pool_h) // self.stride + 1
         new_w = (old_w - pool_w) // self.stride + 1
 
@@ -60,7 +61,7 @@ class AvgPool(Layer):
 
         # forward
         self.last_input = input
-        
+
         n, d, h, w = input.shape
         input_reshaped = input.reshape(n * d, 1, h, w)
         self.X_col = im2col_indices(input_reshaped, pool_h, pool_w, padding=0, stride=self.stride)
@@ -153,7 +154,7 @@ class MaxPool(Layer):
 
         self.max_idx = self.X_col._argmax(axis=0)
 
-        return self.X_col, self.max_idx, h_out, w_out, n, d
+        # return self.X_col, self.max_idx, h_out, w_out, n, d
 
         outputs = self.X_col[self.max_idx, range(self.max_idx.size)]
 

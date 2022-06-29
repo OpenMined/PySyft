@@ -1243,6 +1243,25 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=output_max_val,
         )
 
+    def ravel(self):
+        data = self.child
+        output_data = data.ravel()
+
+        output_data_subjects = DataSubjectList(
+            one_hot_lookup=self.data_subjects.one_hot_lookup,
+            data_subjects_indexed=self.data_subjects.data_subjects_indexed.ravel()
+        )
+
+        min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+
+        return PhiTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals
+        )
+
     def random_horizontal_flip(self, p: float = 0.5) -> PhiTensor:
         """Could make more efficient by not encoding/decoding FPT"""
         if np.random.random() <= p:

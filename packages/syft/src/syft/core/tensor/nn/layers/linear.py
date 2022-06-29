@@ -1,11 +1,13 @@
+# stdlib
+from typing import Union
+
 # third party
 import numpy as np
-from typing import Union
 
 # relative
 from ....common.serde.serializable import serializable
-from ...autodp.phi_tensor import PhiTensor
 from ...autodp.gamma_tensor import GammaTensor
+from ...autodp.phi_tensor import PhiTensor
 from ..initializations import XavierInitialization
 from .base import Layer
 
