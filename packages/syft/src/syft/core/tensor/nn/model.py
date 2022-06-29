@@ -92,12 +92,14 @@ class Model:
                 # get parameter and gradients
                 params = []
                 grads = []
+                layers_with_params = []
                 for layer in self.layers:
                     params += layer.params
                     grads += layer.grads
+                    layers_with_params += [layer]*len(layer.params) if len(layer.params) > 0 else []
 
                 # update parameters
-                self.optimizer.update(params, grads)
+                self.optimizer.update(params, grads, layers_with_params)
 
                 # got loss and predict
                 train_losses.append(self.loss.forward(y_pred, y_batch))

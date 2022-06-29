@@ -84,7 +84,7 @@ class Adamax(Optimizer):
         self.ms = None
         self.vs = None
 
-    def update(self, params, grads):
+    def update(self, params, grads, layers_with_params):
 
         # init
         self.iterations += 1
@@ -95,9 +95,11 @@ class Adamax(Optimizer):
             self.vs = [np.zeros(p.shape) for p in params]
 
         # update parameters
-        for i, (m, v, p, g) in enumerate(zip(self.ms, self.vs, params, grads)):
+        for i, (m, v, p, g, layer) in enumerate(zip(self.ms, self.vs, params, grads, layers_with_params)):
             m =  g * (1 - self.beta1) + m * self.beta1
             v = dp_maximum(g.abs(), v * self.beta2)
+            # layer.params[0].shape == p.shape
+            # layer.params[1].shape == p.shape
             p = (m * (-1.0 / (v + self.epsilon)) * a_t) + p
 
             self.ms[i] = m
