@@ -74,7 +74,7 @@ class Adamax(Optimizer):
         "iterations",
     )
 
-    def __init__(self, beta1=0.9, beta2=0.999, epsilon=1e-8, *args, **kwargs):
+    def __init__(self, learning_rate: float = 0.001, beta1=0.9, beta2=0.999, epsilon=1e-8, *args, **kwargs):
         super(Adamax, self).__init__(*args, **kwargs)
 
         self.beta1 = beta1
@@ -85,19 +85,20 @@ class Adamax(Optimizer):
         self.vs = None
 
     def update(self, params, grads):
+
         # init
         self.iterations += 1
         a_t = self.lr / (1 - np.power(self.beta1, self.iterations))
         if self.ms is None:
-            self.ms = [p.zeros_like() for p in params]
+            self.ms = [np.zeros(p.shape) for p in params]
         if self.vs is None:
-            self.vs = [p.zeros_like() for p in params]
+            self.vs = [np.zeros(p.shape) for p in params]
 
         # update parameters
         for i, (m, v, p, g) in enumerate(zip(self.ms, self.vs, params, grads)):
-            m = m * self.beta1 + g * (1 - self.beta1)
-            v = dp_maximum(v * self.beta2, g.abs())
-            p = p - (m * (1.0 / (v + self.epsilon)) * a_t)
+            m =  g * (1 - self.beta1) + m * self.beta1
+            v = dp_maximum(g.abs(), v * self.beta2)
+            p = (m * (-1.0 / (v + self.epsilon)) * a_t) + p
 
             self.ms[i] = m
             self.vs[i] = v
