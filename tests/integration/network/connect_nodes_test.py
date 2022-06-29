@@ -142,7 +142,7 @@ def disconnect_network() -> None:
         except Exception as e:
             print(f"Exception running: {cmd}. {e}")
     else:
-        pod = "tailscale-0"
+        pod = "proxy-0"
         container = "container-1"
         context = "k3d-test-network-1"
         namespace = "test-network-1"
