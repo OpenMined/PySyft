@@ -31,10 +31,10 @@ def get_output_shape(shape1, shape2):
         - 1 extra dimension that shape1 (if shape1 has only 1 DS per datapoint)
     """
 
-    if len(shape1) > len(shape2) or len(shape2) - len(shape1) > 1:
-        raise NotImplementedError
+    # if len(shape1) > len(shape2) or abs(len(shape2) - len(shape1)) > 1:
+    #     raise NotImplementedError(f"Unsuitable shapes: {shape1}, {shape2}, {len(shape1)}, {len(shape2)}")
 
-    first_dim = max(shape1[0], shape2[0]) if len(shape1) == len(shape2) else shape2[0]
+    first_dim = max(shape1[0], shape2[0])
     other_dims = shape1 if len(shape1) < len(shape2) else shape1[1:]
     output_size = (first_dim, *other_dims)
     return output_size
@@ -139,9 +139,9 @@ class DataSubjectList:
     # def __getitem__(self, key: Union[int, slice, str]) -> Union[DataSubject, str]:
     #     return self.one_hot_lookup[self.data_subjects_indexed[key]]
 
-    def copy(self, order: Optional[str] = "K") -> DataSubjectList:
+    def copy(self) -> DataSubjectList:
         return DataSubjectList(
-            self.one_hot_lookup.copy(), self.data_subjects_indexed.copy(order=order)
+            self.one_hot_lookup.copy(), self.data_subjects_indexed.copy()
         )
 
     def __len__(self) -> int:
@@ -180,6 +180,14 @@ class DataSubjectList:
     @property
     def shape(self) -> Tuple:
         return self.data_subjects_indexed.shape
+
+    @staticmethod
+    def index_dsl(tensor: Any, index):
+        if tensor.shape == tensor.data_subjects.shape:
+            assert tensor[index].shape == tensor.data_subjects[index].shape
+            return tensor.data_subjects[index]
+        elif len(tensor.shape) < len(tensor.data_subjects.shape):
+            return tensor.data_subjects[:, index]
 
     def __getitem__(self, item) -> DataSubjectList:
         result = self.data_subjects_indexed[item]
@@ -245,32 +253,33 @@ class DataSubjectList:
         output_shape = get_output_shape(dsl1.shape, dsl2.shape)
 
         # TODO: Broadcasting with [1] over multiple indices?
-        dsl1_len = dsl1.shape[0] if len(dsl1.shape) == len(dsl2.shape) else 1
+        dsl1_len = dsl1.shape[0] if len(dsl1.shape) >= len(dsl2.shape) else 1
         dsl2_len = dsl2.shape[0]
 
-        if dsl1_len < dsl2_len:
+        if dsl1.shape == dsl2.shape:
+            # This is not an insertion, this is a complete replacement.
+            return dsl2.copy()
+        elif dsl1_len < dsl2_len:
             # We need to create a bigger array
             bigger_array = np.full(output_shape, np.nan)
 
             # Fill current dsl1 values into this bigger_array
             # TODO: Ask Madhava if there's a smarter/vectorized way to do this
-            if dsl1_len == 1:
+            if dsl1.shape[0] == 1:
                 bigger_array[0] = dsl1.data_subjects_indexed
             else:
-                for i in range(dsl1_len):
-                    bigger_array[i] = dsl1[i]
+                for i in range(dsl1.shape[0]):
+                    bigger_array[i] = dsl1.data_subjects_indexed[i]
 
             output_dsl = DataSubjectList(one_hot_lookup=dsl1.one_hot_lookup, data_subjects_indexed=bigger_array)
-            # bigger_array[:, index] = dsl2.data_subjects_indexed.squeeze()
             dsl2_copy = dsl2.copy()
-            dsl2_copy.data_subjects_indexed = dsl2_copy.data_subjects_indexed.squeeze()
             output_dsl[:, index] = dsl2_copy
             return output_dsl
 
         elif dsl1_len == dsl2_len:
             # it fits perfectly
             output_dsl = dsl1.copy()
-            output_dsl[index] = dsl2
+            output_dsl[:, index] = dsl2
             return output_dsl
         else:
             # add some nans

@@ -1076,7 +1076,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=self.child.copy(order=order),
             min_vals=self.min_vals.copy(order=order),
             max_vals=self.max_vals.copy(order=order),
-            data_subjects=self.data_subjects.copy(order=order),
+            data_subjects=self.data_subjects.copy(),
         )
 
     def all(self) -> bool:
@@ -1157,6 +1157,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             if self.data_subjects.one_hot_lookup != value.data_subjects.one_hot_lookup:
                 gamma_output = self.gamma
                 gamma_output[key] = value
+                # print("It's on the right track")
                 return gamma_output
 
             return PhiTensor(

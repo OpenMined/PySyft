@@ -1912,32 +1912,54 @@ class GammaTensor:
 
         if isinstance(item, PassthroughTensor):
             data = self.child[item.child]
-            return GammaTensor(
-                child=data,
-                min_vals=minv,
-                max_vals=maxv,
-                data_subjects=DataSubjectList(
-                    one_hot_lookup=self.data_subjects.one_hot_lookup,
-                    data_subjects_indexed=self.data_subjects.data_subjects_indexed[
-                        item.child
-                    ],
-                ),
-            )
+            if self.shape == self.data_subjects.shape:
+                return GammaTensor(
+                    child=data,
+                    min_vals=minv,
+                    max_vals=maxv,
+                    data_subjects=DataSubjectList.index_dsl(self, item.child)
+                        # self.data_subjects.data_subjects_indexed[
+                        #     item.child
+                        # ],
+                )
+            elif len(self.shape) < len(self.data_subjects.shape):
+                return GammaTensor(
+                    child=data,
+                    min_vals=minv,
+                    max_vals=maxv,
+                    data_subjects=DataSubjectList.index_dsl(self, item.child)
+                        # self.data_subjects.data_subjects_indexed[:, item.child],
+                )
+            else:
+                raise Exception(f"Incompatible shapes: {self.shape}, {self.data_subjects.shape}")
         else:
             data = self.child[item]
-            return GammaTensor(
-                child=data,
-                min_vals=minv,
-                max_vals=maxv,
-                data_subjects=DataSubjectList(
-                    one_hot_lookup=self.data_subjects.one_hot_lookup,
-                    data_subjects_indexed=self.data_subjects.data_subjects_indexed[
-                        item
-                    ],
-                ),
-            )
+            if self.shape == self.data_subjects.shape:
+                return GammaTensor(
+                    child=data,
+                    min_vals=minv,
+                    max_vals=maxv,
+                    data_subjects=DataSubjectList.index_dsl(self. item)
 
-    def __setitem__(self, key, value):
+                    # DataSubjectList(
+                    #     one_hot_lookup=self.data_subjects.one_hot_lookup,
+                    #     data_subjects_indexed=DataSubjectList.index_dsl(self, item)
+                        # self.data_subjects.data_subjects_indexed[
+                        #     item
+                        # ],
+                    )
+            elif len(self.shape) < len(self.data_subjects.shape):
+                return GammaTensor(
+                    child=data,
+                    min_vals=minv,
+                    max_vals=maxv,
+                    data_subjects=DataSubjectList.index_dsl(self, item)
+                        # self.data_subjects.data_subjects_indexed[item],
+                )
+            else:
+                raise Exception(f"Incompatible shapes: {self.shape}, {self.data_subjects.shape}")
+
+    def __setitem__(self, key, value) -> None:
         # relative
         from .phi_tensor import PhiTensor
 
@@ -1952,14 +1974,11 @@ class GammaTensor:
             if maxv > self.max_vals.data.max():
                 self.max_vals.data = maxv
 
-            output_ds = DataSubjectList.insert(dsl1=self.data_subjects, dsl2=value.data_subjects, index=key)
+            output_dsl = DataSubjectList.insert(
+                dsl1=self.data_subjects, dsl2=value.data_subjects, index=key)
+            self.data_subjects.one_hot_lookup = output_dsl.one_hot_lookup
+            self.data_subjects.data_subjects_indexed = output_dsl.data_subjects_indexed
 
-            return GammaTensor(
-                child=self.child,
-                data_subjects=output_ds,
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-            )
         elif isinstance(value, np.ndarray):
             self.child[key] = value
             minv = value.min()
@@ -1971,12 +1990,6 @@ class GammaTensor:
             if maxv > self.max_vals.data.max():
                 self.max_vals.data = maxv
 
-            return PhiTensor(
-                child=self.child,
-                data_subjects=self.data_subjects,
-                min_vals=self.min_vals,
-                max_vals=self.max_vals,
-            )
         else:
             raise NotImplementedError
 
