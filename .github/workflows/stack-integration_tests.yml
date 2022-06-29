@@ -161,250 +161,334 @@ jobs:
         run: |
           tox -e stack.test.integration.tls
 
-  # stack-integration-tests-windows:
-  #   strategy:
-  #     max-parallel: 3
-  #     matrix:
-  #       os: [Windows-10]
-  #       python-version: ["3.10"]
+  stack-integration-tests-windows:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [Windows-10]
+        python-version: ["3.10"]
 
-  #   runs-on: [self-hosted, windows]
+    runs-on: [self-hosted, windows]
 
-  #   steps:
-  #     - name: Start Docker Desktop
-  #       run: |
-  #         powershell.exe -command 'start "C:\Program Files\Docker\Docker\Docker Desktop.exe"'
-  #       shell: cmd
+    steps:
+      - name: Start Docker Desktop
+        run: |
+          powershell.exe -command 'start "C:\Program Files\Docker\Docker\Docker Desktop.exe"'
+        shell: cmd
 
-  #     - name: Stop all running containers
-  #       continue-on-error: true
-  #       run: |
-  #         powershell.exe -command "docker rm $(docker ps -aq) --force"
-  #       shell: cmd
+      - name: Stop all running containers
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker rm $(docker ps -aq) --force"
+        shell: cmd
 
-  #     - name: Prune all volumes
-  #       continue-on-error: true
-  #       run: |
-  #         powershell.exe -command "docker volume prune --force"
-  #       shell: cmd
+      - name: Prune all volumes
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker volume prune --force"
+        shell: cmd
 
-  #     - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-  #     - name: Check for file changes
-  #       uses: dorny/paths-filter@v2
-  #       id: changes
-  #       with:
-  #         base: ${{ github.ref }}
-  #         token: ${{ github.token }}
-  #         filters: .github/file-filters.yml
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
 
-  #     - name: Set up Python ${{ matrix.python-version }}
-  #       uses: actions/setup-python@v3
-  #       if: steps.changes.outputs.stack == 'true'
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
 
-  #     - name: Get pip cache dir
-  #       if: steps.changes.outputs.stack == 'true'
-  #       id: pip-cache
-  #       run: |
-  #         echo "::set-output name=dir::$(pip cache dir)"
-  #       shell: cmd
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+        shell: cmd
 
-  #     # - name: pip cache
-  #     #   uses: actions/cache@v3
-  #     #   if: steps.changes.outputs.stack == 'true'
-  #     #   with:
-  #     #     path: ${{ steps.pip-cache.outputs.dir }}
-  #     #     key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-  #     #     restore-keys: |
-  #     #       ${{ runner.os }}-pip-py${{ matrix.python-version }}
+      # - name: pip cache
+      #   uses: actions/cache@v3
+      #   if: steps.changes.outputs.stack == 'true'
+      #   with:
+      #     path: ${{ steps.pip-cache.outputs.dir }}
+      #     key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+      #     restore-keys: |
+      #       ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
-  #     - name: Upgrade pip
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         python -m pip install --upgrade --user pip
-  #       shell: cmd
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+        shell: cmd
 
-  #     - name: Install tox
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         pip install tox --upgrade
-  #       shell: cmd
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
+        shell: cmd
 
-  #     - name: Check python version
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         python -VV
-  #       shell: cmd
+      - name: Check python version
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -VV
+        shell: cmd
 
-  #     - name: Show choco installed packages
-  #       uses: crazy-max/ghaction-chocolatey@v1
-  #       with:
-  #         args: list --localonly
+      - name: Show choco installed packages
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: list --localonly
 
-  #     - name: Install cmake
-  #       uses: crazy-max/ghaction-chocolatey@v1
-  #       with:
-  #         args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
+      - name: Install cmake
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
-  #     - name: Check cmake version
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         cmake --version
-  #       shell: cmd
+      - name: Check cmake version
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          cmake --version
+        shell: cmd
 
-  #     - name: Install visualcpp-build-tools
-  #       uses: crazy-max/ghaction-chocolatey@v1
-  #       with:
-  #         args: install visualstudio2019-workload-vctools -y
+      - name: Install visualcpp-build-tools
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install visualstudio2019-workload-vctools -y
 
-  #     - name: Start stacks
-  #       if: steps.changes.outputs.stack == 'true'
-  #       timeout-minutes: 30
-  #       env:
-  #         HAGRID_ART: false
-  #       run: |
-  #         pip install -e packages/hagrid
-  #         pip install cython
-  #         pip install pycapnp
-  #         set HAGRID_ART=false
-  #         set NETWORK_CHECK_INTERVAL=5
-  #         hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
-  #         hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
-  #         hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test --vpn=false
-  #         bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-  #         bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-  #         docker ps
-  #       shell: cmd
+      - name: Start stacks
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+        run: |
+          pip install -e packages/hagrid
+          pip install cython
+          pip install pycapnp
+          set HAGRID_ART=false
+          set NETWORK_CHECK_INTERVAL=5
+          hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
+          hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
+          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test --vpn=false
+          bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
+          bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
+          docker ps
+        shell: cmd
 
-  #     - name: Run integration tests
-  #       if: steps.changes.outputs.stack == 'true'
-  #       timeout-minutes: 30
-  #       env:
-  #         HAGRID_ART: false
-  #       run: |
-  #         tox -e stack.test.integration.windows
-  #       shell: cmd
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        timeout-minutes: 30
+        env:
+          HAGRID_ART: false
+        run: |
+          tox -e stack.test.integration.windows
+        shell: cmd
 
-  #     - name: Stop all running containers
-  #       if: steps.changes.outputs.stack == 'true'
-  #       continue-on-error: true
-  #       run: |
-  #         powershell.exe -command "docker rm $(docker ps -aq) --force"
-  #       shell: cmd
+      - name: Stop all running containers
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker rm $(docker ps -aq) --force"
+        shell: cmd
 
-  #     - name: Prune all volumes
-  #       if: steps.changes.outputs.stack == 'true'
-  #       continue-on-error: true
-  #       run: |
-  #         powershell.exe -command "docker volume prune --force"
-  #       shell: cmd
+      - name: Prune all volumes
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        run: |
+          powershell.exe -command "docker volume prune --force"
+        shell: cmd
 
-  # stack-integration-tests-k8s:
-  #   strategy:
-  #     max-parallel: 3
-  #     matrix:
-  #       os: [ubuntu-latest]
-  #       python-version: ["3.10"]
+  stack-integration-tests-smpc:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
 
-  #   # runs-on: [self-hosted, linux]
-  #   runs-on: ${{ matrix.os }}
+    runs-on: [self-hosted, linux]
 
-  #   steps:
-  #     # - name: set permissions on work folder for self-runners
-  #     #   run: |
-  #     #     sudo chown -R $USER:$USER ~/actions-runner/_work/
+    steps:
+      - name: set permissions on work folder for self-runners
+        run: |
+          sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-  #     - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-  #     - name: Check for file changes
-  #       uses: dorny/paths-filter@v2
-  #       id: changes
-  #       with:
-  #         base: ${{ github.ref }}
-  #         token: ${{ github.token }}
-  #         filters: .github/file-filters.yml
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
 
-  #     - name: Set up Python ${{ matrix.python-version }}
-  #       uses: actions/setup-python@v3
-  #       if: steps.changes.outputs.stack == 'true'
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
 
-  #     - name: Get pip cache dir
-  #       if: steps.changes.outputs.stack == 'true'
-  #       id: pip-cache
-  #       run: |
-  #         echo "::set-output name=dir::$(pip cache dir)"
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
 
-  #     - name: pip cache
-  #       uses: actions/cache@v3
-  #       if: steps.changes.outputs.stack == 'true'
-  #       with:
-  #         path: ${{ steps.pip-cache.outputs.dir }}
-  #         key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-  #         restore-keys: |
-  #           ${{ runner.os }}-pip-py${{ matrix.python-version }}
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
 
-  #     - name: Upgrade pip
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         python -m pip install --upgrade --user pip
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
 
-  #     - name: Install tox
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         pip install tox --upgrade
+      - name: Install build essentials
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          sudo apt-get update && sudo apt-get install -y cmake libssl-dev build-essential
 
-  #     - name: Install kubectl
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         # cleanup apt version
-  #         sudo apt remove kubectl || true
-  #         # install kubectl 1.22
-  #         curl -LO https://dl.k8s.io/release/v1.22.9/bin/linux/amd64/kubectl
-  #         chmod +x kubectl
-  #         sudo install kubectl /usr/local/bin;
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
 
-  #     - name: Install jq
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         # needed for the wait_for.sh script
-  #         sudo apt update && sudo apt install jq -y
+      - name: docker cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        with:
+          path: .docker-cache
+          key: ${{ runner.os }}-docker
+          restore-keys: |
+            ${{ runner.os }}-docker
 
-  #     - name: Install k9s
-  #       if: steps.changes.outputs.stack == 'true'
-  #       run: |
-  #         # install k9s
-  #         wget https://github.com/derailed/k9s/releases/download/v0.25.18/k9s_Linux_x86_64.tar.gz
-  #         tar -xvf k9s_Linux_x86_64.tar.gz
-  #         chmod +x k9s
-  #         sudo install k9s /usr/local/bin;
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        shell: bash
+        run: |
+          mkdir -p ~/.docker/cli-plugins
+          DOCKER_COMPOSE_VERSION=v2.3.4
+          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
+          chmod +x ~/.docker/cli-plugins/docker-compose
+          docker rm `docker ps -aq` --force || true
+          docker buildx use default || true
+          rm -rf .tox
+          tox -e stack.test.integration.smpc
+          docker rm `docker ps -aq` --force || true
+          docker system prune --volumes --force || true
 
-  #     - name: Remove existing containers
-  #       if: steps.changes.outputs.stack == 'true'
-  #       continue-on-error: true
-  #       shell: bash
-  #       run: |
-  #         docker rm $(docker ps -aq) --force || true
-  #         docker buildx use default || true
+  stack-integration-tests-k8s:
+    strategy:
+      max-parallel: 3
+      matrix:
+        os: [ubuntu-latest]
+        python-version: ["3.10"]
 
-  #     - name: Run integration tests
-  #       if: steps.changes.outputs.stack == 'true'
-  #       continue-on-error: true
-  #       shell: bash
-  #       run: |
-  #         # install k3d
-  #         wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
-  #         mv k3d-linux-amd64 k3d
-  #         chmod +x k3d
-  #         export PATH=`pwd`:$PATH
-  #         k3d version
-  #         curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
-  #         sudo install devspace /usr/local/bin;
-  #         tox -e stack.test.integration.k8s
-  #         docker rm $(docker ps -aq) --force || true
+    runs-on: [self-hosted, linux]
+
+    steps:
+      - name: set permissions on work folder for self-runners
+        run: |
+          sudo chown -R $USER:$USER ~/actions-runner/_work/
+
+      - uses: actions/checkout@v3
+
+      - name: Check for file changes
+        uses: dorny/paths-filter@v2
+        id: changes
+        with:
+          base: ${{ github.ref }}
+          token: ${{ github.token }}
+          filters: .github/file-filters.yml
+
+      - name: Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          python-version: ${{ matrix.python-version }}
+
+      - name: Get pip cache dir
+        if: steps.changes.outputs.stack == 'true'
+        id: pip-cache
+        run: |
+          echo "::set-output name=dir::$(pip cache dir)"
+
+      - name: pip cache
+        uses: actions/cache@v3
+        if: steps.changes.outputs.stack == 'true'
+        with:
+          path: ${{ steps.pip-cache.outputs.dir }}
+          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
+          restore-keys: |
+            ${{ runner.os }}-pip-py${{ matrix.python-version }}
+
+      - name: Upgrade pip
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          python -m pip install --upgrade --user pip
+
+      - name: Install tox
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          pip install tox --upgrade
+
+      - name: Install kubectl
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # cleanup apt version
+          sudo apt remove kubectl || true
+          # install kubectl 1.22
+          curl -LO https://dl.k8s.io/release/v1.22.9/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo install kubectl /usr/local/bin;
+
+      - name: Install jq
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # needed for the wait_for.sh script
+          sudo apt update && sudo apt install jq -y
+
+      - name: Install k9s
+        if: steps.changes.outputs.stack == 'true'
+        run: |
+          # install k9s
+          wget https://github.com/derailed/k9s/releases/download/v0.25.18/k9s_Linux_x86_64.tar.gz
+          tar -xvf k9s_Linux_x86_64.tar.gz
+          chmod +x k9s
+          sudo install k9s /usr/local/bin;
+
+      - name: Remove existing containers
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          docker rm $(docker ps -aq) --force || true
+          docker buildx use default || true
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        continue-on-error: true
+        shell: bash
+        run: |
+          # install k3d
+          wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
+          mv k3d-linux-amd64 k3d
+          chmod +x k3d
+          export PATH=`pwd`:$PATH
+          k3d version
+          curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
+          sudo install devspace /usr/local/bin;
+          tox -e stack.test.integration.k8s
+          docker rm $(docker ps -aq) --force || true
 
   stack-tests-course:
     strategy:
