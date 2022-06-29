@@ -1206,9 +1206,22 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         data = self.child
         output_data = np.reshape(data, *shape)
 
+        if self.shape == self.data_subjects.shape:
+            output_ds = DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(*shape)
+            )
+        else:
+            output_ds = DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
+                    self.data_subjects.shape[0], *shape[0]
+                )
+            )
+
         return PhiTensor(
             child=output_data,
-            data_subjects=self.data_subjects,
+            data_subjects=output_ds,
             min_vals=output_data.min(),
             max_vals=output_data.max(),
         )
@@ -1793,9 +1806,22 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         else:
             max_vals = data.max()
 
+        if self.shape == self.data_subjects.shape:
+            output_ds = DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose()
+            )
+        else:
+            output_ds = DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
+                    self.shape[0], self.shape[1:][::-1]
+                )
+            )
+
         return PhiTensor(
             child=data,
-            data_subjects=self.data_subjects,
+            data_subjects=output_ds,
             min_vals=min_vals,
             max_vals=max_vals,
         )

@@ -1526,9 +1526,22 @@ class GammaTensor:
         def _transpose(state: dict) -> jax.numpy.DeviceArray:
             return jnp.transpose(self.run(state))
 
+        if self.shape == self.data_subjects.shape:
+            output_ds = DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose()
+            )
+        else:
+            output_ds = DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
+                    self.shape[0], self.shape[1:][::-1]
+                )
+            )
+
         return GammaTensor(
             child=self.child.transpose(),
-            data_subjects=self.data_subjects,
+            data_subjects=output_ds,
             min_vals=self.min_vals.transpose(),
             max_vals=self.max_vals.transpose(),
             func=_transpose,
@@ -1584,11 +1597,24 @@ class GammaTensor:
         )
 
     def reshape(self, shape):
+        if self.shape == self.data_subjects.shape:
+            output_ds = DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(shape)
+            )
+        else:
+            output_ds = DataSubjectList(
+                one_hot_lookup=self.data_subjects.one_hot_lookup,
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
+                    self.data_subjects.shape[0], *shape
+                )
+            )
+
         return GammaTensor(
             child=self.child.reshape(shape),
             data_subjects=DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(shape)
+                data_subjects_indexed=output_ds
             ),
             min_vals=self.min_vals.reshape(shape) if isinstance(self.min_vals, lazyrepeatarray) else self.min_vals,
             max_vals=self.max_vals.reshape(shape) if isinstance(self.max_vals, lazyrepeatarray) else self.max_vals
