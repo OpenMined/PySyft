@@ -106,7 +106,7 @@ def test_mpc_matmul_public(get_clients, op_str: str) -> None:
 
     op = getattr(operator, op_str)
     res = op(mpc_tensor_1, value_2)
-    res.block_with_timeout(secs=40)
+    res.block_with_timeout(secs=80)
 
     res = res.reconstruct()
 
