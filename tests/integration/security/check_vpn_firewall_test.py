@@ -27,7 +27,7 @@ def docker_network_connect(direction: str = "connect") -> None:
             try:
                 if project == network:
                     continue
-                container_name = f"test_{project}-tailscale-1"
+                container_name = f"test_{project}-proxy-1"
                 network_name = f"test_{network}_default"
                 cmd = f"docker network {direction} {network_name} {container_name}"
                 print(f"Connecting {container_name} to {network_name}")
