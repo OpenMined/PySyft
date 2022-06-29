@@ -4,7 +4,7 @@ import numpy as np
 # relative
 from ....common.serde.serializable import serializable
 from ...autodp.phi_tensor import PhiTensor
-from ..utils import dp_zeros
+from ..utils import col2im_indices, im2col_indices
 from .base import Layer
 
 
@@ -26,8 +26,15 @@ class AvgPool(Layer):
 
     __attr_allowlist__ = ("pool_size", "input_shape", "out_shape", "last_input")
 
-    def __init__(self, pool_size):
-        self.pool_size = pool_size
+    def __init__(self, pool_size, stride=1):
+        if isinstance(pool_size, tuple):
+            self.pool_size = pool_size
+        elif isinstance(pool_size, int):
+            self.pool_size = pool_size, pool_size
+        else:
+            raise TypeError("Pool size can be either int or Tuple")
+
+        self.stride = stride
 
         self.input_shape = None
         self.out_shape = None
@@ -38,92 +45,51 @@ class AvgPool(Layer):
 
         old_h, old_w = prev_layer.out_shape[-2:]
         pool_h, pool_w = self.pool_size
-        new_h, new_w = old_h // pool_h, old_w // pool_w
-
-        assert old_h % pool_h == old_w % pool_w == 0
+        
+        new_h = (old_h - pool_h) // self.stride + 1
+        new_w = (old_w - pool_w) // self.stride + 1
 
         self.out_shape = prev_layer.out_shape[:-2] + (new_h, new_w)
 
     def forward(self, input: PhiTensor, *args, **kwargs):
-
         # shape
+
         self.input_shape = input.shape
         pool_h, pool_w = self.pool_size
-        new_h, new_w = self.out_shape[-2:]
+        h_out, w_out = self.out_shape[-2:]
 
         # forward
-        outputs = dp_zeros(
-            self.input_shape[:-2] + self.out_shape[-2:],
-            data_subjects=input.data_subjects,
-        )
+        self.last_input = input
+        
+        n, d, h, w = input.shape
+        input_reshaped = input.reshape(n * d, 1, h, w)
+        self.X_col = im2col_indices(input_reshaped, pool_h, pool_w, padding=0, stride=self.stride)
 
-        ndim = len(input.shape)
-        if ndim == 4:
-            nb_batch, nb_axis, _, _ = input.shape
+        outputs = self.X_col.mean(axis=0)
 
-            for a in np.arange(nb_batch):
-                for b in np.arange(nb_axis):
-                    for h in np.arange(new_h):
-                        for w in np.arange(new_w):
-                            outputs[a, b, h, w] = input[
-                                a, b, h : h + pool_h, w : w + pool_w
-                            ].mean()
-
-        elif ndim == 3:
-            nb_batch, _, _ = input.shape
-
-            for a in np.arange(nb_batch):
-                for h in np.arange(new_h):
-                    for w in np.arange(new_w):
-                        outputs[a, h, w] = input[
-                            a, h : h + pool_h, w : w + pool_w
-                        ].mean()
-
-        else:
-            raise ValueError()
+        outputs = outputs.reshape(h_out, w_out, n, d)
+        outputs = outputs.transpose(2, 3, 0, 1)
 
         return outputs
 
     def backward(self, pre_grad: PhiTensor, *args, **kwargs):
-        new_h, new_w = self.out_shape[-2:]
+
+        n, d, w, h = self.input_shape
         pool_h, pool_w = self.pool_size
-        length = np.prod(self.pool_size)
 
-        layer_grads = dp_zeros(self.input_shape, pre_grad.data_subjects)
-        # layer_grads = PhiTensor(child=layer_grads, data_subjects=self.input_data_subjects, min_vals=0, max_vals=1)
+        dX_col = self.X_col.zeros_like()
 
-        ndim = len(pre_grad.shape)
+        dout_col = pre_grad.transpose(2, 3, 0, 1).ravel()
 
-        if ndim == 4:
-            nb_batch, nb_axis, _, _ = pre_grad.shape
+        dout_col_size = np.prod(dout_col.shape)
 
-            for a in np.arange(nb_batch):
-                for b in np.arange(nb_axis):
-                    for h in np.arange(new_h):
-                        for w in np.arange(new_w):
-                            h_shift, w_shift = h * pool_h, w * pool_w
-                            layer_grads[
-                                a,
-                                b,
-                                h_shift : h_shift + pool_h,
-                                w_shift : w_shift + pool_w,
-                            ] = pre_grad[a, b, h, w] * (1.0 / length)
+        dX_col[:, range(dout_col_size)] = dout_col * (1.0 / dX_col.shape[0])
 
-        elif ndim == 3:
-            nb_batch, _, _ = pre_grad.shape
+        dX = col2im_indices(dX_col, (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride)
 
-            for a in np.arange(nb_batch):
-                for h in np.arange(new_h):
-                    for w in np.arange(new_w):
-                        h_shift, w_shift = h * pool_h, w * pool_w
-                        layer_grads[
-                            a, h_shift : h_shift + pool_h, w_shift : w_shift + pool_w
-                        ] = pre_grad[a, h, w] * (1.0 / length)
+        dX = dX.reshape(self.input_shape)
 
-        else:
-            raise ValueError()
-
-        return layer_grads
+        return dX
 
 
 @serializable(recursive_serde=True)
@@ -145,11 +111,20 @@ class MaxPool(Layer):
     __attr_allowlist__ = ("pool_size", "input_shape", "out_shape", "last_input")
 
     def __init__(self, pool_size, stride=1):
-        self.pool_size = pool_size
+        if isinstance(pool_size, tuple):
+            self.pool_size = pool_size
+        elif isinstance(pool_size, int):
+            self.pool_size = pool_size, pool_size
+        else:
+            raise TypeError("Pool size can be either int or Tuple")
+
+        self.stride = stride
 
         self.input_shape = None
         self.out_shape = None
         self.last_input = None
+        self.X_col = None
+        self.max_idx = None
 
     def connect_to(self, prev_layer):
         # prev_layer.out_shape: (nb_batch, ..., height, width)
@@ -157,98 +132,51 @@ class MaxPool(Layer):
 
         old_h, old_w = prev_layer.out_shape[-2:]
         pool_h, pool_w = self.pool_size
-        new_h, new_w = old_h // pool_h, old_w // pool_w
-
-        assert old_h % pool_h == old_w % pool_w == 0
+        new_h = (old_h - pool_h) // self.stride + 1
+        new_w = (old_w - pool_w) // self.stride + 1
 
         self.out_shape = prev_layer.out_shape[:-2] + (new_h, new_w)
 
-    def forward(self, input, *args, **kwargs):
+    def forward(self, input: PhiTensor, *args, **kwargs):
         # shape
+
         self.input_shape = input.shape
         pool_h, pool_w = self.pool_size
-        new_h, new_w = self.out_shape[-2:]
+        h_out, w_out = self.out_shape[-2:]
 
         # forward
         self.last_input = input
-        outputs = dp_zeros(
-            self.input_shape[:-2] + self.out_shape[-2:],
-            data_subjects=input.data_subjects,
-        )
 
-        ndim = len(input.shape)
+        n, d, h, w = input.shape
+        input_reshaped = input.reshape((n * d, 1, h, w))
+        self.X_col = im2col_indices(input_reshaped, pool_h, pool_w, padding=0, stride=self.stride)
 
-        if ndim == 4:
-            nb_batch, nb_axis, _, _ = input.shape
+        self.max_idx = self.X_col._argmax(axis=0)
 
-            for a in np.arange(nb_batch):
-                for b in np.arange(nb_axis):
-                    for h in np.arange(new_h):
-                        for w in np.arange(new_w):
-                            outputs[a, b, h, w] = input[
-                                a, b, h : h + pool_h, w : w + pool_w
-                            ].max()
+        return self.X_col, self.max_idx, h_out, w_out, n, d
 
-        elif ndim == 3:
-            nb_batch, _, _ = input.shape
+        outputs = self.X_col[self.max_idx, range(self.max_idx.size)]
 
-            for a in np.arange(nb_batch):
-                for h in np.arange(new_h):
-                    for w in np.arange(new_w):
-                        outputs[a, h, w] = input[
-                            a, h : h + pool_h, w : w + pool_w
-                        ].max()
-
-        else:
-            raise ValueError()
+        outputs = outputs.reshape((h_out, w_out, n, d))
+        outputs = outputs.transpose((2, 3, 0, 1))
 
         return outputs
 
-    def backward(self, pre_grad, *args, **kwargs):
-        new_h, new_w = self.out_shape[-2:]
+    def backward(self, pre_grad: PhiTensor, *args, **kwargs):
+
+        n, d, w, h = self.input_shape
         pool_h, pool_w = self.pool_size
 
-        layer_grads = input.zeros_like()
+        dX_col = self.X_col.zeros_like()
 
-        ndim = len(pre_grad.shape)
+        dout_col = pre_grad.transpose((2, 3, 0, 1)).ravel()
 
-        if ndim == 4:
-            nb_batch, nb_axis, _, _ = pre_grad.shape
+        dout_col_size = np.prod(dout_col.shape)
 
-            for a in np.arange(nb_batch):
-                for b in np.arange(nb_axis):
-                    for h in np.arange(new_h):
-                        for w in np.arange(new_w):
-                            patch = self.last_input[
-                                a, b, h : h + pool_h, w : w + pool_w
-                            ]
-                            max_idx = patch.unravel_argmax()
-                            #                             max_idx = np.unravel_index(patch.argmax(), patch.shape)
+        dX_col[self.max_idx, range(dout_col_size)] = dout_col
 
-                            h_shift, w_shift = (
-                                h * pool_h + max_idx[0],
-                                w * pool_w + max_idx[1],
-                            )
-                            layer_grads[a, b, h_shift, w_shift] = pre_grad[a, b, h, w]
-        #                             layer_grads[a, b, h_shift, w_shift] = pre_grad[a, b, a, w]
+        dX = col2im_indices(dX_col, (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride)
 
-        elif ndim == 3:
-            nb_batch, _, _ = pre_grad.shape
+        dX = dX.reshape(self.input_shape)
 
-            for a in np.arange(nb_batch):
-                for h in np.arange(new_h):
-                    for w in np.arange(new_w):
-                        patch = self.last_input[a, h : h + pool_h, w : w + pool_w]
-                        max_idx = patch.unravel_argmax()
-                        #                         max_idx = np.unravel_index(patch.argmax(), patch.shape)
-                        h_shift, w_shift = (
-                            h * pool_h + max_idx[0],
-                            w * pool_w + max_idx[1],
-                        )
-                        layer_grads[a, h_shift, w_shift] = pre_grad[a, h, w]
-        #                         layer_grads[a, h_shift, w_shift] = pre_grad[a, a, w]
-
-        else:
-            raise ValueError()
-
-        return layer_grads
+        return dX

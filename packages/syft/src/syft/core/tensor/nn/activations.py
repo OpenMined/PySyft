@@ -88,7 +88,7 @@ class leaky_ReLU(Activation):
 
 def get(activation: Optional[Activation]):
     if activation is None:
-        return leaky_ReLU()
+        return None
     elif callable(activation):
         return activation()
     elif isinstance(activation, Activation):

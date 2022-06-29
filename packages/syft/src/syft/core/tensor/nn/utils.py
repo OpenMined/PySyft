@@ -145,9 +145,11 @@ def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="constant",
     min_v = lazyrepeatarray(data=min(input.min_vals.data.min(), output_data.min()), shape=output_data.shape)
     max_v = lazyrepeatarray(data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape)
 
+
+    # TODO: Verify if this is correct implementation
     output_data_subjects=DataSubjectList(
         one_hot_lookup=input.data_subjects.one_hot_lookup,
-        data_subjects_indexed=np.pad(input.data_subjects.data_subjects_indexed, width, mode=padding_mode, **kwargs)
+        data_subjects_indexed=np.zeros_like(output_data)
     )
 
     if isinstance(input, PhiTensor):
@@ -221,7 +223,17 @@ def im2col_indices(x: PhiTensor, field_height: int, field_width: int, padding: i
     """ An implementation of im2col based on some fancy indexing """
     # Zero-pad the input
     p = padding
-    x_padded = dp_pad(x, ((0, 0), (0, 0), (p, p), (p, p)), padding_mode='constant')
+
+    if len(x.shape) == 4:
+        width = ((0, 0), (0, 0), (p, p), (p, p))
+    elif len(x.shape) == 3:
+        width  = ((0, 0), (p, p), (p, p))
+    elif len(x.shape) == 2:
+        width  = ((p, p), (p, p))
+    else:
+        raise NotImplementedError
+
+    x_padded = dp_pad(x, width, padding_mode='constant')
 
     k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
 

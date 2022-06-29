@@ -143,7 +143,7 @@ class Model:
         for layer in self.layers[:]:
             x_next = layer.forward(x_next)
         y_pred = x_next
-        return y_pred
+        return y_pred   
 
     def accuracy(self, outputs, targets):
         y_predicts = np.argmax(outputs, axis=1)
