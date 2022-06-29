@@ -339,6 +339,12 @@ class PassthroughTensor(np.lib.mixins.NDArrayOperatorsMixin):
 
         return self.__class__(self.child.concatenate(other.child, *args, **kwargs))
 
+    def something(self, *args, **kwargs) -> PassthroughTensor:
+        shares = [tensor.child for tensor in args]
+        res = self.__class__(self.child.something(c=shares[0], s=shares[1]))
+        print("Helllo", res)
+        return res
+
     def __rmul__(
         self, other: Union[Type[PassthroughTensor], AcceptableSimpleType]
     ) -> PassthroughTensor:

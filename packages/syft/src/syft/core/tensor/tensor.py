@@ -108,7 +108,7 @@ class TensorPointer(Pointer):
         # attr_path_and_name and then use that to get the actual pointer klass
         # then set the result to that pointer klass
 
-        op = f"__{op_str}__" if op_str != "concatenate" else "concatenate"
+        op = f"__{op_str}__" if op_str not in {"concatenate", "something"} else op_str
         # remove this to dunder method before merge.
         attr_path_and_name = f"syft.core.tensor.tensor.Tensor.{op}"
         seed_id_locations = kwargs.pop("seed_id_locations", None)
@@ -131,7 +131,7 @@ class TensorPointer(Pointer):
                 downcast_args,
                 downcast_kwargs,
             ) = lib.python.util.downcast_args_and_kwargs(
-                args=[self, other], kwargs=kwargs
+                args=[self, other] + list(args), kwargs=kwargs
             )
 
             # then we convert anything which isnt a pointer into a pointer
@@ -181,9 +181,14 @@ class TensorPointer(Pointer):
             raise ValueError(f"Invalid Type for TensorPointer:{type(other)}")
 
         if self.public_shape is not None and other_shape is not None:
-            result_public_shape = utils.get_shape(
-                op_str, self.public_shape, other_shape
-            )
+            if op_str == "something":
+                result_public_shape = utils.get_shape(
+                    "__add__", self.public_shape, other_shape
+                )
+            else:
+                result_public_shape = utils.get_shape(
+                    op_str, self.public_shape, other_shape
+                )
 
         if self.public_dtype is not None and other_dtype is not None:
             if self.public_dtype != other_dtype:
@@ -196,6 +201,9 @@ class TensorPointer(Pointer):
         result.public_dtype = result_public_dtype
 
         return result
+
+    def something(self, c_share, s_share, **kwargs) -> Tensor:
+        return self._apply_tensor_op(c_share, "something", s_share, **kwargs)
 
     @staticmethod
     def _apply_op(

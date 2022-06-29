@@ -15,6 +15,7 @@ from typing import Dict
 from typing import TYPE_CHECKING
 
 # relative
+from ....pointer import pointer
 from ....tensor.config import DEFAULT_RING_SIZE
 from ....tensor.smpc import utils
 from ...store import CryptoPrimitiveProvider
@@ -109,6 +110,7 @@ def lt_master(x: MPCTensor, y: MPCTensor, op_str: str) -> MPCTensor:
     # sum carry adder
     # res = sign(diff)
 
+    pointer.count = 0
     res_shares = x - y
     res_shares.block
     # time.sleep(2)

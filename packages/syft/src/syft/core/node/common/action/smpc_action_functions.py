@@ -29,7 +29,27 @@ def get_id_at_location_from_op(seed: int, operation_str: str) -> UID:
     return UID(UUID(bytes=generator.bytes(16)))
 
 
-def private_mul(x: ShareTensor, y: ShareTensor, op_str: str) -> ShareTensor:
+def private_compare(a: ShareTensor, b: ShareTensor, c: ShareTensor) -> ShareTensor:
+    seed_id_locations = context.SMPC_CONTEXT.get("seed_id_locations", None)
+    if seed_id_locations is None:
+        raise ValueError(
+            f"Input seed : {seed_id_locations} for private multiplication should not None"
+        )
+
+    generator = np.random.default_rng(seed_id_locations)
+    _ = UID(
+        UUID(bytes=generator.bytes(16))
+    )  # Ignore first one as it is used for result.
+
+    share = private_mul(b, c, "mul", generator=generator)
+    share = a + share
+
+    return share
+
+
+def private_mul(
+    x: ShareTensor, y: ShareTensor, op_str: str, generator: Optional[int] = None
+) -> ShareTensor:
     """Performs SMPC Private Multiplication using Beaver Triples.
 
     Args:
@@ -39,15 +59,17 @@ def private_mul(x: ShareTensor, y: ShareTensor, op_str: str) -> ShareTensor:
     Returns:
         res (ShareTensor): Result of the operation.
     """
-    seed_id_locations = context.SMPC_CONTEXT.get("seed_id_locations", None)
-    if seed_id_locations is None:
-        raise ValueError(
-            f"Input seed : {seed_id_locations} for private multiplication should not None"
-        )
-    generator = np.random.default_rng(seed_id_locations)
-    _ = UID(
-        UUID(bytes=generator.bytes(16))
-    )  # Ignore first one as it is used for result.
+    if generator is None:
+        # It means this function was called from another function
+        seed_id_locations = context.SMPC_CONTEXT.get("seed_id_locations", None)
+        if seed_id_locations is None:
+            raise ValueError(
+                f"Input seed : {seed_id_locations} for private multiplication should not None"
+            )
+        generator = np.random.default_rng(seed_id_locations)
+        _ = UID(
+            UUID(bytes=generator.bytes(16))
+        )  # Ignore first one as it is used for result.
     eps_id = UID(UUID(bytes=generator.bytes(16)))
     delta_id = UID(UUID(bytes=generator.bytes(16)))
     ring_size = utils.get_ring_size(x.ring_size, y.ring_size)
@@ -90,6 +112,7 @@ def spdz_mask(
         raise ValueError("Node context should be passed to spdz mask")
 
     clients = ShareTensor.login_clients(parties_info=x.parties_info)
+    print("CLIENTS", clients)
 
     eps = x - a_share  # beaver intermediate values.
     delta = y - b_share

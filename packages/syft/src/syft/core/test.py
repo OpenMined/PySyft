@@ -21,10 +21,9 @@ from ....common import UID
 from ....tensor.config import DEFAULT_RING_SIZE
 from ....tensor.fixed_precision_tensor import FixedPrecisionTensor
 from ....tensor.smpc import static
-from ....tensor.smpc import utils
 from ....tensor.smpc.mpc_tensor import MPCTensor
 from ....tensor.smpc.share_tensor import ShareTensor
-from ....tensor.tensor import Tensor
+from ....tensor.smpc.utils import get_nr_bits
 from ...store.crypto_primitive_provider import CryptoPrimitiveProvider
 
 
@@ -92,11 +91,13 @@ class ABY3:
 
         bit_shares = [share[0] for share in decomposed_shares]
         bit_shares = zip(*bit_shares)  # type: ignore
+        fpt = FixedPrecisionTensor()
         for bit_sh in bit_shares:
             mpc = MPCTensor(
                 shares=bit_sh, shape=shape, parties=parties, ring_size=ring_size
             )
-            res_shares.append(mpc)
+            mpc.block
+            res_shares.append(fpt.scale * mpc)
 
         # TODO: Should modify to xor at mpc tensor level
         arith_share = reduce(lambda a, b: a + b - (a * b * 2), res_shares)
@@ -154,11 +155,8 @@ class ABY3:
             ring_size=2,
         )
 
-        ring_bits = utils.get_nr_bits(ring_size)
-        shape_res = utils.get_shape("mul", a[0].shape, b[0].shape)
-        c = MPCTensor(
-            secret=Tensor(np.zeros(shape_res, dtype=np.bool)), parties=parties
-        )  # carry bits of addition.
+        ring_bits = get_nr_bits(ring_size)
+        c = np.array([0], dtype=np.bool)  # carry bits of addition.
         stacked_a = static.stack(a)
         stacked_b = static.stack(b)
         stacked_a.block
@@ -168,13 +166,11 @@ class ABY3:
         mul_a_b.block
 
         result: List[MPCTensor] = []
-        for idx in range(ring_bits):
-            print("Bit Number :", idx)
+        for idx in tqdm(range(ring_bits), desc="Computing..."):
             s_tmp = a[idx] + b[idx]
             s = s_tmp + c
             if idx != ring_bits - 1:
-                val = mul_a_b[idx]
-                c = val.something(c, s_tmp, a[idx], b[idx], idx)
+                c = mul_a_b[idx] + c * s_tmp
                 c.block
             result.append(s)
         return result
@@ -186,6 +182,10 @@ class ABY3:
         # Specialized for 3 parties
         """Perform bit addition on MPCTensors using a full adder.
 
+        Reference: "Generalizing the SPDZ Compiler For Other Protocols"
+        URL: https://eprint.iacr.org/2018/762.pdf
+        Check Section 4.3 Bit Decomposition - Step 2
+
         Args:
             a (List[MPCTensor]): MPCTensor with shares of bit.
             b (List[MPCTensor]): MPCTensor with shares of bit.
@@ -194,6 +194,7 @@ class ABY3:
             result (List[MPCTensor]): Result of the operation.
 
         TODO: Should modify ripple carry adder to parallel prefix adder.
+
         """
         parties = a[0].parties
         parties_info = a[0].parties_info
@@ -216,7 +217,7 @@ class ABY3:
             ring_size=2,
         )
 
-        ring_bits = utils.get_nr_bits(ring_size)
+        ring_bits = get_nr_bits(ring_size)
 
         carry = np.zeros(a[0].mpc_shape, dtype=np.bool)
         # one = MPCTensor(
@@ -262,7 +263,7 @@ class ABY3:
 
         nr_parties = len(x.parties)
         ring_size = DEFAULT_RING_SIZE
-        ring_bits = utils.get_nr_bits(ring_size)
+        ring_bits = get_nr_bits(ring_size)
 
         shape = x.shape
         parties = x.parties
@@ -298,12 +299,15 @@ class ABY3:
                     shares=bit_sh, shape=shape, parties=parties, ring_size=2
                 )
                 res_shares[i].append(mpc)
-        # return res_shares
+        """
+        gmuraru (TODO): Need to do a little bit of benchmarking to see what difference is
+        between these 2 adders
         if nr_parties == 2:
             # Specialized for two parties
             bin_share = ABY3.full_adder_spdz_compiler(res_shares[0], res_shares[1])
         else:
-            bin_share = reduce(ABY3.full_adder, res_shares)
+        """
+        bin_share = reduce(ABY3.full_adder, res_shares)
 
         return bin_share
 

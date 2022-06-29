@@ -792,6 +792,13 @@ class ShareTensor(PassthroughTensor):
         share.child = value
         return share
 
+    def something(self, c, s) -> ShareTensor:
+        # relative
+        from ...node.common.action.smpc_action_functions import private_compare
+
+        res = private_compare(self, c, s)
+        return res
+
     def concatenate(
         self, other: ShareTensor, *args: List[Any], **kwargs: Dict[str, Any]
     ) -> ShareTensor:

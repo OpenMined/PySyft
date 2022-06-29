@@ -169,6 +169,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
             "syft.core.tensor.tensor.Tensor.bit_decomposition",
             "syft.lib.python._SyNone",
         ),
+        (
+            "syft.core.tensor.tensor.Tensor.something",
+            "syft.core.tensor.tensor.Tensor",
+        ),
         ("syft.core.tensor.tensor.Tensor.mpc_swap", "syft.core.tensor.tensor.Tensor"),
         (
             "syft.core.tensor.tensor.Tensor.concatenate",
@@ -325,6 +329,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.core.tensor.nn.Model.step",
             "syft.lib.python._SyNone",
+        (
+            "syft.core.tensor.smpc.share_tensor.ShareTensor.something",
+            "syft.lib.python.ShareTensor",
+        ),
         (
             "syft.core.tensor.smpc.static.stack_helper",
             "syft.core.tensor.tensor.Tensor",

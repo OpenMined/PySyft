@@ -119,6 +119,7 @@ from ..node.common.node_service.object_search_permission_update.obj_search_permi
 )
 from ..store.storeable_object import StorableObject
 
+count = 0
 
 # TODO: Fix the Client, Address, Location confusion
 @serializable()
@@ -163,8 +164,10 @@ class Pointer(AbstractPointer):
 
     @property
     def block(self) -> AbstractPointer:
+        global count
         while not self.exists:
             time.sleep(0.1)
+            count += 1
         return self
 
     def block_with_timeout(self, secs: int, secs_per_poll: int = 1) -> AbstractPointer:

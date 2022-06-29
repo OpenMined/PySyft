@@ -99,7 +99,7 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
         resolved_self = retrieve_object(node, self._self.id_at_location, self.path)
         result_read_permissions = resolved_self.read_permissions
 
-        resolved_args = list()
+        resolved_args = []
         tag_args = []
         for arg in self.args:
             r_arg = retrieve_object(node, arg.id_at_location, self.path)
@@ -124,12 +124,15 @@ class RunClassMethodSMPCAction(ImmediateActionWithoutReply):
             resolved_kwargs[arg_name] = r_arg.data
             tag_kwargs[arg_name] = r_arg
 
+        print("Resolved args", resolved_args)
+        print("Resolved kwargs", resolved_kwargs)
         (
             upcasted_args,
             upcasted_kwargs,
         ) = lib.python.util.upcast_args_and_kwargs(resolved_args, resolved_kwargs)
 
         method = node.lib_ast(self.path)
+        print("Method is", method)
         seed_id_locations = self.seed_id_locations
 
         # TODO: For the moment we don't run any SMPC operation that provides any kwarg

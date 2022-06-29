@@ -29,6 +29,7 @@ from ...smpc.approximations import APPROXIMATIONS
 from ...smpc.protocol.spdz import spdz
 from ...smpc.store import CryptoPrimitiveProvider
 from ..config import DEFAULT_RING_SIZE
+from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
 from ..passthrough import SupportedChainType  # type: ignore
@@ -39,6 +40,7 @@ if TYPE_CHECKING:
     # relative
     from ..tensor import Tensor
     from ..tensor import TensorPointer
+
 
 METHODS_FORWARD_ALL_SHARES = {
     "repeat",
@@ -60,6 +62,9 @@ METHODS_FORWARD_ALL_SHARES = {
     "choose",
     "cumsum",
     "trace",
+    # Torch has t() and tranpose(dim0, dim1)
+    # NumPy has tranpose()
+    "transpose",
 }
 INPLACE_OPS = {
     "resize",
@@ -76,6 +81,8 @@ class MPCTensor(PassthroughTensor):
         "parties_info",
         "ring_size",
     )
+
+    top_level_op_compare: bool = False
 
     def __init__(
         self,
@@ -106,8 +113,6 @@ class MPCTensor(PassthroughTensor):
             self.ring_size = ring_size
         else:
             self.ring_size = MPCTensor.get_ring_size_from_secret(secret, shares)
-        if secret is not None and shape is None:
-            shape = secret.shape
         self.mpc_shape = shape
 
         # TODO: We can get this from the the secret if the secret is local
@@ -115,6 +120,7 @@ class MPCTensor(PassthroughTensor):
         #  =priority&stories_group_by=WORKFLOW_STATE
         if shape is None:
             raise ValueError("Shape of the secret should be known")
+
         if secret is not None:
             shares = MPCTensor._get_shares_from_secret(
                 secret=secret,
@@ -422,9 +428,6 @@ class MPCTensor(PassthroughTensor):
         return self
 
     def reconstruct(self, delete_obj: bool = True) -> np.ndarray:
-        # relative
-        from ..fixed_precision_tensor import FixedPrecisionTensor
-
         dtype = utils.RING_SIZE_TO_TYPE.get(self.ring_size, None)
 
         if dtype is None:
@@ -456,8 +459,9 @@ class MPCTensor(PassthroughTensor):
             else:
                 return False
 
-        if check_fpt(result):
-            return result.decode()
+        fpt = FixedPrecisionTensor()
+        fpt.child = result.child
+        result = fpt.decode()
 
         def get_lowest_child(value: Any) -> AcceptableSimpleType:
             if isinstance(value, PassthroughTensor):
@@ -495,9 +499,7 @@ class MPCTensor(PassthroughTensor):
                 shares.append(new_share)
 
                 # TODO: generalize type after fixed precision
-                dummy_res = np.random.randint(
-                    _self.mpc_shape[0], size=_self.mpc_shape, dtype=np.int32  # type: ignore
-                )
+                dummy_res = np.ones(_self.mpc_shape, dtype=np.int64)
                 if method_name not in INPLACE_OPS:
                     dummy_res = getattr(dummy_res, method_name)(*args, **kwargs)
                 else:
@@ -643,6 +645,9 @@ class MPCTensor(PassthroughTensor):
     ) -> List[ShareTensor]:
         op_method = f"__{op_str}__"
         if op_str in {"mul", "matmul", "add", "sub"}:
+            if op_str in {"add", "sub"}:
+                fpt = FixedPrecisionTensor()
+                y = fpt.encode(y)
             res_shares = [
                 getattr(share, op_method)(y, **kwargs) for share in self.child
             ]
@@ -791,7 +796,7 @@ class MPCTensor(PassthroughTensor):
     def lt(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-        mpc_res = spdz.lt_master(self, y, "mul")  # type: ignore
+        mpc_res = spdz.lt_master(self, y, "mul")
 
         return mpc_res
 
@@ -805,9 +810,7 @@ class MPCTensor(PassthroughTensor):
     def ge(
         self, y: Union[int, float, np.ndarray, torch.tensor, MPCTensor]
     ) -> MPCTensor:
-
         mpc_res = 1 - MPCTensor.lt(self, y)
-
         return mpc_res  # type: ignore
 
     def le(
@@ -920,20 +923,6 @@ class MPCTensor(PassthroughTensor):
         res: MPCTensor = 2 * (self > 0) - 1  # type: ignore
         return res
 
-    def something(self, carry: MPCTensor, s: MPCTensor):
-        kwargs = {"seed_id_locations": secrets.randbits(64)}
-        shares = [
-            share.something(c_share, s_tmp_share, **kwargs)
-            for share, c_share, s_tmp_share in zip(self.child, carry.child, s.child)
-        ]
-
-        return MPCTensor(
-            shares=shares,
-            shape=self.shape,
-            parties=self.parties,
-            ring_size=self.ring_size,
-        )
-
     def __getitem__(self, *args: List[Any], **kwargs: Dict[str, Any]) -> "MPCTensor":
         shares = []
         method_name = "__getitem__"
@@ -1030,7 +1019,7 @@ class MPCTensor(PassthroughTensor):
         out += "\n\nMPCTensor"
         out += ".shape=" + str(self.shape) + "\n"
         for i, child in enumerate(self.child):
-            out += f"\t .child[{i}] = " + child.__repr__() + "\n"
+            out += f"\t .child[{i}] = " + repr(child) + "\n"
         out = out[:-1] + ""
 
         return out
