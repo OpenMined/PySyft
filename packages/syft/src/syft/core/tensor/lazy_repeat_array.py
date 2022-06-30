@@ -55,7 +55,8 @@ class lazyrepeatarray:
             data = np.array(data)
 
         # verify broadcasting works on shapes
-        np.broadcast_shapes(data.shape, shape)
+        if -1 not in shape:
+            np.broadcast_shapes(data.shape, shape)
 
         self.data = data
         self.shape = shape

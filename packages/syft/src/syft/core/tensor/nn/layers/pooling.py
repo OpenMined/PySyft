@@ -70,7 +70,7 @@ class AvgPool(Layer):
 
         outputs = outputs.reshape(h_out, w_out, n, d)
         outputs = outputs.transpose(2, 3, 0, 1)
-
+        print("Done with AvgPool forward pass")
         return outputs
 
     def backward(self, pre_grad: PhiTensor, *args, **kwargs):
@@ -149,19 +149,18 @@ class MaxPool(Layer):
         self.last_input = input
 
         n, d, h, w = input.shape
-        print(input.shape, input.data_subjects.shape)
         input_reshaped = input.reshape((n * d, 1, h, w))
+        print("Starting im2col")
         self.X_col = im2col_indices(input_reshaped, pool_h, pool_w, padding=0, stride=self.stride)
-
+        print("FInished im2col, starting _argmax")
         self.max_idx = self.X_col._argmax(axis=0)
-
-        # return self.X_col, self.max_idx, h_out, w_out, n, d
-
+        print("Finished argmax, getting outputs")
         outputs = self.X_col[self.max_idx, range(self.max_idx.size)]
-
+        print("Got outputs, reshaping now")
         outputs = outputs.reshape((h_out, w_out, n, d))
+        print("Reshaped outputs, transposing now")
         outputs = outputs.transpose((2, 3, 0, 1))
-
+        print("Done with MaxPool forward pass")
         return outputs
 
     def backward(self, pre_grad: PhiTensor, *args, **kwargs):

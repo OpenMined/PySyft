@@ -191,7 +191,6 @@ class DataSubjectList:
     @staticmethod
     def index_dsl(tensor: Any, index):
         if tensor.shape == tensor.data_subjects.shape:
-            assert tensor[index].shape == tensor.data_subjects[index].shape
             return tensor.data_subjects[index]
         elif len(tensor.shape) < len(tensor.data_subjects.shape):
             return tensor.data_subjects[:, index]

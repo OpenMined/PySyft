@@ -1621,7 +1621,6 @@ class GammaTensor:
                 maxv = self.max_vals.reshape(shape)
                 maxv.data = maxv.data.max()
             else:
-                print("Strange behaviour")
                 minv = self.min_vals.reshape(shape)
                 minv.data = minv.data.min()
 
@@ -1631,7 +1630,6 @@ class GammaTensor:
             minv = self.min_vals
             maxv = self.max_vals
         else:
-            print("What type is this?", type(self.min_vals))
             minv = self.min_vals
             maxv = self.max_vals
 
@@ -1644,6 +1642,9 @@ class GammaTensor:
             min_vals=minv,
             max_vals=maxv
         )
+
+    def _argmax(self, axis: Optional[int]) -> np.ndarray:
+        return self.child.argmax(axis)
 
     def mean(self, axis) -> GammaTensor:
         output_state = dict()
