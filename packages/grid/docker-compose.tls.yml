@@ -1,9 +1,8 @@
 version: "3.8"
 services:
-  tailscale:
+  proxy:
     ports:
       - "${HTTPS_PORT}:${HTTPS_PORT}"
-  proxy:
     environment:
       - TRAEFIK_TLS_CONF=${TRAEFIK_TLS_CONF}
       - TRAEFIK_TLS_CERTS=${TRAEFIK_TLS_CERTS}

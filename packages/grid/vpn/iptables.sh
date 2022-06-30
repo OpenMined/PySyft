@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# find IP of tailscale container
+# find IP of proxy container
 get_tailescale_ip_from_container_net() {
     IP_RANGES=$(get_possible_ips)
     echo "Searching these ip ranges: \n$IP_RANGES" >&2
@@ -9,9 +9,9 @@ get_tailescale_ip_from_container_net() {
         for i in {1..255}; do
             IP_ADDRESS=$IP_RANGE.$i
             echo "nslookup: $IP_ADDRESS" >&2
-            OUTPUT=$(nslookup $IP_ADDRESS | grep tailscale)
+            OUTPUT=$(nslookup $IP_ADDRESS | grep proxy)
             if [ ! -z "$OUTPUT" ]; then
-                echo "Found: hostname tailscale on $IP_ADDRESS" >&2
+                echo "Found: hostname proxy on $IP_ADDRESS" >&2
                 break 2
             fi
             IP_ADDRESS=""
@@ -20,7 +20,7 @@ get_tailescale_ip_from_container_net() {
     echo $IP_ADDRESS
 }
 
-# find IP of tailscale container
+# find IP of proxy container
 get_tailescale_internal_ip_from_host_net() {
     IP_RANGES=$(get_possible_ips)
     echo "Searching these ip ranges: \n$IP_RANGES" >&2
