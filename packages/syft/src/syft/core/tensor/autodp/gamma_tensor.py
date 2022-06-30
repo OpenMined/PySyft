@@ -1169,6 +1169,7 @@ class GammaTensor:
             child = self.child + other.child
             min_val = self.min_vals + other.min_vals
             max_val = self.max_vals + other.max_vals
+            output_ds = DataSubjectList.combine_dsi(self.data_subjects, other.data_subjects)
 
         else:
 
@@ -1178,11 +1179,11 @@ class GammaTensor:
             child = self.child + other
             min_val = self.min_vals + other
             max_val = self.max_vals + other
-            # output_ds = self.data_subjects
+            output_ds = self.data_subjects
         # print("the state we returned is: ", output_state)
         return GammaTensor(
             child=child,
-            data_subjects=self.data_subjects,
+            data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
             func=_add,
@@ -1205,10 +1206,7 @@ class GammaTensor:
             def _sub(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.subtract(self.run(state), other.run(state))
 
-            # print("this is the other.state", other.state)
             output_state[other.id] = other
-            # state.update(other.state)
-            # print("this is the output_state", output_state)
 
             child = self.child - other.child
             min_min = self.min_vals.data - other.min_vals.data
@@ -1221,6 +1219,7 @@ class GammaTensor:
             min_val.data = _min_val
             max_val = self.max_vals.copy()
             max_val.data = _max_val
+            output_ds = DataSubjectList.combine_dsi(self.data_subjects, other.data_subjects)
 
         else:
 
@@ -1230,10 +1229,11 @@ class GammaTensor:
             child = self.child - other
             min_val = self.min_vals - other
             max_val = self.max_vals - other
+            output_ds = self.data_subjects
         # print("the state we returned is: ", output_state)
         return GammaTensor(
             child=child,
-            data_subjects=self.data_subjects,
+            data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
             func=_sub,
@@ -1264,6 +1264,7 @@ class GammaTensor:
             max_max = self.max_vals.data * other.max_vals.data
             _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
             _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+            output_ds = DataSubjectList.combine_dsi(self.data_subjects, other.data_subjects)
 
         else:
 
@@ -1277,15 +1278,17 @@ class GammaTensor:
             max_max = self.max_vals.data * other
             _min_val = np.array(np.min([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
             _max_val = np.array(np.max([min_min, min_max, max_min, max_max], axis=0))  # type: ignore
+            output_ds = self.data_subjects
 
         min_val = self.min_vals.copy()
         min_val.data = _min_val
         max_val = self.max_vals.copy()
         max_val.data = _max_val
 
+
         return GammaTensor(
             child=child,
-            data_subjects=self.data_subjects,
+            data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
             func=_mul,

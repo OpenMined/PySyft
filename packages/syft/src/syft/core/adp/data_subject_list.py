@@ -196,6 +196,29 @@ class DataSubjectList:
         elif len(tensor.shape) < len(tensor.data_subjects.shape):
             return tensor.data_subjects[:, index]
 
+    @staticmethod
+    def combine_dsi(dsl1: DataSubjectList, dsl2: DataSubjectList):
+        dsl1_dims = len(dsl1.shape)
+        dsl2_dims = len(dsl2.shape)
+        if dsl1_dims == dsl2_dims:
+            output_shape = (dsl1.shape[0] + dsl2.shape[0], *dsl1.shape[1:])
+        elif dsl1_dims - dsl2_dims == 1:
+            dsl2.data_subjects_indexed = np.expand_dims(dsl2.data_subjects_indexed, 0)
+            output_shape = (dsl1.shape[0] + dsl2.shape[0], *dsl1.shape[1:])
+        elif dsl2_dims - dsl1_dims == 1:
+            dsl1.data_subjects_indexed = np.expand_dims(dsl1.data_subjects_indexed, 0)
+            output_shape = (dsl1.shape[0] + dsl2.shape[0], *dsl1.shape[1:])
+        else:
+            raise Exception(
+                f"Shapes of DSLs incompatible- are they meant to be broadcasted: {dsl1.shape}, {dsl2.shape}")
+
+        output_dsl = DataSubjectList(one_hot_lookup=np.array([]),
+                                     data_subjects_indexed=np.empty(output_shape))
+
+        output_dsl[:dsl1.shape[0]] = dsl1
+        output_dsl[dsl1.shape[0]:] = dsl2
+        return output_dsl
+
     def __getitem__(self, item) -> DataSubjectList:
         result = self.data_subjects_indexed[item]
         return DataSubjectList(
