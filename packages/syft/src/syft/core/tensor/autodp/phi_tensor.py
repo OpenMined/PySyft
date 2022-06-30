@@ -1813,11 +1813,13 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 )
 
     def clip(self, a_min: int, a_max: int):
-        data = self.child
         output_data = np.clip(self.child, a_min, a_max)
 
-        min_vals = np.clip(self.min_vals.data, a_min, a_max)
-        max_vals = np.clip(self.max_vals.data, a_min, a_max)
+        min_v = np.clip(self.min_vals.data, a_min, a_max)
+        max_v= np.clip(self.max_vals.data, a_min, a_max)
+
+        min_vals = lazyrepeatarray(data=min_v, shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=max_v, shape=output_data.shape)
 
         return PhiTensor(
             child=output_data,

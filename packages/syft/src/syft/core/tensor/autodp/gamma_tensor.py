@@ -1913,6 +1913,31 @@ class GammaTensor:
             state=state,
         )
 
+
+    def clip(self, a_min: int, a_max: int):
+        def _clip(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.clip(self.run(state))
+
+        state = dict()
+        state.update(self.state)
+
+        output_data = self.child.clip(a_min, a_max)
+
+        min_v = np.clip(self.min_vals.data, a_min, a_max)
+        max_v = np.clip(self.max_vals.data, a_min, a_max)
+
+        min_vals = lazyrepeatarray(data=min_v, shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=max_v, shape=output_data.shape)
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            func=_clip,
+            state=state
+        )
+
     @staticmethod
     def combine(gt_list: List[GammaTensor], target_shape: Tuple) -> GammaTensor:
         data = np.zeros(np.prod(target_shape))

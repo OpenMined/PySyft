@@ -1,3 +1,6 @@
+# third party
+import numpy as np
+
 # relative
 from ...common.serde.serializable import serializable
 from ..autodp.phi_tensor import PhiTensor
@@ -73,5 +76,7 @@ class BinaryCrossEntropy(Loss):
             Targets in [0, 1], such as ground truth labels.
         """
         outputs = outputs.clip(self.epsilon, 1 - self.epsilon)
-        divisor = dp_maximum(outputs * ((outputs * -1) + 1), self.epsilon)
+        divisor = outputs * ((outputs * -1) + 1)
+        # TODO: Verify if we require to track data subjects during finding divisor
+        divisor = np.maximum(divisor.child, self.epsilon)
         return (outputs - targets) * (1.0 / divisor)
