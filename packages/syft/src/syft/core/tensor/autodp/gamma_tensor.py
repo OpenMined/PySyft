@@ -1638,22 +1638,22 @@ class GammaTensor:
     def T(self):
         return self.transpose()
 
-    def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
+    def sum(self, axis: Optional[Union[int, Tuple[int]]] = None) -> GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sum(self.run(state))
 
         output_state = dict()
         output_state[self.id] = self
-        # output_state.update(self.state)
 
-        child = self.child.sum(*args, **kwargs)
+        child = self.child.sum(axis=axis)
+        print(child.shape)
 
-        min_val = self.min_vals.sum(*args, **kwargs)
-        max_val = self.max_vals.sum(*args, **kwargs)
+        min_val = self.min_vals.sum(axis=axis)
+        max_val = self.max_vals.sum(axis=axis)
 
         return GammaTensor(
             child=child,
-            data_subjects=self.data_subjects,
+            data_subjects=self.data_subjects.sum(target_shape=child.shape),
             min_vals=min_val,
             max_vals=max_val,
             func=_sum,
