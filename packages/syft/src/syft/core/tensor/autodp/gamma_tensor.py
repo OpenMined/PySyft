@@ -1606,7 +1606,9 @@ class GammaTensor:
         if self.shape == self.data_subjects.shape:
             output_ds = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(*args)
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(
+                    *args
+                ),
             )
         else:
             args_input = (0, *[i + 1 for i in args[0]])
@@ -1615,7 +1617,7 @@ class GammaTensor:
                 data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(
                     args_input
                     # self.shape[0], self.shape[1:][::-1]
-                )
+                ),
             )
 
         return GammaTensor(
@@ -1676,6 +1678,60 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func=_ones_like,
+            state=output_state,
+        )
+
+    def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
+        def _zeros_like(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.zeros_like(self.run(state))
+
+        output_state = dict()
+        output_state[self.id] = self
+        # output_state.update(self.state)
+
+        child = (
+            np.zeros_like(self.child, *args, **kwargs)
+            if isinstance(self.child, np.ndarray)
+            else self.child.zeros_like(*args, **kwargs)
+        )
+
+        min_val = self.min_vals.zeros_like(*args, **kwargs)
+        max_val = self.max_vals.zeros_like(*args, **kwargs)
+
+        return GammaTensor(
+            child=child,
+            data_subjects=self.data_subjects,
+            min_vals=min_val,
+            max_vals=max_val,
+            func=_zeros_like,
+            state=output_state,
+        )
+
+    def ravel(self):
+        def _ravel(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.ravel(self.run(state))
+
+        output_state = dict()
+        output_state[self.id] = self
+        # output_state.update(self.state)
+
+        data = self.child
+        output_data = data.ravel()
+
+        output_data_subjects = DataSubjectList(
+            one_hot_lookup=self.data_subjects.one_hot_lookup,
+            data_subjects_indexed=self.data_subjects.data_subjects_indexed.ravel(),
+        )
+
+        min_val = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
+        max_val = lazyrepeatarray(data=self.max_vals.data, shape=output_data.shape)
+
+        return GammaTensor(
+            child=output_data,
+            data_subjects=output_data_subjects,
+            min_vals=min_val,
+            max_vals=max_val,
+            func=_ravel,
             state=output_state,
         )
 
@@ -1927,7 +1983,6 @@ class GammaTensor:
             state=state,
         )
 
-
     def clip(self, a_min: int, a_max: int):
         def _clip(state: dict) -> jax.numpy.DeviceArray:
             return jnp.clip(self.run(state))
@@ -1949,7 +2004,7 @@ class GammaTensor:
             min_vals=min_vals,
             max_vals=max_vals,
             func=_clip,
-            state=state
+            state=state,
         )
 
     @staticmethod

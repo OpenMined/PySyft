@@ -64,7 +64,9 @@ class AvgPool(Layer):
 
         n, d, h, w = input.shape
         input_reshaped = input.reshape(n * d, 1, h, w)
-        self.X_col = im2col_indices(input_reshaped, pool_h, pool_w, padding=0, stride=self.stride)
+        self.X_col = im2col_indices(
+            input_reshaped, pool_h, pool_w, padding=0, stride=self.stride
+        )
 
         outputs = self.X_col.mean(axis=0)
 
@@ -86,7 +88,9 @@ class AvgPool(Layer):
 
         dX_col[:, range(dout_col_size)] = dout_col * (1.0 / dX_col.shape[0])
 
-        dX = col2im_indices(dX_col, (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride)
+        dX = col2im_indices(
+            dX_col, (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride
+        )
 
         dX = dX.reshape(self.input_shape)
 
@@ -150,7 +154,9 @@ class MaxPool(Layer):
 
         n, d, h, w = input.shape
         input_reshaped = input.reshape((n * d, 1, h, w))
-        self.X_col = im2col_indices(input_reshaped, pool_h, pool_w, padding=0, stride=self.stride)
+        self.X_col = im2col_indices(
+            input_reshaped, pool_h, pool_w, padding=0, stride=self.stride
+        )
         print("FInished im2col, starting _argmax")
         self.max_idx = self.X_col._argmax(axis=0)
         outputs = self.X_col[self.max_idx, range(self.max_idx.size)]
@@ -177,7 +183,9 @@ class MaxPool(Layer):
 
         dX_col[self.max_idx, range(dout_col_size)] = dout_col
 
-        dX = col2im_indices(dX_col, (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride)
+        dX = col2im_indices(
+            dX_col, (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride
+        )
 
         dX = dX.reshape(self.input_shape)
 
