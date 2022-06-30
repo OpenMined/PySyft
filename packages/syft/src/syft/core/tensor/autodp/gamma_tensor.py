@@ -1620,11 +1620,16 @@ class GammaTensor:
                 ),
             )
 
+        output_data = self.child.transpose(*args)
+
+        min_vals = lazyrepeatarray(data=output_data.min(), shape=output_data.shape)
+        max_vals = lazyrepeatarray(data=output_data.max(), shape=output_data.shape)
+
         return GammaTensor(
-            child=self.child.transpose(*args),
+            child=output_data,
             data_subjects=output_ds,
-            min_vals=self.min_vals.transpose(*args),
-            max_vals=self.max_vals.transpose(*args),
+            min_vals=min_vals,
+            max_vals=max_vals,
             func=_transpose,
             state=output_state,
         )
@@ -2005,7 +2010,7 @@ class GammaTensor:
             max_vals=max_vals,
             func=_clip,
             state=state,
-        )
+            )
 
     @staticmethod
     def combine(gt_list: List[GammaTensor], target_shape: Tuple) -> GammaTensor:
