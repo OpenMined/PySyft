@@ -1096,6 +1096,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if not isinstance(data_subjects, DataSubjectList):
             data_subjects = DataSubjectList.from_objs(data_subjects)
 
+        if len(data_subjects.shape) != len(self.shape):
+            data_subjects.data_subjects_indexed = np.expand_dims(data_subjects.data_subjects_indexed, axis=0)
+
         self.data_subjects = data_subjects
 
     @property
@@ -2083,31 +2086,26 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def sum(
         self,
-        *args: Tuple[Any, ...],
-        **kwargs: Any,
+        axis: Optional[Union[int, Tuple[int]]] = None,
     ) -> Union[PhiTensor, GammaTensor]:
         # TODO: Add support for axes arguments later
-        min_val = self.min_vals.sum(*args, **kwargs)
-        max_val = self.max_vals.sum(*args, **kwargs)
+        min_val = self.min_vals.sum(axis=axis)
+        max_val = self.max_vals.sum(axis=axis)
         if len(self.data_subjects.one_hot_lookup) == 1:
+            result = self.child.sum(axis=axis)
             return PhiTensor(
-                child=self.child.sum(*args, **kwargs),
+                child=result,
                 min_vals=min_val,
                 max_vals=max_val,
-                data_subjects=DataSubjectList.from_objs(
-                    self.data_subjects.one_hot_lookup[0]
-                ),  # Need to check this
+                data_subjects=self.data_subjects.sum(target_shape=result.shape)
             )
-
-        # TODO: Expand this later to include more args/kwargs
-        res = GammaTensor(
-            child=self.child.sum(*args, **kwargs),
-            data_subjects=self.data_subjects.sum(),
+        result = self.child.sum(axis=axis)
+        return GammaTensor(
+            child=result,
+            data_subjects=self.data_subjects.sum(target_shape=result.shape),
             min_vals=min_val,
             max_vals=max_val,
         )
-
-        return res
 
     def ones_like(
         self,

@@ -164,11 +164,13 @@ class DataSubjectList:
                     return False
         return self == other
 
-    def sum(self) -> DataSubjectList:
-        # If sum is used without any arguments then the result is always a singular value
+    def sum(self, target_shape: tuple) -> DataSubjectList:
+        """
+        ::target_shape:: is the shape that the data (DP Tensor.child) has.
+        """
         return DataSubjectList(
             self.one_hot_lookup.copy(),
-            self.data_subjects_indexed.flatten(),
+            self.data_subjects_indexed.reshape((-1, *target_shape)),
         )
 
     def flatten(self) -> DataSubjectList:
