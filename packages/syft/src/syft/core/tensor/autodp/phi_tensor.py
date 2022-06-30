@@ -1801,16 +1801,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if self.shape == self.data_subjects.shape:
             output_ds = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose()
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(*args)
             )
         else:
-            print(self.shape)
-            print(self.shape[0], self.shape[1:][::-1])
+            args_input = (0, *[i + 1 for i in args[0]])
             output_ds = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
-                    self.shape[0], *self.shape[1:][::-1]
-                )
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(args_input)
+                # data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
+                #     self.shape[0], *self.shape[1:][::-1]
+                # )
             )
 
         return PhiTensor(

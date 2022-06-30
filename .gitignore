@@ -50,3 +50,4 @@ helm-charts/**/*.lock
 
 # notebook data
 notebooks/medical-federated-learning-program/data-owners/MedNIST.pkl
+notebooks/*.pkl

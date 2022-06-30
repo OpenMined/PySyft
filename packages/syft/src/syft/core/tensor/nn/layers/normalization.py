@@ -78,7 +78,6 @@ class BatchNorm(Layer):
         out = self.activation.forward(out) if self.activation is not None else out
 
         self.cache = (xhat, xmu, ivar, sqrtvar, var)
-
         return out
 
     def backward(

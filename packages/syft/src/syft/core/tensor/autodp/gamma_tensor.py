@@ -1610,14 +1610,39 @@ class GammaTensor:
                 )
             )
 
+        if isinstance(self.min_vals, lazyrepeatarray):
+            if self.min_vals.data.shape == 1:
+                minv = self.min_vals.reshape(shape)
+                maxv = self.max_vals.reshape(shape)
+            elif self.min_vals.data.shape == self.min_vals.shape:
+                minv = self.min_vals.reshape(shape)
+                minv.data = minv.data.min()
+
+                maxv = self.max_vals.reshape(shape)
+                maxv.data = maxv.data.max()
+            else:
+                print("Strange behaviour")
+                minv = self.min_vals.reshape(shape)
+                minv.data = minv.data.min()
+
+                maxv = self.max_vals.reshape(shape)
+                maxv.data = maxv.data.max()
+        elif isinstance(self.min_vals, (int, float)):
+            minv = self.min_vals
+            maxv = self.max_vals
+        else:
+            print("What type is this?", type(self.min_vals))
+            minv = self.min_vals
+            maxv = self.max_vals
+
         return GammaTensor(
             child=self.child.reshape(shape),
             data_subjects=DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
                 data_subjects_indexed=output_ds
             ),
-            min_vals=self.min_vals.reshape(shape) if isinstance(self.min_vals, lazyrepeatarray) else self.min_vals,
-            max_vals=self.max_vals.reshape(shape) if isinstance(self.max_vals, lazyrepeatarray) else self.max_vals
+            min_vals=minv,
+            max_vals=maxv
         )
 
     def mean(self, axis) -> GammaTensor:
@@ -1965,7 +1990,7 @@ class GammaTensor:
                     child=data,
                     min_vals=minv,
                     max_vals=maxv,
-                    data_subjects=DataSubjectList.index_dsl(self. item)
+                    data_subjects=DataSubjectList.index_dsl(self, item)
 
                     # DataSubjectList(
                     #     one_hot_lookup=self.data_subjects.one_hot_lookup,

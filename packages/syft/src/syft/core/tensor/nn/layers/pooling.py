@@ -149,6 +149,7 @@ class MaxPool(Layer):
         self.last_input = input
 
         n, d, h, w = input.shape
+        print(input.shape, input.data_subjects.shape)
         input_reshaped = input.reshape((n * d, 1, h, w))
         self.X_col = im2col_indices(input_reshaped, pool_h, pool_w, padding=0, stride=self.stride)
 
