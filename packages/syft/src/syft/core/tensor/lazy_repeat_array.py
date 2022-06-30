@@ -153,6 +153,10 @@ class lazyrepeatarray:
 
         # raise Exception("not sure how to do this yet")
 
+    def __getitem__(self, key: Union[int, bool, slice, Ellipsis]) -> lazyrepeatarray:
+        res = self.to_numpy().__getitem__(key)
+        return lazyrepeatarray(data=res, shape=res.shape)
+
     def zeros_like(self, *args: Tuple[Any, ...], **kwargs: Any) -> lazyrepeatarray:
         res = np.array(np.zeros_like(self.to_numpy(), *args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)

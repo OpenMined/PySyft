@@ -579,6 +579,69 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
 
         return result
 
+    def __getitem__(
+        self, key: Union[int, bool, slice, Ellipsis]
+    ) -> TensorWrappedPhiTensorPointer:
+        """Apply the slice  operation on "self"
+        Args:
+            y (Union[int,bool,slice,Ellipsis]) : second operand.
+
+        Returns:
+            Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.
+        """
+        attr_path_and_name = "syft.core.tensor.tensor.Tensor.__getitem__"
+        result: TensorWrappedPhiTensorPointer
+        min_vals = self.min_vals.__getitem__(key)
+        max_vals = self.max_vals.__getitem__(key)
+
+        result = TensorWrappedPhiTensorPointer(
+            data_subjects=self.data_subjects,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            client=self.client,
+        )
+
+        # QUESTION can the id_at_location be None?
+        result_id_at_location = getattr(result, "id_at_location", None)
+
+        if result_id_at_location is not None:
+            # first downcast anything primitive which is not already PyPrimitive
+            (
+                downcast_args,
+                downcast_kwargs,
+            ) = lib.python.util.downcast_args_and_kwargs(args=[key], kwargs={})
+
+            # then we convert anything which isnt a pointer into a pointer
+            pointer_args, pointer_kwargs = pointerize_args_and_kwargs(
+                args=downcast_args,
+                kwargs=downcast_kwargs,
+                client=self.client,
+                gc_enabled=False,
+            )
+
+            cmd = RunClassMethodAction(
+                path=attr_path_and_name,
+                _self=self,
+                args=pointer_args,
+                kwargs=pointer_kwargs,
+                id_at_location=result_id_at_location,
+                address=self.client.address,
+            )
+            self.client.send_immediate_msg_without_reply(msg=cmd)
+
+        inherit_tags(
+            attr_path_and_name=attr_path_and_name,
+            result=result,
+            self_obj=self,
+            args=[key],
+            kwargs={},
+        )
+        dummy_res = np.empty(self.public_shape).__getitem__(key)
+        result.public_shape = dummy_res.shape
+        result.public_dtype = self.public_dtype
+
+        return result
+
     def ones_like(
         self,
         *args: Tuple[Any, ...],
@@ -1209,14 +1272,16 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if self.shape == self.data_subjects.shape:
             output_ds = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(*shape)
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
+                    *shape
+                ),
             )
         else:
             output_ds = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
                 data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
                     self.data_subjects.shape[0], *shape[0]
-                )
+                ),
             )
 
         return PhiTensor(
@@ -1262,7 +1327,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         output_data_subjects = DataSubjectList(
             one_hot_lookup=self.data_subjects.one_hot_lookup,
-            data_subjects_indexed=self.data_subjects.data_subjects_indexed.ravel()
+            data_subjects_indexed=self.data_subjects.data_subjects_indexed.ravel(),
         )
 
         min_vals = lazyrepeatarray(data=self.min_vals.data, shape=output_data.shape)
@@ -1272,7 +1337,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             child=output_data,
             data_subjects=output_data_subjects,
             min_vals=min_vals,
-            max_vals=max_vals
+            max_vals=max_vals,
         )
 
     def random_horizontal_flip(self, p: float = 0.5) -> PhiTensor:
@@ -1538,7 +1603,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if (self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup).any():
+            if (
+                self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
+            ).any():
                 return self.gamma - other.gamma
                 # raise NotImplementedError
 
@@ -1673,7 +1740,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     max_vals = self.max_vals.__matmul__(other)
                     output_ds = DataSubjectList(
                         one_hot_lookup=self.data_subjects.one_hot_lookup,
-                        data_subjects_indexed=np.zeros_like(data)
+                        data_subjects_indexed=np.zeros_like(data),
                     )
                 elif isinstance(other, PhiTensor):
                     if self.data_subjects != other.data_subjects:
@@ -1801,13 +1868,17 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         if self.shape == self.data_subjects.shape:
             output_ds = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(*args)
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(
+                    *args
+                ),
             )
         else:
             args_input = (0, *[i + 1 for i in args[0]])
             output_ds = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
-                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(args_input)
+                data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(
+                    args_input
+                )
                 # data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
                 #     self.shape[0], *self.shape[1:][::-1]
                 # )
