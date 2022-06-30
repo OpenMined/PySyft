@@ -21,10 +21,14 @@ Papers or Publications
 Video Courses
 ~~~~~~~~~~~~~~~~~~~~~
 * `Our Privacy Opportunity by OpenMined <https://courses.openmined.org/courses/our-privacy-opportunity>`_
+    Privacy infrastructure is changing how information is managed in society. Learn how it creates both opportunity and disruption within nearly every corner of society and how one can join this next great wave of innovation.
 
 * `Foundations of Private Computation by OpenMined <https://courses.openmined.org/courses/foundations-of-private-computation>`_
+    Learn every major privacy-preserving technique to an intermediate level, understand how they work together, and how one can use them to safely study data owned by another organization without ever seeing the underlying data themselves.
 
 * `Introduction to Remote Data Science by OpenMined <https://courses.openmined.org/courses/introduction-to-remote-data-science>`_
+    Learn about the importance of Remote Data Science and how one can start using Remote Data Science in their projects.
+
 
 Articles or Blogs
 ~~~~~~~~~~~~~~~~~~~~~
@@ -45,8 +49,8 @@ Conference Talks or Videos
 
 * `Deep Learning with Differential Privacy by Mukul Rathi <https://www.youtube.com/watch?v=oNSelFJnPaM>`_
 
-Jupyter Notebooks
-~~~~~~~~~~~~~~~~~~~~~
+.. Jupyter Notebooks
+.. ~~~~~~~~~~~~~~~~~~~~~
 
 
 Reference Books
