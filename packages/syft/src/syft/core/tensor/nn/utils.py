@@ -138,7 +138,7 @@ def dp_zeros(
         raise NotImplementedError("Zero or negative data subject behaviour undefined.")
 
 
-def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="reflect", **kwargs):
+def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="constant", **kwargs):
 
     data = input.child
     output_data: Sequence = np.pad(data, width, mode=padding_mode, **kwargs)
@@ -146,7 +146,7 @@ def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="reflect", 
     max_v = lazyrepeatarray(data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape)
 
     output_dsi = np.pad(
-            input.data_subjects.data_subjects_indexed, pad_width=width, mode="reflect")
+            input.data_subjects.data_subjects_indexed, pad_width=width, mode=padding_mode)
 
     output_data_subjects=DataSubjectList(
         one_hot_lookup=input.data_subjects.one_hot_lookup,
@@ -231,16 +231,12 @@ def im2col_indices(x: PhiTensor, field_height: int, field_width: int, padding: i
         width = ((p, p), (p, p))
     else:
         raise NotImplementedError
-    print("Starting dp pad")
-    x_padded = dp_pad(x, width, padding_mode='reflect')
-    print("done dp_pad", x_padded.shape, type(x_padded.data_subjects.data_subjects_indexed))
+    x_padded = dp_pad(x, width, padding_mode='constant')
 
     k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
     cols = x_padded[:, k, i, j]
-    print("cols=x_padded[:, k, i, j] has DSI of type:", type(cols.data_subjects.data_subjects_indexed))
     C = x.shape[1]
     cols = cols.transpose((1, 2, 0)).reshape((field_height * field_width * C, -1))
-    print("after transpose and reshape", type(cols.data_subjects.data_subjects_indexed))
 
     # Not sure why this happens but sometimes this gets a shape of (n, -1)
     if cols.min_vals.shape != cols.shape:

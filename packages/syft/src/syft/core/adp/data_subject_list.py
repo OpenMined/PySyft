@@ -150,7 +150,8 @@ class DataSubjectList:
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, DataSubjectList):
             dsi_comparison = self.data_subjects_indexed == other.data_subjects_indexed
-            ohl_comparison = (self.one_hot_lookup == other.one_hot_lookup).all()
+            ohl_comparison = (self.one_hot_lookup == other.one_hot_lookup)
+            ohl_comparison = ohl_comparison if isinstance(ohl_comparison, bool) else ohl_comparison.all()
             if isinstance(dsi_comparison, bool):
                 if dsi_comparison is True and ohl_comparison is True:
                     return True

@@ -1605,13 +1605,17 @@ class GammaTensor:
             )
 
         return GammaTensor(
-            child=self.child.transpose(),
+            child=self.child.transpose(*args),
             data_subjects=output_ds,
             min_vals=self.min_vals.transpose(),
             max_vals=self.max_vals.transpose(),
             func=_transpose,
             state=output_state,
         )
+
+    @property
+    def T(self):
+        return self.transpose()
 
     def sum(self, *args: Tuple[Any, ...], **kwargs: Any) -> GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:

@@ -1603,9 +1603,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if (
-                self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
-            ).any():
+            is_one_hot_lookup_same = self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
+            is_one_hot_lookup_same = is_one_hot_lookup_same if isinstance(is_one_hot_lookup_same, bool) else is_one_hot_lookup_same.any()
+            if is_one_hot_lookup_same:
                 return self.gamma - other.gamma
                 # raise NotImplementedError
 

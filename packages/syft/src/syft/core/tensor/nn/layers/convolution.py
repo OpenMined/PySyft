@@ -110,7 +110,6 @@ class Convolution(Layer):
         out = out.transpose((3, 0, 1, 2))
 
         self.last_output = self.activation.forward(out) if self.activation is not None else out
-        print("Done with CONV forward pass")
         return out
 
     def backward(self, pre_grad: PhiTensor, *args: Tuple, **kwargs: Dict):
