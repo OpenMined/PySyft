@@ -1122,6 +1122,15 @@ class GammaTensor:
         if len(self.state) == 0 and self.func is not no_op:
             self.state[self.id] = self
 
+        if not isinstance(self.min_vals, lazyrepeatarray):
+            self.min_vals = lazyrepeatarray(data=self.min_vals, shape=self.shape)
+            self.max_vals = lazyrepeatarray(data=self.max_vals, shape=self.shape)
+
+        if isinstance(self.min_vals, lazyrepeatarray):
+            if self.min_vals.data.size != 1:
+                self.min_vals.data = self.min_vals.data.min()
+                self.max_vals.data = self.max_vals.data.max()
+
     def decode(self) -> np.ndarray:
         if isinstance(self.child, FixedPrecisionTensor):
             return self.child.decode()
@@ -1160,6 +1169,7 @@ class GammaTensor:
             child = self.child + other.child
             min_val = self.min_vals + other.min_vals
             max_val = self.max_vals + other.max_vals
+
         else:
 
             def _add(state: dict) -> jax.numpy.DeviceArray:
@@ -1168,6 +1178,7 @@ class GammaTensor:
             child = self.child + other
             min_val = self.min_vals + other
             max_val = self.max_vals + other
+            # output_ds = self.data_subjects
         # print("the state we returned is: ", output_state)
         return GammaTensor(
             child=child,
@@ -1607,8 +1618,8 @@ class GammaTensor:
         return GammaTensor(
             child=self.child.transpose(*args),
             data_subjects=output_ds,
-            min_vals=self.min_vals.transpose(),
-            max_vals=self.max_vals.transpose(),
+            min_vals=self.min_vals.transpose(*args),
+            max_vals=self.max_vals.transpose(*args),
             func=_transpose,
             state=output_state,
         )
