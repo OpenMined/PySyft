@@ -135,10 +135,18 @@ class BatchNorm(Layer):
         dx = dx1 + dx2
 
         return dx
+    
 
     @property
     def params(self):
         return self.beta, self.gamma
+
+    @params.setter
+    def params(self,new_params):
+        assert (
+            len(new_params) == 2
+        ), f"Expected Two values Update Params has length{len(new_params)}"
+        self.beta, self.gamma = new_params
 
     @property
     def grades(self):

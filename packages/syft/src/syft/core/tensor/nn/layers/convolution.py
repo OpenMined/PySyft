@@ -94,28 +94,45 @@ class Convolution(Layer):
         self.W = self.init((self.nb_filter, pre_nb_filter, filter_height, filter_width))
         self.b = np.zeros((self.nb_filter,))
 
+    
+
     def forward(self, input: PhiTensor, *args: Tuple, **kwargs: Dict):
         self.last_input = input
 
         n_filters, d_filter, h_filter, w_filter = self.W.shape
         n_x, d_x, h_x, w_x = input.shape
 
-        _, _, h_out, w_out, = self.out_shape
+        (
+            _,
+            _,
+            h_out,
+            w_out,
+        ) = self.out_shape
 
-        self.X_col = im2col_indices(input, h_filter, w_filter, padding=self.padding, stride=self.stride)
+        self.X_col = im2col_indices(
+            input, h_filter, w_filter, padding=self.padding, stride=self.stride
+        )
 
         W_col = self.W.reshape((n_filters, -1))
-        out = self.X_col.T @ W_col.T + self.b  # Transpose is required here because W_col is numpy array
+        out = (
+            self.X_col.T @ W_col.T + self.b
+        )  # Transpose is required here because W_col is numpy array
         out = out.reshape((n_filters, h_out, w_out, n_x))
         out = out.transpose((3, 0, 1, 2))
 
-        self.last_output = self.activation.forward(out) if self.activation is not None else out
+        self.last_output = (
+            self.activation.forward(out) if self.activation is not None else out
+        )
         return out
 
     def backward(self, pre_grad: PhiTensor, *args: Tuple, **kwargs: Dict):
         n_filter, d_filter, h_filter, w_filter = self.W.shape
 
-        pre_grads = (pre_grad * self.activation.derivative(pre_grad)) if self.activation is not None else pre_grad
+        pre_grads = (
+            (pre_grad * self.activation.derivative(pre_grad))
+            if self.activation is not None
+            else pre_grad
+        )
         db = pre_grads.sum(axis=(0, 2, 3))
         self.db = db.reshape((n_filter, -1))
 
@@ -126,12 +143,26 @@ class Convolution(Layer):
 
         W_reshape = self.W.reshape(n_filter, -1)
         dX_col = pre_grads_reshaped.T @ W_reshape
-        dX = col2im_indices(dX_col, self.input_shape, h_filter, w_filter, padding=self.padding, stride=self.stride)
+        dX = col2im_indices(
+            dX_col,
+            self.input_shape,
+            h_filter,
+            w_filter,
+            padding=self.padding,
+            stride=self.stride,
+        )
         return dX
 
     @property
     def params(self):
         return self.W, self.b
+
+    @params.setter
+    def params(self, new_params):
+        assert (
+            len(new_params) == 2
+        ), f"Expected Two values Update Params has length{len(new_params)}"
+        self.W, self.b = new_params
 
     @property
     def grads(self):

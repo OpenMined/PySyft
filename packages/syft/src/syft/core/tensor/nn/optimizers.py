@@ -74,7 +74,15 @@ class Adamax(Optimizer):
         "iterations",
     )
 
-    def __init__(self, learning_rate: float = 0.001, beta1=0.9, beta2=0.999, epsilon=1e-8, *args, **kwargs):
+    def __init__(
+        self,
+        learning_rate: float = 0.001,
+        beta1=0.9,
+        beta2=0.999,
+        epsilon=1e-8,
+        *args,
+        **kwargs
+    ):
         super(Adamax, self).__init__(*args, **kwargs)
 
         self.beta1 = beta1
@@ -84,23 +92,36 @@ class Adamax(Optimizer):
         self.ms = None
         self.vs = None
 
-    def update(self, params, grads, layers_with_params):
+    def update(self, layers):
 
         # init
         self.iterations += 1
         a_t = self.lr / (1 - np.power(self.beta1, self.iterations))
+
+        params = []
+        grads = []
+        for layer in layers:
+            params += layer.params
+            grads += layer.grads
+
         if self.ms is None:
             self.ms = [np.zeros(p.shape) for p in params]
         if self.vs is None:
             self.vs = [np.zeros(p.shape) for p in params]
 
-        # update parameters
-        for i, (m, v, p, g, layer) in enumerate(zip(self.ms, self.vs, params, grads, layers_with_params)):
-            m =  g * (1 - self.beta1) + m * self.beta1
-            v = dp_maximum(g.abs(), v * self.beta2)
-            # layer.params[0].shape == p.shape
-            # layer.params[1].shape == p.shape
-            p = (m * (-1.0 / (v + self.epsilon)) * a_t) + p
+        idx = 0
+        for layer in layers:
+            new_params = []
+            for p, g in zip(layer.params, layer.grads):
+                m = self.ms[idx]
+                v = self.vs[idx]
+                m = g * (1 - self.beta1) + m * self.beta1
+                v = dp_maximum(g.abs(), v * self.beta2)
+                p = (m * (-1.0 / (v + self.epsilon)) * a_t) + p
+                new_params.append(p)
 
-            self.ms[i] = m
-            self.vs[i] = v
+                self.ms[idx] = m
+                self.vs[idx] = v
+                idx += 1
+            if new_params:
+                layer.params = new_params
