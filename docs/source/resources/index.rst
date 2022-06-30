@@ -8,10 +8,15 @@ Resources
 This is a collection of resources in various multimedia and text formats to help you with different topics related to PySyft.
 
 .. note::
-  If you have seen an article/video/talk that has helped you but is not listed here, feel free to open a Pull Request to add the same.
+  If you have seen an article/video/talk that has helped you but is not listed here, feel free to open a Pull Request `here <https://github.com/OpenMined/PySyft>`_ to add the same.
 
-Papers
+Papers or Publications
 ~~~~~~~~~~~~~~~~~~~~~
+* `Syft 0.5: A Platform for Universally Deployable Structured Transparency <https://arxiv.org/abs/2104.12385>`_
+
+* `PySyft: A Library for Easy Federated Learning <https://link.springer.com/chapter/10.1007/978-3-030-70604-3_5>`_
+
+* `A generic framework for privacy preserving deep learning <https://arxiv.org/abs/1811.04017>`_
 
 Video Courses
 ~~~~~~~~~~~~~~~~~~~~~
