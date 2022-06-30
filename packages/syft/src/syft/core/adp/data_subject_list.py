@@ -149,11 +149,18 @@ class DataSubjectList:
 
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, DataSubjectList):
-            if (self.data_subjects_indexed == other.data_subjects_indexed).all() and (  # type: ignore
-                self.one_hot_lookup == other.one_hot_lookup
-            ).all():
-                return True
-            return False
+            dsi_comparison = self.data_subjects_indexed == other.data_subjects_indexed
+            ohl_comparison = (self.one_hot_lookup == other.one_hot_lookup).all()
+            if isinstance(dsi_comparison, bool):
+                if dsi_comparison is True and ohl_comparison is True:
+                    return True
+                else:
+                    return False
+            elif isinstance(dsi_comparison, np.ndarray):
+                if dsi_comparison.all() is True and ohl_comparison is True:
+                    return True
+                else:
+                    return False
         return self == other
 
     def sum(self) -> DataSubjectList:

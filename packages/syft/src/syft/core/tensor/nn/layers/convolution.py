@@ -105,8 +105,7 @@ class Convolution(Layer):
         self.X_col = im2col_indices(input, h_filter, w_filter, padding=self.padding, stride=self.stride)
 
         W_col = self.W.reshape((n_filters, -1))
-
-        out = self.X_col.T @ W_col.T + self.b # Transpose is required here because W_col is numpy array
+        out = self.X_col.T @ W_col.T + self.b  # Transpose is required here because W_col is numpy array
         out = out.reshape((n_filters, h_out, w_out, n_x))
         out = out.transpose((3, 0, 1, 2))
 

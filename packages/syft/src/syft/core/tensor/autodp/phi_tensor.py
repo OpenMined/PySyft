@@ -1538,12 +1538,11 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            if self.data_subjects != other.data_subjects:
-                # return self.gamma - other.gamma
-                raise NotImplementedError
+            if (self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup).any():
+                return self.gamma - other.gamma
+                # raise NotImplementedError
 
             data = self.child - other.child
-
             min_min = self.min_vals.data - other.min_vals.data
             min_max = self.min_vals.data - other.max_vals.data
             max_min = self.max_vals.data - other.min_vals.data
@@ -1583,7 +1582,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         if isinstance(other, PhiTensor):
             if self.data_subjects != other.data_subjects:
-                print("Entities are not the same?!?!?!")
                 return self.gamma * other.gamma
 
             data = self.child * other.child
@@ -1673,24 +1671,18 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     data = self.child.__matmul__(other)
                     min_vals = self.min_vals.__matmul__(other)
                     max_vals = self.max_vals.__matmul__(other)
+                    output_ds = DataSubjectList(
+                        one_hot_lookup=self.data_subjects.one_hot_lookup,
+                        data_subjects_indexed=np.zeros_like(data)
+                    )
                 elif isinstance(other, PhiTensor):
                     if self.data_subjects != other.data_subjects:
-                        # return convert_to_gamma_tensor(self).__matmul__(convert_to_gamma_tensor(other))
-                        raise NotImplementedError
+                        return self.gamma @ other.gamma
                     else:
                         data = self.child.__matmul__(other.child)
-                        # _min_vals = np.array(
-                        #     [self.min_vals.data.__matmul__(other.min_vals.data)]
-                        # )
-                        # _max_vals = np.array(
-                        #     [self.max_vals.data.__matmul__(other.max_vals.data)]
-                        # )
-                        # min_vals = self.min_vals.copy()
-                        # min_vals.data = _min_vals
-                        # max_vals = self.max_vals.copy()
-                        # max_vals.data = _max_vals
                         min_vals = self.min_vals.__matmul__(other.min_vals)
                         max_vals = self.max_vals.__matmul__(other.max_vals)
+                        output_ds = self.data_subjects
 
                 elif isinstance(other, GammaTensor):
                     return self.gamma @ other
@@ -1702,7 +1694,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     child=data,
                     max_vals=max_vals,
                     min_vals=min_vals,
-                    data_subjects=self.data_subjects,
+                    data_subjects=output_ds,
                 )
 
     def __rmatmul__(
@@ -1812,10 +1804,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose()
             )
         else:
+            print(self.shape)
+            print(self.shape[0], self.shape[1:][::-1])
             output_ds = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
                 data_subjects_indexed=self.data_subjects.data_subjects_indexed.reshape(
-                    self.shape[0], self.shape[1:][::-1]
+                    self.shape[0], *self.shape[1:][::-1]
                 )
             )
 

@@ -138,18 +138,19 @@ def dp_zeros(
         raise NotImplementedError("Zero or negative data subject behaviour undefined.")
 
 
-def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="constant", **kwargs):
+def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="reflect", **kwargs):
 
     data = input.child
     output_data: Sequence = np.pad(data, width, mode=padding_mode, **kwargs)
     min_v = lazyrepeatarray(data=min(input.min_vals.data.min(), output_data.min()), shape=output_data.shape)
     max_v = lazyrepeatarray(data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape)
 
+    output_dsi = np.pad(
+            input.data_subjects.data_subjects_indexed, pad_width=width, mode="reflect")
 
-    # TODO: Verify if this is correct implementation
     output_data_subjects=DataSubjectList(
         one_hot_lookup=input.data_subjects.one_hot_lookup,
-        data_subjects_indexed=np.zeros_like(output_data)
+        data_subjects_indexed=output_dsi
     )
 
     if isinstance(input, PhiTensor):
@@ -227,13 +228,13 @@ def im2col_indices(x: PhiTensor, field_height: int, field_width: int, padding: i
     if len(x.shape) == 4:
         width = ((0, 0), (0, 0), (p, p), (p, p))
     elif len(x.shape) == 3:
-        width  = ((0, 0), (p, p), (p, p))
+        width = ((0, 0), (p, p), (p, p))
     elif len(x.shape) == 2:
-        width  = ((p, p), (p, p))
+        width = ((p, p), (p, p))
     else:
         raise NotImplementedError
 
-    x_padded = dp_pad(x, width, padding_mode='constant')
+    x_padded = dp_pad(x, width, padding_mode='reflect')
 
     k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
 
