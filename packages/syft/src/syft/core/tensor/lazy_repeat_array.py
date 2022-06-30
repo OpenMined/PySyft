@@ -66,6 +66,7 @@ class lazyrepeatarray:
             output = self.data[item]
             return lazyrepeatarray(data=output, shape=output.shape)
         elif self.data.size == 1:
+            print(self.shape, item)
             test_arr = np.ones(self.shape)[
                 item
             ]  # TODO: Is there a better way to determine output shape?

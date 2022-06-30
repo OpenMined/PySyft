@@ -193,23 +193,14 @@ def get_im2col_indices(x_shape: Tuple, field_height: int, field_width: int, padd
     out_height = int((H + 2 * padding - field_height) / stride + 1)
     out_width = int((W + 2 * padding - field_width) / stride + 1)
 
-    print("Got out_h, out_w")
-
     i0 = np.repeat(np.arange(field_height), field_width)
-    print("Done repeat")
     i0 = np.tile(i0, C)
-    print("done tile")
     i1 = stride * np.repeat(np.arange(out_height), out_width)
-    print("done stride * repeat")
     j0 = np.tile(np.arange(field_width), field_height * C)
-    print("done tile")
     j1 = stride * np.tile(np.arange(out_width), out_height)
-    print("done stride * tile")
     i = i0.reshape(-1, 1) + i1.reshape(1, -1)
     j = j0.reshape(-1, 1) + j1.reshape(1, -1)
-    print("done reshape + reshape")
     k = np.repeat(np.arange(C), field_height * field_width).reshape(-1, 1)
-    print("got k")
     return (k.astype(int), i.astype(int), j.astype(int))
 
 
@@ -242,13 +233,17 @@ def im2col_indices(x: PhiTensor, field_height: int, field_width: int, padding: i
         raise NotImplementedError
     print("Starting dp pad")
     x_padded = dp_pad(x, width, padding_mode='reflect')
-    print("done dp_pad", x_padded.shape)
+    print("done dp_pad", x_padded.shape, type(x_padded.data_subjects.data_subjects_indexed))
 
     k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
-    print("done get_im2col")
     cols = x_padded[:, k, i, j]
-    print("got cols")
+    print("cols=x_padded[:, k, i, j] has DSI of type:", type(cols.data_subjects.data_subjects_indexed))
     C = x.shape[1]
     cols = cols.transpose((1, 2, 0)).reshape((field_height * field_width * C, -1))
-    print("transposed!")
+    print("after transpose and reshape", type(cols.data_subjects.data_subjects_indexed))
+
+    # Not sure why this happens but sometimes this gets a shape of (n, -1)
+    if cols.min_vals.shape != cols.shape:
+        cols.min_vals.shape = cols.shape
+        cols.max_vals.shape = cols.shape
     return cols

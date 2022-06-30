@@ -152,14 +152,17 @@ class MaxPool(Layer):
         input_reshaped = input.reshape((n * d, 1, h, w))
         print("Starting im2col")
         self.X_col = im2col_indices(input_reshaped, pool_h, pool_w, padding=0, stride=self.stride)
+        print(type(self.X_col.data_subjects.data_subjects_indexed))
         print("FInished im2col, starting _argmax")
         self.max_idx = self.X_col._argmax(axis=0)
-        print("Finished argmax, getting outputs")
         outputs = self.X_col[self.max_idx, range(self.max_idx.size)]
+        print(type(outputs.data_subjects.data_subjects_indexed))
         print("Got outputs, reshaping now")
         outputs = outputs.reshape((h_out, w_out, n, d))
+        print(type(outputs.data_subjects.data_subjects_indexed))
         print("Reshaped outputs, transposing now")
         outputs = outputs.transpose((2, 3, 0, 1))
+        print(type(outputs.data_subjects.data_subjects_indexed))
         print("Done with MaxPool forward pass")
         return outputs
 
