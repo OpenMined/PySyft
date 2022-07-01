@@ -234,22 +234,29 @@ class DataSubjectList:
 
         dsl1_target_shape = (*dsl1.shape[1:-1], 1, 1)
         dsl2_target_shape = (1, 1, *dsl2.shape[1:-2], dsl2.shape[-1])
+        print("target shapes: ", dsl1_target_shape, dsl2_target_shape)
 
         summed_dsl1 = dsl1.sum(target_shape=dsl1_target_shape)
         summed_dsl2 = dsl2.sum(target_shape=dsl2_target_shape)
+        print("summed shapes: ", summed_dsl1.shape, summed_dsl2.shape)
 
         # We need to project these data subject arrays to their entire row/column respectively
         dsl1_projection = np.ones((*summed_dsl1.shape[:-2], *summed_dsl2.shape[-2:]))
         dsl2_projection = np.ones(
             (summed_dsl2.shape[0], *summed_dsl1.shape[1:-2], *summed_dsl2.shape[-2:]))
 
+        print("Projection shapes:", dsl1_projection.shape , dsl2_projection.shape)
         summed_dsl1.data_subjects_indexed = dsl1_projection * summed_dsl1.data_subjects_indexed
         summed_dsl2.data_subjects_indexed = dsl2_projection * summed_dsl2.data_subjects_indexed
 
+        print("summed shapes: ", summed_dsl1.shape, summed_dsl2.shape)
         output_ds = DataSubjectList.combine_dsi(summed_dsl1, summed_dsl2)
 
+        print("output shape:", output_ds.shape)
+
         # This gets rid of redundant (repeating) DSL slices.
-        output_ds.data_subjects_indexed = np.unique(output_ds.data_subjects_indexed, axis=0)
+        output_ds.data_subjects_indexed = np.unique(output_ds.data_subjects_indexed, axis=0).squeeze()
+        print("output shape after unique:", output_ds.shape)
         return output_ds
 
     @staticmethod

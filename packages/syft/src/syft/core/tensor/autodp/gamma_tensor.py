@@ -1922,7 +1922,7 @@ class GammaTensor:
             output_state[self.id] = self
             output_state[other.id] = other
 
-            output_ds = DataSubjectList.combine_dsi(self.data_subjects, other.data_subjects)
+            output_ds = DataSubjectList.dot(self.data_subjects, other.data_subjects)
 
             def _dot(state: dict):
                 return jnp.dot(self.run(state))
