@@ -1640,6 +1640,34 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         return res
 
+    def mean(
+        self,
+        *args: Tuple[Any, ...],
+        **kwargs: Any,
+    ) -> Union[PhiTensor, GammaTensor]:
+        # TODO: Add support for axes arguments later
+        min_val = self.min_vals.mean(*args, **kwargs)
+        max_val = self.max_vals.mean(*args, **kwargs)
+        if len(self.data_subjects.one_hot_lookup) == 1:
+            return PhiTensor(
+                child=self.child.mean(*args, **kwargs),
+                min_vals=min_val,
+                max_vals=max_val,
+                data_subjects=DataSubjectList.from_objs(
+                    self.data_subjects.one_hot_lookup[0]
+                ),  # Need to check this
+            )
+
+        # TODO: Expand this later to include more args/kwargs
+        res = GammaTensor(
+            child=self.child.mean(*args, **kwargs),
+            data_subjects=self.data_subjects.mean(),
+            min_val=min_val,
+            max_val=max_val,
+        )
+
+        return res
+
     def ones_like(
         self,
         *args: Tuple[Any, ...],
