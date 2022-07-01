@@ -332,6 +332,33 @@ def test_sum(
     assert zeros_tensor.sum().child == 0
 
 
+@pytest.mark.parametrize("kwargs", [{"axis": (1)}])
+def test_mean(
+    reference_data: np.ndarray,
+    upper_bound: np.ndarray,
+    lower_bound: np.ndarray,
+    ishan: DataSubject,
+    kwargs: Dict,
+) -> None:
+    zeros_tensor = PT(
+        child=reference_data * 0,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+    tensor = PT(
+        child=reference_data,
+        data_subjects=ishan,
+        max_vals=upper_bound,
+        min_vals=lower_bound,
+    )
+
+    tensor_mean = tensor.mean(**kwargs)
+
+    assert (tensor_mean.child == reference_data.mean(**kwargs)).all()
+    assert zeros_tensor.mean().child == 0
+
+
 def test_ne_vals(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
