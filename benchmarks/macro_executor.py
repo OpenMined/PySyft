@@ -64,7 +64,7 @@ def download_spicy_bird_benchmark(
     return dict(zip(sizes, paths)), sizes
 
 
-key_size = "1B"
+key_size = "1M"
 files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
 
 
@@ -103,21 +103,20 @@ domain_node = sy.login(email="info@openmined.org", password="changethis", port=9
 content = {"user_id": 1, "budget": 9_999_999}
 domain_node._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
 
-dataset_name = "1B Tweets dataset"
+dataset_name = "1M Tweets dataset"
 
 t0 = time()
 
 domain_node.load_dataset(
-    assets={"1B Tweets dataset": tweets_data},
+    assets={"1M Tweets dataset": tweets_data},
     name=dataset_name,
-    description=" Tweets- 1B rows",
-    use_blob_storage=True,
+    description=" Tweets- 1M rows",
 )
 tf = round(time() - t0, 3)
 print(f"Time taken to load {dataset_name} dataset: {tf} seconds")
 benchmark_report["load_dataset"] = tf
 
-data = domain_node.datasets[-1]["1B Tweets dataset"]
+data = domain_node.datasets[-1]["1M Tweets dataset"]
 
 print(data)
 

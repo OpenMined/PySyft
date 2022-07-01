@@ -6,52 +6,64 @@ services:
       - net_admin
       - net_raw
 
-  tailscale:
-    hostname: ${DOMAIN_NAME?Variable not set}
-    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
-    environment:
-      - SERVICE_NAME=tailscale
-      - RELEASE=${RELEASE:-production}
-      - HOSTNAME=${DOMAIN_NAME?Variable not set}
-      - STACK_API_KEY=$STACK_API_KEY
-      - HTTP_PORT=${HTTP_PORT}
-      - HTTPS_PORT=${HTTPS_PORT}
-    volumes:
-      - tailscale-data:/var/lib/tailscale
-      - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
-    cap_add: # Required for tailscale to work
-      - net_admin
-      - sys_module
-    ports:
-      - "${HTTP_PORT}:81"
-      - "41641/udp"
-      - "4000"
-    depends_on:
-      - "docker-host"
-
   proxy:
     restart: always
+    hostname: ${DOMAIN_NAME?Variable not set}
     image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
-    network_mode: service:tailscale
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
       - SERVICE_NAME=proxy
       - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
     command:
       - "--providers.docker"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
       - "--entrypoints.web.address=:81"
       - "--entrypoints.vpn.address=:80"
-
       # Enable the access log, with HTTP requests
       - "--accesslog"
       # Enable the Traefik log, for configurations and errors
       - "--log"
+      - "--ping=true"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
+      - "traefik.http.routers.ping.rule=PathPrefix(`/ping`)"
+      - "traefik.http.services.ping.loadbalancer.server.port=80"
+      - "traefik.http.routers.ping.service=ping@internal"
+    ports:
+      - "${HTTP_PORT}:81"
+    depends_on:
+      - "docker-host"
+
+  tailscale:
+    profiles:
+      - vpn
+    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
+    environment:
+      - SERVICE_NAME=tailscale
+      - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - STACK_API_KEY=$STACK_API_KEY
+    volumes:
+      - tailscale-data:/var/lib/tailscale
+      - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
+    cap_add: # Required for tailscale to work
+      - net_admin
+      - sys_module
+    # ports:
+    #   - "41641/udp"
+    #   - "4000"
+    depends_on:
+      - "proxy"
+    network_mode: service:proxy
 
   frontend:
     restart: always

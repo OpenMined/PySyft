@@ -22,10 +22,7 @@ class SetupConfig(Base):
     daa_document = Column(Integer, ForeignKey("daa_pdf.id"))
     tags = Column(String(255), default="[]")
     deployed_on = Column(DateTime())
+    signing_key = Column(String(2048))
 
     def __str__(self) -> str:
         return f"<Domain Name: {self.domain_name}>"
-
-
-def create_setup(id: int, domain_name: str, node_id: str) -> SetupConfig:
-    return SetupConfig(id=id, domain_name=domain_name, node_id=node_id)

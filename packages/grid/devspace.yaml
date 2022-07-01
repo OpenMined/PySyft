@@ -25,7 +25,7 @@ vars:
     value: tailscale
   - name: SERVICE_NAME_REDIS
     value: redis
-  - name: SERVICE_NAME_TRAEFIK
+  - name: SERVICE_NAME_PROXY
     value: proxy
   - name: SERVICE_NAME_SEAWEEDFS
     value: seaweedfs
@@ -85,6 +85,8 @@ vars:
     value: traefik-domain.yaml
   - name: NETWORK_CHECK_INTERVAL
     value: "60"
+  - name: TEST_MODE
+    value: "0"
 
 images:
   backend:
@@ -93,7 +95,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.16"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -105,7 +107,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.16"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -124,7 +126,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.16"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -136,7 +138,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.16"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -148,7 +150,7 @@ images:
     tags:
       - "######"
       - latest
-      - "0.7.0-beta.15"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -184,7 +186,7 @@ deployments:
   #       - k8s/manifests/vpn-iptables
 
   # containers
-  - name: tailscale
+  - name: proxy
     helm:
       componentChart: true
       values:
@@ -196,7 +198,7 @@ deployments:
                   name: traefik-conf
             env:
               - name: SERVICE_NAME
-                value: ${SERVICE_NAME_TRAEFIK}
+                value: ${SERVICE_NAME_PROXY}
           - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
             securityContext:
               capabilities:
@@ -220,7 +222,7 @@ deployments:
             configMap:
               name: traefik-main-config
         service:
-          name: ${SERVICE_NAME_TAILSCALE}
+          name: ${SERVICE_NAME_PROXY}
           ports:
             - name: proxy
               port: 80
@@ -430,6 +432,8 @@ deployments:
                 value: ${RELEASE}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
         service:
           name: ${SERVICE_NAME_BACKEND}
           ports:
@@ -526,6 +530,8 @@ deployments:
                 value: ${RELEASE}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
         service:
           name: ${SERVICE_NAME_BACKEND_STREAM}
           ports:
@@ -610,6 +616,8 @@ deployments:
                 value: $!{NETWORK_CHECK_INTERVAL}
               - name: USE_BLOB_STORAGE
                 value: ${USE_BLOB_STORAGE}
+              - name: TEST_MODE
+                value: $!{TEST_MODE}
 
   - name: frontend
     helm:

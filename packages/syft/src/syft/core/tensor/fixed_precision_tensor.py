@@ -82,6 +82,14 @@ class FixedPrecisionTensor(PassthroughTensor):
         """
         return self._scale
 
+    @property
+    def dtype(self) -> np.dtype:
+        return getattr(self.child, "dtype", None)
+
+    @property
+    def shape(self) -> Optional[Tuple[int, ...]]:
+        return getattr(self.child, "shape", None)
+
     def decode(self) -> Any:
         # relative
         from .smpc.share_tensor import ShareTensor
@@ -89,7 +97,8 @@ class FixedPrecisionTensor(PassthroughTensor):
         value = self.child.child if isinstance(self.child, ShareTensor) else self.child
 
         correction = (value < 0).astype(DEFAULT_INT_NUMPY_TYPE)
-        dividend = value // self._scale - correction
+
+        dividend = np.trunc(value / self._scale - correction)
         remainder = value % self._scale
         remainder += (
             (remainder == 0).astype(DEFAULT_INT_NUMPY_TYPE) * self._scale * correction
@@ -165,6 +174,20 @@ class FixedPrecisionTensor(PassthroughTensor):
 
         return res
 
+    def __rmatmul__(self, other: Any) -> FixedPrecisionTensor:
+        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
+        if isinstance(other, np.ndarray) and other.dtype == np.dtype("bool"):
+            raise ValueError("Should not get  a boolan array to matmul")
+        else:
+            other = self.sanity_check(other)
+            context.FPT_CONTEXT["seed_id_locations"] = context.SMPC_CONTEXT.get(
+                "seed_id_locations", None
+            )
+            res.child = self.child.__rmatmul__(other.child)
+            res = res / self.scale
+
+        return res
+
     def __truediv__(
         self, other: Union[int, np.integer, FixedPrecisionTensor]
     ) -> FixedPrecisionTensor:
@@ -172,9 +195,10 @@ class FixedPrecisionTensor(PassthroughTensor):
             raise ValueError("We do not support Private Division yet.")
 
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        res.child = self.child / other
-        if isinstance(res.child, np.ndarray):
-            res.child = res.child.astype(DEFAULT_INT_NUMPY_TYPE)
+        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+            res.child = np.trunc(self.child / other).astype(DEFAULT_INT_NUMPY_TYPE)
+        else:
+            res.child = self.child / other
         return res
 
     def transpose(
@@ -188,22 +212,19 @@ class FixedPrecisionTensor(PassthroughTensor):
     def T(self) -> FixedPrecisionTensor:
         return self.transpose()
 
-    # TODO: Remove after moving private compare to sharetensor level
+    # For comparison , we could skip conversion to FPT , as operation holds without encoding.
     def __lt__(self, other: Any) -> FixedPrecisionTensor:
-        res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        if isinstance(other, FixedPrecisionTensor):
-            res.child = (self.child < other.child) * 1
-        else:
-            res.child = (self.child < other) * 1
+        other = self.sanity_check(other)
+        value = (self.child < other.child) * 1
+
+        res = FixedPrecisionTensor(
+            value=value, base=self._base, precision=self._precision
+        )
         return res
 
     def __gt__(self, other: Any) -> FixedPrecisionTensor:
-
-        if isinstance(other, FixedPrecisionTensor):
-            value = (self.child > other.child) * 1
-        else:
-            value = (self.child > other) * 1
-
+        other = self.sanity_check(other)
+        value = (self.child > other.child) * 1
         res = FixedPrecisionTensor(
             value=value, base=self._base, precision=self._precision
         )
@@ -232,7 +253,10 @@ class FixedPrecisionTensor(PassthroughTensor):
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None
     ) -> FixedPrecisionTensor:
         res = FixedPrecisionTensor(base=self._base, precision=self._precision)
-        res.child = self.child.sum(axis=axis)
+        if isinstance(self.child, np.ndarray):
+            res.child = np.array(self.child.sum(axis=axis))
+        else:
+            res.child = self.child.sum(axis=axis)
         return res
 
     def _object2bytes(self) -> bytes:
@@ -244,8 +268,10 @@ class FixedPrecisionTensor(PassthroughTensor):
         fpt_msg.magicHeader = serde_magic_header(type(self))
 
         # child of FPT tensor could either be ShareTensor or np.ndarray
-        if isinstance(self.child, np.ndarray):
-            chunk_bytes(capnp_serialize(self.child, to_bytes=True), "child", fpt_msg)
+        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+            chunk_bytes(
+                capnp_serialize(np.array(self.child), to_bytes=True), "child", fpt_msg
+            )
             fpt_msg.isNumpy = True
         else:
             chunk_bytes(serialize(self.child, to_bytes=True), "child", fpt_msg)  # type: ignore
@@ -281,4 +307,29 @@ class FixedPrecisionTensor(PassthroughTensor):
 
         res = FixedPrecisionTensor(base=base, precision=precision)
         res.child = child
+        return res
+
+    def __getitem__(
+        self, item: Union[str, int, slice, PassthroughTensor]
+    ) -> FixedPrecisionTensor:
+        res = FixedPrecisionTensor(base=self.base, precision=self.precision)
+        if isinstance(item, PassthroughTensor):
+            res.child = self.child.getitem(item.child)
+        else:
+            res.child = self.child.getitem(item)
+
+        return res
+
+    def one_hot(self) -> FixedPrecisionTensor:
+        if not isinstance(self.child, np.ndarray):
+            raise ValueError("One hot work only for numpy array child type")
+
+        value = self.decode().astype(DEFAULT_INT_NUMPY_TYPE)
+        one_hot_Y = np.zeros((value.size, value.max() + 1))
+        one_hot_Y[np.arange(value.size), value] = 1
+        one_hot_Y = one_hot_Y.T
+
+        res = FixedPrecisionTensor(
+            value=one_hot_Y, base=self.base, precision=self.precision
+        )
         return res

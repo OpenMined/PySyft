@@ -16,3 +16,6 @@ class NodeRoute(Base):
     node_id = Column(Integer, ForeignKey("node.id"))
     host_or_ip = Column(String(255))
     is_vpn = Column(Boolean(), default=False)
+    private = Column(Boolean(), default=False)
+    protocol = Column(String(255), default="http")
+    port = Column(Integer(), default=80)

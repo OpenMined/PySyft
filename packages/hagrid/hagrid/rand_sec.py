@@ -2,6 +2,7 @@
 from os import urandom
 import string
 import sys
+from typing import List
 from typing import Set
 
 
@@ -33,7 +34,7 @@ def generate_sec_random_password(
         )
 
     choices: str = ""
-    required_tokens: list[str] = []
+    required_tokens: List[str] = []
     if special_chars:
         special_characters = "!@#$%^&*()_+"
         choices += special_characters

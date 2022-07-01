@@ -14,6 +14,7 @@ message CreateInitialSetUpMessage {
   string domain_name = 6;
   double budget = 7;
   syft.core.io.Address reply_to = 8;
+  bytes signing_key = 9;
 }
 
 message GetSetUpMessage {

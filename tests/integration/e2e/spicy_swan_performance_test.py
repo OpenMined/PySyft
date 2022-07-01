@@ -73,7 +73,6 @@ def upload_subset(
         assets={f"{size_name}_tweets": tweets_data},
         name=name,
         description=f"{name} - {datetime.now()}",
-        use_blob_storage=True,
     )
 
     return tweets_data_size_mb, tweets_data.shape
