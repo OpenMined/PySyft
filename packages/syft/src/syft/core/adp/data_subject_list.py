@@ -220,6 +220,38 @@ class DataSubjectList:
         output_ds.data_subjects_indexed = np.unique(output_ds.data_subjects_indexed, axis=0)
         return output_ds
 
+    def dot(dsl1: DataSubjectList, dsl2: DataSubjectList):
+        """
+        a/b:
+        0D/0D -> multiplication
+        1D/1D -> multiplication
+        1D/other -> sum product over last axis
+        2D/2D -> matmul
+        higher -> sum product over axis=-1 of a, axis=-2 of b
+
+        dot(a, b)[i,j,k,m] = sum(a[i,j,:] * b[k,:,m])
+        """
+
+        dsl1_target_shape = (*dsl1.shape[1:-1], 1, 1)
+        dsl2_target_shape = (1, 1, *dsl2.shape[1:-2], dsl2.shape[-1])
+
+        summed_dsl1 = dsl1.sum(target_shape=dsl1_target_shape)
+        summed_dsl2 = dsl2.sum(target_shape=dsl2_target_shape)
+
+        # We need to project these data subject arrays to their entire row/column respectively
+        dsl1_projection = np.ones((*summed_dsl1.shape[:-2], *summed_dsl2.shape[-2:]))
+        dsl2_projection = np.ones(
+            (summed_dsl2.shape[0], *summed_dsl1.shape[1:-2], *summed_dsl2.shape[-2:]))
+
+        summed_dsl1.data_subjects_indexed = dsl1_projection * summed_dsl1.data_subjects_indexed
+        summed_dsl2.data_subjects_indexed = dsl2_projection * summed_dsl2.data_subjects_indexed
+
+        output_ds = DataSubjectList.combine_dsi(summed_dsl1, summed_dsl2)
+
+        # This gets rid of redundant (repeating) DSL slices.
+        output_ds.data_subjects_indexed = np.unique(output_ds.data_subjects_indexed, axis=0)
+        return output_ds
+
     @staticmethod
     def index_dsl(tensor: Any, index):
         if tensor.shape == tensor.data_subjects.shape:
