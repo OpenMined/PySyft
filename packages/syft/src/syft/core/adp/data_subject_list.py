@@ -173,14 +173,6 @@ class DataSubjectList:
             self.data_subjects_indexed.reshape((-1, *target_shape)),
         )
 
-    def matmul_sum(self, axis: int = None) -> DataSubjectList:
-        slice = self.data_subjects_indexed.take()
-
-        return DataSubjectList(
-            self.one_hot_lookup.copy(),
-            self.data_subjects_indexed.reshape((-1, *target_shape)),
-        )
-
     def flatten(self) -> DataSubjectList:
         return DataSubjectList(
             one_hot_lookup=self.one_hot_lookup.copy(),
@@ -207,24 +199,20 @@ class DataSubjectList:
         broadcasting was easier for DSL.
         """
 
-        dsl1_len = len(dsl1.shape)  # Assumption: dsl1_len == dsl2_len
-        if dsl1_len == 3:
-            dsl1_target_shape = (dsl1.shape[1], 1)
-            dsl2_target_shape = (1, dsl2.shape[-1])
-        elif dsl1_len == 2:
-            dsl1_target_shape = tuple([dsl1.shape[0], 1])
-            dsl2_target_shape = tuple([1, dsl2.shape[-1]])
-        else:
-            raise NotImplementedError
+        dsl1_target_shape = (*dsl1.shape[:-1], 1) if len(dsl1.shape) == 2 else (*dsl1.shape[1:-1], 1)
+        dsl2_target_shape = (1, *dsl2.shape[:-3], dsl2.shape[-1]) if len(dsl2.shape) == 2 \
+            else (*dsl2.shape[1:-2], 1, dsl2.shape[-1])
 
         summed_dsl1 = dsl1.sum(target_shape=dsl1_target_shape)
         summed_dsl2 = dsl2.sum(target_shape=dsl2_target_shape)
 
         # We need to project these data subject arrays to their entire row/column respectively
-        summed_dsl1.data_subjects_indexed = np.ones(
-            (*summed_dsl1.shape[:-1], summed_dsl2.shape[-1])) * summed_dsl1.data_subjects_indexed
-        summed_dsl2.data_subjects_indexed = np.ones(
-            (*summed_dsl2.shape[:-2], summed_dsl1.shape[-2], summed_dsl2.shape[-1])) * summed_dsl2.data_subjects_indexed
+        dsl1_projection = np.ones((*summed_dsl1.shape[:-1], summed_dsl2.shape[-1]))  # *summed_dsl2.shape[1:-2],
+        dsl2_projection = np.ones(
+            (*summed_dsl2.shape[:-2], summed_dsl1.shape[-2], summed_dsl2.shape[-1]))  # *summed_dsl2.shape[1:-2],
+
+        summed_dsl1.data_subjects_indexed = dsl1_projection * summed_dsl1.data_subjects_indexed
+        summed_dsl2.data_subjects_indexed = dsl2_projection * summed_dsl2.data_subjects_indexed
 
         output_ds = DataSubjectList.combine_dsi(summed_dsl1, summed_dsl2)
 

@@ -144,9 +144,9 @@ class lazyrepeatarray:
                 )
             return self.__class__(data=self.data.__matmul__(other), shape=new_shape)
 
-        if self.shape[-1] != other.shape[0]:
+        if self.shape[-1] != other.shape[-2]:
             raise Exception(
-                "cannot matrix multiply tensors with different shapes: {self.shape} and {other.shape}"
+                f"cannot matrix multiply tensors with different shapes: {self.shape} and {other.shape}"
             )
 
         result = self.to_numpy() @ other.to_numpy()
