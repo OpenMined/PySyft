@@ -97,6 +97,7 @@ class Convolution(Layer):
     
 
     def forward(self, input: PhiTensor, *args: Tuple, **kwargs: Dict):
+        print("Input into Conv forward:", input.shape, input.data_subjects.shape)
         self.last_input = input
 
         n_filters, d_filter, h_filter, w_filter = self.W.shape

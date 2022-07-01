@@ -138,13 +138,14 @@ def dp_zeros(
         raise NotImplementedError("Zero or negative data subject behaviour undefined.")
 
 
-def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="constant", **kwargs):
+def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="reflect", **kwargs):
 
     data = input.child
     output_data: Sequence = np.pad(data, width, mode=padding_mode, **kwargs)
     min_v = lazyrepeatarray(data=min(input.min_vals.data.min(), output_data.min()), shape=output_data.shape)
     max_v = lazyrepeatarray(data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape)
 
+    print("dsi_shape, width, mode", input.data_subjects.shape, width, padding_mode)
     output_dsi = np.pad(
             input.data_subjects.data_subjects_indexed, pad_width=width, mode=padding_mode)
 
@@ -222,6 +223,7 @@ def im2col_indices(x: PhiTensor, field_height: int, field_width: int, padding: i
     """ An implementation of im2col based on some fancy indexing """
     # Zero-pad the input
     p = padding
+    print("shapes before padding:, ", x.shape, x.data_subjects.shape)
 
     if len(x.shape) == 4:
         width = ((0, 0), (0, 0), (p, p), (p, p))
