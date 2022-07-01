@@ -1315,6 +1315,7 @@ class GammaTensor:
             child = self.child @ other.child
             min_val = self.min_vals.__matmul__(other.min_vals)
             max_val = self.max_vals.__matmul__(other.max_vals)
+            output_ds = DataSubjectList.matmul(self.data_subjects, other.data_subjects)
 
         else:
 
@@ -1325,9 +1326,13 @@ class GammaTensor:
             min_val = self.min_vals.__matmul__(other)
             max_val = self.max_vals.__matmul__(other)
 
+            # We need a fake DSL here in order for the Data Subjects to have the correct shape at the end.
+            fake_dsl = DataSubjectList(one_hot_lookup=np.array([]), data_subjects_indexed=np.empty_like(other))
+            output_ds = DataSubjectList.matmul(self.data_subjects, fake_dsl)
+
         return GammaTensor(
             child=child,
-            data_subjects=self.data_subjects,
+            data_subjects=output_ds,
             min_vals=min_val,
             max_vals=max_val,
             func=_matmul,
@@ -1646,7 +1651,6 @@ class GammaTensor:
         output_state[self.id] = self
 
         child = self.child.sum(axis=axis)
-        print(child.shape)
 
         min_val = self.min_vals.sum(axis=axis)
         max_val = self.max_vals.sum(axis=axis)
@@ -1879,6 +1883,7 @@ class GammaTensor:
         # such that the minimum value should be 0
         if isinstance(other, np.ndarray):
             result = jnp.dot(self.child, other)
+            output_ds = self.data_subjects
 
             if isinstance(self.min_vals, lazyrepeatarray):
                 minv = lazyrepeatarray(
@@ -1893,6 +1898,7 @@ class GammaTensor:
                     ).max(),
                     shape=result.shape,
                 )
+
             elif isinstance(self.min_vals, (int, float)):
                 minv = lazyrepeatarray(
                     data=jnp.dot(np.ones_like(self.child) * self.min_vals, other).min(),
@@ -1907,7 +1913,7 @@ class GammaTensor:
 
             return GammaTensor(
                 child=result,
-                data_subjects=self.data_subjects,
+                data_subjects=output_ds,
                 min_vals=minv,
                 max_vals=maxv,
             )
@@ -1915,6 +1921,8 @@ class GammaTensor:
             output_state = dict()
             output_state[self.id] = self
             output_state[other.id] = other
+
+            output_ds = DataSubjectList.combine_dsi(self.data_subjects, other.data_subjects)
 
             def _dot(state: dict):
                 return jnp.dot(self.run(state))
@@ -1957,7 +1965,7 @@ class GammaTensor:
 
             return GammaTensor(
                 child=result,
-                data_subjects=self.data_subjects,
+                data_subjects=output_ds,
                 min_vals=minv,
                 max_vals=maxv,
                 func=_dot,

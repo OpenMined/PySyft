@@ -173,6 +173,14 @@ class DataSubjectList:
             self.data_subjects_indexed.reshape((-1, *target_shape)),
         )
 
+    def matmul_sum(self, axis: int = None) -> DataSubjectList:
+        slice = self.data_subjects_indexed.take()
+
+        return DataSubjectList(
+            self.one_hot_lookup.copy(),
+            self.data_subjects_indexed.reshape((-1, *target_shape)),
+        )
+
     def flatten(self) -> DataSubjectList:
         return DataSubjectList(
             one_hot_lookup=self.one_hot_lookup.copy(),
@@ -190,6 +198,40 @@ class DataSubjectList:
     @property
     def shape(self) -> Tuple:
         return self.data_subjects_indexed.shape
+
+
+    @staticmethod
+    def matmul(dsl1: DataSubjectList, dsl2: DataSubjectList):
+        """
+        Matmul can only be done when Tensor.child is a 2D array, thus Tensor.DSL is 2D (PhiTensor) or 3D (Gamma)
+        Although Matmul first involves multiplication and then addition, implementing it with summation and then
+        broadcasting was easier for DSL.
+        """
+
+        dsl1_len = len(dsl1.shape)  # Assumption: dsl1_len == dsl2_len
+        if dsl1_len == 3:
+            dsl1_target_shape = (dsl1.shape[1], 1)
+            dsl2_target_shape = (1, dsl2.shape[-1])
+        elif dsl1_len == 2:
+            dsl1_target_shape = tuple([dsl1.shape[0], 1])
+            dsl2_target_shape = tuple([1, dsl2.shape[-1]])
+        else:
+            raise NotImplementedError
+
+        summed_dsl1 = dsl1.sum(target_shape=dsl1_target_shape)
+        summed_dsl2 = dsl2.sum(target_shape=dsl2_target_shape)
+
+        # We need to project these data subject arrays to their entire row/column respectively
+        summed_dsl1.data_subjects_indexed = np.ones(
+            (*summed_dsl1.shape[:-1], summed_dsl2.shape[-1])) * summed_dsl1.data_subjects_indexed
+        summed_dsl2.data_subjects_indexed = np.ones(
+            (*summed_dsl2.shape[:-2], summed_dsl1.shape[-2], summed_dsl2.shape[-1])) * summed_dsl2.data_subjects_indexed
+
+        output_ds = DataSubjectList.combine_dsi(summed_dsl1, summed_dsl2)
+
+        # This gets rid of redundant (repeating) DSL slices.
+        output_ds.data_subjects_indexed = np.unique(output_ds.data_subjects_indexed, axis=0)
+        return output_ds
 
     @staticmethod
     def index_dsl(tensor: Any, index):

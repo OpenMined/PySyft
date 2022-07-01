@@ -1606,9 +1606,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            is_one_hot_lookup_same = self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
-            is_one_hot_lookup_same = is_one_hot_lookup_same if isinstance(is_one_hot_lookup_same, bool) else is_one_hot_lookup_same.any()
-            if is_one_hot_lookup_same:
+            diff_data_subjects = self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
+            diff_data_subjects = diff_data_subjects if isinstance(diff_data_subjects, bool) else diff_data_subjects.any()
+            if diff_data_subjects:
                 return self.gamma - other.gamma
                 # raise NotImplementedError
 
@@ -1752,7 +1752,12 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                         data = self.child.__matmul__(other.child)
                         min_vals = self.min_vals.__matmul__(other.min_vals)
                         max_vals = self.max_vals.__matmul__(other.max_vals)
-                        output_ds = self.data_subjects
+                        output_ds = DataSubjectList(
+                            one_hot_lookup=np.concatenate((self.data_subjects
+                                                           .one_hot_lookup, other.data_subjects.one_hot_lookup)),
+                            data_subjects_indexed=np.concatenate((
+                                np.zeros_like(data), np.ones_like(data)))  # replace with (1, *data.shape) if inc shape
+                        )
 
                 elif isinstance(other, GammaTensor):
                     return self.gamma @ other
