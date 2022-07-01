@@ -199,7 +199,6 @@ class DataSubjectList:
     def shape(self) -> Tuple:
         return self.data_subjects_indexed.shape
 
-
     @staticmethod
     def matmul(dsl1: DataSubjectList, dsl2: DataSubjectList):
         """
