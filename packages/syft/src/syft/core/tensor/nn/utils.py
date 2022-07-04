@@ -138,20 +138,32 @@ def dp_zeros(
         raise NotImplementedError("Zero or negative data subject behaviour undefined.")
 
 
-def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="reflect", **kwargs):
+def dp_pad(
+    input: Union[PhiTensor, GammaTensor], width, padding_mode="reflect", **kwargs
+):
 
     data = input.child
     output_data: Sequence = np.pad(data, width, mode=padding_mode, **kwargs)
-    min_v = lazyrepeatarray(data=min(input.min_vals.data.min(), output_data.min()), shape=output_data.shape)
-    max_v = lazyrepeatarray(data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape)
-
+    min_v = lazyrepeatarray(
+        data=min(input.min_vals.data.min(), output_data.min()), shape=output_data.shape
+    )
+    max_v = lazyrepeatarray(
+        data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape
+    )
+    if isinstance(input, GammaTensor):
+        dsl_width = [(0, 0)] + list(width)
+    else:
+        dsl_width = width
     print("dsi_shape, width, mode", input.data_subjects.shape, width, padding_mode)
     output_dsi = np.pad(
-            input.data_subjects.data_subjects_indexed, pad_width=width, mode=padding_mode)
+        input.data_subjects.data_subjects_indexed,
+        pad_width=dsl_width,
+        mode=padding_mode,
+    )
 
-    output_data_subjects=DataSubjectList(
+    output_data_subjects = DataSubjectList(
         one_hot_lookup=input.data_subjects.one_hot_lookup,
-        data_subjects_indexed=output_dsi
+        data_subjects_indexed=output_dsi,
     )
 
     if isinstance(input, PhiTensor):
@@ -159,7 +171,7 @@ def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="reflect", 
             child=output_data,
             data_subjects=output_data_subjects,
             min_vals=min_v,
-            max_vals=max_v
+            max_vals=max_v,
         )
     elif isinstance(input, GammaTensor):
         return GammaTensor(
@@ -169,7 +181,9 @@ def dp_pad(input: Union[PhiTensor, GammaTensor], width, padding_mode="reflect", 
             max_vals=max_v,
         )
     else:
-        raise NotImplementedError(f"Padding is not implemented for Input Type: {type(input)}")
+        raise NotImplementedError(
+            f"Padding is not implemented for Input Type: {type(input)}"
+        )
 
 
 def dp_add_at(a: PhiTensor, indices: Tuple, b: PhiTensor):
@@ -182,11 +196,17 @@ def dp_add_at(a: PhiTensor, indices: Tuple, b: PhiTensor):
         child=data_a,
         data_subjects=a.data_subjects,
         min_vals=data_a.min(),
-        max_vals=data_a.max()
+        max_vals=data_a.max(),
     )
 
 
-def get_im2col_indices(x_shape: Tuple, field_height: int, field_width: int, padding: int=1, stride: int=1):
+def get_im2col_indices(
+    x_shape: Tuple,
+    field_height: int,
+    field_width: int,
+    padding: int = 1,
+    stride: int = 1,
+):
     # First figure out what the size of the output should be
     N, C, H, W = x_shape
     assert (H + 2 * padding - field_height) % stride == 0
@@ -205,8 +225,15 @@ def get_im2col_indices(x_shape: Tuple, field_height: int, field_width: int, padd
     return (k.astype(int), i.astype(int), j.astype(int))
 
 
-def col2im_indices(cols: PhiTensor, x_shape: Tuple, field_height: int=3, field_width: int=3, padding: int=1, stride: int=1):
-    """ An implementation of col2im based on fancy indexing and np.add.at """
+def col2im_indices(
+    cols: PhiTensor,
+    x_shape: Tuple,
+    field_height: int = 3,
+    field_width: int = 3,
+    padding: int = 1,
+    stride: int = 1,
+):
+    """An implementation of col2im based on fancy indexing and np.add.at"""
     N, C, H, W = x_shape
     H_padded, W_padded = H + 2 * padding, W + 2 * padding
     x_padded = dp_zeros((N, C, H_padded, W_padded), data_subjects=cols.data_subjects)
@@ -219,8 +246,10 @@ def col2im_indices(cols: PhiTensor, x_shape: Tuple, field_height: int=3, field_w
     return x_padded[:, :, padding:-padding, padding:-padding]
 
 
-def im2col_indices(x: PhiTensor, field_height: int, field_width: int, padding: int=1, stride :int=1):
-    """ An implementation of im2col based on some fancy indexing """
+def im2col_indices(
+    x: PhiTensor, field_height: int, field_width: int, padding: int = 1, stride: int = 1
+):
+    """An implementation of im2col based on some fancy indexing"""
     # Zero-pad the input
     p = padding
     print("shapes before padding:, ", x.shape, x.data_subjects.shape)
@@ -233,9 +262,11 @@ def im2col_indices(x: PhiTensor, field_height: int, field_width: int, padding: i
         width = ((p, p), (p, p))
     else:
         raise NotImplementedError
-    x_padded = dp_pad(x, width, padding_mode='constant')
+    x_padded = dp_pad(x, width)
 
     k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
+
+    # return k, i, j, x_padded
     cols = x_padded[:, k, i, j]
     C = x.shape[1]
     cols = cols.transpose((1, 2, 0)).reshape((field_height * field_width * C, -1))

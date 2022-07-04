@@ -150,8 +150,12 @@ class DataSubjectList:
     def __eq__(self, other: Any) -> bool:
         if isinstance(other, DataSubjectList):
             dsi_comparison = self.data_subjects_indexed == other.data_subjects_indexed
-            ohl_comparison = (self.one_hot_lookup == other.one_hot_lookup)
-            ohl_comparison = ohl_comparison if isinstance(ohl_comparison, bool) else ohl_comparison.all()
+            ohl_comparison = self.one_hot_lookup == other.one_hot_lookup
+            ohl_comparison = (
+                ohl_comparison
+                if isinstance(ohl_comparison, bool)
+                else ohl_comparison.all()
+            )
             if isinstance(dsi_comparison, bool):
                 if dsi_comparison is True and ohl_comparison is True:
                     return True
@@ -199,25 +203,39 @@ class DataSubjectList:
         broadcasting was easier for DSL.
         """
 
-        dsl1_target_shape = (*dsl1.shape[:-1], 1) if len(dsl1.shape) == 2 else (*dsl1.shape[1:-1], 1)
-        dsl2_target_shape = (1, *dsl2.shape[:-3], dsl2.shape[-1]) if len(dsl2.shape) == 2 \
+        dsl1_target_shape = (
+            (*dsl1.shape[:-1], 1) if len(dsl1.shape) == 2 else (*dsl1.shape[1:-1], 1)
+        )
+        dsl2_target_shape = (
+            (1, *dsl2.shape[:-3], dsl2.shape[-1])
+            if len(dsl2.shape) == 2
             else (*dsl2.shape[1:-2], 1, dsl2.shape[-1])
+        )
 
         summed_dsl1 = dsl1.sum(target_shape=dsl1_target_shape)
         summed_dsl2 = dsl2.sum(target_shape=dsl2_target_shape)
 
         # We need to project these data subject arrays to their entire row/column respectively
-        dsl1_projection = np.ones((*summed_dsl1.shape[:-1], summed_dsl2.shape[-1]))  # *summed_dsl2.shape[1:-2],
+        dsl1_projection = np.ones(
+            (*summed_dsl1.shape[:-1], summed_dsl2.shape[-1])
+        )  # *summed_dsl2.shape[1:-2],
         dsl2_projection = np.ones(
-            (*summed_dsl2.shape[:-2], summed_dsl1.shape[-2], summed_dsl2.shape[-1]))  # *summed_dsl2.shape[1:-2],
+            (*summed_dsl2.shape[:-2], summed_dsl1.shape[-2], summed_dsl2.shape[-1])
+        )  # *summed_dsl2.shape[1:-2],
 
-        summed_dsl1.data_subjects_indexed = dsl1_projection * summed_dsl1.data_subjects_indexed
-        summed_dsl2.data_subjects_indexed = dsl2_projection * summed_dsl2.data_subjects_indexed
+        summed_dsl1.data_subjects_indexed = (
+            dsl1_projection * summed_dsl1.data_subjects_indexed
+        )
+        summed_dsl2.data_subjects_indexed = (
+            dsl2_projection * summed_dsl2.data_subjects_indexed
+        )
 
         output_ds = DataSubjectList.combine_dsi(summed_dsl1, summed_dsl2)
 
         # This gets rid of redundant (repeating) DSL slices.
-        output_ds.data_subjects_indexed = np.unique(output_ds.data_subjects_indexed, axis=0)
+        output_ds.data_subjects_indexed = np.unique(
+            output_ds.data_subjects_indexed, axis=0
+        )
         return output_ds
 
     def dot(dsl1: DataSubjectList, dsl2: DataSubjectList):
@@ -241,15 +259,22 @@ class DataSubjectList:
         # We need to project these data subject arrays to their entire row/column respectively
         dsl1_projection = np.ones((*summed_dsl1.shape[:-2], *summed_dsl2.shape[-2:]))
         dsl2_projection = np.ones(
-            (summed_dsl2.shape[0], *summed_dsl1.shape[1:-2], *summed_dsl2.shape[-2:]))
+            (summed_dsl2.shape[0], *summed_dsl1.shape[1:-2], *summed_dsl2.shape[-2:])
+        )
 
-        summed_dsl1.data_subjects_indexed = dsl1_projection * summed_dsl1.data_subjects_indexed
-        summed_dsl2.data_subjects_indexed = dsl2_projection * summed_dsl2.data_subjects_indexed
+        summed_dsl1.data_subjects_indexed = (
+            dsl1_projection * summed_dsl1.data_subjects_indexed
+        )
+        summed_dsl2.data_subjects_indexed = (
+            dsl2_projection * summed_dsl2.data_subjects_indexed
+        )
 
         output_ds = DataSubjectList.combine_dsi(summed_dsl1, summed_dsl2)
 
         # This gets rid of redundant (repeating) DSL slices.
-        output_ds.data_subjects_indexed = np.unique(output_ds.data_subjects_indexed, axis=0).squeeze()
+        output_ds.data_subjects_indexed = np.unique(
+            output_ds.data_subjects_indexed, axis=0
+        ).squeeze()
         return output_ds
 
     @staticmethod
@@ -257,7 +282,8 @@ class DataSubjectList:
         if tensor.shape == tensor.data_subjects.shape:
             return tensor.data_subjects[index]
         elif len(tensor.shape) < len(tensor.data_subjects.shape):
-            return tensor.data_subjects[:, index]
+            index = tuple([slice(None, None, None)] + list(index))
+            return tensor.data_subjects[index]
 
     @staticmethod
     def combine_dsi(dsl1: DataSubjectList, dsl2: DataSubjectList):
@@ -273,16 +299,19 @@ class DataSubjectList:
             output_shape = (dsl1.shape[0] + dsl2.shape[0], *dsl1.shape[1:])
         else:
             raise Exception(
-                f"Shapes of DSLs incompatible- are they meant to be broadcasted: {dsl1.shape}, {dsl2.shape}")
+                f"Shapes of DSLs incompatible- are they meant to be broadcasted: {dsl1.shape}, {dsl2.shape}"
+            )
 
-        output_dsl = DataSubjectList(one_hot_lookup=np.array([]),
-                                     data_subjects_indexed=np.empty(output_shape))
+        output_dsl = DataSubjectList(
+            one_hot_lookup=np.array([]), data_subjects_indexed=np.empty(output_shape)
+        )
 
-        output_dsl[:dsl1.shape[0]] = dsl1
-        output_dsl[dsl1.shape[0]:] = dsl2
+        output_dsl[: dsl1.shape[0]] = dsl1
+        output_dsl[dsl1.shape[0] :] = dsl2
         return output_dsl
 
     def __getitem__(self, item) -> DataSubjectList:
+
         result = self.data_subjects_indexed[item]
         return DataSubjectList(
             one_hot_lookup=self.one_hot_lookup,  # np.unique(self.one_hot_lookup[result]),
@@ -364,7 +393,9 @@ class DataSubjectList:
                 for i in range(dsl1.shape[0]):
                     bigger_array[i] = dsl1.data_subjects_indexed[i]
 
-            output_dsl = DataSubjectList(one_hot_lookup=dsl1.one_hot_lookup, data_subjects_indexed=bigger_array)
+            output_dsl = DataSubjectList(
+                one_hot_lookup=dsl1.one_hot_lookup, data_subjects_indexed=bigger_array
+            )
             dsl2_copy = dsl2.copy()
             output_dsl[:, index] = dsl2_copy
             return output_dsl
@@ -376,15 +407,23 @@ class DataSubjectList:
             return output_dsl
         else:
             # add some nans
-            extra_nans = np.array([np.nan] * (dsl1_len - dsl2_len) * np.prod(dsl2.shape[1:])).reshape(
-                (dsl1_len - dsl2_len, *dsl2.shape[1:]))
-            array_to_append = np.concatenate((dsl2.data_subjects_indexed, extra_nans)).squeeze()
+            extra_nans = np.array(
+                [np.nan] * (dsl1_len - dsl2_len) * np.prod(dsl2.shape[1:])
+            ).reshape((dsl1_len - dsl2_len, *dsl2.shape[1:]))
+            array_to_append = np.concatenate(
+                (dsl2.data_subjects_indexed, extra_nans)
+            ).squeeze()
             new_dsl = dsl2.copy()
             new_dsl.data_subjects_indexed = array_to_append
 
             output_dsl = dsl1.copy()
             output_dsl[:, index] = new_dsl
             return output_dsl
+
+    def tranpose(self: DataSubjectList, axes: Tuple) -> DataSubjectList:
+        return DataSubjectList(
+            self.one_hot_lookup, np.transpose(self.data_subjects_indexed, axes=axes)
+        )
 
     @staticmethod
     def combine(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:

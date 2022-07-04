@@ -1097,7 +1097,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             data_subjects = DataSubjectList.from_objs(data_subjects)
 
         if len(data_subjects.shape) != len(self.shape):
-            data_subjects.data_subjects_indexed = np.expand_dims(data_subjects.data_subjects_indexed, axis=0)
+            data_subjects.data_subjects_indexed = np.expand_dims(
+                data_subjects.data_subjects_indexed, axis=0
+            )
 
         self.data_subjects = data_subjects
 
@@ -1474,10 +1476,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def create_gamma(self) -> GammaTensor:
         """Return a new Gamma tensor based on this phi tensor"""
+        exp_data_subjects = DataSubjectList(
+            one_hot_lookup=self.data_subjects.one_hot_lookup,
+            data_subjects_indexed=np.expand_dims(self.data_subjects.data_subjects_indexed, 0),
+        )
 
         gamma_tensor = GammaTensor(
             child=self.child,
-            data_subjects=self.data_subjects,
+            data_subjects=exp_data_subjects,
             min_vals=self.min_vals,
             max_vals=self.max_vals,
         )
@@ -1606,8 +1612,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __sub__(self, other: SupportedChainType) -> Union[PhiTensor, GammaTensor]:
 
         if isinstance(other, PhiTensor):
-            diff_data_subjects = self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
-            diff_data_subjects = diff_data_subjects if isinstance(diff_data_subjects, bool) else diff_data_subjects.any()
+            diff_data_subjects = (
+                self.data_subjects.one_hot_lookup != other.data_subjects.one_hot_lookup
+            )
+            diff_data_subjects = (
+                diff_data_subjects
+                if isinstance(diff_data_subjects, bool)
+                else diff_data_subjects.any()
+            )
             if diff_data_subjects:
                 return self.gamma - other.gamma
                 # raise NotImplementedError
@@ -1753,10 +1765,15 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                         min_vals = self.min_vals.__matmul__(other.min_vals)
                         max_vals = self.max_vals.__matmul__(other.max_vals)
                         output_ds = DataSubjectList(
-                            one_hot_lookup=np.concatenate((self.data_subjects
-                                                           .one_hot_lookup, other.data_subjects.one_hot_lookup)),
-                            data_subjects_indexed=np.concatenate((
-                                np.zeros_like(data), np.ones_like(data)))  # replace with (1, *data.shape) if inc shape
+                            one_hot_lookup=np.concatenate(
+                                (
+                                    self.data_subjects.one_hot_lookup,
+                                    other.data_subjects.one_hot_lookup,
+                                )
+                            ),
+                            data_subjects_indexed=np.concatenate(
+                                (np.zeros_like(data), np.ones_like(data))
+                            ),  # replace with (1, *data.shape) if inc shape
                         )
 
                 elif isinstance(other, GammaTensor):
@@ -1824,7 +1841,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         output_data = np.clip(self.child, a_min, a_max)
 
         min_v = np.clip(self.min_vals.data, a_min, a_max)
-        max_v= np.clip(self.max_vals.data, a_min, a_max)
+        max_v = np.clip(self.max_vals.data, a_min, a_max)
 
         min_vals = lazyrepeatarray(data=min_v, shape=output_data.shape)
         max_vals = lazyrepeatarray(data=max_v, shape=output_data.shape)
@@ -2102,7 +2119,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                 child=result,
                 min_vals=min_val,
                 max_vals=max_val,
-                data_subjects=self.data_subjects.sum(target_shape=result.shape)
+                data_subjects=self.data_subjects.sum(target_shape=result.shape),
             )
         result = self.child.sum(axis=axis)
         return GammaTensor(
