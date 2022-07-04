@@ -1248,10 +1248,10 @@ class GammaTensor:
                 # if np.broadcast_shapes(self.shape, other.shape) and np.broadcast_shapes(self.data_subjects.shape, other.data_subjects.shape):
                 #     print("THE OPERATION CAN BE CARRIED OUT.")
                 #
-                if dsl1_ndim == dsl2_ndim:
+                # if dsl1_ndim == dsl2_ndim:
                 #     print("Equal dims")
-                    dsl1 = self.data_subjects
-                    dsl2 = other.data_subjects
+                dsl1 = self.data_subjects
+                dsl2 = other.data_subjects
                 #
                 # if dsl1_ndim > dsl2_ndim:
                 #     print("dsl1 greater")

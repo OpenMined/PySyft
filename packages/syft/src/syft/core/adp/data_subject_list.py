@@ -313,7 +313,8 @@ class DataSubjectList:
         )
 
         output_dsl[: dsl1.shape[0]] = dsl1
-        output_dsl[dsl1.shape[0] :] = dsl2
+        output_dsl[dsl1.shape[0]:] = dsl2
+        output_dsl.data_subjects_indexed = np.unique(output_dsl.data_subjects_indexed, axis=0)
         return output_dsl
 
     def __getitem__(self, item) -> DataSubjectList:
