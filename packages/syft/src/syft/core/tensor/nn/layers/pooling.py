@@ -63,15 +63,15 @@ class AvgPool(Layer):
         self.last_input = input
 
         n, d, h, w = input.shape
-        input_reshaped = input.reshape(n * d, 1, h, w)
+        input_reshaped = input.reshape((n * d, 1, h, w))
         self.X_col = im2col_indices(
             input_reshaped, pool_h, pool_w, padding=0, stride=self.stride
         )
 
         outputs = self.X_col.mean(axis=0)
 
-        outputs = outputs.reshape(h_out, w_out, n, d)
-        outputs = outputs.transpose(2, 3, 0, 1)
+        outputs = outputs.reshape((h_out, w_out, n, d))
+        outputs = outputs.transpose((2, 3, 0, 1))
         print("Done with AvgPool forward pass")
         return outputs
 
