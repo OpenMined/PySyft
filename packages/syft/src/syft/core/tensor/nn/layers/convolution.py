@@ -94,7 +94,7 @@ class Convolution(Layer):
         self.W = self.init((self.nb_filter, pre_nb_filter, filter_height, filter_width))
         self.b = np.zeros((self.nb_filter,))
 
-    
+
 
     def forward(self, input: PhiTensor, *args: Tuple, **kwargs: Dict):
         print("Input into Conv forward:", input.shape, input.data_subjects.shape)
@@ -124,6 +124,7 @@ class Convolution(Layer):
         self.last_output = (
             self.activation.forward(out) if self.activation is not None else out
         )
+        print("Done with convolution")
         return out
 
     def backward(self, pre_grad: PhiTensor, *args: Tuple, **kwargs: Dict):

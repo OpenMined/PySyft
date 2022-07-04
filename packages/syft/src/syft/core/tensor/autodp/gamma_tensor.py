@@ -52,6 +52,8 @@ from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..lazy_repeat_array import compute_min_max
 from ..lazy_repeat_array import lazyrepeatarray
 from ..passthrough import PassthroughTensor  # type: ignore
+from ..passthrough import SupportedChainType
+from ..passthrough import is_acceptable_simple_type
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
@@ -1192,6 +1194,22 @@ class GammaTensor:
             state=output_state,
         )
 
+
+    def __rtruediv__(self, other: SupportedChainType) -> GammaTensor:
+
+        if is_acceptable_simple_type(other):
+            return GammaTensor(
+                child=(1 / self.child) * other,
+                min_vals=(1 / self.min_vals) * other,
+                max_vals=(1 / self.max_vals) * other,
+                data_subjects=self.data_subjects,
+                # scalar_manager=self.scalar_manager,
+            )
+        else:
+            print("Type is unsupported:" + str(type(other)))
+            raise NotImplementedError
+
+
     def __sub__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
@@ -1221,8 +1239,32 @@ class GammaTensor:
             min_val.data = _min_val
             max_val = self.max_vals.copy()
             max_val.data = _max_val
+
+            dsl1_ndim = len(self.data_subjects.shape)
+            dsl2_ndim = len(other.data_subjects.shape)
+
+            if dsl1_ndim == dsl2_ndim:
+                dsl1 = self.data_subjects
+                dsl2 = other.data_subjects
+
+            if dsl1_ndim > dsl2_ndim:
+                dsl1 = self.data_subjects
+                rows = dsl1.shape[1]
+
+                dsl2 = DataSubjectList(
+                    one_hot_lookup=other.data_subjects.one_hot_lookup,
+                    data_subjects_indexed=np.repeat(np.expand_dims(other.data_subjects.data_subjects_indexed, 1), repeats=rows, axis=1)
+                )
+            else:
+                dsl2 = other.data_subjects
+                rows = dsl2.shape[1]
+                dsl1 = DataSubjectList(
+                    one_hot_lookup=self.data_subjects.one_hot_lookup,
+                    data_subjects_indexed=np.repeat(np.expand_dims(other.data_subjects.data_subjects_indexed, 1), repeats=rows, axis=1)
+                )
+
             output_ds = DataSubjectList.combine_dsi(
-                self.data_subjects, other.data_subjects
+                dsl1, dsl2
             )
 
         else:
@@ -1623,7 +1665,11 @@ class GammaTensor:
                 ),
             )
         else:
-            args_input = (0, *[i + 1 for i in args[0]])
+            if args:
+                args_input = (0, *[i + 1 for i in args[0]])
+            else:
+                args_input = [0] + list(range(self.data_subjects.data_subjects_indexed.ndim-1, 0, -1))
+
             output_ds = DataSubjectList(
                 one_hot_lookup=self.data_subjects.one_hot_lookup,
                 data_subjects_indexed=self.data_subjects.data_subjects_indexed.transpose(
@@ -1992,9 +2038,12 @@ class GammaTensor:
         state = dict()
         state.update(self.state)
 
+        min_v = jnp.sqrt(self.min_vals.data)
+        max_v = jnp.sqrt(self.min_vals.data)
+
         child = jnp.sqrt(self.child)
-        min_val = jnp.sqrt(self.min_vals)
-        max_val = jnp.sqrt(self.max_vals)
+        min_val = lazyrepeatarray(min_v, shape=child.shape)
+        max_val = lazyrepeatarray(max_v, shape=child.shape)
 
         return GammaTensor(
             child=child,
