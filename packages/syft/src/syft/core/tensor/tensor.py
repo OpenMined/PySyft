@@ -202,8 +202,8 @@ class TensorPointer(Pointer):
 
         return result
 
-    def something(self, c_share, s_share, **kwargs) -> Tensor:
-        return self._apply_tensor_op(c_share, "something", s_share, **kwargs)
+    def something(self, *args, **kwargs) -> Tensor:
+        return self._apply_tensor_op(self, "something", *args, **kwargs)
 
     @staticmethod
     def _apply_op(

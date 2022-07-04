@@ -158,15 +158,11 @@ def MSB(x: MPCTensor) -> MPCTensor:
         msb (MPCTensor): returns arithmetic shares of the MSB.
     """
     ring_size = DEFAULT_RING_SIZE
-    decomposed_shares = ABY3.bit_decomposition(x)
+    msb_mpc = ABY3.bit_decomposition(x)
     # return decomposed_shares
 
-    for share in decomposed_shares:
-        share.block
+    msb_mpc.block
 
-    msb_share = decomposed_shares[-1]
-    msb_share.block
-
-    msb = ABY3.bit_injection(msb_share, ring_size)
+    msb = ABY3.bit_injection(msb_mpc, ring_size)
 
     return msb

@@ -24,6 +24,7 @@ import torch
 from . import utils
 from .... import logger
 from ....grid import GridURL
+from ....lib.python.list import List as SyftList
 from ...node.common.action.przs_action import PRZSAction
 from ...smpc.approximations import APPROXIMATIONS
 from ...smpc.protocol.spdz import spdz
@@ -920,19 +921,29 @@ class MPCTensor(PassthroughTensor):
         res: MPCTensor = 2 * (self > 0) - 1  # type: ignore
         return res
 
-    def something(self, carry: MPCTensor, s: MPCTensor):
+    def something(self, *args, **kwargs) -> List[MPCTensor]:
         kwargs = {"seed_id_locations": secrets.randbits(64)}
-        shares = [
-            share.something(c_share, s_tmp_share, **kwargs)
-            for share, c_share, s_tmp_share in zip(self.child, carry.child, s.child)
-        ]
+        shares = []
+        nr_parties = len(self.parties)
 
-        return MPCTensor(
-            shares=shares,
-            shape=self.shape,
-            parties=self.parties,
-            ring_size=self.ring_size,
-        )
+        a, b = args
+        ring_size = len(a)
+        print("Ring size is", ring_size)
+        shares = [[] for _ in range(nr_parties)]
+
+        for party_idx in range(nr_parties):
+            a_args = SyftList()
+            b_args = SyftList()
+            for i in range(ring_size):
+                a_args.append(a[i].child[party_idx])
+                b_args.append(b[i].child[party_idx])
+
+            shares[party_idx].append(self.child[party_idx].something(a_args, b_args, **kwargs))
+
+        import pdb; pdb.set_trace()
+        res = [MPCTensor(shares=shares_bit, shape=self.shape, parties=self.parties, ring_size=self.ring_size) for shares_bit in zip(*shares)]
+        print(res[0].get_copy())
+        return res
 
     def __getitem__(self, *args: List[Any], **kwargs: Dict[str, Any]) -> "MPCTensor":
         shares = []

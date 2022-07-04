@@ -130,7 +130,7 @@ class ABY3:
         # For ring_size 2 we generate those before hand
         CryptoPrimitiveProvider.generate_primitives(
             "beaver_mul",
-            nr_instances=64,
+            nr_instances=128,
             parties=parties,
             g_kwargs={
                 "a_shape": shape_x,
@@ -141,6 +141,7 @@ class ABY3:
             ring_size=2,
         )
 
+        """
         CryptoPrimitiveProvider.generate_primitives(
             "beaver_mul",
             nr_instances=1,
@@ -153,12 +154,14 @@ class ABY3:
             p_kwargs={"a_shape": (len(a),) + shape_x, "b_shape": (len(b),) + shape_y},
             ring_size=2,
         )
+        """
 
         ring_bits = utils.get_nr_bits(ring_size)
         shape_res = utils.get_shape("mul", a[0].shape, b[0].shape)
         c = MPCTensor(
             secret=Tensor(np.zeros(shape_res, dtype=np.bool)), parties=parties
         )  # carry bits of addition.
+        """
         stacked_a = static.stack(a)
         stacked_b = static.stack(b)
         stacked_a.block
@@ -166,7 +169,9 @@ class ABY3:
 
         mul_a_b = stacked_a * stacked_b
         mul_a_b.block
+        """
 
+        """
         result: List[MPCTensor] = []
         for idx in range(ring_bits):
             print("Bit Number :", idx)
@@ -177,6 +182,8 @@ class ABY3:
                 c = val.something(c, s_tmp, a[idx], b[idx], idx)
                 c.block
             result.append(s)
+        """
+        result = c.something(a, b)
         return result
 
     @staticmethod
@@ -272,15 +279,10 @@ class ABY3:
         path_and_name = x.child[0].path_and_name
         attr_path_and_name = f"{x.child[0].path_and_name}.bit_decomposition"
 
-        if not isinstance(x.child[0], TensorPointer):
-            decomposed_shares = [
-                share.bit_decomposition(share, 2, True, **kwargs) for share in x.child
-            ]
-        else:
-            decomposed_shares = []
-            op = get_run_class_method(attr_path_and_name, SMPC=True)
-            for share in x.child:
-                decomposed_shares.append(op(share, share, 2, True, **kwargs))
+        decomposed_shares = []
+        op = get_run_class_method(attr_path_and_name, SMPC=True)
+        for share in x.child:
+            decomposed_shares.append(op(share, share, 2, True, **kwargs))
 
         decomposed_shares = ABY3.pregenerate_pointers(
             parties, ring_bits, path_and_name, seed_id_locations

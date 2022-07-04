@@ -3,6 +3,7 @@ from copy import deepcopy
 from functools import reduce
 from typing import Any
 from typing import Dict
+from typing import List
 from typing import Optional
 from typing import Union
 from uuid import UUID
@@ -17,7 +18,6 @@ from ....tensor.autodp.phi_tensor import PhiTensor
 from ....tensor.smpc import context
 from ....tensor.smpc import utils
 from ....tensor.smpc.share_tensor import ShareTensor
-from ....tensor.smpc.utils import count_wraps
 from ...abstract.node import AbstractNode
 from .beaver_action import BeaverAction
 from .greenlets_switch import beaver_retrieve_object
@@ -29,22 +29,38 @@ def get_id_at_location_from_op(seed: int, operation_str: str) -> UID:
     return UID(UUID(bytes=generator.bytes(16)))
 
 
-def private_compare(a: ShareTensor, b: ShareTensor, c: ShareTensor) -> ShareTensor:
+def private_compare(d, a: List[ShareTensor], b: List[ShareTensor]) -> ShareTensor:
     seed_id_locations = context.SMPC_CONTEXT.get("seed_id_locations", None)
     if seed_id_locations is None:
         raise ValueError(
             f"Input seed : {seed_id_locations} for private multiplication should not None"
         )
 
+    print("Seeed id at locations", seed_id_locations)
     generator = np.random.default_rng(seed_id_locations)
     _ = UID(
         UUID(bytes=generator.bytes(16))
     )  # Ignore first one as it is used for result.
 
-    share = private_mul(b, c, "mul", generator=generator)
-    share = a + share
 
-    return share
+    if len(a) != len(b):
+        raise ValueError(f"len(a) != len(b), ({len(a)} and {len(b)})")
+    ring_bits = len(a)
+
+    c = 0
+    result: List[ShareTensor] = []
+    print("RANGEEE BITS", ring_bits)
+    for idx in range(ring_bits):
+        s_tmp = a[idx] + b[idx]
+        s = s_tmp + c
+        if idx != ring_bits - 1:
+            share1 = private_mul(a[idx], b[idx], "mul", generator=generator)
+            share2 = private_mul(c, s, "mul", generator=generator)
+            c = share1 + share2
+        result.append(s)
+
+    print("Reeesult", result)
+    return result[-1]
 
 
 def private_mul(
@@ -286,10 +302,10 @@ def divide_wrap_correction(
 
     z_shares = beaver_retrieve_object(node, z_id, nr_parties).data  # type: ignore
 
-    beta_xr = count_wraps([x.child, r_share.child])
+    beta_xr = utils.count_wraps([x.child, r_share.child])
 
     theta_x.child = beta_xr - theta_r_sh.child
-    theta_z = count_wraps([share.child for share in z_shares])
+    theta_z = utils.count_wraps([share.child for share in z_shares])
 
     # TODO: We neglect calculation of Etaxr as it involves a comparision which bottlnecks
     # the computation, we assume Etaxr =0 , the probability of an error in the division
