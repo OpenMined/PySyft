@@ -191,6 +191,12 @@ class DataSubjectList:
             ),
         )
 
+    def expand_dims(self, target_shape) -> DataSubjectList:
+        return DataSubjectList(
+            one_hot_lookup=self.one_hot_lookup,
+            data_subjects_indexed=self.data_subjects_indexed.reshape(target_shape),
+        )
+
     @property
     def shape(self) -> Tuple:
         return self.data_subjects_indexed.shape

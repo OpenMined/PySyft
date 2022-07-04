@@ -94,13 +94,12 @@ class Convolution(Layer):
         self.W = self.init((self.nb_filter, pre_nb_filter, filter_height, filter_width))
         self.b = np.zeros((self.nb_filter,))
 
-
-
     def forward(self, input: PhiTensor, *args: Tuple, **kwargs: Dict):
         print("Input into Conv forward:", input.shape, input.data_subjects.shape)
         self.last_input = input
 
         n_filters, d_filter, h_filter, w_filter = self.W.shape
+
         n_x, d_x, h_x, w_x = input.shape
 
         (
@@ -113,17 +112,27 @@ class Convolution(Layer):
         self.X_col = im2col_indices(
             input, h_filter, w_filter, padding=self.padding, stride=self.stride
         )
+        print("X_col after im2col", self.X_col.shape, self.X_col.data_subjects.shape)
 
+        from ...autodp.gamma_tensor import GammaTensor
+        if isinstance(self.W, (PhiTensor, GammaTensor)):
+            print("W", self.W.shape, self.W.data_subjects.shape)
         W_col = self.W.reshape((n_filters, -1))
+        if isinstance(self.W, (PhiTensor, GammaTensor)):
+            print("W after reshape", W_col.shape, W_col.data_subjects.shape)
         out = (
             self.X_col.T @ W_col.T + self.b
         )  # Transpose is required here because W_col is numpy array
+        print("out after matmul", out.shape, out.data_subjects.shape)
         out = out.reshape((n_filters, h_out, w_out, n_x))
+        print("out after reshape", out.shape, out.data_subjects.shape)
         out = out.transpose((3, 0, 1, 2))
+        print("out after transpose", out.shape, out.data_subjects.shape)
 
         self.last_output = (
             self.activation.forward(out) if self.activation is not None else out
         )
+        print("out after matmul", self.last_output.shape, self.last_output.data_subjects.shape)
         print("Done with convolution")
         return out
 

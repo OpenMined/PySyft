@@ -1416,6 +1416,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
     ) -> PhiTensor:
         result = self.child.mean(axis)
+        print(f"PT mean gives shape of {result.shape}")
         return PhiTensor(
             child=result,
             data_subjects=DataSubjectList(
@@ -2128,6 +2129,25 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             min_vals=min_val,
             max_vals=max_val,
         )
+
+    def expand_dims(self, axis: int) -> PhiTensor:
+        result = np.expand_dims(self.child, axis=axis)
+        minv = self.min_vals.copy()
+        minv.shape = result.shape
+        maxv = self.max_vals.copy()
+        maxv.shape = result.shape
+
+        target_shape_dsl = list(self.data_subjects.shape)
+        target_shape_dsl.insert(axis+1, 1)
+        print(target_shape_dsl)
+
+        return PhiTensor(
+            child=result,
+            min_vals=minv,
+            max_vals=maxv,
+            data_subjects=self.data_subjects.expand_dims(target_shape_dsl)
+        )
+
 
     def ones_like(
         self,

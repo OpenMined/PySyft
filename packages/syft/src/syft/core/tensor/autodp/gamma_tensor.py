@@ -1133,6 +1133,8 @@ class GammaTensor:
                 self.min_vals.data = self.min_vals.data.min()
                 self.max_vals.data = self.max_vals.data.max()
 
+        self.data_subjects.data_subjects_indexed = np.unique(self.data_subjects.data_subjects_indexed, axis=0)
+
     def decode(self) -> np.ndarray:
         if isinstance(self.child, FixedPrecisionTensor):
             return self.child.decode()
@@ -1144,7 +1146,7 @@ class GammaTensor:
         # TODO: Can we eliminate "state" and use self.state below?
         # we hit a private input
         if self.func is no_op:
-            return self.decode()
+            return self  #.decode()
         return self.func(state)
 
     def __add__(self, other: Any) -> GammaTensor:
@@ -1223,49 +1225,55 @@ class GammaTensor:
 
         if isinstance(other, GammaTensor):
 
-            def _sub(state: dict) -> jax.numpy.DeviceArray:
-                return jnp.subtract(self.run(state), other.run(state))
+                def _sub(state: dict) -> jax.numpy.DeviceArray:
+                    return jnp.subtract(self.run(state), other.run(state))
 
-            output_state[other.id] = other
+                output_state[other.id] = other
 
-            child = self.child - other.child
-            min_min = self.min_vals.data - other.min_vals.data
-            min_max = self.min_vals.data - other.max_vals.data
-            max_min = self.max_vals.data - other.min_vals.data
-            max_max = self.max_vals.data - other.max_vals.data
-            _min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
-            _max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
-            min_val = self.min_vals.copy()
-            min_val.data = _min_val
-            max_val = self.max_vals.copy()
-            max_val.data = _max_val
+                child = self.child - other.child
+                min_min = self.min_vals.data - other.min_vals.data
+                min_max = self.min_vals.data - other.max_vals.data
+                max_min = self.max_vals.data - other.min_vals.data
+                max_max = self.max_vals.data - other.max_vals.data
+                _min_val = np.minimum.reduce([min_min, min_max, max_min, max_max])
+                _max_val = np.maximum.reduce([min_min, min_max, max_min, max_max])
+                min_val = self.min_vals.copy()
+                min_val.data = _min_val
+                max_val = self.max_vals.copy()
+                max_val.data = _max_val
 
-            dsl1_ndim = len(self.data_subjects.shape)
-            dsl2_ndim = len(other.data_subjects.shape)
+                dsl1_ndim = len(self.data_subjects.shape)
+                dsl2_ndim = len(other.data_subjects.shape)
 
-            if dsl1_ndim == dsl2_ndim:
-                dsl1 = self.data_subjects
-                dsl2 = other.data_subjects
+                # if np.broadcast_shapes(self.shape, other.shape) and np.broadcast_shapes(self.data_subjects.shape, other.data_subjects.shape):
+                #     print("THE OPERATION CAN BE CARRIED OUT.")
+                #
+                if dsl1_ndim == dsl2_ndim:
+                #     print("Equal dims")
+                    dsl1 = self.data_subjects
+                    dsl2 = other.data_subjects
+                #
+                # if dsl1_ndim > dsl2_ndim:
+                #     print("dsl1 greater")
+                #     dsl1 = self.data_subjects
+                #     rows = dsl1.shape[1]
+                #
+                #     dsl2 = DataSubjectList(
+                #         one_hot_lookup=other.data_subjects.one_hot_lookup,
+                #         data_subjects_indexed=np.repeat(np.expand_dims(other.data_subjects.data_subjects_indexed, 1), repeats=rows, axis=1)
+                #     )
+                # else:
+                #     print("dsl2 greater")
+                #     dsl2 = other.data_subjects
+                #     rows = dsl2.shape[1]
+                #     dsl1 = DataSubjectList(
+                #         one_hot_lookup=self.data_subjects.one_hot_lookup,
+                #         data_subjects_indexed=np.repeat(np.expand_dims(other.data_subjects.data_subjects_indexed, 1), repeats=rows, axis=1)
+                #     )
 
-            if dsl1_ndim > dsl2_ndim:
-                dsl1 = self.data_subjects
-                rows = dsl1.shape[1]
-
-                dsl2 = DataSubjectList(
-                    one_hot_lookup=other.data_subjects.one_hot_lookup,
-                    data_subjects_indexed=np.repeat(np.expand_dims(other.data_subjects.data_subjects_indexed, 1), repeats=rows, axis=1)
+                output_ds = DataSubjectList.combine_dsi(
+                    dsl1, dsl2
                 )
-            else:
-                dsl2 = other.data_subjects
-                rows = dsl2.shape[1]
-                dsl1 = DataSubjectList(
-                    one_hot_lookup=self.data_subjects.one_hot_lookup,
-                    data_subjects_indexed=np.repeat(np.expand_dims(other.data_subjects.data_subjects_indexed, 1), repeats=rows, axis=1)
-                )
-
-            output_ds = DataSubjectList.combine_dsi(
-                dsl1, dsl2
-            )
 
         else:
 
@@ -1276,7 +1284,7 @@ class GammaTensor:
             min_val = self.min_vals - other
             max_val = self.max_vals - other
             output_ds = self.data_subjects
-        # print("the state we returned is: ", output_state)
+
         return GammaTensor(
             child=child,
             data_subjects=output_ds,
@@ -1873,33 +1881,20 @@ class GammaTensor:
             func=_mean,
         )
 
-    def std(self, axis) -> GammaTensor:
-        output_state = dict()
-        output_state[self.id] = self
+    def expand_dims(self, axis: Optional[int]) -> GammaTensor:
+        print("CAN YOU HEAR ME")
+        result = np.expand_dims(self.child, axis)
+        print("reshaping to:", result.shape)
+        print("og shape", self.data_subjects.shape)
+        target_shape_dsl = list(self.data_subjects.shape)
+        target_shape_dsl.insert(axis + 1, 1)
+        print("target shape", target_shape_dsl)
 
-        def _std(state, axis=axis):
-            return jnp.std(self.run(state), axis)
-
-        result = self.child.std(axis)
-        minv = (
-            self.min_vals.data
-            if isinstance(self.min_vals, lazyrepeatarray)
-            else self.min_vals
-        )
-        maxv = (
-            self.max_vals.data
-            if isinstance(self.max_vals, lazyrepeatarray)
-            else self.max_vals
-        )
         return GammaTensor(
             child=result,
-            data_subjects=self.data_subjects.reshape(result.shape),
-            min_vals=lazyrepeatarray(data=0, shape=result.shape),
-            max_vals=lazyrepeatarray(
-                data=0.25 * (maxv + minv) ** 2, shape=result.shape
-            ),
-            state=output_state,
-            func=_std,
+            data_subjects=self.data_subjects.expand_dims(target_shape_dsl),
+            min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
+            max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
     def std(self, axis) -> GammaTensor:
@@ -2165,21 +2160,21 @@ class GammaTensor:
             deduct_epsilon_for_user=deduct_epsilon_for_user,
         )
 
-    def expand_dims(self, axis: int) -> GammaTensor:
-        def _expand_dims(state: dict) -> jax.numpy.DeviceArray:
-            return jnp.expand_dims(self.run(state), axis)
-
-        state = dict()
-        state.update(self.state)
-
-        return GammaTensor(
-            child=jnp.expand_dims(self.child, axis),
-            data_subjects=self.data_subjects,
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            func=_expand_dims,
-            state=state,
-        )
+    # def expand_dims(self, axis: int) -> GammaTensor:
+    #     def _expand_dims(state: dict) -> jax.numpy.DeviceArray:
+    #         return jnp.expand_dims(self.run(state), axis)
+    #
+    #     state = dict()
+    #     state.update(self.state)
+    #
+    #     return GammaTensor(
+    #         child=jnp.expand_dims(self.child, axis),
+    #         data_subjects=self.data_subjects,
+    #         min_vals=self.min_vals,
+    #         max_vals=self.max_vals,
+    #         func=_expand_dims,
+    #         state=state,
+    #     )
 
     def squeeze(self, axis: Optional[int] = None) -> GammaTensor:
         def _squeeze(state: dict) -> jax.numpy.DeviceArray:
