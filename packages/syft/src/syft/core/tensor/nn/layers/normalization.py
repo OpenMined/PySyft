@@ -65,7 +65,7 @@ class BatchNorm(Layer):
 
         xmu = input - mean
         print("xmu shapes", xmu.shape, xmu.data_subjects.shape)
-        print("xmu ohl", xmu.data_subjects.one_hot_lookup)
+
         # step2:
         # sq = xmu ** 2
         # var = 1. / N * np.sum(sq, axis=0)
@@ -150,14 +150,13 @@ class BatchNorm(Layer):
         dx = dx1 + dx2
 
         return dx
-    
 
     @property
     def params(self):
         return self.beta, self.gamma
 
     @params.setter
-    def params(self,new_params):
+    def params(self, new_params):
         assert (
             len(new_params) == 2
         ), f"Expected Two values Update Params has length{len(new_params)}"

@@ -11,6 +11,9 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
+# syft absolute
+from syft.core.tensor.passthrough import PassthroughTensor
+
 # relative
 from ..common.serde.serializable import serializable
 from .data_subject import DataSubject
@@ -18,8 +21,8 @@ from .data_subject import DataSubject
 
 def get_output_shape(shape1, shape2):
     """
-    When you insert values from one DP Tensor into another, this will help the DSL
-    figure out what its output shape will be. (DSL.insert())
+    When you insert values from one DP Tensor into another, this will help the NewDataSubject
+    figure out what its output shape will be. (NewDataSubject.insert())
 
     Assumptions:
     - shape1 reflects the shape of the datapoints, i.e. (n, ... , r, c)
@@ -204,9 +207,9 @@ class DataSubjectList:
     @staticmethod
     def matmul(dsl1: DataSubjectList, dsl2: DataSubjectList):
         """
-        Matmul can only be done when Tensor.child is a 2D array, thus Tensor.DSL is 2D (PhiTensor) or 3D (Gamma)
+        Matmul can only be done when Tensor.child is a 2D array, thus Tensor.NewDataSubject is 2D (PhiTensor) or 3D (Gamma)
         Although Matmul first involves multiplication and then addition, implementing it with summation and then
-        broadcasting was easier for DSL.
+        broadcasting was easier for NewDataSubject.
         """
 
         dsl1_target_shape = (
@@ -238,7 +241,7 @@ class DataSubjectList:
 
         output_ds = DataSubjectList.combine_dsi(summed_dsl1, summed_dsl2)
 
-        # This gets rid of redundant (repeating) DSL slices.
+        # This gets rid of redundant (repeating) NewDataSubject slices.
         output_ds.data_subjects_indexed = np.unique(
             output_ds.data_subjects_indexed, axis=0
         )
@@ -277,7 +280,7 @@ class DataSubjectList:
 
         output_ds = DataSubjectList.combine_dsi(summed_dsl1, summed_dsl2)
 
-        # This gets rid of redundant (repeating) DSL slices.
+        # This gets rid of redundant (repeating) NewDataSubject slices.
         output_ds.data_subjects_indexed = np.unique(
             output_ds.data_subjects_indexed, axis=0
         ).squeeze()
@@ -305,7 +308,7 @@ class DataSubjectList:
             output_shape = (dsl1.shape[0] + dsl2.shape[0], *dsl1.shape[1:])
         else:
             raise Exception(
-                f"Shapes of DSLs incompatible- are they meant to be broadcasted: {dsl1.shape}, {dsl2.shape}"
+                f"Shapes of NewDataSubjects incompatible- are they meant to be broadcasted: {dsl1.shape}, {dsl2.shape}"
             )
 
         output_dsl = DataSubjectList(
@@ -313,8 +316,10 @@ class DataSubjectList:
         )
 
         output_dsl[: dsl1.shape[0]] = dsl1
-        output_dsl[dsl1.shape[0]:] = dsl2
-        output_dsl.data_subjects_indexed = np.unique(output_dsl.data_subjects_indexed, axis=0)
+        output_dsl[dsl1.shape[0] :] = dsl2
+        output_dsl.data_subjects_indexed = np.unique(
+            output_dsl.data_subjects_indexed, axis=0
+        )
         return output_dsl
 
     def __getitem__(self, item) -> DataSubjectList:
@@ -532,10 +537,10 @@ class DataSubjectList:
 
     @staticmethod
     def absorb(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:
-        # TODO: Check if DSLs need to be flattened before appending, if different sizes?
+        # TODO: Check if NewDataSubjects need to be flattened before appending, if different sizes?
 
         """
-        Unlike Combine() which creates a DSL for a GammaTensor where one data point is owned
+        Unlike Combine() which creates a NewDataSubject for a GammaTensor where one data point is owned
         by multiple data subjects, Absorb() creates a GammaTensor where each data point is
         still only owned by a single data subject.
 
@@ -623,3 +628,120 @@ class DataSubjectList:
             return DataSubjectList(
                 one_hot_lookup=output_one_hot_encoding, data_subjects_indexed=final_dsi
             )
+
+
+@serializable(recursive_serde=True)
+class NewDataSubject:
+    __attr_allowlist__ = ("data_subjects",)
+
+    def __init__(self, data_subjects):
+        self.data_subjects = set(data_subjects)
+
+    def __add__(self, other):
+        if isinstance(other, NewDataSubject):
+            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+        else:
+            return NewDataSubject(self.data_subjects)
+
+    def __sub__(self, other):
+        if isinstance(other, NewDataSubject):
+            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+        else:
+            return NewDataSubject(self.data_subjects)
+
+    def __mul__(self, other):
+        if isinstance(other, NewDataSubject):
+            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+        else:
+            return NewDataSubject(self.data_subjects)
+
+    def __ge__(self, other):
+        if isinstance(other, NewDataSubject):
+            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+        else:
+            return NewDataSubject(self.data_subjects)
+
+    def __le__(self, other):
+        if isinstance(other, NewDataSubject):
+            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+        else:
+            return NewDataSubject(self.data_subjects)
+
+    def __gt__(self, other):
+        if isinstance(other, NewDataSubject):
+            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+        else:
+            return NewDataSubject(self.data_subjects)
+    
+    def __lt__(self, other):
+        if isinstance(other, NewDataSubject):
+            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+        else:
+            return NewDataSubject(self.data_subjects)
+
+    def __truediv__(self, other):
+        if isinstance(other, NewDataSubject):
+            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+        else:
+            return NewDataSubject(self.data_subjects)
+
+    def __rtruediv__(self, other):
+        return NewDataSubject(self.data_subjects)
+
+    def __repr__(self):
+        return "NewDataSubject: " + str(self.data_subjects.__repr__())
+
+    def conjugate(self, *args, **kwargs):
+        return NewDataSubject(self.data_subjects)
+
+    def subtract(self, x, y, *args, **kwargs):
+        if isinstance(y, NewDataSubject) and isinstance(x, NewDataSubject):
+            return NewDataSubject(x.data_subjects.union(y.data_subjects))
+        elif isinstance(y, NewDataSubject):
+            return NewDataSubject(y.data_subjects)
+        elif isinstance(x, NewDataSubject):
+            return NewDataSubject(x.data_subjects)
+
+    def multiply(self, x, y, *args, **kwargs):
+        if isinstance(y, NewDataSubject) and isinstance(x, NewDataSubject):
+            return NewDataSubject(x.data_subjects.union(y.data_subjects))
+        elif isinstance(y, NewDataSubject):
+            return NewDataSubject(y.data_subjects)
+        elif isinstance(x, NewDataSubject):
+            return NewDataSubject(x.data_subjects)
+
+    def real(self):
+        return NewDataSubject(self.data_subjects)
+
+    def var(self, *args, **kwargs):
+        return (self - np.mean(self)) * (self - np.mean(self))
+
+    def sqrt(self, *args, **kwargs):
+        return NewDataSubject(self.data_subjects)
+
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+        method_name = ufunc.__name__
+        print("method_name", method_name)
+        method = getattr(self, method_name, None)
+        if method is not None:
+            return method(*inputs, **kwargs)
+        else:
+            raise NotImplementedError(
+                f"Method: {method_name} not implemented in NewDataSubject"
+            )
+
+    @staticmethod
+    def from_objs(input_subjects: Union[np.ndarray, list]) -> np.ndarray:
+        # TODO: When the user passes the data subjects they might pass it as list
+        # specifying the entity per row, but in our new notation we want it to be
+        # per data point, we should make sure that we implement in such a way we expand
+        # the datasubjects automatically for row to data point mapping.
+        if not isinstance(input_subjects, np.ndarray):
+            input_subjects = np.array(input_subjects)
+
+        data_map = (
+            lambda x: NewDataSubject([x]) if not isinstance(x, NewDataSubject) else x
+        )
+        map_function = np.vectorize(data_map)
+
+        return map_function(input_subjects)

@@ -52,21 +52,18 @@ def dp_maximum(
 
     output = np.maximum(x_data, y_data)
 
-    if gamma_output(x, y):
-        array_with_max = np.argmax(np.dstack((x_data, y_data)), axis=-1)
-        x_max_ds = np.transpose(array_with_max.nonzero())
-        y_max_ds = np.transpose((array_with_max == 1).nonzero())
+    # if gamma_output(x, y):
+    #     array_with_max = np.argmax(np.dstack((x_data, y_data)), axis=-1)
+    #     x_max_ds = np.transpose(array_with_max.nonzero())
+    #     y_max_ds = np.transpose((array_with_max == 1).nonzero())
 
-        tensor_list = [x[tuple(i)] for i in x_max_ds]
-        if isinstance(y, (PhiTensor, GammaTensor)):
-            tensor_list += [y[tuple(i)] for i in y_max_ds]
-        return GammaTensor.combine(tensor_list, output.shape)
+    #     tensor_list = [x[tuple(i)] for i in x_max_ds]
+    #     if isinstance(y, (PhiTensor, GammaTensor)):
+    #         tensor_list += [y[tuple(i)] for i in y_max_ds]
+    #     return GammaTensor.combine(tensor_list, output.shape)
 
     min_v, max_v = output.min(), output.max()
-    dsl = DataSubjectList(
-        one_hot_lookup=x.data_subjects.one_hot_lookup,
-        data_subjects_indexed=np.zeros_like(output),
-    )
+    dsl = x.data_subjects  # TODO: fix later
     return PhiTensor(
         child=output,
         data_subjects=dsl,
@@ -111,31 +108,26 @@ def dp_zeros(
     :return:
     """
     output = np.zeros(shape)
-    ds_count = len(data_subjects.one_hot_lookup)
+    # ds_count = len(data_subjects.one_hot_lookup)
 
-    if ds_count == 1:
+    # if ds_count == 1:
 
-        return PhiTensor(
-            child=output,
-            data_subjects=DataSubjectList(
-                one_hot_lookup=data_subjects.one_hot_lookup,
-                data_subjects_indexed=np.zeros_like(
-                    output
-                ),  # This shouldn't matter b/c it will be replaced
-            ),
-            min_vals=output.min(),
-            max_vals=output.max(),
-        )
-    elif ds_count > 1:
-        # TODO @Ishan: will the lack of a `gamma.func` here hurt us in any way?
-        return GammaTensor(
-            child=output,
-            data_subjects=data_subjects,
-            min_vals=lazyrepeatarray(0, shape),
-            max_vals=lazyrepeatarray(1, shape),
-        )
-    else:
-        raise NotImplementedError("Zero or negative data subject behaviour undefined.")
+    #     return PhiTensor(
+    #         child=output,
+    #         data_subjects=np.zeros_like(shape),
+    #         min_vals=output.min(),
+    #         max_vals=output.max(),
+    #     )
+    # elif ds_count > 1:
+    #     # TODO @Ishan: will the lack of a `gamma.func` here hurt us in any way?
+    return GammaTensor(
+        child=output,
+        data_subjects=data_subjects,
+        min_vals=lazyrepeatarray(0, shape),
+        max_vals=lazyrepeatarray(1, shape),
+    )
+    # else:
+    #     raise NotImplementedError("Zero or negative data subject behaviour undefined.")
 
 
 def dp_pad(
@@ -150,20 +142,11 @@ def dp_pad(
     max_v = lazyrepeatarray(
         data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape
     )
-    if isinstance(input, GammaTensor):
-        dsl_width = [(0, 0)] + list(width)
-    else:
-        dsl_width = width
-    print("dsi_shape, width, mode", input.data_subjects.shape, width, padding_mode)
-    output_dsi = np.pad(
-        input.data_subjects.data_subjects_indexed,
-        pad_width=dsl_width,
-        mode=padding_mode,
-    )
 
-    output_data_subjects = DataSubjectList(
-        one_hot_lookup=input.data_subjects.one_hot_lookup,
-        data_subjects_indexed=output_dsi,
+    print("dsi_shape, width, mode", input.data_subjects.shape, width, padding_mode)
+
+    output_data_subjects = np.pad(
+        input.data_subjects, width, mode=padding_mode, **kwargs
     )
 
     if isinstance(input, PhiTensor):
@@ -194,7 +177,7 @@ def dp_add_at(a: PhiTensor, indices: Tuple, b: PhiTensor):
 
     return PhiTensor(
         child=data_a,
-        data_subjects=a.data_subjects,
+        data_subjects=np.add.at(a.data_subjects, indices, b.data_subjects),
         min_vals=data_a.min(),
         max_vals=data_a.max(),
     )
@@ -263,13 +246,15 @@ def im2col_indices(
     else:
         raise NotImplementedError
     x_padded = dp_pad(x, width)
+    print("x_padded", x_padded.shape)
 
     k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
 
-    # return k, i, j, x_padded
     cols = x_padded[:, k, i, j]
+    print("cols before", cols.shape)
     C = x.shape[1]
     cols = cols.transpose((1, 2, 0)).reshape((field_height * field_width * C, -1))
+    print("cols transpose", cols.shape)
 
     # Not sure why this happens but sometimes this gets a shape of (n, -1)
     if cols.min_vals.shape != cols.shape:

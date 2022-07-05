@@ -112,9 +112,11 @@ class Convolution(Layer):
         self.X_col = im2col_indices(
             input, h_filter, w_filter, padding=self.padding, stride=self.stride
         )
-        print("X_col after im2col", self.X_col.shape, self.X_col.data_subjects.shape)
+        # print("X_col after im2col", self.X_col.shape, self.X_col.data_subjects.shape)
 
+        # relative
         from ...autodp.gamma_tensor import GammaTensor
+
         if isinstance(self.W, (PhiTensor, GammaTensor)):
             print("W", self.W.shape, self.W.data_subjects.shape)
         W_col = self.W.reshape((n_filters, -1))
@@ -132,7 +134,11 @@ class Convolution(Layer):
         self.last_output = (
             self.activation.forward(out) if self.activation is not None else out
         )
-        print("out after matmul", self.last_output.shape, self.last_output.data_subjects.shape)
+        print(
+            "out after matmul",
+            self.last_output.shape,
+            self.last_output.data_subjects.shape,
+        )
         print("Done with convolution")
         return out
 

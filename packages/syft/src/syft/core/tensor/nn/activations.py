@@ -58,7 +58,7 @@ class leaky_ReLU(Activation):
 
         gt = input_array > 0
 
-        return gt * input_array + ((gt * -1) + 1) * input_array * self.slope
+        return input_array * gt + input_array * ((gt * -1) + 1) * self.slope
 
     def derivative(
         self, input_array: Optional[Union[PhiTensor, GammaTensor]] = None

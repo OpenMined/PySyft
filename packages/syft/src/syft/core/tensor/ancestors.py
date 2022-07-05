@@ -17,6 +17,7 @@ from numpy.typing import ArrayLike
 # relative
 from ..adp.data_subject import DataSubject
 from ..adp.data_subject_list import DataSubjectList
+from ..adp.data_subject_list import NewDataSubject
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
@@ -418,14 +419,14 @@ class PhiTensorAncestor(TensorChainManager):
 
         # Check 3: If data_subjects is a string, make it a list with one entity in it
         if isinstance(data_subjects, str):
-            data_subjects = [DataSubject(data_subjects)]
-        elif isinstance(data_subjects, DataSubject):
+            data_subjects = [NewDataSubject(data_subjects)]
+        elif isinstance(data_subjects, NewDataSubject):
             data_subjects = [data_subjects]
-        # Check 4: If data_subjects are a list, are the items strings or DataSubject objects.
-        # If they're strings lets create DataSubject objects.
+        # Check 4: If data_subjects are a list, are the items strings or NewDataSubject objects.
+        # If they're strings lets create NewDataSubject objects.
 
-        if isinstance(data_subjects, (list, tuple)):
-            data_subjects = np.array(data_subjects)
+        # if isinstance(data_subjects, (list, tuple)):
+        #     data_subjects = np.array(data_subjects)
 
         # if len(data_subjects) != 1 and data_subjects.shape != self.shape:
         #     raise Exception(
@@ -436,19 +437,8 @@ class PhiTensorAncestor(TensorChainManager):
         #         " the tensor you're calling .private() on. Try again."
         #     )
 
-        if not isinstance(data_subjects, DataSubjectList):
-            one_hot_lookup, data_subjects_indexed = np.unique(
-                data_subjects, return_inverse=True
-            )
-        else:
-            one_hot_lookup, data_subjects_indexed = (
-                data_subjects.one_hot_lookup,
-                data_subjects.data_subjects_indexed,
-            )
-
-        data_subjects_list = DataSubjectList(
-            one_hot_lookup=one_hot_lookup, data_subjects_indexed=data_subjects_indexed
-        )
+        if not isinstance(data_subjects, NewDataSubject):
+            data_subjects = NewDataSubject.from_objs(data_subjects)
 
         # SKIP check temporarily
         # for entity in one_hot_lookup:
@@ -456,53 +446,41 @@ class PhiTensorAncestor(TensorChainManager):
         #         raise ValueError(
         #             f"Expected DataSubject to be either string or DataSubject object, but type is {type(entity)}"
         #         )
-
-        if not isinstance(one_hot_lookup, np.ndarray) or not isinstance(
-            data_subjects_indexed, np.ndarray
-        ):
-            raise Exception(
-                f"one_hot_lookup {type(one_hot_lookup)} and data_subjects_indexed "
-                + f"{type(data_subjects_indexed)} must be np.ndarrays"
+        if data_subjects.shape != self.shape:
+            raise ValueError(
+                f"DataSubjects shape: {data_subjects.shape} should match data shape: {self.shape}"
             )
-        elif (
-            data_subjects_list is not None and len(data_subjects_list) == self.shape[0]
-        ):
 
-            if isinstance(min_val, (bool, int, float)):
-                min_vals = np.array(min_val).ravel()  # make it 1D
-            else:
-                raise Exception(
-                    "min_vals should be either float,int,bool got "
-                    + str(type(min_val))
-                    + " instead."
-                )
-
-            if isinstance(max_val, (bool, int, float)):
-                max_vals = np.array(max_val).ravel()  # make it 1D
-            else:
-                raise Exception(
-                    "min_vals should be either float,int,bool got "
-                    + str(type(max_val))
-                    + " instead."
-                )
-
-            if min_vals.shape != self.child.shape:
-                min_vals = lazyrepeatarray(min_vals, self.child.shape)
-
-            if max_vals.shape != self.child.shape:
-                max_vals = lazyrepeatarray(max_vals, self.child.shape)
-
-            self.replace_abstraction_top(
-                tensor_type=_PhiTensor(),
-                child=self.child,
-                min_vals=min_vals,
-                max_vals=max_vals,
-                data_subjects=data_subjects_list,  # type: ignore
-            )  # type: ignore
-
+        if isinstance(min_val, (bool, int, float)):
+            min_vals = np.array(min_val).ravel()  # make it 1D
         else:
             raise Exception(
-                "If you're passing in mulitple data_subjects, please pass in one per row."
+                "min_vals should be either float,int,bool got "
+                + str(type(min_val))
+                + " instead."
             )
+
+        if isinstance(max_val, (bool, int, float)):
+            max_vals = np.array(max_val).ravel()  # make it 1D
+        else:
+            raise Exception(
+                "min_vals should be either float,int,bool got "
+                + str(type(max_val))
+                + " instead."
+            )
+
+        if min_vals.shape != self.child.shape:
+            min_vals = lazyrepeatarray(min_vals, self.child.shape)
+
+        if max_vals.shape != self.child.shape:
+            max_vals = lazyrepeatarray(max_vals, self.child.shape)
+
+        self.replace_abstraction_top(
+            tensor_type=_PhiTensor(),
+            child=self.child,
+            min_vals=min_vals,
+            max_vals=max_vals,
+            data_subjects=data_subjects,  # type: ignore
+        )  # type: ignore
 
         return self
