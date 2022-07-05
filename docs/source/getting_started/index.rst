@@ -38,9 +38,7 @@ both Data Owner and Data Scientist as a part of a tutorial or course.
 * Jupyter notebook
 * Docker
 
-If you already have all of them, jump here!
-
-.. TODO: add href to a page w only syft grid and hagrid commands
+If you already have all of them, jump `here! <https://openmined.github.io/PySyft/install_tutorials/have_prerequisites.html#>`__
 
 
 What OS are you on?
