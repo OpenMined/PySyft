@@ -33,6 +33,9 @@ from .common.node_manager.user_manager import UserManager
 from .common.node_service.association_request.association_request_service import (
     AssociationRequestService,
 )
+from .common.node_service.association_request.association_request_service import (
+    AssociationRequestWithoutReplyService,
+)
 from .common.node_service.network_search.network_search_service import (
     NetworkSearchService,
 )
@@ -57,7 +60,8 @@ from .common.node_service.vpn.vpn_service import VPNStatusService
 from .domain import Domain
 from .domain_client import DomainClient
 from .network_client import NetworkClient
-from hagrid.rand_sec import generate_sec_random_password 
+from .network_service import NetworkServiceClass
+
 
 class Network(Node):
 
@@ -120,6 +124,13 @@ class Network(Node):
         self.immediate_services_with_reply.append(NetworkSearchService)
         self.immediate_services_with_reply.append(PeerDiscoveryService)
 
+        # TODO: New Service registration process
+        self.immediate_services_with_reply.append(NetworkServiceClass)
+
+        self.immediate_services_without_reply.append(
+            AssociationRequestWithoutReplyService
+        )
+
         self.requests: List[RequestMessage] = list()
         # available_device_types = set()
         # TODO: add available compute types
@@ -133,14 +144,20 @@ class Network(Node):
 
         self.post_init()
 
+    def post_init(self) -> None:
+        super().post_init()
+        self.set_node_uid()
+
     def initial_setup(  # nosec
         self,
+        signing_key: SigningKey,
         first_superuser_name: str = "Jane Doe",
         first_superuser_email: str = "info@openmined.org",
-        first_superuser_password: str = generate_sec_random_password(48),
+        first_superuser_password: str = "changethis",
         first_superuser_budget: float = 5.55,
         domain_name: str = "BigHospital",
     ) -> Network:
+        Node.set_keys(node=self, signing_key=signing_key)
 
         # Build Syft Message
         msg: SignedImmediateSyftMessageWithReply = CreateInitialSetUpMessage(
@@ -151,16 +168,13 @@ class Network(Node):
             domain_name=domain_name,
             budget=first_superuser_budget,
             reply_to=self.address,
+            signing_key=signing_key,
         ).sign(signing_key=self.signing_key)
 
         # Process syft message
         _ = self.recv_immediate_msg_with_reply(msg=msg).message
 
         return self
-
-    def post_init(self) -> None:
-        super().post_init()
-        self.set_node_uid()
 
     def loud_print(self) -> None:
         try:

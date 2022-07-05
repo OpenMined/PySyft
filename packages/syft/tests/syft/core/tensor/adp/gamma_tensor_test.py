@@ -76,12 +76,12 @@ def test_gamma_serde(
     print("gamma tensor", gamma_tensor1)
     # Checks to ensure gamma tensor was properly created
     assert isinstance(gamma_tensor1, GammaTensor)
-    assert gamma_tensor1.child.child == tensor1.child.child.sum()
+    assert gamma_tensor1.child == tensor1.child.sum()
 
     ser = sy.serialize(gamma_tensor1, to_bytes=True)
     de = sy.deserialize(ser, from_bytes=True)
 
-    assert de.child.child == gamma_tensor1.child.child
+    assert de.child == gamma_tensor1.child
     assert de.data_subjects == gamma_tensor1.data_subjects
     assert de.min_val == gamma_tensor1.min_val
     assert de.max_val == gamma_tensor1.max_val
@@ -107,7 +107,7 @@ def test_gamma_publish(
     gamma_tensor1 = tensor1.sum()
     assert isinstance(gamma_tensor1, GammaTensor)
     # Gamma Tensor Does not have FPT Values
-    assert tensor1.child.child.sum() == gamma_tensor1.child.child
+    assert tensor1.child.sum() == gamma_tensor1.child
 
     ledger_store = DictLedgerStore()
     print(ledger_store.kv_store)
@@ -128,6 +128,6 @@ def test_gamma_publish(
     )
 
     assert results.dtype == np.float64
-    assert results < tensor1.child.encode(upper_bound.sum()) + 10
-    assert -10 + tensor1.child.encode(lower_bound.sum()) < results
+    assert results < upper_bound.sum() + 10
+    assert -10 + lower_bound.sum() < results
     print(ledger_store.kv_store)

@@ -265,6 +265,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: run docker with a different platform like linux/arm64",
 )
+@click.option(
+    "--vpn",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn tailscale vpn container on or off",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -797,6 +804,11 @@ def create_launch_cmd(
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
     else:
         parsed_kwargs["jupyter"] = False
+
+    if "vpn" in kwargs and kwargs["vpn"] is not None:
+        parsed_kwargs["vpn"] = str_to_bool(cast(str, kwargs["vpn"]))
+    else:
+        parsed_kwargs["vpn"] = True
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
@@ -1392,6 +1404,10 @@ def create_launch_docker_cmd(
         pull_cmd += " docker compose pull"
 
     cmd += " docker compose -p " + snake_name
+
+    if "vpn" in kwargs and kwargs["vpn"]:
+        cmd += " --profile vpn"
+
     if str(node_type.input) == "network":
         cmd += " --profile network"
     else:
@@ -1400,6 +1416,32 @@ def create_launch_docker_cmd(
     # network frontend disabled
     if str(node_type.input) != "network" and kwargs["headless"] is False:
         cmd += " --profile frontend"
+
+    # new docker compose regression work around
+    default_env = f"{GRID_SRC_PATH}/.env"
+    default_envs = {}
+    with open(default_env, "r") as f:
+        for line in f.readlines():
+            if "=" in line:
+                parts = line.strip().split("=")
+                key = parts[0]
+                value = ""
+                if len(parts) > 1:
+                    value = parts[1]
+                default_envs[key] = value
+    default_envs.update(envs)
+    try:
+        env_file = ""
+        for k, v in default_envs.items():
+            env_file += f"{k}={v}\n"
+
+        env_file_path = os.path.abspath("./.envfile")
+        with open(env_file_path, "w") as f:
+            f.write(env_file)
+
+        cmd += f" --env-file {env_file_path}"
+    except Exception:  # nosec
+        pass
 
     cmd += " --file docker-compose.yml"
     if build:
