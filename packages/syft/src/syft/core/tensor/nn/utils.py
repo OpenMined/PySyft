@@ -143,7 +143,7 @@ def dp_pad(
         data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape
     )
 
-    print("dsi_shape, width, mode", input.data_subjects.shape, width, padding_mode)
+    # print("dsi_shape, width, mode", input.data_subjects.shape, width, padding_mode)
 
     output_data_subjects = np.pad(
         input.data_subjects, width, mode=padding_mode, **kwargs
@@ -235,7 +235,7 @@ def im2col_indices(
     """An implementation of im2col based on some fancy indexing"""
     # Zero-pad the input
     p = padding
-    print("shapes before padding:, ", x.shape, x.data_subjects.shape)
+    # print("shapes before padding:, ", x.shape, x.data_subjects.shape)
 
     if len(x.shape) == 4:
         width = ((0, 0), (0, 0), (p, p), (p, p))
@@ -246,15 +246,15 @@ def im2col_indices(
     else:
         raise NotImplementedError
     x_padded = dp_pad(x, width)
-    print("x_padded", x_padded.shape)
+    # print("x_padded", x_padded.shape)
 
     k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
 
     cols = x_padded[:, k, i, j]
-    print("cols before", cols.shape)
+    # print("cols before", cols.shape)
     C = x.shape[1]
     cols = cols.transpose((1, 2, 0)).reshape((field_height * field_width * C, -1))
-    print("cols transpose", cols.shape)
+    # print("cols transpose", cols.shape)
 
     # Not sure why this happens but sometimes this gets a shape of (n, -1)
     if cols.min_vals.shape != cols.shape:

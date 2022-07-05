@@ -1808,13 +1808,13 @@ class GammaTensor:
         )
 
     def expand_dims(self, axis: Optional[int]) -> GammaTensor:
-        print("CAN YOU HEAR ME")
+        # print("CAN YOU HEAR ME")
         result = np.expand_dims(self.child, axis)
-        print("reshaping to:", result.shape)
-        print("og shape", self.data_subjects.shape)
+        # print("reshaping to:", result.shape)
+        # print("og shape", self.data_subjects.shape)
         target_shape_dsl = list(self.data_subjects.shape)
         target_shape_dsl.insert(axis + 1, 1)
-        print("target shape", target_shape_dsl)
+        # print("target shape", target_shape_dsl)
 
         return GammaTensor(
             child=result,

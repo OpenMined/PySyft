@@ -56,41 +56,41 @@ class BatchNorm(Layer):
 
     def forward(self, input: Union[PhiTensor, GammaTensor], *args, **kwargs):
         # N, D = x.shape
-        print("input shapes", input.shape, input.data_subjects.shape)
+        # print("input shapes", input.shape, input.data_subjects.shape)
 
         # step1: calculate the mean
         mean = input.mean(axis=-3)
         mean = mean.expand_dims(-3)
-        print("mean shapes after expand", mean.shape, mean.data_subjects.shape)
+        # print("mean shapes after expand", mean.shape, mean.data_subjects.shape)
 
         xmu = input - mean
-        print("xmu shapes", xmu.shape, xmu.data_subjects.shape)
+        # print("xmu shapes", xmu.shape, xmu.data_subjects.shape)
 
         # step2:
         # sq = xmu ** 2
         # var = 1. / N * np.sum(sq, axis=0)
         var = xmu.std(axis=-3).expand_dims(axis=-3)
-        print("var shapes", var.shape, var.data_subjects.shape)
+        # print("var shapes", var.shape, var.data_subjects.shape)
 
         # step3:
         sqrtvar = (var + self.epsilon).sqrt()
-        print("sqrtvar shapes", sqrtvar.shape, sqrtvar.data_subjects.shape)
+        # print("sqrtvar shapes", sqrtvar.shape, sqrtvar.data_subjects.shape)
         ivar = 1.0 / sqrtvar
-        print("ivar shapes", ivar.shape, ivar.data_subjects.shape)
+        # print("ivar shapes", ivar.shape, ivar.data_subjects.shape)
 
         # step4: normalization->x^
         xhat = xmu * ivar
-        print("xhat shapes", xhat.shape, xhat.data_subjects.shape)
+        # print("xhat shapes", xhat.shape, xhat.data_subjects.shape)
 
         # step5: scale and shift
         gammax = xhat * self.gamma
-        print("gamma shapes", gammax.shape, gammax.data_subjects.shape)
+        # print("gamma shapes", gammax.shape, gammax.data_subjects.shape)
 
         out = gammax + self.beta
-        print("out shapes", out.shape, out.data_subjects.shape)
+        # print("out shapes", out.shape, out.data_subjects.shape)
 
         out = self.activation.forward(out) if self.activation is not None else out
-        print("activated out shapes", out.shape, out.data_subjects.shape)
+        # print("activated out shapes", out.shape, out.data_subjects.shape)
 
         self.cache = (xhat, xmu, ivar, sqrtvar, var)
         return out

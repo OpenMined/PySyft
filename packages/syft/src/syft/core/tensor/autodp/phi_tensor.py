@@ -1385,7 +1385,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
     ) -> PhiTensor:
         result = self.child.mean(axis)
-        print(f"PT mean gives shape of {result.shape}")
+        # print(f"PT mean gives shape of {result.shape}")
         return PhiTensor(
             child=result,
             data_subjects=self.data_subjects.mean(axis),
