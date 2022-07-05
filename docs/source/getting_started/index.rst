@@ -9,8 +9,8 @@ Getting Started
 
 Welcome to the domain deployment installation tutorials!
 This section of our documentation is designed to be the
-simplest way to get you started deploying a PyGrid Domain
-to an OSX, Linux, or Windows machine and interacting with it
+simplest way to get you started deploying your data to a domain node
+on an OSX, Linux, or Windows machine and interacting with it
 as a data scientist using PySyft.
 
 .. note:: 
@@ -51,11 +51,11 @@ The first step of your journey is to figure out which operating system you are r
 and choose the right tutorial for installation. 
 There are 3 types of operating systems for you to choose from:
 
-#. `OSX <https://openmined.github.io/PySyft/install_tutorials/osx_11_5_1.html#>`__.
+#. `OSX <https://openmined.github.io/PySyft/install_tutorials/osx_11_5_1.html#>`__
 
-#. `Linux <https://openmined.github.io/PySyft/install_tutorials/linux.html##>`__.
+#. `Linux <https://openmined.github.io/PySyft/install_tutorials/linux.html##>`__
 
-#. `Windows <https://openmined.github.io/PySyft/install_tutorials/windows.html>`__.
+#. `Windows <https://openmined.github.io/PySyft/install_tutorials/windows.html>`__
 
 Best of luck on your journey!
 
