@@ -1099,7 +1099,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         if len(data_subjects.shape) != len(self.shape):
             raise ValueError(
-                f"DataSubjects shape: {data_subjects.shape} should match data shape: {self.shape}"
+                f"DataSubjects shape: {len(data_subjects.shape)} should match data shape: {len(self.shape)}"
             )
 
         self.data_subjects = data_subjects

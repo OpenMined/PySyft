@@ -68,6 +68,7 @@ from .core.tensor import autodp  # noqa: F401
 from .core.tensor.autodp.phi_tensor import PhiTensor  # noqa: F401
 from .core.tensor.autodp.gamma_tensor import GammaTensor  # noqa: F401
 from .core.tensor.lazy_repeat_array import lazyrepeatarray  # noqa: F401
+from .core.adp.data_subject_list import NewDataSubject  # noqa: F401
 from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
 from .core.tensor.tensor import Tensor  # noqa: F401
 from .experimental_flags import flags  # noqa: F401

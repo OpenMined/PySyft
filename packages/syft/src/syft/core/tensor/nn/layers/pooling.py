@@ -64,19 +64,18 @@ class AvgPool(Layer):
 
         n, d, h, w = input.shape
         input_reshaped = input.reshape((n * d, 1, h, w))
+
+        self.ds_cached = input_reshaped.data_subjects
         self.X_col = im2col_indices(
             input_reshaped, pool_h, pool_w, padding=0, stride=self.stride
         )
-
         outputs = self.X_col.mean(axis=0)
-
         outputs = outputs.reshape((h_out, w_out, n, d))
         outputs = outputs.transpose((2, 3, 0, 1))
         # print("Done with AvgPool forward pass")
         return outputs
 
     def backward(self, pre_grad: PhiTensor, *args, **kwargs):
-
         n, d, w, h = self.input_shape
         pool_h, pool_w = self.pool_size
 
@@ -87,9 +86,8 @@ class AvgPool(Layer):
         dout_col_size = np.prod(dout_col.shape)
 
         dX_col[:, range(dout_col_size)] = dout_col * (1.0 / dX_col.shape[0])
-
         dX = col2im_indices(
-            dX_col, (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride
+            dX_col,  (n * d, 1, h, w), self.ds_cached, pool_h, pool_w, padding=0, stride=self.stride
         )
 
         dX = dX.reshape(self.input_shape)
@@ -154,6 +152,7 @@ class MaxPool(Layer):
 
         n, d, h, w = input.shape
         input_reshaped = input.reshape((n * d, 1, h, w))
+        self.ds_cached = input_reshaped.data_subjects
         self.X_col = im2col_indices(
             input_reshaped, pool_h, pool_w, padding=0, stride=self.stride
         )
@@ -182,7 +181,7 @@ class MaxPool(Layer):
         dX_col[self.max_idx, range(dout_col_size)] = dout_col
 
         dX = col2im_indices(
-            dX_col, (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride
+            dX_col, (n * d, 1, h, w), self.ds_cached, pool_h, pool_w, padding=0, stride=self.stride
         )
 
         dX = dX.reshape(self.input_shape)

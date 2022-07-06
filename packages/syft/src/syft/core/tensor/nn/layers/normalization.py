@@ -115,7 +115,7 @@ class BatchNorm(Layer):
 
         N, D, x, y = pre_grad.shape
         pre_grad = (
-            (pre_grad * self.activation.derivative())
+            (self.activation.derivative(pre_grad))
             if self.activation is not None
             else pre_grad
         )
@@ -144,7 +144,7 @@ class BatchNorm(Layer):
 
         # step1,
         dmu = (dxmu1 + dxmu2).sum(axis=0) * -1
-        dx2 = ((1 / N) * pre_grad.ones_like()) * dmu
+        dx2 = (pre_grad.ones_like()) * dmu * (1 / N)
 
         # step0 done!
         dx = dx1 + dx2

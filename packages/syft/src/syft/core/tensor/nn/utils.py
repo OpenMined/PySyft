@@ -8,6 +8,7 @@ import numpy as np
 
 # relative
 from ...adp.data_subject_list import DataSubjectList
+from ...adp.data_subject_list import NewDataSubject
 from ..autodp.gamma_tensor import GammaTensor
 from ..autodp.phi_tensor import PhiTensor
 from ..lazy_repeat_array import lazyrepeatarray
@@ -97,7 +98,7 @@ def dp_log(input: Union[PhiTensor, GammaTensor]) -> Union[PhiTensor, GammaTensor
 
 
 def dp_zeros(
-    shape: Tuple, data_subjects: DataSubjectList
+    shape: Tuple, data_subjects: Union[DataSubjectList, NewDataSubject]
 ) -> Union[PhiTensor, GammaTensor]:
     """
     TODO: Passing in the shape seems unnecessary- it can be inferred from data_subjects.data_subjects_indexed.shape
@@ -108,18 +109,8 @@ def dp_zeros(
     :return:
     """
     output = np.zeros(shape)
-    # ds_count = len(data_subjects.one_hot_lookup)
-
-    # if ds_count == 1:
-
-    #     return PhiTensor(
-    #         child=output,
-    #         data_subjects=np.zeros_like(shape),
-    #         min_vals=output.min(),
-    #         max_vals=output.max(),
-    #     )
-    # elif ds_count > 1:
-    #     # TODO @Ishan: will the lack of a `gamma.func` here hurt us in any way?
+    # output_ds = data_subjects.reshape(shape)
+    # print("Inside dp_zeros: ", output.shape, output_ds.shape)
     return GammaTensor(
         child=output,
         data_subjects=data_subjects,
@@ -174,10 +165,11 @@ def dp_add_at(a: PhiTensor, indices: Tuple, b: PhiTensor):
     data_b = b.child
 
     np.add.at(data_a, indices, data_b)
+    np.add.at(a.data_subjects, indices, b.data_subjects)
 
     return PhiTensor(
         child=data_a,
-        data_subjects=np.add.at(a.data_subjects, indices, b.data_subjects),
+        data_subjects=a.data_subjects,
         min_vals=data_a.min(),
         max_vals=data_a.max(),
     )
@@ -211,6 +203,7 @@ def get_im2col_indices(
 def col2im_indices(
     cols: PhiTensor,
     x_shape: Tuple,
+    target_ds: NewDataSubject,
     field_height: int = 3,
     field_width: int = 3,
     padding: int = 1,
@@ -219,10 +212,13 @@ def col2im_indices(
     """An implementation of col2im based on fancy indexing and np.add.at"""
     N, C, H, W = x_shape
     H_padded, W_padded = H + 2 * padding, W + 2 * padding
-    x_padded = dp_zeros((N, C, H_padded, W_padded), data_subjects=cols.data_subjects)
+    x_padded = dp_zeros((N, C, H_padded, W_padded), data_subjects=target_ds)
+
     k, i, j = get_im2col_indices(x_shape, field_height, field_width, padding, stride)
     cols_reshaped = cols.reshape((C * field_height * field_width, -1, N))
+
     cols_reshaped = cols_reshaped.transpose((2, 0, 1))
+
     x_padded = dp_add_at(x_padded, (slice(None), k, i, j), cols_reshaped)
     if padding == 0:
         return x_padded
@@ -246,12 +242,12 @@ def im2col_indices(
     else:
         raise NotImplementedError
     x_padded = dp_pad(x, width)
+
     # print("x_padded", x_padded.shape)
 
     k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
 
     cols = x_padded[:, k, i, j]
-    # print("cols before", cols.shape)
     C = x.shape[1]
     cols = cols.transpose((1, 2, 0)).reshape((field_height * field_width * C, -1))
     # print("cols transpose", cols.shape)

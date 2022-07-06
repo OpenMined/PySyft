@@ -109,6 +109,7 @@ class Convolution(Layer):
             w_out,
         ) = self.out_shape
 
+        self.ds_cached = input.data_subjects
         self.X_col = im2col_indices(
             input, h_filter, w_filter, padding=self.padding, stride=self.stride
         )
@@ -150,19 +151,31 @@ class Convolution(Layer):
             if self.activation is not None
             else pre_grad
         )
+        print("pre_grads ", pre_grad.shape, pre_grads.min_vals.shape)
         db = pre_grads.sum(axis=(0, 2, 3))
+        print("db ", db.shape, db.min_vals.shape)
         self.db = db.reshape((n_filter, -1))
+        self.db.min_vals.shape = self.db.max_vals.shape = self.db.shape
+        print("self db ", self.db.shape, self.db.min_vals.shape)
 
-        pre_grads_reshaped = pre_grads.transpose((1, 2, 3, 0)).reshape((n_filter, -1))
-
+        pre_grads_reshaped = pre_grads.transpose((1, 2, 3, 0))
+        print("pre_grads ", pre_grads_reshaped.shape, pre_grads_reshaped.min_vals.shape)
+        pre_grads_reshaped = pre_grads_reshaped.reshape((n_filter, -1))
+        pre_grads_reshaped.min_vals.shape = pre_grads_reshaped.max_vals.shape = pre_grads_reshaped.shape
+        print("pre_grads ", pre_grads_reshaped.shape, pre_grads_reshaped.min_vals.shape)
+        print("X_cols", self.X_col.shape, self.X_col.min_vals.shape)
         dW = pre_grads_reshaped @ self.X_col.T
         self.dW = dW.reshape(self.W.shape)
 
         W_reshape = self.W.reshape(n_filter, -1)
+        print("W_reshape, ", W_reshape.shape)
+        # W_reshape.min_vals.shape = W_reshape.max_vals.shape = W_reshape.shape
         dX_col = pre_grads_reshaped.T @ W_reshape
+        print("dX_col ", dX_col.shape)
         dX = col2im_indices(
             dX_col,
             self.input_shape,
+            self.ds_cached,
             h_filter,
             w_filter,
             padding=self.padding,
