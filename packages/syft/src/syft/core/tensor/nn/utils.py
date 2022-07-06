@@ -211,8 +211,11 @@ def col2im_indices(
     print("cols", cols.shape, cols.data_subjects.shape)
     print("target_ds")
     N, C, H, W = x_shape
-    H_padded, W_padded = H + 2 * padding, W + 2 * padding
-    x_padded = dp_zeros((N, C, H_padded, W_padded), data_subjects=target_ds)
+    # H_padded, W_padded = H + 2 * padding, W + 2 * padding
+    x_padded = dp_zeros((N, C, H, W), data_subjects=target_ds)
+    if padding != 0:
+        x_padded = dp_pad(x_padded, width=padding)
+    # x_padded = dp_zeros((N, C, H_padded, W_padded), data_subjects=target_ds)
     print("x_padded", x_padded.shape, x_padded.data_subjects.shape)
 
     k, i, j = get_im2col_indices(x_shape, field_height, field_width, padding, stride)
