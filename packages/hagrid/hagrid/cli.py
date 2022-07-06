@@ -1362,6 +1362,15 @@ def create_launch_docker_cmd(
         "STACK_API_KEY": str(
             generate_sec_random_password(length=48, special_chars=False)
         ),
+        "S3_ROOT_PWD": str(
+            generate_sec_random_password(length=48, special_chars=False)
+        ),
+        "PGADMIN_DEFAULT_PASSWORD": str(
+            generate_sec_random_password(length=48, special_chars=False)
+        ),
+        "POSTGRES_PASSWORD": str(
+            generate_sec_random_password(length=48, special_chars=False)
+        ),
     }
 
     if "platform" in kwargs and kwargs["platform"] is not None:
