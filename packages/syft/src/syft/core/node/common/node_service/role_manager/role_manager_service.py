@@ -14,7 +14,7 @@ from nacl.signing import VerifyKey
 
 # relative
 from .....common.message import ImmediateSyftMessageWithReply
-from ....domain.domain_interface import DomainInterface
+from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import RequestError
@@ -146,7 +146,9 @@ def update_role_msg(
         raise MissingRequestKeyError
 
     # Check if user has permissions to edit roles
-    _allowed = node.users.can_edit_roles(verify_key=verify_key)
+    _allowed = node.users.can_edit_roles(verify_key=verify_key) and str(
+        msg.role_id
+    ) != str(node.roles.owner_role.id)
 
     if _allowed:
         node.roles.set(role_id=msg.role_id, params=params)
@@ -216,7 +218,8 @@ def get_all_roles_msg(
 
     if _allowed:
         roles = node.roles.all()
-        _msg = [model_to_json(role) for role in roles]
+
+        _msg = [model_to_json(role) for role in roles if role.name != "Owner"]
     else:
         raise AuthorizationError("You're not allowed to get Role information!")
 

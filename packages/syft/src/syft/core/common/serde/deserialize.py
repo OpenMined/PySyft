@@ -176,7 +176,7 @@ def deserialize_capnp(buf: bytes) -> Any:
     for i in header_bytes:
         # only allow ascii letters or : in headers and class name to prevent lookup
         # breaking somehow, when packing weird stuff like \x03 ends up in the string
-        # e.g. NDimEntityPhiTensor -> ND\x03imEntityPhiTensor
+        # e.g. PhiTensor -> ND\x03imEntityPhiTensor
         if i in range(65, 91) or i in range(97, 123) or i == 58:
             chars.append(i)
     header_bytes = bytes(chars)
@@ -193,10 +193,15 @@ def deserialize_capnp(buf: bytes) -> Any:
             f"capnp Magic Header {CAPNP_START_MAGIC_HEADER}" + "not found in bytes"
         )
     start_index += len(CAPNP_START_MAGIC_HEADER_BYTES)
-    end_index = header_bytes.index(CAPNP_END_MAGIC_HEADER_BYTES)
+    end_index = start_index + header_bytes[start_index:].index(
+        CAPNP_END_MAGIC_HEADER_BYTES
+    )
     class_name_bytes = header_bytes[start_index:end_index]
-
     class_name = class_name_bytes.decode("utf-8")
+
+    if end_index <= start_index:
+        raise ValueError("End Index should always be greater than Start index")
+
     if class_name not in CAPNP_REGISTRY:
         raise Exception(
             f"Found capnp Magic Header: {CAPNP_START_MAGIC_HEADER} "

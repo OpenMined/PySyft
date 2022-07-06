@@ -35,7 +35,7 @@ class RedisStore(ObjectStore):
             self.redis: redis.client.Redis = redis.Redis(
                 host=settings.REDIS_HOST,
                 port=self.settings.REDIS_PORT,
-                db=self.settings.STORE_DB_ID,
+                db=self.settings.REDIS_STORE_DB_ID,
             )
         except Exception as e:
             print("failed to load redis", e)
@@ -203,6 +203,9 @@ class RedisStore(ObjectStore):
                 .filter_by(obj=str(key.value))
                 .first()
             )
+            obj_dataset_to_delete = (
+                local_session.query(BinObjDataset).filter_by(obj=str(key.value)).first()
+            )
             # Check if the uploaded data is a proxy dataset
             if metadata_to_delete and metadata_to_delete.is_proxy_dataset:
                 # Retrieve proxy dataset from store
@@ -213,6 +216,7 @@ class RedisStore(ObjectStore):
 
             self.redis.delete(str(key.value))
             local_session.delete(metadata_to_delete)
+            local_session.delete(obj_dataset_to_delete)
             local_session.commit()
             local_session.close()
         except Exception as e:

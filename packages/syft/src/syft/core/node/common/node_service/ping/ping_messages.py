@@ -69,5 +69,5 @@ class PingMessageWithReply(GenericPayloadMessageWithReply):
             return {
                 "grid_url": str(grid_url),
                 "result": "ping failed",
-                "status_code": 200,
+                "status_code": 404,
             }

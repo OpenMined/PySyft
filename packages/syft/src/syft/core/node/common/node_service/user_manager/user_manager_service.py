@@ -7,12 +7,11 @@ from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 
 # relative
 from .....common.message import ImmediateSyftMessageWithReply
-from ....domain.domain_interface import DomainInterface
+from ....domain_interface import DomainInterface
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
@@ -115,7 +114,12 @@ def update_user_msg(
     verify_key: VerifyKey,
 ) -> SuccessResponseMessage:
     _valid_parameters = (
-        msg.email or msg.password or msg.role or msg.groups or msg.name or msg.budget
+        msg.email
+        or (msg.password and msg.new_password)
+        or msg.role
+        or msg.groups
+        or msg.name
+        or msg.budget
     )
     _allowed = msg.user_id == 0 or node.users.can_create_users(verify_key=verify_key)
     # Change own information
@@ -149,8 +153,12 @@ def update_user_msg(
         node.users.set(user_id=str(msg.user_id), email=msg.email)
 
     # Change Password Request
-    if msg.password:
-        node.users.set(user_id=str(msg.user_id), password=msg.password)
+    if msg.password and msg.new_password:
+        node.users.change_password(
+            user_id=str(msg.user_id),
+            current_pwd=msg.password,
+            new_pwd=msg.new_password,
+        )
 
     # Change Name Request
     if msg.name:
@@ -170,25 +178,6 @@ def update_user_msg(
         if _allowed:
             new_role_id = node.roles.first(name=msg.role).id
             node.users.set(user_id=msg.user_id, role=new_role_id)  # type: ignore
-        elif (  # Transfering Owner's role
-            msg.role == node.roles.owner_role.name  # target role == Owner
-            and node.users.role(verify_key=verify_key).name
-            == node.roles.owner_role.name  # Current user is the current node owner.
-        ):
-            new_role_id = node.roles.first(name=msg.role).id
-            node.users.set(user_id=str(msg.user_id), role=new_role_id)
-            current_user = node.users.get_user(verify_key=verify_key)
-            node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)  # type: ignore
-            # Updating current node keys
-            root_key = SigningKey(
-                current_user.private_key.encode("utf-8"), encoder=HexEncoder  # type: ignore
-            )
-            node.signing_key = root_key
-            node.verify_key = root_key.verify_key
-            # IDK why, but we also have a different var (node.root_verify_key)
-            # defined at ...common.node.py that points to the verify_key.
-            # So we need to update it as well.
-            node.root_verify_key = root_key.verify_key
         elif target_user.role == node.roles.owner_role.id:
             raise AuthorizationError("You're not allowed to change Owner user roles!")
         else:
@@ -223,8 +212,8 @@ def get_user_msg(
         del _msg["private_key"]
 
         # Get budget spent
-        _msg["budget_spent"] = node.acc.user_budget(
-            user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
+        _msg["budget_spent"] = node.users.get_budget_for_user(
+            verify_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
         )
 
     return GetUserResponse(
@@ -259,9 +248,10 @@ def get_all_users_msg(
             # Remaining Budget
             # TODO:
             # Rename it from budget_spent to remaining budget
-            _user_json["budget_spent"] = node.acc.get_remaining_budget(  # type: ignore
-                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
-                returned_epsilon_is_private=False,
+            _user_json["budget_spent"] = node.users.get_budget_for_user(  # type: ignore
+                verify_key=VerifyKey(
+                    user.verify_key.encode("utf-8"), encoder=HexEncoder
+                ),
             )
             _msg.append(_user_json)
 

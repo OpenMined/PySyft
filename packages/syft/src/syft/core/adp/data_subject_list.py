@@ -13,7 +13,7 @@ import pandas as pd
 
 # relative
 from ..common.serde.serializable import serializable
-from .entity import Entity
+from .data_subject import DataSubject
 
 
 # allow us to serialize and deserialize np.arrays with strings inside as two np.arrays
@@ -39,9 +39,9 @@ def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]
     indexes = []
     offset = 0
     for item in string_list:
-        if not isinstance(item, (Entity, str)):
+        if not isinstance(item, (DataSubject, str)):
             raise Exception(
-                f"DataSubjectList entities must be List[Union[str, Entity]]. {type(item)}"
+                f"DataSubjectList entities must be List[Union[str, DataSubject]]. {type(item)}"
             )
         name = item if isinstance(item, str) else item.name
         name_bytes = name.encode("utf-8")
@@ -62,15 +62,14 @@ class DataSubjectList:
     __attr_allowlist__ = ("one_hot_lookup", "data_subjects_indexed")
     __slots__ = ("one_hot_lookup", "data_subjects_indexed")
 
-    # Temporarily remove as we are not using strings.
-    # # one_hot_lookup is a numpy array of unicode strings which can't be serialized
-    # __serde_overrides__ = {
-    #     "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
-    # }
+    # one_hot_lookup is a numpy array of unicode strings which can't be serialized
+    __serde_overrides__ = {
+        "one_hot_lookup": [liststrtonumpyutf8, numpyutf8tolist],
+    }
 
     def __init__(
         self,
-        one_hot_lookup: np.ndarray[Union[Entity, str, np.integer]],
+        one_hot_lookup: np.ndarray[Union[DataSubject, str, np.integer]],
         data_subjects_indexed: np.ndaray,
     ) -> None:
         self.one_hot_lookup = one_hot_lookup
@@ -96,7 +95,7 @@ class DataSubjectList:
             data_subjects, return_inverse=True
         )
 
-        # This will be the equivalent of the DataSubjectList.one_hot_indexed- a sorted array of all unique entities
+        # This will be the equivalent of the DataSubjectList.one_hot_indexed- a sorted array of all unique data_subjects
         unique_data_subjects = unique_data_subjects.astype(np.str_)
 
         return DataSubjectList(
@@ -113,7 +112,7 @@ class DataSubjectList:
             entities_indexed.resize(entities.shape)
         return DataSubjectList(one_hot_lookup, entities_indexed)
 
-    # def __getitem__(self, key: Union[int, slice, str]) -> Union[Entity, str]:
+    # def __getitem__(self, key: Union[int, slice, str]) -> Union[DataSubject, str]:
     #     return self.one_hot_lookup[self.data_subjects_indexed[key]]
 
     def copy(self, order: Optional[str] = "K") -> DataSubjectList:

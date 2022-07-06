@@ -1,9 +1,17 @@
 # stdlib
+import os
 import re
 import subprocess
 
 # third party
 import pytest
+
+CONTAINER_HOST = os.environ.get("CONTAINER_HOST", "docker")
+EMULATION = os.environ.get("EMULATION", "false")
+print("CONTAINER_HOST", CONTAINER_HOST)
+print("EMULATION", EMULATION)
+
+# QEMU arm64 iptables are not working currently
 
 
 def docker_network_connect(direction: str = "connect") -> None:
@@ -19,7 +27,7 @@ def docker_network_connect(direction: str = "connect") -> None:
             try:
                 if project == network:
                     continue
-                container_name = f"test_{project}-tailscale-1"
+                container_name = f"test_{project}-proxy-1"
                 network_name = f"test_{network}_default"
                 cmd = f"docker network {direction} {network_name} {container_name}"
                 print(f"Connecting {container_name} to {network_name}")
@@ -30,11 +38,15 @@ def docker_network_connect(direction: str = "connect") -> None:
 
 @pytest.mark.security
 def test_create_overlay_networks_docker() -> None:
+    if CONTAINER_HOST != "docker" or EMULATION != "false":
+        return
     docker_network_connect(direction="connect")
 
 
 @pytest.mark.security
 def test_vpn_scan() -> None:
+    if CONTAINER_HOST != "docker" or EMULATION != "false":
+        return
     # the tailscale container is currently the same so we can get away with a
     # single external scan
     containers = [
@@ -55,7 +67,7 @@ def test_vpn_scan() -> None:
     # run in two containers so that all IPs are scanned externally
     for container in containers:
         try:
-            cmd = f"cat scripts/vpn_scan.sh | docker exec -i {container} ash"
+            cmd = f"cat scripts/vpn_scan.sh | docker exec -i {container} bash"
             print(f"Scanning {container}")
             output = subprocess.check_output(cmd, shell=True)
             output = output.decode("utf-8")
@@ -75,4 +87,6 @@ def test_vpn_scan() -> None:
 
 @pytest.mark.security
 def test_remove_overlay_networks_docker() -> None:
+    if CONTAINER_HOST != "docker" or EMULATION != "false":
+        return
     docker_network_connect(direction="disconnect")

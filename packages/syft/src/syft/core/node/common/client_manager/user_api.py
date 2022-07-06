@@ -6,7 +6,7 @@ from typing import Dict
 from .....experimental_flags import flags
 from .....logger import logger
 from ...abstract.node import AbstractNodeClient
-from ...domain.enums import ResponseObjectEnum
+from ...enums import ResponseObjectEnum
 from ..exceptions import AuthorizationError
 from ..node_service.user_auth.user_auth_messages import UserLoginMessageWithReply
 
@@ -59,16 +59,20 @@ class UserRequestAPI(RequestAPI):
                 )  # type: ignore
                 logger.info(response)
             else:
+                response_message = ""
                 if flags.USE_NEW_SERVICE:
                     response = self.perform_request(
                         syft_msg=self._create_message, content=kwargs  # type: ignore
                     )
-                    logger.info(response.message)
+                    response_message = response.payload.message
+                    logger.info(response.payload.message)
                 else:
                     response = self.perform_api_request(
                         syft_msg=self._create_message, content=kwargs
                     )
+                    response_message = response.resp_msg
                     logger.info(response.resp_msg)
+                print(response_message)
 
         except Exception as e:
             print("failing to create user", e)

@@ -1,8 +1,6 @@
 name: HAGrid Continuous Delivery
 
 on:
-  workflow_call:
-
   schedule:
     - cron: "00 03 * * *"
   workflow_dispatch:
@@ -12,14 +10,19 @@ on:
         required: false
 
 jobs:
-  hagrid-deploy:
+  call-hagrid-tests:
+    if: github.repository == 'OpenMined/PySyft' # don't run on forks
+    uses: OpenMined/PySyft/.github/workflows/hagrid-pr_tests.yml@dev
+
+  deploy-hagrid:
+    needs: call-hagrid-tests
     runs-on: ubuntu-latest
 
     outputs:
       current_hash: ${{ steps.get_hash.outputs.current_hash }}
       previous_hash: ${{ steps.get_hash.outputs.previous_hash }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
         with:
           token: ${{ secrets.SYFT_BUMP_TOKEN }}
       - name: Install checksumdir
@@ -33,7 +36,7 @@ jobs:
           previous_hash=$(cat ./scripts/hagrid_hash)
 
       - name: Set up Python
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         with:
           python-version: "3.10"
 

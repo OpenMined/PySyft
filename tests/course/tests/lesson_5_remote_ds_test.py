@@ -17,7 +17,7 @@ def test_login(tb):
 
 def test_privacy_budget(tb):
     ds_domain = tb.ref("ds_domain")
-    assert ds_domain.privacy_budget == 100.0
+    assert ds_domain.privacy_budget.resolve() >= 50.0
 
 
 def test_covid_dataset(tb):

@@ -1,18 +1,31 @@
+# future
+from __future__ import annotations
+
 # stdlib
 import secrets
-from time import time
 from typing import Callable
+from typing import List
+from typing import TYPE_CHECKING
 from typing import Tuple
+from typing import Union
 
 # third party
 import jax
 from jax import numpy as jnp
 import numpy as np
+from tqdm import tqdm
 
 # relative
+from ..tensor.fixed_precision_tensor import FixedPrecisionTensor
+from ..tensor.lazy_repeat_array import lazyrepeatarray
+from ..tensor.passthrough import PassthroughTensor  # type: ignore
 from .data_subject_ledger import DataSubjectLedger
 from .data_subject_ledger import RDPParams
 from .data_subject_list import DataSubjectList
+
+if TYPE_CHECKING:
+    # relative
+    from ..tensor.autodp.gamma_tensor import GammaTensor
 
 # def calculate_bounds_for_mechanism(
 #     value_array: np.ndarray, min_val_array: np.ndarray, max_val_array: np.ndarray
@@ -66,83 +79,124 @@ def calculate_bounds_for_mechanism(
 def vectorized_publish(
     min_vals: np.ndarray,
     max_vals: np.ndarray,
-    values: np.ndarray,
+    state_tree: dict[int, "GammaTensor"],
     data_subjects: DataSubjectList,
     ledger: DataSubjectLedger,
     get_budget_for_user: Callable,
     deduct_epsilon_for_user: Callable,
     is_linear: bool = True,
     sigma: float = 1.5,
-    output_func: Callable = np.sum,
-    # private: bool = False
-) -> np.ndarray:
-    # TODO convert values to np.int64
-    if values.dtype != np.int64:
-        raise Exception("Values is not np.int64", values.dtype)
+    output_func: Callable = lambda x: x,
+) -> Union[np.ndarray, jax.numpy.DeviceArray]:
+    # relative
+    from ..tensor.autodp.gamma_tensor import GammaTensor
 
-    print(f"Starting vectorized publish: {type(ledger)}")
-    # Get all unique entities
-    # unique_data_subjects = data_subjects.one_hot_lookup
-    # unique_data_subject_indices = np.arange(
+    # print(f"Starting vectorized publish: {type(ledger)}")
+    # print("Starting RDP Params Calculation")
+    # TODO: Vectorize this to return a larger GammaTensor instead of a list of Tensors
+    input_tensors: List[GammaTensor] = GammaTensor.get_input_tensors(state_tree)
 
-    print("Starting RDP Params Calculation")
+    filtered_inputs = []
 
-    t1 = time()
-    # Calculate everything needed for RDP
+    # This will reveal the # of input tensors to the user- remove this before merging to dev
+    for input_tensor in tqdm(input_tensors):
+        # TODO: Double check with Andrew if this is correct- if we use the individual min/max values
 
-    l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
-        value_array=values, min_val_array=min_vals, max_val_array=max_vals, sigma=sigma
-    )
+        # t1 = time()
+        # Calculate everything needed for RDP
 
-    if is_linear:
-        lipschitz_bounds = coeffs.copy()
-    else:
-        raise Exception("gamma_tensor.lipschitz_bound property would be used here")
+        if isinstance(input_tensor.child, FixedPrecisionTensor):
+            value = input_tensor.child.decode()
+        else:
+            value = input_tensor.child
 
-    input_entities = data_subjects.data_subjects_indexed[0].reshape(-1)
-    t2 = time()
-    print("Obtained RDP Params, calculation time", t2 - t1)
+        while isinstance(value, PassthroughTensor):
+            value = value.child
 
-    # Query budget spend of all unique entities
-    rdp_params = RDPParams(
-        sigmas=sigmas,
-        l2_norms=l2_norms,
-        l2_norm_bounds=l2_norm_bounds,
-        Ls=lipschitz_bounds,
-        coeffs=coeffs,
-    )
-    print("Finished RDP Params Initialization")
-    try:
-        # query and save
-        mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
-            unique_entity_ids_query=input_entities,
-            rdp_params=rdp_params,
-            private=True,
-            get_budget_for_user=get_budget_for_user,
-            deduct_epsilon_for_user=deduct_epsilon_for_user,
+        if isinstance(input_tensor.min_val, lazyrepeatarray):
+            min_val_array = input_tensor.min_val.to_numpy()
+        else:
+            min_val_array = input_tensor.min_val
+
+        if isinstance(input_tensor.max_val, lazyrepeatarray):
+            max_val_array = input_tensor.max_val.to_numpy()
+        else:
+            max_val_array = input_tensor.max_val
+
+        l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
+            value_array=value,
+            min_val_array=min_val_array,
+            max_val_array=max_val_array,
+            sigma=sigma,
         )
-        # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
-        reshaped_mask = mask.reshape(values.shape)
-        print("Fixed mask shape!")
-        # here we have the final mask and highest possible spend has been applied
-        # to the data scientists budget field in the database
 
-        if mask is None:
-            raise Exception("Failed to publish mask is None")
+        if is_linear:
+            lipschitz_bounds = coeffs.copy()
+        else:
+            lipschitz_bounds = input_tensor.lipschitz_bound
+            # raise Exception("gamma_tensor.lipschitz_bound property would be used here")
 
-        print("Obtained overbudgeted entity mask", mask.dtype)
+        input_entities = input_tensor.data_subjects.data_subjects_indexed
+        # data_subjects.data_subjects_indexed[0].reshape(-1)
+        # t2 = time()
+        # print("Obtained RDP Params, calculation time", t2 - t1)
 
-        # multiply values by the inverted mask
-        filtered_inputs = values * (
-            1 - reshaped_mask
-        )  # + gauss(0, sigma)  # Double check that noise has mean of 0
-        noise = secrets.SystemRandom().gauss(0, sigma)
-        output = np.asarray(output_func(filtered_inputs) + noise)
-        print("got output", type(output), output.dtype)
-        return output
-    except Exception as e:
-        # stdlib
-        import traceback
+        # Query budget spend of all unique data_subjects
+        rdp_params = RDPParams(
+            sigmas=sigmas,
+            l2_norms=l2_norms,
+            l2_norm_bounds=l2_norm_bounds,
+            Ls=lipschitz_bounds,
+            coeffs=coeffs,
+        )
+        # print("Finished RDP Params Initialization")
+        try:
+            # query and save
+            mask = ledger.get_entity_overbudget_mask_for_epsilon_and_append(
+                unique_entity_ids_query=input_entities,
+                rdp_params=rdp_params,
+                private=True,
+                get_budget_for_user=get_budget_for_user,
+                deduct_epsilon_for_user=deduct_epsilon_for_user,
+            )
+            # We had to flatten the mask so the code generalized for N-dim arrays, here we reshape it back
+            reshaped_mask = mask.reshape(value.shape)
+            # print("Fixed mask shape!")
+            # here we have the final mask and highest possible spend has been applied
+            # to the data scientists budget field in the database
 
-        print(traceback.format_exc())
-        print(f"Failed to run vectorized_publish. {e}")
+            if mask is None:
+                raise Exception("Failed to publish mask is None")
+
+            # print("Obtained overbudgeted entity mask", mask.dtype)
+
+            # multiply values by the inverted mask
+            filtered_input_tensor = value * (
+                1 - reshaped_mask
+            )  # + gauss(0, sigma)  # Double check that noise has mean of 0
+
+            filtered_inputs.append(filtered_input_tensor)
+            # output = np.asarray(output_func(filtered_inputs) + noise)
+
+        except Exception as e:
+            # stdlib
+            import traceback
+
+            print(traceback.format_exc())
+            print(f"Failed to run vectorized_publish. {e}")
+
+    print("We have filtered all the input tensors. Now to compute the result:")
+
+    # noise = secrets.SystemRandom().gauss(0, sigma)
+    print("Filtered inputs ", filtered_inputs)
+    original_output = np.asarray(output_func(filtered_inputs))
+    print("original output (before noise:", original_output)
+    noise = np.asarray(
+        [secrets.SystemRandom().gauss(0, sigma) for _ in range(original_output.size)]
+    )
+    noise.resize(original_output.shape)
+    print("noise: ", noise)
+
+    output = np.asarray(output_func(filtered_inputs) + noise)
+    print("got output", type(output), output.dtype)
+    return output.squeeze()

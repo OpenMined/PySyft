@@ -6,67 +6,70 @@ services:
       - net_admin
       - net_raw
 
-  tailscale:
-    hostname: ${DOMAIN_NAME?Variable not set}
-    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
-    build:
-      context: ./vpn
-      dockerfile: tailscale.dockerfile
-    environment:
-      - SERVICE_NAME=tailscale
-      - RELEASE=${RELEASE:-production}
-      - HOSTNAME=${DOMAIN_NAME?Variable not set}
-      - STACK_API_KEY=$STACK_API_KEY
-      - HTTP_PORT=${HTTP_PORT}
-      - HTTPS_PORT=${HTTPS_PORT}
-    volumes:
-      - tailscale-data:/var/lib/tailscale
-      - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
-    cap_add: # Required for tailscale to work
-      - net_admin
-      - sys_module
-    ports:
-      - "${HTTP_PORT}:81"
-      - "41641/udp"
-      - "4000"
-    depends_on:
-      - "docker-host"
-
   proxy:
     restart: always
-    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}
+    hostname: ${DOMAIN_NAME?Variable not set}
+    image: ${DOCKER_IMAGE_TRAEFIK?Variable not set}:${TRAEFIK_VERSION?Variable not set}
     networks:
       - "${TRAEFIK_PUBLIC_NETWORK?Variable not set}"
       - default
-    network_mode: service:tailscale
     volumes:
       - "/var/run/docker.sock:/var/run/docker.sock"
     environment:
       - SERVICE_NAME=proxy
       - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - HTTP_PORT=${HTTP_PORT}
+      - HTTPS_PORT=${HTTPS_PORT}
     command:
       - "--providers.docker"
       - "--providers.docker.exposedbydefault=false"
       - "--providers.docker.constraints=Label(`traefik.constraint-label-stack`, `${TRAEFIK_TAG?Variable not set}`)"
       - "--entrypoints.web.address=:81"
       - "--entrypoints.vpn.address=:80"
-
       # Enable the access log, with HTTP requests
       - "--accesslog"
       # Enable the Traefik log, for configurations and errors
       - "--log"
+      - "--ping=true"
+    labels:
+      - "traefik.enable=true"
+      - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
+      - "traefik.http.routers.ping.rule=PathPrefix(`/ping`)"
+      - "traefik.http.services.ping.loadbalancer.server.port=80"
+      - "traefik.http.routers.ping.service=ping@internal"
+    ports:
+      - "${HTTP_PORT}:81"
+    depends_on:
+      - "docker-host"
+
+  tailscale:
+    profiles:
+      - vpn
+    image: "${DOCKER_IMAGE_TAILSCALE?Variable not set}:${VERSION-latest}"
+    environment:
+      - SERVICE_NAME=tailscale
+      - RELEASE=${RELEASE:-production}
+      - HOSTNAME=${DOMAIN_NAME?Variable not set}
+      - STACK_API_KEY=$STACK_API_KEY
+    volumes:
+      - tailscale-data:/var/lib/tailscale
+      - "/dev/net/tun:/dev/net/tun" # Required for tailscale to work
+    cap_add: # Required for tailscale to work
+      - net_admin
+      - sys_module
+    # ports:
+    #   - "41641/udp"
+    #   - "4000"
+    depends_on:
+      - "proxy"
+    network_mode: service:proxy
 
   frontend:
     restart: always
-    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}-${NODE_TYPE}:${VERSION-latest}"
+    image: "${DOCKER_IMAGE_FRONTEND?Variable not set}:${VERSION-latest}"
     profiles:
       - frontend
-    build:
-      context: ./frontend
-      dockerfile: frontend.dockerfile
-      target: "grid-ui-production"
-      args:
-        NODE_TYPE: ${NODE_TYPE}
     environment:
       - SERVICE_NAME=frontend
       - RELEASE=${RELEASE:-production}
@@ -104,7 +107,7 @@ services:
 
   redis:
     restart: always
-    image: redis:6.2
+    image: redis:${REDIS_VERSION?Variable not set}
     volumes:
       - app-redis-data:/data
       - ./redis/redis.conf:/usr/local/etc/redis/redis.conf
@@ -143,10 +146,7 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
-    build:
-      context: ../
-      dockerfile: ./grid/backend/backend.dockerfile
-      target: "backend"
+      - CONTAINER_HOST=${CONTAINER_HOST}
     command: /start.sh
     labels:
       - "traefik.enable=true"
@@ -177,10 +177,7 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
-    build:
-      context: ../
-      dockerfile: ./grid/backend/backend.dockerfile
-      target: "backend"
+      - CONTAINER_HOST=${CONTAINER_HOST}
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
     labels:
       - "traefik.enable=true"
@@ -210,11 +207,9 @@ services:
       - HTTP_PORT=${HTTP_PORT}
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
+      - CONTAINER_HOST=${CONTAINER_HOST}
+      - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
     command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
-    build:
-      context: ../
-      dockerfile: ./grid/backend/backend.dockerfile
-      target: "backend"
     network_mode: service:proxy
 
   headscale:
@@ -222,9 +217,6 @@ services:
       - network
     hostname: headscale
     image: "${DOCKER_IMAGE_HEADSCALE?Variable not set}:${VERSION-latest}"
-    build:
-      context: ./vpn
-      dockerfile: headscale.dockerfile
     volumes:
       - headscale-data:/headscale/data
     environment:

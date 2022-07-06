@@ -49,8 +49,8 @@ from syft.core.node.common.node_service.user_manager.user_messages import (
     UpdateUserMessage,
 )
 from syft.core.node.common.node_service.user_manager.user_messages import GetUserMessage
-from syft.core.node.domain.domain_interface import DomainInterface
-from syft.core.node.domain.service import DomainServiceClass
+from syft.core.node.domain_interface import DomainInterface
+from syft.core.node.domain_service import DomainServiceClass
 
 
 def _create_dummy_user(faker: Faker, is_admin=False):
@@ -58,7 +58,7 @@ def _create_dummy_user(faker: Faker, is_admin=False):
     # Create dummy user
     user = {
         "name": faker.name(),
-        "email": faker.email(),
+        "email": faker.free_email(),
         "password": faker.password(),
         "budget": faker.random.random() * 100,
         "role": 4 if is_admin else 1,
@@ -105,7 +105,7 @@ class TestCreateUserMessageBenchmarking:
         # Create dummy user data
         user1 = {
             "name": faker.name(),
-            "email": f"{faker.random_int()}-{faker.email()}",
+            "email": f"{faker.random_int()}-{faker.free_email()}",
             "password": faker.password(),
             "website": faker.hostname(),
             "institution": faker.company(),
@@ -115,7 +115,7 @@ class TestCreateUserMessageBenchmarking:
 
         user2 = {
             "name": faker.name(),
-            "email": f"{faker.random_int()}-{faker.email()}",
+            "email": f"{faker.random_int()}-{faker.free_email()}",
             "password": faker.password(),
             "website": faker.hostname(),
             "institution": faker.company(),
@@ -389,20 +389,24 @@ class TestUpdateUserMessageBenchmarking:
         user1_updated_info = {
             "user_id": ds_user_1.id,
             "name": faker.name(),
-            "email": faker.email(),
+            "email": faker.free_email(),
             "institution": faker.company(),
             "website": faker.hostname(),
             "budget": faker.random.random() * 100,
         }
 
+        print(user1_updated_info)
+
         user2_updated_info = {
             "user_id": ds_user_2.id,
             "name": faker.name(),
-            "email": faker.email(),
+            "email": faker.free_email(),
             "institution": faker.company(),
             "website": faker.hostname(),
             "budget": faker.random.random() * 100,
         }
+
+        print(user2_updated_info)
 
         # Create user update messages
         old_user_msg = UpdateUserMessage(

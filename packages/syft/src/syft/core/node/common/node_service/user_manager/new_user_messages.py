@@ -6,7 +6,6 @@ from typing import Union
 
 # third party
 from nacl.encoding import HexEncoder
-from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import EmailStr
 from typing_extensions import final
@@ -14,8 +13,8 @@ from typing_extensions import final
 # relative
 from .....common.serde.serializable import serializable
 from ....abstract.node_service_interface import NodeServiceInterface
-from ....domain.domain_interface import DomainInterface
-from ....domain.registry import DomainMessageRegistry
+from ....domain_interface import DomainInterface
+from ....domain_msg_registry import DomainMessageRegistry
 from ...exceptions import AuthorizationError
 from ...exceptions import MissingRequestKeyError
 from ...exceptions import UserNotFoundError
@@ -157,8 +156,8 @@ class GetUserMessage(SyftMessage, DomainMessageRegistry):
         reply.role = node.roles.first(id=reply.role).name  # type: ignore
 
         # Get budget spent
-        reply.budget_spent = node.acc.user_budget(  # type: ignore
-            user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
+        reply.budget_spent = node.users.get_budget_for_user(  # type: ignore
+            verify_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder)
         )
         return reply
 
@@ -206,9 +205,10 @@ class GetUsersMessage(SyftMessage, DomainMessageRegistry):
             # Remaining Budget
             # TODO:
             # Rename it from budget_spent to remaining budget
-            user_model.budget_spent = node.acc.get_remaining_budget(  # type: ignore
-                user_key=VerifyKey(user.verify_key.encode("utf-8"), encoder=HexEncoder),
-                returned_epsilon_is_private=False,
+            user_model.budget_spent = node.users.get_budget_for_user(  # type: ignore
+                verify_key=VerifyKey(
+                    user.verify_key.encode("utf-8"), encoder=HexEncoder
+                ),
             )
             users_list.append(user_model)
 
@@ -268,6 +268,7 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
         institution: Optional[str] = ""
         website: Optional[str] = ""
         password: Optional[str] = ""
+        new_password: Optional[str] = ""
         role: Optional[str] = ""
         budget: Optional[float] = None
 
@@ -298,7 +299,7 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
 
         _valid_parameters = (
             self.payload.email
-            or self.payload.password
+            or (self.payload.password and self.payload.new_password)
             or self.payload.role
             or self.payload.name
             or self.payload.institution
@@ -338,32 +339,27 @@ class UpdateUserMessage(SyftMessage, DomainMessageRegistry):
                 role = payload_dict.pop("role")
                 new_role_id = node.roles.first(name=role).id
                 node.users.set(user_id=user_id, role=new_role_id)  # type: ignore
-            elif (  # Transfering Owner's role
-                self.payload.role == node.roles.owner_role.name  # target role == Owner
-                and node.users.role(verify_key=verify_key).name
-                == node.roles.owner_role.name  # Current user is the current node owner.
-            ):
-                role = payload_dict.pop("role")
-                new_role_id = node.roles.first(name=role).id
-                node.users.set(user_id=str(user_id), role=new_role_id)
-                current_user = node.users.get_user(verify_key=verify_key)
-                node.users.set(user_id=current_user.id, role=node.roles.admin_role.id)  # type: ignore
-                # Updating current node keys
-                root_key = SigningKey(
-                    current_user.private_key.encode("utf-8"), encoder=HexEncoder  # type: ignore
-                )
-                node.signing_key = root_key
-                node.verify_key = root_key.verify_key
-                # IDK why, but we also have a different var (node.root_verify_key)
-                # defined at ...common.node.py that points to the verify_key.
-                # So we need to update it as well.
-                node.root_verify_key = root_key.verify_key
             elif target_user.role == node.roles.owner_role.id:
                 raise AuthorizationError(
                     "You're not allowed to change Owner user roles!"
                 )
             else:
                 raise AuthorizationError("You're not allowed to change User roles!")
+
+        # Note: Maybe we should create a specific message to change password
+        # but in order to accomplish this, we also need to refactory the frontend
+        # methods in order to perform a request to the proper endpoint.
+        elif self.payload.password and self.payload.new_password:
+            node.users.change_password(
+                user_id=user_id,
+                current_pwd=self.payload.password,
+                new_pwd=self.payload.new_password,
+            )
+
+            # Delete password keys from the update parameters dictionary to be updated
+            # in the next step since we already did it in the previous line.
+            del payload_dict["password"]
+            del payload_dict["new_password"]
 
         # Update values of all other parameters
         for param, val in payload_dict.items():

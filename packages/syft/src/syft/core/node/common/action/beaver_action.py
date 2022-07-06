@@ -29,25 +29,25 @@ BEAVER_CACHE: Dict[UID, StorableObject] = {}  # Global cache for spdz mask value
 class BeaverAction(ImmediateActionWithoutReply):
     def __init__(
         self,
-        eps: ShareTensor,
-        eps_id: UID,
-        delta: ShareTensor,
-        delta_id: UID,
+        values: List[ShareTensor],
+        locations: List[UID],
         address: Address,
         msg_id: Optional[UID] = None,
     ):
         super().__init__(address=address, msg_id=msg_id)
-        self.eps = eps
-        self.eps_id = eps_id
-        self.delta = delta
-        self.delta_id = delta_id
+        self.values = values
+        self.locations = locations
+        if len(values) != len(locations):
+            raise ValueError(
+                f"Iterable size for Values: {len(values)} Locations: {len(locations)} should be same for Beaver Action."
+            )
 
     def __repr__(self) -> str:
-        res = f"EPS: {self.eps}, "
-        res = f"{res}EPS_ID: {self.eps_id}, "
-        res = f"{res}DELTA: {self.delta}, "
-        res = f"{res}DELTA_ID {self.delta_id} "
-        return f"Beaver Action: {res}"
+        return (
+            "Beaver Action: "
+            + f"Values: {self.values}, "
+            + f"Locations: {self.locations}"
+        )
 
     @staticmethod
     def beaver_populate(
@@ -85,33 +85,21 @@ class BeaverAction(ImmediateActionWithoutReply):
             raise Exception(f"Object at {id_at_location} should be a List or None")
 
     def execute_action(self, node: AbstractNode, verify_key: VerifyKey) -> None:
-        eps = self.eps
-        eps_id = self.eps_id
-        delta = self.delta
-        delta_id = self.delta_id
-        BeaverAction.beaver_populate(eps, eps_id, node)
-        BeaverAction.beaver_populate(delta, delta_id, node)
+        for value, location in zip(self.values, self.locations):
+            BeaverAction.beaver_populate(value, location, node)
 
     def _object2proto(self) -> BeaverAction_PB:
-        eps = sy.serialize(self.eps)
-        eps_id = sy.serialize(self.eps_id)
-        delta = sy.serialize(self.delta)
-        delta_id = sy.serialize(self.delta_id)
+        values = [sy.serialize(value, to_bytes=True) for value in self.values]
+        locations = [sy.serialize(location) for location in self.locations]
         addr = sy.serialize(self.address)
-        return BeaverAction_PB(
-            eps=eps, eps_id=eps_id, delta=delta, delta_id=delta_id, address=addr
-        )
+        return BeaverAction_PB(values=values, locations=locations, address=addr)
 
     @staticmethod
     def _proto2object(proto: BeaverAction_PB) -> "BeaverAction":
-        eps = sy.deserialize(blob=proto.eps)
-        eps_id = sy.deserialize(blob=proto.eps_id)
-        delta = sy.deserialize(blob=proto.delta)
-        delta_id = sy.deserialize(blob=proto.delta_id)
+        values = [sy.deserialize(value, from_bytes=True) for value in proto.values]
+        locations = [sy.deserialize(location) for location in proto.locations]
         addr = sy.deserialize(blob=proto.address)
-        return BeaverAction(
-            eps=eps, eps_id=eps_id, delta=delta, delta_id=delta_id, address=addr
-        )
+        return BeaverAction(values=values, locations=locations, address=addr)
 
     @staticmethod
     def get_protobuf_schema() -> GeneratedProtocolMessageType:

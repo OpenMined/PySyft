@@ -5,6 +5,7 @@ from typing import Generator
 # third party
 from _pytest.logging import LogCaptureFixture
 from asgi_lifespan import LifespanManager
+from faker import Faker
 from fastapi import FastAPI
 from httpx import AsyncClient
 from loguru import logger
@@ -22,6 +23,11 @@ log_handler = get_log_handler()
 @pytest.fixture(scope="session")
 def db() -> Generator:
     yield get_db_session()
+
+
+@pytest.fixture
+def faker() -> Faker:
+    return Faker()
 
 
 @pytest.fixture

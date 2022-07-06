@@ -33,6 +33,7 @@ from ...common.message import ImmediateSyftMessageWithoutReply
 from ...common.message import SignedEventualSyftMessageWithoutReply
 from ...common.message import SignedImmediateSyftMessageWithReply
 from ...common.message import SignedImmediateSyftMessageWithoutReply
+from ...common.message import SignedMessage
 from ...common.message import SyftMessage
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
@@ -43,6 +44,7 @@ from ...pointer.garbage_collection import GarbageCollection
 from ...pointer.garbage_collection import gc_get_default_strategy
 from ...pointer.pointer import Pointer
 from ..abstract.node import AbstractNodeClient
+from ..common.client_manager.node_networking_api import NodeNetworkingAPI
 from .action.exception_action import ExceptionMessage
 from .node_service.object_search.obj_search_service import ObjectSearchMessage
 
@@ -94,6 +96,7 @@ class Client(AbstractNodeClient):
         self.install_supported_frameworks()
 
         self.store = StoreClient(client=self)
+        self.networking = NodeNetworkingAPI(client=self)
         self.version = version
 
     def obj_exists(self, obj_id: UID) -> bool:
@@ -166,12 +169,16 @@ class Client(AbstractNodeClient):
 
     @property
     def settings(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
-        # relative
-        from .node_service.node_setup.node_setup_messages import GetSetUpMessage
+        try:
+            # relative
+            from .node_service.node_setup.node_setup_messages import GetSetUpMessage
 
-        return self._perform_grid_request(  # type: ignore
-            grid_msg=GetSetUpMessage, content=kwargs
-        ).content  # type : ignore
+            return self._perform_grid_request(  # type: ignore
+                grid_msg=GetSetUpMessage, content=kwargs
+            ).content  # type : ignore
+        except Exception:  # nosec
+            # unable to fetch settings
+            return {}
 
     def join_network(
         self,
@@ -189,13 +196,14 @@ class Client(AbstractNodeClient):
             # we are leaving the client and entering the node in a container
             # any hostnames of localhost need to be converted to docker-host
             if client is not None:
-                grid_url = client.routes[0].connection.base_url.as_docker_host()  # type: ignore
+                grid_url = client.routes[0].connection.base_url  # type: ignore
             else:
-                grid_url = GridURL.from_url(str(host_or_ip)).as_docker_host()
+                grid_url = GridURL.from_url(str(host_or_ip))
 
             return self.vpn.join_network_vpn(grid_url=grid_url)  # type: ignore
         except Exception as e:
-            print(f"Failed to join network with {client} or {host_or_ip}. {e}")
+            msg = f"Failed to join network with {client} or {host_or_ip}. {e}"
+            raise Exception(msg)
 
     @property
     def id(self) -> UID:
@@ -211,9 +219,10 @@ class Client(AbstractNodeClient):
             ImmediateSyftMessageWithReply,
             Any,  # TEMPORARY until we switch everything to NodeRunnableMessage types.
         ],
-        route_index: int = 0,
         timeout: Optional[float] = None,
-    ) -> SyftMessage:
+        return_signed: bool = False,
+        route_index: int = 0,
+    ) -> Union[SyftMessage, SignedMessage]:
 
         # relative
         from .node_service.simple.simple_messages import NodeRunnableMessageWithReply
@@ -244,6 +253,8 @@ class Client(AbstractNodeClient):
                 error(str(exception))
                 traceback_and_raise(exception)
             else:
+                if return_signed:
+                    return response
                 return response.message
 
         traceback_and_raise(

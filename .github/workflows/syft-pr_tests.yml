@@ -22,15 +22,19 @@ defaults:
 jobs:
   syft-core-tests-latest-versions:
     strategy:
-      max-parallel: 3
+      max-parallel: 4
       matrix:
         os: [windows-latest, ubuntu-latest, macos-latest]
         python-version: ["3.10"]
         torch-version: [1.11.0]
+        include:
+          - python-version: "3.7"
+            torch-version: 1.11.0
+            os: "ubuntu-latest"
 
     runs-on: ${{ matrix.os }}
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -41,7 +45,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -49,7 +53,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Get pip cache dir
         id: pip-cache
@@ -58,7 +62,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.syft == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -71,19 +75,24 @@ jobs:
         run: |
           pip install packaging wheel --default-timeout=60
           python scripts/adjust_torch_versions.py ./setup.cfg ${{ matrix.torch-version }}
-          python -c "import platform; import os; os.system('pip install jaxlib===0.3.5 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
+          python -c "import platform; import os; os.system('pip install jaxlib===0.3.7 -f https://whls.blob.core.windows.net/unstable/index.html') if platform.system().lower() == 'windows' else ''"
           pip install pycapnp
           pip install -e .[dev] -f https://download.pytorch.org/whl/torch_stable.html
-          pip install numpy==1.22.3
-          pip install primesieve==2.3.0 --force-reinstall --no-cache-dir
 
-      - name: Scan for security issues
-        if: steps.changes.outputs.syft == 'true'
+      - name: Scan for security issues python 3.8+
+        if: steps.changes.outputs.syft == 'true' && matrix.python-version != '3.7'
         run: |
           bandit -r src
           safety check
 
+      - name: Scan for security issues python 3.7
+        if: steps.changes.outputs.syft == 'true' && matrix.python-version == '3.7'
+        run: |
+          bandit -r src
+          # we want to test python 3.7 for colab so we have to ignore these numpy issues
+          safety check -i 44717 -i 44716 -i 44715
+
       - name: Run normal tests
         if: steps.changes.outputs.syft == 'true'
         run: |
-          pytest -s -m 'fast or slow' --cov syft --cov-fail-under 68 -n auto --durations=50
+          pytest -s -m 'fast or slow' --cov syft --cov-fail-under 67 -n auto --durations=50
