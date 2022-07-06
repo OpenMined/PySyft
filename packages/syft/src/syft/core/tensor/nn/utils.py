@@ -92,14 +92,27 @@ def dp_log(input: Union[PhiTensor, GammaTensor]) -> Union[PhiTensor, GammaTensor
             max_vals=max_v,
         )
     elif isinstance(input, GammaTensor):
-        return input.log()  # TODO: this doesn't technically match np API so
+        output = np.log(input.child)
+        # min_v, max_v = output.min(), output.max()  # These bounds are a function of private data
+        min_v = lazyrepeatarray(
+            data=np.log(input.min_vals.data.min()), shape=output.shape
+        )
+        max_v = lazyrepeatarray(
+            data=np.log(input.max_vals.data.max()), shape=output.shape
+        )
+        dsl = input.data_subjects
+
+        return GammaTensor(
+            child=output,
+            data_subjects=dsl,
+            min_vals=min_v,
+            max_vals=max_v,
+        )
     else:
         raise NotImplementedError(f"Undefined behaviour for type: {type(input)}")
 
 
-def dp_zeros(
-    shape: Tuple, data_subjects: Union[DataSubjectList, NewDataSubject]
-) -> Union[PhiTensor, GammaTensor]:
+def dp_zeros(shape: Tuple) -> Union[PhiTensor, GammaTensor]:
     """
     TODO: Passing in the shape seems unnecessary- it can be inferred from data_subjects.data_subjects_indexed.shape
     output = np.zeros_like(data_subjects.data_subjects_indexed)
@@ -109,6 +122,9 @@ def dp_zeros(
     :return:
     """
     output = np.zeros(shape)
+
+    # Create Empty DataSubjectSet array
+    data_subjects = np.broadcast_to(np.array([NewDataSubject(set())]), output.shape)
 
     return GammaTensor(
         child=output,
@@ -157,19 +173,34 @@ def dp_pad(
         )
 
 
-def dp_add_at(a: PhiTensor, indices: Tuple, b: PhiTensor):
+def dp_add_at(a: Union[PhiTensor, GammaTensor], indices: Tuple, b: Union[PhiTensor, GammaTensor]):
     data_a = a.child
     data_b = b.child
 
-    np.add.at(data_a, indices, data_b)
-    np.add.at(a.data_subjects, indices, b.data_subjects)
+    data_subject_a = a.data_subjects
+    data_subject_b = b.data_subjects
 
-    return PhiTensor(
-        child=data_a,
-        data_subjects=a.data_subjects,
-        min_vals=data_a.min(),
-        max_vals=data_a.max(),
-    )
+    np.add.at(data_a, indices, data_b)
+
+    # TODO: @Shubham Find np.add.at can be implemented at data_subject_level
+    # data_subject_a[indices] = data_subject_a[indices] + data_subject_b
+    # The above is an alternate to np.add.at
+    # np.add.at(data_subject_a, indices, data_subject_b)
+
+    if isinstance(a, PhiTensor):
+        return PhiTensor(
+            child=data_a,
+            data_subjects=data_subject_a,
+            min_vals=data_a.min(),
+            max_vals=data_a.max(),
+        )
+    else:
+        return GammaTensor(
+            child=data_a,
+            data_subjects=data_subject_a,
+            min_vals=lazyrepeatarray(data_a.min(), shape=data_a.shape),
+            max_vals=lazyrepeatarray(data_a.min(), shape=data_a.shape)
+        )
 
 
 def get_im2col_indices(
@@ -200,7 +231,6 @@ def get_im2col_indices(
 def col2im_indices(
     cols: PhiTensor,
     x_shape: Tuple,
-    target_ds: NewDataSubject,
     field_height: int = 3,
     field_width: int = 3,
     padding: int = 1,
@@ -211,10 +241,10 @@ def col2im_indices(
     print("cols", cols.shape, cols.data_subjects.shape)
     print("target_ds")
     N, C, H, W = x_shape
-    # H_padded, W_padded = H + 2 * padding, W + 2 * padding
-    x_padded = dp_zeros((N, C, H, W), data_subjects=target_ds)
-    if padding != 0:
-        x_padded = dp_pad(x_padded, width=padding)
+    H_padded, W_padded = H + 2 * padding, W + 2 * padding
+    x_padded = dp_zeros(shape=(N, C, H_padded, W_padded))
+    # if padding != 0:
+    #     x_padded = dp_pad(x_padded, width=padding)
     # x_padded = dp_zeros((N, C, H_padded, W_padded), data_subjects=target_ds)
     print("x_padded", x_padded.shape, x_padded.data_subjects.shape)
 

@@ -9,7 +9,7 @@ from .base import Layer
 
 @serializable(recursive_serde=True)
 class Flatten(Layer):
-    __attr_allowlist__ = ("outdim", "last_input_shape", "out_shape")
+    __attr_allowlist__ = ("outdim", "last_input_shape", "out_shape", "input_shape")
 
     def __init__(self, outdim=2):
         self.outdim = outdim
@@ -25,6 +25,7 @@ class Flatten(Layer):
         to_flatten = np.prod(prev_layer.out_shape[self.outdim - 1 :])
         flattened_shape = prev_layer.out_shape[: self.outdim - 1] + (to_flatten,)
 
+        self.input_shape = prev_layer.out_shape
         self.out_shape = flattened_shape
 
     def forward(self, input: PhiTensor, *args, **kwargs):

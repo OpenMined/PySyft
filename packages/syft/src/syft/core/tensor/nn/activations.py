@@ -6,6 +6,7 @@ from typing import Union
 from ...common.serde.serializable import serializable
 from ..autodp.gamma_tensor import GammaTensor
 from ..autodp.phi_tensor import PhiTensor
+from ..lazy_repeat_array import lazyrepeatarray
 
 
 @serializable(recursive_serde=True)
@@ -77,8 +78,8 @@ class leaky_ReLU(Activation):
             return GammaTensor(
                 child=res,
                 data_subjects=last_forward.data_subjects,
-                min_val=last_forward.min_vals * 0,
-                max_val=last_forward.max_vals * 1,
+                min_vals=last_forward.min_vals * 0,
+                max_vals=last_forward.max_vals * 1,
             )
         else:
             raise NotImplementedError(

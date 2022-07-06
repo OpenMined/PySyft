@@ -1656,14 +1656,14 @@ class GammaTensor:
 
         child = self.child.sum(axis=axis)
 
-        min_val = self.min_vals.sum(axis=axis)
-        max_val = self.max_vals.sum(axis=axis)
+        min_v = child.min()
+        max_v = child.max()
 
         return GammaTensor(
             child=child,
             data_subjects=self.data_subjects.sum(axis=axis),
-            min_vals=min_val,
-            max_vals=max_val,
+            min_vals=lazyrepeatarray(data=min_v, shape=child.shape),
+            max_vals=lazyrepeatarray(data=max_v, shape=child.shape),
             func=_sum,
             state=output_state,
         )
@@ -1971,6 +1971,28 @@ class GammaTensor:
             min_vals=min_val,
             max_vals=max_val,
             func=_sqrt,
+            state=state,
+        )
+
+    def abs(self) -> GammaTensor:
+        def _abs(state: dict) -> jax.numpy.DeviceArray:
+            return jnp.abs(self.run(state))
+
+        state = dict()
+        state.update(self.state)
+
+        data = self.child
+        output = np.abs(data)
+
+        min_v = np.abs(self.min_vals.data)
+        max_v = np.abs(self.min_vals.data)
+
+        return GammaTensor(
+            child=output,
+            data_subjects=self.data_subjects,
+            min_vals=lazyrepeatarray(min_v, shape=output.shape),
+            max_vals=lazyrepeatarray(max_v, shape=output.shape),
+            func=_abs,
             state=state,
         )
 

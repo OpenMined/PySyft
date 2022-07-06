@@ -67,8 +67,6 @@ class Convolution(Layer):
         self.activation = activations.get(activation)
 
     def connect_to(self, prev_layer: Optional[Layer] = None):
-        print("CONNECTING CONV LAYER")
-        print("input_shape = ", self.input_shape)
         if prev_layer is None:
             assert self.input_shape is not None
             input_shape = self.input_shape
@@ -108,8 +106,6 @@ class Convolution(Layer):
         _, _, h_out, w_out = self.out_shape
         print("out_shape", self.out_shape)
 
-        self.ds_cached = input.data_subjects
-
         self.X_col = im2col_indices(
             input, h_filter, w_filter, padding=self.padding, stride=self.stride
         )
@@ -137,14 +133,14 @@ class Convolution(Layer):
         n_filter, d_filter, h_filter, w_filter = self.W.shape
 
         pre_grads = (
-            (pre_grad * self.activation.derivative(pre_grad))
+            self.activation.derivative(pre_grad)
             if self.activation is not None
             else pre_grad
         )
 
         db = pre_grads.sum(axis=(0, 2, 3))  # TODO @Shubham: This is missing axis=1?
         self.db = db.reshape((n_filter, -1))
-        self.db.min_vals.shape = self.db.max_vals.shape = self.db.shape
+        # self.db.min_vals.shape = self.db.max_vals.shape = self.db.shape
 
         pre_grads_reshaped = pre_grads.transpose((1, 2, 3, 0))
         pre_grads_reshaped = pre_grads_reshaped.reshape((n_filter, -1))
@@ -158,7 +154,6 @@ class Convolution(Layer):
         dX = col2im_indices(
             dX_col,
             self.input_shape,
-            self.ds_cached,
             h_filter,
             w_filter,
             padding=self.padding,

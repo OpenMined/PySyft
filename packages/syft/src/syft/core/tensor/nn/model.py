@@ -29,10 +29,10 @@ class Model:
     def compile(self, loss=BinaryCrossEntropy(), optimizer=Adamax()):
         self.layers[0].first_layer = True
 
-        next_layer = None
+        prev_layer = None
         for _, layer in enumerate(self.layers):
-            layer.connect_to(next_layer)
-            next_layer = layer
+            layer.connect_to(prev_layer)
+            prev_layer = layer
 
         self.loss = loss
         self.optimizer = optimizer
@@ -65,14 +65,6 @@ class Model:
         while iter_idx < max_iter:
             iter_idx += 1
 
-            # shuffle
-            if shuffle:
-                seed = np.random.randint(111, 1111111)
-                np.random.seed(seed)
-                np.random.shuffle(train_X)
-                np.random.seed(seed)
-                np.random.shuffle(train_Y)
-
             # train
             train_losses, train_predicts, train_targets = [], [], []
             for b in range(train_Y.shape[0] // batch_size):
@@ -99,11 +91,11 @@ class Model:
                 train_targets.extend(y_batch)
 
             # output train status
-            runout = "iter %d, train-[loss %.4f, acc %.4f]; " % (
-                iter_idx,
-                float(np.mean(train_losses)),
-                float(self.accuracy(train_predicts, train_targets)),
-            )
+            # runout = "iter %d, train-[loss %.4f, acc %.4f]; " % (
+            #     iter_idx,
+            #     float(np.mean(train_losses)),
+            #     float(self.accuracy(train_predicts, train_targets)),
+            # )
 
             # runout = "iter %d, train-[loss %.4f, ]; " % (
             #     iter_idx, float(np.mean(train_losses)))
@@ -126,10 +118,10 @@ class Model:
                     valid_targets.extend(y_batch)
 
                 # output valid status
-                runout += "valid-[loss %.4f, acc %.4f]; " % (
-                    float(np.mean(valid_losses)),
-                    float(self.accuracy(valid_predicts, valid_targets)),
-                )
+                # runout += "valid-[loss %.4f, acc %.4f]; " % (
+                #     float(np.mean(valid_losses)),
+                #     float(self.accuracy(valid_predicts, valid_targets)),
+                # )
 
     def predict(self, X):
         """Calculate an output Y for the given input X."""
@@ -137,7 +129,7 @@ class Model:
         for layer in self.layers[:]:
             x_next = layer.forward(x_next)
         y_pred = x_next
-        return y_pred   
+        return y_pred
 
     def accuracy(self, outputs, targets):
         y_predicts = np.argmax(outputs, axis=1)

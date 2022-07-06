@@ -24,6 +24,8 @@ class Linear(Layer):
         "db",
         "last_input",
         "init",
+        "input_shape",
+        "out_shape"
     )
 
     def __init__(self, n_out, n_in=None):
@@ -48,6 +50,8 @@ class Linear(Layer):
 
         self.W = self.init((n_in, self.n_out))
         self.b = np.zeros((self.n_out,))
+        self.input_shape = n_in
+        self.out_shape = (self.n_out, )
 
     def forward(self, input: Union[PhiTensor, GammaTensor], *args, **kwargs):
         self.last_input = input
@@ -59,7 +63,7 @@ class Linear(Layer):
         if not self.first_layer:
             return pre_grad.dot(self.W.T)
 
-    
+
 
     @property
     def params(self):

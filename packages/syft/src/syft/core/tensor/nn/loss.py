@@ -64,7 +64,7 @@ class BinaryCrossEntropy(Loss):
             (outputs * -1) + 1
         )
         log_loss = log_loss.sum(axis=1) * -1
-        return log_loss.mean()
+        return log_loss.mean(axis=0)
 
     def backward(self, outputs: PhiTensor, targets: PhiTensor):
         """Backward pass.
@@ -77,6 +77,5 @@ class BinaryCrossEntropy(Loss):
         """
         outputs = outputs.clip(self.epsilon, 1 - self.epsilon)
         divisor = outputs * ((outputs * -1) + 1)
-        # TODO: Verify if we require to track data subjects during finding divisor
         divisor = np.maximum(divisor.child, self.epsilon)
         return (outputs - targets) * (1.0 / divisor)

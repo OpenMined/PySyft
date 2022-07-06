@@ -52,6 +52,7 @@ class BatchNorm(Layer):
         n_in = prev_layer.out_shape[-1]
         self.beta = np.zeros((n_in,))
         self.gamma = np.ones((n_in,))
+        self.input_shape = prev_layer.out_shape
         self.out_shape = prev_layer.out_shape
 
     def forward(self, input: Union[PhiTensor, GammaTensor], *args, **kwargs):
@@ -115,7 +116,7 @@ class BatchNorm(Layer):
 
         N, D, x, y = pre_grad.shape
         pre_grad = (
-            (self.activation.derivative(pre_grad))
+            self.activation.derivative(pre_grad)
             if self.activation is not None
             else pre_grad
         )
@@ -163,5 +164,5 @@ class BatchNorm(Layer):
         self.beta, self.gamma = new_params
 
     @property
-    def grades(self):
+    def grads(self):
         return self.dbeta, self.dgamma
