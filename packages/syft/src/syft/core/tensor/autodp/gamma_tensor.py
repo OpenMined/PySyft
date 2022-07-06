@@ -34,8 +34,8 @@ from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
 from ...adp.data_subject_list import DataSubjectList
-from ...adp.data_subject_list import liststrtonumpyutf8
-from ...adp.data_subject_list import numpyutf8tolist
+from ...adp.data_subject_list import dslarraytonumpyutf8
+from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import vectorized_publish
 from ...common.serde.capnp import CapnpModule
 from ...common.serde.capnp import get_capnp_schema
@@ -2305,8 +2305,10 @@ class GammaTensor:
             child = self.child
         gamma_msg.child = serialize(child, to_bytes=True)
         gamma_msg.state = serialize(self.state, to_bytes=True)
-        gamma_msg.dataSubjects = serialize(self.data_subjects.tolist(), to_bytes=True)
-        gamma_msg.dataSubjectsShape = serialize(self.data_subjects.shape, to_bytes=True)
+        gamma_msg.dataSubjects = serialize(
+            dslarraytonumpyutf8(self.data_subjects), to_bytes=True
+        )
+        pt_msg.dataSubjectsShape = serialize(self.data_subjects.shape, to_bytes=True)
         gamma_msg.minVal = serialize(self.min_vals, to_bytes=True)
         gamma_msg.maxVal = serialize(self.max_vals, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
@@ -2327,9 +2329,8 @@ class GammaTensor:
         ) as gamma_msg:
             child = deserialize(gamma_msg.child, from_bytes=True)
             state = deserialize(gamma_msg.state, from_bytes=True)
-
-            data_subjects = np.array(
-                deserialize(gamma_msg.dataSubjects), from_bytes=True
+            data_subjects = numpyutf8todslarray(
+                deserialize(pt_msg.dataSubjects, from_bytes=True)
             )
             data_subjects_shape = deserialize(
                 gamma_msg.dataSubjectsShape, from_bytes=True

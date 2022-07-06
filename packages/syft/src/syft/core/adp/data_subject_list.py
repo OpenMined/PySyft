@@ -11,11 +11,9 @@ from typing import Union
 import numpy as np
 import pandas as pd
 
-# syft absolute
-from syft.core.tensor.passthrough import PassthroughTensor
-
 # relative
 from ..common.serde.serializable import serializable
+from ..tensor.passthrough import PassthroughTensor
 from .data_subject import DataSubject
 
 
@@ -637,7 +635,7 @@ class DataSubjectList:
             )
 
 
-def newnumpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
+def numpyutf8todslarray(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
     index_length = int(string_index[-1])
     index_array = string_index[-(index_length + 1) : -1]  # noqa
     string_array: np.ndarray = string_index[: -(index_length + 1)]
@@ -660,7 +658,7 @@ def newnumpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarra
 # reshape
 
 
-def newliststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+def dslarraytonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     string_list = string_list.flatten()
     bytes_list = []
     indexes = []
