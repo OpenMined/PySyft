@@ -61,6 +61,13 @@ def numpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
     return np.array(output_list)
 
 
+# Flatten array
+# include property in newdatasubject to convert data to string
+# include a new value phiTensor capnp to store the shape
+# include property to convert to back to newdata subject
+# reshape
+
+
 def liststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
     bytes_list = []
     indexes = []
@@ -630,12 +637,68 @@ class DataSubjectList:
             )
 
 
+def newnumpyutf8tolist(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
+    index_length = int(string_index[-1])
+    index_array = string_index[-(index_length + 1) : -1]  # noqa
+    string_array: np.ndarray = string_index[: -(index_length + 1)]
+    output_bytes: bytes = string_array.astype(np.uint8).tobytes()
+    output_list = []
+    last_offset = 0
+    for offset in index_array:
+        chars = output_bytes[last_offset:offset]
+        final_string = chars.decode("utf-8")
+        final_string = NewDataSubject.fromstring(final_string)
+        last_offset = offset
+        output_list.append(final_string)
+    return np.array(output_list)
+
+
+# Flatten array
+# include property in newdatasubject to convert data to string
+# include a new value phiTensor capnp to store the shape
+# include property to convert to back to newdata subject
+# reshape
+
+
+def newliststrtonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    string_list = string_list.flatten()
+    bytes_list = []
+    indexes = []
+    offset = 0
+    for item in string_list:
+        if not isinstance(item, NewDataSubject):
+            raise Exception(
+                f"DataSubjectList entities must be  DataSubject. {type(item)}"
+            )
+        name = item.tostring()
+        name_bytes = name.encode("utf-8")
+        offset += len(name_bytes)
+        indexes.append(offset)
+        bytes_list.append(name_bytes)
+
+    np_bytes = np.frombuffer(b"".join(bytes_list), dtype=np.uint8)
+    np_bytes = np_bytes.astype(np.uint64)
+    np_indexes = np.array(indexes, dtype=np.uint64)
+    index_length = np.array([len(np_indexes)], dtype=np.uint64)
+    output_array = np.concatenate([np_bytes, np_indexes, index_length])
+    return output_array
+
+
 @serializable(recursive_serde=True)
 class NewDataSubject:
     __attr_allowlist__ = ("data_subjects",)
 
+    delimiter = ","
+
     def __init__(self, data_subjects):
         self.data_subjects = set(data_subjects)
+
+    def tostring(self):
+        return f"{self.delimiter}".join(self.data_subjects)
+
+    @classmethod
+    def fromstring(cls, input_string: str):
+        return NewDataSubject(set(input_string.split(f"{cls.delimiter}")))
 
     def __add__(self, other):
         if isinstance(other, NewDataSubject):
@@ -672,7 +735,7 @@ class NewDataSubject:
             return NewDataSubject(self.data_subjects.union(other.data_subjects))
         else:
             return NewDataSubject(self.data_subjects)
-    
+
     def __lt__(self, other):
         if isinstance(other, NewDataSubject):
             return NewDataSubject(self.data_subjects.union(other.data_subjects))

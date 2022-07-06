@@ -2306,6 +2306,7 @@ class GammaTensor:
         gamma_msg.child = serialize(child, to_bytes=True)
         gamma_msg.state = serialize(self.state, to_bytes=True)
         gamma_msg.dataSubjects = serialize(self.data_subjects.tolist(), to_bytes=True)
+        gamma_msg.dataSubjectsShape = serialize(self.data_subjects.shape, to_bytes=True)
         gamma_msg.minVal = serialize(self.min_vals, to_bytes=True)
         gamma_msg.maxVal = serialize(self.max_vals, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
@@ -2330,6 +2331,10 @@ class GammaTensor:
             data_subjects = np.array(
                 deserialize(gamma_msg.dataSubjects), from_bytes=True
             )
+            data_subjects_shape = deserialize(
+                gamma_msg.dataSubjectsShape, from_bytes=True
+            )
+            data_subjects = data_subjects.reshape(data_subjects_shape)
 
             min_val = deserialize(gamma_msg.minVal, from_bytes=True)
             max_val = deserialize(gamma_msg.maxVal, from_bytes=True)

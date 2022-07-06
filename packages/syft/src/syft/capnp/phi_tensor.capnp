@@ -7,4 +7,5 @@ struct PT {
   minVals @2 :Data;
   maxVals @3 :Data;
   dataSubjects @4 :Data;
+  dataSubjectsShape @5 :Data;
 }

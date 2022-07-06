@@ -2239,8 +2239,13 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
         pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
         pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        pt_msg.dataSubjects = serialize(self.data_subjects.tolist(), to_bytes=True)
+        # syft absolute
+        from syft.core.adp.data_subject_list import newliststrtonumpyutf8
 
+        pt_msg.dataSubjects = serialize(
+            newliststrtonumpyutf8(self.data_subjects), to_bytes=True
+        )
+        pt_msg.dataSubjectsShape = serialize(self.data_subjects.shape, to_bytes=True)
         # to pack or not to pack?
         # to_bytes = pt_msg.to_bytes()
 
@@ -2261,8 +2266,14 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
         min_vals = deserialize(pt_msg.minVals, from_bytes=True)
         max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
-        data_subjects = np.array(deserialize(pt_msg.dataSubjects), from_bytes=True)
+        # syft absolute
+        from syft.core.adp.data_subject_list import newnumpyutf8tolist
 
+        data_subjects = newnumpyutf8tolist(
+            deserialize(pt_msg.dataSubjects, from_bytes=True)
+        )
+        data_subjects_shape = deserialize(pt_msg.dataSubjectsShape, from_bytes=True)
+        data_subjects = data_subjects.reshape(data_subjects_shape)
         return PhiTensor(
             child=child,
             min_vals=min_vals,

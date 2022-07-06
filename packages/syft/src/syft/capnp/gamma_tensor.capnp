@@ -6,8 +6,9 @@ struct GammaTensor {
   child @1 :Data;
   state @2 :Data;
   dataSubjects @3 :Array;
-  minVal @4 :Data;
-  maxVal @5 :Data;
-  isLinear @6 :Bool;
-  id @7 :Text;
+  dataSubjectsShape @4 :Data;
+  minVal @5 :Data;
+  maxVal @6 :Data;
+  isLinear @7 :Bool;
+  id @8 :Text;
 }
