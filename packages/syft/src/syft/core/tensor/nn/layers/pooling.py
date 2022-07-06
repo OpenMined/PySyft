@@ -165,6 +165,7 @@ class MaxPool(Layer):
         outputs = outputs.transpose((2, 3, 0, 1))
         # print("transposed outputs, DSL shape:", outputs.shape, outputs.data_subjects.shape)
         # print("Done with MaxPool forward pass")
+        print(f"Output shape will be: {outputs.shape}")
         return outputs
 
     def backward(self, pre_grad: PhiTensor, *args, **kwargs):

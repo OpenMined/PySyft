@@ -67,6 +67,8 @@ class Convolution(Layer):
         self.activation = activations.get(activation)
 
     def connect_to(self, prev_layer: Optional[Layer] = None):
+        print("CONNECTING CONV LAYER")
+        print("input_shape = ", self.input_shape)
         if prev_layer is None:
             assert self.input_shape is not None
             input_shape = self.input_shape
@@ -97,53 +99,41 @@ class Convolution(Layer):
     def forward(self, input: PhiTensor, *args: Tuple, **kwargs: Dict):
         # print("Input into Conv forward:", input.shape, input.data_subjects.shape)
         self.last_input = input
+        self.input_shape = input.shape
 
         n_filters, d_filter, h_filter, w_filter = self.W.shape
 
         n_x, d_x, h_x, w_x = input.shape
 
-        (
-            _,
-            _,
-            h_out,
-            w_out,
-        ) = self.out_shape
+        _, _, h_out, w_out = self.out_shape
+        print("out_shape", self.out_shape)
 
         self.ds_cached = input.data_subjects
+
         self.X_col = im2col_indices(
             input, h_filter, w_filter, padding=self.padding, stride=self.stride
         )
-        # print("X_col after im2col", self.X_col.shape, self.X_col.data_subjects.shape)
+        print("X_col_shape", self.X_col.shape, self.X_col.data_subjects.shape)
+        print("input_shape", input.shape, input.data_subjects.shape)
 
-        # relative
-        from ...autodp.gamma_tensor import GammaTensor
-
-        # if isinstance(self.W, (PhiTensor, GammaTensor)):
-        #     print("W", self.W.shape, self.W.data_subjects.shape)
         W_col = self.W.reshape((n_filters, -1))
-        # if isinstance(self.W, (PhiTensor, GammaTensor)):
-        #     print("W after reshape", W_col.shape, W_col.data_subjects.shape)
+        print("W_col", W_col.shape)
         out = (
             self.X_col.T @ W_col.T + self.b
         )  # Transpose is required here because W_col is numpy array
-        # print("out after matmul", out.shape, out.data_subjects.shape)
+        print("out", out.shape)
         out = out.reshape((n_filters, h_out, w_out, n_x))
-        # print("out after reshape", out.shape, out.data_subjects.shape)
         out = out.transpose((3, 0, 1, 2))
-        # print("out after transpose", out.shape, out.data_subjects.shape)
 
         self.last_output = (
             self.activation.forward(out) if self.activation is not None else out
         )
-        # print(
-        #     "out after matmul",
-        #     self.last_output.shape,
-        #     self.last_output.data_subjects.shape,
-        # )
-        # print("Done with convolution")
+        print("output: ", out.shape, out.data_subjects.shape)
+
         return out
 
     def backward(self, pre_grad: PhiTensor, *args: Tuple, **kwargs: Dict):
+        print("ATTENTION OUR INPUT SHAPE IS.....", self.input_shape)
         n_filter, d_filter, h_filter, w_filter = self.W.shape
 
         pre_grads = (
@@ -151,27 +141,20 @@ class Convolution(Layer):
             if self.activation is not None
             else pre_grad
         )
-        print("pre_grads ", pre_grad.shape, pre_grads.min_vals.shape)
-        db = pre_grads.sum(axis=(0, 2, 3))
-        print("db ", db.shape, db.min_vals.shape)
+
+        db = pre_grads.sum(axis=(0, 2, 3))  # TODO @Shubham: This is missing axis=1?
         self.db = db.reshape((n_filter, -1))
         self.db.min_vals.shape = self.db.max_vals.shape = self.db.shape
-        print("self db ", self.db.shape, self.db.min_vals.shape)
 
         pre_grads_reshaped = pre_grads.transpose((1, 2, 3, 0))
-        print("pre_grads ", pre_grads_reshaped.shape, pre_grads_reshaped.min_vals.shape)
         pre_grads_reshaped = pre_grads_reshaped.reshape((n_filter, -1))
         pre_grads_reshaped.min_vals.shape = pre_grads_reshaped.max_vals.shape = pre_grads_reshaped.shape
-        print("pre_grads ", pre_grads_reshaped.shape, pre_grads_reshaped.min_vals.shape)
-        print("X_cols", self.X_col.shape, self.X_col.min_vals.shape)
         dW = pre_grads_reshaped @ self.X_col.T
         self.dW = dW.reshape(self.W.shape)
 
         W_reshape = self.W.reshape(n_filter, -1)
-        print("W_reshape, ", W_reshape.shape)
         # W_reshape.min_vals.shape = W_reshape.max_vals.shape = W_reshape.shape
         dX_col = pre_grads_reshaped.T @ W_reshape
-        print("dX_col ", dX_col.shape)
         dX = col2im_indices(
             dX_col,
             self.input_shape,

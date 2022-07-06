@@ -109,16 +109,13 @@ def dp_zeros(
     :return:
     """
     output = np.zeros(shape)
-    # output_ds = data_subjects.reshape(shape)
-    # print("Inside dp_zeros: ", output.shape, output_ds.shape)
+
     return GammaTensor(
         child=output,
         data_subjects=data_subjects,
         min_vals=lazyrepeatarray(0, shape),
         max_vals=lazyrepeatarray(1, shape),
     )
-    # else:
-    #     raise NotImplementedError("Zero or negative data subject behaviour undefined.")
 
 
 def dp_pad(
@@ -210,16 +207,22 @@ def col2im_indices(
     stride: int = 1,
 ):
     """An implementation of col2im based on fancy indexing and np.add.at"""
+    print("x_shape", x_shape)
+    print("cols", cols.shape, cols.data_subjects.shape)
+    print("target_ds")
     N, C, H, W = x_shape
     H_padded, W_padded = H + 2 * padding, W + 2 * padding
     x_padded = dp_zeros((N, C, H_padded, W_padded), data_subjects=target_ds)
+    print("x_padded", x_padded.shape, x_padded.data_subjects.shape)
 
     k, i, j = get_im2col_indices(x_shape, field_height, field_width, padding, stride)
     cols_reshaped = cols.reshape((C * field_height * field_width, -1, N))
 
     cols_reshaped = cols_reshaped.transpose((2, 0, 1))
-
+    print("input arrays to dp_add_at", x_padded.shape, cols_reshaped.shape,)
+    print("input DS to dp_add_at",  x_padded.data_subjects.shape, cols_reshaped.data_subjects.shape)
     x_padded = dp_add_at(x_padded, (slice(None), k, i, j), cols_reshaped)
+    print("x_padded", x_padded.shape, x_padded.data_subjects.shape)
     if padding == 0:
         return x_padded
     return x_padded[:, :, padding:-padding, padding:-padding]
