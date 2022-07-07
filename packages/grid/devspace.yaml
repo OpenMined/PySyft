@@ -25,7 +25,7 @@ vars:
     value: tailscale
   - name: SERVICE_NAME_REDIS
     value: redis
-  - name: SERVICE_NAME_TRAEFIK
+  - name: SERVICE_NAME_PROXY
     value: proxy
   - name: SERVICE_NAME_SEAWEEDFS
     value: seaweedfs
@@ -93,8 +93,9 @@ images:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
     # rebuildStrategy: ignoreContextChanges
     tags:
+      - "######"
       - latest
-      - "0.7.0-beta.29"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./backend/backend.dockerfile
     context: ../
@@ -104,8 +105,9 @@ images:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
     # rebuildStrategy: ignoreContextChanges
     tags:
+      - "######"
       - latest
-      - "0.7.0-beta.29"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./frontend/frontend.dockerfile
     context: ./frontend
@@ -122,8 +124,9 @@ images:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
     # rebuildStrategy: ignoreContextChanges
     tags:
+      - "######"
       - latest
-      - "0.7.0-beta.29"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./vpn/headscale.dockerfile
     context: ./vpn
@@ -133,8 +136,9 @@ images:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
     # rebuildStrategy: ignoreContextChanges
     tags:
+      - "######"
       - latest
-      - "0.7.0-beta.29"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./vpn/tailscale.dockerfile
     context: ./vpn
@@ -144,8 +148,9 @@ images:
     image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
     # rebuildStrategy: ignoreContextChanges
     tags:
+      - "######"
       - latest
-      - "0.7.0-beta.29"
+      - "0.7.0-beta.30"
     createPullSecret: true
     dockerfile: ./vpn/iptables.dockerfile
     context: ./vpn
@@ -181,7 +186,7 @@ deployments:
   #       - k8s/manifests/vpn-iptables
 
   # containers
-  - name: tailscale
+  - name: proxy
     helm:
       componentChart: true
       values:
@@ -193,8 +198,8 @@ deployments:
                   name: traefik-conf
             env:
               - name: SERVICE_NAME
-                value: ${SERVICE_NAME_TRAEFIK}
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}:${VERSION}
+                value: ${SERVICE_NAME_PROXY}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_TAILSCALE}
             securityContext:
               capabilities:
                 add: ["NET_ADMIN", "SYS_MODULE"]
@@ -217,7 +222,7 @@ deployments:
             configMap:
               name: traefik-main-config
         service:
-          name: ${SERVICE_NAME_TAILSCALE}
+          name: ${SERVICE_NAME_PROXY}
           ports:
             - name: proxy
               port: 80
@@ -351,7 +356,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
               - /start.sh
             securityContext:
@@ -439,7 +444,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
               - waitforit
             args:
@@ -537,7 +542,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}:${VERSION}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_BACKEND}
             command:
               - waitforit
             args:
@@ -619,7 +624,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}:${VERSION}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_FRONTEND}
             env:
               - name: VERSION
                 value: ${VERSION}
@@ -639,7 +644,7 @@ deployments:
       componentChart: true
       values:
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}:${VERSION}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_HEADSCALE}
             env:
               - name: NETWORK_NAME
                 value: ${NETWORK_NAME}
@@ -668,7 +673,7 @@ deployments:
       values:
         hostNetwork: true
         containers:
-          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}:${VERSION}
+          - image: ${CONTAINER_REGISTRY}${DOCKER_IMAGE_VPN_IPTABLES}
             command: ["sh", "-c", "/iptables.sh"]
             resources:
               requests:
