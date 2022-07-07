@@ -727,7 +727,10 @@ class DomainClient(Client):
             dataset_bytes = serialize(assets, to_bytes=True)
 
         self.datasets.create_syft(
-            dataset=dataset_bytes, metadata=metadata, platform="syft"
+            dataset=dataset_bytes,
+            metadata=metadata,
+            platform="syft",
+            timeout=300,
         )
         sys.stdout.write("\rDataset is uploaded successfully !!! 🎉")
 

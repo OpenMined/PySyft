@@ -636,6 +636,9 @@ class DataSubjectList:
 
 
 def numpyutf8todslarray(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
+    shape_length = int(string_index[-1])
+    shape = tuple(string_index[-(shape_length + 1) : -1])  # noqa
+    string_index = string_index[: -(shape_length + 1)]
     index_length = int(string_index[-1])
     index_array = string_index[-(index_length + 1) : -1]  # noqa
     string_array: np.ndarray = string_index[: -(index_length + 1)]
@@ -648,7 +651,7 @@ def numpyutf8todslarray(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarr
         final_string = NewDataSubject.fromstring(final_string)
         last_offset = offset
         output_list.append(final_string)
-    return np.array(output_list)
+    return np.array(output_list).reshape(shape)
 
 
 # Flatten array
@@ -659,6 +662,7 @@ def numpyutf8todslarray(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarr
 
 
 def dslarraytonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    array_shape = string_list.shape
     string_list = string_list.flatten()
     bytes_list = []
     indexes = []
@@ -678,7 +682,12 @@ def dslarraytonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray
     np_bytes = np_bytes.astype(np.uint64)
     np_indexes = np.array(indexes, dtype=np.uint64)
     index_length = np.array([len(np_indexes)], dtype=np.uint64)
-    output_array = np.concatenate([np_bytes, np_indexes, index_length])
+    shape = np.array(array_shape, dtype=np.uint64)
+    shape_length = np.array([len(shape)], dtype=np.uint64)
+    output_array = np.concatenate(
+        [np_bytes, np_indexes, index_length, shape, shape_length]
+    )
+
     return output_array
 
 

@@ -15,6 +15,33 @@ from ...core.common.uid import UID
 from ...grid import GridURL
 
 
+def kwargs_dsl_to_numpy(input_kwargs):
+    # relative
+    from ..adp.data_subject_list import dslarraytonumpyutf8
+
+    data_subjects = input_kwargs.get("data_subjects",None)
+
+    if data_subjects is not None:
+        input_kwargs["data_subjects"] = dslarraytonumpyutf8(
+            data_subjects
+        )
+
+    return input_kwargs
+
+
+def kwargs_dsl_from_numpy(input_kwargs):
+    # relative
+    from ..adp.data_subject_list import numpyutf8todslarray
+
+    data_subjects = input_kwargs.get("data_subjects",None)
+
+    if data_subjects is not None:
+        input_kwargs["data_subjects"] = numpyutf8todslarray(
+            data_subjects
+        )
+    return input_kwargs
+
+
 @serializable(recursive_serde=True)
 class ProxyDataset:
     __attr_allowlist__ = [
@@ -27,6 +54,10 @@ class ProxyDataset:
         "url",
         "obj_public_kwargs",
     ]
+
+    __serde_overrides__ = {
+        "obj_public_kwargs": [kwargs_dsl_to_numpy, kwargs_dsl_from_numpy],
+    }
 
     def __init__(
         self,

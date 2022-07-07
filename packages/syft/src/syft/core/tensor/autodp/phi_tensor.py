@@ -84,6 +84,7 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
     __serde_overrides__ = {
         "client": [lambda x: x.address, lambda y: y],
         "public_shape": [lambda x: x, lambda y: upcast(y)],
+        "data_subjects": [dslarraytonumpyutf8, numpyutf8todslarray],
     }
     _exhausted = False
     is_enum = False
@@ -2234,15 +2235,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         # this is how we dispatch correct deserialization of bytes
         pt_msg.magicHeader = serde_magic_header(type(self))
 
-        # We always have FPT as the child of an PT in the tensor chain.
-        chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
+        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+            chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", pt_msg)  # type: ignore
+            pt_msg.isNumpy = True
+        else:
+            chunk_bytes(serialize(self.child, to_bytes=True), "child", pt_msg)  # type: ignore
+            pt_msg.isNumpy = False
 
         pt_msg.minVals = serialize(self.min_vals, to_bytes=True)
         pt_msg.maxVals = serialize(self.max_vals, to_bytes=True)
-        pt_msg.dataSubjects = serialize(
-            dslarraytonumpyutf8(self.data_subjects), to_bytes=True
+        chunk_bytes(
+            capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
+            "dataSubjects",
+            pt_msg,
         )
-        pt_msg.dataSubjectsShape = serialize(self.data_subjects.shape, to_bytes=True)
         # to pack or not to pack?
         # to_bytes = pt_msg.to_bytes()
 
@@ -2260,14 +2266,17 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         )
 
-        child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+        if pt_msg.isNumpy:
+            child = capnp_deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+        else:
+            child = deserialize(combine_bytes(pt_msg.child), from_bytes=True)
+
         min_vals = deserialize(pt_msg.minVals, from_bytes=True)
         max_vals = deserialize(pt_msg.maxVals, from_bytes=True)
         data_subjects = numpyutf8todslarray(
-            deserialize(pt_msg.dataSubjects, from_bytes=True)
+            capnp_deserialize(combine_bytes(pt_msg.dataSubjects), from_bytes=True)
         )
-        data_subjects_shape = deserialize(pt_msg.dataSubjectsShape, from_bytes=True)
-        data_subjects = data_subjects.reshape(data_subjects_shape)
+
         return PhiTensor(
             child=child,
             min_vals=min_vals,

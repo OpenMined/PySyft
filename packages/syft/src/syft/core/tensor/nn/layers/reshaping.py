@@ -23,7 +23,7 @@ class Flatten(Layer):
         assert len(prev_layer.out_shape) > 2
 
         to_flatten = np.prod(prev_layer.out_shape[self.outdim - 1 :])
-        flattened_shape = prev_layer.out_shape[: self.outdim - 1] + (to_flatten,)
+        flattened_shape = prev_layer.out_shape[: self.outdim - 1] + (int(to_flatten),)
 
         self.input_shape = prev_layer.out_shape
         self.out_shape = flattened_shape

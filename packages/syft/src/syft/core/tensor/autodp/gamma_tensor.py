@@ -38,6 +38,8 @@ from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
 from ...adp.vectorized_publish import vectorized_publish
 from ...common.serde.capnp import CapnpModule
+from ...common.serde.capnp import chunk_bytes
+from ...common.serde.capnp import combine_bytes
 from ...common.serde.capnp import get_capnp_schema
 from ...common.serde.capnp import serde_magic_header
 from ...common.serde.deserialize import _deserialize as deserialize
@@ -2299,16 +2301,20 @@ class GammaTensor:
         # what is the difference between inputs and value which do we serde
         # do we need to serde func? if so how?
         # what about the state dict?
-        if np.isscalar(self.child):
-            child = np.array(self.child)
+
+        if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
+            chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", gamma_msg)  # type: ignore
+            gamma_msg.isNumpy = True
         else:
-            child = self.child
-        gamma_msg.child = serialize(child, to_bytes=True)
+            chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
+            gamma_msg.isNumpy = False
+
         gamma_msg.state = serialize(self.state, to_bytes=True)
-        gamma_msg.dataSubjects = serialize(
-            dslarraytonumpyutf8(self.data_subjects), to_bytes=True
+        chunk_bytes(
+            capnp_serialize(dslarraytonumpyutf8(self.data_subjects), to_bytes=True),
+            "dataSubjects",
+            gamma_msg,
         )
-        pt_msg.dataSubjectsShape = serialize(self.data_subjects.shape, to_bytes=True)
         gamma_msg.minVal = serialize(self.min_vals, to_bytes=True)
         gamma_msg.maxVal = serialize(self.max_vals, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
@@ -2327,15 +2333,21 @@ class GammaTensor:
         with gamma_struct.from_bytes(
             buf, traversal_limit_in_words=MAX_TRAVERSAL_LIMIT
         ) as gamma_msg:
-            child = deserialize(gamma_msg.child, from_bytes=True)
+
+            if gamma_msg.isNumpy:
+                child = capnp_deserialize(
+                    combine_bytes(gamma_msg.child), from_bytes=True
+                )
+            else:
+                child = deserialize(combine_bytes(gamma_msg.child), from_bytes=True)
+
             state = deserialize(gamma_msg.state, from_bytes=True)
+
             data_subjects = numpyutf8todslarray(
-                deserialize(pt_msg.dataSubjects, from_bytes=True)
+                capnp_deserialize(
+                    combine_bytes(gamma_msg.dataSubjects), from_bytes=True
+                )
             )
-            data_subjects_shape = deserialize(
-                gamma_msg.dataSubjectsShape, from_bytes=True
-            )
-            data_subjects = data_subjects.reshape(data_subjects_shape)
 
             min_val = deserialize(gamma_msg.minVal, from_bytes=True)
             max_val = deserialize(gamma_msg.maxVal, from_bytes=True)

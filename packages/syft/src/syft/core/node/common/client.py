@@ -504,7 +504,9 @@ class StoreClient:
                 address=self.client.address, reply_to=self.client.address, obj_id=key
             )
             results = getattr(
-                self.client.send_immediate_msg_with_reply(msg=msg), "results", None
+                self.client.send_immediate_msg_with_reply(msg=msg, timeout=600),
+                "results",
+                None,
             )
 
             if results is None:
