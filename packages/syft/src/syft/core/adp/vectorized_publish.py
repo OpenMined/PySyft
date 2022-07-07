@@ -136,7 +136,7 @@ def vectorized_publish(
             lipschitz_bounds = input_tensor.lipschitz_bound
             # raise Exception("gamma_tensor.lipschitz_bound property would be used here")
 
-        input_entities = input_tensor.data_subjects.data_subjects_indexed
+        input_entities = input_tensor.data_subjects
         # data_subjects.data_subjects_indexed[0].reshape(-1)
         # t2 = time()
         # print("Obtained RDP Params, calculation time", t2 - t1)

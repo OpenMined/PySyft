@@ -104,32 +104,25 @@ class Convolution(Layer):
         n_x, d_x, h_x, w_x = input.shape
 
         _, _, h_out, w_out = self.out_shape
-        print("out_shape", self.out_shape)
 
         self.X_col = im2col_indices(
             input, h_filter, w_filter, padding=self.padding, stride=self.stride
         )
-        print("X_col_shape", self.X_col.shape, self.X_col.data_subjects.shape)
-        print("input_shape", input.shape, input.data_subjects.shape)
 
         W_col = self.W.reshape((n_filters, -1))
-        print("W_col", W_col.shape)
         out = (
             self.X_col.T @ W_col.T + self.b
         )  # Transpose is required here because W_col is numpy array
-        print("out", out.shape)
         out = out.reshape((n_filters, h_out, w_out, n_x))
         out = out.transpose((3, 0, 1, 2))
 
         self.last_output = (
             self.activation.forward(out) if self.activation is not None else out
         )
-        print("output: ", out.shape, out.data_subjects.shape)
 
         return out
 
     def backward(self, pre_grad: PhiTensor, *args: Tuple, **kwargs: Dict):
-        print("ATTENTION OUR INPUT SHAPE IS.....", self.input_shape)
         n_filter, d_filter, h_filter, w_filter = self.W.shape
 
         pre_grads = (

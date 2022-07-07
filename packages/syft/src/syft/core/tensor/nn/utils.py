@@ -147,8 +147,6 @@ def dp_pad(
         data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape
     )
 
-    # print("dsi_shape, width, mode", input.data_subjects.shape, width, padding_mode)
-
     output_data_subjects = np.pad(
         input.data_subjects, width, mode=padding_mode, **kwargs
     )
@@ -237,25 +235,14 @@ def col2im_indices(
     stride: int = 1,
 ):
     """An implementation of col2im based on fancy indexing and np.add.at"""
-    print("x_shape", x_shape)
-    print("cols", cols.shape, cols.data_subjects.shape)
-    print("target_ds")
     N, C, H, W = x_shape
     H_padded, W_padded = H + 2 * padding, W + 2 * padding
     x_padded = dp_zeros(shape=(N, C, H_padded, W_padded))
-    # if padding != 0:
-    #     x_padded = dp_pad(x_padded, width=padding)
-    # x_padded = dp_zeros((N, C, H_padded, W_padded), data_subjects=target_ds)
-    print("x_padded", x_padded.shape, x_padded.data_subjects.shape)
 
     k, i, j = get_im2col_indices(x_shape, field_height, field_width, padding, stride)
     cols_reshaped = cols.reshape((C * field_height * field_width, -1, N))
-
     cols_reshaped = cols_reshaped.transpose((2, 0, 1))
-    print("input arrays to dp_add_at", x_padded.shape, cols_reshaped.shape,)
-    print("input DS to dp_add_at",  x_padded.data_subjects.shape, cols_reshaped.data_subjects.shape)
     x_padded = dp_add_at(x_padded, (slice(None), k, i, j), cols_reshaped)
-    print("x_padded", x_padded.shape, x_padded.data_subjects.shape)
     if padding == 0:
         return x_padded
     return x_padded[:, :, padding:-padding, padding:-padding]
@@ -267,7 +254,6 @@ def im2col_indices(
     """An implementation of im2col based on some fancy indexing"""
     # Zero-pad the input
     p = padding
-    # print("shapes before padding:, ", x.shape, x.data_subjects.shape)
 
     if len(x.shape) == 4:
         width = ((0, 0), (0, 0), (p, p), (p, p))
@@ -279,14 +265,11 @@ def im2col_indices(
         raise NotImplementedError
     x_padded = dp_pad(x, width)
 
-    # print("x_padded", x_padded.shape)
-
     k, i, j = get_im2col_indices(x.shape, field_height, field_width, padding, stride)
 
     cols = x_padded[:, k, i, j]
     C = x.shape[1]
     cols = cols.transpose((1, 2, 0)).reshape((field_height * field_width * C, -1))
-    # print("cols transpose", cols.shape)
 
     # Not sure why this happens but sometimes this gets a shape of (n, -1)
     if cols.min_vals.shape != cols.shape:
