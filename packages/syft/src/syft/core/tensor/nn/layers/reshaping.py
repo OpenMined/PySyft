@@ -32,7 +32,7 @@ class Flatten(Layer):
         self.last_input_shape = input.shape
 
         to_flatten = np.prod(self.last_input_shape[self.outdim - 1 :])
-        flattened_shape = input.shape[: self.outdim - 1] + (to_flatten,)
+        flattened_shape = input.shape[: self.outdim - 1] + (int(to_flatten),)
         # flattened_shape = input.shape[: self.outdim - 1] + (-1,)
         return input.reshape(flattened_shape)
 

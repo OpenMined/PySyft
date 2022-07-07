@@ -15,12 +15,14 @@ class Model:
         "layers",
         "loss",
         "optimizer",
+        "aggregated_loss",
     ]
 
     def __init__(self, layers=None):
         self.layers = [] if layers is None else layers
 
         self.loss = None
+        self.aggregated_loss = 0.0
         self.optimizer = Adamax
 
     def add(self, layer):
@@ -148,14 +150,15 @@ class Model:
             next_grad = layer.backward(next_grad)
 
         # update parameters
+        print("Updating optimizer")
         self.optimizer.update(self.layers)
 
         # got loss and predict
+        print("Predicting loss")
         loss = self.loss.forward(y_pred, y_batch)
 
         curr_loss = float(loss.child)
-
-        return curr_loss
+        self.aggregated_loss += curr_loss
 
     def predict(self, X):
         """Calculate an output Y for the given input X."""

@@ -46,11 +46,11 @@ class Linear(Layer):
             n_in = self.n_in
         else:
             assert len(prev_layer.out_shape) == 2
-            n_in = prev_layer.out_shape[-1]
+            n_in = int(prev_layer.out_shape[-1])
 
         self.W = self.init((n_in, self.n_out))
         self.b = np.zeros((self.n_out,))
-        self.input_shape = n_in
+        self.input_shape = (n_in,)
         self.out_shape = (self.n_out, )
 
     def forward(self, input: Union[PhiTensor, GammaTensor], *args, **kwargs):

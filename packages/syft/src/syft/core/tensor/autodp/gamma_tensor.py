@@ -2305,6 +2305,9 @@ class GammaTensor:
         if isinstance(self.child, np.ndarray) or np.isscalar(self.child):
             chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", gamma_msg)  # type: ignore
             gamma_msg.isNumpy = True
+        elif isinstance(self.child, jnp.ndarray):
+            chunk_bytes(capnp_serialize(jax2numpy(self.child, self.child.dtype), to_bytes=True), "child", gamma_msg)  # type: ignore
+            gamma_msg.isNumpy = True
         else:
             chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore
             gamma_msg.isNumpy = False
@@ -2315,6 +2318,11 @@ class GammaTensor:
             "dataSubjects",
             gamma_msg,
         )
+
+        # Explicity convert lazyrepeatarray data to ndarray
+        self.min_vals.data = np.array(self.min_vals.data)
+        self.max_vals.data = np.array(self.max_vals.data)
+
         gamma_msg.minVal = serialize(self.min_vals, to_bytes=True)
         gamma_msg.maxVal = serialize(self.max_vals, to_bytes=True)
         gamma_msg.isLinear = self.is_linear
