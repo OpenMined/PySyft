@@ -131,6 +131,13 @@ class Model:
                 # )
 
     def step(self, x_batch, y_batch):
+
+        x_batch = x_batch.child if isinstance(x_batch, Tensor) else x_batch
+        y_batch = y_batch.child if isinstance(y_batch, Tensor) else y_batch
+
+        print(type(x_batch), type(y_batch))
+        print(x_batch.shape, y_batch.shape)
+
         # forward propagation
         y_pred = self.predict(x_batch)
 
@@ -146,12 +153,14 @@ class Model:
         # got loss and predict
         loss = self.loss.forward(y_pred, y_batch)
 
-        return loss
+        curr_loss = float(loss.child)
+
+        return curr_loss
 
     def predict(self, X):
         """Calculate an output Y for the given input X."""
         x_next = X
-        for layer in self.layers[:]:
+        for layer in self.layers:
             print("Forward layer", layer)
             x_next = layer.forward(x_next)
         y_pred = x_next
