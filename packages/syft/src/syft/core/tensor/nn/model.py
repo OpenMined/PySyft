@@ -3,6 +3,7 @@ import numpy as np
 
 # relative
 from ...common.serde.serializable import serializable
+from ..tensor import Tensor
 from .layers.base import Layer
 from .loss import BinaryCrossEntropy
 from .optimizers import Adamax
@@ -47,6 +48,12 @@ class Model:
         validation_split=0.0,
         validation_data=None,
     ) -> None:
+        print("Started Training")
+
+        if isinstance(X, Tensor):
+            X = X.child
+        if isinstance(Y, Tensor):
+            Y = Y.child
 
         # prepare data
         train_X = X  # .astype(get_dtype()) if np.issubdtype(np.float64, X.dtype) else X
@@ -79,16 +86,16 @@ class Model:
                 # backward propagation
                 next_grad = self.loss.backward(y_pred, y_batch)
                 for layer in self.layers[::-1]:
+                    print("Backward layer", layer)
                     next_grad = layer.backward(next_grad)
-
 
                 # update parameters
                 self.optimizer.update(self.layers)
 
                 # got loss and predict
                 train_losses.append(self.loss.forward(y_pred, y_batch))
-                train_predicts.extend(y_pred)
-                train_targets.extend(y_batch)
+                # train_predicts.extend(y_pred)
+                # train_targets.extend(y_batch)
 
             # output train status
             # runout = "iter %d, train-[loss %.4f, acc %.4f]; " % (
@@ -123,10 +130,29 @@ class Model:
                 #     float(self.accuracy(valid_predicts, valid_targets)),
                 # )
 
+    def step(self, x_batch, y_batch):
+        # forward propagation
+        y_pred = self.predict(x_batch)
+
+        # backward propagation
+        next_grad = self.loss.backward(y_pred, y_batch)
+        for layer in self.layers[::-1]:
+            print("Backward layer", layer)
+            next_grad = layer.backward(next_grad)
+
+        # update parameters
+        self.optimizer.update(self.layers)
+
+        # got loss and predict
+        loss = self.loss.forward(y_pred, y_batch)
+
+        return loss
+
     def predict(self, X):
         """Calculate an output Y for the given input X."""
         x_next = X
         for layer in self.layers[:]:
+            print("Forward layer", layer)
             x_next = layer.forward(x_next)
         y_pred = x_next
         return y_pred

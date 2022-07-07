@@ -25,7 +25,14 @@ class AvgPool(Layer):
         `(samples, pooled_rows, pooled_cols, channels)` if dim_ordering='tf'.
     """
 
-    __attr_allowlist__ = ("pool_size", "input_shape", "out_shape", "last_input")
+    __attr_allowlist__ = (
+        "stride",
+        "pool_size",
+        "input_shape",
+        "out_shape",
+        "last_input",
+        "X_col",
+    )
 
     def __init__(self, pool_size, stride=1):
         if isinstance(pool_size, tuple):
@@ -85,7 +92,9 @@ class AvgPool(Layer):
         dout_col_size = np.prod(dout_col.shape)
 
         dX_col[:, range(dout_col_size)] = dout_col * (1.0 / dX_col.shape[0])
-        dX = col2im_indices(dX_col,  (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride)
+        dX = col2im_indices(
+            dX_col, (n * d, 1, h, w), pool_h, pool_w, padding=0, stride=self.stride
+        )
 
         dX = dX.reshape(self.input_shape)
 
@@ -108,7 +117,15 @@ class MaxPool(Layer):
         `(samples, pooled_rows, pooled_cols, channels)` if dim_ordering='tf'.
     """
 
-    __attr_allowlist__ = ("pool_size", "input_shape", "out_shape", "last_input")
+    __attr_allowlist__ = (
+        "stride",
+        "X_col",
+        "max_idx",
+        "pool_size",
+        "input_shape",
+        "out_shape",
+        "last_input",
+    )
 
     def __init__(self, pool_size, stride=1):
         if isinstance(pool_size, tuple):
