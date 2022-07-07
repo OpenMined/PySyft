@@ -136,7 +136,14 @@ def vectorized_publish(
             lipschitz_bounds = input_tensor.lipschitz_bound
             # raise Exception("gamma_tensor.lipschitz_bound property would be used here")
 
-        input_entities = input_tensor.data_subjects
+        if isinstance(input_tensor.data_subjects, np.ndarray):
+            # TODO: THIS IS A HACK FOR AA AND SHOULD __NOT__ BE MERGED INTO DEV
+            # Need to convert newDSL to old DSL-> this works because for each step we only use 1 data subject at a time
+            input_entities = np.zeros_like(input_tensor)
+        elif isinstance(input_tensor.data_subjects, DataSubjectList):
+            input_entities = input_tensor.data_subjects.data_subjects_indexed
+        else:
+            raise NotImplementedError(f"Undefined behaviour for data subjects type: {type(input_tensor.data_subjects)}")
         # data_subjects.data_subjects_indexed[0].reshape(-1)
         # t2 = time()
         # print("Obtained RDP Params, calculation time", t2 - t1)

@@ -691,6 +691,9 @@ class NewDataSubject:
     def __init__(self, data_subjects):
         self.data_subjects = set(data_subjects)
 
+    def __len__(self):
+        return len(self.data_subjects)
+
     def tostring(self):
         return f"{self.delimiter}".join(self.data_subjects)
 
