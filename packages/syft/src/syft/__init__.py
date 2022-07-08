@@ -29,25 +29,31 @@ To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` 
 
 __version__ = "0.7.0-beta.30"
 
+print("1")
 # stdlib
 from pathlib import Path
 import sys
 from typing import Any
-
+print("2")
 # third party
 from pkg_resources import DistributionNotFound  # noqa: F401
 from pkg_resources import get_distribution  # noqa: F401
 
+print("3")
 # relative
 # Package Imports
 from . import filterwarnings  # noqa: F401
+print("3.1")
 from . import jax_settings  # noqa: F401
+print("3.2")
 from . import lib  # noqa: F401
+print("3.3")
 from . import logger  # noqa: F401
 
+print("4")
 # ASTRACT OBJECT IMPORTS
 from .core import common  # noqa: F401
-
+print("5")
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401
 from .core.common.serde.serialize import _serialize as serialize  # noqa: F401
@@ -61,6 +67,7 @@ from .core.node.domain import DomainClient  # noqa: F401
 from .core.node.network import Network  # noqa: F401
 from .core.node.network_client import NetworkClient  # noqa: F401
 
+print("6")
 # Convenience Constructors
 from .core.node.vm import VirtualMachine  # noqa: F401
 from .core.node.vm_client import VirtualMachineClient  # noqa: F401
@@ -72,6 +79,7 @@ from .grid.client.client import connect  # noqa: F401
 from .grid.client.client import login  # noqa: F401
 from .grid.client.client import register  # noqa: F401
 
+print("7")
 # Convenience Objects
 from .lib import lib_ast  # noqa: F401
 from .lib import load  # noqa: F401
