@@ -16,9 +16,11 @@ from ...core.common.message import SyftMessage
 from ...core.common.serde.deserialize import _deserialize
 from ...core.common.serde.serialize import _serialize
 from ...core.io.connection import ClientConnection
-from ...core.node.domain.enums import RequestAPIFields
-from ...core.node.domain.exceptions import RequestAPIException
+from ...core.node.enums import RequestAPIFields
+from ...core.node.exceptions import RequestAPIException
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
+
+DEFAULT_TIMEOUT = 30  # seconds
 
 
 class HTTPConnection(ClientConnection):
@@ -30,7 +32,10 @@ class HTTPConnection(ClientConnection):
             raise Exception(f"Invalid GridURL. {self.base_url}")
 
     def send_immediate_msg_with_reply(
-        self, msg: SignedImmediateSyftMessageWithReply, timeout: Optional[float] = None
+        self,
+        msg: SignedImmediateSyftMessageWithReply,
+        timeout: Optional[float] = None,
+        return_signed: bool = False,
     ) -> SignedImmediateSyftMessageWithoutReply:
         """
         Sends high priority messages and wait for their responses.
@@ -101,6 +106,9 @@ class HTTPConnection(ClientConnection):
         SyftMessage
         :rtype: requests.Response
         """
+
+        # timeout = None will wait forever
+        timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
 
         # Perform HTTP request using base_url as a root address
         data_bytes: bytes = _serialize(msg, to_bytes=True)  # type: ignore

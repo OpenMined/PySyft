@@ -22,8 +22,8 @@ from .. import GridURL
 from ...core.io.connection import ClientConnection
 from ...core.io.route import SoloRoute
 from ...core.node.common.client import Client
-from ...core.node.domain.client import DomainClient
-from ...core.node.network.client import NetworkClient
+from ...core.node.domain_client import DomainClient
+from ...core.node.network_client import NetworkClient
 from ...util import verify_tls
 from .grid_connection import GridHTTPConnection
 
@@ -101,7 +101,12 @@ def login(
     password: Optional[str] = None,
     conn_type: Type[ClientConnection] = GridHTTPConnection,
     verbose: Optional[bool] = True,
+    timeout: Optional[float] = None,
+    retry: Optional[int] = None,
 ) -> Client:
+
+    retry = 5 if retry is None else retry  # Default to 5 retries
+    timeout = 10 if timeout is None else timeout  # Default to 10 seconds
 
     if password == "changethis":  # nosec
 
@@ -150,7 +155,37 @@ def login(
         credentials = {"email": email, "password": password}
 
     # connecting to domain
-    node = connect(url=grid_url, credentials=credentials, conn_type=conn_type)
+    node = None
+    timeout_btw_retries = timeout
+    retry_attempt = 1
+
+    while node is None and retry_attempt <= retry:
+        try:
+            node = connect(
+                url=grid_url,
+                credentials=credentials,
+                conn_type=conn_type,
+                timeout=timeout,
+            )
+        except requests.ConnectTimeout:
+            raise requests.ConnectTimeout(
+                f"Connection to node with: {url} timed out. Please try again !!!"
+            )
+        except requests.ConnectionError as e:
+            if retry_attempt <= retry:
+                print(
+                    f"\nConnectionError: Retrying again.... Attempt: {retry_attempt}",
+                    end="\r",
+                )
+                time.sleep(timeout_btw_retries)
+            else:
+                raise e
+        retry_attempt += 1
+
+    if node is None:
+        raise requests.ConnectionError(
+            f"Failed to connect to node with: {url}. Please try again !!!"
+        )
 
     if verbose:
         # bit of fanciness
@@ -193,21 +228,24 @@ def register(
         password = getpass("Please enter your password")
 
     if url is None:
-        url = input("Please enter URL of domain (ex: 'http://localhost'):")
+        url = input("Please enter URL of domain (ex: 'localhost'):")
 
     if port is None:
         port = int(input("Please enter the port your domain is running on:"))
 
-    register_url = url + ":" + str(port) + "/api/v1/register"
+    grid_url = GridURL(host_or_ip=url, port=port)
+
+    register_url = grid_url.url + "/api/v1/register"
     myobj = {"name": name, "email": email, "password": password}
 
-    x = requests.post(register_url, data=json.dumps(myobj))
+    response = requests.post(register_url, data=json.dumps(myobj))
 
-    if "error" not in json.loads(x.text):
+    if "error" not in json.loads(response.text):
         if verbose:
             print("Successfully registered! Logging in...")
+
         return login(
-            url=url, port=port, email=email, password=password, verbose=verbose
+            url=grid_url, port=port, email=email, password=password, verbose=verbose
         )
 
-    raise Exception(x.text)
+    raise Exception(response.text)

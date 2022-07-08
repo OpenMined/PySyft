@@ -18,9 +18,9 @@ function t(key: string, i18n_key = 'common') {
     users: usersStrings,
     account: accountStrings,
     paths: pathStrings,
-    settings: settingsStrings
+    settings: settingsStrings,
   }
   return get(i18ns[i18n_key], key?.toLowerCase())
 }
 
-export {t}
+export { t }

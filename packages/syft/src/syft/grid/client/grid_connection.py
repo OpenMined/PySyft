@@ -23,8 +23,8 @@ from ...core.common.message import SignedImmediateSyftMessageWithoutReply
 from ...core.common.message import SyftMessage
 from ...core.common.serde.serializable import serializable
 from ...core.common.serde.serialize import _serialize
-from ...core.node.domain.enums import RequestAPIFields
-from ...core.node.domain.exceptions import RequestAPIException
+from ...core.node.enums import RequestAPIFields
+from ...core.node.exceptions import RequestAPIException
 from ...logger import debug
 from ...proto.core.node.common.metadata_pb2 import Metadata as Metadata_PB
 from ...proto.grid.connections.http_connection_pb2 import (
@@ -33,7 +33,7 @@ from ...proto.grid.connections.http_connection_pb2 import (
 from ...util import verify_tls
 from ..connections.http_connection import HTTPConnection
 
-DEFAULT_TIMEOUT = 5  # seconds
+DEFAULT_TIMEOUT = 30  # seconds
 
 
 class TimeoutHTTPAdapter(HTTPAdapter):
@@ -42,6 +42,9 @@ class TimeoutHTTPAdapter(HTTPAdapter):
         if "timeout" in kwargs:
             self.timeout = kwargs["timeout"]
             del kwargs["timeout"]
+        if "max_retries" in kwargs:
+            self.max_retries = kwargs["max_retries"]
+            del kwargs["max_retries"]
         super().__init__(*args, **kwargs)
 
     def send(self, request: Any, **kwargs: Any) -> Any:  # type:ignore
@@ -88,7 +91,7 @@ class GridHTTPConnection(HTTPConnection):
         return _header
 
     def _send_msg(
-        self, msg: SyftMessage, timeout: Optional[float] = 10
+        self, msg: SyftMessage, timeout: Optional[float] = None
     ) -> requests.Response:
         """
         Serializes Syft messages in json format and send it using HTTP protocol.
@@ -111,6 +114,9 @@ class GridHTTPConnection(HTTPConnection):
 
         # Perform HTTP request using base_url as a root address
         msg_bytes: bytes = _serialize(obj=msg, to_bytes=True)  # type: ignore
+
+        # timeout = None will wait forever
+        timeout = timeout if timeout is not None else DEFAULT_TIMEOUT
 
         # if sys.getsizeof(msg_bytes) < GridHTTPConnection.SIZE_THRESHOLD:
         # if True:
@@ -173,6 +179,11 @@ class GridHTTPConnection(HTTPConnection):
 
         metadata_url = str(self.base_url) + "/syft/metadata"
         response = session.get(metadata_url, verify=verify_tls())
+
+        if response.status_code != 200:
+            raise requests.ConnectionError(
+                f"Failed to fetch metadata. Response returned with code {response.status_code}"
+            )
 
         # upgrade to tls if available
         try:

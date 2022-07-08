@@ -24,6 +24,8 @@ import torch
 from . import utils
 from .... import logger
 from ....grid import GridURL
+from ...node.common.action.przs_action import PRZSAction
+from ...smpc.approximations import APPROXIMATIONS
 from ...smpc.protocol.spdz import spdz
 from ...smpc.store import CryptoPrimitiveProvider
 from ..config import DEFAULT_RING_SIZE
@@ -300,38 +302,63 @@ class MPCTensor(PassthroughTensor):
                 value = None
 
             # relative
+            from ..autodp.gamma_tensor import TensorWrappedGammaTensorPointer
             from ..autodp.phi_tensor import TensorWrappedPhiTensorPointer
 
-            if isinstance(secret, TensorWrappedPhiTensorPointer):
+            is_dp_tensor = False
+            if isinstance(
+                secret, (TensorWrappedPhiTensorPointer, TensorWrappedGammaTensorPointer)
+            ):
 
                 share_wrapper = secret.to_local_object_without_private_data_child()
-                share_wrapper_pointer = share_wrapper.send(party)
 
-                remote_share = party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor(
-                    rank=i,
-                    parties_info=parties_info,
-                    value=value,
-                    shape=shape,
-                    seed_przs=seed_przs,
-                    share_wrapper=share_wrapper_pointer,
-                    ring_size=str(ring_size),
-                )
+                kwargs = {
+                    "rank": i,
+                    "parties_info": parties_info,
+                    "value": value,
+                    "shape": shape,
+                    "seed_przs": seed_przs,
+                    "share_wrapper": share_wrapper,
+                    "ring_size": str(ring_size),
+                }
+                is_dp_tensor = True
+                attr_path_and_name = "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs_on_dp_tensor"
 
             else:
-                remote_share = (
-                    party.syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs(
-                        rank=i,
-                        parties_info=parties_info,
-                        value=value,
-                        shape=shape,
-                        seed_przs=seed_przs,
-                        ring_size=str(ring_size),
-                    )
+                kwargs = {
+                    "rank": i,
+                    "parties_info": parties_info,
+                    "value": value,
+                    "shape": shape,
+                    "seed_przs": seed_przs,
+                    "ring_size": str(ring_size),
+                }
+                attr_path_and_name = (
+                    "syft.core.tensor.smpc.share_tensor.ShareTensor.generate_przs"
                 )
 
-            # Converted ring size to string as it exceeds 64 bit.
+            args: List[Any] = []  # Currently we do not use any args in PRZS Action
 
-            shares.append(remote_share)
+            return_type_name = party.lib_ast.query(attr_path_and_name).return_type_name
+            resolved_pointer_type = party.lib_ast.query(return_type_name)
+            result = resolved_pointer_type.pointer_type(client=party)
+
+            # TODO: Path in PRZS is not used due to attribute error syft ast for przs of ShareTensor,
+            # should be modified to use path.
+            # QUESTION can the id_at_location be None?
+            result_id_at_location = getattr(result, "id_at_location", None)
+            if result_id_at_location is not None:
+                cmd = PRZSAction(
+                    path=attr_path_and_name,
+                    args=args,
+                    kwargs=kwargs,
+                    id_at_location=result_id_at_location,
+                    is_dp_tensor=is_dp_tensor,
+                    address=party.address,
+                )
+                party.send_immediate_msg_without_reply(msg=cmd)
+
+            shares.append(result)
 
         return shares
 
@@ -568,6 +595,8 @@ class MPCTensor(PassthroughTensor):
                 new_parties = [client]
                 new_parties += parties
                 mpc_tensor = MPCTensor.reshare(mpc_tensor, new_parties)
+            else:
+                new_parties = parties
 
             other = MPCTensor(secret=other, parties=new_parties, shape=public_shape)
 
@@ -710,7 +739,6 @@ class MPCTensor(PassthroughTensor):
                 p_kwargs={"shape": new_shape},
                 ring_size=self.ring_size,
             )
-
             res_shares = [
                 getattr(a, op)(b, **kwargs) for a, b in zip(self.child, itertools.repeat(y))  # type: ignore
             ]
@@ -804,6 +832,42 @@ class MPCTensor(PassthroughTensor):
 
         return mpc_res  # type: ignore
 
+    def truediv(self, y: Union["MPCTensor", np.ndarray, float, int]) -> MPCTensor:
+        """Apply the "div" operation between "self" and "y".
+
+        Args:
+            y (Union["MPCTensor", torch.Tensor, float, int]): Denominator.
+
+        Returns:
+            MPCTensor: Result of the operation.
+
+        Raises:
+            ValueError: If input denominator is float.
+        """
+        is_private = isinstance(y, MPCTensor)
+
+        result: MPCTensor
+        if is_private:
+            reciprocal = APPROXIMATIONS["reciprocal"]
+            result = self.mul(reciprocal(y))  # type: ignore
+        else:
+            result = self * (1 / y)
+
+        return result
+
+    def rtruediv(self, y: Union[np.ndarray, float, int]) -> MPCTensor:
+        """Apply recriprocal of MPCTensor.
+
+        Args:
+            y (Union[torch.Tensor, float, int]): Numerator.
+
+        Returns:
+            MPCTensor: Result of the operation.
+        """
+        reciprocal = APPROXIMATIONS["reciprocal"]
+        result: MPCTensor = reciprocal(self) * y  # type: ignore
+        return result
+
     def put(
         self,
         indices: npt.ArrayLike,
@@ -829,19 +893,19 @@ class MPCTensor(PassthroughTensor):
         return res
 
     def concatenate(
-        self, other: MPCTensor, *args: List[Any], **kwargs: Dict[str, Any]
+        self,
+        other: Union[MPCTensor, TensorPointer],
+        *args: List[Any],
+        **kwargs: Dict[str, Any],
     ) -> MPCTensor:
-        if not isinstance(other, MPCTensor):
-            raise ValueError(
-                f"Invalid type: {type(other)} for MPCTensor concatenate operation"
-            )
+        self, other = MPCTensor.sanity_checks(self, other)
 
         shares = []
-        for x, y in zip(self.child, other.child):
+        for x, y in zip(self.child, other.child):  # type: ignore
             shares.append(x.concatenate(y, *args, **kwargs))
 
         dummy_res = np.concatenate(
-            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs
+            (np.empty(self.shape), np.empty(other.shape)), *args, **kwargs  # type: ignore
         )
         res = MPCTensor(shares=shares, parties=self.parties, shape=dummy_res.shape)
 
@@ -912,10 +976,13 @@ class MPCTensor(PassthroughTensor):
     @property
     def synthetic(self) -> np.ndarray:
         # TODO finish. max_vals and min_vals not available at present.
+        public_dtype_func = getattr(
+            self.public_dtype, "upcast", lambda: self.public_dtype
+        )
         return (
             np.random.rand(*list(self.shape)) * (self.max_vals - self.min_vals)  # type: ignore
             + self.min_vals
-        ).astype(self.public_dtype)
+        ).astype(public_dtype_func())
 
     def __repr__(self) -> str:
 
@@ -943,6 +1010,8 @@ class MPCTensor(PassthroughTensor):
     __le__ = le
     __eq__ = eq
     __ne__ = ne
+    __truediv__ = truediv
+    __rtruediv__ = rtruediv
 
 
 @implements(MPCTensor, np.add)

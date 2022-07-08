@@ -68,8 +68,11 @@ def get_shape(
     Returns:
         The shape of the result
     """
-    op = getattr(operator, op_str)
-    res = op(np.empty(x_shape), np.empty(y_shape)).shape
+    if op_str[:2] != "__":
+        op = getattr(operator, op_str)
+        res = op(np.empty(x_shape), np.empty(y_shape)).shape
+    else:
+        res = (getattr(np.empty(x_shape), op_str)(np.empty(y_shape))).shape
     res = cast(Tuple[int], res)
     return tuple(res)  # type: ignore
 
@@ -90,7 +93,7 @@ def get_ring_size(
     """
     if x_ring_size != y_ring_size:
         raise ValueError(
-            "Expected the same ring size for x and y ({x_ring_size} vs {y_ring_size})"
+            f"Expected the same ring size for x and y ({x_ring_size} vs {y_ring_size})"
         )
 
     return x_ring_size

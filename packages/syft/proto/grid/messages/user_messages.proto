@@ -91,7 +91,8 @@ message UpdateUserMessage {
   double budget = 9;
   string institution = 10;
   string website = 11;
-  syft.core.io.Address reply_to = 12;
+  string new_password = 12;
+  syft.core.io.Address reply_to = 13;
 }
 
 // Search Users

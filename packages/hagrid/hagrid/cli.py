@@ -2,19 +2,18 @@
 from datetime import datetime
 import json
 import os
-from os import urandom
 import re
 import socket
 import stat
-import string
-import subprocess
+import subprocess  # nosec
 import sys
+import tempfile
 import time
 from typing import Any
+from typing import Callable
 from typing import Dict as TypeDict
 from typing import List as TypeList
 from typing import Optional
-from typing import Set
 from typing import Tuple
 from typing import Tuple as TypeTuple
 from typing import Union
@@ -22,6 +21,7 @@ from typing import cast
 
 # third party
 import click
+import requests
 import rich
 from rich.live import Live
 
@@ -58,9 +58,11 @@ from .lib import generate_process_status_table
 from .lib import generate_user_table
 from .lib import hagrid_root
 from .lib import name_tag
+from .lib import save_vm_details_as_json
 from .lib import update_repo
 from .lib import use_branch
 from .mode import EDITABLE_MODE
+from .rand_sec import generate_sec_random_password
 from .style import RichGroup
 
 
@@ -90,17 +92,17 @@ def clean(location: str) -> None:
     if location == "library" or location == "volumes":
         print("Deleting all Docker volumes in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)
+        subprocess.call("docker volume rm $(docker volume ls -q)", shell=True)  # nosec
 
     if location == "containers" or location == "pantry":
         print("Deleting all Docker containers in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)
+        subprocess.call("docker rm -f $(docker ps -a -q)", shell=True)  # nosec
 
     if location == "images":
         print("Deleting all Docker images in 2 secs (Ctrl-C to stop)")
         time.sleep(2)
-        subprocess.call("docker rmi $(docker images -q)", shell=True)
+        subprocess.call("docker rmi $(docker images -q)", shell=True)  # nosec
 
 
 @click.command(help="Start a new PyGrid domain/network node!")
@@ -256,6 +258,20 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: git branch to use for launch / build operations",
 )
+@click.option(
+    "--platform",
+    default=None,
+    required=False,
+    type=str,
+    help="Optional: run docker with a different platform like linux/arm64",
+)
+@click.option(
+    "--vpn",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn tailscale vpn container on or off",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -287,14 +303,14 @@ def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
         return
 
 
-def execute_commands(cmds: list, dry_run: bool = False) -> None:
+def execute_commands(cmds: TypeList, dry_run: bool = False) -> None:
     """Execute the launch commands and display their status in realtime.
 
     Args:
         cmds (list): list of commands to be executed
         dry_run (bool, optional): If `True` only displays cmds to be executed. Defaults to False.
     """
-    process_list: list = []
+    process_list: TypeList = []
     console = rich.get_console()
 
     username, password = (
@@ -313,7 +329,7 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
 
         try:
             if len(cmds) > 1:
-                process = subprocess.Popen(
+                process = subprocess.Popen(  # nosec
                     cmd_to_exec,
                     stdout=subprocess.PIPE,
                     stderr=subprocess.PIPE,
@@ -326,7 +342,7 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
                 process_list.append((ip_address, process, jupyter_token))
             else:
                 display_jupyter_token(cmd)
-                subprocess.run(
+                subprocess.run(  # nosec
                     cmd_to_exec,
                     shell=True,
                     cwd=GRID_SRC_PATH,
@@ -338,8 +354,11 @@ def execute_commands(cmds: list, dry_run: bool = False) -> None:
         # display VM launch status
         display_vm_status(process_list)
 
+        # save vm details as json
+        save_vm_details_as_json(username, password, process_list)
 
-def display_vm_status(process_list: list) -> None:
+
+def display_vm_status(process_list: TypeList) -> None:
     """Display the status of the processes being executed on the VM.
 
     Args:
@@ -525,13 +544,13 @@ def fix_key_permission(private_key_path: str) -> None:
             raise e
 
 
-def private_to_public_key(private_key_path: str, username: str) -> str:
+def private_to_public_key(private_key_path: str, temp_path: str, username: str) -> str:
     # check key permission
     fix_key_permission(private_key_path=private_key_path)
-    output_path = f"/tmp/hagrid_{username}_key.pub"
+    output_path = f"{temp_path}/hagrid_{username}_key.pub"
     cmd = f"ssh-keygen -f {private_key_path} -y > {output_path}"
     try:
-        subprocess.check_call(cmd, shell=True)
+        subprocess.check_call(cmd, shell=True)  # nosec
     except Exception as e:
         print("failed to make ssh key", e)
         raise e
@@ -541,9 +560,9 @@ def private_to_public_key(private_key_path: str, username: str) -> str:
 def check_azure_authed() -> bool:
     cmd = "az account show"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -551,16 +570,16 @@ def check_azure_authed() -> bool:
 def login_azure() -> bool:
     cmd = "az login"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
 
 def check_azure_cli_installed() -> bool:
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             ["az", "--version"], stdout=subprocess.DEVNULL, stderr=subprocess.STDOUT
         )
         if result.returncode != 0:
@@ -576,7 +595,7 @@ Please install it and then retry your command.\
 
 def check_gcloud_cli_installed() -> bool:
     try:
-        subprocess.call(["gcloud", "version"])
+        subprocess.call(["gcloud", "version"])  # nosec
         print("Gcloud cli installed!")
     except FileNotFoundError:
         msg = "\nYou don't appear to have the gcloud CLI tool installed! \n\n\
@@ -589,12 +608,12 @@ Please install it and then retry again.\
 
 def check_gcloud_authed() -> bool:
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # nosec
             ["gcloud", "auth", "print-identity-token"], stdout=subprocess.PIPE
         )
         if result.returncode == 0:
             return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -602,9 +621,9 @@ def check_gcloud_authed() -> bool:
 def login_gcloud() -> bool:
     cmd = "gcloud auth login"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 
@@ -628,7 +647,7 @@ def generate_gcloud_key_at_path(key_path: str) -> str:
         # triggers a key check
         cmd = "gcloud compute ssh '' --dry-run"
         try:
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
         except Exception:  # nosec
             pass
         if not os.path.exists(key_path):
@@ -644,7 +663,7 @@ def generate_key_at_path(key_path: str) -> str:
     else:
         cmd = f"ssh-keygen -N '' -f {key_path}"
         try:
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
             if not os.path.exists(key_path):
                 raise Exception(f"Failed to generate ssh-key at: {key_path}")
         except Exception as e:
@@ -714,7 +733,7 @@ def create_launch_cmd(
     verb: GrammarVerb,
     kwargs: TypeDict[str, Any],
     ignore_docker_version_check: Optional[bool] = False,
-) -> Union[str, list[str]]:
+) -> Union[str, TypeList[str]]:
     parsed_kwargs: TypeDict[str, Any] = {}
     host_term = verb.get_named_term_hostgrammar(name="host")
     host = host_term.host
@@ -785,6 +804,14 @@ def create_launch_cmd(
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
     else:
         parsed_kwargs["jupyter"] = False
+
+    if "vpn" in kwargs and kwargs["vpn"] is not None:
+        parsed_kwargs["vpn"] = str_to_bool(cast(str, kwargs["vpn"]))
+    else:
+        parsed_kwargs["vpn"] = True
+
+    # allows changing docker platform to other cpu architectures like arm64
+    parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
 
     if host in ["docker"]:
 
@@ -949,9 +976,9 @@ def create_launch_cmd(
                     ),
                     kwargs=kwargs,
                 )
-                if auto_generate_password == "y":
+                if auto_generate_password == "y":  # nosec
                     parsed_kwargs["password"] = generate_sec_random_password(length=16)
-                elif auto_generate_password == "n":
+                elif auto_generate_password == "n":  # nosec
                     parsed_kwargs["password"] = ask(
                         question=Question(
                             var_name="password",
@@ -1332,7 +1359,13 @@ def create_launch_docker_cmd(
         "VERSION": version_string,
         "VERSION_HASH": version_hash,
         "USE_BLOB_STORAGE": use_blob_storage,
+        "STACK_API_KEY": str(
+            generate_sec_random_password(length=48, special_chars=False)
+        ),
     }
+
+    if "platform" in kwargs and kwargs["platform"] is not None:
+        envs["DOCKER_DEFAULT_PLATFORM"] = kwargs["platform"]
 
     if "tls" in kwargs and kwargs["tls"] is True and len(kwargs["cert_store_path"]) > 0:
         envs["TRAEFIK_TLS_CERTS"] = kwargs["cert_store_path"]
@@ -1371,6 +1404,10 @@ def create_launch_docker_cmd(
         pull_cmd += " docker compose pull"
 
     cmd += " docker compose -p " + snake_name
+
+    if "vpn" in kwargs and kwargs["vpn"]:
+        cmd += " --profile vpn"
+
     if str(node_type.input) == "network":
         cmd += " --profile network"
     else:
@@ -1379,6 +1416,32 @@ def create_launch_docker_cmd(
     # network frontend disabled
     if str(node_type.input) != "network" and kwargs["headless"] is False:
         cmd += " --profile frontend"
+
+    # new docker compose regression work around
+    default_env = f"{GRID_SRC_PATH}/.env"
+    default_envs = {}
+    with open(default_env, "r") as f:
+        for line in f.readlines():
+            if "=" in line:
+                parts = line.strip().split("=")
+                key = parts[0]
+                value = ""
+                if len(parts) > 1:
+                    value = parts[1]
+                default_envs[key] = value
+    default_envs.update(envs)
+    try:
+        env_file = ""
+        for k, v in default_envs.items():
+            env_file += f"{k}={v}\n"
+
+        env_file_path = os.path.abspath("./.envfile")
+        with open(env_file_path, "w") as f:
+            f.write(env_file)
+
+        cmd += f" --env-file {env_file_path}"
+    except Exception:  # nosec
+        pass
 
     cmd += " --file docker-compose.yml"
     if build:
@@ -1444,8 +1507,8 @@ def get_or_make_resource_group(resource_group: str, location: str = "westus") ->
     cmd = f"az group show --resource-group {resource_group}"
     exists = True
     try:
-        subprocess.check_call(cmd, shell=True)
-    except Exception:
+        subprocess.check_call(cmd, shell=True)  # nosec
+    except Exception:  # nosec
         # group doesn't exist so lets create it
         exists = False
 
@@ -1453,7 +1516,7 @@ def get_or_make_resource_group(resource_group: str, location: str = "westus") ->
         cmd = f"az group create -l {location} -n {resource_group}"
         try:
             print(f"Creating resource group.\nRunning: {cmd}")
-            subprocess.check_call(cmd, shell=True)
+            subprocess.check_call(cmd, shell=True)  # nosec
         except Exception as e:
             raise Exception(
                 f"Unable to create resource group {resource_group} @ {location}. {e}"
@@ -1476,11 +1539,11 @@ def extract_host_ip(stdout: bytes) -> Optional[str]:
     return None
 
 
-def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[list]:
+def get_vm_host_ips(node_name: str, resource_group: str) -> Optional[TypeList]:
     cmd = f"az vm list-ip-addresses -g {resource_group} --query "
     cmd += f""""[?starts_with(virtualMachine.name, '{node_name}')]"""
     cmd += '''.virtualMachine.network.publicIpAddresses[0].ipAddress"'''
-    output = subprocess.check_output(cmd, shell=True)
+    output = subprocess.check_output(cmd, shell=True)  # nosec
     try:
         host_ips = json.loads(output)
         return host_ips
@@ -1519,7 +1582,7 @@ def extract_host_ip_from_cmd(cmd: str) -> Optional[str]:
         ips = re.findall(matcher, cmd)
         if ips:
             return ips[0]
-    except Exception:
+    except Exception:  # nosec
         pass
 
     return None
@@ -1566,13 +1629,20 @@ def make_vm_azure(
     size: str,
     image_name: str,
     node_count: int,
-) -> list:
+) -> TypeList:
     disk_size_gb = "200"
-    public_key_path = (
-        private_to_public_key(private_key_path=key_path, username=username)
-        if key_path
-        else None
-    )
+    try:
+        temp_dir = tempfile.TemporaryDirectory()
+        public_key_path = (
+            private_to_public_key(
+                private_key_path=key_path, temp_path=temp_dir.name, username=username
+            )
+            if key_path
+            else None
+        )
+    except Exception:  # nosec
+        temp_dir.cleanup()
+
     authentication_type = "ssh" if key_path else "password"
     cmd = f"az vm create -n {node_name} -g {resource_group} --size {size} "
     cmd += f"--image {image_name} --os-disk-size-gb {disk_size_gb} "
@@ -1581,13 +1651,15 @@ def make_vm_azure(
     cmd += f"--admin-password '{password}' " if password else ""
     cmd += f"--count {node_count} " if node_count > 1 else ""
 
-    host_ips: Optional[list] = []
+    host_ips: Optional[TypeList] = []
     try:
         print(f"Creating vm.\nRunning: {hide_azure_vm_password(cmd)}")
-        subprocess.check_output(cmd, shell=True)
+        subprocess.check_output(cmd, shell=True)  # nosec
         host_ips = get_vm_host_ips(node_name=node_name, resource_group=resource_group)
     except Exception as e:
         print("failed", e)
+    finally:
+        temp_dir.cleanup()
 
     if not host_ips:
         raise Exception("Failed to create vm or get VM public ip")
@@ -1596,7 +1668,7 @@ def make_vm_azure(
         # clean up temp public key
         if public_key_path:
             os.unlink(public_key_path)
-    except Exception:
+    except Exception:  # nosec
         pass
 
     return host_ips
@@ -1609,7 +1681,7 @@ def open_port_vm_azure(
     cmd += f"--nsg-name {node_name}NSG --name {port_name} --destination-port-ranges {port} --priority {priority}"
     try:
         print(f"Creating {port_name} {port} ngs rule.\nRunning: {cmd}")
-        output = subprocess.check_call(cmd, shell=True)
+        output = subprocess.check_call(cmd, shell=True)  # nosec
         print("output", output)
         pass
     except Exception as e:
@@ -1620,7 +1692,7 @@ def create_project(project_id: str) -> None:
     cmd = f"gcloud projects create {project_id} --set-as-default"
     try:
         print(f"Creating project.\nRunning: {cmd}")
-        subprocess.check_call(cmd, shell=True)
+        subprocess.check_call(cmd, shell=True)  # nosec
     except Exception as e:
         print("failed", e)
 
@@ -1725,7 +1797,7 @@ def make_gcp_vm(
     host_ip = None
     try:
         print(f"Creating vm.\nRunning: {cmd}")
-        output = subprocess.check_output(cmd, shell=True)
+        output = subprocess.check_output(cmd, shell=True)  # nosec
         host_ip = extract_host_ip_gcp(stdout=output)
     except Exception as e:
         print("failed", e)
@@ -1749,7 +1821,7 @@ def create_launch_azure_cmd(
     auth: AuthCredentials,
     ansible_extras: str,
     kwargs: TypeDict[str, Any],
-) -> list[str]:
+) -> TypeList[str]:
 
     get_or_make_resource_group(resource_group=resource_group, location=location)
 
@@ -1799,7 +1871,7 @@ def create_launch_azure_cmd(
             priority=502,
         )
 
-    launch_cmds: list[str] = []
+    launch_cmds: TypeList[str] = []
 
     for host_ip in host_ips:
         # get old host
@@ -1831,6 +1903,9 @@ def create_launch_azure_cmd(
             kwargs.update(extra_kwargs)
 
             # provision
+            host_up = check_ip_for_ssh(host_ip=host_ip)
+            if not host_up:
+                print(f"Warning: {host_ip} ssh not available yet")
             launch_cmd = create_launch_custom_cmd(verb=verb, auth=auth, kwargs=kwargs)
             launch_cmds.append(launch_cmd)
 
@@ -2006,7 +2081,7 @@ def create_land_cmd(verb: GrammarVerb, kwargs: TypeDict[str, Any]) -> str:
 
     if host in ["docker"]:
         if verb.get_named_term_grammar("node_name").input == "all":
-            # subprocess.call("docker rm `docker ps -aq` --force", shell=True)
+            # subprocess.call("docker rm `docker ps -aq` --force", shell=True) # nosec
             return "docker rm `docker ps -aq` --force"
 
         version = check_docker_version()
@@ -2148,7 +2223,7 @@ def land(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     if "cmd" not in kwargs or str_to_bool(cast(str, kwargs["cmd"])) is False:
         print("Running: \n", cmd)
         try:
-            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)
+            subprocess.call(cmd, shell=True, cwd=GRID_SRC_PATH)  # nosec
         except Exception as e:
             print(f"Failed to run cmd: {cmd}. {e}")
 
@@ -2184,140 +2259,149 @@ def debug(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
 
 cli.add_command(debug)
 
+DEFAULT_HEALTH_CHECKS = ["host", "UI (βeta)", "api", "ssh", "jupyter"]
+HEALTH_CHECK_FUNCTIONS = {
+    "host": check_host,
+    "UI (βeta)": check_login_page,
+    "api": check_api_metadata,
+    "ssh": check_ip_for_ssh,
+    "jupyter": check_jupyter_server,
+}
+
+HEALTH_CHECK_ICONS = {
+    "host": "🔌",
+    "UI (βeta)": "🖱",
+    "api": "⚙️",
+    "ssh": "🔐",
+    "jupyter": "📗",
+}
+
+HEALTH_CHECK_URLS = {
+    "host": "{ip_address}",
+    "UI (βeta)": "http://{ip_address}/login",
+    "api": "http://{ip_address}/api/v1",
+    "ssh": "hagrid ssh {ip_address}",
+    "jupyter": "http://{ip_address}:8888",
+}
+
+
+def check_host_health(ip_address: str, keys: TypeList[str]) -> TypeDict[str, bool]:
+    status = {}
+    for key in keys:
+        func: Callable = HEALTH_CHECK_FUNCTIONS[key]  # type: ignore
+        status[key] = func(ip_address, silent=True)
+    return status
+
+
+def icon_status(status: bool) -> str:
+    return "✅" if status else "❌"
+
+
+def get_health_checks(ip_address: str) -> TypeTuple[bool, TypeList[TypeList[str]]]:
+    keys = list(DEFAULT_HEALTH_CHECKS)
+    if "localhost" in ip_address:
+        new_keys = []
+        for key in keys:
+            if key not in ["host", "jupyter", "ssh"]:
+                new_keys.append(key)
+        keys = new_keys
+
+    health_status = check_host_health(ip_address=ip_address, keys=keys)
+    complete_status = all(health_status.values())
+
+    # figure out how to add this back?
+    # console.print("[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:")
+    table_contents = []
+    for key, value in health_status.items():
+        table_contents.append(
+            [
+                HEALTH_CHECK_ICONS[key],
+                key,
+                HEALTH_CHECK_URLS[key].replace("{ip_address}", ip_address),
+                icon_status(value),
+            ]
+        )
+
+    return complete_status, table_contents
+
+
+def create_check_table(
+    table_contents: TypeList[TypeList[str]], time_left: int = 0
+) -> rich.table.Table:
+    table = rich.table.Table()
+    table.add_column("PyGrid", style="magenta")
+    table.add_column("Info", justify="left")
+    time_left_str = "" if time_left == 0 else str(time_left)
+    table.add_column(time_left_str, justify="left")
+    for row in table_contents:
+        table.add_row(row[1], row[2], row[3])
+    return table
+
 
 @click.command(help="Check health of an IP address/addresses or a resource group")
 @click.argument("ip_addresses", type=str, nargs=-1)
-def check(ip_addresses: list[str]) -> None:
+@click.option(
+    "--wait",
+    is_flag=True,
+    help="Optional: wait until checks pass",
+)
+@click.option(
+    "--silent",
+    is_flag=True,
+    help="Optional: don't refresh output during wait",
+)
+def check(
+    ip_addresses: TypeList[str], wait: bool = False, silent: bool = False
+) -> None:
     console = rich.get_console()
+    if len(ip_addresses) == 0:
+        headers = {"User-Agent": "curl/7.79.1"}
+        print("Detecting External IP...")
+        ip_res = requests.get("https://ifconfig.co", headers=headers)
+        ip_address = ip_res.text.strip()
+        ip_addresses = [ip_address]
 
-    for ip_address in ip_addresses:
-
-        console.print(
-            "[bold magenta]Checking host:[/bold magenta]", ip_address, ":mage:"
-        )
-
-        if check_host(ip_address, silent=True):
-            base_host_status = "✅"
-        else:
-            base_host_status = "❌"
-
-        if check_login_page(ip_address, silent=True):
-            login_page_status = "✅"
-        else:
-            login_page_status = "❌"
-
-        if check_api_metadata(ip_address, silent=True):
-            backend_status = "✅"
-        else:
-            backend_status = "❌"
-
-        if check_ip_for_ssh(ip_address, silent=True):
-            ssh_status = "✅"
-        else:
-            ssh_status = "❌"
-
-        if check_jupyter_server(ip_address, silent=True):
-            jupyter_status = "✅"
-        else:
-            jupyter_status = "❌"
-
-        table_contents = [
-            ["🔌", "Host", f"{ip_address}", base_host_status],
-            ["🖱", "UI", f"http://{ip_address}/login", login_page_status],
-            ["⚙️", "API", f"http://{ip_address}/api/v1", backend_status],
-            ["🔐", "SSH", f"hagrid ssh {ip_address}", ssh_status],
-            ["", "Jupyter", f"http://{ip_address}:8888/", jupyter_status],
-        ]
-
-        table = rich.table.Table()
-
-        table.add_column("PyGrid", style="magenta")
-        table.add_column("Info", justify="left")
-        table.add_column("", justify="left")
-        for row in table_contents:
-            table.add_row(row[1], row[2], row[3])
+    if len(ip_addresses) == 1:
+        ip_address = ip_addresses[0]
+        status, table_contents = get_health_checks(ip_address=ip_address)
+        table = create_check_table(table_contents=table_contents)
+        max_timeout = 600
+        if wait and not status:
+            table = create_check_table(
+                table_contents=table_contents, time_left=max_timeout
+            )
+            if silent:
+                print("Checking...")
+            while not status:
+                if not silent:
+                    with Live(table, refresh_per_second=4, screen=True) as live:
+                        max_timeout -= 1
+                        if max_timeout % 5 == 0:
+                            status, table_contents = get_health_checks(ip_address)
+                        table = create_check_table(
+                            table_contents=table_contents, time_left=max_timeout
+                        )
+                        live.update(table)
+                        if status:
+                            break
+                        time.sleep(1)
+                else:
+                    max_timeout -= 1
+                    if max_timeout % 5 == 0:
+                        status, table_contents = get_health_checks(ip_address)
+                    table = create_check_table(
+                        table_contents=table_contents, time_left=max_timeout
+                    )
+                    time.sleep(1)
         console.print(table)
+    else:
+        for ip_address in ip_addresses:
+            _, table_contents = get_health_checks(ip_address)
+            table = create_check_table(table_contents=table_contents)
+            console.print(table)
 
 
 cli.add_command(check)
-
-
-def generate_sec_random_password(
-    length: int,
-    special_chars: bool = True,
-    digits: bool = True,
-    lower_case: bool = True,
-    upper_case: bool = True,
-) -> str:
-    """Generates a random password of the given length.
-
-    Args:
-        length (int): length of the password
-        special_chars (bool, optional): Include at least one specials char in the password. Defaults to True.
-        digits (bool, optional): Include at least one digit in the password. Defaults to True.
-        lower_case (bool, optional): Include at least one lower case character in the password. Defaults to True.
-        upper_case (bool, optional): Includde at least one upper case character in the password. Defaults to True.
-
-    Raises:
-        ValueError: If password length if too short.
-
-    Returns:
-        str: randomly generated password
-    """
-    if not isinstance(length, int) or length < 10:
-        raise ValueError(
-            "Password should have a positive safe length of at least 10 characters!"
-        )
-
-    choices: str = ""
-    required_tokens: list[str] = []
-    if special_chars:
-        special_characters = "!@#$%^&*()_+"
-        choices += special_characters
-        required_tokens.append(
-            special_characters[
-                int.from_bytes(urandom(1), sys.byteorder) % len(special_characters)
-            ]
-        )
-    if lower_case:
-        choices += string.ascii_lowercase
-        required_tokens.append(
-            string.ascii_lowercase[
-                int.from_bytes(urandom(1), sys.byteorder) % len(string.ascii_lowercase)
-            ]
-        )
-    if upper_case:
-        choices += string.ascii_uppercase
-        required_tokens.append(
-            string.ascii_uppercase[
-                int.from_bytes(urandom(1), sys.byteorder) % len(string.ascii_uppercase)
-            ]
-        )
-    if digits:
-        choices += string.digits
-        required_tokens.append(
-            string.digits[
-                int.from_bytes(urandom(1), sys.byteorder) % len(string.digits)
-            ]
-        )
-
-    # original Python 2 (urandom returns str)
-    # return "".join(chars[ord(c) % len(chars)] for c in urandom(length))
-
-    # Python 3 (urandom returns bytes)
-
-    password = [choices[c % len(choices)] for c in urandom(length)]
-
-    # Pick some random indexes
-    random_indexes: Set[int] = set()
-    while len(random_indexes) < len(required_tokens):
-        random_indexes.add(int.from_bytes(urandom(1), sys.byteorder) % len(password))
-
-    # Replace the random indexes with the required tokens
-    for i, idx in enumerate(random_indexes):
-        password[idx] = required_tokens[i]
-
-    return "".join(password)
 
 
 # add Hagrid info to the cli
@@ -2346,11 +2430,11 @@ def ssh_into_remote_machine(
     """
     try:
         if auth_type == "key":
-            subprocess.call(
+            subprocess.call(  # nosec
                 ["ssh", "-i", f"{private_key_path}", f"{username}@{host_ip}", cmd]
             )
         elif auth_type == "password":
-            subprocess.call(["ssh", f"{username}@{host_ip}", cmd])
+            subprocess.call(["ssh", f"{username}@{host_ip}", cmd])  # nosec
     except Exception as e:
         raise e
 
@@ -2365,7 +2449,7 @@ def ssh_into_remote_machine(
     help="Optional: command to execute on the remote machine.",
 )
 def ssh(ip_address: str, cmd: str) -> None:
-    kwargs: dict = {}
+    kwargs: TypeDict = {}
     key_path: Optional[str] = None
 
     if check_ip_for_ssh(ip_address, timeout=10, silent=False):

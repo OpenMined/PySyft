@@ -28,4 +28,5 @@ syft.grid.connections
    :recursive:
 
    syft.grid.connections.http_connection
+   syft.grid.connections.webrtc
 

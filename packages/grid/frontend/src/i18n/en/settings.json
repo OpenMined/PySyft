@@ -7,6 +7,7 @@
   "reset-confirmation-copy": "Description here of what this option means. Also might want to provide a link out that explains how to delete a node via command line.",
   "reset-success-heading": "Your Domain node has been Reset/Purged",
   "reset-success-copy": "To help us improve future experiences could you share with us any frustrations or suggestions you have with or for the PyGridUI Platform?",
+  "change-password-success-heading": "Your password was successfully changed",
   "support-email": "Support email",
   "support-email-label": "An email available for users to use when they have specific questions about your domain node",
   "tags": "Tags",

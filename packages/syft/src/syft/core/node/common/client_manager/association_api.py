@@ -4,10 +4,10 @@ from typing import Dict
 
 # relative
 from ...abstract.node import AbstractNodeClient
-from ...domain.enums import AssociationRequestResponses
-from ...domain.enums import RequestAPIFields
-from ...domain.enums import ResponseObjectEnum
-from ...domain.exceptions import PyGridClientException
+from ...enums import AssociationRequestResponses
+from ...enums import RequestAPIFields
+from ...enums import ResponseObjectEnum
+from ...exceptions import PyGridClientException
 from ..node_service.association_request.association_request_messages import (
     DeleteAssociationRequestMessage,
 )
@@ -23,6 +23,7 @@ from ..node_service.association_request.association_request_messages import (
 from ..node_service.association_request.association_request_messages import (
     SendAssociationRequestMessage,
 )
+from ..node_service.success_resp_message import ErrorResponseMessage
 from .request_api import RequestAPI
 
 
@@ -36,6 +37,20 @@ class AssociationRequestAPI(RequestAPI):
             delete_msg=DeleteAssociationRequestMessage,
             response_key=ResponseObjectEnum.ASSOCIATION_REQUEST,
         )
+
+    def create(self, **kwargs: Any) -> None:
+        retry = kwargs.pop("retry")
+        response = self.perform_api_request(  # type: ignore
+            syft_msg=self._create_message, content=kwargs
+        )
+
+        if isinstance(response, ErrorResponseMessage):
+            if retry > 0:
+                print(response.resp_msg, " Retrying", retry, " ...")
+                kwargs["retry"] = retry - 1
+                self.create(**kwargs)
+            else:
+                raise Exception(response.resp_msg)
 
     def update(self, **kwargs: Any) -> Dict[Any, Any]:  # type: ignore
         raise PyGridClientException(

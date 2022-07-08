@@ -47,3 +47,9 @@ helm-charts/**/*.lock
 
 # docker cache
 .docker-cache/
+
+# notebook data
+notebooks/medical-federated-learning-program/data-owners/MedNIST.pkl
+
+# k3d registry
+k3d-registry

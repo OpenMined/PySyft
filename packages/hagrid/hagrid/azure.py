@@ -1,7 +1,7 @@
 # stdlib
 import json
 import os
-import subprocess
+import subprocess  # nosec
 from typing import Dict as TypeDict
 from typing import Optional
 
@@ -33,9 +33,9 @@ def login_azure() -> bool:
 
     cmd = "az login"
     try:
-        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)
+        subprocess.check_call(cmd, shell=True, stdout=subprocess.DEVNULL)  # nosec
         return True
-    except Exception:
+    except Exception:  # nosec
         pass
     return False
 

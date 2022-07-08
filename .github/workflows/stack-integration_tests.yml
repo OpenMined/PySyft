@@ -29,7 +29,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -40,7 +40,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -52,7 +52,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -63,7 +63,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -85,59 +85,6 @@ jobs:
         run: |
           tox -e stack.test.integration
 
-  stack-integration-tests-public:
-    strategy:
-      max-parallel: 3
-      matrix:
-        os: [ubuntu-latest]
-        python-version: ["3.10"]
-
-    runs-on: ${{matrix.os}}
-
-    steps:
-      - uses: actions/checkout@v2
-
-      - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
-        with:
-          python-version: ${{ matrix.python-version }}
-
-      - name: Get pip cache dir
-        id: pip-cache
-        run: |
-          echo "::set-output name=dir::$(pip cache dir)"
-
-      - name: pip cache
-        uses: actions/cache@v2
-        with:
-          path: ${{ steps.pip-cache.outputs.dir }}
-          key: ${{ runner.os }}-pip-py${{ matrix.python-version }}
-          restore-keys: |
-            ${{ runner.os }}-pip-py${{ matrix.python-version }}
-
-      - name: Upgrade pip
-        run: |
-          pip install --upgrade --user pip
-
-      - name: Install tox
-        run: |
-          pip install tox --upgrade
-
-      - name: Install Docker Compose
-        if: runner.os == 'Linux'
-        shell: bash
-        run: |
-          mkdir -p ~/.docker/cli-plugins
-          DOCKER_COMPOSE_VERSION=v2.3.4
-          curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
-          chmod +x ~/.docker/cli-plugins/docker-compose
-
-      - name: Run integration tests
-        timeout-minutes: 30
-        continue-on-error: true
-        run: |
-          HAGRID_FLAGS="--tag=latest --test" tox -e stack.test.integration
-
   stack-integration-tests-tls:
     strategy:
       max-parallel: 3
@@ -148,7 +95,7 @@ jobs:
     runs-on: ${{matrix.os}}
 
     steps:
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -159,7 +106,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -171,7 +118,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -182,7 +129,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -241,7 +188,7 @@ jobs:
           powershell.exe -command "docker volume prune --force"
         shell: cmd
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -252,7 +199,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -265,7 +212,7 @@ jobs:
         shell: cmd
 
       # - name: pip cache
-      #   uses: actions/cache@v2
+      #   uses: actions/cache@v3
       #   if: steps.changes.outputs.stack == 'true'
       #   with:
       #     path: ${{ steps.pip-cache.outputs.dir }}
@@ -276,7 +223,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
         shell: cmd
 
       - name: Install tox
@@ -325,7 +272,7 @@ jobs:
           set NETWORK_CHECK_INTERVAL=5
           hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
           hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
-          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test
+          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test --vpn=false
           bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
           docker ps
@@ -368,7 +315,7 @@ jobs:
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -379,7 +326,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -391,7 +338,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -402,7 +349,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install build essentials
         if: steps.changes.outputs.stack == 'true'
@@ -415,7 +362,7 @@ jobs:
           pip install tox --upgrade
 
       - name: docker cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:
@@ -433,6 +380,7 @@ jobs:
           curl -sSL https://github.com/docker/compose/releases/download/${DOCKER_COMPOSE_VERSION}/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
           chmod +x ~/.docker/cli-plugins/docker-compose
           docker rm `docker ps -aq` --force || true
+          docker buildx use default || true
           rm -rf .tox
           tox -e stack.test.integration.smpc
           docker rm `docker ps -aq` --force || true
@@ -452,7 +400,7 @@ jobs:
         run: |
           sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -463,7 +411,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -475,7 +423,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -486,7 +434,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -496,12 +444,12 @@ jobs:
       - name: Install kubectl
         if: steps.changes.outputs.stack == 'true'
         run: |
-          sudo apt-get update
-          sudo apt-get install -y apt-transport-https ca-certificates curl
-          sudo curl -fsSLo /usr/share/keyrings/kubernetes-archive-keyring.gpg https://packages.cloud.google.com/apt/doc/apt-key.gpg
-          echo "deb [signed-by=/usr/share/keyrings/kubernetes-archive-keyring.gpg] https://apt.kubernetes.io/ kubernetes-xenial main" | sudo tee /etc/apt/sources.list.d/kubernetes.list
-          sudo apt-get update
-          sudo apt-get install -y kubectl
+          # cleanup apt version
+          sudo apt remove kubectl || true
+          # install kubectl 1.22
+          curl -LO https://dl.k8s.io/release/v1.22.9/bin/linux/amd64/kubectl
+          chmod +x kubectl
+          sudo install kubectl /usr/local/bin;
 
       - name: Install jq
         if: steps.changes.outputs.stack == 'true'
@@ -518,13 +466,20 @@ jobs:
           chmod +x k9s
           sudo install k9s /usr/local/bin;
 
-      - name: Run integration tests
+      - name: Remove existing containers
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         shell: bash
         run: |
+          docker rm $(docker ps -aq) --force || true
+          docker buildx use default || true
+
+      - name: Run integration tests
+        if: steps.changes.outputs.stack == 'true'
+        shell: bash
+        run: |
           # install k3d
-          wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
+          wget https://github.com/k3d-io/k3d/releases/download/v5.4.3/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
           export PATH=`pwd`:$PATH
@@ -532,6 +487,7 @@ jobs:
           curl -s -L "https://github.com/loft-sh/devspace/releases/latest" | sed -nE 's!.*"([^"]*devspace-linux-amd64)".*!https://github.com\1!p' | xargs -n 1 curl -L -o devspace && chmod +x devspace;
           sudo install devspace /usr/local/bin;
           tox -e stack.test.integration.k8s
+          docker rm $(docker ps -aq) --force || true
 
   stack-tests-course:
     strategy:
@@ -546,7 +502,7 @@ jobs:
       #   run: |
       #     sudo chown -R $USER:$USER ~/actions-runner/_work/
 
-      - uses: actions/checkout@v2
+      - uses: actions/checkout@v3
 
       - name: Check for file changes
         uses: dorny/paths-filter@v2
@@ -557,7 +513,7 @@ jobs:
           filters: .github/file-filters.yml
 
       - name: Set up Python ${{ matrix.python-version }}
-        uses: actions/setup-python@v2
+        uses: actions/setup-python@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           python-version: ${{ matrix.python-version }}
@@ -569,7 +525,7 @@ jobs:
           echo "::set-output name=dir::$(pip cache dir)"
 
       - name: pip cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         with:
           path: ${{ steps.pip-cache.outputs.dir }}
@@ -580,7 +536,7 @@ jobs:
       - name: Upgrade pip
         if: steps.changes.outputs.stack == 'true'
         run: |
-          pip install --upgrade --user pip
+          python -m pip install --upgrade --user pip
 
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
@@ -588,7 +544,7 @@ jobs:
           pip install tox --upgrade
 
       - name: docker cache
-        uses: actions/cache@v2
+        uses: actions/cache@v3
         if: steps.changes.outputs.stack == 'true'
         continue-on-error: true
         with:
