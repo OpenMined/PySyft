@@ -55,6 +55,7 @@ class Convolution(Layer):
         self.input_shape = input_shape
         self.stride = stride
         self.padding = padding
+        self.name = "Conv"
 
         self.W, self.dW = None, None
         self.b, self.db = None, None

@@ -195,7 +195,9 @@ def vectorized_publish(
     print("We have filtered all the input tensors. Now to compute the result:")
 
     # noise = secrets.SystemRandom().gauss(0, sigma)
-    print("Filtered inputs ", filtered_inputs)
+    print("Filtered inputs ", type(filtered_inputs), type(filtered_input_tensor), filtered_inputs)
+    # GammaTensor.convert_dsl(state_tree)
+    print("Converted DSLs")
     original_output = np.asarray(output_func(filtered_inputs))
     print("original output (before noise:", original_output)
     noise = np.asarray(

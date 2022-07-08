@@ -324,6 +324,10 @@ def create_tensor_ast(client: Optional[AbstractNodeClient] = None) -> Globals:
         (
             "syft.core.tensor.nn.Model.step",
             "syft.lib.python._SyNone",
+        ),
+        (
+            "syft.core.tensor.nn.Model.download_weights",
+            "dict",
         )
     ]
 

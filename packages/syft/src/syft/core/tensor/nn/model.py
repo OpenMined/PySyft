@@ -25,11 +25,18 @@ class Model:
         self.aggregated_loss = 0.0
         self.optimizer = Adamax
 
+    def download_weights(self, sigma):
+        parameters = {}
+        for layer in self.layers:
+            if hasattr(layer, "params"):
+                parameters[layer.name] = [param.publish(sigma=sigma) for param in layer.params]
+        return parameters
+
     def add(self, layer):
         assert isinstance(layer, Layer), "PySyft doesn't recognize this kind of layer."
         self.layers.append(layer)
 
-    def compile(self, loss=BinaryCrossEntropy(), optimizer=Adamax()):
+    def initialize_weights(self, loss=BinaryCrossEntropy(), optimizer=Adamax()):
         self.layers[0].first_layer = True
 
         prev_layer = None

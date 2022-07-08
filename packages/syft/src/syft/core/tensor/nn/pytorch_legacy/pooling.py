@@ -37,6 +37,7 @@ class MaxPool2d(nn.Module):
             return_indices=self.return_indices,
             ceil_mode=self.ceil_mode,
         )
+        self.name = "MaxPool"
 
     def forward(self, image: PhiTensor):
         data = self.func(Tensor(image.child)).detach().numpy()
@@ -68,6 +69,7 @@ class AvgPool2d(nn.Module):
         self.func = nn.AvgPool2d(
             kernel_size=self.kernel_size, stride=self.stride, padding=self.padding
         )
+        self.name = "AvgPool"
 
     def forward(self, image: PhiTensor):
         data = self.func(Tensor(image.child)).detach().numpy()

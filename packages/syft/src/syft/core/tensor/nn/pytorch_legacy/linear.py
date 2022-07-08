@@ -17,6 +17,7 @@ class Linear(nn.Module):
         self.func = nn.Linear(
             in_features=self.in_features, out_features=self.out_features, bias=self.bias
         )
+        self.name = "Linear"
 
     def forward(self, image: PhiTensor):
         image_asarray = image.child

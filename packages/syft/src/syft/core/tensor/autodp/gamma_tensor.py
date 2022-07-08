@@ -1092,6 +1092,15 @@ def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
     Whenever you manipulate a private input (i.e. add it to another private tensor),
     the result will have a different function. Thus we can check to see if the f
     """
+    if isinstance(x, GammaTensor) and isinstance(x.data_subjects, np.ndarray):
+        x = GammaTensor(
+            child=x.child,
+            data_subjects=np.zeros_like(x.data_subjects, np.int64),
+            min_vals=x.min_vals,
+            max_vals=x.max_vals,
+            func=x.func,
+            state=GammaTensor.convert_dsl(x.state)
+        )
     return x
 
 
@@ -1123,7 +1132,7 @@ class GammaTensor:
     def __post_init__(
         self,
     ) -> None:  # Might not serve any purpose anymore, since state trees are updated during ops
-        if len(self.state) == 0 and self.func is not no_op:
+        if self.state and len(self.state) == 0 and self.func is not no_op:
             self.state[self.id] = self
 
         if not isinstance(self.min_vals, lazyrepeatarray):
@@ -1141,7 +1150,7 @@ class GammaTensor:
         else:
             return self.child
 
-    def run(self, state: dict) -> Callable:
+    def run(self, state: dict) -> Union[Callable, GammaTensor]:
         """This method traverses the computational tree and returns all the private inputs"""
         # TODO: Can we eliminate "state" and use self.state below?
         # we hit a private input
@@ -2074,40 +2083,79 @@ class GammaTensor:
             max_vals=max_val,
         )
 
+    @staticmethod
+    def convert_dsl(state: dict, new_state: Optional[dict] = None):
+        if new_state is None:
+            new_state = dict()
+        if state:
+            for tensor in list(state.values()):
+                if isinstance(tensor.data_subjects, np.ndarray):
+                    new_tensor = GammaTensor(
+                        child=tensor.child,
+                        data_subjects=np.zeros_like(tensor.data_subjects, dtype=np.int64),
+                        min_vals=tensor.min_vals,
+                        max_vals=tensor.max_vals,
+                        func=tensor.func,
+                        state=GammaTensor.convert_dsl(tensor.state, {})
+                    )
+                    # for idx, row in enumerate(tensor.data_subjects):
+                    #     tensor.data_subjects[idx] = jnp.zeros_like(np.zeros_like(row), jnp.int64)
+                else:
+                    print(tensor.data_subjects)
+                    new_tensor = tensor
+                new_state[new_tensor.id] = new_tensor
+            return new_state
+        else:
+            return None
+
     def publish(
         self,
         get_budget_for_user: Callable,
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
+        dsl_hack = False
     ) -> jax.numpy.DeviceArray:
-        # TODO: Add data scientist privacy budget as an input argument, and pass it
-        # into vectorized_publish
-        if sigma is None:
-            sigma = self.child.mean() / 4  # TODO @Ishan: replace this with calibration
+        if dsl_hack is False:
+            if sigma is None:
+                sigma = self.child.mean() / 4  # TODO @Ishan: replace this with calibration
 
-        if self.child.dtype != np.int64:
-            raise Exception(
-                "Data type of private values is not np.int64: ", self.child.dtype
+            if self.child.dtype != np.int64:
+                raise Exception(
+                    "Data type of private values is not np.int64: ", self.child.dtype
+                )
+
+            if (
+                not self.state
+            ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
+                self.state[self.id] = self
+
+            # print("RUNNING SELF.FUNC(NEW_STATE)")
+            # print(self.func(new_state))
+
+            return vectorized_publish(
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+                state_tree=self.state,
+                data_subjects=self.data_subjects,
+                is_linear=self.is_linear,
+                sigma=sigma,
+                output_func=self.func,
+                ledger=ledger,
+                get_budget_for_user=get_budget_for_user,
+                deduct_epsilon_for_user=deduct_epsilon_for_user,
+            )
+        else:
+            tensor = GammaTensor(
+                child=self.child,
+                data_subjects=np.zeros_like(self.data_subjects),
+                min_vals=self.min_vals,
+                max_vals=self.max_vals,
+                state=GammaTensor.convert_dsl(self.state)
             )
 
-        if (
-            not self.state
-        ):  # if state tree is empty (e.g. publishing a PhiTensor w/ public vals directly)
-            self.state[self.id] = self
+            return tensor.publish(get_budget_for_user, deduct_epsilon_for_user, ledger, sigma)
 
-        return vectorized_publish(
-            min_vals=self.min_vals,
-            max_vals=self.max_vals,
-            state_tree=self.state,
-            data_subjects=self.data_subjects,
-            is_linear=self.is_linear,
-            sigma=sigma,
-            output_func=self.func,
-            ledger=ledger,
-            get_budget_for_user=get_budget_for_user,
-            deduct_epsilon_for_user=deduct_epsilon_for_user,
-        )
 
     # def expand_dims(self, axis: int) -> GammaTensor:
     #     def _expand_dims(state: dict) -> jax.numpy.DeviceArray:

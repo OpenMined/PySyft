@@ -25,6 +25,7 @@ class BatchNorm2d(nn.Module):
             momentum=self.momentum,
             affine=self.affine,
         )
+        self.name = "BatchNorm"
 
     def forward(self, image: PhiTensor):
         data = self.func(Tensor(image.child))
