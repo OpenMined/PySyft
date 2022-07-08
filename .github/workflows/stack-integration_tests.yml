@@ -361,15 +361,27 @@ jobs:
         run: |
           pip install tox --upgrade
 
-      - name: docker cache
-        uses: actions/cache@v3
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
+      # - name: docker cache
+      #   uses: actions/cache@v3
+      #   if: steps.changes.outputs.stack == 'true'
+      #   continue-on-error: true
+      #   with:
+      #     path: .docker-cache
+      #     key: ${{ runner.os }}-docker
+      #     restore-keys: |
+      #       ${{ runner.os }}-docker
+
+      - name: Cache openmined images
+        uses: broadshield/action-docker-layer-caching@main
         with:
-          path: .docker-cache
-          key: ${{ runner.os }}-docker
+          filter: reference="*/openmined*:*"
+          key: docker-layer-caching-${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event_name }}-{hash}
           restore-keys: |
-            ${{ runner.os }}-docker
+            docker-layer-caching-${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event_name }}-{hash}
+            docker-layer-caching-${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event_name }}
+            docker-layer-caching-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+            docker-layer-caching-${{ github.workflow }}
+            docker-layer-caching-
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
@@ -543,15 +555,27 @@ jobs:
         run: |
           pip install tox --upgrade
 
-      - name: docker cache
-        uses: actions/cache@v3
-        if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
+      # - name: docker cache
+      #   uses: actions/cache@v3
+      #   if: steps.changes.outputs.stack == 'true'
+      #   continue-on-error: true
+      #   with:
+      #     path: .docker-cache
+      #     key: ${{ runner.os }}-docker
+      #     restore-keys: |
+      #       ${{ runner.os }}-docker
+
+      - name: Cache openmined images
+        uses: broadshield/action-docker-layer-caching@main
         with:
-          path: .docker-cache
-          key: ${{ runner.os }}-docker
+          filter: reference="*/openmined*:*"
+          key: docker-layer-caching-${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event_name }}-{hash}
           restore-keys: |
-            ${{ runner.os }}-docker
+            docker-layer-caching-${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event_name }}-{hash}
+            docker-layer-caching-${{ github.workflow }}-${{ github.head_ref || github.ref }}-${{ github.event_name }}
+            docker-layer-caching-${{ github.workflow }}-${{ github.head_ref || github.ref }}
+            docker-layer-caching-${{ github.workflow }}
+            docker-layer-caching-
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
