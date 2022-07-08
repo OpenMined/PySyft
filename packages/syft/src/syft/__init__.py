@@ -24,6 +24,7 @@ Syft "python" functionality includes the following modules:
     this can create future complications with lower level languages calling
     higher level ones.
 To begin your education in Syft, continue to the :py:mod:`syft.core.node.vm.vm` module...
+
 """
 
 __version__ = "0.7.0-beta.30"
