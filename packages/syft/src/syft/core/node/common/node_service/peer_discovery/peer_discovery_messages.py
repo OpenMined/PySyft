@@ -45,6 +45,9 @@ def node_id_to_peer_route_metadata(
         peer_route["name"] = node_row.node_name
         peer_route["host_or_ip"] = route.host_or_ip
         peer_route["is_vpn"] = route.is_vpn
+        peer_route["private"] = route.private
+        peer_route["protocol"] = route.protocol
+        peer_route["port"] = route.port
         routes_meta.append(peer_route)
     return routes_meta
 

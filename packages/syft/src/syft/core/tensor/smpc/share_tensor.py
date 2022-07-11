@@ -384,6 +384,9 @@ class ShareTensor(PassthroughTensor):
         ring_size: Union[int, str] = DEFAULT_RING_SIZE,
     ) -> PassthroughTensor:
         ring_size = int(ring_size)
+        if hasattr(value, "child"):
+            value.child.child = FixedPrecisionTensor(value.child.child)  # type: ignore
+
         if value is not None:
             share = ShareTensor.generate_przs(
                 value=value.child,
