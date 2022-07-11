@@ -331,15 +331,17 @@ class Pointer(AbstractPointer):
     def publish(self, sigma: float = 1.5) -> Any:
 
         # relative
-        from ...lib.python import Float
+        from ...lib.python import Any
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,
         )
 
-        # TODO: make publish genuinely asynchronous (not sure why it isn't already but
-        # if you call publish on an object before it exists it complains.
-        self.block
-
+        # attr_path_and_name = self.path_and_name + ".publish"
+        # return_type_name = self.client.lib_ast.query(
+        #     attr_path_and_name
+        # ).return_type_name
+        # resolved_pointer_type = self.client.lib_ast.query(return_type_name)
+        # result = resolved_pointer_type.pointer_type(client=self.client)
         id_at_location = UID()
 
         obj_msg = PublishScalarsAction(
@@ -352,12 +354,10 @@ class Pointer(AbstractPointer):
         self.client.send_immediate_msg_without_reply(msg=obj_msg)
         # create pointer which will point to float result
 
-        afloat = Float(0.0)
-        ptr_type = obj2pointer_type(obj=afloat)
-        ptr = ptr_type(
-            client=self.client,
-            id_at_location=id_at_location,
+        ptr = self.client.lib_ast.query("syft.lib.python.Any").pointer_type(
+            client=self.client
         )
+        ptr.id_at_location = id_at_location
         ptr._pointable = True
 
         # return pointer

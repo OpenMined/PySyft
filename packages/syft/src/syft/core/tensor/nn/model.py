@@ -25,11 +25,27 @@ class Model:
         self.aggregated_loss = 0.0
         self.optimizer = Adamax
 
-    def download_weights(self, sigma):
+    def publish(self, deduct_epsilon_for_user, get_budget_for_user, ledger, sigma):
+        print("Publish Model Weights")
+        # syft absolute
+        from syft.core.tensor.autodp.gamma_tensor import GammaTensor
+
         parameters = {}
-        for layer in self.layers:
+        for i, layer in enumerate(self.layers):
+            print("Layer", layer)
             if hasattr(layer, "params"):
-                parameters[layer.name] = [param.publish(sigma=sigma) for param in layer.params]
+                parameters[str(layer) + str(i)] = [
+                    param.publish(
+                        deduct_epsilon_for_user=deduct_epsilon_for_user,
+                        get_budget_for_user=get_budget_for_user,
+                        ledger=ledger,
+                        sigma=sigma,
+                    )
+                    if isinstance(param, (GammaTensor))
+                    else param
+                    for param in layer.params
+                ]
+
         return parameters
 
     def add(self, layer):

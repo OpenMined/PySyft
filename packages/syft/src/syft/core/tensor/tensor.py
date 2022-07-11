@@ -5,6 +5,7 @@ from __future__ import annotations
 import operator
 import secrets
 from typing import Any
+from typing import Callable
 from typing import Dict
 from typing import List
 from typing import Optional
@@ -22,6 +23,7 @@ import syft as sy
 # relative
 from ... import lib
 from ...ast.klass import pointerize_args_and_kwargs
+from ...core.adp.data_subject_ledger import DataSubjectLedger
 from ...util import inherit_tags
 from ..common.serde.capnp import CapnpModule
 from ..common.serde.capnp import chunk_bytes
@@ -601,6 +603,17 @@ class Tensor(
                 public_shape=getattr(self, "public_shape", None),
                 public_dtype=getattr(self, "public_dtype", None),
             )
+
+    def publish(
+        self,
+        get_budget_for_user: Callable,
+        deduct_epsilon_for_user: Callable,
+        ledger: DataSubjectLedger,
+        sigma: float,
+    ) -> Any:
+        return self.child.publish(
+            get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
+        )
 
     # TODO: remove after moving private compare to sharetensor level
     def bit_decomposition(self, ring_size: Union[int, str], bitwise: bool) -> None:

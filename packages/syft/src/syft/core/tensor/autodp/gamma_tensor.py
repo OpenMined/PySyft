@@ -1099,7 +1099,7 @@ def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
             min_vals=x.min_vals,
             max_vals=x.max_vals,
             func=x.func,
-            state=GammaTensor.convert_dsl(x.state)
+            state=GammaTensor.convert_dsl(x.state),
         )
     return x
 
@@ -1757,23 +1757,26 @@ class GammaTensor:
         )
 
     def reshape(self, shape):
+        child = self.child.reshape(shape)
+        output_shape = child.shape
 
         if isinstance(self.min_vals, lazyrepeatarray):
             if self.min_vals.data.shape == 1:
-                minv = self.min_vals.reshape(shape)
-                maxv = self.max_vals.reshape(shape)
+                minv = self.min_vals.reshape(output_shape)
+                maxv = self.max_vals.reshape(output_shape)
             elif self.min_vals.data.shape == self.min_vals.shape:
-                minv = self.min_vals.reshape(shape)
+                minv = self.min_vals.reshape(output_shape)
                 minv.data = minv.data.min()
 
-                maxv = self.max_vals.reshape(shape)
+                maxv = self.max_vals.reshape(output_shape)
                 maxv.data = maxv.data.max()
             else:
-                minv = self.min_vals.reshape(shape)
+                minv = self.min_vals.reshape(output_shape)
                 minv.data = minv.data.min()
 
-                maxv = self.max_vals.reshape(shape)
+                maxv = self.max_vals.reshape(output_shape)
                 maxv.data = maxv.data.max()
+
         elif isinstance(self.min_vals, (int, float)):
             minv = self.min_vals
             maxv = self.max_vals
@@ -1782,7 +1785,7 @@ class GammaTensor:
             maxv = self.max_vals
 
         return GammaTensor(
-            child=self.child.reshape(shape),
+            child=child,
             data_subjects=self.data_subjects.reshape(shape),
             min_vals=minv,
             max_vals=maxv,
@@ -2092,11 +2095,13 @@ class GammaTensor:
                 if isinstance(tensor.data_subjects, np.ndarray):
                     new_tensor = GammaTensor(
                         child=tensor.child,
-                        data_subjects=np.zeros_like(tensor.data_subjects, dtype=np.int64),
+                        data_subjects=np.zeros_like(
+                            tensor.data_subjects, dtype=np.int64
+                        ),
                         min_vals=tensor.min_vals,
                         max_vals=tensor.max_vals,
                         func=tensor.func,
-                        state=GammaTensor.convert_dsl(tensor.state, {})
+                        state=GammaTensor.convert_dsl(tensor.state, {}),
                     )
                     # for idx, row in enumerate(tensor.data_subjects):
                     #     tensor.data_subjects[idx] = jnp.zeros_like(np.zeros_like(row), jnp.int64)
@@ -2114,16 +2119,20 @@ class GammaTensor:
         deduct_epsilon_for_user: Callable,
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
-        dsl_hack = False
+        dsl_hack=False,
     ) -> jax.numpy.DeviceArray:
+        print("min_vals", self.min_vals.shape)
+        print("max_vals", self.max_vals.shape)
         if dsl_hack is False:
             if sigma is None:
-                sigma = self.child.mean() / 4  # TODO @Ishan: replace this with calibration
+                sigma = (
+                    self.child.mean() / 4
+                )  # TODO @Ishan: replace this with calibration
 
-            if self.child.dtype != np.int64:
-                raise Exception(
-                    "Data type of private values is not np.int64: ", self.child.dtype
-                )
+            # if self.child.dtype != np.int64:
+            #     raise Exception(
+            #         "Data type of private values is not np.int64: ", self.child.dtype
+            #     )
 
             if (
                 not self.state
@@ -2151,11 +2160,12 @@ class GammaTensor:
                 data_subjects=np.zeros_like(self.data_subjects),
                 min_vals=self.min_vals,
                 max_vals=self.max_vals,
-                state=GammaTensor.convert_dsl(self.state)
+                state=GammaTensor.convert_dsl(self.state),
             )
 
-            return tensor.publish(get_budget_for_user, deduct_epsilon_for_user, ledger, sigma)
-
+            return tensor.publish(
+                get_budget_for_user, deduct_epsilon_for_user, ledger, sigma
+            )
 
     # def expand_dims(self, axis: int) -> GammaTensor:
     #     def _expand_dims(state: dict) -> jax.numpy.DeviceArray:

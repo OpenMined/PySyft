@@ -4,6 +4,7 @@ from __future__ import annotations
 # stdlib
 from typing import Any
 from typing import Dict
+from typing import Iterable
 from typing import List
 from typing import Optional
 from typing import TYPE_CHECKING
@@ -60,6 +61,10 @@ class lazyrepeatarray:
 
         self.data = data
         self.shape = shape
+        if isinstance(shape, Iterable):
+            for val in shape:
+                if val < 0:
+                    print("Invalid Shape", shape)
 
     def __getitem__(self, item) -> lazyrepeatarray:
         if self.data.shape == self.shape:
