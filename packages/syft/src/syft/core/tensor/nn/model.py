@@ -28,7 +28,7 @@ class Model:
     def publish(self, deduct_epsilon_for_user, get_budget_for_user, ledger, sigma):
         print("Publish Model Weights")
         # syft absolute
-        from syft.core.tensor.autodp.gamma_tensor import GammaTensor
+        from ..autodp.gamma_tensor import GammaTensor
 
         parameters = {}
         for i, layer in enumerate(self.layers):
