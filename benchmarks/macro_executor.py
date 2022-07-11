@@ -36,7 +36,38 @@ def get_git_revision_short_hash() -> str:
 
 benchmark_report["git_revision_hash"] = get_git_revision_short_hash()
 
-benchmark_report["data_row_size"] = key
+
+def download_spicy_bird_benchmark(
+    sizes: Optional[List[str]] = None,
+) -> Tuple[Dict[str, Path], List[str]]:
+    sizes = sizes if sizes else ["100K", "250K", "500K", "750K", "1M", "1B"]
+    file_suffix = "_rows_dataset_sample.parquet"
+    BASE_URL = "https://raw.githubusercontent.com/madhavajay/datasets/main/spicy_bird/"
+
+    folder_name = "spicy_bird"
+    dataset_path = get_root_data_path() / folder_name
+    paths = []
+    for size in sizes:
+        filename = f"{size}{file_suffix}"
+        full_path = dataset_path / filename
+        url = f"{BASE_URL}{filename}"
+        if not os.path.exists(full_path):
+            print(url)
+            path = download_file(url=url, full_path=full_path)
+        else:
+            path = Path(full_path)
+        paths.append(path)
+    return dict(zip(sizes, paths)), sizes
+
+
+key_size = "1M"
+files, ordered_sizes = download_spicy_bird_benchmark(sizes=[key_size])
+
+
+data_file = files[key_size]
+
+benchmark_report["data_row_size"] = key_size
+
 t0 = time()
 df = pq.read_table(data_file)
 end_time = time()
@@ -69,20 +100,20 @@ domain_node = sy.login(email="info@openmined.org", password="changethis", port=9
 content = {"user_id": 1, "budget": 9_999_999}
 domain_node._perform_grid_request(grid_msg=UpdateUserMessage, content=content)
 
-dataset_name = "1B Tweets dataset"
+dataset_name = "1M Tweets dataset"
 
 t0 = time()
 
 domain_node.load_dataset(
-    assets={"1B Tweets dataset": tweets_data},
+    assets={"1M Tweets dataset": tweets_data},
     name=dataset_name,
-    description=" Tweets- 1B rows",
+    description=" Tweets- 1M rows",
 )
 tf = round(time() - t0, 3)
 print(f"Time taken to load {dataset_name} dataset: {tf} seconds")
 benchmark_report["load_dataset"] = tf
 
-data = domain_node.datasets[-1]["1B Tweets dataset"]
+data = domain_node.datasets[-1]["1M Tweets dataset"]
 
 print(data)
 

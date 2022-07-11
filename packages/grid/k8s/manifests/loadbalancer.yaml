@@ -13,5 +13,5 @@ spec:
       protocol: TCP
       targetPort: 443
   selector:
-    app.kubernetes.io/component: tailscale
+    app.kubernetes.io/component: proxy
   type: LoadBalancer
