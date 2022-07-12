@@ -246,7 +246,7 @@ jobs:
       - name: Install git
         uses: crazy-max/ghaction-chocolatey@v1
         with:
-          args: install git -y
+          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
 
       - name: Install cmake
         uses: crazy-max/ghaction-chocolatey@v1
