@@ -264,6 +264,11 @@ jobs:
         with:
           args: install visualstudio2019-workload-vctools -y
 
+      - name: Install powershell core
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install powershell-core -y
+
       # - name: Start stacks
       #   if: steps.changes.outputs.stack == 'true'
       #   timeout-minutes: 30
