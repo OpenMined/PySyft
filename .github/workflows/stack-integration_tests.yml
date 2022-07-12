@@ -288,8 +288,9 @@ jobs:
         timeout-minutes: 30
         env:
           HAGRID_ART: false
-        run: ""
-        shell: tox -e stack.test.integration.windows {0}
+        run: |
+          tox -e stack.test.integration.windows
+        shell: cmd
 
       - name: Stop all running containers
         if: steps.changes.outputs.stack == 'true'
