@@ -1385,20 +1385,20 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def mean(
         self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
     ) -> PhiTensor:
-        result = self.child.mean(axis)
+        result = self.child.mean(axis, **kwargs)
         # print(f"PT mean gives shape of {result.shape}")
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.mean(axis),
+            data_subjects=self.data_subjects.mean(axis, **kwargs),
             min_vals=lazyrepeatarray(data=self.min_vals.data, shape=result.shape),
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
-    def std(self, axis: Optional[Union[int, Tuple[int, ...]]] = None) -> PhiTensor:
-        result = self.child.std(axis)
+    def std(self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs) -> PhiTensor:
+        result = self.child.std(axis, **kwargs)
         return PhiTensor(
             child=result,
-            data_subjects=self.data_subjects.std(axis),
+            data_subjects=self.data_subjects.std(axis, **kwargs),
             min_vals=lazyrepeatarray(data=0, shape=result.shape),
             max_vals=lazyrepeatarray(
                 data=0.25
@@ -2050,9 +2050,10 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def sum(
         self,
-        axis: Optional[Union[int, Tuple[int]]] = None,
+        axis: Optional[Union[int, Tuple]] = None,
+        **kwargs
     ) -> Union[PhiTensor, GammaTensor]:
-        return self.gamma.sum(axis)
+        return self.gamma.sum(axis, **kwargs)
         # # TODO: Add support for axes arguments later
         # min_val = self.min_vals.sum(axis=axis)
         # max_val = self.max_vals.sum(axis=axis)

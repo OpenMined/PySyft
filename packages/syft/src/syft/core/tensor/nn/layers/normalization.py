@@ -49,9 +49,10 @@ class BatchNorm(Layer):
         self.out_shape = None
 
     def connect_to(self, prev_layer):
-        n_in = prev_layer.out_shape[-1]
-        self.beta = np.zeros((n_in,))
-        self.gamma = np.ones((n_in,))
+
+        N, C, H, W = prev_layer.out_shape
+        self.beta = np.zeros((1, C, 1, 1))
+        self.gamma = np.zeros((1, C, 1, 1))
         self.input_shape = prev_layer.out_shape
         self.out_shape = prev_layer.out_shape
 
@@ -59,14 +60,18 @@ class BatchNorm(Layer):
         # N, D = x.shape
 
         # step1: calculate the mean
-        mean = input.mean(axis=self.axis)
+        # mean calc along N, H, W axis
+        # Reference: https://arxiv.org/pdf/1803.08494.pdf
+        mean = input.mean(axis=(0, 2, 3), keepdims=True)
 
         xmu = input - mean
 
         # step2:
         # sq = xmu ** 2
-        # var = 1. / N * np.sum(sq, axis=0)
-        var = xmu.std(axis=self.axis)
+        # var = 1. / N * np.sum(sq, axis=(N, H, W))
+        # std calc along N, H, W axis
+        # Reference: https://arxiv.org/pdf/1803.08494.pdf
+        var = xmu.std(axis=(0, 2, 3), keepdims=True)
 
         # step3:
         sqrtvar = (var + self.epsilon).sqrt()
@@ -94,6 +99,9 @@ class BatchNorm(Layer):
         https://kratzert.github.io/2016/02/12/understanding-the-
         gradient-flow-through-the-batch-normalization-layer.html
 
+        # mean, std, sum is calculated along N, H, W axis
+        # Reference: https://arxiv.org/pdf/1803.08494.pdf
+
         Note:
             - I removed the np.ones() at a few places where I
                thought it wasn't making a difference
@@ -112,13 +120,17 @@ class BatchNorm(Layer):
         )
 
         # step6
-        self.dbeta = pre_grad.sum(axis=self.axis)
+        # sum is calculated along N, H, W axis
+        self.dbeta = pre_grad.sum(axis=(0, 2, 3), keepdims=True)
         dgammax = pre_grad
-        self.dgamma = (dgammax * xhat).sum(axis=self.axis)
+
+        # sum is calculated along N, H, W axis
+        self.dgamma = (dgammax * xhat).sum(axis=(0, 2, 3), keepdims=True)
         dxhat = dgammax * self.gamma
 
         # step5
-        divar = (dxhat * xmu).sum(axis=self.axis)
+        # var is calculated along N, H, W axis
+        divar = (dxhat * xmu).sum(axis=(0, 2, 3), keepdims=True)
         dxmu1 = dxhat * ivar
 
         # step4
@@ -130,11 +142,12 @@ class BatchNorm(Layer):
         dsq = (pre_grad.ones_like()) * dvar * (1.0 / N)
         dxmu2 = xmu * dsq * 2
 
-        # step2,
+        # step2
         dx1 = dxmu1 + dxmu2
 
-        # step1,
-        dmu = (dxmu1 + dxmu2).sum(axis=self.axis) * -1
+        # step1
+        # sum is calculated along N, H, W axis
+        dmu = (dxmu1 + dxmu2).sum(axis=(0, 2, 3), keepdims=True) * -1
         dx2 = (pre_grad.ones_like()) * dmu * (1 / N)
 
         # step0 done!

@@ -1658,21 +1658,21 @@ class GammaTensor:
     def T(self):
         return self.transpose()
 
-    def sum(self, axis: Optional[Union[int, Tuple[int]]] = None) -> GammaTensor:
+    def sum(self, axis: Optional[Union[int, Tuple[int]]] = None, **kwargs: Any) -> GammaTensor:
         def _sum(state: dict) -> jax.numpy.DeviceArray:
             return jnp.sum(self.run(state))
 
         output_state = dict()
         output_state[self.id] = self
 
-        child = self.child.sum(axis=axis)
+        child = self.child.sum(axis=axis, **kwargs)
 
         min_v = child.min()
         max_v = child.max()
 
         return GammaTensor(
             child=child,
-            data_subjects=self.data_subjects.sum(axis=axis),
+            data_subjects=self.data_subjects.sum(axis=axis, **kwargs),
             min_vals=lazyrepeatarray(data=min_v, shape=child.shape),
             max_vals=lazyrepeatarray(data=max_v, shape=child.shape),
             func=_sum,
@@ -1794,14 +1794,14 @@ class GammaTensor:
     def _argmax(self, axis: Optional[int]) -> np.ndarray:
         return self.child.argmax(axis)
 
-    def mean(self, axis) -> GammaTensor:
+    def mean(self, axis, **kwargs) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
         def _mean(state, axis=axis):
             return jnp.mean(self.run(state), axis)
 
-        result = self.child.mean(axis)
+        result = self.child.mean(axis, **kwargs)
         minv = (
             self.min_vals.data
             if isinstance(self.min_vals, lazyrepeatarray)
@@ -1814,7 +1814,7 @@ class GammaTensor:
         )
         return GammaTensor(
             child=result,
-            data_subjects=self.data_subjects.mean(axis),
+            data_subjects=self.data_subjects.mean(axis, **kwargs),
             min_vals=lazyrepeatarray(data=minv, shape=result.shape),
             max_vals=lazyrepeatarray(data=(maxv + minv) / 2, shape=result.shape),
             state=output_state,
@@ -1837,14 +1837,14 @@ class GammaTensor:
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
-    def std(self, axis) -> GammaTensor:
+    def std(self, axis, **kwargs) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
         def _std(state, axis=axis):
             return jnp.std(self.run(state), axis)
 
-        result = self.child.std(axis)
+        result = self.child.std(axis, **kwargs)
         minv = (
             self.min_vals.data
             if isinstance(self.min_vals, lazyrepeatarray)
@@ -1857,7 +1857,7 @@ class GammaTensor:
         )
         return GammaTensor(
             child=result,
-            data_subjects=self.data_subjects.std(axis),
+            data_subjects=self.data_subjects.std(axis, **kwargs),
             min_vals=lazyrepeatarray(data=0, shape=result.shape),
             max_vals=lazyrepeatarray(
                 data=0.25 * (maxv + minv) ** 2, shape=result.shape
