@@ -63,6 +63,10 @@ class Device(Node):
 
         self.post_init()
 
+    def post_init(self) -> None:
+        Node.set_keys(node=self)
+        super().post_init()
+
     @property
     def icon(self) -> str:
         return "📱"

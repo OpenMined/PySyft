@@ -27,20 +27,11 @@ Our rapidly growing community of 12,000+ can be found on `Slack <http://slack.op
 community is very friendly and great about quickly answering questions about the
 use and development of PySyft!
 
-Resources
----------
-
 .. toctree::
   :maxdepth: 1
   :hidden:
 
   getting_started/index
-
-.. toctree::
-  :maxdepth: 1
-  :hidden:
-
-  user_guide/index
 
 .. toctree::
   :maxdepth: 1
@@ -59,6 +50,12 @@ Resources
   :hidden:
 
   deployment/glossary
+
+.. toctree::
+  :maxdepth: 1
+  :hidden:
+
+  resources/index
 
 
 .. toctree:
@@ -144,11 +141,3 @@ Resources
             :type: ref
             :text: To the development guide
             :classes: btn-block btn-secondary stretched-link
-
-
-Indices and tables
-==================
-
-* :ref:`genindex`
-* :ref:`modindex`
-* :ref:`search`
