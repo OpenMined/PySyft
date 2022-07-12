@@ -49,6 +49,19 @@ class Model:
 
         return parameters
 
+    def replace_weights(self, published_weights: dict) -> None:
+        # TODO: REMOVE .flatten()... once the Optimzer is fixed
+        """
+        For when you want to use published weights downloaded from a domain
+        """
+        layer_keys = list(published_weights.keys())
+        print(layer_keys)
+        for i, layer in enumerate(self.layers):
+            params = published_weights[str(layer) + str(i)]
+            if len(params) > 0:
+                layer.params = params
+        return self
+
     def add(self, layer):
         assert isinstance(layer, Layer), "PySyft doesn't recognize this kind of layer."
         self.layers.append(layer)
