@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from typing import Any
-from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -13,7 +12,6 @@ import pandas as pd
 
 # relative
 from ..common.serde.serializable import serializable
-from ..tensor.passthrough import PassthroughTensor
 from .data_subject import DataSubject
 
 
@@ -212,9 +210,9 @@ class DataSubjectList:
     @staticmethod
     def matmul(dsl1: DataSubjectList, dsl2: DataSubjectList):
         """
-        Matmul can only be done when Tensor.child is a 2D array, thus Tensor.NewDataSubject is 2D (PhiTensor) or 3D (Gamma)
-        Although Matmul first involves multiplication and then addition, implementing it with summation and then
-        broadcasting was easier for NewDataSubject.
+        Matmul can only be done when Tensor.child is a 2D array, thus Tensor.NewDataSubject is 2D (PhiTensor)
+        or 3D (Gamma) ,Although Matmul first involves multiplication and then addition, implementing it with
+        summation and then broadcasting was easier for NewDataSubject.
         """
 
         dsl1_target_shape = (
@@ -321,7 +319,7 @@ class DataSubjectList:
         )
 
         output_dsl[: dsl1.shape[0]] = dsl1
-        output_dsl[dsl1.shape[0] :] = dsl2
+        output_dsl[dsl1.shape[0] :] = dsl2  # noqa: E203
         output_dsl.data_subjects_indexed = np.unique(
             output_dsl.data_subjects_indexed, axis=0
         )

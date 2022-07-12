@@ -5,9 +5,6 @@ import numpy as np
 from ...common.serde.serializable import serializable
 from ..tensor import Tensor
 from .layers.base import Layer
-from .layers.convolution import Convolution
-from .layers.normalization import BatchNorm
-from .layers.linear import Linear
 from .loss import BinaryCrossEntropy
 from .optimizers import Adamax
 
@@ -30,12 +27,13 @@ class Model:
 
     def publish(self, deduct_epsilon_for_user, get_budget_for_user, ledger, sigma):
         print("Publish Model Weights")
-        # syft absolute
+        # relative
         from ..autodp.gamma_tensor import GammaTensor
 
         parameters = {}
         for i, layer in enumerate(self.layers):
             print("Layer", layer)
+
             if hasattr(layer, "params"):
                 parameters[str(layer) + str(i)] = [
                     param.publish(
@@ -65,34 +63,6 @@ class Model:
 
         self.loss = loss
         self.optimizer = optimizer
-
-    def replace_weights(self, published_weights: dict) -> None:
-        # TODO: REMOVE .flatten()... once the Optimzer is fixed
-        """
-        For when you want to use published weights downloaded from a domain
-
-        """
-        layer_keys = list(published_weights.keys())
-        print(layer_keys)
-        for i, layer in enumerate(self.layers):
-            new_weights = published_weights[layer_keys[i]]
-            if len(new_weights) == 0:
-                continue
-            elif len(new_weights) == 2:
-                if isinstance(layer, Convolution):
-                    layer.W = new_weights[0]
-                    layer.b = new_weights[1].flatten()[:layer.b.shape[0]]
-                elif isinstance(layer, BatchNorm):
-                    layer.beta = new_weights[0].flatten()[:layer.beta.shape[0]]  # TO BYPASS OPTIMIZER ERROR FOR NOW
-                    layer.gamma = new_weights[1].flatten()[:layer.gamma.shape[0]]
-                elif isinstance(layer, Linear):
-                    layer.W = new_weights[0]
-                    layer.b = new_weights[1]
-                else:
-                    raise NotImplementedError
-            else:
-                print(i, len(new_weights))
-                raise NotImplementedError
 
     def fit(
         self,
@@ -129,7 +99,8 @@ class Model:
             iter_idx += 1
 
             # train
-            train_losses, train_predicts, train_targets = [], [], []
+            train_losses = []
+            # train_predicts, train_targets =  [], []
             for b in range(train_Y.shape[0] // batch_size):
                 batch_begin = b * batch_size
                 batch_end = batch_begin + batch_size

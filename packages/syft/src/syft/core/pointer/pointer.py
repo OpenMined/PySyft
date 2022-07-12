@@ -104,7 +104,6 @@ from ...logger import debug
 from ...logger import error
 from ...logger import warning
 from ...proto.core.pointer.pointer_pb2 import Pointer as Pointer_PB
-from ...util import obj2pointer_type
 from ..common.pointer import AbstractPointer
 from ..common.serde.deserialize import _deserialize
 from ..common.serde.serializable import serializable
@@ -331,7 +330,6 @@ class Pointer(AbstractPointer):
     def publish(self, sigma: float = 1.5) -> Any:
 
         # relative
-        from ...lib.python import Any
         from ..node.common.node_service.publish.publish_service import (
             PublishScalarsAction,
         )

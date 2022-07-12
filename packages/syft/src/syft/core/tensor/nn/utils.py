@@ -7,7 +7,6 @@ from typing import Union
 import numpy as np
 
 # relative
-from ...adp.data_subject_list import DataSubjectList
 from ...adp.data_subject_list import NewDataSubject
 from ..autodp.gamma_tensor import GammaTensor
 from ..autodp.phi_tensor import PhiTensor
@@ -171,12 +170,14 @@ def dp_pad(
         )
 
 
-def dp_add_at(a: Union[PhiTensor, GammaTensor], indices: Tuple, b: Union[PhiTensor, GammaTensor]):
+def dp_add_at(
+    a: Union[PhiTensor, GammaTensor], indices: Tuple, b: Union[PhiTensor, GammaTensor]
+):
     data_a = a.child
     data_b = b.child
 
     data_subject_a = a.data_subjects
-    data_subject_b = b.data_subjects
+    # data_subject_b = b.data_subjects
 
     np.add.at(data_a, indices, data_b)
 
@@ -197,7 +198,7 @@ def dp_add_at(a: Union[PhiTensor, GammaTensor], indices: Tuple, b: Union[PhiTens
             child=data_a,
             data_subjects=data_subject_a,
             min_vals=lazyrepeatarray(data_a.min(), shape=data_a.shape),
-            max_vals=lazyrepeatarray(data_a.min(), shape=data_a.shape)
+            max_vals=lazyrepeatarray(data_a.min(), shape=data_a.shape),
         )
 
 

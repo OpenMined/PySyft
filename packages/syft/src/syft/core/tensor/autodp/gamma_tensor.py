@@ -2048,7 +2048,9 @@ class GammaTensor:
         for gamma_tensor in gt_list:
             # Add data points
             input_size = int(np.prod(gamma_tensor.shape))
-            data[last_index : last_index + input_size] = gamma_tensor.child.flatten()
+            data[
+                last_index : last_index + input_size  # noqa: E203
+            ] = gamma_tensor.child.flatten()
             last_index += input_size
 
             # Add min/max values
@@ -2364,7 +2366,11 @@ class GammaTensor:
             chunk_bytes(capnp_serialize(np.array(self.child), to_bytes=True), "child", gamma_msg)  # type: ignore
             gamma_msg.isNumpy = True
         elif isinstance(self.child, jnp.ndarray):
-            chunk_bytes(capnp_serialize(jax2numpy(self.child, self.child.dtype), to_bytes=True), "child", gamma_msg)  # type: ignore
+            chunk_bytes(
+                capnp_serialize(jax2numpy(self.child, self.child.dtype), to_bytes=True),
+                "child",
+                gamma_msg,
+            )
             gamma_msg.isNumpy = True
         else:
             chunk_bytes(serialize(self.child, to_bytes=True), "child", gamma_msg)  # type: ignore

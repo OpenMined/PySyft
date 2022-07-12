@@ -22,7 +22,7 @@ class Flatten(Layer):
     def connect_to(self, prev_layer):
         assert len(prev_layer.out_shape) > 2
 
-        to_flatten = np.prod(prev_layer.out_shape[self.outdim - 1 :])
+        to_flatten = np.prod(prev_layer.out_shape[self.outdim - 1 :])  # noqa: E203
         flattened_shape = prev_layer.out_shape[: self.outdim - 1] + (int(to_flatten),)
 
         self.input_shape = prev_layer.out_shape
@@ -31,7 +31,7 @@ class Flatten(Layer):
     def forward(self, input: PhiTensor, *args, **kwargs):
         self.last_input_shape = input.shape
 
-        to_flatten = np.prod(self.last_input_shape[self.outdim - 1 :])
+        to_flatten = np.prod(self.last_input_shape[self.outdim - 1 :])  # noqa: E203
         flattened_shape = input.shape[: self.outdim - 1] + (int(to_flatten),)
         # flattened_shape = input.shape[: self.outdim - 1] + (-1,)
         return input.reshape(flattened_shape)

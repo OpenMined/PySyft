@@ -6,7 +6,6 @@ from typing import Union
 from ...common.serde.serializable import serializable
 from ..autodp.gamma_tensor import GammaTensor
 from ..autodp.phi_tensor import PhiTensor
-from ..lazy_repeat_array import lazyrepeatarray
 
 
 @serializable(recursive_serde=True)
@@ -33,7 +32,8 @@ class Activation(object):
         _extended_summary_
 
         Args:
-            input (Optional[PhiTensor, GammaTensor], optional): If provide `input`, this function will not use `last_forward`. Defaults to None.
+            input (Optional[PhiTensor, GammaTensor], optional): If provide `input`,
+            this function will not use `last_forward`. Defaults to None.
         """
 
         raise NotImplementedError

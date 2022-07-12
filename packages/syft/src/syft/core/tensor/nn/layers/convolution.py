@@ -138,7 +138,9 @@ class Convolution(Layer):
 
         pre_grads_reshaped = pre_grads.transpose((1, 2, 3, 0))
         pre_grads_reshaped = pre_grads_reshaped.reshape((n_filter, -1))
-        pre_grads_reshaped.min_vals.shape = pre_grads_reshaped.max_vals.shape = pre_grads_reshaped.shape
+        pre_grads_reshaped.min_vals.shape = (
+            pre_grads_reshaped.max_vals.shape
+        ) = pre_grads_reshaped.shape
         dW = pre_grads_reshaped @ self.X_col.T
         self.dW = dW.reshape(self.W.shape)
 

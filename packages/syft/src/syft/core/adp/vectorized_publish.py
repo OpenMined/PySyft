@@ -143,7 +143,9 @@ def vectorized_publish(
         elif isinstance(input_tensor.data_subjects, DataSubjectList):
             input_entities = input_tensor.data_subjects.data_subjects_indexed
         else:
-            raise NotImplementedError(f"Undefined behaviour for data subjects type: {type(input_tensor.data_subjects)}")
+            raise NotImplementedError(
+                f"Undefined behaviour for data subjects type: {type(input_tensor.data_subjects)}"
+            )
         # data_subjects.data_subjects_indexed[0].reshape(-1)
         # t2 = time()
         # print("Obtained RDP Params, calculation time", t2 - t1)
@@ -195,7 +197,12 @@ def vectorized_publish(
     print("We have filtered all the input tensors. Now to compute the result:")
 
     # noise = secrets.SystemRandom().gauss(0, sigma)
-    print("Filtered inputs ", type(filtered_inputs), type(filtered_input_tensor), filtered_inputs)
+    print(
+        "Filtered inputs ",
+        type(filtered_inputs),
+        type(filtered_input_tensor),
+        filtered_inputs,
+    )
     # GammaTensor.convert_dsl(state_tree)
     print("Converted DSLs")
     original_output = np.asarray(output_func(filtered_inputs))

@@ -15,8 +15,6 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # relative
-from ..adp.data_subject import DataSubject
-from ..adp.data_subject_list import DataSubjectList
 from ..adp.data_subject_list import NewDataSubject
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager

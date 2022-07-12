@@ -5,7 +5,6 @@ import numpy as np
 from ...common.serde.serializable import serializable
 from ..autodp.phi_tensor import PhiTensor
 from .utils import dp_log
-from .utils import dp_maximum
 
 
 @serializable(recursive_serde=True)
