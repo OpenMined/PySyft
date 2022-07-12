@@ -295,7 +295,7 @@ jobs:
           HAGRID_ART: false
         run: |
           tox -e stack.test.integration.windows
-        shell: pwsh
+        shell: powershell
 
       - name: Stop all running containers
         if: steps.changes.outputs.stack == 'true'
