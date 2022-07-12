@@ -34,6 +34,10 @@ class Model:
         for i, layer in enumerate(self.layers):
             print("Layer", str(layer))
 
+            print("Before  Publish")
+            for param in layer.params:
+                print(param.shape, end=" ")
+            print()
             if hasattr(layer, "params"):
                 parameters[str(layer) + str(i)] = [
                     param.publish(
@@ -46,6 +50,10 @@ class Model:
                     else param
                     for param in layer.params
                 ]
+                print("After  Publish")
+                for param in parameters[str(layer) + str(i)]:
+                    print(param.shape, end=" ")
+                print()
 
         return parameters
 

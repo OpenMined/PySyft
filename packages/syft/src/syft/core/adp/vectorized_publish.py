@@ -215,4 +215,4 @@ def vectorized_publish(
 
     output = np.asarray(output_func(filtered_inputs) + noise)
     print("got output", type(output), output.dtype)
-    return output.squeeze()
+    return output.squeeze(axis=0)
