@@ -226,11 +226,22 @@ jobs:
           python -m pip install --upgrade --user pip
         shell: cmd
 
+      - name: "add-path"
+        shell: cmd
+        run: |
+          echo ::add-path::"C:\Program Files\Git\usr\bin\bash.exe"
+          dir "C:\Program Files\Git\usr\bin\bash.exe"
+      - name: "shell: bash.exe"
+        shell: bash
+        run: |
+          openssl version -d
+          pwd
+
       - name: Install tox
         if: steps.changes.outputs.stack == 'true'
         run: |
           pip install tox --upgrade
-        shell: cmd
+        shell: bash
 
       - name: Check python version
         if: steps.changes.outputs.stack == 'true'
