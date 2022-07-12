@@ -289,7 +289,7 @@ jobs:
         env:
           HAGRID_ART: false
         run: ""
-        shell: tox -e stack.test.integration.windows
+        shell: tox -e stack.test.integration.windows {0}
 
       - name: Stop all running containers
         if: steps.changes.outputs.stack == 'true'
