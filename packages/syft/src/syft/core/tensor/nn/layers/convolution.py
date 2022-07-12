@@ -133,8 +133,8 @@ class Convolution(Layer):
         )
 
         db = pre_grads.sum(axis=(0, 2, 3))  # TODO @Shubham: This is missing axis=1?
-        self.db = db.reshape((n_filter, -1))
-        # self.db.min_vals.shape = self.db.max_vals.shape = self.db.shape
+
+        self.db = db.reshape((n_filter, ))
 
         pre_grads_reshaped = pre_grads.transpose((1, 2, 3, 0))
         pre_grads_reshaped = pre_grads_reshaped.reshape((n_filter, -1))
@@ -142,10 +142,9 @@ class Convolution(Layer):
             pre_grads_reshaped.max_vals.shape
         ) = pre_grads_reshaped.shape
         dW = pre_grads_reshaped @ self.X_col.T
-        self.dW = dW.reshape(self.W.shape)
+        self.dW = dW.reshape((self.W.shape))
 
-        W_reshape = self.W.reshape(n_filter, -1)
-        # W_reshape.min_vals.shape = W_reshape.max_vals.shape = W_reshape.shape
+        W_reshape = self.W.reshape((n_filter, -1))
         dX_col = pre_grads_reshaped.T @ W_reshape
         dX = col2im_indices(
             dX_col,

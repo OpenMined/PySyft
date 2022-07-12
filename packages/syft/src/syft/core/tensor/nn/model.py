@@ -32,7 +32,7 @@ class Model:
 
         parameters = {}
         for i, layer in enumerate(self.layers):
-            print("Layer", layer)
+            print("Layer", str(layer))
 
             if hasattr(layer, "params"):
                 parameters[str(layer) + str(i)] = [
@@ -126,7 +126,7 @@ class Model:
                 # backward propagation
                 next_grad = self.loss.backward(y_pred, y_batch)
                 for layer in self.layers[::-1]:
-                    print("Backward layer", layer)
+                    print("Backward layer", str(layer))
                     next_grad = layer.backward(next_grad)
 
                 # update parameters
@@ -181,10 +181,13 @@ class Model:
         # forward propagation
         y_pred = self.predict(x_batch)
 
+        print(f"Predictions:", y_pred.child.argmax())
+        print(f"Actual Value:", y_batch.child.shape)
+
         # backward propagation
         next_grad = self.loss.backward(y_pred, y_batch)
         for layer in self.layers[::-1]:
-            print("Backward layer", layer)
+            print("Backward layer", str(layer))
             next_grad = layer.backward(next_grad)
 
         # update parameters
@@ -198,11 +201,13 @@ class Model:
         curr_loss = float(loss.child)
         self.aggregated_loss += curr_loss
 
+        print("Loss:", self.aggregated_loss)
+
     def predict(self, X):
         """Calculate an output Y for the given input X."""
         x_next = X
         for layer in self.layers:
-            print("Forward layer", layer)
+            print("Forward layer", str(layer))
             x_next = layer.forward(x_next)
         y_pred = x_next
         return y_pred

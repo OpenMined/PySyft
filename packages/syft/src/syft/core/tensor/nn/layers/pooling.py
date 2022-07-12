@@ -170,15 +170,14 @@ class MaxPool(Layer):
         self.X_col = im2col_indices(
             input_reshaped, pool_h, pool_w, padding=0, stride=self.stride
         )
-        # print("FInished im2col, starting _argmax")
+
         self.max_idx = self.X_col._argmax(axis=0)
         outputs = self.X_col[self.max_idx, range(self.max_idx.size)]
-        # print("outputs, DSL shape:", outputs.shape, outputs.data_subjects.shape)
+
         outputs = outputs.reshape((h_out, w_out, n, d))
-        # print("reshaped outputs, DSL shape:", outputs.shape, outputs.data_subjects.shape)
+
         outputs = outputs.transpose((2, 3, 0, 1))
-        # print("transposed outputs, DSL shape:", outputs.shape, outputs.data_subjects.shape)
-        # print("Done with MaxPool forward pass")
+
         return outputs
 
     def backward(self, pre_grad: PhiTensor, *args, **kwargs):

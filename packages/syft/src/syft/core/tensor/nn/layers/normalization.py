@@ -57,41 +57,31 @@ class BatchNorm(Layer):
 
     def forward(self, input: Union[PhiTensor, GammaTensor], *args, **kwargs):
         # N, D = x.shape
-        # print("input shapes", input.shape, input.data_subjects.shape)
 
         # step1: calculate the mean
-        mean = input.mean(axis=-3)
-        mean = mean.expand_dims(-3)
-        # print("mean shapes after expand", mean.shape, mean.data_subjects.shape)
+        mean = input.mean(axis=self.axis)
 
         xmu = input - mean
-        # print("xmu shapes", xmu.shape, xmu.data_subjects.shape)
 
         # step2:
         # sq = xmu ** 2
         # var = 1. / N * np.sum(sq, axis=0)
-        var = xmu.std(axis=-3).expand_dims(axis=-3)
-        # print("var shapes", var.shape, var.data_subjects.shape)
+        var = xmu.std(axis=self.axis)
 
         # step3:
         sqrtvar = (var + self.epsilon).sqrt()
-        # print("sqrtvar shapes", sqrtvar.shape, sqrtvar.data_subjects.shape)
+
         ivar = 1.0 / sqrtvar
-        # print("ivar shapes", ivar.shape, ivar.data_subjects.shape)
 
         # step4: normalization->x^
         xhat = xmu * ivar
-        # print("xhat shapes", xhat.shape, xhat.data_subjects.shape)
 
         # step5: scale and shift
         gammax = xhat * self.gamma
-        # print("gamma shapes", gammax.shape, gammax.data_subjects.shape)
 
         out = gammax + self.beta
-        # print("out shapes", out.shape, out.data_subjects.shape)
 
         out = self.activation.forward(out) if self.activation is not None else out
-        # print("activated out shapes", out.shape, out.data_subjects.shape)
 
         self.cache = (xhat, xmu, ivar, sqrtvar, var)
         return out
@@ -122,13 +112,13 @@ class BatchNorm(Layer):
         )
 
         # step6
-        self.dbeta = pre_grad.sum(axis=0)
+        self.dbeta = pre_grad.sum(axis=self.axis)
         dgammax = pre_grad
-        self.dgamma = (dgammax * xhat).sum(axis=0)
+        self.dgamma = (dgammax * xhat).sum(axis=self.axis)
         dxhat = dgammax * self.gamma
 
         # step5
-        divar = (dxhat * xmu).sum(axis=0)
+        divar = (dxhat * xmu).sum(axis=self.axis)
         dxmu1 = dxhat * ivar
 
         # step4
@@ -144,7 +134,7 @@ class BatchNorm(Layer):
         dx1 = dxmu1 + dxmu2
 
         # step1,
-        dmu = (dxmu1 + dxmu2).sum(axis=0) * -1
+        dmu = (dxmu1 + dxmu2).sum(axis=self.axis) * -1
         dx2 = (pre_grad.ones_like()) * dmu * (1 / N)
 
         # step0 done!
