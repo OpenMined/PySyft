@@ -1,3 +1,7 @@
+# stdlib
+# stdlib
+from typing import Dict
+
 # third party
 import numpy as np
 import pytest
@@ -284,8 +288,8 @@ def test_serde(
     assert (de.max_vals == tensor1.max_vals).all()
     assert de.data_subjects == tensor1.data_subjects
 
-    assert np.shares_memory(tensor1.child.child, tensor1.child.child)
-    assert not np.shares_memory(de.child.child, tensor1.child.child)
+    assert np.shares_memory(tensor1.child, tensor1.child)
+    assert not np.shares_memory(de.child, tensor1.child)
 
 
 def test_copy(
@@ -328,13 +332,10 @@ def test_copy_with(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    encode_func = reference_tensor.child.encode
 
     # Copy the tensor and check if it works
-    copy_with_tensor = reference_tensor.copy_with(encode_func(reference_data))
-    copy_with_binary_tensor = reference_tensor.copy_with(
-        encode_func(reference_binary_data)
-    )
+    copy_with_tensor = reference_tensor.copy_with(reference_data)
+    copy_with_binary_tensor = reference_tensor.copy_with(reference_binary_data)
 
     assert (
         reference_tensor == copy_with_tensor
@@ -345,12 +346,13 @@ def test_copy_with(
     ).all(), "Copying of the PT with the given child fails"
 
 
+@pytest.mark.parametrize("kwargs", [{"axis": (1)}])
 def test_sum(
     reference_data: np.ndarray,
     upper_bound: np.ndarray,
     lower_bound: np.ndarray,
     ishan: DataSubject,
-    dims: int,
+    kwargs: Dict,
 ) -> None:
     zeros_tensor = PT(
         child=reference_data * 0,
@@ -364,11 +366,11 @@ def test_sum(
         max_vals=upper_bound,
         min_vals=lower_bound,
     )
-    encode_func = tensor.child.encode
-    tensor_sum = tensor.sum()
 
-    assert tensor_sum.child.child == encode_func(reference_data).sum()
-    assert zeros_tensor.sum().child.child == 0
+    tensor_sum = tensor.sum(**kwargs)
+
+    assert (tensor_sum.child == reference_data.sum(**kwargs)).all()
+    assert zeros_tensor.sum().child == 0
 
 
 def test_ne_vals(

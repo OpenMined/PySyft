@@ -243,6 +243,11 @@ jobs:
         with:
           args: list --localonly
 
+      - name: Install git
+        uses: crazy-max/ghaction-chocolatey@v1
+        with:
+          args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
+
       - name: Install cmake
         uses: crazy-max/ghaction-chocolatey@v1
         with:
@@ -259,31 +264,13 @@ jobs:
         with:
           args: install visualstudio2019-workload-vctools -y
 
-      - name: Start stacks
-        if: steps.changes.outputs.stack == 'true'
-        timeout-minutes: 30
-        env:
-          HAGRID_ART: false
-        run: |
-          pip install -e packages/hagrid
-          pip install cython
-          pip install pycapnp
-          set HAGRID_ART=false
-          set NETWORK_CHECK_INTERVAL=5
-          hagrid launch test_network_1 network to docker:9081 --tag=local --tail=false --headless=true --test
-          hagrid launch test_domain_1 domain to docker:9082 --tag=local --tail=false --headless=true --test
-          hagrid launch test_domain_2 domain to docker:9083 --tag=local --tail=false --build=false --headless=true --test
-          bash -c "(docker logs test_domain_1-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-          bash -c "(docker logs test_domain_2-backend_stream-1 -f &) | grep -q 'Application startup complete' || true"
-          docker ps
-        shell: cmd
-
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
         timeout-minutes: 30
         env:
           HAGRID_ART: false
         run: |
+          where.exe bash
           tox -e stack.test.integration.windows
         shell: cmd
 
@@ -476,11 +463,10 @@ jobs:
 
       - name: Run integration tests
         if: steps.changes.outputs.stack == 'true'
-        continue-on-error: true
         shell: bash
         run: |
           # install k3d
-          wget https://github.com/k3d-io/k3d/releases/download/v5.4.1/k3d-linux-amd64
+          wget https://github.com/k3d-io/k3d/releases/download/v5.4.3/k3d-linux-amd64
           mv k3d-linux-amd64 k3d
           chmod +x k3d
           export PATH=`pwd`:$PATH

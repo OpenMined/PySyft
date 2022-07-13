@@ -2,7 +2,7 @@ name: HAGrid Continuous Delivery
 
 on:
   schedule:
-    - cron: "00 03 * * *"
+    - cron: "00 03 * * 5" # Thursday
   workflow_dispatch:
     inputs:
       none:
