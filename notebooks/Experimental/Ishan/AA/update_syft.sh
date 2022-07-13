@@ -1,9 +1,8 @@
-echo "CLoning Pysyft";
-git clone -b model_training_tests https://github.com/OpenMined/PySyft.git;
-echo "Installing Hagrid/PySyft";
-pip install -e PySyft/packages/hagrid;
-pip install -e PySyft/packages/syft;
-echo "Landing Domain ... ";
+DOMAIN_NAME="$(sudo docker ps --format '{{.Names}}' | grep "celery" |rev | cut -c 16- | rev)"
+echo "Domain Name: ${DOMAIN_NAME}"
+echo "Nuking  Domain ..  >:)";
 hagrid land all;
 echo "Launching Domain .. hahaha >:)";
-hagrid launch domain;
+hagrid launch ${DOMAIN_NAME} to docker:80  --tail=false --dev
+echo "finished"
+
