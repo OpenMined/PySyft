@@ -294,8 +294,9 @@ jobs:
         env:
           HAGRID_ART: false
         run: |
+          where.exe bash
           tox -e stack.test.integration.windows
-        shell: powershell
+        shell: cmd
 
       - name: Stop all running containers
         if: steps.changes.outputs.stack == 'true'

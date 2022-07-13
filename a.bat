@@ -1,2 +1,0 @@
-echo %path%
-echo %USERNAME%
