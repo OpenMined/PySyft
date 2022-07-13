@@ -1472,7 +1472,6 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         for i in self.min_vals.shape:
             product *= i
         output_shape = (product,)
-        print(self.min_vals.data, self.min_vals.data.shape)
         return PhiTensor(
             child=self.child.flatten(order=order),
             min_vals=lazyrepeatarray(
