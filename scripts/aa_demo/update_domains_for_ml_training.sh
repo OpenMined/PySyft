@@ -9,10 +9,10 @@ do
 	pass=$(echo $line | cut -d "," -f 3)
 	dataset_url=$(echo $line | cut -d "," -f 4)
 
-	COMMAND="cd PySyft &&git stash && \
+	COMMAND="cd PySyft &&git restore scripts && git stash && \
 			sudo git fetch origin model_training_tests && \
 			 git pull origin model_training_tests && \
-			  git stash apply stash@{0} && \
+			 git stash apply stash@{0} && \
 			  chmod +x scripts/aa_demo/update_domain.sh &&\
 			  ./scripts/aa_demo/update_domain.sh $ip $dataset_url"
 	echo $ip, $usn, $pass
