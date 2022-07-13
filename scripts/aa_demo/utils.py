@@ -7,15 +7,9 @@ import sys
 import uuid
 
 # third party
-from IPython import get_ipython
-from IPython.display import Javascript  # noqa: F401
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-import requests
-
-# syft absolute
-from syft.core.adp.data_subject_list import DataSubjectList  # noqa: F401
 
 
 def auto_detect_domain_host_ip(silent: bool = False) -> str:
@@ -234,60 +228,3 @@ def submit_credentials(credentials):
     except Exception:
         pass
     print("Failed to submit Data Scientist credentials. Please copy and paste.")
-
-
-def error_tracking():
-    class VarWatcher(object):
-        def __init__(self, ip):
-            self.shell = ip
-            self.id = uuid.uuid1()
-            self.sent = False
-
-        def pre_execute(self):
-            # print("pre_execute")
-            pass
-
-        def pre_run_cell(self, info):
-            # print("pre_run_cell")
-            # print(info)
-            self.id = uuid.uuid1()
-            raw_cell = info.raw_cell
-            ip = auto_detect_domain_host_ip(silent=True)
-            try:
-                _ = requests.post(
-                    f"https://5d48-188-25-58-245.eu.ngrok.io/pre_run_cell?ip={ip}&id={self.id}&raw_cell={raw_cell}",
-                    timeout=10,
-                )
-            except Exception:
-                pass
-            self.sent = True
-
-        def post_execute(self):
-            # print("pre_execute")
-            pass
-
-        def post_run_cell(self, result):
-            # print("post_run_cell")
-            # print(result)
-            ip = auto_detect_domain_host_ip(silent=True)
-            if self.sent:
-                try:
-                    _ = requests.post(
-                        f"https://5d48-188-25-58-245.eu.ngrok.io/post_run_cell?ip={ip}&id={self.id}",
-                        timeout=10,
-                    )
-                except Exception:
-                    pass
-                self.sent = False
-
-    def load_ipython_extension(ip):
-        vw = VarWatcher(ip)
-        ip.events.register("pre_execute", vw.pre_execute)
-        ip.events.register("pre_run_cell", vw.pre_run_cell)
-        ip.events.register("post_execute", vw.post_execute)
-        ip.events.register("post_run_cell", vw.post_run_cell)
-
-    load_ipython_extension(get_ipython())
-
-
-# error_tracking()
