@@ -3,7 +3,8 @@
   <br>
   <img src="packages/syft/docs/img/logo_big.png" alt="Syft" width="400">
   </br>
-  A World Where Every Good Question is Answered
+  Answer questions using unseen data owned by others
+  <br>
   
 </h1>
 
@@ -16,12 +17,18 @@
 
 </div>
 
+# Ouickstart
+'*Getting started guide for Installation and User-Personas(Tutorials)*'
+
 
 # What is PySyft?
+'*We can combine what and why by stating our thesis and how these technologies come together to achieve that goal*'
 
-Syft decouples private data from model training using [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html), [Differential Privacy](https://en.wikipedia.org/wiki/Differential_privacy), and Encrypted Computation (like [Multi-Party Computation (MPC)](https://en.wikipedia.org/wiki/Secure_multi-party_computation) and [Homomorphic Encryption (HE)](https://en.wikipedia.org/wiki/Homomorphic_encryption)) within the leading Deep Learning frameworks like PyTorch and TensorFlow.
+PySyft allows you to perform private and secure Deep Learning by making it possible for one person to answer a question using data owned by another without ever seeing or acquiring a copy of that data. We call this process Remote Data Science. It means in a wide variety of domains across society, current tradeoffs between the benefits of sharing information with someone (innovation, insights, scientific discovery, etc.) and the risks that they might misuse it (privacy invasion, IP theft, blackmail, etc.) will be broken. 
 
-It allows you to perform private and secure Deep Learning by allowing you to write software which can compute over information you do not own on machines you do not have (total) control over. This includes servers in the cloud, personal desktops, laptops, mobile phones, websites, and edge devices. Wherever your data wants to live in your ownership, the Syft ecosystem exists to help keep it there while allowing it to be used privately for computation.
+PySyft can improve your product based on customers' private data without them needing to disclose their sensitive information. Researchers will make medical advances without patients disclosing medical information. It also means 1000x more data in every domain. PySyft achieves this using [Federated Learning](https://ai.googleblog.com/2017/04/federated-learning-collaborative.html) and [Encrypted Computation](https://en.wikipedia.org/wiki/Homomorphic_encryption) and is currently under development. 
+
+PySyft appreciates all contributors, and if you would like to fix a bug or suggest a new feature, please see our [Contribution page](https://openmined.github.io/PySyft/developer_guide/index.html).
 
 <h5 align="center">
     <img src="packages/syft/docs/img/Working_infographic.gif" alt="working_infographic" width="400">
@@ -32,3 +39,15 @@ It allows you to perform private and secure Deep Learning by allowing you to wri
     <img src="packages/syft/docs/img/big-picture.png" alt="big-picture-overview" width="400">
 </h5>
 
+# Main Features
+'*Flex the features that we have in syft in the form of bullet points*'
+
+# Deployment
+'*List with all platforms that are clickable and lead to their respective separate pages*'
+
+# Call for Contributors
+'*Link to Resources, Contributing, Padawan program, Courses, Documentation, Blogs and slack*'
+
+# Organisational Contributors
+
+'*Thank the organisations that have been contributing in terms of developers but w way smaller logos*'
