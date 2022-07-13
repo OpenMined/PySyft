@@ -28,5 +28,4 @@ syft.core.node.abstract
    :recursive:
 
    syft.core.node.abstract.node
-   syft.core.node.abstract.node_service_interface
 

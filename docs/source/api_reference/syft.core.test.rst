@@ -1,31 +1,18 @@
-syft.core.test
-==============
+syft.core.test package
+======================
 
 .. automodule:: syft.core.test
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   
-   
-   
+Submodules
+----------
 
-   
-   
-   
+syft.core.test.module\_test module
+----------------------------------
 
-   
-   
-   
-
-   
-   
-   
-
-
-
-.. rubric:: Modules
-
-.. autosummary::
-   :toctree:
-   :recursive:
-
-   syft.core.test.module_test
-
+.. automodule:: syft.core.test.module_test
+   :members:
+   :undoc-members:
+   :show-inheritance:

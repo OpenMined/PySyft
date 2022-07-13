@@ -40,6 +40,7 @@ class UserUpdate(BaseUser):
     budget: Optional[float]
     institution: Optional[str]
     website: Optional[str]
+    new_password: Optional[str]
 
 
 class UserCandidate(BaseUser):

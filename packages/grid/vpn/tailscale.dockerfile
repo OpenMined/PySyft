@@ -1,4 +1,4 @@
-FROM tailscale/tailscale:v1.20.4
+FROM tailscale/tailscale:v1.22.0
 
 RUN --mount=type=cache,target=/var/cache/apk \
     apk -U upgrade || true; \
