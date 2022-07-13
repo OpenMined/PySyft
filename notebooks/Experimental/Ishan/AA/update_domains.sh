@@ -12,7 +12,6 @@ do
 			sudo git fetch origin model_training_tests && \
 			 git pull origin model_training_tests && \
 			  git stash apply stash@{0} && \
-			  chmod +x scripts/aa_demo/update_domain.sh &&\
 			  ./scripts/aa_demo/update_domain.sh"
 	echo $ip, $usn, $pass
 	# TODO: Replace azureuser to om and use its proper password
