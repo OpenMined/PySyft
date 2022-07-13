@@ -3,7 +3,6 @@ from __future__ import annotations
 
 # stdlib
 from collections.abc import Sequence
-from html import entities
 from typing import Any
 from typing import Callable
 from typing import Dict
@@ -30,7 +29,6 @@ from ...common.serde.capnp import serde_magic_header
 from ...common.serde.serializable import serializable
 from ...common.uid import UID
 from ...pointer.pointer import Pointer
-from ..ancestors import AutogradTensorAncestor
 from ..lazy_repeat_array import lazyrepeatarray
 from ..passthrough import AcceptableSimpleType  # type: ignore
 from ..passthrough import PassthroughTensor  # type: ignore
@@ -100,7 +98,7 @@ class NDimEntityPhiTensorPointer(Pointer):
 
 
 @serializable(capnp_bytes=True)
-class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
+class NDimEntityPhiTensor(PassthroughTensor, ADPTensor):
     PointerClassOverride = NDimEntityPhiTensorPointer
     # __attr_allowlist__ = ["child", "min_vals", "max_vals", "entities"]
     __slots__ = (
@@ -240,7 +238,7 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
         # TODO: check if values needs to be a JAX array or if numpy will suffice
 
         return GammaTensor(
-            value=self.child,
+            child=self.child,
             data_subjects=self.entities,
             min_val=self.min_vals,
             max_val=self.max_vals,
@@ -346,15 +344,15 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             print("Type is unsupported:" + str(type(other)))
             raise NotImplementedError
 
-    def transpose(self, *args, **kwargs) -> NDimEntityPhiTensor:
+    def transpose(self, *args: Tuple, **kwargs: Dict) -> NDimEntityPhiTensor:
         return NDimEntityPhiTensor(
-            child=self.child.transpose(),
-            min_vals=self.min_vals.transpose(),
-            max_vals=self.max_vals.transpose(),
+            child=self.child.transpose(*args, **kwargs),
+            min_vals=self.min_vals.transpose(*args, **kwargs),
+            max_vals=self.max_vals.transpose(*args, **kwargs),
             entities=DataSubjectList(
                 one_hot_lookup=self.entities.one_hot_lookup,
-                data_subjects_indexed=self.entities.data_subjects_indexed.transpose()
-            )
+                data_subjects_indexed=self.entities.data_subjects_indexed.transpose(),
+            ),
         )
 
     def sum(
@@ -372,11 +370,10 @@ class NDimEntityPhiTensor(PassthroughTensor, AutogradTensorAncestor, ADPTensor):
             )
 
         return GammaTensor(
-            value=np.array(self.child.sum()),
+            child=np.array(self.child.sum()),
             data_subjects=self.entities.sum(),
-            min_val=float(self.min_vals.sum(axis=None)),
-            max_val=float(self.max_vals.sum(axis=None)),
-            inputs=self.child,
+            min_val=self.min_vals.sum(axis=None),
+            max_val=self.max_vals.sum(axis=None),
         )
 
     def __ne__(  # type: ignore

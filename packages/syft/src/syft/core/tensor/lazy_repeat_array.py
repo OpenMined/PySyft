@@ -184,11 +184,6 @@ class lazyrepeatarray:
         res = np.array(np.ones_like(self.to_numpy(), *args, **kwargs))
         return lazyrepeatarray(data=res, shape=res.shape)
 
-    def transpose(self):
-        if isinstance(self.data, np.ndarray):
-            self.data = self.data.transpose()
-        self.shape = self.shape[::-1]
-
     def __eq__(self, other: Any) -> lazyrepeatarray:  # type: ignore
         if isinstance(other, lazyrepeatarray):
             if self.shape == other.shape:
