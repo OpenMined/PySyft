@@ -1,7 +1,7 @@
 # $1 domain ip
 # $2 dataset url
 # install syft in dev mode
-pip install -e packages/syft
+pip install -U -e packages/syft
 
 # get domain name
 DOMAIN_NAME="$(sudo docker ps --format '{{.Names}}' | grep "celery" |rev | cut -c 16- | rev)"

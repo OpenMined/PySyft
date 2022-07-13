@@ -18,9 +18,7 @@ do
 	echo $ip, $usn, $pass
 	# TODO: Replace azureuser to om and use its proper password
 	# sshpass -p $pass ssh $usn@$ip $(cat update_syft.sh)
-	sshpass -p $pass ssh $usn@$ip  "sudo runuser -l om -c '${COMMAND}'"
+	sshpass -o StrictHostKeyChecking=no -p $pass ssh $usn@$ip  "sudo runuser -l om -c '${COMMAND}'"
 
-	exit
-	break
 done
 
