@@ -36,9 +36,9 @@ def initialize_model(input_shape) -> nn.Model:
     model.add(nn.MaxPool(pool_size=2, stride=2))
 
     # Layer 2
-    model.add(nn.Convolution(nb_filter=64, filter_size=3, padding=2))
-    model.add(nn.BatchNorm(activation=nn.leaky_ReLU()))
-    model.add(nn.MaxPool(pool_size=2, stride=2))
+    # model.add(nn.Convolution(nb_filter=64, filter_size=3, padding=2))
+    # model.add(nn.BatchNorm(activation=nn.leaky_ReLU()))
+    # model.add(nn.MaxPool(pool_size=2, stride=2))
 
     # Layer 3
     model.add(nn.AvgPool(3))
@@ -59,6 +59,15 @@ def get_input_shape(domain_address):
     X_train = domain.datasets[-1]["train_images"][:2]  # just taking first two images.
     return X_train.public_shape
 
+
+def save_model(model, filename="model.npy"):
+    model_weights = {}
+    for i, layer in enumerate(model.layers):
+        model_weights[str(layer) + str(i)] = layer.params
+
+    print("Saving model as .npy...", end=" ")
+    np.save("model.npy", model_weights, allow_pickle=True)
+    print("Model sucessfully saved.")
 
 
 def train_on_domains(domain_addresses):
@@ -131,4 +140,4 @@ def train_on_domains(domain_addresses):
 if __name__ == "__main__":
     domain_host_ips = get_domain_addresses()
     final_model = train_on_domains(domain_host_ips)
-
+    save_model(final_model, "model_trained_on_100_domains.npy")
