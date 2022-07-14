@@ -24,6 +24,6 @@ echo "Domain lauch succeeded."
 echo "Starting to upload dataset"
 
 # upload dataset
-# python scripts/aa_demo/upload_dataset.py $1 $2
+python scripts/aa_demo/upload_dataset.py $1 $2
 
-# echo "Upload dataset script complete."
+echo "Upload dataset script complete."
