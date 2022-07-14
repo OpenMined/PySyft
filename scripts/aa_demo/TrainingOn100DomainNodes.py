@@ -6,6 +6,7 @@
 import time
 
 # third party
+import numpy as np
 import pandas as pd
 
 # syft absolute
@@ -13,7 +14,7 @@ import syft as sy
 from syft import nn
 
 DOMAIN_INFO_FILE = "test.csv"
-USER_EMAIL = "sam@stargate.net"
+USER_EMAIL = "info@openmined.org"
 USER_PASSWORD = "changethis"
 
 
@@ -88,10 +89,13 @@ def train_on_domains(domain_addresses):
 
     for i, address in enumerate(domain_addresses):
 
+        print()
+        print("================================="*3)
+
         # Log into the domain
         domain = sy.login(url=address, email=USER_EMAIL, password=USER_PASSWORD)
 
-        print(f"Domain: {i+1} - {domain.name}")
+        print(f"Domain: {i+1} ({domain.name})")
 
         # Check if dataset is present on the domain
         if len(domain.datasets) == 0:
@@ -113,7 +117,14 @@ def train_on_domains(domain_addresses):
         # - calculates loss
         # - backward pass
         # - optimizer weight updates
-        print(f"Training started on Domain: {i+1} - {domain.name}")
+
+        print("waiting for model ptr to be ready !!!")
+        # wait for model_ptr to be accessible
+        while(not model_ptr.exists):
+            time.sleep(2)
+
+        print(f"Training started on Domain {i+1} ({domain.name})")
+
         run_status = model_ptr.step(X_train, y_train)
 
         # Wait for step operation to be completed on the remote domain.
@@ -121,14 +132,14 @@ def train_on_domains(domain_addresses):
             time.sleep(10)
 
         # Publish Model Weights
-        print(f"Publishing model weights on Domain: {i+1} - {domain.name}")
+        print(f"Publishing model weights on Domain {i+1} ({domain.name})")
         published_obj = model_ptr.publish(sigma=1e4)  # PB spent with 1e3 = 690k, thus 1e4 sigma -> 6.9k which is within PB limit of 9999
         while(not published_obj.exists):
             time.sleep(2)
         parameters = published_obj.get_copy()
 
         loss = parameters["loss"]
-        print(f"Model loss on Domain: {i+1} - {domain.name}: {loss}")
+        print(f"Model loss on Domain {i+1} ({domain.name}): {loss}")
 
         # Update weights and move onto next domain node
         model = initialize_model(input_shape)
