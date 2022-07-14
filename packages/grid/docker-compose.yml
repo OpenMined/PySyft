@@ -131,6 +131,7 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - db
+      - seaweedfs
     env_file:
       - .env
     environment:
@@ -160,6 +161,7 @@ services:
     image: "${DOCKER_IMAGE_BACKEND?Variable not set}:${VERSION-latest}"
     depends_on:
       - db
+      - seaweedfs
       - backend
     env_file:
       - .env
@@ -178,7 +180,7 @@ services:
       - HTTPS_PORT=${HTTPS_PORT}
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start.sh"
+    command: "/start.sh"
     labels:
       - "traefik.enable=true"
       - "traefik.constraint-label-stack=${TRAEFIK_TAG?Variable not set}"
@@ -192,6 +194,7 @@ services:
     depends_on:
       - db
       - queue
+      - seaweedfs
     env_file:
       - .env
     environment:
@@ -209,7 +212,7 @@ services:
       - USE_BLOB_STORAGE=${USE_BLOB_STORAGE}
       - CONTAINER_HOST=${CONTAINER_HOST}
       - NETWORK_CHECK_INTERVAL=${NETWORK_CHECK_INTERVAL}
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start.sh"
+    command: "/worker-start.sh"
     network_mode: service:proxy
 
   headscale:

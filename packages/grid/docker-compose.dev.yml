@@ -66,7 +66,7 @@ services:
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /start-reload.sh"
+    command: "/start-reload.sh"
     # command: "sleep 99999"
     environment:
       - PROFILE=true
@@ -80,7 +80,7 @@ services:
       - ../syft:/app/syft
       - ./data/package-cache:/root/.cache
       # - ./profile:/tmp/profile
-    command: "waitforit -address=http://localhost:8001/api/v1/syft/metadata -status=200 -timeout=600 -- /worker-start-reload.sh"
+    command: "/worker-start-reload.sh"
     # command: "sleep 99999"
     environment:
       - PROFILE=true
