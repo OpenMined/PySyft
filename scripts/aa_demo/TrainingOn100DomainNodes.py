@@ -125,11 +125,14 @@ def train_on_domains(domain_addresses):
         published_obj = model_ptr.publish(sigma=1e4)  # PB spent with 1e3 = 690k, thus 1e4 sigma -> 6.9k which is within PB limit of 9999
         while(not published_obj.exists):
             time.sleep(2)
-        new_weights = published_obj.get_copy()
+        parameters = published_obj.get_copy()
+
+        loss = parameters["loss"]
+        print(f"Model loss on Domain: {i+1} - {domain.name}: {loss}")
 
         # Update weights and move onto next domain node
         model = initialize_model(input_shape)
-        model.replace_weights(new_weights)
+        model.replace_weights(parameters)
         print(f"Model training finished on Domain: {i+1} - {domain.name}")
 
         print()

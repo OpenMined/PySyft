@@ -1,3 +1,5 @@
+#!/bin/bash
+
 passes=$(cat test.csv | cut -d "," -f 3)
 domain_ips=$(cat test.csv | cut -d "," -f 1)
 usn=$(cat test.csv | cut -d "," -f 2)
@@ -9,7 +11,7 @@ do
 	pass=$(echo $line | cut -d "," -f 3)
 	dataset_url=$(echo $line | cut -d "," -f 4)
 
-	COMMAND="cd PySyft &&sudo git restore scripts &&sudo  git stash && \
+	COMMAND="cd PySyft &&sudo git restore scripts && sudo git stash && \
 			sudo git fetch origin model_training_tests && \
 			sudo  git pull origin model_training_tests && \
 			sudo git stash apply stash@{0} && \

@@ -55,6 +55,8 @@ class Model:
                     print(param.shape, end=" ")
                 print()
 
+        parameters["loss"] = self.aggregated_loss
+
         return parameters
 
     def replace_weights(self, published_weights: dict) -> None:

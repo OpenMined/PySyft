@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # $1 domain ip
 # $2 dataset url
 # install syft in dev mode
@@ -13,7 +15,7 @@ hagrid land all
 echo "Launching Domain .. hahaha >:)";
 
 # re-launch domain
-hagrid launch ${DOMAIN_NAME} to docker:80  --tail=false --dev
+hagrid launch ${DOMAIN_NAME} to docker:80  --tail=false --dev --build_src="model_training_tests"
 
 # wait for domain to be up
 hagrid check --wait --silent
@@ -22,6 +24,6 @@ echo "Domain lauch succeeded."
 echo "Starting to upload dataset"
 
 # upload dataset
-python scripts/aa_demo/upload_dataset.py $1 $2
+# python scripts/aa_demo/upload_dataset.py $1 $2
 
-echo "Upload dataset script complete."
+# echo "Upload dataset script complete."
