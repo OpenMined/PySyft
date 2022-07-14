@@ -1,43 +1,58 @@
-syft.core.adp
-=============
+syft.core.adp package
+=====================
 
 .. automodule:: syft.core.adp
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   
-   
-   
+Submodules
+----------
 
-   
-   
-   .. rubric:: Functions
+syft.core.adp.abstract\_ledger\_store module
+--------------------------------------------
 
-   .. autosummary::
-   
-      create_adp_ast
-   
-   
+.. automodule:: syft.core.adp.abstract_ledger_store
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   
-   
-   
+syft.core.adp.data\_subject module
+----------------------------------
 
-   
-   
-   
+.. automodule:: syft.core.adp.data_subject
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
+syft.core.adp.data\_subject\_ledger module
+------------------------------------------
 
+.. automodule:: syft.core.adp.data_subject_ledger
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-.. rubric:: Modules
+syft.core.adp.data\_subject\_list module
+----------------------------------------
 
-.. autosummary::
-   :toctree:
-   :recursive:
+.. automodule:: syft.core.adp.data_subject_list
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-   syft.core.adp.adversarial_accountant
-   syft.core.adp.entity
-   syft.core.adp.idp_gaussian_mechanism
-   syft.core.adp.publish
-   syft.core.adp.scalar
-   syft.core.adp.search
-   syft.core.adp.vm_private_scalar_manager
+syft.core.adp.ledger\_store module
+----------------------------------
 
+.. automodule:: syft.core.adp.ledger_store
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+syft.core.adp.vectorized\_publish module
+----------------------------------------
+
+.. automodule:: syft.core.adp.vectorized_publish
+   :members:
+   :undoc-members:
+   :show-inheritance:

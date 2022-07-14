@@ -28,6 +28,7 @@ syft.core.common
    :recursive:
 
    syft.core.common.environment
+   syft.core.common.event_loop
    syft.core.common.group
    syft.core.common.message
    syft.core.common.object

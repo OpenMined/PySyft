@@ -24,6 +24,9 @@ DOMAIN1_VPN_IP = "100.64.0.2"
 TEST_ROOT_EMAIL = "info@openmined.org"
 TEST_ROOT_PASS = "changethis"
 
+EMULATION = os.environ.get("EMULATION", "false")
+print("EMULATION", EMULATION)
+
 
 def send_msg(domain: DomainClient) -> SleepMessageWithReply:
     msg = SleepMessageWithReply(kwargs={"seconds": 0.5}).to(
@@ -51,4 +54,7 @@ def test_parallel_sync_io_requests() -> None:
     for i in res:
         assert isinstance(i, SleepReplyMessage)
 
-    assert total <= 2
+    expected_time = 2
+    if EMULATION != "false":
+        expected_time = 3  # emulation is slow on CI
+    assert total <= expected_time
