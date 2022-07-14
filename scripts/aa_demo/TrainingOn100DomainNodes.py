@@ -14,7 +14,7 @@ import syft as sy
 from syft import nn
 
 DOMAIN_INFO_FILE = "test.csv"
-USER_EMAIL = "info@openmined.org"
+USER_EMAIL = "sam@stargate.net"
 USER_PASSWORD = "changethis"
 
 
