@@ -53,6 +53,8 @@ def register(data: dict = Body(..., example="sheldon@caltech.edu")) -> Any:
         "name": data["name"],
         "email": data["email"],
         "password": data["password"],
+        "institution": data.get("institution"),
+        "website": data.get("website"),
         "budget": 0.0,
     }
 

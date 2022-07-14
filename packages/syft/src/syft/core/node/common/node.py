@@ -1,12 +1,5 @@
-# -*- coding: utf-8 -*-
-"""
-CODING GUIDELINES:
-
-Do NOT (without talking to trask):
-- add another high level method for sending or receiving messages (like recv_eventual_msg_without_reply)
-- add a service to the list of services below unless you're SURE all nodes will need it!
-- serialize anything with pickle
-"""
+# future
+from __future__ import annotations
 
 # stdlib
 from typing import Any
@@ -18,6 +11,7 @@ from typing import TypeVar
 from typing import Union
 
 # third party
+from nacl.encoding import HexEncoder
 from nacl.signing import SigningKey
 from nacl.signing import VerifyKey
 from pydantic import BaseSettings
@@ -68,6 +62,7 @@ from .node_service.msg_forwarding.msg_forwarding_service import (
 from .node_service.msg_forwarding.msg_forwarding_service import (
     SignedMessageWithoutReplyForwardingService,
 )
+from .node_service.node_credential.node_credential_messages import NodeCredentials
 from .node_service.node_service import EventualNodeServiceWithoutReply
 from .node_service.node_service import ImmediateNodeServiceWithReply
 from .node_service.object_action.obj_action_service import (
@@ -280,20 +275,11 @@ class Node(AbstractNode):
         # comes from the node. In order to do that, the node needs to generate keys
         # for itself to sign and verify with.
 
-        # create a signing key if one isn't provided
-        if signing_key is None:
-            self.signing_key = SigningKey.generate()
-        else:
-            self.signing_key = signing_key
-
-        # if verify key isn't provided, get verify key from signing key
-        if verify_key is None:
-            self.verify_key = self.signing_key.verify_key
-        else:
-            self.verify_key = verify_key
+        # update keys
+        if signing_key:
+            Node.set_keys(node=self, signing_key=signing_key)
 
         # PERMISSION REGISTRY:
-        self.root_verify_key = self.verify_key  # TODO: CHANGE
         self.guest_verify_key_registry = set()
         self.admin_verify_key_registry = set()
         self.cpl_ofcr_verify_key_registry = set()
@@ -325,9 +311,21 @@ class Node(AbstractNode):
                 elif type(self).__name__ == "Network":
                     self.network = location
                 info(f"Finished setting Node UID. {location}")
+            if setup.signing_key:
+                signing_key = SigningKey(setup.signing_key, encoder=HexEncoder)
+                Node.set_keys(node=self, signing_key=signing_key)
         except Exception:
             info("Setup hasnt run yet so ignoring set_node_uid")
             pass
+
+    @staticmethod
+    def set_keys(node: Node, signing_key: Optional[SigningKey] = None) -> None:
+        if signing_key is None:
+            signing_key = SigningKey.generate()
+
+        node.signing_key = signing_key
+        node.verify_key = signing_key.verify_key
+        node.root_verify_key = node.verify_key  # TODO: CHANGE
 
     @property
     def icon(self) -> str:
@@ -383,6 +381,9 @@ class Node(AbstractNode):
                     node_name=peer.node_name,
                     host_or_ip=route.host_or_ip,
                     is_vpn=route.is_vpn,
+                    private=route.private,
+                    port=route.port,
+                    protocol=route.protocol,
                 )
         except Exception as e:
             error(f"Failed to add route to peer {peer}. {e}")
@@ -397,33 +398,53 @@ class Node(AbstractNode):
         # get all the routes for each client and sort by VPN first
         all_clients = {}
         for node_id in self.peer_route_clients.keys():
-            all_clients[node_id] = list(
-                self.peer_route_clients[node_id]["vpn"].values()
-            ) + list(self.peer_route_clients[node_id]["public"].values())
+            all_clients[node_id] = (
+                list(self.peer_route_clients[node_id]["vpn"].values())
+                + list(self.peer_route_clients[node_id]["https"].values())
+                + list(self.peer_route_clients[node_id]["http"].values())
+            )
 
         return all_clients
 
     def add_route(
-        self, node_id: UID, node_name: str, host_or_ip: str, is_vpn: bool
+        self,
+        node_id: UID,
+        node_name: str,
+        host_or_ip: str,
+        is_vpn: bool,
+        private: bool,
+        port: int,
+        protocol: str,
     ) -> None:
-        debug(f"Adding route {node_id}, {node_name}, {host_or_ip}, {is_vpn}")
+        debug(
+            f"Adding route {node_id}, {node_name}, "
+            + f"{protocol}://{host_or_ip}:{port}, vpn: {is_vpn}, private: {private}"
+        )
         try:
-            vpn_key = "vpn" if is_vpn else "public"
+            grid_url = GridURL.from_url(
+                f"{protocol}://{host_or_ip}:{port}"
+            ).as_container_host(container_host=self.settings.CONTAINER_HOST)
+            security_key = "vpn" if is_vpn else protocol
             # make sure the node_id is in the Dict
-            node_id_dict: Dict[str, Dict[str, Client]] = {"vpn": {}, "public": {}}
+            node_id_dict: Dict[str, Dict[str, Client]] = {
+                "vpn": {},
+                "http": {},
+                "https": {},
+            }
             if node_id in self.peer_route_clients:
                 node_id_dict = self.peer_route_clients[node_id]
 
-            if host_or_ip not in node_id_dict[vpn_key]:
+            if grid_url.base_url not in node_id_dict[security_key]:
                 # connect and save the client
-                grid_url = GridURL.from_url(host_or_ip)
                 client = sy.connect(url=grid_url.with_path("/api/v1"), timeout=0.3)
-                node_id_dict[vpn_key][host_or_ip] = client
+                node_id_dict[security_key][grid_url.base_url] = client
 
             self.peer_route_clients[node_id] = node_id_dict
         except Exception as e:
             debug(
-                f"Failed to add_route {node_id} {node_name} {host_or_ip} {is_vpn}. {e}"
+                f"Adding route {node_id}, {node_name}, "
+                + f"{protocol}://{host_or_ip}:{port}, vpn: {is_vpn}, "
+                + f"private: {private}. {e}"
             )
 
     def get_peer_client(self, node_id: UID, only_vpn: bool = True) -> Optional[Client]:
@@ -442,9 +463,12 @@ class Node(AbstractNode):
                 elif "vpn" in routes and len(routes["vpn"]) > 0:
                     # if we have VPN lets use it
                     return list(routes["vpn"].values())[0]
-                elif "public" in routes and len(routes["public"]) > 0:
-                    # we only have public and don't care
-                    return list(routes["public"].values())[0]
+                elif "https" in routes and len(routes["https"]) > 0:
+                    # we only have https
+                    return list(routes["https"].values())[0]
+                elif "http" in routes and len(routes["http"]) > 0:
+                    # we only have http and don't care
+                    return list(routes["http"].values())[0]
         except Exception as e:
             error(
                 f"Exception while selecting node_id {node_id} from peer_route_clients. "
@@ -486,9 +510,7 @@ class Node(AbstractNode):
                 public_exception = e
             else:
                 private_log_msg = f"An {type(e)} has been triggered"  # dont send
-                public_exception = UnknownPrivateException(
-                    str(e)
-                )
+                public_exception = UnknownPrivateException(str(e))
             try:
                 # try printing a useful message
                 private_log_msg += f" by {type(contents)} "
@@ -717,3 +739,11 @@ class Node(AbstractNode):
     def __repr__(self) -> str:
         no_dash = str(self.id).replace("-", "")
         return f"{self.node_type}: {self.name}: {no_dash}"
+
+    def get_credentials(self) -> NodeCredentials:
+        return NodeCredentials.from_objs(
+            node_uid=self.id,
+            node_name=self.name,
+            node_type=self.node_type,
+            verify_key=self.verify_key,
+        )

@@ -265,6 +265,13 @@ def clean(location: str) -> None:
     type=str,
     help="Optional: run docker with a different platform like linux/arm64",
 )
+@click.option(
+    "--vpn",
+    default="true",
+    required=False,
+    type=str,
+    help="Optional: turn tailscale vpn container on or off",
+)
 def launch(args: TypeTuple[str], **kwargs: TypeDict[str, Any]) -> None:
     verb = get_launch_verb()
     try:
@@ -797,6 +804,11 @@ def create_launch_cmd(
         parsed_kwargs["jupyter"] = str_to_bool(cast(str, kwargs["jupyter"]))
     else:
         parsed_kwargs["jupyter"] = False
+
+    if "vpn" in kwargs and kwargs["vpn"] is not None:
+        parsed_kwargs["vpn"] = str_to_bool(cast(str, kwargs["vpn"]))
+    else:
+        parsed_kwargs["vpn"] = True
 
     # allows changing docker platform to other cpu architectures like arm64
     parsed_kwargs["platform"] = kwargs["platform"] if "platform" in kwargs else None
@@ -1392,6 +1404,10 @@ def create_launch_docker_cmd(
         pull_cmd += " docker compose pull"
 
     cmd += " docker compose -p " + snake_name
+
+    if "vpn" in kwargs and kwargs["vpn"]:
+        cmd += " --profile vpn"
+
     if str(node_type.input) == "network":
         cmd += " --profile network"
     else:
