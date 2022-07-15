@@ -2420,7 +2420,7 @@ def quickstart() -> None:
         directory = os.path.expanduser("~/.hagrid/quickstart/")
         file_name = "quickstart.ipynb"
         packages = ["virtualenv", "virtualenv-api"]
-        local_syft_dir = os.path.split(os.getcwd())[0]+"/syft"
+        local_syft_dir = os.path.split(os.getcwd())[0] + "/syft"
         file_path = directory + file_name
 
         for package in packages:
@@ -2429,19 +2429,21 @@ def quickstart() -> None:
 
         env = VirtualEnvironment(directory)
 
-        if(not os.path.isdir(directory)):
+        if not os.path.isdir(directory):
             os.makedirs(directory)
-            url = 'https://raw.githubusercontent.com/OpenMined/PySyft/dev/notebooks/course3/L5_RemoteDataScience.ipynb'
+            url = "https://raw.githubusercontent.com/OpenMined/PySyft/dev/notebooks/course3/L5_RemoteDataScience.ipynb"
             r = requests.get(url, allow_redirects=True)
-            open(os.path.expanduser(file_path), 'wb').write(r.content)
+            open(os.path.expanduser(file_path), "wb").write(r.content)
 
         print("Installing Syft in editable mode")
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "-e",local_syft_dir])
+        subprocess.check_call(
+            [sys.executable, "-m", "pip", "install", "-e", local_syft_dir]
+        )
 
         print("Installing Jupyter Labs")
         env.install("jupyterlab")
 
-        cmd = 'source bin/activate; jupyter lab '+file_name 
+        cmd = "source bin/activate; jupyter lab " + file_name
         subprocess.call(cmd, shell=True, cwd=directory)
 
     except Exception as error:
