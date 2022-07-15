@@ -15,7 +15,7 @@ from ...core.common.uid import UID
 from ...grid import GridURL
 
 
-def kwargs_dsl_to_numpy(input_kwargs):
+def _dsl_to_numpy(input_kwargs: Dict) -> Dict:
     # relative
     from ..adp.data_subject_list import dslarraytonumpyutf8
 
@@ -27,7 +27,7 @@ def kwargs_dsl_to_numpy(input_kwargs):
     return input_kwargs
 
 
-def kwargs_dsl_from_numpy(input_kwargs):
+def _numpy_to_dsl(input_kwargs: Dict) -> Dict:
     # relative
     from ..adp.data_subject_list import numpyutf8todslarray
 
@@ -52,7 +52,7 @@ class ProxyDataset:
     ]
 
     __serde_overrides__ = {
-        "obj_public_kwargs": [kwargs_dsl_to_numpy, kwargs_dsl_from_numpy],
+        "obj_public_kwargs": [_dsl_to_numpy, _numpy_to_dsl],
     }
 
     def __init__(

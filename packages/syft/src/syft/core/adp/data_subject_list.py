@@ -8,6 +8,7 @@ from typing import Union
 
 # third party
 import numpy as np
+from numpy.typing import ArrayLike
 import pandas as pd
 
 # relative
@@ -633,7 +634,15 @@ class DataSubjectList:
             )
 
 
-def numpyutf8todslarray(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarray:
+def numpyutf8todslarray(string_index: Tuple[np.ndarray, np.ndarray]) -> ArrayLike:
+    """Decodes utf-8 encoded numpy array to DataSubjectArray.
+
+    Args:
+        string_index (Tuple[np.ndarray, np.ndarray]): encoded array
+
+    Returns:
+        np.ndarray: decoded DataSubjectArray.
+    """
     shape_length = int(string_index[-1])
     shape = tuple(string_index[-(shape_length + 1) : -1])  # noqa
     string_index = string_index[: -(shape_length + 1)]
@@ -652,14 +661,18 @@ def numpyutf8todslarray(string_index: Tuple[np.ndarray, np.ndarray]) -> np.ndarr
     return np.array(output_list).reshape(shape)
 
 
-# Flatten array
-# include property in newdatasubject to convert data to string
-# include a new value phiTensor capnp to store the shape
-# include property to convert to back to newdata subject
-# reshape
+def dslarraytonumpyutf8(string_list: np.ndarray) -> ArrayLike:
+    """Encodes DataSubjectArray to utf-8 encoded numpy array.
 
+    Args:
+        string_list (np.ndarray): DataSubjectArray to be encoded
 
-def dslarraytonumpyutf8(string_list: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
+    Raises:
+        Exception: DataSubject is not a DataSubjectArray
+
+    Returns:
+        Tuple[np.ndarray, np.ndarray]: utf-8 encoded int Numpy array
+    """
     array_shape = string_list.shape
     string_list = string_list.flatten()
     bytes_list = []
@@ -698,74 +711,74 @@ class NewDataSubject:
     def __init__(self, data_subjects):
         self.data_subjects = set(data_subjects)
 
-    def __len__(self):
+    def __len__(self) -> int:
         return len(self.data_subjects)
 
-    def tostring(self):
+    def tostring(self) -> str:
         return f"{self.delimiter}".join(self.data_subjects)
 
     @classmethod
-    def fromstring(cls, input_string: str):
+    def fromstring(cls, input_string: str) -> NewDataSubject:
         return NewDataSubject(set(input_string.split(f"{cls.delimiter}")))
 
-    def __add__(self, other):
+    def __add__(self, other) -> NewDataSubject:
         if isinstance(other, NewDataSubject):
             return NewDataSubject(self.data_subjects.union(other.data_subjects))
         else:
             return NewDataSubject(self.data_subjects)
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> NewDataSubject:
         if isinstance(other, NewDataSubject):
             return NewDataSubject(self.data_subjects.union(other.data_subjects))
         else:
             return NewDataSubject(self.data_subjects)
 
-    def __mul__(self, other):
+    def __mul__(self, other) -> NewDataSubject:
         if isinstance(other, NewDataSubject):
             return NewDataSubject(self.data_subjects.union(other.data_subjects))
         else:
             return NewDataSubject(self.data_subjects)
 
-    def __ge__(self, other):
+    def __ge__(self, other) -> NewDataSubject:
         if isinstance(other, NewDataSubject):
             return NewDataSubject(self.data_subjects.union(other.data_subjects))
         else:
             return NewDataSubject(self.data_subjects)
 
-    def __le__(self, other):
+    def __le__(self, other) -> NewDataSubject:
         if isinstance(other, NewDataSubject):
             return NewDataSubject(self.data_subjects.union(other.data_subjects))
         else:
             return NewDataSubject(self.data_subjects)
 
-    def __gt__(self, other):
+    def __gt__(self, other) -> NewDataSubject:
         if isinstance(other, NewDataSubject):
             return NewDataSubject(self.data_subjects.union(other.data_subjects))
         else:
             return NewDataSubject(self.data_subjects)
 
-    def __lt__(self, other):
+    def __lt__(self, other) -> NewDataSubject:
         if isinstance(other, NewDataSubject):
             return NewDataSubject(self.data_subjects.union(other.data_subjects))
         else:
             return NewDataSubject(self.data_subjects)
 
-    def __truediv__(self, other):
+    def __truediv__(self, other) -> NewDataSubject:
         if isinstance(other, NewDataSubject):
             return NewDataSubject(self.data_subjects.union(other.data_subjects))
         else:
             return NewDataSubject(self.data_subjects)
 
-    def __rtruediv__(self, other):
+    def __rtruediv__(self, other) -> NewDataSubject:
         return NewDataSubject(self.data_subjects)
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return "NewDataSubject: " + str(self.data_subjects.__repr__())
 
-    def conjugate(self, *args, **kwargs):
+    def conjugate(self, *args, **kwargs) -> NewDataSubject:
         return NewDataSubject(self.data_subjects)
 
-    def subtract(self, x, y, *args, **kwargs):
+    def subtract(self, x, y, *args, **kwargs) -> NewDataSubject:
         if isinstance(y, NewDataSubject) and isinstance(x, NewDataSubject):
             return NewDataSubject(x.data_subjects.union(y.data_subjects))
         elif isinstance(y, NewDataSubject):
@@ -773,7 +786,7 @@ class NewDataSubject:
         elif isinstance(x, NewDataSubject):
             return NewDataSubject(x.data_subjects)
 
-    def multiply(self, x, y, *args, **kwargs):
+    def multiply(self, x, y, *args, **kwargs) -> NewDataSubject:
         if isinstance(y, NewDataSubject) and isinstance(x, NewDataSubject):
             return NewDataSubject(x.data_subjects.union(y.data_subjects))
         elif isinstance(y, NewDataSubject):
@@ -781,16 +794,16 @@ class NewDataSubject:
         elif isinstance(x, NewDataSubject):
             return NewDataSubject(x.data_subjects)
 
-    def real(self):
+    def real(self) -> NewDataSubject:
         return NewDataSubject(self.data_subjects)
 
-    def var(self, *args, **kwargs):
+    def var(self, *args, **kwargs) -> NewDataSubject:
         return (self - np.mean(self)) * (self - np.mean(self))
 
-    def sqrt(self, *args, **kwargs):
+    def sqrt(self, *args, **kwargs) -> NewDataSubject:
         return NewDataSubject(self.data_subjects)
 
-    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs):
+    def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:
         method_name = ufunc.__name__
         print("method_name", method_name)
         method = getattr(self, method_name, None)
@@ -802,7 +815,7 @@ class NewDataSubject:
             )
 
     @staticmethod
-    def from_objs(input_subjects: Union[np.ndarray, list]) -> np.ndarray:
+    def from_objs(input_subjects: Union[np.ndarray, list]) -> ArrayLike:
         # TODO: When the user passes the data subjects they might pass it as list
         # specifying the entity per row, but in our new notation we want it to be
         # per data point, we should make sure that we implement in such a way we expand

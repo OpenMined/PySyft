@@ -4,7 +4,6 @@ import json
 import os
 import subprocess
 import sys
-import uuid
 
 # third party
 import matplotlib.pyplot as plt

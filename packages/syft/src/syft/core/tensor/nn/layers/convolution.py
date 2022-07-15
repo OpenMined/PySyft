@@ -134,7 +134,7 @@ class Convolution(Layer):
 
         db = pre_grads.sum(axis=(0, 2, 3))  # TODO @Shubham: This is missing axis=1?
 
-        self.db = db.reshape((n_filter, ))
+        self.db = db.reshape((n_filter,))
 
         pre_grads_reshaped = pre_grads.transpose((1, 2, 3, 0))
         pre_grads_reshaped = pre_grads_reshaped.reshape((n_filter, -1))

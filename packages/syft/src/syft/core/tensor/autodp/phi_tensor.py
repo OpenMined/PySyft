@@ -1394,7 +1394,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=lazyrepeatarray(data=self.max_vals.data, shape=result.shape),
         )
 
-    def std(self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs) -> PhiTensor:
+    def std(
+        self, axis: Optional[Union[int, Tuple[int, ...]]] = None, **kwargs
+    ) -> PhiTensor:
         result = self.child.std(axis, **kwargs)
         return PhiTensor(
             child=result,
@@ -2049,9 +2051,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             raise NotImplementedError
 
     def sum(
-        self,
-        axis: Optional[Union[int, Tuple]] = None,
-        **kwargs
+        self, axis: Optional[Union[int, Tuple]] = None, **kwargs
     ) -> Union[PhiTensor, GammaTensor]:
         return self.gamma.sum(axis, **kwargs)
         # # TODO: Add support for axes arguments later

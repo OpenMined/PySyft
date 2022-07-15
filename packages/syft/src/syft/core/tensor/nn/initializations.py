@@ -1,5 +1,9 @@
+# stdlib
+from typing import Tuple
+
 # third party
 import numpy as np
+from numpy.typing import ArrayLike
 
 # relative
 from ...common.serde.serializable import serializable
@@ -15,13 +19,13 @@ class Initializer(object):
     subclassed when implementing new types of weight initializers.
     """
 
-    def __call__(self, size: float):
+    def __call__(self, size: float) -> ArrayLike:
         """Makes :class:`Initializer` instances callable like a function, invoking
         their :meth:`call()` method.
         """
         return self.call(size)
 
-    def call(self, size):
+    def call(self, size) -> ArrayLike:
         """Sample should return a numpy.array of size shape and data type
         ``numpy.float32``.
         """
@@ -38,11 +42,11 @@ class Uniform(Initializer):
     def __init__(self, scale=0.05):
         self.scale = scale
 
-    def call(self, size):
+    def call(self, size) -> ArrayLike:
         return np.array(np.random.uniform(-self.scale, self.scale, size=size))
 
 
-def decompose_size(size):
+def decompose_size(size) -> Tuple[int, int]:
     if len(size) == 2:
         fan_in = size[0]
         fan_out = size[1]
@@ -62,6 +66,6 @@ def decompose_size(size):
 class XavierInitialization(Initializer):
     __attr_allowlist__ = ()
 
-    def call(self, size):
+    def call(self, size) -> ArrayLike:
         fan_in, fan_out = decompose_size(size)
         return Uniform(np.sqrt(6 / (fan_in + fan_out)))(size)

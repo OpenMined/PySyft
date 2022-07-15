@@ -66,7 +66,7 @@ class lazyrepeatarray:
                 if val < 0:
                     print("Invalid Shape", shape)
 
-    def __getitem__(self, item) -> lazyrepeatarray:
+    def __getitem__(self, item: int) -> lazyrepeatarray:
         if self.data.shape == self.shape:
             output = self.data[item]
             return lazyrepeatarray(data=output, shape=output.shape)

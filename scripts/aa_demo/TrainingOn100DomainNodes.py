@@ -32,7 +32,9 @@ def initialize_model(input_shape) -> nn.Model:
     # Add layers to the model
 
     # Layer 1
-    model.add(nn.Convolution(nb_filter=32, filter_size=3, padding=2, input_shape=input_shape))
+    model.add(
+        nn.Convolution(nb_filter=32, filter_size=3, padding=2, input_shape=input_shape)
+    )
     model.add(nn.BatchNorm(activation=nn.leaky_ReLU()))
     model.add(nn.MaxPool(pool_size=2, stride=2))
 
@@ -90,7 +92,7 @@ def train_on_domains(domain_addresses):
     for i, address in enumerate(domain_addresses):
 
         print()
-        print("================================="*3)
+        print("=================================" * 3)
 
         # Log into the domain
         domain = sy.login(url=address, email=USER_EMAIL, password=USER_PASSWORD)
@@ -106,10 +108,12 @@ def train_on_domains(domain_addresses):
         X_train = domain.datasets[-1]["train_images"][:2]
         y_train = domain.datasets[-1]["train_labels"][:2]
 
-        print(f"Image Shape: {X_train.public_shape}, Label Shape: {y_train.public_shape}")
+        print(
+            f"Image Shape: {X_train.public_shape}, Label Shape: {y_train.public_shape}"
+        )
 
         # Perform a single epoch
-        model_ptr = model.send(domain,send_to_blob_storage=False)
+        model_ptr = model.send(domain, send_to_blob_storage=False)
 
         # Perform a single step
         # A single step performs the following operation on the batch of images:
@@ -120,7 +124,7 @@ def train_on_domains(domain_addresses):
 
         print("waiting for model ptr to be ready !!!")
         # wait for model_ptr to be accessible
-        while(not model_ptr.exists):
+        while not model_ptr.exists:
             time.sleep(2)
 
         print(f"Training started on Domain {i+1} ({domain.name})")
@@ -128,13 +132,15 @@ def train_on_domains(domain_addresses):
         run_status = model_ptr.step(X_train, y_train)
 
         # Wait for step operation to be completed on the remote domain.
-        while(not run_status.exists):
+        while not run_status.exists:
             time.sleep(10)
 
         # Publish Model Weights
         print(f"Publishing model weights on Domain {i+1} ({domain.name})")
-        published_obj = model_ptr.publish(sigma=1e4)  # PB spent with 1e3 = 690k, thus 1e4 sigma -> 6.9k which is within PB limit of 9999
-        while(not published_obj.exists):
+        published_obj = model_ptr.publish(
+            sigma=1e4
+        )  # PB spent with 1e3 = 690k, thus 1e4 sigma -> 6.9k which is within PB limit of 9999
+        while not published_obj.exists:
             time.sleep(2)
         parameters = published_obj.get_copy()
 
