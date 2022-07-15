@@ -150,7 +150,7 @@ PySyft is a library which contains the tools to run privacy preserving machine l
 Hagrid is a commandline tool that speeds up the deployment of PyGrid, the provider of a peer-to-peer network of
 data owners and data scientists who can collectively train AI model using Syft.
 
-7. **Launch the Doman Node**
+7. **Launch the Domain Node**
 
 Congrats for making it this far! You only have one final step remaining, before you unleash the power of Hagrid!
 The final step is to launch a domain node, which is as easy as:
