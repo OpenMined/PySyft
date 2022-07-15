@@ -1,4 +1,5 @@
 # stdlib
+from virtualenvapi.manage import VirtualEnvironment
 from datetime import datetime
 import json
 import os
@@ -2411,6 +2412,43 @@ def version() -> None:
 
 
 cli.add_command(version)
+
+
+@click.command(help="Start a fully feaured virtual env and an intro notebook ready!")
+def quickstart() -> None:
+    try:
+        directory = os.path.expanduser("~/.hagrid/quickstart/")
+        file_name = "quickstart.ipynb"
+        packages = ["virtualenv", "virtualenv-api"]
+        local_syft_dir = os.path.split(os.getcwd())[0]+"/syft"
+        file_path = directory + file_name
+
+        for package in packages:
+            print("Installing dependencies: ", package)
+            subprocess.check_call([sys.executable, "-m", "pip", "install", package])
+
+        env = VirtualEnvironment(directory)
+
+        if(not os.path.isdir(directory)):
+            os.makedirs(directory)
+            url = 'https://raw.githubusercontent.com/OpenMined/PySyft/dev/notebooks/course3/L5_RemoteDataScience.ipynb'
+            r = requests.get(url, allow_redirects=True)
+            open(os.path.expanduser(file_path), 'wb').write(r.content)
+
+        print("Installing Syft in editable mode")
+        subprocess.check_call([sys.executable, "-m", "pip", "install", "-e",local_syft_dir])
+
+        print("Installing Jupyter Labs")
+        env.install("jupyterlab")
+
+        cmd = 'source bin/activate; jupyter lab '+file_name 
+        subprocess.call(cmd, shell=True, cwd=directory)
+
+    except Exception as error:
+        print("Error running quickstart: ", error)
+
+
+cli.add_command(quickstart)
 
 
 def ssh_into_remote_machine(
