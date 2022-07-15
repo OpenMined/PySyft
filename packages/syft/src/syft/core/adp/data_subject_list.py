@@ -775,6 +775,16 @@ class NewDataSubject:
     def __repr__(self) -> str:
         return "NewDataSubject: " + str(self.data_subjects.__repr__())
 
+    def __iter__(self):
+        for data_subject in self.data_subjects:
+            yield data_subject
+
+    def __contains__(self, item):
+        if isinstance(item, NewDataSubject):
+            return self.data_subjects.isdisjoint(item.data_subjects)
+        else:
+            return self.data_subjects.isdisjoint(set(item))
+
     def conjugate(self, *args, **kwargs) -> NewDataSubject:
         return NewDataSubject(self.data_subjects)
 
@@ -793,6 +803,12 @@ class NewDataSubject:
             return NewDataSubject(y.data_subjects)
         elif isinstance(x, NewDataSubject):
             return NewDataSubject(x.data_subjects)
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, NewDataSubject):
+            return self.data_subjects == other.data_subjects
+        else:
+            raise NotImplementedError
 
     def real(self) -> NewDataSubject:
         return NewDataSubject(self.data_subjects)
