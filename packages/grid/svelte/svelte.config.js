@@ -1,5 +1,8 @@
 import adapter from '@sveltejs/adapter-auto';
+import nodeAdapter from '@sveltejs/adapter-node';
 import preprocess from 'svelte-preprocess';
+
+const Docker = process.env.DOCKER;
 
 /** @type {import('@sveltejs/kit').Config} */
 const config = {
@@ -7,7 +10,7 @@ const config = {
     postcss: true
   }),
   kit: {
-    adapter: adapter()
+    adapter: Docker ? nodeAdapter({ out: 'out' }) : adapter()
   }
 };
 
