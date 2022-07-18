@@ -2415,13 +2415,12 @@ cli.add_command(version)
 
 
 @click.command(help="Start a fully feaured virtual env and an intro notebook ready!")
-def quickstart() -> None:
+@click.argument("url", required=False)
+def quickstart(url) -> None:
     try:
         directory = os.path.expanduser("~/.hagrid/quickstart/")
-        file_name = "quickstart.ipynb"
         packages = ["virtualenv", "virtualenv-api"]
         local_syft_dir = os.path.split(os.getcwd())[0] + "/syft"
-        file_path = directory + file_name
 
         for package in packages:
             print("Installing dependencies: ", package)
@@ -2429,19 +2428,24 @@ def quickstart() -> None:
 
         env = VirtualEnvironment(directory)
 
+        if not url:
+            url = "https://raw.githubusercontent.com/OpenMined/PySyft/dev/notebooks/course3/L5_RemoteDataScience.ipynb"
+
+        file_name = os.path.basename(url).replace("%20", "_")
+        file_path = directory + file_name
+
         if not os.path.isdir(directory):
             os.makedirs(directory)
-            url = "https://raw.githubusercontent.com/OpenMined/PySyft/dev/notebooks/course3/L5_RemoteDataScience.ipynb"
+
+        if not os.path.isfile(file_path):
             r = requests.get(url, allow_redirects=True)
             open(os.path.expanduser(file_path), "wb").write(r.content)
 
-        print("Installing Syft in editable mode")
-        subprocess.check_call(
-            [sys.executable, "-m", "pip", "install", "-e", local_syft_dir]
-        )
-
         print("Installing Jupyter Labs")
         env.install("jupyterlab")
+
+        print("Installing Syft in editable mode")
+        env.install("-e " + local_syft_dir)
 
         cmd = "source bin/activate; jupyter lab " + file_name
         subprocess.call(cmd, shell=True, cwd=directory)
