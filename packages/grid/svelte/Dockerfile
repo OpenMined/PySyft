@@ -3,7 +3,7 @@ FROM node:16 as builder
 WORKDIR /app
 RUN curl -f https://get.pnpm.io/v6.16.js | node - add --global pnpm
 COPY package.json pnpm-lock.yaml ./
-RUN pnpm i --frozen-lockfile 
+RUN pnpm i --frozen-lockfile
 
 COPY . .
 RUN DOCKER=true pnpm build
