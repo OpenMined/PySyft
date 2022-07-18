@@ -1,5 +1,4 @@
 # stdlib
-from virtualenvapi.manage import VirtualEnvironment
 from datetime import datetime
 import json
 import os
@@ -25,6 +24,7 @@ import click
 import requests
 import rich
 from rich.live import Live
+from virtualenvapi.manage import VirtualEnvironment
 
 # relative
 from . import __version__
