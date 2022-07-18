@@ -1,7 +1,7 @@
 <h1 align="center">
 
   <br>
-  <img src="packages/syft/docs/img/logo_big.png" alt="Syft" width="400">
+  <img src="packages/syft/docs/img/logo_big.png" alt="Syft" width="200">
   </br>
   Answer questions using unseen data owned by others
   <br>
@@ -30,26 +30,21 @@ For example, PySyft can improve your product based on customers' private data wi
 
 
 <h5 align="center">
-    <img src="packages/syft/docs/img/Working_infographic.gif" alt="working_infographic" width="400">
+    <img src="packages/syft/docs/img/Working_infographic.gif" alt="working_infographic" width="1080">
 </h5>
  
-
-
-Data Owners provide (digital) datasets which they would like to make available for study by an outside party they may or may not fully trust has good intentions.
-
-Domain server manages the remote study of the data by a Data Scientist and allows the Data Owner to handle the data and incoming requests from the Data Scientist. It also acts as a gatekeeper for the Data Scientist's access to the data to compute and experiment with the results.
-
-Network server provides services to the network of Data Owners and Data Scientists, such as dataset search and bulk project approval (legal/technical) to participate in a project. It acts as a bridge between the members (Domains) and its subscribers (End Users) and can provide access to a collection of domains at once.
-
-Data Scientists are end users who desire to perform computations or answer a specific question using data owned by someone else. They can see a list of datasets hosted on the Domains and can request to get the results.
+### Important General Terms
+* **Data Owners** provide datasets which they would like to make available for study by an outside party they may or may not fully trust has good intentions.
+* **Domain server** manages the remote study of the data by a Data Scientist and allows the Data Owner to handle the data and incoming requests from the Data Scientist. It also acts as a gatekeeper for the Data Scientist's access to the data to compute and experiment with the results.
+* **Network server** provides services to the network of Data Owners and Data Scientists, such as dataset search and bulk project approval (legal/technical) to participate in a project. It acts as a bridge between the members (Domains) and its subscribers (End Users) and can provide access to a collection of domains at once.
+* **Data Scientists** are end users who desire to perform computations or answer a specific question using data owned by someone else. They can see a list of datasets hosted on the Domains and can request to get the results.
 
 The steps performed by the respective personas are shown below:
 
 
 <h5 align="center"> 
-    <img src="packages/syft/docs/img/big-picture.png" alt="big-picture-overview" width="400">
+    <img src="packages/syft/docs/img/big-picture.png" alt="big-picture-overview" width="720">
 </h5>
-
 
 
 # Deployment
@@ -75,8 +70,19 @@ If you are still looking for some help in understanding PySyft, learn more about
 
 Nevertheless, introduce yourself to our continually growing [Slack](https://communityinviter.com/apps/openmined/openmined/) Community with 14,500+ members, and one of us will be happy to help you with your questions.
 
+# Disclaimer
+The software is in Beta. If you find yourself stuck at some point, don't hesitate to contact us at #support [Slack](https://communityinviter.com/apps/openmined/openmined/) channel, where we have an active community of amazing people who are always ready to help you. 
+
 # Organisational Contributors
 
 '*Thank the organisations that have been contributing in terms of developers but w way smaller logos*'
 
-PySyft exists because of all the great people who contributed to this project.
+PySyft exists because of all the great people who contributed to this project. We are very grateful for contributions to Syft and Grid from the following organizations!
+
+  <br>
+  <img src="packages/syft/docs/img/Organizational_Contributions.png" alt="Syft" width="400">
+  </br>
+
+# License
+
+[Apache License 2.0](https://github.com/OpenMined/PySyft/blob/main/packages/syft/LICENSE)
