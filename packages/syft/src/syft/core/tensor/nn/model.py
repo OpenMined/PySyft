@@ -1,12 +1,23 @@
+# stdlib
+from typing import List
+from typing import Optional
+from typing import Tuple
+from typing import Type
+from typing import Union
+
 # third party
 import numpy as np
 
 # relative
 from ...common.serde.serializable import serializable
+from ..autodp.gamma_tensor import GammaTensor
+from ..autodp.phi_tensor import PhiTensor
 from ..tensor import Tensor
 from .layers.base import Layer
 from .loss import BinaryCrossEntropy
+from .loss import Loss
 from .optimizers import Adamax
+from .optimizers import Optimizer
 
 
 @serializable(recursive_serde=True)
@@ -18,12 +29,12 @@ class Model:
         "aggregated_loss",
     ]
 
-    def __init__(self, layers=None):
-        self.layers = [] if layers is None else layers
+    def __init__(self, layers: Optional[List[Type[Layer]]] = None):
+        self.layers: List[Type[Layer]] = [] if layers is None else layers
 
-        self.loss = None
-        self.aggregated_loss = 0.0
-        self.optimizer = Adamax
+        self.loss: Optional[Loss] = None
+        self.aggregated_loss: float = 0.0
+        self.optimizer: Type[Optimizer] = Adamax
 
     def publish(self, deduct_epsilon_for_user, get_budget_for_user, ledger, sigma):
         print("Publish Model Weights")
@@ -68,9 +79,11 @@ class Model:
             if len(params) > 0:
                 layer.params = params
 
-    def add(self, layer):
-        assert isinstance(layer, Layer), "PySyft doesn't recognize this kind of layer."
-        self.layers.append(layer)
+    def add(self, layer: Type[Layer]):
+        if isinstance(layer, Layer):
+            self.layers.append(layer)
+        else:
+            raise TypeError("PySyft doesn't recognize this kind of layer.")
 
     def initialize_weights(self, loss=BinaryCrossEntropy(), optimizer=Adamax()):
         self.layers[0].first_layer = True
@@ -85,13 +98,13 @@ class Model:
 
     def fit(
         self,
-        X,
-        Y,
-        max_iter=100,
-        batch_size=64,
-        shuffle=True,
-        validation_split=0.0,
-        validation_data=None,
+        X: Union[GammaTensor, PhiTensor, Tensor],
+        Y: Union[GammaTensor, PhiTensor, Tensor],
+        max_iter: int = 100,
+        batch_size: int = 4,
+        shuffle: bool = True,
+        validation_split: float = 0.0,
+        validation_data: Optional[Tuple] = None,
     ) -> None:
         print("Started Training")
 
@@ -140,18 +153,6 @@ class Model:
 
                 # got loss and predict
                 train_losses.append(self.loss.forward(y_pred, y_batch))
-                # train_predicts.extend(y_pred)
-                # train_targets.extend(y_batch)
-
-            # output train status
-            # runout = "iter %d, train-[loss %.4f, acc %.4f]; " % (
-            #     iter_idx,
-            #     float(np.mean(train_losses)),
-            #     float(self.accuracy(train_predicts, train_targets)),
-            # )
-
-            # runout = "iter %d, train-[loss %.4f, ]; " % (
-            #     iter_idx, float(np.mean(train_losses)))
 
             if valid_X is not None and valid_Y is not None:
                 # valid
@@ -170,13 +171,11 @@ class Model:
                     valid_predicts.extend(y_pred)
                     valid_targets.extend(y_batch)
 
-                # output valid status
-                # runout += "valid-[loss %.4f, acc %.4f]; " % (
-                #     float(np.mean(valid_losses)),
-                #     float(self.accuracy(valid_predicts, valid_targets)),
-                # )
-
-    def step(self, x_batch, y_batch):
+    def step(
+        self,
+        x_batch: Union[GammaTensor, PhiTensor, Tensor],
+        y_batch: Union[GammaTensor, PhiTensor, Tensor],
+    ):
 
         x_batch = x_batch.child if isinstance(x_batch, Tensor) else x_batch
         y_batch = y_batch.child if isinstance(y_batch, Tensor) else y_batch
@@ -209,7 +208,7 @@ class Model:
 
         print("Loss:", self.aggregated_loss)
 
-    def predict(self, X):
+    def predict(self, X: Union[GammaTensor, PhiTensor, Tensor]):
         """Calculate an output Y for the given input X."""
         x_next = X
         for layer in self.layers:

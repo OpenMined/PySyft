@@ -2,6 +2,7 @@
 from typing import Dict
 from typing import Optional
 from typing import Tuple
+from typing import Type
 from typing import Union
 
 # third party
@@ -50,7 +51,7 @@ class Convolution(Layer):
         input_shape: Optional[Tuple] = None,
         stride: int = 1,
         padding: int = 0,
-        activation: Optional[activations.Activation] = None,
+        activation: Optional[str] = None,
     ):
         self.nb_filter = nb_filter
         self.filter_size = filter_size
@@ -71,7 +72,7 @@ class Convolution(Layer):
         self.init = XavierInitialization()
         self.activation = activations.get(activation)
 
-    def connect_to(self, prev_layer: Optional[Layer] = None):
+    def connect_to(self, prev_layer: Optional[Type[Layer]] = None):
         if prev_layer is None:
             assert self.input_shape is not None
             input_shape = self.input_shape

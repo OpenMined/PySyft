@@ -1,10 +1,9 @@
 # stdlib
 from typing import Dict
+from typing import List
 from typing import Tuple
+from typing import Type
 from typing import Union
-
-# third party
-from numpy.typing import ArrayLike
 
 # relative
 from ...autodp.gamma_tensor import GammaTensor
@@ -32,11 +31,11 @@ class Layer:
     ):
         raise NotImplementedError
 
-    def connect_to(self, prev_layer: "Layer") -> None:
+    def connect_to(self, prev_layer: Type["Layer"]) -> None:
         raise NotImplementedError
 
     @property
-    def params(self):
+    def params(self) -> List:
         """Layer parameters.
 
         Returns a list of numpy.array variables or expressions that
@@ -52,14 +51,14 @@ class Layer:
         return []
 
     @property
-    def grads(self):
+    def grads(self) -> List:
         """Get layer parameter gradients as calculated from backward()."""
         return []
 
     @property
-    def param_grads(self):
+    def param_grads(self) -> List:
         """Layer parameters and corresponding gradients."""
         return list(zip(self.params, self.grads))
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__class__.__name__

@@ -1,4 +1,5 @@
 # stdlib
+from typing import Tuple
 from typing import Optional
 from typing import Union
 
@@ -12,7 +13,7 @@ from ..autodp.phi_tensor import PhiTensor
 class Activation(object):
     """Base class for activations."""
 
-    __attr_allowlist__ = ("last_forward",)
+    __attr_allowlist__: Tuple[str, ...] = ("last_forward",)
 
     def __init__(self):
         self.last_forward = None
@@ -93,14 +94,22 @@ class leaky_ReLU(Activation):
             )
 
 
-def get(activation: Optional[Activation]) -> Activation:
-    if activation is None:
+def get(activation_name: Optional[str]) -> Optional[Activation]:
+
+    activation_name_map = {
+        "leaky_relu": leaky_ReLU,
+    }
+
+    if activation_name is None:
         return None
-    elif callable(activation):
-        return activation()
-    elif isinstance(activation, Activation):
-        return activation
+    elif isinstance(activation_name, str):
+        if activation_name not in activation_name_map:
+            raise NotImplementedError(
+                f"Activation {activation_name} is not current supported in PySyft."
+            )
+        else:
+            return activation_name_map.get(activation_name)
     else:
         raise TypeError(
-            f"Could not interpret activation function identifier: {activation}"
+            f"Could not interpret activation function identifier: {activation_name}"
         )

@@ -1,5 +1,6 @@
 # stdlib
 from typing import Dict
+from typing import Optional
 from typing import Tuple
 from typing import Union
 
@@ -35,7 +36,7 @@ class BatchNorm(Layer):
         epsilon: float = 1e-6,
         momentum: float = 0.9,
         axis: int = 0,
-        activation: activations.Activation = None,
+        activation: Optional[str] = None,
     ):
         self.epsilon = epsilon
         self.momentum = momentum

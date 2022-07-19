@@ -35,12 +35,12 @@ def initialize_model(input_shape) -> nn.Model:
     model.add(
         nn.Convolution(nb_filter=32, filter_size=3, padding=2, input_shape=input_shape)
     )
-    model.add(nn.BatchNorm(activation=nn.leaky_ReLU()))
+    model.add(nn.BatchNorm(activation="leaky_relu"))
     model.add(nn.MaxPool(pool_size=2, stride=2))
 
     # Layer 2
     # model.add(nn.Convolution(nb_filter=64, filter_size=3, padding=2))
-    # model.add(nn.BatchNorm(activation=nn.leaky_ReLU()))
+    # model.add(nn.BatchNorm(activation="leaky_relu"))
     # model.add(nn.MaxPool(pool_size=2, stride=2))
 
     # Layer 3

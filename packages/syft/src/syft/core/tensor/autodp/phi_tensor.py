@@ -13,6 +13,7 @@ from typing import Union
 
 # third party
 import numpy as np
+from numpy.typing import NDArray
 from scipy.ndimage.interpolation import rotate
 
 # relative
@@ -1078,7 +1079,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
 
     def __init__(
         self,
-        child: Sequence,
+        child: Union[Sequence, NDArray],
         data_subjects: Union[
             List[DataSubjectArray], List[DataSubject], DataSubjectList
         ],
