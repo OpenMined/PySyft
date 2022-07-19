@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Getting started &#8212; PySyft  documentation</title>
+    <title>Getting Started &#8212; PySyft  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -81,7 +81,7 @@
         <ul id="navbar-main-elements" class="navbar-nav">
     <li class="toctree-l1 current active nav-item">
  <a class="current reference internal nav-link" href="#">
-  Getting started
+  Getting Started
  </a>
 </li>
 
@@ -170,43 +170,16 @@
 <nav id="bd-toc-nav">
     <ul class="visible nav section-nav flex-column">
  <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#why-pysyft-and-pygrid">
-   Why PySyft and PyGrid?
-  </a>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#beginner-level-pysyft-pygrid-installation">
-   Beginner-level PySyft &amp; PyGrid Installation
+  <a class="reference internal nav-link" href="#what-os-are-you-on">
+   What OS are you on?
   </a>
   <ul class="nav section-nav flex-column">
    <li class="toc-h3 nav-item toc-entry">
-    <a class="reference internal nav-link" href="#step-1-are-you-on-osx-windows-or-linux">
-     Step 1: Are you on OSX, Windows, or Linux?
+    <a class="reference internal nav-link" href="#f-a-q">
+     F.A.Q
     </a>
-    <ul class="nav section-nav flex-column">
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#osx-tutorials">
-       OSX Tutorials
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#linux-tutorials">
-       Linux Tutorials
-      </a>
-     </li>
-     <li class="toc-h4 nav-item toc-entry">
-      <a class="reference internal nav-link" href="#windows-tutorials">
-       Windows Tutorials
-      </a>
-     </li>
-    </ul>
    </li>
   </ul>
- </li>
- <li class="toc-h2 nav-item toc-entry">
-  <a class="reference internal nav-link" href="#f-a-q">
-   F.A.Q
-  </a>
  </li>
 </ul>
 
@@ -230,31 +203,21 @@
               <div>
                 
   <section id="getting-started">
-<span id="id1"></span><h1>Getting started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
-<div class="toctree-wrapper compound">
-</div>
-<section id="why-pysyft-and-pygrid">
-<h2>Why PySyft and PyGrid?<a class="headerlink" href="#why-pysyft-and-pygrid" title="Permalink to this headline">¶</a></h2>
-<p>Syft decouples private data from model training, using
-<a class="reference external" href="https://ai.googleblog.com/2017/04/federated-learning-collaborative.html">Federated Learning</a>,
-<a class="reference external" href="https://en.wikipedia.org/wiki/Differential_privacy">Differential Privacy</a>,
-and Encrypted Computation (like
-<a class="reference external" href="https://en.wikipedia.org/wiki/Secure_multi-party_computation">Multi-Party Computation (MPC)</a>
-and <a class="reference external" href="https://en.wikipedia.org/wiki/Homomorphic_encryption">Homomorphic Encryption (HE)</a>
-within the main Deep Learning frameworks like PyTorch and TensorFlow.</p>
-</section>
-<section id="beginner-level-pysyft-pygrid-installation">
-<h2>Beginner-level PySyft &amp; PyGrid Installation<a class="headerlink" href="#beginner-level-pysyft-pygrid-installation" title="Permalink to this headline">¶</a></h2>
+<span id="id1"></span><h1>Getting Started<a class="headerlink" href="#getting-started" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
 <p>Welcome to the domain deployment installation tutorials!
 This section of our documentation is designed to be the
-simplest way to get you started deploying a PyGrid Domain
-to an OSX, Linux, or Windows machine and interacting with it
-as a data scientist using PySyft. If you’re looking
+simplest way to get you started deploying your data to a domain node
+on an OSX, Linux, or Windows machine and interacting with it
+as a data scientist using PySyft.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>If you’re looking
 for cloud deployment, or more advanced tutorials such as
 ansible, vagrant, kubernetes, or virtualbox deployment, please see the
 <a class="reference external" href="https://openmined.github.io/PySyft/deployment/index.html#">advanced deployment documentation</a>.</p>
+</div>
 <p>The purpose of these tutorials is to help you install everything
 you need to run a Domain node from your personal machine (such
 as if you’re running through OpenMined
@@ -264,88 +227,47 @@ or
 To that end, we will also be installing everything you might need to run Jupyter
 notebooks with PySyft installed, such as if you’re pretending to be
 both Data Owner and Data Scientist as a part of a tutorial or course.</p>
-<section id="step-1-are-you-on-osx-windows-or-linux">
-<h3>Step 1: Are you on OSX, Windows, or Linux?<a class="headerlink" href="#step-1-are-you-on-osx-windows-or-linux" title="Permalink to this headline">¶</a></h3>
-<p>Installation differs greatly depending on whether your personal machine is
-running OSX, Linux, or Windows. PySyft and PyGrid are relatively new pieces
-of software so not all versions of these are supported. However, the first
-step of your journey is to figure out which operating system you are running
-and choose the right tutorial for installation. Then within the dropdowns below,
-choose which version is right for you. Once you’ve found the right version,
-and completed the tutorial for that version, you’ll be all done!!! Good luck!</p>
-<p>There are 3 types of operating systems for you to choose from: OSX, Linux, and Windows.</p>
-<section id="osx-tutorials">
-<h4>OSX Tutorials<a class="headerlink" href="#osx-tutorials" title="Permalink to this headline">¶</a></h4>
-<p>If you know you’re running OSX but you’re not sure what version you’re running,
-click the Apple logo at the top left corner, then click “About this Mac” and you’ll
-see something like:</p>
-<p><a class="reference internal" href="../_images/find_osx_version.png"><img alt="find_osx_version" src="../_images/find_osx_version.png" style="width: 50%;" /></a></p>
-<p>See where this image says “11.5.1”? Figure out what number yours says in that place
-and use that number to determine which of these installation tutorials you should
-follow to complete your installation. If you don’t see your number, choose the
-closest that you can.</p>
+<p><strong>We will be setting up the following dependencies before PySyft and PyGrid:</strong></p>
+<ul class="simple">
+<li><p>Python &gt;=3.9</p></li>
+<li><p>pip</p></li>
+<li><p>Conda</p></li>
+<li><p>Jupyter notebook</p></li>
+<li><p>Docker</p></li>
+</ul>
+<p>If you already have all of them, jump <a class="reference external" href="https://openmined.github.io/PySyft/install_tutorials/have_prerequisites.html#">here!</a></p>
+<section id="what-os-are-you-on">
+<h2>What OS are you on?<a class="headerlink" href="#what-os-are-you-on" title="Permalink to this headline">¶</a></h2>
+<p>If you are unsure about the above, don’t worry, we got you covered.
+The first step of your journey is to figure out which operating system you are running
+and choose the right tutorial for installation.
+There are 3 types of operating systems for you to choose from:</p>
 <ol class="arabic simple">
-<li><p><a class="reference external" href="https://openmined.github.io/PySyft/install_tutorials/osx_11_5_1.html#">Big Sur (11.5.1)</a>.</p></li>
-</ol>
-</section>
-<section id="linux-tutorials">
-<h4>Linux Tutorials<a class="headerlink" href="#linux-tutorials" title="Permalink to this headline">¶</a></h4>
-<p>If you know that you’re running Linux but you’re not sure what version you’re running,
-open up a command line and type:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ lsb_release -a
-</pre></div>
-</div>
-<p>Which should print something like the following:</p>
-<p><a class="reference internal" href="../_images/find_ubuntu_version.png"><img alt="find_ubuntu_version" src="../_images/find_ubuntu_version.png" style="width: 50%;" /></a></p>
-<p>See where this image says “20.04.3”? Figure out what number yours says in that place</p>
-<ol class="arabic simple">
-<li><p><a class="reference external" href="https://openmined.github.io/PySyft/install_tutorials/linux.html##">Ubuntu (20.04.3 - Focal Fossa)</a>.</p></li>
-</ol>
-</section>
-<section id="windows-tutorials">
-<h4>Windows Tutorials<a class="headerlink" href="#windows-tutorials" title="Permalink to this headline">¶</a></h4>
-<p>If you know that you’re running Windows but you’re not sure what version you’re running,
-press (Windows Key + R) and then in the text box that appears type:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ winver
-</pre></div>
-</div>
-<p>and hit (Enter)! This should print something like the following:</p>
-<p><a class="reference internal" href="../_images/find_windows_version.png"><img alt="find_windows_version" src="../_images/find_windows_version.png" style="width: 50%;" /></a></p>
-<p>See where this image says “Windows 10” and “20H2”? Figure out what numbers yours says in those place
-and use those number to determine which of these installation tutorials you should
-follow to complete your installation. If you don’t see one of your numbers, choose the
-closest that you can.</p>
-<ol class="arabic simple">
-<li><p><a class="reference external" href="https://openmined.github.io/PySyft/install_tutorials/windows.html">Windows 10 (20H2)</a>.</p></li>
+<li><p><a class="reference external" href="https://openmined.github.io/PySyft/install_tutorials/osx_11_5_1.html#">OSX</a></p></li>
+<li><p><a class="reference external" href="https://openmined.github.io/PySyft/install_tutorials/linux.html##">Linux</a></p></li>
+<li><p><a class="reference external" href="https://openmined.github.io/PySyft/install_tutorials/windows.html">Windows</a></p></li>
 </ol>
 <p>Best of luck on your journey!</p>
-</section>
-</section>
-</section>
 <section id="f-a-q">
-<h2>F.A.Q<a class="headerlink" href="#f-a-q" title="Permalink to this headline">¶</a></h2>
+<h3>F.A.Q<a class="headerlink" href="#f-a-q" title="Permalink to this headline">¶</a></h3>
 <div class="container">
 <div id="accordion" class="shadow tutorial-accordion">
 
     <div class="card tutorial-card">
         <div class="card-header collapsed card-link" data-toggle="collapse" data-target="#collapseOne">
             <div class="d-flex flex-row tutorial-card-header-1">
-                <div class="d-flex flex-row tutorial-card-header-2">
-                    <button class="btn btn-dark btn-sm"></button>
-                      What is a privacy budget?
-                </div>
+                <button class="d-flex flex-row tutorial-card-header-2 btn">
+                      My OS is not listed here?
+                </button>
                 <span class="badge gs-badge-link">                    </span>
                 </div>
             </div>
             <div id="collapseOne" class="collapse" data-parent="#accordion">
                 <div class="card-body">
 
-The privacy budget is a collection of quantitative measures through which a
-data owner can pre-determine the degree of information access they grant to a
-data scientist so that that limit is automatically enforceable through
-automated systems. In our specific setup the privacy budget is measured against
- data subjects, not datasets. Therefore, the epsilon value indicates how much
- can be learned from any one data subject.</section>
+If your Operating System is not listed here, feel free to drop us a query
+on <a href="http://slack.openmined.org/">Slack</a> and we will get back to you.</section>
+</section>
 </section>
 
 

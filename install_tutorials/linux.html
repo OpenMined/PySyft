@@ -6,7 +6,7 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" /><meta name="generator" content="Docutils 0.17.1: http://docutils.sourceforge.net/" />
 
-    <title>Installation on Linux (&gt;=20.04.03) &#8212; PySyft  documentation</title>
+    <title>Installation on Linux &#8212; PySyft  documentation</title>
     
   <link href="../_static/css/theme.css" rel="stylesheet">
   <link href="../_static/css/index.ff1ffe594081f20da1ef19478df9384b.css" rel="stylesheet">
@@ -79,7 +79,7 @@
         <ul id="navbar-main-elements" class="navbar-nav">
     <li class="toctree-l1 nav-item">
  <a class="reference internal nav-link" href="../getting_started/index.html">
-  Getting started
+  Getting Started
  </a>
 </li>
 
@@ -183,31 +183,39 @@
               
               <div>
                 
-  <section id="installation-on-linux-20-04-03">
-<span id="linux-install"></span><h1>Installation on Linux (&gt;=20.04.03)<a class="headerlink" href="#installation-on-linux-20-04-03" title="Permalink to this headline">¶</a></h1>
+  <section id="installation-on-linux">
+<span id="linux-install"></span><h1>Installation on Linux<a class="headerlink" href="#installation-on-linux" title="Permalink to this headline">¶</a></h1>
 <div class="toctree-wrapper compound">
 </div>
 <p>This documentation is to help you install and be able to deploy a Domain Node on Ubuntu Linux, with a version of <code class="docutils literal notranslate"><span class="pre">20.04.03</span></code> or newer, in the simplest way possible.</p>
+<div class="admonition note">
+<p class="admonition-title">Note</p>
+<p>Do you use a different distribution other than Ubuntu? Don’t worry, just replace the <code class="docutils literal notranslate"><span class="pre">apt</span></code> &amp; <code class="docutils literal notranslate"><span class="pre">apt-get</span></code> with your package manager.</p>
+</div>
 <div class="admonition seealso">
 <p class="admonition-title">See also</p>
 <p>For more advanced tutorials, such as cloud deployment, ansible, vagrant, kubernetes, or virtualbox deployment, please check
 <a class="reference external" href="https://openmined.github.io/PySyft/deployment/index.html#">advanced deployment documentation</a>.</p>
 </div>
-<p>We will use the Linux Terminal to install all the prerequisites and launch the domain. A quick way to launch the terminal is by pressing <code class="docutils literal notranslate"><span class="pre">Ctrl+Alt+T</span></code>. Let’s go!</p>
 <ol class="arabic simple">
+<li><p><strong>Launching a Terminal Instance</strong></p></li>
+</ol>
+<p>We will use the Linux Terminal to install all the prerequisites and launch the domain. A quick way to launch the terminal is by pressing <code class="docutils literal notranslate"><span class="pre">Ctrl+Alt+T</span></code>. Let’s go!</p>
+<ol class="arabic simple" start="2">
 <li><p><strong>Installing Python 3.9</strong></p></li>
 </ol>
 <p>We’ll be working with Python 3.9 or newer. To check if you have it installed, you may run:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python3 --version
 </pre></div>
 </div>
+<p>Your output should looks something like <code class="docutils literal notranslate"><span class="pre">Python</span> <span class="pre">3.x.y</span></code> where x&gt;=9.</p>
 <p>If you don’t have the correct version of Python, installing it is as easy as running the following:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>sudo apt update
 sudo apt install python3.9
 python3 --version
 </pre></div>
 </div>
-<ol class="arabic simple" start="2">
+<ol class="arabic simple" start="3">
 <li><p><strong>Installing and using Pip</strong></p></li>
 </ol>
 <p><a class="reference external" href="https://pip.pypa.io/en/stable/">Pip</a> is the most widely used package installer for Python and will help us to install the required dependencies MUCH easier.
@@ -219,13 +227,13 @@ You can install it by running the following:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>python -m pip install --upgrade pip
 </pre></div>
 </div>
-<ol class="arabic simple" start="3">
+<p>Your output should looks something like <code class="docutils literal notranslate"><span class="pre">Requirement</span> <span class="pre">already</span> <span class="pre">satisfied:</span> <span class="pre">pip</span> <span class="pre">in</span> <span class="pre">&lt;package-dir&gt;</span></code>.</p>
+<ol class="arabic simple" start="4">
 <li><p><strong>Conda and setting up a virtual environment</strong></p></li>
 </ol>
 <p>Conda is a package manager that helps you to easily install a lot of data science and machine learning packages, but also to create a separated environment when a certain set of dependencies need to be installed.
 To install Conda, you can:</p>
-<blockquote>
-<div><ol class="loweralpha">
+<ol class="loweralpha">
 <li><p>Download the <a class="reference external" href="https://www.anaconda.com/products/individual#Downloads">Anaconda installer</a>.</p></li>
 <li><p>Run the following code, modifying it depending on where you downloaded the installer (e.g. <cite>~/Downloads/</cite>):</p>
 <blockquote>
@@ -234,7 +242,7 @@ To install Conda, you can:</p>
 </div>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Please note that the naming might be different given it could be a newer version of Anaconda. This is ok, you can proceed further.</p>
+<p>Please note that the naming might be different given it could be a newer version of Anaconda.</p>
 </div>
 </div></blockquote>
 </li>
@@ -246,7 +254,7 @@ conda activate syft_env
 </div>
 </div></blockquote>
 </li>
-<li><p>To exit, you might run:</p>
+<li><p>To exit, you can run:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>conda deactivate
 </pre></div>
@@ -254,8 +262,7 @@ conda activate syft_env
 </div></blockquote>
 </li>
 </ol>
-</div></blockquote>
-<ol class="arabic simple" start="4">
+<ol class="arabic simple" start="5">
 <li><p><strong>Install Jupyter Notebook</strong></p></li>
 </ol>
 <p>A very convenient way to interact with a deployed node is via Python, using a Jupyter Notebook. You can install it by running:</p>
@@ -270,11 +277,11 @@ conda activate syft_env
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>jupyter notebook
 </pre></div>
 </div>
-<ol class="arabic simple" start="5">
+<ol class="arabic simple" start="6">
 <li><p><strong>Installing and configuring Docker</strong></p></li>
 </ol>
 <p><a class="reference external" href="https://docs.docker.com/get-started/overview/">Docker</a> is a framework which allows us to separate the infrastructure needed to run PySyft in an isolated environment called a <code class="docutils literal notranslate"><span class="pre">container</span></code> which you can use off the shelf, without many concerns.
-If it sounds complicated, please don’t worry- we will walk you through all steps, and you’ll be done in no time!
+If it sounds complicated, please don’t worry, we will walk you through all steps, and you’ll be done in no time!
 Additionally, we will also use <a class="reference external" href="https://docs.docker.com/compose/">Docker Composite V2</a>, which allows us to run multi-container applications.</p>
 <ol class="loweralpha">
 <li><p>Install <strong>Docker</strong>:</p>
@@ -285,15 +292,15 @@ Additionally, we will also use <a class="reference external" href="https://docs.
 </div></blockquote>
 </li>
 <li><p>Install <strong>Docker Composite V2</strong> as described <a class="reference external" href="https://docs.docker.com/compose/cli-command/#installing-compose-v2">here</a>.</p></li>
-<li><p>You should see ‘Docker Compose version v2’ when running:</p>
+<li><p>Run the below command to verify the install:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>docker compose version
-Docker Compose version v2
 </pre></div>
 </div>
+<p>You should see somthing like <code class="docutils literal notranslate"><span class="pre">Docker</span> <span class="pre">Compose</span> <span class="pre">version</span> <span class="pre">2.x.y</span></code> in the output when runnning the above command.</p>
 </div></blockquote>
 </li>
-<li><p>If not, go through the <a class="reference external" href="https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/">instructions here</a> or if you are using Linux, you can try to do:</p>
+<li><p>If you see something else, go through the <a class="reference external" href="https://www.rockyourcode.com/how-to-install-docker-compose-v2-on-linux-2021/">instructions here</a> or if you are using Linux, you can try to do:</p>
 <blockquote>
 <div><div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>mkdir -p ~/.docker/cli-plugins
 curl -sSL https://github.com/docker/compose/releases/download/v2.2.3/docker-compose-linux-x86_64 -o ~/.docker/cli-plugins/docker-compose
@@ -312,11 +319,10 @@ sudo usermod -aG docker <span class="nv">$USER</span>
 </li>
 </ol>
 <ol class="arabic simple" start="6">
-<li><p><strong>Install PySyft and PyGrid</strong></p></li>
+<li><p><strong>Install PySyft and Hagrid</strong></p></li>
 </ol>
 <p>The hardest part is done! To install the OpenMined stack that you need in order to deploy a node, please run:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>$ pip install syft
-$ pip install hagrid
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>pip install syft hagrid
 </pre></div>
 </div>
 <p>PySyft is a library which contains the tools to run privacy preserving machine learning.
@@ -327,15 +333,14 @@ data owners and data scientists who can collectively train AI model using Syft.<
 </ol>
 <p>Congrats for making it this far! You only have one final step remaining, before you unleash the power of Hagrid!
 The final step is to launch a domain node, which is as easy as:</p>
-<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hagrid launch
+<div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hagrid launch &lt;name_of_domain&gt;
 </pre></div>
 </div>
-<p>To stop the running domain,
-Find the auto-assigned name of your domain (look at the lines just after you executed the above command) and run:</p>
+<p>To stop the running domain, run:</p>
 <div class="highlight-bash notranslate"><div class="highlight"><pre><span></span>hagrid land &lt;name_of_domain&gt;
 </pre></div>
 </div>
-<p>But before stopping it, you can go to <code class="docutils literal notranslate"><span class="pre">`localhost:8081</span></code> in your <a class="reference external" href="localhost:8081">browser</a> to actually interact with the PyGrid Admin UI, where you can manage as a Data Owner your datasets, as well as incoming requests from data scientist.
+<p>But before stopping it, you can go to <code class="docutils literal notranslate"><span class="pre">localhost:8081</span></code> in your <a class="reference external" href="localhost:8081">browser</a> to actually interact with the PyGrid Admin UI, where you can manage as a Data Owner your datasets, as well as incoming requests from data scientist.
 You can log in using the following credentials:</p>
 <div class="highlight-python notranslate"><div class="highlight"><pre><span></span><span class="n">info</span><span class="nd">@openmined</span><span class="o">.</span><span class="n">org</span>
 
