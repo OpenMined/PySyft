@@ -80,7 +80,7 @@ use and development of PySyft!
     ---
     :img-top: _static/main_panels/index_getting_started.svg
 
-    Getting started
+    Getting Started
     ^^^^^^^^^^^^^^^
 
     New to *PySyft*? Here you can find a guide into installing and first steps into
