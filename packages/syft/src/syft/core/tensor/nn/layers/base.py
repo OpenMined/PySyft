@@ -1,5 +1,11 @@
 # relative
+from typing import Union
 from ...autodp.phi_tensor import PhiTensor
+from ...autodp.gamma_tensor import GammaTensor
+
+from numpy.typing import ArrayLike
+
+from typing_extensions import Self
 
 
 class Layer:
@@ -11,15 +17,17 @@ class Layer:
     network.
     """
 
-    first_layer = False
+    first_layer: bool = False
 
-    def forward(self, input: PhiTensor, *args, **kwargs):
+    def forward(self, input: Union[PhiTensor, GammaTensor, ArrayLike], *args, **kwargs):
         raise NotImplementedError
 
-    def backward(self, pre_grad, *args, **kwargs):
+    def backward(
+        self, pre_grad: Union[PhiTensor, GammaTensor, ArrayLike], *args, **kwargs
+    ):
         raise NotImplementedError
 
-    def connect_to(self, prev_layer):
+    def connect_to(self, prev_layer: Self) -> None:
         raise NotImplementedError
 
     @property

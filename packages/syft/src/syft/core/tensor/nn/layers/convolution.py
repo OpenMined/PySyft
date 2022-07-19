@@ -1,10 +1,11 @@
 # stdlib
-from typing import Dict
+from typing import Dict, Union
 from typing import Optional
 from typing import Tuple
 
 # third party
 import numpy as np
+from packages.syft.src.syft.core.tensor.autodp.gamma_tensor import GammaTensor
 
 # relative
 from .. import activations
@@ -43,8 +44,8 @@ class Convolution(Layer):
 
     def __init__(
         self,
-        nb_filter,
-        filter_size,
+        nb_filter: int,
+        filter_size: Union[int, Tuple[int, int]],
         input_shape: Optional[Tuple] = None,
         stride: int = 1,
         padding: int = 0,
@@ -57,12 +58,14 @@ class Convolution(Layer):
         self.padding = padding
         self.name = "Conv"
 
-        self.W, self.dW = None, None
-        self.b, self.db = None, None
-        self.out_shape = None
-        self.last_output = None
-        self.last_input = None
-        self.X_col = None
+        self.W: Union[np.ndarray, PhiTensor, GammaTensor] = None
+        self.dW: Union[PhiTensor, GammaTensor] = None
+        self.b: Union[np.ndarray, PhiTensor, GammaTensor] = None
+        self.db: Union[PhiTensor, GammaTensor] = None
+        self.out_shape: Optional[Tuple[int, ...]] = None
+        self.last_output: Optional[Tuple[int, ...]] = None
+        self.last_input: Union[PhiTensor, GammaTensor] = None
+        self.X_col: Union[PhiTensor, GammaTensor] = None
 
         self.init = XavierInitialization()
         self.activation = activations.get(activation)
@@ -72,9 +75,8 @@ class Convolution(Layer):
             assert self.input_shape is not None
             input_shape = self.input_shape
         else:
-            input_shape = prev_layer.out_shape
+            input_shape = prev_layer.out_shape  # type: ignore
 
-        # input_shape: (batch size, num input feature maps, image height, image width)
         assert len(input_shape) == 4
 
         nb_batch, pre_nb_filter, pre_height, pre_width = input_shape
@@ -95,14 +97,17 @@ class Convolution(Layer):
         self.W = self.init((self.nb_filter, pre_nb_filter, filter_height, filter_width))
         self.b = np.zeros((self.nb_filter,))
 
-    def forward(self, input: PhiTensor, *args: Tuple, **kwargs: Dict):
+    def forward(
+        self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+    ):
         # print("Input into Conv forward:", input.shape, input.data_subjects.shape)
         self.last_input = input
         self.input_shape = input.shape
 
         n_filters, d_filter, h_filter, w_filter = self.W.shape
 
-        n_x, d_x, h_x, w_x = input.shape
+        # Input Shape -> N, C, H, W
+        n_x, _, _, _ = input.shape
 
         _, _, h_out, w_out = self.out_shape
 
@@ -123,7 +128,9 @@ class Convolution(Layer):
 
         return out
 
-    def backward(self, pre_grad: PhiTensor, *args: Tuple, **kwargs: Dict):
+    def backward(
+        self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+    ):
         n_filter, d_filter, h_filter, w_filter = self.W.shape
 
         pre_grads = (
@@ -132,7 +139,7 @@ class Convolution(Layer):
             else pre_grad
         )
 
-        db = pre_grads.sum(axis=(0, 2, 3))  # TODO @Shubham: This is missing axis=1?
+        db = pre_grads.sum(axis=(0, 2, 3))
 
         self.db = db.reshape((n_filter,))
 
@@ -157,16 +164,16 @@ class Convolution(Layer):
         return dX
 
     @property
-    def params(self):
+    def params(self) -> Tuple[PhiTensor, GammaTensor]:
         return self.W, self.b
 
     @params.setter
-    def params(self, new_params):
+    def params(self, new_params: Tuple[PhiTensor, GammaTensor]):
         assert (
             len(new_params) == 2
         ), f"Expected Two values Update Params has length{len(new_params)}"
         self.W, self.b = new_params
 
     @property
-    def grads(self):
+    def grads(self) -> Tuple[GammaTensor, PhiTensor]:
         return self.dW, self.db

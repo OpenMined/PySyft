@@ -229,7 +229,7 @@ def get_im2col_indices(
 
 def col2im_indices(
     cols: PhiTensor,
-    x_shape: Tuple,
+    x_shape: Tuple[int, ...],
     field_height: int = 3,
     field_width: int = 3,
     padding: int = 1,
