@@ -1,6 +1,8 @@
 # stdlib
-from typing import Tuple
+from typing import Dict
 from typing import Optional
+from typing import Tuple
+from typing import Type
 from typing import Union
 
 # relative
@@ -94,9 +96,9 @@ class leaky_ReLU(Activation):
             )
 
 
-def get(activation_name: Optional[str]) -> Optional[Activation]:
+def get(activation_name: Optional[str]) -> Optional[Type[Activation]]:
 
-    activation_name_map = {
+    activation_name_map: Dict[str, Type[Activation]] = {
         "leaky_relu": leaky_ReLU,
     }
 
