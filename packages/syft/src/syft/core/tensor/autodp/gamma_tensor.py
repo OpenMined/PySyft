@@ -33,6 +33,8 @@ from ....lib.numpy.array import capnp_serialize
 from ....lib.python.util import upcast
 from ....util import inherit_tags
 from ...adp.data_subject_ledger import DataSubjectLedger
+from ...adp.data_subject_list import DataSubject
+from ...adp.data_subject_list import DataSubjectArray
 from ...adp.data_subject_list import DataSubjectList
 from ...adp.data_subject_list import dslarraytonumpyutf8
 from ...adp.data_subject_list import numpyutf8todslarray
@@ -1119,7 +1121,9 @@ class GammaTensor:
     PointerClassOverride = TensorWrappedGammaTensorPointer
 
     child: jnp.array
-    data_subjects: np.ndarray
+    data_subjects: Union[
+        np.ndarray, List[DataSubjectArray], DataSubjectList, List[DataSubject]
+    ]
     min_vals: lazyrepeatarray = flax.struct.field(pytree_node=False)
     max_vals: lazyrepeatarray = flax.struct.field(pytree_node=False)
     is_linear: bool = True

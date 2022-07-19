@@ -1,23 +1,21 @@
 # stdlib
+from typing import Callable
+from typing import Dict
 from typing import List
 from typing import Optional
 from typing import Tuple
 from typing import Type
 from typing import Union
 
-# third party
-import numpy as np
-
 # relative
+from ...adp.data_subject_ledger import DataSubjectLedger
 from ...common.serde.serializable import serializable
 from ..autodp.gamma_tensor import GammaTensor
 from ..autodp.phi_tensor import PhiTensor
 from ..tensor import Tensor
 from .layers.base import Layer
 from .loss import BinaryCrossEntropy
-from .loss import Loss
 from .optimizers import Adamax
-from .optimizers import Optimizer
 
 
 @serializable(recursive_serde=True)
@@ -30,23 +28,18 @@ class Model:
     ]
 
     def __init__(self, layers: Optional[List[Type[Layer]]] = None):
-        self.layers: List[Type[Layer]] = [] if layers is None else layers
-
-        self.loss: Optional[Loss] = None
+        self.layers: List = [] if layers is None else layers
         self.aggregated_loss: float = 0.0
-        self.optimizer: Type[Optimizer] = Adamax
 
-    def publish(self, deduct_epsilon_for_user, get_budget_for_user, ledger, sigma):
+    def publish(self, deduct_epsilon_for_user: Callable, get_budget_for_user: Callable, ledger: DataSubjectLedger, sigma: float) -> Dict:
         print("Publish Model Weights")
-        # relative
-        from ..autodp.gamma_tensor import GammaTensor
 
         parameters = {}
         for i, layer in enumerate(self.layers):
             print("Layer", str(layer))
 
             print("Before  Publish")
-            for param in layer.params:
+            for param in layer.params:  # type: ignore
                 print(param.shape, end=" ")
             print()
             if hasattr(layer, "params"):
@@ -59,14 +52,14 @@ class Model:
                     )
                     if isinstance(param, (GammaTensor))
                     else param
-                    for param in layer.params
+                    for param in layer.params  # type: ignore
                 ]
                 print("After  Publish")
                 for param in parameters[str(layer) + str(i)]:
                     print(param.shape, end=" ")
                 print()
 
-        parameters["loss"] = self.aggregated_loss
+        parameters["loss"] = self.aggregated_loss  # type: ignore
 
         return parameters
 
@@ -77,7 +70,7 @@ class Model:
         for i, layer in enumerate(self.layers):
             params = published_weights[str(layer) + str(i)]
             if len(params) > 0:
-                layer.params = params
+                layer.params = params  # type: ignore
 
     def add(self, layer: Type[Layer]):
         if isinstance(layer, Layer):
@@ -90,7 +83,7 @@ class Model:
 
         prev_layer = None
         for _, layer in enumerate(self.layers):
-            layer.connect_to(prev_layer)
+            layer.connect_to(prev_layer=prev_layer)
             prev_layer = layer
 
         self.loss = loss
@@ -155,21 +148,21 @@ class Model:
                 train_losses.append(self.loss.forward(y_pred, y_batch))
 
             if valid_X is not None and valid_Y is not None:
-                # valid
-                valid_losses, valid_predicts, valid_targets = [], [], []
+                valid_losses, valid_predicts, valid_targets = [], [], []  # type: ignore
+
                 for b in range(valid_X.shape[0] // batch_size):
                     batch_begin = b * batch_size
                     batch_end = batch_begin + batch_size
-                    x_batch = valid_X[batch_begin:batch_end]
-                    y_batch = valid_Y[batch_begin:batch_end]
+                    x_val_batch = valid_X[batch_begin:batch_end]
+                    y_val_batch = valid_Y[batch_begin:batch_end]
 
                     # forward propagation
-                    y_pred = self.predict(x_batch)
+                    y_val_pred = self.predict(x_val_batch)
 
                     # got loss and predict
-                    valid_losses.append(self.loss.forward(y_pred, y_batch))
-                    valid_predicts.extend(y_pred)
-                    valid_targets.extend(y_batch)
+                    valid_losses.append(self.loss.forward(y_val_pred, y_val_batch))
+                    valid_predicts.extend(y_val_pred)
+                    valid_targets.extend(y_val_batch)  # type: ignore
 
     def step(
         self,
@@ -216,12 +209,3 @@ class Model:
             x_next = layer.forward(x_next)
         y_pred = x_next
         return y_pred
-
-    def accuracy(self, outputs, targets):
-        y_predicts = np.argmax(outputs, axis=1)
-        y_targets = np.argmax(targets, axis=1)
-        acc = y_predicts == y_targets
-        return np.mean(acc)
-
-    def evaluate(self, X, Y):
-        raise NotImplementedError()

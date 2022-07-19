@@ -2,7 +2,6 @@
 from typing import Dict
 from typing import List
 from typing import Tuple
-from typing import Type
 from typing import Union
 
 # relative
@@ -31,7 +30,7 @@ class Layer:
     ):
         raise NotImplementedError
 
-    def connect_to(self, prev_layer: Type["Layer"]) -> None:
+    def connect_to(self, prev_layer) -> None:
         raise NotImplementedError
 
     @property

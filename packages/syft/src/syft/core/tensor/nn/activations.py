@@ -73,7 +73,9 @@ class leaky_ReLU(Activation):
     def derivative(
         self, input_array: Optional[Union[PhiTensor, GammaTensor]] = None
     ) -> Union[PhiTensor, GammaTensor]:
-        last_forward = input_array if input_array else self.last_forward
+        last_forward: Union[GammaTensor, PhiTensor] = (
+            input_array if input_array else self.last_forward
+        )
         res = (last_forward > 0).child * 1 + (last_forward <= 0).child * self.slope
 
         if isinstance(input_array, PhiTensor):
