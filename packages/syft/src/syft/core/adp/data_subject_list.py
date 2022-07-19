@@ -140,12 +140,11 @@ class DataSubjectList:
         )
 
     def mean(self) -> DataSubjectList:
-        return self
-        # # If mean is used without any arguments then the result is always a singular value
-        # return DataSubjectList(
-        #     self.one_hot_lookup.copy(),
-        #     self.data_subjects_indexed.flatten(),
-        # )
+        # If mean is used without any arguments then the result is always a singular value
+        return DataSubjectList(
+            self.one_hot_lookup.copy(),
+            self.data_subjects_indexed.flatten(),
+        )
 
     @property
     def shape(self) -> Tuple:
