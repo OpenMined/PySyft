@@ -17,7 +17,9 @@ class Activation(object):
     def __init__(self):
         self.last_forward = None
 
-    def forward(self, input: Union[PhiTensor, GammaTensor]) -> Union[PhiTensor, GammaTensor]:
+    def forward(
+        self, input: Union[PhiTensor, GammaTensor]
+    ) -> Union[PhiTensor, GammaTensor]:
         """Forward Step.
 
         Args:
@@ -26,7 +28,9 @@ class Activation(object):
 
         raise NotImplementedError
 
-    def derivative(self, input: Optional[Union[PhiTensor, GammaTensor]] = None) -> Union[PhiTensor, GammaTensor]:
+    def derivative(
+        self, input: Optional[Union[PhiTensor, GammaTensor]] = None
+    ) -> Union[PhiTensor, GammaTensor]:
         """Backward Step.
 
         _extended_summary_
@@ -53,7 +57,9 @@ class leaky_ReLU(Activation):
         super(leaky_ReLU, self).__init__()
         self.slope = slope
 
-    def forward(self, input_array: Union[PhiTensor, GammaTensor]) -> Union[PhiTensor, GammaTensor]:
+    def forward(
+        self, input_array: Union[PhiTensor, GammaTensor]
+    ) -> Union[PhiTensor, GammaTensor]:
         # Last image that has been forward passed through this activation function
         self.last_forward = input_array
 

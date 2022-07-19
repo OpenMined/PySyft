@@ -76,10 +76,6 @@ def save_model(model, filename="model.npy"):
 def train_on_domains(domain_addresses):
     """Remotely train on the list of domains."""
 
-    # TRAINING PARAMS
-    n_epochs = 1
-    batch_size = 2
-
     # Get input shape of the images
     # We assume images on all domains have the same shape.
     input_shape = get_input_shape(domain_addresses[0])  # Shape Format -> (N, C, H, W)

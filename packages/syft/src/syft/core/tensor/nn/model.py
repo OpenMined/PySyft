@@ -187,8 +187,8 @@ class Model:
         # forward propagation
         y_pred = self.predict(x_batch)
 
-        print(f"Predictions:", y_pred.child.argmax())
-        print(f"Actual Value:", y_batch.child.shape)
+        print("Predictions:", y_pred.child.argmax())
+        print("Actual Value:", y_batch.child.shape)
 
         # backward propagation
         next_grad = self.loss.backward(y_pred, y_batch)

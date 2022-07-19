@@ -1,21 +1,18 @@
 #!/usr/bin/env python
 # coding: utf-8
-
-# ## Upload Data
-
-# In[25]:
-
-
 # stdlib
 import sys
 
 # third party
-from utils import *
+import numpy as np
 
 # syft absolute
-# run this cell
 import syft as sy
 from syft.core.adp.data_subject_list import NewDataSubject
+
+# relative
+from .utils import download_dataset
+from .utils import split_and_preprocess_dataset
 
 
 def add_dataset_to_domain(domain_ip, dataset_url):
@@ -53,8 +50,9 @@ def add_dataset_to_domain(domain_ip, dataset_url):
             "train_labels": train_label_data[:5],
         },
         description="Invasive Ductal Carcinoma (IDC) is the most common subtype of all breast cancers. \
-            The modified dataset consisted of 162 whole mount slide images of Breast Cancer (BCa) specimens scanned at 40x. \
-            Patches of size 50 x 50 were extracted from the original image. The labels 0 is non-IDC and 1 is IDC.",
+            The modified dataset consisted of 162 whole mount slide images of Breast Cancer (BCa) specimens \
+            scanned at 40x.Patches of size 50 x 50 were extracted from the original image. \
+            The labels 0 is non-IDC and 1 is IDC.",
     )
     try:
         domain.create_user(
@@ -65,9 +63,6 @@ def add_dataset_to_domain(domain_ip, dataset_url):
         )
     except Exception as e:
         print(e)
-
-
-# In[ ]:
 
 
 if __name__ == "__main__":

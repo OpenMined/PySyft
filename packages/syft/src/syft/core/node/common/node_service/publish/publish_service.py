@@ -13,7 +13,7 @@ from .....adp.data_subject_ledger import DataSubjectLedger  # type: ignore
 from .....common.uid import UID  # type: ignore
 from .....store.storeable_object import StorableObject  # type: ignore
 from ....abstract.node import AbstractNode  # type: ignore
-from ...action.greenlets_switch import retrieve_object
+from ...action.greenlets_switch import retrieve_object  # type: ignore
 
 # from ...action import context  # type: ignore
 from ..node_service import ImmediateNodeServiceWithoutReply  # type: ignore
