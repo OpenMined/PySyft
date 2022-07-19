@@ -1797,7 +1797,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
                     data_subjects=output_ds,
                 )
 
-    def clip(self, a_min: int, a_max: int):
+    def clip(self, a_min: float, a_max: float):
         output_data = np.clip(self.child, a_min, a_max)
 
         min_v = np.clip(self.min_vals.data, a_min, a_max)

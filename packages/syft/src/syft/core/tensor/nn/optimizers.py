@@ -1,8 +1,16 @@
+# stdlib
+from typing import Dict
+from typing import List
+from typing import Optional
+from typing import Tuple
+
 # third party
 import numpy as np
+from numpy.typing import NDArray
 
 # relative
 from ...common.serde.serializable import serializable
+from .layers.base import Layer
 from .utils import dp_maximum
 
 
@@ -25,24 +33,40 @@ class Optimizer:
         When adapting step rates, do not move above this value. Default is inf.
     """
 
-    __attr_allowlist__ = ("lr", "clip", "decay", "lr_min", "lr_max", "iterations")
+    __attr_allowlist__: Tuple[str, ...] = (
+        "lr",
+        "clip",
+        "decay",
+        "lr_min",
+        "lr_max",
+        "iterations",
+    )
 
-    def __init__(self, lr=0.001, clip=-1, decay=0.0, lr_min=0.0, lr_max=np.inf):
+    def __init__(
+        self,
+        lr: float = 0.001,
+        clip: int = -1,
+        decay: float = 0.0,
+        lr_min: float = 0.0,
+        lr_max: float = np.inf,
+        *args: Tuple,
+        **kwargs: Dict,
+    ):
         self.lr = lr
         self.clip = clip
         self.decay = decay
         self.lr_min = lr_min
         self.lr_max = lr_max
 
-        self.iterations = 0
+        self.iterations: int = 0
 
-    def update(self, params, grads):
+    def update(self, layers: List[Layer]) -> None:
         self.iterations += 1
 
         self.lr *= 1.0 / 1 + self.decay * self.iterations
         self.lr = np.clip(self.lr, self.lr_min, self.lr_max)
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__class__.__name__
 
 
@@ -76,23 +100,22 @@ class Adamax(Optimizer):
 
     def __init__(
         self,
-        learning_rate: float = 0.001,
-        beta1=0.9,
-        beta2=0.999,
-        epsilon=1e-8,
-        *args,
-        **kwargs
+        beta1: float = 0.9,
+        beta2: float = 0.999,
+        epsilon: float = 1e-8,
+        *args: Tuple,
+        **kwargs: Dict,
     ):
-        super(Adamax, self).__init__(*args, **kwargs)
+        super(Adamax, self).__init__(args=args, kwargs=kwargs)
 
         self.beta1 = beta1
         self.beta2 = beta2
         self.epsilon = epsilon
 
-        self.ms = None
-        self.vs = None
+        self.ms: Optional[List[NDArray]] = None
+        self.vs: Optional[List[NDArray]] = None
 
-    def update(self, layers):
+    def update(self, layers: List[Layer]) -> None:
 
         # init
         self.iterations += 1
@@ -111,12 +134,13 @@ class Adamax(Optimizer):
 
         idx = 0
         for layer in layers:
-            new_params = []
+            new_params: List[Layer] = []
+
             for p, g in zip(layer.params, layer.grads):
                 m = self.ms[idx]
                 v = self.vs[idx]
                 m = g * (1 - self.beta1) + m * self.beta1
-                v = dp_maximum(g.abs(), v * self.beta2)
+                v = dp_maximum(x=g.abs(), y=(v * self.beta2))  # type: ignore
                 p = (m * (-1.0 / (v + self.epsilon)) * a_t) + p
                 new_params.append(p)
 
@@ -124,4 +148,4 @@ class Adamax(Optimizer):
                 self.vs[idx] = v
                 idx += 1
             if new_params:
-                layer.params = new_params
+                layer.params = new_params  # type: ignore

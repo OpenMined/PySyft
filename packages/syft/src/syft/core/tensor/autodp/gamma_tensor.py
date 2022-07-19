@@ -2016,7 +2016,7 @@ class GammaTensor:
             state=state,
         )
 
-    def clip(self, a_min: int, a_max: int) -> GammaTensor:
+    def clip(self, a_min: float, a_max: float) -> GammaTensor:
         def _clip(state: dict) -> jax.numpy.DeviceArray:
             return jnp.clip(self.run(state))
 

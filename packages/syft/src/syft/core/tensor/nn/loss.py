@@ -1,8 +1,15 @@
 # third party
+
+# stdlib
+from typing import Tuple
+from typing import Union
+
+# third party
 import numpy as np
 
 # relative
 from ...common.serde.serializable import serializable
+from ..autodp.gamma_tensor import GammaTensor
 from ..autodp.phi_tensor import PhiTensor
 from .utils import dp_log
 
@@ -14,13 +21,21 @@ class Loss(object):
 
     """
 
-    __attr_allowlist__ = ()
+    __attr_allowlist__: Tuple[str, ...] = ()
 
-    def forward(self, outputs: PhiTensor, targets: PhiTensor):
+    def forward(
+        self,
+        outputs: Union[PhiTensor, GammaTensor],
+        targets: Union[PhiTensor, GammaTensor],
+    ) -> Union[PhiTensor, GammaTensor]:
         """Forward function."""
         raise NotImplementedError()
 
-    def backward(self, outputs: PhiTensor, targets: PhiTensor):
+    def backward(
+        self,
+        outputs: Union[PhiTensor, GammaTensor],
+        targets: Union[PhiTensor, GammaTensor],
+    ) -> Union[PhiTensor, GammaTensor]:
         """Backward function.
 
         Parameters
@@ -35,7 +50,7 @@ class Loss(object):
         """
         raise NotImplementedError()
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.__class__.__name__
 
 
@@ -43,10 +58,14 @@ class Loss(object):
 class BinaryCrossEntropy(Loss):
     __attr_allowlist__ = ("epsilon",)
 
-    def __init__(self, epsilon=1e-11):
+    def __init__(self, epsilon: float = 1e-11):
         self.epsilon = epsilon
 
-    def forward(self, outputs, targets):
+    def forward(
+        self,
+        outputs: Union[PhiTensor, GammaTensor],
+        targets: Union[PhiTensor, GammaTensor],
+    ) -> Union[PhiTensor, GammaTensor]:
         """Forward pass.
 
         .. math:: L = -t \\log(p) - (1 - t) \\log(1 - p)
@@ -65,7 +84,11 @@ class BinaryCrossEntropy(Loss):
         log_loss = log_loss.sum(axis=1) * -1
         return log_loss.mean(axis=0)
 
-    def backward(self, outputs: PhiTensor, targets: PhiTensor):
+    def backward(
+        self,
+        outputs: Union[PhiTensor, GammaTensor],
+        targets: Union[PhiTensor, GammaTensor],
+    ) -> Union[PhiTensor, GammaTensor]:
         """Backward pass.
         Parameters
         ----------

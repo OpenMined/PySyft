@@ -15,7 +15,9 @@ from ..autodp.phi_tensor import PhiTensor
 from ..tensor import Tensor
 from .layers.base import Layer
 from .loss import BinaryCrossEntropy
+from .loss import Loss
 from .optimizers import Adamax
+from .optimizers import Optimizer
 
 
 @serializable(recursive_serde=True)
@@ -31,7 +33,13 @@ class Model:
         self.layers: List = [] if layers is None else layers
         self.aggregated_loss: float = 0.0
 
-    def publish(self, deduct_epsilon_for_user: Callable, get_budget_for_user: Callable, ledger: DataSubjectLedger, sigma: float) -> Dict:
+    def publish(
+        self,
+        deduct_epsilon_for_user: Callable,
+        get_budget_for_user: Callable,
+        ledger: DataSubjectLedger,
+        sigma: float,
+    ) -> Dict:
         print("Publish Model Weights")
 
         parameters = {}
@@ -72,13 +80,17 @@ class Model:
             if len(params) > 0:
                 layer.params = params  # type: ignore
 
-    def add(self, layer: Type[Layer]):
+    def add(self, layer: Layer) -> None:
         if isinstance(layer, Layer):
             self.layers.append(layer)
         else:
             raise TypeError("PySyft doesn't recognize this kind of layer.")
 
-    def initialize_weights(self, loss=BinaryCrossEntropy(), optimizer=Adamax()):
+    def initialize_weights(
+        self,
+        loss: Loss = BinaryCrossEntropy(),
+        optimizer: Optimizer = Adamax(),
+    ) -> None:
         self.layers[0].first_layer = True
 
         prev_layer = None
@@ -161,14 +173,14 @@ class Model:
 
                     # got loss and predict
                     valid_losses.append(self.loss.forward(y_val_pred, y_val_batch))
-                    valid_predicts.extend(y_val_pred)
-                    valid_targets.extend(y_val_batch)  # type: ignore
+                    valid_predicts.extend(y_val_pred.child)
+                    valid_targets.extend(y_val_batch.child)
 
     def step(
         self,
         x_batch: Union[GammaTensor, PhiTensor, Tensor],
         y_batch: Union[GammaTensor, PhiTensor, Tensor],
-    ):
+    ) -> None:
 
         x_batch = x_batch.child if isinstance(x_batch, Tensor) else x_batch
         y_batch = y_batch.child if isinstance(y_batch, Tensor) else y_batch
@@ -201,7 +213,9 @@ class Model:
 
         print("Loss:", self.aggregated_loss)
 
-    def predict(self, X: Union[GammaTensor, PhiTensor, Tensor]):
+    def predict(
+        self, X: Union[GammaTensor, PhiTensor, Tensor]
+    ) -> Union[GammaTensor, PhiTensor, Tensor]:
         """Calculate an output Y for the given input X."""
         x_next = X
         for layer in self.layers:
