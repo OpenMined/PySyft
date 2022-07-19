@@ -258,12 +258,35 @@ services:
       # by rewriting the customrequestheaders.Host with the same host:port as the
       # code uses internally any S3 presigned urls will still validate
 
+  mongo:
+    image: mongo:latest
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017"
+    volumes:
+      - mongo-data:/data/db
+
+  arango:
+    image: arangodb:latest
+    restart: always
+    environment:
+      ARANGO_ROOT_PASSWORD: somepassword
+    ports:
+      - "8529"
+    volumes:
+      - arango-data:/var/lib/arangodb3
+
 volumes:
   app-db-data:
   tailscale-data:
   headscale-data:
   app-redis-data:
   seaweedfs-data:
+  mongo-data:
+  arango-data:
 
 networks:
   traefik-public:
