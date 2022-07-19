@@ -505,11 +505,7 @@ class NewDataSubject:
         for data_subject in self.data_subjects:
             yield data_subject
 
-<<<<<<< HEAD
     def __contains__(self, item: Union[str, NewDataSubject]) -> bool:
-=======
-    def __contains__(self, item: Union[NewDataSubject, ArrayLike, List]):
->>>>>>> c1ef28ecd (add typing to base.py in layers)
         if isinstance(item, NewDataSubject):
             return self.data_subjects.isdisjoint(item.data_subjects)
         else:
@@ -532,11 +528,7 @@ class NewDataSubject:
         elif isinstance(x, NewDataSubject):
             return NewDataSubject(x.data_subjects)
         else:
-<<<<<<< HEAD
             raise ValueError(f"Either X:{type(x)} Y:{type(y)} should be NewDataSubject")
-=======
-            raise NotImplementedError
->>>>>>> c1ef28ecd (add typing to base.py in layers)
 
     def multiply(
         self,
@@ -552,15 +544,9 @@ class NewDataSubject:
         elif isinstance(x, NewDataSubject):
             return NewDataSubject(x.data_subjects)
         else:
-<<<<<<< HEAD
             raise ValueError(f"Either X:{type(x)} Y:{type(y)} should be NewDataSubject")
 
     def __eq__(self, other: Union[NewDataSubject, Any]) -> bool:
-=======
-            raise NotImplementedError
-
-    def __eq__(self, other: NewDataSubject) -> bool:
->>>>>>> c1ef28ecd (add typing to base.py in layers)
         if isinstance(other, NewDataSubject):
             return self.data_subjects == other.data_subjects
         else:
