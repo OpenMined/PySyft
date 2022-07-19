@@ -582,11 +582,11 @@ class TensorWrappedPhiTensorPointer(Pointer, PassthroughTensor):
         return result
 
     def __getitem__(
-        self, key: Union[int, bool, slice, Ellipsis]
+        self, key: Union[int, bool, slice]
     ) -> TensorWrappedPhiTensorPointer:
         """Apply the slice  operation on "self"
         Args:
-            y (Union[int,bool,slice,Ellipsis]) : second operand.
+            y (Union[int,bool,slice]) : second operand.
 
         Returns:
             Union[TensorWrappedPhiTensorPointer,MPCTensor] : Result of the operation.

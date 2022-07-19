@@ -54,8 +54,8 @@ from ..fixed_precision_tensor import FixedPrecisionTensor
 from ..lazy_repeat_array import compute_min_max
 from ..lazy_repeat_array import lazyrepeatarray
 from ..passthrough import PassthroughTensor  # type: ignore
-from ..passthrough import SupportedChainType
-from ..passthrough import is_acceptable_simple_type
+from ..passthrough import SupportedChainType  # type: ignore
+from ..passthrough import is_acceptable_simple_type  # type: ignore
 from ..smpc import utils
 from ..smpc.mpc_tensor import MPCTensor
 from ..smpc.utils import TYPE_TO_RING_SIZE
@@ -577,11 +577,11 @@ class TensorWrappedGammaTensorPointer(Pointer, PassthroughTensor):
         return result
 
     def __getitem__(
-        self, key: Union[int, bool, slice, Ellipsis]
+        self, key: Union[int, bool, slice]
     ) -> TensorWrappedGammaTensorPointer:
         """Apply the slice  operation on "self"
         Args:
-            y (Union[int,bool,slice,Ellipsis]) : second operand.
+            y (Union[int,bool,slice]) : second operand.
 
         Returns:
             Union[TensorWrappedGammaTensorPointer] : Result of the operation.
@@ -1093,7 +1093,7 @@ def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
     the result will have a different function. Thus we can check to see if the f
     """
     if isinstance(x, GammaTensor) and isinstance(x.data_subjects, np.ndarray):
-        x = GammaTensor(
+        res = GammaTensor(
             child=x.child,
             data_subjects=np.zeros_like(x.data_subjects, np.int64),
             min_vals=x.min_vals,
@@ -1101,7 +1101,7 @@ def no_op(x: Dict[str, GammaTensor]) -> Dict[str, GammaTensor]:
             func=x.func,
             state=GammaTensor.convert_dsl(x.state),
         )
-    return x
+    return res
 
 
 def jax2numpy(value: jnp.array, dtype: np.dtype) -> np.array:
@@ -1655,7 +1655,7 @@ class GammaTensor:
         )
 
     @property
-    def T(self):
+    def T(self) -> GammaTensor:
         return self.transpose()
 
     def sum(
@@ -1733,7 +1733,7 @@ class GammaTensor:
             state=output_state,
         )
 
-    def ravel(self):
+    def ravel(self) -> GammaTensor:
         def _ravel(state: dict) -> jax.numpy.DeviceArray:
             return jnp.ravel(self.run(state))
 
@@ -1758,7 +1758,7 @@ class GammaTensor:
             state=output_state,
         )
 
-    def reshape(self, shape):
+    def reshape(self, shape: Tuple[int]) -> GammaTensor:
         child = self.child.reshape(shape)
         output_shape = child.shape
 
@@ -1796,11 +1796,11 @@ class GammaTensor:
     def _argmax(self, axis: Optional[int]) -> np.ndarray:
         return self.child.argmax(axis)
 
-    def mean(self, axis, **kwargs) -> GammaTensor:
+    def mean(self, axis: int, **kwargs: Dict[Any, Any]) -> GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        def _mean(state, axis=axis):
+        def _mean(state, axis=axis) -> jax.numpy.DeviceArray:
             return jnp.mean(self.run(state), axis)
 
         result = self.child.mean(axis, **kwargs)
@@ -1843,7 +1843,7 @@ class GammaTensor:
         output_state = dict()
         output_state[self.id] = self
 
-        def _std(state, axis=axis):
+        def _std(state, axis=axis) -> jax.numpy.DeviceArray:
             return jnp.std(self.run(state), axis)
 
         result = self.child.std(axis, **kwargs)
@@ -1915,7 +1915,7 @@ class GammaTensor:
 
             output_ds = self.data_subjects.dot(other.data_subjects)
 
-            def _dot(state: dict):
+            def _dot(state: dict) -> jax.numpy.DeviceArray:
                 return jnp.dot(self.run(state))
 
             result = jnp.dot(self.child, other.child)
@@ -2012,7 +2012,7 @@ class GammaTensor:
             state=state,
         )
 
-    def clip(self, a_min: int, a_max: int):
+    def clip(self, a_min: int, a_max: int) -> GammaTensor:
         def _clip(state: dict) -> jax.numpy.DeviceArray:
             return jnp.clip(self.run(state))
 
@@ -2252,7 +2252,9 @@ class GammaTensor:
                 data_subjects=self.data_subjects[item],
             )
 
-    def __setitem__(self, key, value) -> None:
+    def __setitem__(
+        self, key: Union[int, slice], value: Union[GammaTensor, np.ndarray]
+    ) -> None:
         # relative
         from .phi_tensor import PhiTensor
 
