@@ -15,7 +15,7 @@ import numpy as np
 from numpy.typing import ArrayLike
 
 # relative
-from ..adp.data_subject_list import NewDataSubject
+from ..adp.data_subject_list import DataSubjectArray
 from .lazy_repeat_array import lazyrepeatarray
 from .manager import TensorChainManager
 from .passthrough import PassthroughTensor  # type: ignore
@@ -417,11 +417,11 @@ class PhiTensorAncestor(TensorChainManager):
 
         # Check 3: If data_subjects is a string, make it a list with one entity in it
         if isinstance(data_subjects, str):
-            data_subjects = [NewDataSubject(data_subjects)]
-        elif isinstance(data_subjects, NewDataSubject):
+            data_subjects = [DataSubjectArray(data_subjects)]
+        elif isinstance(data_subjects, DataSubjectArray):
             data_subjects = [data_subjects]
-        # Check 4: If data_subjects are a list, are the items strings or NewDataSubject objects.
-        # If they're strings lets create NewDataSubject objects.
+        # Check 4: If data_subjects are a list, are the items strings or DataSubjectArray objects.
+        # If they're strings lets create DataSubjectArray objects.
 
         # if isinstance(data_subjects, (list, tuple)):
         #     data_subjects = np.array(data_subjects)
@@ -435,8 +435,8 @@ class PhiTensorAncestor(TensorChainManager):
         #         " the tensor you're calling .private() on. Try again."
         #     )
 
-        if not isinstance(data_subjects, NewDataSubject):
-            data_subjects = NewDataSubject.from_objs(data_subjects)
+        if not isinstance(data_subjects, DataSubjectArray):
+            data_subjects = DataSubjectArray.from_objs(data_subjects)
 
         # SKIP check temporarily
         # for entity in one_hot_lookup:

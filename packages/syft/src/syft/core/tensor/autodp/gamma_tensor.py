@@ -1758,7 +1758,7 @@ class GammaTensor:
             state=output_state,
         )
 
-    def reshape(self, shape: Tuple[int]) -> GammaTensor:
+    def reshape(self, shape: Tuple[int, ...]) -> GammaTensor:
         child = self.child.reshape(shape)
         output_shape = child.shape
 

@@ -1,11 +1,14 @@
-# relative
+# stdlib
+from typing import Dict
+from typing import Tuple
 from typing import Union
-from ...autodp.phi_tensor import PhiTensor
-from ...autodp.gamma_tensor import GammaTensor
 
+# third party
 from numpy.typing import ArrayLike
 
-from typing_extensions import Self
+# relative
+from ...autodp.gamma_tensor import GammaTensor
+from ...autodp.phi_tensor import PhiTensor
 
 
 class Layer:
@@ -19,15 +22,17 @@ class Layer:
 
     first_layer: bool = False
 
-    def forward(self, input: Union[PhiTensor, GammaTensor, ArrayLike], *args, **kwargs):
-        raise NotImplementedError
-
-    def backward(
-        self, pre_grad: Union[PhiTensor, GammaTensor, ArrayLike], *args, **kwargs
+    def forward(
+        self, input: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
     ):
         raise NotImplementedError
 
-    def connect_to(self, prev_layer: Self) -> None:
+    def backward(
+        self, pre_grad: Union[PhiTensor, GammaTensor], *args: Tuple, **kwargs: Dict
+    ):
+        raise NotImplementedError
+
+    def connect_to(self, prev_layer: "Layer") -> None:
         raise NotImplementedError
 
     @property

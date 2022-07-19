@@ -1,13 +1,13 @@
 # stdlib
-from typing import Sequence
 from typing import Tuple
 from typing import Union
 
 # third party
 import numpy as np
+from numpy.typing import NDArray
 
 # relative
-from ...adp.data_subject_list import NewDataSubject
+from ...adp.data_subject_list import DataSubjectArray
 from ..autodp.gamma_tensor import GammaTensor
 from ..autodp.phi_tensor import PhiTensor
 from ..lazy_repeat_array import lazyrepeatarray
@@ -123,7 +123,7 @@ def dp_zeros(shape: Tuple) -> Union[PhiTensor, GammaTensor]:
     output = np.zeros(shape)
 
     # Create Empty DataSubjectSet array
-    data_subjects = np.broadcast_to(np.array([NewDataSubject(set())]), output.shape)
+    data_subjects = np.broadcast_to(np.array([DataSubjectArray(set())]), output.shape)
 
     return GammaTensor(
         child=output,
@@ -138,7 +138,7 @@ def dp_pad(
 ):
 
     data = input.child
-    output_data: Sequence = np.pad(data, width, mode=padding_mode, **kwargs)
+    output_data: NDArray = np.pad(data, width, mode=padding_mode, **kwargs)
     min_v = lazyrepeatarray(
         data=min(input.min_vals.data.min(), output_data.min()), shape=output_data.shape
     )
@@ -146,7 +146,7 @@ def dp_pad(
         data=min(input.max_vals.data.max(), output_data.max()), shape=output_data.shape
     )
 
-    output_data_subjects = np.pad(
+    output_data_subjects: NDArray = np.pad(
         input.data_subjects, width, mode=padding_mode, **kwargs
     )
 
@@ -203,7 +203,7 @@ def dp_add_at(
 
 
 def get_im2col_indices(
-    x_shape: Tuple,
+    x_shape: Tuple[int, ...],
     field_height: int,
     field_width: int,
     padding: int = 1,
@@ -228,7 +228,7 @@ def get_im2col_indices(
 
 
 def col2im_indices(
-    cols: PhiTensor,
+    cols: Union[PhiTensor, GammaTensor],
     x_shape: Tuple[int, ...],
     field_height: int = 3,
     field_width: int = 3,
@@ -250,7 +250,11 @@ def col2im_indices(
 
 
 def im2col_indices(
-    x: PhiTensor, field_height: int, field_width: int, padding: int = 1, stride: int = 1
+    x: Union[PhiTensor, GammaTensor],
+    field_height: int,
+    field_width: int,
+    padding: int = 1,
+    stride: int = 1,
 ):
     """An implementation of im2col based on some fancy indexing"""
     # Zero-pad the input

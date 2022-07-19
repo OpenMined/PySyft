@@ -8,7 +8,7 @@ import numpy as np
 
 # syft absolute
 import syft as sy
-from syft.core.adp.data_subject_list import NewDataSubject
+from syft.core.adp.data_subject_list import DataSubjectArray
 
 # relative
 from .utils import download_dataset
@@ -29,11 +29,11 @@ def add_dataset_to_domain(domain_ip, dataset_url):
 
     data_subjects_image = np.ones(train["images"].shape).astype(object)
     for i, patient in enumerate(train["patient_ids"]):
-        data_subjects_image[i] = NewDataSubject([str(patient)])
+        data_subjects_image[i] = DataSubjectArray([str(patient)])
 
     data_subjects_labels = np.ones(train["labels"].shape).astype(object)
     for i, patient in enumerate(train["patient_ids"]):
-        data_subjects_labels[i] = NewDataSubject([str(patient)])
+        data_subjects_labels[i] = DataSubjectArray([str(patient)])
 
     train_image_data = sy.Tensor(train["images"]).annotated_with_dp_metadata(
         min_val=0, max_val=255, data_subjects=data_subjects_image

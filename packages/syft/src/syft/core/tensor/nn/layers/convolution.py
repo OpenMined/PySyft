@@ -1,15 +1,16 @@
 # stdlib
-from typing import Dict, Union
+from typing import Dict
 from typing import Optional
 from typing import Tuple
+from typing import Union
 
 # third party
 import numpy as np
-from packages.syft.src.syft.core.tensor.autodp.gamma_tensor import GammaTensor
 
 # relative
 from .. import activations
 from ....common.serde.serializable import serializable
+from ...autodp.gamma_tensor import GammaTensor
 from ...autodp.phi_tensor import PhiTensor
 from ..initializations import XavierInitialization
 from ..utils import col2im_indices
@@ -58,14 +59,14 @@ class Convolution(Layer):
         self.padding = padding
         self.name = "Conv"
 
-        self.W: Union[np.ndarray, PhiTensor, GammaTensor] = None
-        self.dW: Union[PhiTensor, GammaTensor] = None
-        self.b: Union[np.ndarray, PhiTensor, GammaTensor] = None
-        self.db: Union[PhiTensor, GammaTensor] = None
+        self.W: Optional[Union[np.ndarray, PhiTensor, GammaTensor]] = None
+        self.dW: Optional[Union[PhiTensor, GammaTensor]] = None
+        self.b: Optional[Union[np.ndarray, PhiTensor, GammaTensor]] = None
+        self.db: Optional[Union[PhiTensor, GammaTensor]] = None
         self.out_shape: Optional[Tuple[int, ...]] = None
-        self.last_output: Optional[Tuple[int, ...]] = None
-        self.last_input: Union[PhiTensor, GammaTensor] = None
-        self.X_col: Union[PhiTensor, GammaTensor] = None
+        self.last_output: Optional[Union[PhiTensor, GammaTensor]] = None
+        self.last_input: Optional[Union[PhiTensor, GammaTensor]] = None
+        self.X_col: Optional[Union[PhiTensor, GammaTensor]] = None
 
         self.init = XavierInitialization()
         self.activation = activations.get(activation)
@@ -85,7 +86,9 @@ class Convolution(Layer):
         elif isinstance(self.filter_size, int):
             filter_height = filter_width = self.filter_size
         else:
-            raise NotImplementedError
+            raise TypeError(
+                "Argument `filter_size` should either to be Tuple or an integer."
+            )
 
         height = (pre_height - filter_height + 2 * self.padding) // self.stride + 1
         width = (pre_width - filter_width + 2 * self.padding) // self.stride + 1
@@ -109,11 +112,15 @@ class Convolution(Layer):
         # Input Shape -> N, C, H, W
         n_x, _, _, _ = input.shape
 
+        assert self.out_shape is not None
+
         _, _, h_out, w_out = self.out_shape
 
         self.X_col = im2col_indices(
             input, h_filter, w_filter, padding=self.padding, stride=self.stride
         )
+
+        assert self.W is not None, "self.W cannot be None."
 
         W_col = self.W.reshape((n_filters, -1))
         out = (

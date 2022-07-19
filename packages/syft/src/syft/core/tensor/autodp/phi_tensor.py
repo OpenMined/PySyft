@@ -20,8 +20,8 @@ from .... import lib
 from ....ast.klass import pointerize_args_and_kwargs
 from ....core.adp.data_subject import DataSubject
 from ....core.adp.data_subject_ledger import DataSubjectLedger
+from ....core.adp.data_subject_list import DataSubjectArray
 from ....core.adp.data_subject_list import DataSubjectList
-from ....core.adp.data_subject_list import NewDataSubject
 from ....core.adp.data_subject_list import dslarraytonumpyutf8
 from ....core.adp.data_subject_list import numpyutf8todslarray
 from ....core.node.common.action.get_or_set_property_action import (
@@ -1079,7 +1079,9 @@ class PhiTensor(PassthroughTensor, ADPTensor):
     def __init__(
         self,
         child: Sequence,
-        data_subjects: Union[List[NewDataSubject], List[DataSubject], DataSubjectList],
+        data_subjects: Union[
+            List[DataSubjectArray], List[DataSubject], DataSubjectList
+        ],
         min_vals: Union[np.ndarray, lazyrepeatarray],
         max_vals: Union[np.ndarray, lazyrepeatarray],
     ) -> None:
@@ -1095,8 +1097,8 @@ class PhiTensor(PassthroughTensor, ADPTensor):
         self.min_vals = min_vals
         self.max_vals = max_vals
 
-        if not isinstance(data_subjects, NewDataSubject):
-            data_subjects = NewDataSubject.from_objs(data_subjects)
+        if not isinstance(data_subjects, DataSubjectArray):
+            data_subjects = DataSubjectArray.from_objs(data_subjects)
 
         if len(data_subjects.shape) != len(self.shape):
             raise ValueError(
@@ -1254,7 +1256,7 @@ class PhiTensor(PassthroughTensor, ADPTensor):
             max_vals=np.abs(self.min_vals.data),
         )
 
-    def reshape(self, *shape: Tuple) -> PhiTensor:
+    def reshape(self, *shape: Tuple[int, ...]) -> PhiTensor:
 
         data = self.child
         output_data = np.reshape(data, *shape)

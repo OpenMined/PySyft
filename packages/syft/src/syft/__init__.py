@@ -46,8 +46,8 @@ from . import logger  # noqa: F401
 
 # ASTRACT OBJECT IMPORTS
 from .core import common  # noqa: F401
+from .core.adp.data_subject_list import DataSubjectArray  # noqa: F401
 from .core.adp.data_subject_list import DataSubjectList  # noqa: F401
-from .core.adp.data_subject_list import NewDataSubject  # noqa: F401
 
 # Convenience Methods
 from .core.common.serde.deserialize import _deserialize as deserialize  # noqa: F401

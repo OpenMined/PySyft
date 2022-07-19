@@ -268,10 +268,10 @@ class DataSubjectList:
 
     @staticmethod
     def absorb(dsl1: DataSubjectList, dsl2: DataSubjectList) -> DataSubjectList:
-        # TODO: Check if NewDataSubjects need to be flattened before appending, if different sizes?
+        # TODO: Check if DataSubjectArrays need to be flattened before appending, if different sizes?
 
         """
-        Unlike Combine() which creates a NewDataSubject for a GammaTensor where one data point is owned
+        Unlike Combine() which creates a DataSubjectArray for a GammaTensor where one data point is owned
         by multiple data subjects, Absorb() creates a GammaTensor where each data point is
         still only owned by a single data subject.
 
@@ -381,7 +381,7 @@ def numpyutf8todslarray(input_index: Tuple[np.ndarray, np.ndarray]) -> ArrayLike
     last_offset = 0
     for offset in index_array:
         chars = output_bytes[last_offset:offset]
-        final_string = NewDataSubject.fromstring(chars.decode("utf-8"))
+        final_string = DataSubjectArray.fromstring(chars.decode("utf-8"))
         last_offset = offset
         output_list.append(final_string)
     return np.array(output_list).reshape(shape)
@@ -405,7 +405,7 @@ def dslarraytonumpyutf8(string_list: np.ndarray) -> ArrayLike:
     indexes = []
     offset = 0
     for item in string_list:
-        if not isinstance(item, NewDataSubject):
+        if not isinstance(item, DataSubjectArray):
             raise Exception(
                 f"DataSubjectList entities must be  DataSubject. {type(item)}"
             )
@@ -429,7 +429,7 @@ def dslarraytonumpyutf8(string_list: np.ndarray) -> ArrayLike:
 
 
 @serializable(recursive_serde=True)
-class NewDataSubject:
+class DataSubjectArray:
     __attr_allowlist__ = ("data_subjects",)
 
     delimiter = ","
@@ -444,122 +444,126 @@ class NewDataSubject:
         return f"{self.delimiter}".join(self.data_subjects)
 
     @classmethod
-    def fromstring(cls, input_string: str) -> NewDataSubject:
-        return NewDataSubject(set(input_string.split(f"{cls.delimiter}")))
+    def fromstring(cls, input_string: str) -> DataSubjectArray:
+        return DataSubjectArray(set(input_string.split(f"{cls.delimiter}")))
 
-    def __add__(self, other: Union[NewDataSubject, Any]) -> NewDataSubject:
-        if isinstance(other, NewDataSubject):
-            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+    def __add__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
-            return NewDataSubject(self.data_subjects)
+            return DataSubjectArray(self.data_subjects)
 
-    def __sub__(self, other: Union[NewDataSubject, Any]) -> NewDataSubject:
-        if isinstance(other, NewDataSubject):
-            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+    def __sub__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
-            return NewDataSubject(self.data_subjects)
+            return DataSubjectArray(self.data_subjects)
 
-    def __mul__(self, other: Union[NewDataSubject, Any]) -> NewDataSubject:
-        if isinstance(other, NewDataSubject):
-            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+    def __mul__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
-            return NewDataSubject(self.data_subjects)
+            return DataSubjectArray(self.data_subjects)
 
-    def __ge__(self, other: Union[NewDataSubject, Any]) -> NewDataSubject:
-        if isinstance(other, NewDataSubject):
-            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+    def __ge__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
-            return NewDataSubject(self.data_subjects)
+            return DataSubjectArray(self.data_subjects)
 
-    def __le__(self, other: Union[NewDataSubject, Any]) -> NewDataSubject:
-        if isinstance(other, NewDataSubject):
-            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+    def __le__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
-            return NewDataSubject(self.data_subjects)
+            return DataSubjectArray(self.data_subjects)
 
-    def __gt__(self, other: Union[NewDataSubject, Any]) -> NewDataSubject:
-        if isinstance(other, NewDataSubject):
-            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+    def __gt__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
-            return NewDataSubject(self.data_subjects)
+            return DataSubjectArray(self.data_subjects)
 
-    def __lt__(self, other: Union[NewDataSubject, Any]) -> NewDataSubject:
-        if isinstance(other, NewDataSubject):
-            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+    def __lt__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
-            return NewDataSubject(self.data_subjects)
+            return DataSubjectArray(self.data_subjects)
 
-    def __truediv__(self, other: Union[NewDataSubject, Any]) -> NewDataSubject:
-        if isinstance(other, NewDataSubject):
-            return NewDataSubject(self.data_subjects.union(other.data_subjects))
+    def __truediv__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        if isinstance(other, DataSubjectArray):
+            return DataSubjectArray(self.data_subjects.union(other.data_subjects))
         else:
-            return NewDataSubject(self.data_subjects)
+            return DataSubjectArray(self.data_subjects)
 
-    def __rtruediv__(self, other: Union[NewDataSubject, Any]) -> NewDataSubject:
-        return NewDataSubject(self.data_subjects)
+    def __rtruediv__(self, other: Union[DataSubjectArray, Any]) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
 
     def __repr__(self) -> str:
-        return "NewDataSubject: " + str(self.data_subjects.__repr__())
+        return "DataSubjectArray: " + str(self.data_subjects.__repr__())
 
     def __iter__(self) -> Iterator[Any]:
         for data_subject in self.data_subjects:
             yield data_subject
 
-    def __contains__(self, item: Union[str, NewDataSubject]) -> bool:
-        if isinstance(item, NewDataSubject):
+    def __contains__(self, item: Union[str, DataSubjectArray]) -> bool:
+        if isinstance(item, DataSubjectArray):
             return self.data_subjects.isdisjoint(item.data_subjects)
         else:
             return self.data_subjects.isdisjoint(set(item))
 
-    def conjugate(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> NewDataSubject:
-        return NewDataSubject(self.data_subjects)
+    def conjugate(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
 
     def subtract(
         self,
-        x: Union[NewDataSubject, Any],
-        y: Union[NewDataSubject, Any],
+        x: Union[DataSubjectArray, Any],
+        y: Union[DataSubjectArray, Any],
         *args: List[Any],
         **kwargs: Dict[Any, Any],
-    ) -> NewDataSubject:
-        if isinstance(y, NewDataSubject) and isinstance(x, NewDataSubject):
-            return NewDataSubject(x.data_subjects.union(y.data_subjects))
-        elif isinstance(y, NewDataSubject):
-            return NewDataSubject(y.data_subjects)
-        elif isinstance(x, NewDataSubject):
-            return NewDataSubject(x.data_subjects)
+    ) -> DataSubjectArray:
+        if isinstance(y, DataSubjectArray) and isinstance(x, DataSubjectArray):
+            return DataSubjectArray(x.data_subjects.union(y.data_subjects))
+        elif isinstance(y, DataSubjectArray):
+            return DataSubjectArray(y.data_subjects)
+        elif isinstance(x, DataSubjectArray):
+            return DataSubjectArray(x.data_subjects)
         else:
-            raise ValueError(f"Either X:{type(x)} Y:{type(y)} should be NewDataSubject")
+            raise ValueError(
+                f"Either X:{type(x)} Y:{type(y)} should be DataSubjectArray"
+            )
 
     def multiply(
         self,
-        x: Union[NewDataSubject, Any],
-        y: Union[NewDataSubject, Any],
+        x: Union[DataSubjectArray, Any],
+        y: Union[DataSubjectArray, Any],
         *args: List[Any],
         **kwargs: Dict[Any, Any],
-    ) -> NewDataSubject:
-        if isinstance(y, NewDataSubject) and isinstance(x, NewDataSubject):
-            return NewDataSubject(x.data_subjects.union(y.data_subjects))
-        elif isinstance(y, NewDataSubject):
-            return NewDataSubject(y.data_subjects)
-        elif isinstance(x, NewDataSubject):
-            return NewDataSubject(x.data_subjects)
+    ) -> DataSubjectArray:
+        if isinstance(y, DataSubjectArray) and isinstance(x, DataSubjectArray):
+            return DataSubjectArray(x.data_subjects.union(y.data_subjects))
+        elif isinstance(y, DataSubjectArray):
+            return DataSubjectArray(y.data_subjects)
+        elif isinstance(x, DataSubjectArray):
+            return DataSubjectArray(x.data_subjects)
         else:
-            raise ValueError(f"Either X:{type(x)} Y:{type(y)} should be NewDataSubject")
+            raise ValueError(
+                f"Either X:{type(x)} Y:{type(y)} should be DataSubjectArray"
+            )
 
-    def __eq__(self, other: Union[NewDataSubject, Any]) -> bool:
-        if isinstance(other, NewDataSubject):
+    def __eq__(self, other: Union[DataSubjectArray, Any]) -> bool:
+        if isinstance(other, DataSubjectArray):
             return self.data_subjects == other.data_subjects
         else:
             raise NotImplementedError
 
-    def real(self) -> NewDataSubject:
-        return NewDataSubject(self.data_subjects)
+    def real(self) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
 
-    def var(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> NewDataSubject:
+    def var(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
         return (self - np.mean(self)) * (self - np.mean(self))
 
-    def sqrt(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> NewDataSubject:
-        return NewDataSubject(self.data_subjects)
+    def sqrt(self, *args: List[Any], **kwargs: Dict[Any, Any]) -> DataSubjectArray:
+        return DataSubjectArray(self.data_subjects)
 
     def __array_ufunc__(self, ufunc, method, *inputs, **kwargs) -> ArrayLike:  # type: ignore
         method_name = ufunc.__name__
@@ -569,7 +573,7 @@ class NewDataSubject:
             return method(*inputs, **kwargs)
         else:
             raise NotImplementedError(
-                f"Method: {method_name} not implemented in NewDataSubject"
+                f"Method: {method_name} not implemented in DataSubjectArray"
             )
 
     @staticmethod
@@ -582,7 +586,9 @@ class NewDataSubject:
             input_subjects = np.array(input_subjects)
 
         data_map = (
-            lambda x: NewDataSubject([x]) if not isinstance(x, NewDataSubject) else x
+            lambda x: DataSubjectArray([x])
+            if not isinstance(x, DataSubjectArray)
+            else x
         )
         map_function = np.vectorize(data_map)
 
