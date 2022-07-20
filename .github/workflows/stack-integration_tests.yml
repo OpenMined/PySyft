@@ -71,7 +71,7 @@ jobs:
           pip install tox --upgrade
 
       - name: Check python version
-         if: (steps.changes.outputs.stack == 'true' && matrix.os == 'windows')
+        if: (steps.changes.outputs.stack == 'true' && matrix.os == 'windows')
         run: |
           python -VV
         shell: cmd
