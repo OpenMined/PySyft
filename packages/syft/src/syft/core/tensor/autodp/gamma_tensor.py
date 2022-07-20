@@ -1448,6 +1448,46 @@ class GammaTensor:
             state=output_state,
         )
 
+    def __lt__(self, other: Any) -> GammaTensor:
+        # relative
+        from .phi_tensor import PhiTensor
+
+        output_state = dict()
+        # Add this tensor to the chain
+        output_state[self.id] = self
+
+        if isinstance(other, PhiTensor):
+            other = other.gamma
+
+        if isinstance(other, GammaTensor):
+
+            def _lt(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.less(self.run(state), other.run(state))
+
+            output_state[other.id] = other
+            child = self.child.__lt__(other.child)
+            output_ds = self.data_subjects > other.data_subjects
+
+        else:
+
+            def _lt(state: dict) -> jax.numpy.DeviceArray:
+                return jnp.greater(self.run(state), other)
+
+            child = self.child.__lt__(other)
+            output_ds = self.data_subjects
+
+        min_val = self.min_vals * 0
+        max_val = (self.max_vals * 0) + 1
+
+        return GammaTensor(
+            child=child,
+            data_subjects=output_ds,
+            min_vals=min_val,
+            max_vals=max_val,
+            func=_lt,
+            state=output_state,
+        )
+
     def __le__(self, other: Any) -> GammaTensor:
         # relative
         from .phi_tensor import PhiTensor
