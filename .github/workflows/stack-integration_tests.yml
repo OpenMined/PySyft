@@ -71,13 +71,13 @@ jobs:
           pip install tox --upgrade
 
       - name: Check python version
-         if: steps.changes.outputs.stack == 'true' || matrix.os == 'windows'
+         if: steps.changes.outputs.stack == 'true' && matrix.os == 'windows'
         run: |
           python -VV
         shell: cmd
 
       - name: Show choco installed packages
-        if: ${{matrix.os}} == 'windows'
+        if: matrix.os == 'windows'
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: list --localonly
@@ -89,13 +89,13 @@ jobs:
           args: install git.install --params "/GitAndUnixToolsOnPath /WindowsTerminal /NoAutoCrlf" -y
 
       - name: Install cmake
-        if: ${{matrix.os}} == 'windows'
+        if: matrix.os == 'windows'
         uses: crazy-max/ghaction-chocolatey@v1
         with:
           args: install cmake.portable --installargs 'ADD_CMAKE_TO_PATH=System' -y
 
       - name: Check cmake version
-        if: steps.changes.outputs.stack == 'true' ||  matrix.os == 'windows'
+        if: steps.changes.outputs.stack == 'true' &&  matrix.os == 'windows'
         run: |
           cmake --version
         shell: cmd
