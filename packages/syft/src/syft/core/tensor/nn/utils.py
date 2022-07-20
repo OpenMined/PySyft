@@ -1,4 +1,7 @@
 # stdlib
+from typing import Any
+from typing import Dict
+from typing import Sequence
 from typing import Tuple
 from typing import Union
 
@@ -28,7 +31,9 @@ def gamma_output(
     inputs_are_gamma = any([isinstance(i, GammaTensor) for i in (x, y)])
     inputs_are_phi = all([isinstance(i, PhiTensor) for i in (x, y)])
 
-    def phi_data_subjects_differ(x, y):
+    def phi_data_subjects_differ(
+        x: Union[PhiTensor, Any], y: Union[PhiTensor, Any]
+    ) -> bool:
         if not isinstance(y, PhiTensor) or not isinstance(x, PhiTensor):
             return False
 
@@ -134,8 +139,11 @@ def dp_zeros(shape: Tuple) -> Union[PhiTensor, GammaTensor]:
 
 
 def dp_pad(
-    input: Union[PhiTensor, GammaTensor], width, padding_mode="reflect", **kwargs
-):
+    input: Union[PhiTensor, GammaTensor],
+    width: Union[int, Sequence],
+    padding_mode: str = "reflect",
+    **kwargs: Dict[Any, Any],
+) -> Union[PhiTensor, GammaTensor]:
 
     data = input.child
     output_data: NDArray = np.pad(data, width, mode=padding_mode, **kwargs)
@@ -172,7 +180,7 @@ def dp_pad(
 
 def dp_add_at(
     a: Union[PhiTensor, GammaTensor], indices: Tuple, b: Union[PhiTensor, GammaTensor]
-):
+) -> Union[PhiTensor, GammaTensor]:
     data_a = a.child
     data_b = b.child
 
@@ -208,7 +216,7 @@ def get_im2col_indices(
     field_width: int,
     padding: int = 1,
     stride: int = 1,
-):
+) -> Tuple[np.ndarray, np.ndarray, np.ndarray]:
     # First figure out what the size of the output should be
     N, C, H, W = x_shape
     assert (H + 2 * padding - field_height) % stride == 0
@@ -234,7 +242,7 @@ def col2im_indices(
     field_width: int = 3,
     padding: int = 1,
     stride: int = 1,
-):
+) -> Union[PhiTensor, GammaTensor]:
     """An implementation of col2im based on fancy indexing and np.add.at"""
     N, C, H, W = x_shape
     H_padded, W_padded = H + 2 * padding, W + 2 * padding
@@ -255,11 +263,12 @@ def im2col_indices(
     field_width: int,
     padding: int = 1,
     stride: int = 1,
-):
+) -> Union[PhiTensor, GammaTensor]:
     """An implementation of im2col based on some fancy indexing"""
     # Zero-pad the input
     p = padding
 
+    width: Tuple[Any, ...]
     if len(x.shape) == 4:
         width = ((0, 0), (0, 0), (p, p), (p, p))
     elif len(x.shape) == 3:
