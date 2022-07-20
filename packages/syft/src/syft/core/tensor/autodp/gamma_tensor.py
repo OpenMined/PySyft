@@ -230,8 +230,7 @@ class GammaTensor:
         ledger: DataSubjectLedger,
         sigma: Optional[float] = None,
     ) -> jax.numpy.DeviceArray:
-        # TODO: Add data scientist privacy budget as an input argument, and pass it
-        # into vectorized_publish
+        
         if self.value.dtype != np.int64:
             raise Exception(
                 "Data type of private values is not np.int64: ", self.value.dtype

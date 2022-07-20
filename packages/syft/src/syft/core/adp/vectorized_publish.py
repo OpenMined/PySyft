@@ -92,6 +92,11 @@ def calibrate_sigma(
     sigma=1.5,
    ) -> np.ndarray:
 
+    """ 
+       Adjust the value of sigma chosen to have a 90% chance of being less than query_limit
+ 
+    """
+    
     # RDP Params Initialization
     l2_norms, l2_norm_bounds, sigmas, coeffs = calculate_bounds_for_mechanism(
         value_array=value,
@@ -117,17 +122,19 @@ def calibrate_sigma(
 
     rdp_constants_lookup = convert_constants_to_indices(rdp_constants)
     max_rdp = np.max(rdp_constants_lookup)
+   
     budget_spend = cache_constant2epsilon.take((max_rdp).astype(np.int64))
     
     if budget_spend >= query_limit:
-        # calculate the value of sigma
+        print("****** Budget spent EXCEEDS limit set by data owner")
         # This is the first index in the cache that has an epsilon >= query limit
         threshold_index = np.searchsorted(cache_constant2epsilon, query_limit)
-        # There is a 90% chance the final budget spend will be below the query_limit
+        # There is a 90% chance the final budget spent will be below the query_limit
         selected_rdp_value = np.random.choice(np.arange(threshold_index - 9, threshold_index + 1))
         calibrated_sigma = selected_rdp_value * np.sqrt(max_rdp / selected_rdp_value)
 
     else:
+        print("****** Budget spent BELOW limit set by data owner")
         calibrated_sigma = rdp_params.sigmas
 
     return calibrated_sigma
